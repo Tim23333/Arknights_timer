@@ -13,15 +13,26 @@ from pathlib import Path
 from ak_memory_reader import AKMemoryReader
 
 
+def _timer_data_dir() -> Path:
+    """
+    与 backend/app/services/timer_provider.py 保持一致：
+    - 若设置 AK_TIMER_DATA_DIR，则优先使用该目录
+    - 冻结 EXE 默认写到 %LOCALAPPDATA%/ArknightsTimer/data
+    - 源码运行写到仓库 backend/data
+    """
+    env_dir = os.getenv("AK_TIMER_DATA_DIR", "").strip()
+    if env_dir:
+        return Path(env_dir)
+    if getattr(sys, "frozen", False):
+        return Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "ArknightsTimer" / "data"
+    repo_root = Path(__file__).resolve().parents[2]
+    return repo_root / "backend" / "data"
+
+
 def _write_timer_hook(process_name: str, time_address_hex: str) -> None:
     """供打轴桌面端读取：进程名 + 时间地址（帧地址仍由 AKMemoryReader 推导）。"""
-    if getattr(sys, "frozen", False):
-        data_root = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "ArknightsTimeline" / "data"
-        data_root.mkdir(parents=True, exist_ok=True)
-        path = data_root / "timer_hook.json"
-    else:
-        repo_root = Path(__file__).resolve().parents[2]
-        path = repo_root / "backend" / "data" / "timer_hook.json"
+    data_root = _timer_data_dir()
+    path = data_root / "timer_hook.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "process_name": process_name,

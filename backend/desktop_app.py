@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -470,6 +471,10 @@ class CoachWindow(QMainWindow):
             QMessageBox.critical(self, "寻址工具", f"未找到脚本：\n{script}")
             return
         try:
+            env = os.environ.copy()
+            env["AK_TIMER_DATA_DIR"] = str(
+                Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "ArknightsTimer" / "data"
+            )
             # 冻结后 sys.executable 指向当前主程序 exe，直接调用会重新打开自身。
             if getattr(sys, "frozen", False):
                 py_cmd = shutil.which("python") or shutil.which("py")
@@ -484,7 +489,7 @@ class CoachWindow(QMainWindow):
                 cmd = [py_cmd, str(script)]
             else:
                 cmd = [sys.executable, str(script)]
-            subprocess.Popen(cmd, cwd=str(script.parent), close_fds=sys.platform != "win32")
+            subprocess.Popen(cmd, cwd=str(script.parent), env=env, close_fds=sys.platform != "win32")
         except OSError as e:
             QMessageBox.critical(self, "寻址工具", f"无法启动：{e}")
 

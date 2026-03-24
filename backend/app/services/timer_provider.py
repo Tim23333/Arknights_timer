@@ -27,10 +27,42 @@ _bootstrap_import_path()
 from tools.timer.ak_memory_reader import AKMemoryReader
 
 
-def _hook_path() -> Path:
-    """与 tools/timer 写入路径一致：backend/data/timer_hook.json"""
+def _default_hook_path() -> Path:
+    """
+    timer_hook.json 默认路径：
+    - 冻结 EXE: %LOCALAPPDATA%/ArknightsTimer/data/timer_hook.json
+    - 源码运行: backend/data/timer_hook.json
+    """
+    env_dir = os.getenv("AK_TIMER_DATA_DIR", "").strip()
+    if env_dir:
+        return Path(env_dir) / "timer_hook.json"
+    if getattr(sys, "frozen", False):
+        base = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "ArknightsTimer" / "data"
+        return base / "timer_hook.json"
     backend_root = Path(__file__).resolve().parents[2]
     return backend_root / "data" / "timer_hook.json"
+
+
+def _resolve_hook_path() -> Path:
+    """
+    兼容历史路径，优先使用存在的文件；若都不存在则返回默认路径。
+    """
+    candidates: list[Path] = []
+    default_path = _default_hook_path()
+    candidates.append(default_path)
+
+    # 兼容旧版 EXE 可能写到的目录
+    legacy_local = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "ArknightsTimeline" / "data" / "timer_hook.json"
+    candidates.append(legacy_local)
+
+    # 兼容运行目录附近
+    exe_side = Path(sys.executable).resolve().parent / "data" / "timer_hook.json"
+    candidates.append(exe_side)
+
+    for p in candidates:
+        if p.is_file():
+            return p
+    return default_path
 
 
 class TimerDataProvider:
@@ -110,7 +142,7 @@ class TimerDataProvider:
     def refresh_from_hook_file(self) -> Dict[str, Any]:
         """读取 timer_hook.json 并单次采样游戏时间、逻辑帧，更新缓存。"""
         with self._lock:
-            path = _hook_path()
+            path = _resolve_hook_path()
             if not path.is_file():
                 self._game_cache = {
                     **self._game_cache,
