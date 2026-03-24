@@ -30,13 +30,13 @@ from tools.timer.ak_memory_reader import AKMemoryReader
 def _default_hook_path() -> Path:
     """
     timer_hook.json 默认路径：
-    - 冻结 EXE: %LOCALAPPDATA%/ArknightsTimer/data/timer_hook.json
-    - 源码运行: backend/data/timer_hook.json
+    - Windows: %LOCALAPPDATA%/ArknightsTimer/data/timer_hook.json
+    - 非 Windows 源码运行: backend/data/timer_hook.json
     """
     env_dir = os.getenv("AK_TIMER_DATA_DIR", "").strip()
     if env_dir:
         return Path(env_dir) / "timer_hook.json"
-    if getattr(sys, "frozen", False):
+    if os.name == "nt":
         base = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "ArknightsTimer" / "data"
         return base / "timer_hook.json"
     backend_root = Path(__file__).resolve().parents[2]
@@ -51,6 +51,10 @@ def _resolve_hook_path() -> Path:
     default_path = _default_hook_path()
     candidates.append(default_path)
 
+    # Windows 固定目录（无论是否 frozen）
+    local_new = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "ArknightsTimer" / "data" / "timer_hook.json"
+    candidates.append(local_new)
+
     # 兼容旧版 EXE 可能写到的目录
     legacy_local = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "ArknightsTimeline" / "data" / "timer_hook.json"
     candidates.append(legacy_local)
@@ -58,6 +62,13 @@ def _resolve_hook_path() -> Path:
     # 兼容运行目录附近
     exe_side = Path(sys.executable).resolve().parent / "data" / "timer_hook.json"
     candidates.append(exe_side)
+
+    # 兼容源码目录
+    try:
+        backend_root = Path(__file__).resolve().parents[2]
+        candidates.append(backend_root / "data" / "timer_hook.json")
+    except Exception:
+        pass
 
     for p in candidates:
         if p.is_file():

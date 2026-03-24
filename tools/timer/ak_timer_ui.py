@@ -17,13 +17,13 @@ def _timer_data_dir() -> Path:
     """
     与 backend/app/services/timer_provider.py 保持一致：
     - 若设置 AK_TIMER_DATA_DIR，则优先使用该目录
-    - 冻结 EXE 默认写到 %LOCALAPPDATA%/ArknightsTimer/data
-    - 源码运行写到仓库 backend/data
+    - Windows 默认写到 %LOCALAPPDATA%/ArknightsTimer/data（避免提权重启后环境丢失导致路径漂移）
+    - 非 Windows 源码运行写到仓库 backend/data
     """
     env_dir = os.getenv("AK_TIMER_DATA_DIR", "").strip()
     if env_dir:
         return Path(env_dir)
-    if getattr(sys, "frozen", False):
+    if os.name == "nt":
         return Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "ArknightsTimer" / "data"
     repo_root = Path(__file__).resolve().parents[2]
     return repo_root / "backend" / "data"
@@ -336,8 +336,9 @@ class ProcessWaiter:
             if reader.set_address(address_hex_str):
                 try:
                     _write_timer_hook(reader.process_name, address_hex_str)
-                except OSError:
-                    pass
+                except OSError as e:
+                    messagebox.showerror("错误", f"写入 timer_hook.json 失败：{e}")
+                    return
                 self.root.attributes("-topmost", True)
                 TimerApp(self.root, reader)
             else:
