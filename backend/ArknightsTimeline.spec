@@ -2,19 +2,11 @@
 
 
 a = Analysis(
-    ['run.py'],
-    pathex=['g:\\Arknights'],
+    ['D:\\Arknights\\Arknights_timer\\backend\\run.py'],
+    pathex=['D:\\Arknights\\Arknights_timer'],
     binaries=[],
-    datas=[('..\\\\tools', 'tools')],
-    hiddenimports=[
-        'tools',
-        'tools.timer',
-        'tools.timer.ak_memory_reader',
-        'tkinter',
-        'tkinter.ttk',
-        'tkinter.filedialog',
-        'tkinter.messagebox',
-    ],
+    datas=[('D:\\Arknights\\Arknights_timer\\tools', 'tools'), ('D:\\Arknights\\Arknights_timer\\backend\\data', 'backend/data'), ('D:\\Arknights\\Arknights_timer\\backend\\app\\static', 'backend/app/static')],
+    hiddenimports=['tools.timer.ak_memory_reader', 'pymem', 'PySide6'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -37,10 +29,11 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=['D:\\Arknights\\aaa.ico'],
 )
