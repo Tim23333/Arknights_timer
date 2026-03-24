@@ -1,3 +1,4 @@
+import json
 import tkinter as tk
 from tkinter import messagebox
 import struct
@@ -7,7 +8,21 @@ import concurrent.futures
 import os
 import sys
 import ctypes
+from pathlib import Path
+
 from ak_memory_reader import AKMemoryReader
+
+
+def _write_timer_hook(process_name: str, time_address_hex: str) -> None:
+    """供打轴桌面端读取：进程名 + 时间地址（帧地址仍由 AKMemoryReader 推导）。"""
+    repo_root = Path(__file__).resolve().parents[2]
+    path = repo_root / "backend" / "data" / "timer_hook.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "process_name": process_name,
+        "time_address": time_address_hex.strip(),
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def scan_memory_chunk(pid, base_address, region_size, min_val, max_val):
@@ -303,6 +318,10 @@ class ProcessWaiter:
 
         def launch_timer_ui(address_hex_str):
             if reader.set_address(address_hex_str):
+                try:
+                    _write_timer_hook(reader.process_name, address_hex_str)
+                except OSError:
+                    pass
                 self.root.attributes("-topmost", True)
                 TimerApp(self.root, reader)
             else:

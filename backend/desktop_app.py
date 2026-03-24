@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
@@ -12,10 +13,11 @@ import tkinter as tk
 
 # 保证可导入 app.services（从 backend 目录运行）
 _BACKEND_ROOT = Path(__file__).resolve().parent
+_REPO_ROOT = _BACKEND_ROOT.parent
 if str(_BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(_BACKEND_ROOT))
 
-from app.services.schedule_engine import build_status_payload
+from app.services.schedule_engine import build_status_payload, game_frame_for_anchor
 from app.services.schedule_store import ScheduleStore
 from app.services.timer_provider import TimerDataProvider
 from app.services.timeline_cache import TimelineCacheService
@@ -51,15 +53,14 @@ class CoachDesktopApp:
         self._store = ScheduleStore()
         self._cache = TimelineCacheService()
 
-        self._var_process = tk.StringVar(value=self._provider.process_name)
-        self._var_address = tk.StringVar(value=self._provider.time_address_hex or "")
         self._var_cache_user = tk.StringVar(value="default")
+        self._var_exec_mode = tk.StringVar(value="from_start")
+        self._anchor_game_frame: int | None = None
 
         self._build_ui()
+        self._var_exec_mode.trace_add("write", self._on_exec_mode_trace)
 
     def _build_ui(self) -> None:
-        pad = {"padx": 10, "pady": 6}
-
         title = tk.Label(
             self.root,
             text="明日方舟打轴工具 · 桌面版",
@@ -71,39 +72,44 @@ class CoachDesktopApp:
 
         sub = tk.Label(
             self.root,
-            text="对接 tools/timer 读取游戏时间/帧 · 加载排轴 JSON 显示当前步骤与各区间倒计时",
+            text="用「寻址工具」逐步扫描内存；完成后点「刷新游戏状态」从同一配置读取时间与逻辑帧（非实时轮询）",
             font=("Segoe UI", 9),
             fg=MUTED,
             bg=BG,
         )
         sub.pack(anchor="w", padx=12, pady=(0, 8))
 
-        cfg = tk.LabelFrame(self.root, text="进程与地址（与原先 API 配置一致）", fg=FG, bg=BG, padx=8, pady=8)
+        cfg = tk.LabelFrame(self.root, text="内存寻址（tools/timer）", fg=FG, bg=BG, padx=8, pady=8)
         cfg.pack(fill="x", padx=12, pady=4)
 
-        row1 = tk.Frame(cfg, bg=BG)
-        row1.pack(fill="x")
-        tk.Label(row1, text="进程名", fg=FG, bg=BG, width=10, anchor="w").pack(side="left")
-        e1 = tk.Entry(row1, textvariable=self._var_process, width=36, bg=ENTRY_BG, fg=FG, insertbackground=FG)
-        e1.pack(side="left", **pad)
-
-        row2 = tk.Frame(cfg, bg=BG)
-        row2.pack(fill="x")
-        tk.Label(row2, text="时间地址", fg=FG, bg=BG, width=10, anchor="w").pack(side="left")
-        e2 = tk.Entry(row2, textvariable=self._var_address, width=36, bg=ENTRY_BG, fg=FG, insertbackground=FG)
-        e2.pack(side="left", **pad)
+        brow = tk.Frame(cfg, bg=BG)
+        brow.pack(fill="x")
         tk.Button(
-            row2,
-            text="应用配置",
-            command=self._on_apply_config,
-            bg="#333",
-            fg=FG,
-        ).pack(side="left", padx=8)
+            brow,
+            text="打开寻址工具",
+            command=self._on_open_timer_tool,
+            bg="#2a4a8a",
+            fg="white",
+        ).pack(side="left", padx=4)
+        tk.Button(
+            brow,
+            text="刷新游戏状态",
+            command=self._on_refresh_game,
+            bg="#1a6b3a",
+            fg="white",
+        ).pack(side="left", padx=4)
+        tk.Label(
+            brow,
+            text="（寻址工具需管理员；完成向导后会写入 backend/data/timer_hook.json）",
+            fg=MUTED,
+            bg=BG,
+            font=("Segoe UI", 9),
+        ).pack(side="left", padx=12)
 
-        game_frame = tk.LabelFrame(self.root, text="游戏状态（自动刷新）", fg=FG, bg=BG, padx=8, pady=8)
+        game_frame = tk.LabelFrame(self.root, text="游戏状态（上次刷新）", fg=FG, bg=BG, padx=8, pady=8)
         game_frame.pack(fill="x", padx=12, pady=4)
 
-        self._lbl_game = tk.Label(game_frame, text="读取中…", fg=FG, bg=BG, justify="left", anchor="w")
+        self._lbl_game = tk.Label(game_frame, text="请点击「刷新游戏状态」…", fg=FG, bg=BG, justify="left", anchor="w")
         self._lbl_game.pack(fill="x")
 
         json_frame = tk.LabelFrame(self.root, text="排轴数据", fg=FG, bg=BG, padx=8, pady=8)
@@ -122,6 +128,32 @@ class CoachDesktopApp:
         )
         tk.Button(jrow, text="从缓存载入", command=self._on_load_cache, bg="#333", fg=FG).pack(side="left", padx=8)
 
+        tbase = tk.Frame(json_frame, bg=BG)
+        tbase.pack(fill="x", pady=(8, 0))
+        tk.Label(tbase, text="时间基准", fg=FG, bg=BG).pack(side="left", padx=(0, 8))
+        tk.Radiobutton(
+            tbase,
+            text="从头执行（轴上帧数 = 游戏帧）",
+            variable=self._var_exec_mode,
+            value="from_start",
+            fg=FG,
+            bg=BG,
+            selectcolor=ENTRY_BG,
+            activebackground=BG,
+            activeforeground=FG,
+        ).pack(side="left", padx=4)
+        tk.Radiobutton(
+            tbase,
+            text="从当前帧起算（把本次刷新时的游戏帧当作轴上 F0）",
+            variable=self._var_exec_mode,
+            value="from_current",
+            fg=FG,
+            bg=BG,
+            selectcolor=ENTRY_BG,
+            activebackground=BG,
+            activeforeground=FG,
+        ).pack(side="left", padx=4)
+
         step_frame = tk.LabelFrame(self.root, text="当前进度", fg=FG, bg=BG, padx=8, pady=8)
         step_frame.pack(fill="x", padx=12, pady=4)
         self._lbl_step = tk.Label(
@@ -139,15 +171,14 @@ class CoachDesktopApp:
         table_frame = tk.LabelFrame(self.root, text="时间轴事项", fg=FG, bg=BG, padx=4, pady=4)
         table_frame.pack(fill="both", expand=True, padx=12, pady=(4, 12))
 
-        cols = ("row", "label", "range", "phase", "until", "note")
+        cols = ("row", "range", "phase", "until", "note")
         self._tree = ttk.Treeview(table_frame, columns=cols, show="headings", height=18)
         headings = [
-            ("row", "轨道", 120),
-            ("label", "标签", 100),
-            ("range", "时间范围", 220),
+            ("row", "轨道", 140),
+            ("range", "时间范围", 260),
             ("phase", "状态", 80),
-            ("until", "距开始 / 剩余", 200),
-            ("note", "备注", 280),
+            ("until", "距开始 / 剩余", 220),
+            ("note", "备注", 360),
         ]
         for cid, text, w in headings:
             self._tree.heading(cid, text=text)
@@ -168,16 +199,46 @@ class CoachDesktopApp:
 
         self.root.after(400, self._tick)
 
-    def _on_apply_config(self) -> None:
-        pn = self._var_process.get().strip() or None
-        addr = self._var_address.get().strip() or None
-        result = self._provider.configure(process_name=pn, time_address=addr)
-        if result.get("ok"):
-            if result.get("time_address"):
-                self._var_address.set(str(result["time_address"]))
-            messagebox.showinfo("配置", result.get("message", "成功"))
+    def _on_open_timer_tool(self) -> None:
+        script = _REPO_ROOT / "tools" / "timer" / "ak_timer_ui.py"
+        if not script.is_file():
+            messagebox.showerror("寻址工具", f"未找到脚本：\n{script}")
+            return
+        try:
+            subprocess.Popen(
+                [sys.executable, str(script)],
+                cwd=str(script.parent),
+                close_fds=sys.platform != "win32",
+            )
+        except OSError as e:
+            messagebox.showerror("寻址工具", f"无法启动：{e}")
+
+    def _on_exec_mode_trace(self, *_args: object) -> None:
+        if self._var_exec_mode.get() == "from_current":
+            game = self._provider.get_game_data()
+            payload = self._store.get()
+            if not payload:
+                messagebox.showwarning("时间基准", "请先加载排轴 JSON，再选择「从当前帧起算」。")
+                self._var_exec_mode.set("from_start")
+                return
+            cf = game_frame_for_anchor(payload, game)
+            if cf is None:
+                messagebox.showwarning(
+                    "时间基准",
+                    "无法解析当前游戏帧，请先点击「刷新游戏状态」后再选「从当前帧起算」。",
+                )
+                self._var_exec_mode.set("from_start")
+                return
+            self._anchor_game_frame = int(cf)
         else:
-            messagebox.showerror("配置失败", result.get("message", "未知错误"))
+            self._anchor_game_frame = None
+        self._refresh_view()
+
+    def _on_refresh_game(self) -> None:
+        res = self._provider.refresh_from_hook_file()
+        self._refresh_view()
+        if not res.get("ok"):
+            messagebox.showwarning("游戏状态", res.get("message", "刷新失败"))
 
     def _on_load_json(self) -> None:
         path = filedialog.askopenfilename(
@@ -224,14 +285,23 @@ class CoachDesktopApp:
     def _refresh_view(self) -> None:
         game = self._provider.get_game_data()
         payload = self._store.get()
-        st = build_status_payload(payload, game)
+        anchor = self._anchor_game_frame if self._var_exec_mode.get() == "from_current" else None
+        st = build_status_payload(payload, game, relative_anchor_game_frame=anchor)
 
+        lr = game.get("last_refresh")
+        mode_line = (
+            f"时间基准: 从当前帧起算（锚点游戏帧 F{self._anchor_game_frame}）"
+            if anchor is not None
+            else "时间基准: 从头执行"
+        )
         lines = [
+            mode_line,
             f"连接: {'是' if game.get('connected') else '否'}  |  已配置地址: {'是' if game.get('configured') else '否'}",
-            f"游戏时间: {game.get('game_time') if game.get('game_time') is not None else '—'}",
+            f"游戏时间 (s): {game.get('game_time') if game.get('game_time') is not None else '—'}",
             f"逻辑帧: {game.get('frame_count') if game.get('frame_count') is not None else '—'}",
-            f"用于对齐的当前帧: {st.get('current_frame') if st.get('current_frame') is not None else '—'} "
-            f"（来源: {st.get('current_frame_source', '—')}）  FPS={st.get('fps', 60)}",
+            f"排轴对照帧: {st.get('current_frame') if st.get('current_frame') is not None else '—'}  "
+            f"FPS={st.get('fps', 60)}",
+            f"最近一次刷新: {lr if lr else '—'}",
             f"说明: {game.get('message', '')}",
         ]
         self._lbl_game.configure(text="\n".join(lines))
@@ -253,7 +323,6 @@ class CoachDesktopApp:
                 "end",
                 values=(
                     it.get("row_name", ""),
-                    it.get("label", "") or "—",
                     it.get("range_text", "") or "—",
                     phase_zh,
                     f"{it.get('until_start_text', '—')} / {it.get('until_end_text', '—')}",

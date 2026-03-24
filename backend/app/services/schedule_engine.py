@@ -193,9 +193,19 @@ def describe_current_step(
     }
 
 
+def game_frame_for_anchor(schedule_payload: Dict[str, Any], game: Dict[str, Any]) -> Optional[int]:
+    """与排轴 meta.fps 一致，解析当前游戏帧（用于「从当前帧起算」锚点）。"""
+    _, meta = flatten_schedule(schedule_payload)
+    fps = _meta_fps(meta)
+    cf, _ = resolve_current_frame(game, fps)
+    return cf
+
+
 def build_status_payload(
     schedule_payload: Optional[Dict[str, Any]],
     game: Dict[str, Any],
+    *,
+    relative_anchor_game_frame: Optional[int] = None,
 ) -> Dict[str, Any]:
     if not schedule_payload:
         return {
@@ -205,6 +215,7 @@ def build_status_payload(
             "fps": 60,
             "current_frame": None,
             "current_frame_source": "none",
+            "relative_anchor_game_frame": relative_anchor_game_frame,
             "items": [],
             "current_step": describe_current_step([], 0),
             "message": "请 POST /api/schedule/load 上传前端导出的 JSON。",
@@ -213,6 +224,15 @@ def build_status_payload(
     flat, meta = flatten_schedule(schedule_payload)
     fps = _meta_fps(meta)
     current_frame, src = resolve_current_frame(game, fps)
+    raw_game_frame = current_frame
+
+    if current_frame is not None and relative_anchor_game_frame is not None:
+        try:
+            anchor = int(relative_anchor_game_frame)
+        except (TypeError, ValueError):
+            anchor = 0
+        current_frame = int(current_frame) - anchor
+        src = f"{src}_rel_anchor"
 
     if current_frame is None:
         enriched = []
@@ -239,14 +259,18 @@ def build_status_payload(
         enriched = [enrich_item(dict(x), current_frame, fps) for x in flat]
         step = describe_current_step(flat, current_frame)
 
-    return {
+    out: Dict[str, Any] = {
         "ok": True,
         "schedule_loaded": True,
         "game": game,
         "fps": fps,
         "current_frame": current_frame,
         "current_frame_source": src,
+        "relative_anchor_game_frame": relative_anchor_game_frame,
         "items": enriched,
         "current_step": step,
         "message": "ok",
     }
+    if raw_game_frame is not None:
+        out["raw_game_frame"] = raw_game_frame
+    return out
