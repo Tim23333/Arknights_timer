@@ -55,6 +55,7 @@ class CoachDesktopApp:
 
         self._var_cache_user = tk.StringVar(value="default")
         self._var_exec_mode = tk.StringVar(value="from_start")
+        self._var_start_frame = tk.StringVar(value="0")
         self._anchor_game_frame: int | None = None
 
         self._build_ui()
@@ -144,7 +145,7 @@ class CoachDesktopApp:
         ).pack(side="left", padx=4)
         tk.Radiobutton(
             tbase,
-            text="从当前帧起算（把本次刷新时的游戏帧当作轴上 F0）",
+            text="从当前帧起算",
             variable=self._var_exec_mode,
             value="from_current",
             fg=FG,
@@ -153,6 +154,22 @@ class CoachDesktopApp:
             activebackground=BG,
             activeforeground=FG,
         ).pack(side="left", padx=4)
+        tk.Label(tbase, text="起始轴帧", fg=FG, bg=BG).pack(side="left", padx=(12, 4))
+        tk.Entry(
+            tbase,
+            textvariable=self._var_start_frame,
+            width=8,
+            bg=ENTRY_BG,
+            fg=FG,
+            insertbackground=FG,
+        ).pack(side="left")
+        tk.Button(
+            tbase,
+            text="按当前帧应用",
+            command=self._apply_anchor_from_current_frame,
+            bg="#333",
+            fg=FG,
+        ).pack(side="left", padx=8)
 
         step_frame = tk.LabelFrame(self.root, text="当前进度", fg=FG, bg=BG, padx=8, pady=8)
         step_frame.pack(fill="x", padx=12, pady=4)
@@ -215,24 +232,42 @@ class CoachDesktopApp:
 
     def _on_exec_mode_trace(self, *_args: object) -> None:
         if self._var_exec_mode.get() == "from_current":
-            game = self._provider.get_game_data()
-            payload = self._store.get()
-            if not payload:
-                messagebox.showwarning("时间基准", "请先加载排轴 JSON，再选择「从当前帧起算」。")
+            if not self._apply_anchor_from_current_frame(show_message=True):
                 self._var_exec_mode.set("from_start")
                 return
-            cf = game_frame_for_anchor(payload, game)
-            if cf is None:
-                messagebox.showwarning(
-                    "时间基准",
-                    "无法解析当前游戏帧，请先点击「刷新游戏状态」后再选「从当前帧起算」。",
-                )
-                self._var_exec_mode.set("from_start")
-                return
-            self._anchor_game_frame = int(cf)
         else:
             self._anchor_game_frame = None
         self._refresh_view()
+
+    def _apply_anchor_from_current_frame(self, show_message: bool = False) -> bool:
+        payload = self._store.get()
+        if not payload:
+            messagebox.showwarning("时间基准", "请先加载排轴 JSON。")
+            return False
+        try:
+            start_frame = int((self._var_start_frame.get() or "0").strip())
+        except ValueError:
+            messagebox.showwarning("时间基准", "起始轴帧必须是整数。")
+            return False
+
+        game = self._provider.get_game_data()
+        cf = game_frame_for_anchor(payload, game)
+        if cf is None:
+            messagebox.showwarning(
+                "时间基准",
+                "无法解析当前游戏帧，请先点击「刷新游戏状态」。",
+            )
+            return False
+
+        # 当前游戏帧对应到用户指定轴帧：schedule_frame = game_frame - anchor
+        self._anchor_game_frame = int(cf) - start_frame
+        if show_message:
+            messagebox.showinfo(
+                "时间基准",
+                f"已应用：当前游戏帧 F{int(cf)} 对齐到轴上 F{start_frame}。",
+            )
+        self._refresh_view()
+        return True
 
     def _on_refresh_game(self) -> None:
         res = self._provider.refresh_from_hook_file()
@@ -289,8 +324,9 @@ class CoachDesktopApp:
         st = build_status_payload(payload, game, relative_anchor_game_frame=anchor)
 
         lr = game.get("last_refresh")
+        start_frame_text = self._var_start_frame.get().strip() or "0"
         mode_line = (
-            f"时间基准: 从当前帧起算（锚点游戏帧 F{self._anchor_game_frame}）"
+            f"时间基准: 从当前帧起算（当前帧映射到轴上 F{start_frame_text}，锚点={self._anchor_game_frame}）"
             if anchor is not None
             else "时间基准: 从头执行"
         )
