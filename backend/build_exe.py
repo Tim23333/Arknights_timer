@@ -6,11 +6,11 @@
 1) 打包入口：backend/run.py
 2) 自动包含 tools/ 目录（含内存寻址工具）
 3) 自动包含 backend/data 与 backend/app/static
-4) 默认图标：D:\\Arknights\\aaa.ico（可命令行覆盖）
+4) 默认图标：仓库根目录下的 aaa.ico（可命令行覆盖）
 
 用法：
   python build_exe.py
-  python build_exe.py --icon "D:\\Arknights\\aaa.ico" --name ArknightsTimeline
+  python build_exe.py --icon "<仓库根目录>\\aaa.ico" --name ArknightsTimeline
   python build_exe.py --onedir
 """
 from __future__ import annotations
@@ -34,8 +34,8 @@ def main() -> int:
     parser.add_argument("--name", default="ArknightsTimeline", help="输出程序名（默认 ArknightsTimeline）")
     parser.add_argument(
         "--icon",
-        default=str((Path(__file__).resolve().parents[2] / "aaa.ico")),
-        help="ico 图标路径（默认 D:\\Arknights\\aaa.ico）",
+        default=str(Path(__file__).resolve().parent.parent / "aaa.ico"),
+        help="ico 图标路径（默认 <仓库根>/aaa.ico）",
     )
     parser.add_argument("--onedir", action="store_true", help="使用 onedir 模式（默认 onefile）")
     parser.add_argument("--no-clean", action="store_true", help="不清理 build/dist 临时目录")

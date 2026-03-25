@@ -152,7 +152,11 @@ class CoachWindow(QMainWindow):
         btn_refresh.clicked.connect(self._on_refresh_game)
         l_cfg.addWidget(btn_tool)
         l_cfg.addWidget(btn_refresh)
-        l_cfg.addWidget(QLabel("（寻址工具需管理员；完成向导后会写入 backend/data/timer_hook.json）"))
+        l_cfg.addWidget(
+            QLabel(
+                "（寻址工具需管理员；Windows 下写入 %LOCALAPPDATA%\\ArknightsTimer\\data\\timer_hook.json）"
+            )
+        )
         l_cfg.addStretch(1)
         main.addWidget(box_cfg)
 
