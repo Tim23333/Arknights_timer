@@ -8,7 +8,14 @@ import concurrent.futures
 import os
 import sys
 import ctypes
+import time
 from pathlib import Path
+
+try:
+    import numpy as np
+    HAS_NUMPY = True
+except ImportError:
+    HAS_NUMPY = False
 
 from ak_memory_reader import AKMemoryReader
 
@@ -41,23 +48,29 @@ def _write_timer_hook(process_name: str, time_address_hex: str) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def scan_memory_chunk(pid, base_address, region_size, min_val, max_val):
+def scan_memory_chunk(handle, base_address, region_size, min_val, max_val):
     try:
-        pm = pymem.Pymem()
-        pm.open_process_from_id(pid)
-        data = pm.read_bytes(base_address, region_size)
+        data = pymem.memory.read_bytes(handle, base_address, region_size)
 
         remainder = len(data) % 4
         if remainder != 0:
             data = data[:-remainder]
 
-        results = []
-        for offset, (val,) in enumerate(struct.iter_unpack('<f', data)):
-            if min_val <= val <= max_val:
-                addr = base_address + offset * 4
-                if addr & 0xFF == 0x28:
-                    results.append(addr)
-        return results
+        if HAS_NUMPY:
+            arr = np.frombuffer(data, dtype='<f4')
+            mask = (arr >= min_val) & (arr <= max_val)
+            indices = np.nonzero(mask)[0]
+            addrs = (indices.astype(np.int64) * 4 + base_address)
+            addrs = addrs[(addrs & 0xFF) == 0x28]
+            return addrs.tolist()
+        else:
+            results = []
+            for offset, (val,) in enumerate(struct.iter_unpack('<f', data)):
+                if min_val <= val <= max_val:
+                    addr = base_address + offset * 4
+                    if addr & 0xFF == 0x28:
+                        results.append(addr)
+            return results
     except Exception:
         return []
 
@@ -136,7 +149,7 @@ class MemoryScannerWizard:
                                    "候选地址清零，请重启程序重新扫描！\n注意：查找浮点时间时，请务必暂停游戏后再搜！")
 
     def first_scan(self, pm, min_val, max_val):
-        pid = pm.process_id
+        handle = pm.process_handle
         regions = []
         curr = 0
 
@@ -149,37 +162,80 @@ class MemoryScannerWizard:
             except Exception:
                 break
 
+        # Merge contiguous regions to reduce task count
+        if regions:
+            regions.sort(key=lambda r: r[0])
+            merged = []
+            buf_base, buf_size = regions[0]
+            for base, size in regions[1:]:
+                if base == buf_base + buf_size:
+                    buf_size += size
+                else:
+                    merged.append((buf_base, buf_size))
+                    buf_base, buf_size = base, size
+            merged.append((buf_base, buf_size))
+            regions = merged
+
         max_workers = min(32, os.cpu_count() * 2)
         total = len(regions)
         completed = 0
+        last_update = time.monotonic()
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(scan_memory_chunk, pid, base, size, min_val, max_val) for base, size in regions]
+            futures = [executor.submit(scan_memory_chunk, handle, base, size, min_val, max_val) for base, size in regions]
             for future in concurrent.futures.as_completed(futures):
                 res = future.result()
                 if res:
                     self.candidate_addresses.extend(res)
                 completed += 1
-                if completed % 20 == 0:
+                now = time.monotonic()
+                if now - last_update >= 0.2:
                     self.scan_btn.config(text=f"Scanning... {int((completed / total) * 100)}%")
                     self.root.update()
+                    last_update = now
 
     def next_scan(self, pm, min_val, max_val):
         survivors = []
-        total_addrs = len(self.candidate_addresses)
+        handle = pm.process_handle
+        PAGE_SIZE = 0x1000
+        sorted_addrs = sorted(self.candidate_addresses)
+        total = len(sorted_addrs)
+        last_update = time.monotonic()
+        processed = 0
 
-        for i, addr in enumerate(self.candidate_addresses):
+        i = 0
+        while i < total:
+            page_start = sorted_addrs[i] & ~(PAGE_SIZE - 1)
+            page_end = page_start + PAGE_SIZE
+
+            batch = []
+            while i < total and sorted_addrs[i] < page_end:
+                batch.append(sorted_addrs[i])
+                i += 1
+
             try:
-                data = pm.read_bytes(addr, 4)
-                val = struct.unpack('<f', data)[0]
-                if min_val <= val <= max_val and (addr & 0xFF) == 0x28:
-                    survivors.append(addr)
+                page_data = pymem.memory.read_bytes(handle, page_start, PAGE_SIZE)
+                for addr in batch:
+                    offset = addr - page_start
+                    val = struct.unpack_from('<f', page_data, offset)[0]
+                    if min_val <= val <= max_val and (addr & 0xFF) == 0x28:
+                        survivors.append(addr)
             except Exception:
-                pass
+                for addr in batch:
+                    try:
+                        data = pymem.memory.read_bytes(handle, addr, 4)
+                        val = struct.unpack('<f', data)[0]
+                        if min_val <= val <= max_val and (addr & 0xFF) == 0x28:
+                            survivors.append(addr)
+                    except Exception:
+                        pass
 
-            if i % 1000 == 0 and total_addrs > 0:
-                self.scan_btn.config(text=f"Filtering... {int((i / total_addrs) * 100)}%")
+            processed += len(batch)
+            now = time.monotonic()
+            if now - last_update >= 0.2:
+                self.scan_btn.config(text=f"Filtering... {int((processed / total) * 100)}%")
                 self.root.update()
+                last_update = now
 
         self.candidate_addresses = survivors
 
