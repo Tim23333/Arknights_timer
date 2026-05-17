@@ -13,7 +13,7 @@ import threading
 from pathlib import Path
 
 from PySide6.QtCore import QTimer, Qt
-from PySide6.QtGui import QColor, QCursor
+from PySide6.QtGui import QColor, QCursor, QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -677,7 +677,18 @@ class CoachWindow(QMainWindow):
 
 
 def main() -> None:
+    # Set Windows AppUserModelID so the taskbar uses our icon instead of the default Python/Windows icon.
+    if sys.platform == "win32":
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("ArknightsTimeline")
+
     app = QApplication.instance() or QApplication(sys.argv)
+
+    # Set application icon (window title bar + taskbar).
+    icon_path = _REPO_ROOT / "aaa.ico"
+    if icon_path.is_file():
+        app.setWindowIcon(QIcon(str(icon_path)))
+
     win = CoachWindow()
     win.show()
     app.exec()

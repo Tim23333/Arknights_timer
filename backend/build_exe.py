@@ -100,6 +100,8 @@ def main() -> int:
         cmd.append("--windowed")
 
     # 打包附加数据
+    if icon_path.is_file():
+        cmd.extend(["--add-data", _add_data_arg(icon_path, ".")])
     cmd.extend(["--add-data", _add_data_arg(tools_dir, "tools")])
     if data_dir.is_dir():
         cmd.extend(["--add-data", _add_data_arg(data_dir, "backend/data")])
