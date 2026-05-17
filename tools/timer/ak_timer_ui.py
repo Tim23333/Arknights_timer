@@ -54,7 +54,9 @@ def scan_memory_chunk(pid, base_address, region_size, min_val, max_val):
         results = []
         for offset, (val,) in enumerate(struct.iter_unpack('<f', data)):
             if min_val <= val <= max_val:
-                results.append(base_address + offset * 4)
+                addr = base_address + offset * 4
+                if addr & 0xFF == 0x28:
+                    results.append(addr)
         return results
     except Exception:
         return []
@@ -101,21 +103,6 @@ class MemoryScannerWizard:
                                   fg="white", font=("Consolas", 10, "bold"))
         self.scan_btn.pack(pady=10)
 
-        list_frame = tk.Frame(self.root, bg="black")
-        self.listbox = tk.Listbox(list_frame, bg="black", fg="#00FFFF", font=("Consolas", 11),
-                                  selectbackground="#0078D7", height=6)
-        scrollbar = tk.Scrollbar(list_frame, orient="vertical", command=self.listbox.yview)
-        self.listbox.config(yscrollcommand=scrollbar.set)
-
-        self.listbox.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-        self.list_frame = list_frame
-
-        self.listbox.bind("<Double-Button-1>", lambda event: self.confirm_selection())
-
-        self.confirm_btn = tk.Button(self.root, text="确认选中地址 (或双击列表)", command=self.confirm_selection,
-                                     bg="#005500", fg="white", font=("Consolas", 10, "bold"))
-
     def perform_scan(self):
         try:
             min_val = float(self.entry_min.get())
@@ -142,8 +129,8 @@ class MemoryScannerWizard:
         self.entry_min.delete(0, tk.END)
         self.entry_max.delete(0, tk.END)
 
-        if 0 < len(self.candidate_addresses) <= 15:
-            self.show_selection_list()
+        if len(self.candidate_addresses) == 1:
+            self.confirm_selection()
         elif len(self.candidate_addresses) == 0:
             messagebox.showwarning("扫描失败",
                                    "候选地址清零，请重启程序重新扫描！\n注意：查找浮点时间时，请务必暂停游戏后再搜！")
@@ -185,7 +172,7 @@ class MemoryScannerWizard:
             try:
                 data = pm.read_bytes(addr, 4)
                 val = struct.unpack('<f', data)[0]
-                if min_val <= val <= max_val:
+                if min_val <= val <= max_val and (addr & 0xFF) == 0x28:
                     survivors.append(addr)
             except Exception:
                 pass
@@ -196,37 +183,8 @@ class MemoryScannerWizard:
 
         self.candidate_addresses = survivors
 
-    def show_selection_list(self):
-        self.info_label.config(text="Step 3: 双击真理地址")
-        self.scan_btn.pack_forget()
-
-        self.list_frame.pack(fill="both", expand=True, padx=20, pady=5)
-        self.confirm_btn.pack(pady=10)
-
-        self.listbox.delete(0, tk.END)
-        recommended_index = 0
-
-        for idx, addr in enumerate(self.candidate_addresses):
-            hex_str = hex(addr).upper().replace("0X", "")
-            display_text = hex_str
-
-            if hex_str.endswith("28"):
-                display_text += " <-- [真理地址]"
-                recommended_index = idx
-
-            self.listbox.insert(tk.END, display_text)
-
-        self.listbox.selection_set(recommended_index)
-        self.listbox.activate(recommended_index)
-
     def confirm_selection(self):
-        selection = self.listbox.curselection()
-        if not selection:
-            messagebox.showwarning("提示", "请先选择一个地址！")
-            return
-
-        index = selection[0]
-        selected_address = self.candidate_addresses[index]
+        selected_address = self.candidate_addresses[0]
         hex_str = hex(selected_address).upper()
 
         for widget in self.root.winfo_children():
