@@ -1,4 +1,3 @@
-import json
 import os
 import sys
 from datetime import datetime
@@ -27,63 +26,14 @@ _bootstrap_import_path()
 from tools.timer.ak_memory_reader import AKMemoryReader
 
 
-def _default_hook_path() -> Path:
-    """
-    timer_hook.json 默认路径：
-    - Windows: %LOCALAPPDATA%/ArknightsTimer/data/timer_hook.json
-    - 非 Windows 源码运行: backend/data/timer_hook.json
-    """
-    env_dir = os.getenv("AK_TIMER_DATA_DIR", "").strip()
-    if env_dir:
-        return Path(env_dir) / "timer_hook.json"
-    if os.name == "nt":
-        base = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "ArknightsTimer" / "data"
-        return base / "timer_hook.json"
-    backend_root = Path(__file__).resolve().parents[2]
-    return backend_root / "data" / "timer_hook.json"
-
-
-def _resolve_hook_path() -> Path:
-    """
-    兼容历史路径，优先使用存在的文件；若都不存在则返回默认路径。
-    """
-    candidates: list[Path] = []
-    default_path = _default_hook_path()
-    candidates.append(default_path)
-
-    # Windows 固定目录（无论是否 frozen）
-    local_new = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "ArknightsTimer" / "data" / "timer_hook.json"
-    candidates.append(local_new)
-
-    # 兼容旧版 EXE 可能写到的目录
-    legacy_local = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "ArknightsTimeline" / "data" / "timer_hook.json"
-    candidates.append(legacy_local)
-
-    # 兼容运行目录附近
-    exe_side = Path(sys.executable).resolve().parent / "data" / "timer_hook.json"
-    candidates.append(exe_side)
-
-    # 兼容源码目录
-    try:
-        backend_root = Path(__file__).resolve().parents[2]
-        candidates.append(backend_root / "data" / "timer_hook.json")
-    except Exception:
-        pass
-
-    for p in candidates:
-        if p.is_file():
-            return p
-    return default_path
-
-
 class TimerDataProvider:
     """
-    游戏时间/帧：仅在调用 refresh_from_hook_file 时读取内存；数据来自寻址工具写入的 timer_hook.json。
+    游戏时间/帧：通过 apply_hook() 接收寻址工具推送的配置，refresh_sample() 做内存采样。
     """
 
     def __init__(self) -> None:
         self._lock = RLock()
-        self.process_name = os.getenv("AK_PROCESS_NAME", "MuMuVMMHeadless.exe")
+        self.process_name: str = os.getenv("AK_PROCESS_NAME", "MuMuVMMHeadless.exe")
         self.time_address_hex: Optional[str] = os.getenv("AK_TIME_ADDRESS", "").strip() or None
         self.reader: Optional[AKMemoryReader] = None
         self._game_cache: Dict[str, Any] = {
@@ -91,7 +41,7 @@ class TimerDataProvider:
             "configured": False,
             "game_time": None,
             "frame_count": None,
-            "message": "请先运行「打开寻址工具」完成扫描；完成后在本窗口点击「刷新游戏状态」。",
+            "message": "请先运行「打开寻址工具」完成扫描。",
             "last_refresh": None,
         }
         self._build_reader()
@@ -106,82 +56,20 @@ class TimerDataProvider:
             return True
         return self.reader.connect()
 
-    def configure(self, process_name: Optional[str], time_address: Optional[str]) -> Dict[str, Any]:
-        """保留给脚本/测试；桌面端主要使用 refresh_from_hook_file。"""
+    def apply_hook(self, process_name: str, time_address: str) -> Dict[str, Any]:
+        """接收寻址工具通过 TCP 推送的 process_name + time_address，配置内存读取。"""
         with self._lock:
-            if process_name:
-                process_name = process_name.strip()
-            if time_address:
-                time_address = time_address.strip()
+            pn = (process_name or "").strip()
+            addr = (time_address or "").strip()
+            if not pn or not addr:
+                msg = "缺少 process_name 或 time_address。"
+                self._game_cache = {**self._game_cache, "message": msg, "last_refresh": None}
+                return {"ok": False, "message": msg}
 
-            if process_name and process_name != self.process_name:
-                self.process_name = process_name
+            if pn != self.process_name:
+                self.process_name = pn
                 self._build_reader()
 
-            connected = self._ensure_connected()
-            if not connected:
-                return {
-                    "ok": False,
-                    "connected": False,
-                    "configured": False,
-                    "process_name": self.process_name,
-                    "message": "进程连接失败，请检查模拟器进程名和权限。",
-                }
-
-            if time_address:
-                if not self.reader.set_address(time_address):
-                    return {
-                        "ok": False,
-                        "connected": True,
-                        "configured": False,
-                        "process_name": self.process_name,
-                        "message": "时间地址格式无效，请传入十六进制地址。",
-                    }
-                self.time_address_hex = hex(self.reader.time_address)
-            elif self.time_address_hex and self.reader:
-                self.reader.set_address(self.time_address_hex)
-
-            return {
-                "ok": True,
-                "connected": True,
-                "configured": bool(self.reader and self.reader.time_address),
-                "process_name": self.process_name,
-                "time_address": self.time_address_hex,
-                "message": "配置已更新。",
-            }
-
-    def refresh_from_hook_file(self) -> Dict[str, Any]:
-        """读取 timer_hook.json 并单次采样游戏时间、逻辑帧，更新缓存。"""
-        with self._lock:
-            path = _resolve_hook_path()
-            if not path.is_file():
-                self._game_cache = {
-                    **self._game_cache,
-                    "connected": False,
-                    "configured": False,
-                    "game_time": None,
-                    "frame_count": None,
-                    "message": f"未找到配置文件：{path}\n请先运行寻址工具并完成地址选择。",
-                    "last_refresh": None,
-                }
-                return {"ok": False, "message": self._game_cache["message"]}
-
-            try:
-                raw = json.loads(path.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError) as e:
-                msg = f"读取配置失败：{e}"
-                self._game_cache = {**self._game_cache, "message": msg, "last_refresh": None}
-                return {"ok": False, "message": msg}
-
-            pn = (raw.get("process_name") or "").strip()
-            addr = (raw.get("time_address") or "").strip()
-            if not pn or not addr:
-                msg = "timer_hook.json 缺少 process_name 或 time_address。"
-                self._game_cache = {**self._game_cache, "message": msg, "last_refresh": None}
-                return {"ok": False, "message": msg}
-
-            self.process_name = pn
-            self._build_reader()
             self.time_address_hex = addr
 
             if not self._ensure_connected():
@@ -190,7 +78,7 @@ class TimerDataProvider:
                     "configured": False,
                     "game_time": None,
                     "frame_count": None,
-                    "message": "无法附加到进程，请确认模拟器已启动并以管理员运行寻址工具后重试。",
+                    "message": "无法附加到进程，请确认模拟器已启动。",
                     "last_refresh": None,
                 }
                 return {"ok": False, "message": self._game_cache["message"]}
@@ -206,13 +94,45 @@ class TimerDataProvider:
                 }
                 return {"ok": False, "message": self._game_cache["message"]}
 
+            # 首次采样以验证数据可用
+            game_time, frame_count = self.reader.get_game_data()
+            self._game_cache = {
+                "connected": True,
+                "configured": True,
+                "game_time": game_time,
+                "frame_count": frame_count,
+                "message": "ok" if game_time is not None else "地址已配置，等待读取内存数据。",
+                "last_refresh": datetime.now().strftime("%Y-%m-%d %H:%M:%S") if game_time is not None else None,
+            }
+            return {
+                "ok": True,
+                "message": "已接收寻址配置。",
+                "process_name": self.process_name,
+                "time_address": self.time_address_hex,
+            }
+
+    def refresh_sample(self) -> Dict[str, Any]:
+        """仅做内存采样（读 game_time + frame_count），不读文件。需先调用 apply_hook 配置地址。"""
+        with self._lock:
+            if not self.reader or not self.reader.time_address:
+                return {"ok": False, "message": self._game_cache.get("message", "未配置地址。")}
+
+            if not self._ensure_connected():
+                self._game_cache = {
+                    **self._game_cache,
+                    "connected": False,
+                    "game_time": None,
+                    "frame_count": None,
+                    "message": "进程连接断开，请确认模拟器仍在运行。",
+                }
+                return {"ok": False, "message": self._game_cache["message"]}
+
             game_time, frame_count = self.reader.get_game_data()
             now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             if game_time is None or frame_count is None:
                 self._game_cache = {
-                    "connected": True,
-                    "configured": True,
+                    **self._game_cache,
                     "game_time": None,
                     "frame_count": None,
                     "message": "读取内存失败，请确认对局进行中且地址仍有效。",
@@ -228,14 +148,9 @@ class TimerDataProvider:
                 "message": "ok",
                 "last_refresh": now,
             }
-            return {
-                "ok": True,
-                "message": "已更新游戏时间 / 逻辑帧。",
-                "game_time": game_time,
-                "frame_count": frame_count,
-            }
+            return {"ok": True, "game_time": game_time, "frame_count": frame_count}
 
     def get_game_data(self) -> Dict[str, Optional[Any]]:
-        """返回最近一次「刷新游戏状态」的采样，不会在后台持续读内存。"""
+        """返回最近一次采样的缓存。"""
         with self._lock:
             return dict(self._game_cache)

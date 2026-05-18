@@ -7,8 +7,10 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import socket
 import subprocess
 import sys
+import ctypes
 import threading
 from pathlib import Path
 
@@ -103,7 +105,10 @@ class CoachWindow(QMainWindow):
         self._last_list_signature: tuple[tuple[object, ...], ...] = ()
         self._last_scroll_target_index = -1
 
+        self._hook_port: int = 0
+
         self._build_ui()
+        self._start_hook_server()
         self._start_workers()
         self._start_timers()
 
@@ -129,7 +134,7 @@ class CoachWindow(QMainWindow):
         main.setSpacing(8)
 
         title_row = QHBoxLayout()
-        title = QLabel("明日方舟打轴工具 · 桌面版")
+        title = QLabel("明日方舟打轴工具 · 桌面版 Made by Tim(321346659)")
         title.setStyleSheet("font-size: 20px; font-weight: 700; color: #e8e8e8;")
         title_row.addWidget(title)
         title_row.addStretch(1)
@@ -152,11 +157,7 @@ class CoachWindow(QMainWindow):
         btn_refresh.clicked.connect(self._on_refresh_game)
         l_cfg.addWidget(btn_tool)
         l_cfg.addWidget(btn_refresh)
-        l_cfg.addWidget(
-            QLabel(
-                "（寻址工具需管理员；Windows 下写入 %LOCALAPPDATA%\\ArknightsTimer\\data\\timer_hook.json）"
-            )
-        )
+        l_cfg.addWidget(QLabel("（寻址工具需管理员权限；扫描完成后自动推送地址到本工具）"))
         l_cfg.addStretch(1)
         main.addWidget(box_cfg)
 
@@ -419,6 +420,43 @@ class CoachWindow(QMainWindow):
         self.activateWindow()
         self._style_toggle_exec_button(self.btn_pin_top, checked)
 
+    def _start_hook_server(self) -> None:
+        """启动本地 TCP 服务端，接收寻址工具推送的 hook 数据。"""
+        srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        srv.bind(("127.0.0.1", 0))
+        srv.listen(1)
+        self._hook_port = srv.getsockname()[1]
+
+        def _serve():
+            while not self._stop_event.is_set():
+                srv.settimeout(1.0)
+                try:
+                    conn, _ = srv.accept()
+                except socket.timeout:
+                    continue
+                except OSError:
+                    break
+                try:
+                    data = b""
+                    while b"\n" not in data:
+                        chunk = conn.recv(4096)
+                        if not chunk:
+                            break
+                        data += chunk
+                    if data:
+                        raw = json.loads(data.decode("utf-8").strip())
+                        pn = (raw.get("process_name") or "").strip()
+                        addr = (raw.get("time_address") or "").strip()
+                        if pn and addr:
+                            self._provider.apply_hook(pn, addr)
+                except Exception:
+                    pass
+                finally:
+                    conn.close()
+
+        threading.Thread(target=_serve, name="ak-hook-tcp-server", daemon=True).start()
+
     def _start_workers(self) -> None:
         threading.Thread(target=self._memory_worker, name="ak-memory-worker", daemon=True).start()
         threading.Thread(target=self._status_worker, name="ak-status-worker", daemon=True).start()
@@ -437,7 +475,7 @@ class CoachWindow(QMainWindow):
     def _memory_worker(self) -> None:
         while not self._stop_event.is_set():
             try:
-                self._provider.refresh_from_hook_file()
+                self._provider.refresh_sample()
             except Exception:
                 pass
             self._stop_event.wait(AUTO_REFRESH_MS / 1000)
@@ -476,9 +514,7 @@ class CoachWindow(QMainWindow):
             return
         try:
             env = os.environ.copy()
-            env["AK_TIMER_DATA_DIR"] = str(
-                Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "ArknightsTimer" / "data"
-            )
+            env["AK_HOOK_PORT"] = str(self._hook_port)
             # 冻结后 sys.executable 指向当前主程序 exe，直接调用会重新打开自身。
             if getattr(sys, "frozen", False):
                 py_cmd = shutil.which("python") or shutil.which("py")
@@ -498,7 +534,7 @@ class CoachWindow(QMainWindow):
             QMessageBox.critical(self, "寻址工具", f"无法启动：{e}")
 
     def _on_refresh_game(self) -> None:
-        res = self._provider.refresh_from_hook_file()
+        res = self._provider.refresh_sample()
         if not res.get("ok"):
             QMessageBox.warning(self, "游戏状态", res.get("message", "刷新失败"))
 
@@ -676,11 +712,23 @@ class CoachWindow(QMainWindow):
         self._last_list_signature = signature
 
 
+def _is_admin() -> bool:
+    try:
+        return bool(ctypes.windll.shell32.IsUserAnAdmin())
+    except Exception:
+        return False
+
+
 def main() -> None:
     # Set Windows AppUserModelID so the taskbar uses our icon instead of the default Python/Windows icon.
     if sys.platform == "win32":
-        import ctypes
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("ArknightsTimeline")
+
+    if sys.platform == "win32" and not _is_admin():
+        script = os.path.abspath(sys.argv[0])
+        params = " ".join([f'"{arg}"' for arg in sys.argv[1:]])
+        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, f'"{script}" {params}', None, 1)
+        sys.exit()
 
     app = QApplication.instance() or QApplication(sys.argv)
 

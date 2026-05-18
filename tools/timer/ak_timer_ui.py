@@ -9,6 +9,7 @@ import os
 import sys
 import ctypes
 import time
+import socket
 from pathlib import Path
 
 try:
@@ -20,32 +21,21 @@ except ImportError:
 from ak_memory_reader import AKMemoryReader
 
 
-def _timer_data_dir() -> Path:
-    """
-    与 backend/app/services/timer_provider.py 保持一致：
-    - 若设置 AK_TIMER_DATA_DIR，则优先使用该目录
-    - Windows 默认写到 %LOCALAPPDATA%/ArknightsTimer/data（避免提权重启后环境丢失导致路径漂移）
-    - 非 Windows 源码运行写到仓库 backend/data
-    """
-    env_dir = os.getenv("AK_TIMER_DATA_DIR", "").strip()
-    if env_dir:
-        return Path(env_dir)
-    if os.name == "nt":
-        return Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "ArknightsTimer" / "data"
-    repo_root = Path(__file__).resolve().parents[2]
-    return repo_root / "backend" / "data"
-
-
-def _write_timer_hook(process_name: str, time_address_hex: str) -> None:
-    """供打轴桌面端读取：进程名 + 时间地址（帧地址仍由 AKMemoryReader 推导）。"""
-    data_root = _timer_data_dir()
-    path = data_root / "timer_hook.json"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {
-        "process_name": process_name,
-        "time_address": time_address_hex.strip(),
-    }
-    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+def _send_hook_via_tcp(process_name: str, time_address_hex: str) -> bool:
+    """通过 TCP 将 hook 数据推送给打轴工具。失败时静默返回 False（不影响寻址工具自身功能）。"""
+    port_str = os.getenv("AK_HOOK_PORT", "").strip()
+    if not port_str:
+        return False
+    try:
+        payload = json.dumps({
+            "process_name": process_name,
+            "time_address": time_address_hex.strip(),
+        }, ensure_ascii=False)
+        with socket.create_connection(("127.0.0.1", int(port_str)), timeout=3) as sock:
+            sock.sendall((payload + "\n").encode("utf-8"))
+        return True
+    except Exception:
+        return False
 
 
 def scan_memory_chunk(handle, base_address, region_size, min_val, max_val):
@@ -348,11 +338,7 @@ class ProcessWaiter:
 
         def launch_timer_ui(address_hex_str):
             if reader.set_address(address_hex_str):
-                try:
-                    _write_timer_hook(reader.process_name, address_hex_str)
-                except OSError as e:
-                    messagebox.showerror("错误", f"写入 timer_hook.json 失败：{e}")
-                    return
+                _send_hook_via_tcp(reader.process_name, address_hex_str)
                 self.root.attributes("-topmost", True)
                 TimerApp(self.root, reader)
             else:
