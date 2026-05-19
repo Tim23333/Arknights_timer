@@ -52,9 +52,9 @@ from app.services.schedule_store import ScheduleStore
 from app.services.timer_provider import TimerDataProvider
 from app.services.timeline_cache import TimelineCacheService
 
-AUTO_REFRESH_MS = 16
+AUTO_REFRESH_MS = 8
 STATUS_BUILD_MS = 33
-FAST_UI_MS = 16
+FAST_UI_MS = 8
 STEP_UI_MS = 33
 SLOW_UI_MS = 150
 
@@ -161,44 +161,14 @@ class CoachWindow(QMainWindow):
         l_cfg.addStretch(1)
         main.addWidget(box_cfg)
 
-        box_game = QGroupBox("游戏状态（实时刷新）")
-        l_game = QHBoxLayout(box_game)
-        self.lbl_game = QLabel("正在等待实时刷新…")
-        self.lbl_game.setWordWrap(True)
-        l_game.addWidget(self.lbl_game, 1)
-        right = QFrame()
-        right.setStyleSheet("background:#252526; border-radius:6px;")
-        l_right = QHBoxLayout(right)
-        l_right.setContentsMargins(10, 6, 10, 6)
-        l_right.setSpacing(16)
+        box_game_json = QGroupBox("游戏状态 & 排轴数据")
+        l_gj = QHBoxLayout(box_game_json)
+        l_gj.setContentsMargins(4, 4, 4, 4)
+        l_gj.setSpacing(10)
 
-        block_time = QFrame()
-        bt_l = QVBoxLayout(block_time)
-        bt_l.setContentsMargins(0, 0, 0, 0)
-        bt_l.setSpacing(2)
-        bt_l.addWidget(QLabel("游戏时间"), alignment=Qt.AlignCenter)
-        self.lbl_game_time_big = QLabel("—")
-        self.lbl_game_time_big.setStyleSheet("font-size:28px;font-weight:700;color:#7ec8ff;")
-        bt_l.addWidget(self.lbl_game_time_big, alignment=Qt.AlignCenter)
-
-        block_frame = QFrame()
-        bf_l = QVBoxLayout(block_frame)
-        bf_l.setContentsMargins(0, 0, 0, 0)
-        bf_l.setSpacing(2)
-        bf_l.addWidget(QLabel("逻辑帧"), alignment=Qt.AlignCenter)
-        self.lbl_frame_big = QLabel("—")
-        self.lbl_frame_big.setStyleSheet("font-size:28px;font-weight:700;color:#ffd66b;")
-        bf_l.addWidget(self.lbl_frame_big, alignment=Qt.AlignCenter)
-
-        l_right.addWidget(block_time)
-        l_right.addWidget(block_frame)
-        l_game.addWidget(right, 0, alignment=Qt.AlignTop)
-        main.addWidget(box_game)
-
-        box_json = QGroupBox("排轴数据")
-        json_outer = QVBoxLayout(box_json)
-        json_outer.setContentsMargins(4, 4, 4, 4)
-        json_outer.setSpacing(10)
+        # ---- 左侧：排轴数据 ----
+        json_left = QVBoxLayout()
+        json_left.setSpacing(10)
 
         card_file = QFrame()
         card_file.setObjectName("ScheduleSubCard")
@@ -238,7 +208,7 @@ class CoachWindow(QMainWindow):
         row_file.addWidget(self.ed_cache_user)
         row_file.addWidget(btn_cache)
         cf_l.addLayout(row_file)
-        json_outer.addWidget(card_file)
+        json_left.addWidget(card_file)
 
         card_time = QFrame()
         card_time.setObjectName("ScheduleSubCard2")
@@ -302,9 +272,59 @@ class CoachWindow(QMainWindow):
         row_anchor.addWidget(self.spin_remind_sec)
         row_anchor.addStretch(1)
         ct_l.addLayout(row_anchor)
-        json_outer.addWidget(card_time)
+        json_left.addWidget(card_time)
 
-        main.addWidget(box_json)
+        l_gj.addLayout(json_left, 3)
+
+        # ---- 右侧：游戏时间 & 逻辑帧 ----
+        right_panel = QVBoxLayout()
+        right_panel.setSpacing(10)
+
+        card_time_disp = QFrame()
+        card_time_disp.setObjectName("GameTimeCard")
+        card_time_disp.setStyleSheet(
+            "#GameTimeCard { background: #252526; border: 1px solid #3c3c3c; border-radius: 8px; }"
+        )
+        ctd_l = QVBoxLayout(card_time_disp)
+        ctd_l.setContentsMargins(16, 12, 16, 12)
+        ctd_l.setSpacing(4)
+        lbl_time_title = QLabel("游戏时间")
+        lbl_time_title.setStyleSheet("color:#9a9a9a; font-size:12px; font-weight:600;")
+        lbl_time_title.setAlignment(Qt.AlignCenter)
+        ctd_l.addWidget(lbl_time_title)
+        self.lbl_game_time_big = QLabel("—")
+        self.lbl_game_time_big.setStyleSheet("font-size:48px; font-weight:700; color:#7ec8ff;")
+        self.lbl_game_time_big.setAlignment(Qt.AlignCenter)
+        ctd_l.addWidget(self.lbl_game_time_big)
+        right_panel.addWidget(card_time_disp)
+
+        card_frame_disp = QFrame()
+        card_frame_disp.setObjectName("GameFrameCard")
+        card_frame_disp.setStyleSheet(
+            "#GameFrameCard { background: #252526; border: 1px solid #3c3c3c; border-radius: 8px; }"
+        )
+        cfd_l = QVBoxLayout(card_frame_disp)
+        cfd_l.setContentsMargins(16, 12, 16, 12)
+        cfd_l.setSpacing(4)
+        lbl_frame_title = QLabel("逻辑帧")
+        lbl_frame_title.setStyleSheet("color:#9a9a9a; font-size:12px; font-weight:600;")
+        lbl_frame_title.setAlignment(Qt.AlignCenter)
+        cfd_l.addWidget(lbl_frame_title)
+        self.lbl_frame_big = QLabel("—")
+        self.lbl_frame_big.setStyleSheet("font-size:48px; font-weight:700; color:#ffd66b;")
+        self.lbl_frame_big.setAlignment(Qt.AlignCenter)
+        cfd_l.addWidget(self.lbl_frame_big)
+        right_panel.addWidget(card_frame_disp)
+
+        self.lbl_game = QLabel("正在等待实时刷新…")
+        self.lbl_game.setWordWrap(True)
+        self.lbl_game.setStyleSheet("color:#9a9a9a; font-size:11px;")
+        right_panel.addWidget(self.lbl_game)
+        right_panel.addStretch(1)
+
+        l_gj.addLayout(right_panel, 1)
+
+        main.addWidget(box_game_json)
 
         box_step = QGroupBox("当前进度")
         l_step = QVBoxLayout(box_step)
