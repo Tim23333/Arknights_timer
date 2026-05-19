@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['D:\\Arknights\\Arknights_timer\\backend\\run.py'],
-    pathex=['D:\\Arknights\\Arknights_timer'],
+    ['G:\\Arknights\\backend\\run.py'],
+    pathex=['G:\\Arknights'],
     binaries=[],
-    datas=[('D:\\Arknights\\Arknights_timer\\aaa.ico', '.'), ('D:\\Arknights\\Arknights_timer\\tools', 'tools'), ('D:\\Arknights\\Arknights_timer\\backend\\data', 'backend/data'), ('D:\\Arknights\\Arknights_timer\\backend\\app\\static', 'backend/app/static')],
+    datas=[('G:\\Arknights\\aaa.ico', '.'), ('G:\\Arknights\\tools', 'tools'), ('G:\\Arknights\\backend\\data', 'backend/data'), ('G:\\Arknights\\backend\\app\\static', 'backend/app/static')],
     hiddenimports=['tools.timer.ak_memory_reader', 'pymem', 'PySide6'],
     hookspath=[],
     hooksconfig={},
@@ -35,5 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['D:\\Arknights\\Arknights_timer\\aaa.ico'],
+    icon=['G:\\Arknights\\aaa.ico'],
 )
