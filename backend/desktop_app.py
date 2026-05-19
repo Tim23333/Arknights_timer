@@ -4,6 +4,7 @@
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import shutil
@@ -57,6 +58,7 @@ STATUS_BUILD_MS = 33
 FAST_UI_MS = 8
 STEP_UI_MS = 33
 SLOW_UI_MS = 150
+WS_PUSH_MS = 8
 
 COLS = ["轨道", "时间范围", "状态", "距开始 / 剩余", "备注"]
 
@@ -106,9 +108,13 @@ class CoachWindow(QMainWindow):
         self._last_scroll_target_index = -1
 
         self._hook_port: int = 0
+        self._ws_port: int = 0
+        self._ws_clients: set = set()
+        self._ws_loop: asyncio.AbstractEventLoop | None = None
 
         self._build_ui()
         self._start_hook_server()
+        self._start_ws_server()
         self._start_workers()
         self._start_timers()
 
@@ -144,6 +150,11 @@ class CoachWindow(QMainWindow):
         self.btn_pin_top.toggled.connect(self._on_toggle_stay_on_top)
         self._style_toggle_exec_button(self.btn_pin_top, checked=False)
         title_row.addWidget(self.btn_pin_top)
+        btn_ws_info = QPushButton("接口说明")
+        btn_ws_info.setToolTip("查看 WebSocket 接口地址与使用方式")
+        btn_ws_info.clicked.connect(self._show_ws_info)
+        self._style_secondary_button(btn_ws_info)
+        title_row.addWidget(btn_ws_info)
         main.addLayout(title_row)
         sub = QLabel("用「寻址工具」逐步扫描内存；完成后会自动读取时间与逻辑帧并实时刷新显示。")
         sub.setStyleSheet("color: #9a9a9a;")
@@ -432,6 +443,33 @@ class CoachWindow(QMainWindow):
         with self._schedule_state_lock:
             self._exec_from_current = True
 
+    def _show_ws_info(self) -> None:
+        if self._ws_port == 0:
+            QMessageBox.information(self, "WebSocket 接口", "WebSocket 服务未启动（可能缺少 websockets 库）。\n请执行 pip install websockets 后重试。")
+            return
+        addr = f"ws://127.0.0.1:{self._ws_port}"
+        text = (
+            f"WebSocket 接口地址：\n{addr}\n\n"
+            "服务端实时推送游戏时间与逻辑帧，客户端只需连接即可接收数据。\n\n"
+            "消息格式（JSON）：\n"
+            '{\n'
+            '  "game_time": 12.345,    // float，游戏内时间（秒）\n'
+            '  "frame_count": 741,     // int，游戏逻辑帧\n'
+            '  "connected": true       // bool，内存读取是否正常\n'
+            '}\n\n'
+            "JavaScript 连接示例：\n"
+            f'const ws = new WebSocket("{addr}");\n'
+            "ws.onmessage = (e) => {\n"
+            "  const data = JSON.parse(e.data);\n"
+            "  console.log(data.game_time, data.frame_count);\n"
+            "};"
+        )
+        dlg = QMessageBox(self)
+        dlg.setWindowTitle("WebSocket 接口说明")
+        dlg.setText(text)
+        dlg.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse | Qt.TextInteractionFlag.TextSelectableByKeyboard)
+        dlg.exec()
+
     def _on_toggle_stay_on_top(self, checked: bool) -> None:
         # Qt requires re-show after changing top-most flag.
         self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, checked)
@@ -477,6 +515,53 @@ class CoachWindow(QMainWindow):
 
         threading.Thread(target=_serve, name="ak-hook-tcp-server", daemon=True).start()
 
+    def _start_ws_server(self) -> None:
+        try:
+            import websockets
+        except ImportError:
+            return
+
+        async def _ws_handler(ws):
+            self._ws_clients.add(ws)
+            try:
+                await ws.wait_closed()
+            finally:
+                self._ws_clients.discard(ws)
+
+        async def _ws_push_loop():
+            while not self._stop_event.is_set():
+                if self._ws_clients:
+                    game = self._provider.get_game_data()
+                    msg = json.dumps({
+                        "game_time": game.get("game_time"),
+                        "frame_count": game.get("frame_count"),
+                        "connected": game.get("connected", False),
+                    })
+                    for ws in list(self._ws_clients):
+                        try:
+                            await ws.send(msg)
+                        except Exception:
+                            self._ws_clients.discard(ws)
+                await asyncio.sleep(WS_PUSH_MS / 1000)
+
+        async def _ws_main():
+            async with websockets.serve(
+                _ws_handler, "127.0.0.1", 0,
+            ) as server:
+                self._ws_port = server.sockets[0].getsockname()[1]
+                while not self._stop_event.is_set():
+                    await asyncio.sleep(0.5)
+
+        def _run():
+            self._ws_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self._ws_loop)
+            self._ws_loop.run_until_complete(asyncio.gather(
+                _ws_main(),
+                _ws_push_loop(),
+            ))
+
+        threading.Thread(target=_run, name="ak-ws-server", daemon=True).start()
+
     def _start_workers(self) -> None:
         threading.Thread(target=self._memory_worker, name="ak-memory-worker", daemon=True).start()
         threading.Thread(target=self._status_worker, name="ak-status-worker", daemon=True).start()
@@ -513,6 +598,12 @@ class CoachWindow(QMainWindow):
 
     def closeEvent(self, event) -> None:  # type: ignore[override]
         self._stop_event.set()
+        if self._ws_clients:
+            for ws in list(self._ws_clients):
+                try:
+                    asyncio.run_coroutine_threadsafe(ws.close(), self._ws_loop)
+                except Exception:
+                    pass
         return super().closeEvent(event)
 
     def _build_status(self) -> dict:
