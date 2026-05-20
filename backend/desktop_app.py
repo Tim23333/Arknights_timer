@@ -518,30 +518,44 @@ class CoachWindow(QMainWindow):
     def _start_ws_server(self) -> None:
         try:
             import websockets
+            from websockets.exceptions import ConnectionClosed
         except ImportError:
             return
+
+        def _snapshot_msg() -> str:
+            game = self._provider.get_game_data()
+            return json.dumps({
+                "game_time": game.get("game_time"),
+                "frame_count": game.get("frame_count"),
+                "connected": game.get("connected", False),
+            })
+
+        async def _send_one(ws, msg: str) -> None:
+            try:
+                await ws.send(msg)
+            except ConnectionClosed:
+                self._ws_clients.discard(ws)
 
         async def _ws_handler(ws):
             self._ws_clients.add(ws)
             try:
+                try:
+                    await ws.send(_snapshot_msg())
+                except ConnectionClosed:
+                    return
                 await ws.wait_closed()
             finally:
                 self._ws_clients.discard(ws)
 
         async def _ws_push_loop():
             while not self._stop_event.is_set():
-                if self._ws_clients:
-                    game = self._provider.get_game_data()
-                    msg = json.dumps({
-                        "game_time": game.get("game_time"),
-                        "frame_count": game.get("frame_count"),
-                        "connected": game.get("connected", False),
-                    })
-                    for ws in list(self._ws_clients):
-                        try:
-                            await ws.send(msg)
-                        except Exception:
-                            self._ws_clients.discard(ws)
+                clients = list(self._ws_clients)
+                if clients:
+                    msg = _snapshot_msg()
+                    await asyncio.gather(
+                        *(_send_one(ws, msg) for ws in clients),
+                        return_exceptions=True,
+                    )
                 await asyncio.sleep(WS_PUSH_MS / 1000)
 
         async def _ws_main():
@@ -558,6 +572,7 @@ class CoachWindow(QMainWindow):
             self._ws_loop.run_until_complete(asyncio.gather(
                 _ws_main(),
                 _ws_push_loop(),
+                return_exceptions=True,
             ))
 
         threading.Thread(target=_run, name="ak-ws-server", daemon=True).start()
