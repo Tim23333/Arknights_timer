@@ -1,59 +1,265 @@
-import json
+import concurrent.futures
 import os
 import struct
-from pathlib import Path
 
 import pymem
 import pymem.exception
 import pymem.memory
-import pymem.process
 
 
-CACHE_FILE = Path(__file__).resolve().parent / "offset_cache.json"
-
-DIRECTION_NAMES = {0: "DOWN", 1: "LEFT", 2: "UP", 3: "RIGHT", 4: "NONE"}
+DIRECTION_NAMES = {0: "UP", 1: "RIGHT", 2: "DOWN", 3: "LEFT", 4: "NONE"}
 OP_NAMES = {0: "SPAWN", 1: "WITHDRAW", 2: "SKILL", 3: "CHEAT"}
 
-LOGITEM_SIZE = 0x30  # 48 bytes
+LOGITEM_SIZE = 0x30
 LOGITEM_STRUCT = "<f4xI4xQiiiiQ"
 
-# Il2Cpp class metadata offsets (from il2cpp.h)
-IL2CPP_CLASS_1_SIZE = 0xB8
-IL2CPP_C_STATIC_FIELDS = 0xB8   # _c.static_fields offset
-IL2CPP_CLASS_PARENT = 0x58      # Il2CppClass_1.parent offset
-IL2CPP_CLASS_NAME = 0x10        # Il2CppClass_1.name offset (char*)
 
-SCAN_CHUNK = 0x40000  # 256KB
+def _scan_chunk_for_op_dir(handle, base, size, needle):
+    """返回 [op, direction] 模式匹配的所有地址 (op 字段位置)。"""
+    try:
+        data = pymem.memory.read_bytes(handle, base, size)
+    except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
+        return set()
+
+    results = set()
+    offset = 0
+    while True:
+        idx = data.find(needle, offset)
+        if idx == -1:
+            break
+        results.add(base + idx)
+        offset = idx + 8
+    return results
 
 
 class DeployTrackerReader:
-    """读取 Arknights 战斗中干员部署时间轴。"""
-
-    def __init__(self, pm: pymem.Pymem, play_time_addr: int):
+    def __init__(self, pm: pymem.Pymem):
         self._pm = pm
-        self._play_time_addr = play_time_addr
         self._bc_addr = None
         self._logger_addr = None
         self._logs_list_addr = None
         self._status_callback = None
 
+        # 增量扫描状态
+        self._stable: set[int] = set()
+        self._round: int = 0
+        self._scan_direction: int = 0
+
     def set_status_callback(self, cb):
-        """设置状态回调 cb(msg: str)，用于 UI 更新进度。"""
         self._status_callback = cb
 
     def _status(self, msg):
+        print(f"[INFO] {msg}")
         if self._status_callback:
             self._status_callback(msg)
 
-    def discover(self) -> bool:
-        """发现并验证 BattleController 实例。成功返回 True。"""
-        self._bc_addr = self._discover_battle_controller(self._play_time_addr)
-        if self._bc_addr is None:
+    # ---- 增量多步扫描 ----
+
+    def start_scan(self, direction: int) -> int:
+        """第一步：部署第一个干员后扫描，返回匹配数量。"""
+        self._scan_direction = direction
+        self._stable = self._do_scan()  # S1
+        self._round = 1
+        self._status(f"第 1 次扫描: {len(self._stable)} 个匹配")
+        return len(self._stable)
+
+    def scan_again(self) -> str:
+        """再次部署后扫描，交集+相邻过滤。
+
+        Returns:
+            "found"  — 找到 BattleController
+            "more"   — 需要再部署
+            "failed" — 失败
+        """
+        self._round += 1
+        handle = self._pm.process_handle
+        needle = struct.pack("<ii", 0, self._scan_direction)
+
+        if self._round <= 2:
+            # 前两步：全盘扫描
+            fresh = self._do_scan()
+        else:
+            # 第3步起：快速增量扫描
+            # ① 验证稳定地址中哪些仍然匹配
+            verified = set()
+            for addr in self._stable:
+                try:
+                    val = pymem.memory.read_bytes(handle, addr, 8)
+                    if val == needle:
+                        verified.add(addr)
+                except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
+                    pass
+
+            # ② 扫描稳定地址所在的内存页，找新出现的
+            PAGE_SIZE = 0x1000
+            PAGE_MASK = ~(PAGE_SIZE - 1)
+            fresh = set(verified)
+            scanned_pages = set()
+
+            for addr in self._stable:
+                page = addr & PAGE_MASK
+                if page in scanned_pages:
+                    continue
+                scanned_pages.add(page)
+                try:
+                    data = pymem.memory.read_bytes(handle, page, PAGE_SIZE)
+                except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
+                    continue
+                offset = 0
+                while True:
+                    idx = data.find(needle, offset)
+                    if idx == -1:
+                        break
+                    fresh.add(page + idx)
+                    offset = idx + 8
+
+            self._status(f"快速扫描: {len(scanned_pages)} 页, 命中 {len(fresh)}")
+
+        # 1. 取交集
+        common = self._stable & fresh
+        self._status(f"交集: {len(common)} (剔除 {len(self._stable) - len(common)})")
+
+        # 2. 收缩
+        self._stable = common
+
+        # 3. 新出现
+        new_only = fresh - common
+        self._status(f"新出现: {len(new_only)}")
+
+        if not new_only:
+            self._status("无新出现地址")
+            return "failed"
+
+        # 4. 相邻过滤 + 深度验证
+        # 快速相邻检查
+        adjacent = []
+        for addr in new_only:
+            neighbor = addr - LOGITEM_SIZE
+            if neighbor in common:
+                adjacent.append((neighbor, addr))
+
+        self._status(f"相邻候选: {len(adjacent)}")
+
+        # 深度验证：读 LogItem 结构，验证 uniqueId 连续、timestamp 递增
+        candidates = set()
+        for prev_op, cur_op in adjacent:
+            if self._validate_logitem_pair(prev_op - 0x18, cur_op - 0x18):
+                candidates.add(cur_op)
+
+        self._status(f"深度过滤后: {len(candidates)}")
+
+        if not candidates:
+            self._status("无相邻候选")
+            return "failed"
+
+        if len(candidates) == 1:
+            addr = next(iter(candidates))
+            logitem_base = addr - 0x18
+            self._status(f"锁定 @ {hex(logitem_base)}")
+            bc = self._trace_logitem_to_battle_controller(logitem_base)
+            if bc is not None:
+                self._bc_addr = bc
+                self._refresh_chain()
+                return "found"
+            self._status("逆向追踪失败")
+            return "failed"
+
+        self._stable = candidates
+        self._status(f"剩余 {len(candidates)} 个候选, 请再部署一次")
+        return "more"
+
+    def _do_scan(self) -> set[int]:
+        """全盘扫描 [op=SPAWN, dir=self._scan_direction]。"""
+        needle = struct.pack("<ii", 0, self._scan_direction)
+        direction_name = DIRECTION_NAMES.get(self._scan_direction, str(self._scan_direction))
+        self._status(f"扫描 [SPAWN + {direction_name}] ...")
+
+        regions = self._collect_readable_regions()
+        total = len(regions)
+        handle = self._pm.process_handle
+        all_hits = set()
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(32, (os.cpu_count() or 4) * 2)) as executor:
+            futures = [
+                executor.submit(_scan_chunk_for_op_dir, handle, base, size, needle)
+                for base, size in regions
+            ]
+            for i, future in enumerate(concurrent.futures.as_completed(futures)):
+                res = future.result()
+                if res:
+                    all_hits.update(res)
+                if (i + 1) % 20 == 0:
+                    self._status(f"  扫描... {int((i + 1) / total * 100)}%")
+
+        return all_hits
+
+    def _validate_logitem_pair(self, li1: int, li2: int) -> bool:
+        """验证两个 LogItem 是否为真实的连续部署记录。
+
+        Args:
+            li1, li2: LogItem 基址 (li2 应在 li1 + 0x30)
+        Returns:
+            True 如果 timestamp 递增、uniqueId 连续、charId 指针有效
+        """
+        handle = self._pm.process_handle
+        try:
+            # 读取两个 LogItem 的头部 (timestamp + uniqueId + padding + charId 指针)
+            # 0x00~0x17: 24 bytes
+            raw1 = pymem.memory.read_bytes(handle, li1, 24)
+            raw2 = pymem.memory.read_bytes(handle, li2, 24)
+
+            ts1, uid1, charid1 = struct.unpack_from("<f4xI4xQ", raw1, 0)
+            ts2, uid2, charid2 = struct.unpack_from("<f4xI4xQ", raw2, 0)
+
+            # 时间戳有效且递增
+            if not (0.0 <= ts1 <= 100000.0 and 0.0 <= ts2 <= 100000.0):
+                return False
+            if not (ts2 > ts1):
+                return False
+
+            # uniqueId 必须连续 (配对: 前一个的 uid = N, 后一个 = N+1)
+            if not (uid2 == uid1 + 1):
+                return False
+
+            # charId 指针必须有效
+            if charid1 < 0x10000 or charid2 < 0x10000:
+                return False
+
+            return True
+        except (struct.error, pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
             return False
-        return self._refresh_chain()
+
+    # ---- 内存区域枚举 ----
+
+    def _collect_readable_regions(self):
+        regions = []
+        curr = 0
+        handle = self._pm.process_handle
+        while True:
+            try:
+                mbi = pymem.memory.virtual_query(handle, curr)
+                curr += mbi.RegionSize
+                if mbi.State == 0x1000 and (mbi.Protect & 0x66) and mbi.RegionSize >= 1024:
+                    regions.append((mbi.BaseAddress, mbi.RegionSize))
+            except Exception:
+                break
+        if regions:
+            regions.sort(key=lambda r: r[0])
+            merged = []
+            buf_base, buf_size = regions[0]
+            for base, size in regions[1:]:
+                if base == buf_base + buf_size:
+                    buf_size += size
+                else:
+                    merged.append((buf_base, buf_size))
+                    buf_base, buf_size = base, size
+            merged.append((buf_base, buf_size))
+            regions = merged
+        return regions
+
+    # ---- 指针链追踪 ----
 
     def _refresh_chain(self) -> bool:
-        """刷新指针链。成功返回 True。"""
         try:
             self._logger_addr = self._pm.read_longlong(self._bc_addr + 0x100)
             if self._logger_addr == 0:
@@ -62,242 +268,118 @@ class DeployTrackerReader:
             if self._logs_list_addr == 0:
                 return False
             return True
-        except pymem.exception.MemoryReadError:
+        except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
             return False
 
-    # ---- 发现 BattleController 实例（Il2Cpp 类元数据链） ----
+    def _trace_logitem_to_battle_controller(self, logitem_addr: int):
+        handle = self._pm.process_handle
 
-    def _discover_battle_controller(self, play_time_addr):
-        # 策略 A：缓存偏移（直接存 s_instance 静态存储地址的偏移）
-        cached_offset = self._load_cached_offset()
-        if cached_offset is not None:
-            sm_static_addr = play_time_addr + cached_offset
+        # 1. 确定数组基址
+        array_base = None
+        for N in range(256):
+            candidate_arr = logitem_addr - 0x20 - N * LOGITEM_SIZE
             try:
-                ptr = self._pm.read_longlong(sm_static_addr)
-                if self._validate_battle_controller_ptr(ptr):
-                    self._status("缓存偏移命中")
-                    return ptr
-            except pymem.exception.MemoryReadError:
-                pass
-            self._status("缓存偏移失效，通过类元数据定位...")
-
-        # 策略 B：通过 Il2Cpp 类元数据链定位
-        return self._locate_via_class_metadata(play_time_addr)
-
-    def _locate_via_class_metadata(self, play_time_addr):
-        """通过 GameAssembly.dll 中的类元数据追踪 s_instance。"""
-        # 1. 算 BattleController 静态数据基址
-        bc_static_base = play_time_addr - 0x28
-
-        # 2. 获取 GameAssembly.dll 范围
-        try:
-            mod = pymem.process.module_from_name(self._pm.process_handle, "GameAssembly.dll")
-        except pymem.exception.ProcessError:
-            self._status("错误：无法获取 GameAssembly.dll")
+                length = self._pm.read_longlong(candidate_arr + 0x18)
+                if N < length < 50000:
+                    if (logitem_addr - candidate_arr - 0x20) % LOGITEM_SIZE == 0:
+                        array_base = candidate_arr
+                        break
+            except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
+                continue
+        if array_base is None:
             return None
 
-        dll_base = mod.lpBaseOfDll
-        dll_end = dll_base + mod.SizeOfImage
-
-        self._status(f"DLL: {dll_base:#x} - {dll_end:#x} ({mod.SizeOfImage // 1048576}MB)")
-
-        # 3. 在 DLL 数据段中搜索指向 bc_static_base 的指针
-        needle = struct.pack("<Q", bc_static_base)
-
-        pos = dll_base
-        while pos < dll_end:
-            chunk_size = min(SCAN_CHUNK, dll_end - pos)
+        # 2. 搜索 List._items 指针
+        logs_list_addr = None
+        for region_base, region_size in self._collect_readable_regions():
             try:
-                data = self._pm.read_bytes(pos, chunk_size)
-            except pymem.exception.MemoryReadError:
-                pos += chunk_size
+                region_data = pymem.memory.read_bytes(handle, region_base, region_size)
+            except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
                 continue
-
-            # 搜索所有匹配位置
-            start = 0
+            offset = 0
+            needle = struct.pack("<Q", array_base)
             while True:
-                idx = data.find(needle, start)
+                idx = region_data.find(needle, offset)
                 if idx == -1:
                     break
-                match_addr = pos + idx
-
-                # 尝试将此位置解释为 _c.static_fields（往前 0xB8 到 _c 基址）
-                bc_c_addr = match_addr - IL2CPP_C_STATIC_FIELDS
-
-                sm_static = self._resolve_parent_static_fields(bc_c_addr)
-                if sm_static is not None:
-                    ptr = self._pm.read_longlong(sm_static)  # s_instance
-                    if self._validate_battle_controller_ptr(ptr):
-                        offset = sm_static - play_time_addr
-                        self._save_cached_offset(offset)
-                        self._status(f"找到，偏移 {offset}")
-                        return ptr
-
-                start = idx + 8
-
-            del data
-            pos += chunk_size
-
-        self._status("在 DLL 数据段中未找到")
-        return None
-
-    def _resolve_parent_static_fields(self, class_c_addr):
-        """验证 class_c_addr 是有效的 _c 结构体，沿 parent → static_fields 读取。
-
-        返回 SingletonMonoBehaviour_StaticFields 地址（可直接读 s_instance），
-        或 None（验证失败）。
-        """
-        try:
-            # 检查 _c 地址在已提交内存中
-            mbi = pymem.memory.virtual_query(self._pm.process_handle, class_c_addr)
-            if mbi.State != 0x1000:
-                return None
-
-            # 读 parent（偏移 0x58 在 Il2CppClass_1 中）
-            parent = self._pm.read_longlong(class_c_addr + IL2CPP_CLASS_PARENT)
-            if parent == 0:
-                return None
-            mbi2 = pymem.memory.virtual_query(self._pm.process_handle, parent)
-            if mbi2.State != 0x1000:
-                return None
-
-            # 快速校验：读 parent 的 name 指针
-            name_ptr = self._pm.read_longlong(parent + IL2CPP_CLASS_NAME)
-            if name_ptr == 0:
-                return None
-
-            # 读 parent.static_fields
-            parent_sf = self._pm.read_longlong(parent + IL2CPP_C_STATIC_FIELDS)
-            if parent_sf == 0:
-                return None
-            mbi3 = pymem.memory.virtual_query(self._pm.process_handle, parent_sf)
-            if mbi3.State != 0x1000:
-                return None
-
-            # parent_sf[0] = s_instance（8 字节）
-            s_instance = self._pm.read_longlong(parent_sf)
-            if s_instance == 0 or s_instance < 0x10000:
-                return None
-
-            return parent_sf
-        except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
+                list_candidate = region_base + idx - 0x10
+                try:
+                    mbi = pymem.memory.virtual_query(handle, list_candidate)
+                    if mbi.State != 0x1000:
+                        offset = idx + 8
+                        continue
+                    _size = self._pm.read_int(list_candidate + 0x18)
+                    _version = self._pm.read_int(list_candidate + 0x1C)
+                    if 0 <= _size <= length and _version >= 0:
+                        logs_list_addr = list_candidate
+                        break
+                except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
+                    pass
+                offset = idx + 8
+            if logs_list_addr is not None:
+                break
+        if logs_list_addr is None:
             return None
 
-    def _validate_battle_controller_ptr(self, ptr):
-        """验证 ptr 是否指向有效的 BattleController 对象。"""
-        if ptr is None or ptr == 0 or ptr < 0x10000:
-            return False
+        # 3. BattleLogger → BattleController
+        battle_logger = logs_list_addr - 0x20
         try:
-            mbi = pymem.memory.virtual_query(self._pm.process_handle, ptr)
-            if mbi.State != 0x1000:
-                return False
-            logger = self._pm.read_longlong(ptr + 0x100)
-            if logger == 0:
-                return False
-            mbi2 = pymem.memory.virtual_query(self._pm.process_handle, logger)
-            if mbi2.State != 0x1000:
-                return False
-            logs_list = self._pm.read_longlong(logger + 0x20)
-            if logs_list == 0:
-                return False
-            mbi3 = pymem.memory.virtual_query(self._pm.process_handle, logs_list)
-            if mbi3.State != 0x1000:
-                return False
-            size = self._pm.read_int(logs_list + 0x18)
-            if 0 <= size <= 100000:
-                return True
+            battle_controller = self._pm.read_longlong(battle_logger + 0x18)
+            if battle_controller == 0 or battle_controller < 0x10000:
+                return None
+            verify_logger = self._pm.read_longlong(battle_controller + 0x100)
+            if verify_logger != battle_logger:
+                return None
+            return battle_controller
         except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
-            pass
-        return False
-
-    # ---- 偏移缓存 ----
-
-    def _load_cached_offset(self):
-        if not CACHE_FILE.exists():
             return None
-        try:
-            data = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
-            if data.get("process_id") == self._pm.process_id:
-                return data.get("offset")
-        except (json.JSONDecodeError, KeyError):
-            pass
-        return None
-
-    def _save_cached_offset(self, offset):
-        try:
-            CACHE_FILE.write_text(
-                json.dumps(
-                    {"process_id": self._pm.process_id, "offset": offset},
-                    ensure_ascii=False,
-                ),
-                encoding="utf-8",
-            )
-        except OSError:
-            pass
 
     # ---- 读取部署事件 ----
 
     def get_events(self):
-        """返回所有操作事件列表。调用前确保发现成功。"""
         if not self._logs_list_addr or not self._refresh_chain():
             return []
-
         try:
             items_ptr = self._pm.read_longlong(self._logs_list_addr + 0x10)
             size = self._pm.read_int(self._logs_list_addr + 0x18)
             max_len = self._pm.read_longlong(items_ptr + 0x18)
             count = min(size, max_len)
-        except pymem.exception.MemoryReadError:
+        except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
             return []
-
         count = max(0, min(count, 50000))
 
         events = []
         try:
             raw = self._pm.read_bytes(items_ptr + 0x20, count * LOGITEM_SIZE)
-        except pymem.exception.MemoryReadError:
+        except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
             return events
 
         for i in range(count):
             try:
                 vals = struct.unpack_from(LOGITEM_STRUCT, raw, i * LOGITEM_SIZE)
                 ts, unique_id, char_ptr, op, direction, grid_row, grid_col, extra_ptr = vals
-
                 char_id = self._read_string(char_ptr) if char_ptr else ""
                 extra = self._read_string(extra_ptr) if extra_ptr else ""
             except (struct.error, UnicodeDecodeError):
                 continue
-
-            events.append(
-                {
-                    "timestamp": round(ts, 6),
-                    "uniqueId": unique_id,
-                    "charId": char_id,
-                    "op": op,
-                    "opName": OP_NAMES.get(op, f"UNKNOWN({op})"),
-                    "direction": direction,
-                    "directionName": DIRECTION_NAMES.get(direction, str(direction)),
-                    "gridRow": grid_row,
-                    "gridCol": grid_col,
-                    "extraInfo": extra,
-                }
-            )
-
+            events.append({
+                "timestamp": round(ts, 6), "uniqueId": unique_id, "charId": char_id,
+                "op": op, "opName": OP_NAMES.get(op, f"UNKNOWN({op})"),
+                "direction": direction,
+                "directionName": DIRECTION_NAMES.get(direction, str(direction)),
+                "gridRow": grid_row, "gridCol": grid_col, "extraInfo": extra,
+            })
         return events
 
     def get_spawn_events(self):
-        """返回仅 SPAWN（部署）事件。"""
         return [e for e in self.get_events() if e["op"] == 0]
 
     def is_battle_active(self) -> bool:
-        """检查是否在战斗中。"""
         try:
             logger = self._pm.read_longlong(self._bc_addr + 0x100)
             return logger != 0
-        except pymem.exception.MemoryReadError:
+        except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
             return False
-
-    # ---- 字符串读取 ----
 
     def _read_string(self, ptr):
         if ptr == 0:
@@ -308,5 +390,5 @@ class DeployTrackerReader:
                 return ""
             raw = self._pm.read_bytes(ptr + 0x14, length * 2)
             return raw.decode("utf-16-le", errors="replace")
-        except (pymem.exception.MemoryReadError, UnicodeDecodeError):
+        except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError, UnicodeDecodeError):
             return ""

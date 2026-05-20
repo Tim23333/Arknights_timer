@@ -1,11 +1,9 @@
 import json
 import os
 import socket
-import struct
 import sys
-import time
 import ctypes
-import concurrent.futures
+import threading
 from pathlib import Path
 from tkinter import messagebox, ttk
 import tkinter as tk
@@ -16,53 +14,19 @@ if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 import pymem
-import pymem.exception
-import pymem.memory
 
-from tools.timer.ak_memory_reader import AKMemoryReader
 from tools.deploy_tracker.ak_deploy_reader import DeployTrackerReader
 
-try:
-    import numpy as np
-
-    HAS_NUMPY = True
-except ImportError:
-    HAS_NUMPY = False
-
-
 EMULATOR_PROCESSES = [
-    "MuMuVMMHeadless.exe",
-    "NemuHeadless.exe",
-    "Ld9BoxHeadless.exe",
-    "LdBoxHeadless.exe",
-    "dnplayer.exe",
-    "NoxVMMHeadless.exe",
-    "HD-Player.exe",
-    "MEmuHeadless.exe",
+    "MuMuVMMHeadless.exe", "NemuHeadless.exe", "Ld9BoxHeadless.exe",
+    "LdBoxHeadless.exe", "dnplayer.exe", "NoxVMMHeadless.exe",
+    "HD-Player.exe", "MEmuHeadless.exe",
 ]
 
-
-# ---- TCP 通信 ----
-
-def _send_hook_via_tcp(process_name: str, time_address_hex: str) -> bool:
-    """与 timer 工具同款的 TCP 地址推送。"""
-    port_str = os.getenv("AK_HOOK_PORT", "").strip()
-    if not port_str:
-        return False
-    try:
-        payload = json.dumps(
-            {"process_name": process_name, "time_address": time_address_hex.strip()},
-            ensure_ascii=False,
-        )
-        with socket.create_connection(("127.0.0.1", int(port_str)), timeout=3) as sock:
-            sock.sendall((payload + "\n").encode("utf-8"))
-        return True
-    except Exception:
-        return False
+DIRECTION_OPTIONS = ["UP (上)", "RIGHT (右)", "DOWN (下)", "LEFT (左)"]
 
 
 def _send_events_via_tcp(process_name: str, events: list) -> bool:
-    """推送部署事件到打轴工具后端。"""
     port_str = os.getenv("AK_HOOK_PORT", "").strip()
     if not port_str:
         return False
@@ -78,241 +42,7 @@ def _send_events_via_tcp(process_name: str, events: list) -> bool:
         return False
 
 
-# ---- 内存扫描（复用 timer 的算法） ----
-
-def scan_memory_chunk(handle, base_address, region_size, min_val, max_val):
-    """与 ak_timer_ui.py 完全相同的扫描函数。"""
-    try:
-        data = pymem.memory.read_bytes(handle, base_address, region_size)
-
-        remainder = len(data) % 4
-        if remainder != 0:
-            data = data[:-remainder]
-
-        if HAS_NUMPY:
-            arr = np.frombuffer(data, dtype="<f4")
-            mask = (arr >= min_val) & (arr <= max_val)
-            indices = np.nonzero(mask)[0]
-            addrs = (indices.astype(np.int64) * 4 + base_address)
-            addrs = addrs[(addrs & 0xFF) == 0x28]
-            return addrs.tolist()
-        else:
-            results = []
-            for offset, (val,) in enumerate(struct.iter_unpack("<f", data)):
-                if min_val <= val <= max_val:
-                    addr = base_address + offset * 4
-                    if addr & 0xFF == 0x28:
-                        results.append(addr)
-            return results
-    except Exception:
-        return []
-
-
-# ---- 扫描向导（从 timer 搬来的逻辑，确认地址后进入部署显示） ----
-
-class DeployScannerWizard:
-    """引导用户扫描 s_fixedPlayTimeFloat，找到后自动连接 BattleController。"""
-
-    def __init__(self, root, reader: AKMemoryReader, on_complete_callback):
-        self.root = root
-        self.reader = reader
-        self.on_complete = on_complete_callback
-
-        self.root.title("摸轴工具 — 扫描地址")
-        self.root.geometry("400x380")
-        self.root.configure(bg="#1E1E1E")
-
-        self.candidate_addresses = []
-
-        tk.Label(
-            self.root,
-            text=f"目标: {self.reader.process_name}",
-            fg="#AAAAAA",
-            bg="#1E1E1E",
-            font=("Consolas", 9),
-        ).pack(pady=(5, 0))
-
-        self.info_label = tk.Label(
-            self.root,
-            text="Step 1: 暂停游戏后填入时间范围，开始扫描",
-            fg="#00FF00",
-            bg="#1E1E1E",
-            font=("Consolas", 11, "bold"),
-        )
-        self.info_label.pack(pady=5)
-
-        self.count_label = tk.Label(
-            self.root,
-            text="候选地址: 0",
-            fg="white",
-            bg="#1E1E1E",
-            font=("Consolas", 10),
-        )
-        self.count_label.pack(pady=5)
-
-        frame_input = tk.Frame(self.root, bg="#1E1E1E")
-        frame_input.pack(pady=10)
-
-        tk.Label(frame_input, text="最小值:", fg="white", bg="#1E1E1E", font=("Consolas", 10)).grid(
-            row=0, column=0, padx=5
-        )
-        self.entry_min = tk.Entry(frame_input, width=10, bg="black", fg="#00FF00", font=("Consolas", 12))
-        self.entry_min.grid(row=0, column=1, padx=5)
-
-        tk.Label(frame_input, text="最大值:", fg="white", bg="#1E1E1E", font=("Consolas", 10)).grid(
-            row=1, column=0, padx=5, pady=10
-        )
-        self.entry_max = tk.Entry(frame_input, width=10, bg="black", fg="#00FF00", font=("Consolas", 12))
-        self.entry_max.grid(row=1, column=1, padx=5, pady=10)
-
-        self.scan_btn = tk.Button(
-            self.root,
-            text="开始首次扫描",
-            command=self._perform_scan,
-            bg="#333333",
-            fg="white",
-            font=("Consolas", 10, "bold"),
-        )
-        self.scan_btn.pack(pady=10)
-
-    def _perform_scan(self):
-        try:
-            min_val = float(self.entry_min.get())
-            max_val = float(self.entry_max.get())
-        except ValueError:
-            messagebox.showerror("输入错误", "请输入有效的数字！")
-            return
-
-        pm = self.reader.pm
-
-        if not self.candidate_addresses:
-            self.scan_btn.config(state="disabled", text="并发扫描中...")
-            self.root.update()
-            self._first_scan(pm, min_val, max_val)
-            self.info_label.config(text="Step 2: 走秒后暂停，再填入新时间范围扫描")
-        else:
-            self.scan_btn.config(state="disabled", text="精准过滤中...")
-            self.root.update()
-            self._next_scan(pm, min_val, max_val)
-
-        self.count_label.config(text=f"候选地址: {len(self.candidate_addresses)}")
-        self.scan_btn.config(state="normal", text="继续扫描")
-
-        self.entry_min.delete(0, tk.END)
-        self.entry_max.delete(0, tk.END)
-
-        if len(self.candidate_addresses) == 1:
-            self._confirm()
-        elif len(self.candidate_addresses) == 0:
-            messagebox.showwarning("扫描失败", "候选地址清零，请重启程序重新扫描！\n注意：查找浮点时间时，请务必暂停游戏后再搜！")
-
-    def _first_scan(self, pm, min_val, max_val):
-        handle = pm.process_handle
-        regions = []
-        curr = 0
-        while True:
-            try:
-                mbi = pymem.memory.virtual_query(pm.process_handle, curr)
-                curr += mbi.RegionSize
-                if mbi.State == 0x1000 and (mbi.Protect & 0x66) and mbi.RegionSize >= 1024:
-                    regions.append((mbi.BaseAddress, mbi.RegionSize))
-            except Exception:
-                break
-
-        if regions:
-            regions.sort(key=lambda r: r[0])
-            merged = []
-            buf_base, buf_size = regions[0]
-            for base, size in regions[1:]:
-                if base == buf_base + buf_size:
-                    buf_size += size
-                else:
-                    merged.append((buf_base, buf_size))
-                    buf_base, buf_size = base, size
-            merged.append((buf_base, buf_size))
-            regions = merged
-
-        max_workers = min(32, (os.cpu_count() or 4) * 2)
-        total = len(regions)
-        completed = 0
-        last_update = time.monotonic()
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [
-                executor.submit(scan_memory_chunk, handle, base, size, min_val, max_val)
-                for base, size in regions
-            ]
-            for future in concurrent.futures.as_completed(futures):
-                res = future.result()
-                if res:
-                    self.candidate_addresses.extend(res)
-                completed += 1
-                now = time.monotonic()
-                if now - last_update >= 0.2:
-                    self.scan_btn.config(text=f"扫描中... {int((completed / total) * 100)}%")
-                    self.root.update()
-                    last_update = now
-
-    def _next_scan(self, pm, min_val, max_val):
-        survivors = []
-        handle = pm.process_handle
-        PAGE_SIZE = 0x1000
-        sorted_addrs = sorted(self.candidate_addresses)
-        total = len(sorted_addrs)
-        last_update = time.monotonic()
-        processed = 0
-
-        i = 0
-        while i < total:
-            page_start = sorted_addrs[i] & ~(PAGE_SIZE - 1)
-            page_end = page_start + PAGE_SIZE
-
-            batch = []
-            while i < total and sorted_addrs[i] < page_end:
-                batch.append(sorted_addrs[i])
-                i += 1
-
-            try:
-                page_data = pymem.memory.read_bytes(handle, page_start, PAGE_SIZE)
-                for addr in batch:
-                    offset = addr - page_start
-                    val = struct.unpack_from("<f", page_data, offset)[0]
-                    if min_val <= val <= max_val and (addr & 0xFF) == 0x28:
-                        survivors.append(addr)
-            except Exception:
-                for addr in batch:
-                    try:
-                        data = pymem.memory.read_bytes(handle, addr, 4)
-                        val = struct.unpack("<f", data)[0]
-                        if min_val <= val <= max_val and (addr & 0xFF) == 0x28:
-                            survivors.append(addr)
-                    except Exception:
-                        pass
-
-            processed += len(batch)
-            now = time.monotonic()
-            if now - last_update >= 0.2:
-                self.scan_btn.config(text=f"过滤中... {int((processed / total) * 100)}%")
-                self.root.update()
-                last_update = now
-
-        self.candidate_addresses = survivors
-
-    def _confirm(self):
-        selected_address = self.candidate_addresses[0]
-        hex_str = hex(selected_address).upper()
-
-        for widget in self.root.winfo_children():
-            widget.destroy()
-
-        self.on_complete(hex_str)
-
-
-# ---- 部署时间轴显示 ----
-
 class DeployDisplayApp:
-    """部署时间轴显示窗口。"""
-
     def __init__(self, root, deploy_reader: DeployTrackerReader, process_name: str):
         self.root = root
         self.reader = deploy_reader
@@ -343,37 +73,24 @@ class DeployDisplayApp:
         self.event_count_label.pack(side="left", padx=10, pady=5)
 
         cb = tk.Checkbutton(
-            toolbar,
-            text="仅部署",
-            variable=self._show_spawn_only,
-            fg="white",
-            bg="#2A2A2A",
-            selectcolor="#2A2A2A",
-            activebackground="#2A2A2A",
-            activeforeground="white",
+            toolbar, text="仅部署", variable=self._show_spawn_only,
+            fg="white", bg="#2A2A2A", selectcolor="#2A2A2A",
+            activebackground="#2A2A2A", activeforeground="white",
             font=("Consolas", 10),
         )
         cb.pack(side="left", padx=10, pady=5)
 
-        tcp_btn = tk.Button(
-            toolbar,
-            text="推送至打轴工具",
-            command=self._tcp_push,
-            bg="#444444",
-            fg="white",
-            font=("Consolas", 9),
-        )
-        tcp_btn.pack(side="right", padx=10, pady=5)
-
         export_btn = tk.Button(
-            toolbar,
-            text="导出 JSON",
-            command=self._export_json,
-            bg="#444444",
-            fg="white",
-            font=("Consolas", 9),
+            toolbar, text="导出 JSON", command=self._export_json,
+            bg="#444444", fg="white", font=("Consolas", 9),
         )
-        export_btn.pack(side="right", padx=5, pady=5)
+        export_btn.pack(side="right", padx=10, pady=5)
+
+        tcp_btn = tk.Button(
+            toolbar, text="推送至打轴工具", command=self._tcp_push,
+            bg="#444444", fg="white", font=("Consolas", 9),
+        )
+        tcp_btn.pack(side="right", padx=5, pady=5)
 
         tree_frame = tk.Frame(self.root, bg="#1E1E1E")
         tree_frame.pack(fill="both", expand=True, padx=5, pady=5)
@@ -433,7 +150,6 @@ class DeployDisplayApp:
             self.status_label.config(text="连接断开", fg="#FF0000")
         except Exception:
             pass
-
         self.root.after(200, self._refresh)
 
     def _populate_table(self, events):
@@ -442,16 +158,10 @@ class DeployDisplayApp:
             position = f"({e['gridRow']}, {e['gridCol']})"
             tag = e["opName"].lower() if e["opName"] in ("SPAWN", "WITHDRAW", "SKILL", "CHEAT") else ""
             self.tree.insert(
-                "",
-                "end",
+                "", "end",
                 values=(
-                    f"{e['timestamp']:.3f}",
-                    e["charId"],
-                    e["opName"],
-                    position,
-                    e["directionName"],
-                    e["uniqueId"],
-                    e["extraInfo"],
+                    f"{e['timestamp']:.3f}", e["charId"], e["opName"],
+                    position, e["directionName"], e["uniqueId"], e["extraInfo"],
                 ),
                 tags=(tag,) if tag else (),
             )
@@ -481,10 +191,157 @@ class DeployDisplayApp:
             messagebox.showwarning("推送", "推送失败，未设置 AK_HOOK_PORT 或后端未运行。")
 
 
-# ---- 流程控制 ----
+class DeployWizardApp:
+    """主流程：等待进程 → 引导部署 → 多次扫描 → 显示时间轴。"""
+
+    def __init__(self, root, process_name, pm):
+        self.root = root
+        self._process_name = process_name
+        self._pm = pm
+        self._reader = DeployTrackerReader(self._pm)
+
+        self.root.geometry("520x400")
+        self.root.title("摸轴工具 — 部署引导")
+        self.root.configure(bg="#1E1E1E")
+        self.root.attributes("-topmost", False)
+
+        self._build_ui()
+
+    def _build_ui(self):
+        tk.Label(
+            self.root, text=f"目标进程: {self._process_name}",
+            fg="#AAAAAA", bg="#1E1E1E", font=("Consolas", 9),
+        ).pack(pady=(10, 5))
+
+        tk.Label(
+            self.root, text="增量扫描引导",
+            fg="#00FF00", bg="#1E1E1E", font=("Consolas", 14, "bold"),
+        ).pack(pady=10)
+
+        guide = tk.Frame(self.root, bg="#252526", padx=15, pady=12)
+        guide.pack(fill="x", padx=20, pady=5)
+
+        steps = [
+            "1. 进入作战关卡，部署第1个干员(记住朝向)",
+            "2. 选择朝向后点击「第一步扫描」",
+            "3. 再部署第2个干员(同样朝向)，点击「再次扫描」",
+            "4. 若还不行，部署第3个干员再扫，直到锁定",
+        ]
+        for s in steps:
+            tk.Label(
+                guide, text=s, fg="#AAAAAA", bg="#252526",
+                font=("Consolas", 10),
+            ).pack(anchor="w", pady=1)
+
+        # 朝向选择
+        row = tk.Frame(self.root, bg="#1E1E1E")
+        row.pack(fill="x", padx=40, pady=(15, 15))
+        tk.Label(row, text="部署朝向:", fg="white", bg="#1E1E1E", font=("Consolas", 11)).pack(side="left", padx=(0, 8))
+        self.dir_var = tk.StringVar(value=DIRECTION_OPTIONS[1])
+        dir_dropdown = ttk.Combobox(
+            row, textvariable=self.dir_var,
+            values=DIRECTION_OPTIONS, state="readonly", width=15,
+        )
+        dir_dropdown.pack(side="left")
+
+        # 按钮
+        btn_row = tk.Frame(self.root, bg="#1E1E1E")
+        btn_row.pack(pady=10)
+        self.scan_btn = tk.Button(
+            btn_row, text="第一步扫描", command=self._first_scan,
+            bg="#3d7eff", fg="white", font=("Consolas", 12, "bold"),
+            width=16, height=2,
+        )
+        self.scan_btn.pack(side="left", padx=5)
+
+        self.scan_again_btn = tk.Button(
+            btn_row, text="再次扫描", command=self._scan_again,
+            bg="#555555", fg="#AAAAAA", font=("Consolas", 12, "bold"),
+            width=16, height=2, state="disabled",
+        )
+        self.scan_again_btn.pack(side="left", padx=5)
+
+        # 状态
+        self.status_var = tk.StringVar(value="就绪 — 部署第1个干员, 选择朝向, 点「第一步扫描」")
+        self.status_label = tk.Label(
+            self.root, textvariable=self.status_var,
+            fg="#FFFF00", bg="#1E1E1E", font=("Consolas", 10), wraplength=480,
+        )
+        self.status_label.pack(pady=5, fill="x", padx=20)
+
+        self._step_count = tk.Label(
+            self.root, text="步数: 0", fg="#888888", bg="#1E1E1E", font=("Consolas", 9),
+        )
+        self._step_count.pack(pady=5)
+
+    def _first_scan(self):
+        dir_idx = DIRECTION_OPTIONS.index(self.dir_var.get())
+
+        self.scan_btn.config(state="disabled")
+        self.dir_var.set(self.dir_var.get())  # lock dropdown
+
+        def task():
+            n = self._reader.start_scan(direction=dir_idx)
+            self.root.after(0, lambda: self._on_first_scan_done(n))
+
+        threading.Thread(target=task, daemon=True).start()
+
+    def _on_first_scan_done(self, n):
+        self._step_count.config(text=f"步数: 1")
+        self.scan_again_btn.config(
+            state="normal", bg="#3d7eff", fg="white",
+            text="再次扫描 (部署第2个)",
+        )
+        self.status_var.set(
+            f"第一步完成: {n} 个匹配\n"
+            "→ 请部署第 2 个干员 (相同朝向), 然后点「再次扫描」"
+        )
+
+    def _scan_again(self):
+        self.scan_again_btn.config(state="disabled", text="扫描中...")
+
+        def task():
+            result = self._reader.scan_again()
+            self.root.after(0, lambda: self._on_scan_again_done(result))
+
+        threading.Thread(target=task, daemon=True).start()
+
+    def _on_scan_again_done(self, result):
+        step = self._reader._round
+        self._step_count.config(text=f"步数: {step}")
+
+        if result == "found":
+            self._launch_display()
+        elif result == "more":
+            self.scan_again_btn.config(
+                state="normal", bg="#3d7eff", fg="white",
+                text=f"再次扫描 (部署第{step + 1}个)",
+            )
+            self.status_var.set(
+                f"候选仍较多, 请部署第 {step + 1} 个干员 (同朝向), 再点「再次扫描」"
+            )
+        else:  # failed
+            self.scan_btn.config(state="normal")
+            self.scan_again_btn.config(
+                state="normal", bg="#555555", fg="#AAAAAA",
+                text=f"再次扫描 (部署第{step + 1}个)",
+            )
+            self.status_var.set(
+                "未找到相邻配对。请确认:\n"
+                "→ 两次部署朝向相同\n"
+                "→ 均为 SPAWN (部署) 操作\n"
+                "可点「第一步扫描」重新开始"
+            )
+            messagebox.showwarning("失败", "未找到有效的相邻配对。\n请检查部署朝向是否一致。")
+
+    def _launch_display(self):
+        for w in self.root.winfo_children():
+            w.destroy()
+        DeployDisplayApp(self.root, self._reader, self._process_name)
+
 
 class ProcessWaiter:
-    """哨兵模式：后台静默轮询等待模拟器启动。"""
+    """哨兵模式：等待模拟器进程，找到后直接进入部署引导。"""
 
     def __init__(self, root):
         self.root = root
@@ -494,11 +351,8 @@ class ProcessWaiter:
         self.root.attributes("-topmost", True)
 
         self.label = tk.Label(
-            self.root,
-            text="等待模拟器启动...",
-            fg="#00FFFF",
-            bg="#1E1E1E",
-            font=("Consolas", 14, "bold"),
+            self.root, text="等待模拟器启动...",
+            fg="#00FFFF", bg="#1E1E1E", font=("Consolas", 14, "bold"),
         )
         self.label.pack(expand=True, fill="both")
 
@@ -507,115 +361,29 @@ class ProcessWaiter:
 
     def _check(self):
         self._dot_count = (self._dot_count + 1) % 4
-        dots = "." * self._dot_count
-        self.label.config(text=f"正在监听模拟器进程{dots}")
+        self.label.config(text=f"正在监听模拟器进程{'.' * self._dot_count}")
 
         found = None
+        pm = None
         for proc in EMULATOR_PROCESSES:
             try:
-                pymem.Pymem(proc)
+                pm = pymem.Pymem(proc)
                 found = proc
                 break
             except Exception:
                 pass
 
         if found:
-            self._launch_scanner(found)
+            self._launch_wizard(found, pm)
         else:
             self.root.after(1000, self._check)
 
-    def _launch_scanner(self, process_name):
+    def _launch_wizard(self, process_name, pm):
         for w in self.root.winfo_children():
             w.destroy()
         self.root.attributes("-topmost", False)
+        DeployWizardApp(self.root, process_name, pm)
 
-        reader = AKMemoryReader(process_name=process_name)
-        if not reader.connect():
-            messagebox.showerror("连接失败", f"挂载 {process_name} 时被系统拒绝。\n请确保程序以管理员权限运行。")
-            sys.exit(1)
-
-        def on_address_found(address_hex_str):
-            reader.set_address(address_hex_str)
-            _send_hook_via_tcp(reader.process_name, address_hex_str)
-
-            # 显示发现进度界面
-            self._show_discovery_progress(address_hex_str, reader, process_name)
-
-        DeployScannerWizard(self.root, reader, on_address_found)
-
-    def _show_discovery_progress(self, address_hex_str, reader, process_name):
-        for w in self.root.winfo_children():
-            w.destroy()
-        self.root.geometry("500x180")
-        self.root.title("摸轴工具 — 发现 BattleController")
-        self.root.attributes("-topmost", False)
-
-        tk.Label(
-            self.root,
-            text=f"地址: {address_hex_str}",
-            fg="#AAAAAA",
-            bg="#1E1E1E",
-            font=("Consolas", 9),
-        ).pack(pady=(10, 5))
-
-        status_var = tk.StringVar(value="正在发现 BattleController...")
-        status_label = tk.Label(
-            self.root,
-            textvariable=status_var,
-            fg="#00FF00",
-            bg="#1E1E1E",
-            font=("Consolas", 11, "bold"),
-        )
-        status_label.pack(pady=10)
-
-        progress_var = tk.StringVar(value="")
-        progress_label = tk.Label(
-            self.root,
-            textvariable=progress_var,
-            fg="#FFFF00",
-            bg="#1E1E1E",
-            font=("Consolas", 10),
-        )
-        progress_label.pack(pady=5)
-
-        self.root.update()
-
-        addr_int = int(address_hex_str.replace("0x", "").replace("0X", ""), 16)
-        deploy_reader = DeployTrackerReader(reader.pm, addr_int)
-        deploy_reader.set_status_callback(lambda msg: progress_var.set(msg))
-
-        ok = deploy_reader.discover()
-        if not ok:
-            status_var.set("未找到 BattleController")
-            status_label.config(fg="#FF0000")
-            progress_var.set("请确认已进入作战关卡，且战斗已开始。")
-
-            retry_btn = tk.Button(
-                self.root,
-                text="重试",
-                command=lambda: self._retry_discovery(address_hex_str, reader, process_name),
-                bg="#444444",
-                fg="white",
-                font=("Consolas", 10),
-            )
-            retry_btn.pack(pady=10)
-            return
-
-        status_var.set("连接成功！")
-        self.root.after(500, lambda: self._launch_display(deploy_reader, process_name))
-
-    def _retry_discovery(self, address_hex_str, reader, process_name):
-        for w in self.root.winfo_children():
-            w.destroy()
-        self._show_discovery_progress(address_hex_str, reader, process_name)
-
-    def _launch_display(self, deploy_reader, process_name):
-        for w in self.root.winfo_children():
-            w.destroy()
-        DeployDisplayApp(self.root, deploy_reader, process_name)
-
-
-# ---- 启动 ----
 
 def is_admin():
     try:
