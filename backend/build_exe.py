@@ -110,6 +110,7 @@ def main() -> int:
 
     # 常用隐藏导入（避免运行时漏模块）
     cmd.extend(["--hidden-import", "tools.timer.ak_memory_reader"])
+    cmd.extend(["--hidden-import", "tools.deploy_tracker.ak_deploy_reader"])
     cmd.extend(["--hidden-import", "pymem"])
     cmd.extend(["--hidden-import", "PySide6"])
 
