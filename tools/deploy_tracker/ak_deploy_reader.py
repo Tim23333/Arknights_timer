@@ -15,20 +15,45 @@ LOGITEM_STRUCT = "<f4xI4xQiiiiQ"
 
 
 def _scan_chunk_for_op_dir(handle, base, size, needle):
-    """返回 [op, direction] 模式匹配的所有地址 (op 字段位置)。"""
+    """按 8 字节对齐扫描 [op, direction] 模式，附带结构预过滤。
+
+    对每个命中立即检查前后上下文字段：
+    - charId 指针 (前 8 字节) 必须在有效堆地址范围
+    - grid_col (后 8~11 字节) 必须是 1..15 的小整数
+    """
     try:
         data = pymem.memory.read_bytes(handle, base, size)
     except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
         return set()
 
     results = set()
-    offset = 0
-    while True:
-        idx = data.find(needle, offset)
-        if idx == -1:
-            break
-        results.add(base + idx)
-        offset = idx + 8
+    data_len = len(data)
+
+    # 按 8 字节步进，仅检查对齐位置，跳过非对齐的误匹配
+    for off in range(0, data_len - 7, 8):
+        # 快速比对 op(4B)=0 + dir(4B)=方向
+        if data[off:off + 8] != needle:
+            continue
+
+        addr = base + off
+
+        #  预过滤 1: 前 8 字节是 charId 指针，必须 > 0x10000 (堆地址)
+        if off < 8:
+            continue
+        char_ptr = struct.unpack_from("<Q", data, off - 8)[0]
+        if char_ptr < 0x10000:
+            continue
+
+        #  预过滤 2: 后 8~11 字节是 grid_col (int)，必须在 1..15 范围
+        gc_off = off + 8
+        if gc_off + 4 > data_len:
+            continue
+        grid_col = struct.unpack_from("<i", data, gc_off)[0]
+        if not (1 <= grid_col <= 15):
+            continue
+
+        results.add(addr)
+
     return results
 
 
@@ -105,13 +130,24 @@ class DeployTrackerReader:
                     data = pymem.memory.read_bytes(handle, page, PAGE_SIZE)
                 except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
                     continue
-                offset = 0
-                while True:
-                    idx = data.find(needle, offset)
-                    if idx == -1:
-                        break
-                    fresh.add(page + idx)
-                    offset = idx + 8
+                data_len = len(data)
+                for off in range(0, data_len - 7, 8):
+                    if data[off:off + 8] != needle:
+                        continue
+                    addr_candidate = page + off
+                    # 结构预过滤（与 _scan_chunk_for_op_dir 一致）
+                    if off < 8:
+                        continue
+                    char_ptr = struct.unpack_from("<Q", data, off - 8)[0]
+                    if char_ptr < 0x10000:
+                        continue
+                    gc_off = off + 8
+                    if gc_off + 4 > data_len:
+                        continue
+                    grid_col = struct.unpack_from("<i", data, gc_off)[0]
+                    if not (1 <= grid_col <= 15):
+                        continue
+                    fresh.add(addr_candidate)
 
             self._status(f"快速扫描: {len(scanned_pages)} 页, 命中 {len(fresh)}")
 
@@ -199,35 +235,61 @@ class DeployTrackerReader:
         Args:
             li1, li2: LogItem 基址 (li2 应在 li1 + 0x30)
         Returns:
-            True 如果 timestamp 递增、uniqueId 连续、charId 指针有效
+            True 如果 timestamp 递增、uniqueId 连续、charId 和 extraInfo 指针有效、
+            grid 坐标在合理范围、charId 字符串以 "char_" 开头
         """
         handle = self._pm.process_handle
         try:
-            # 读取两个 LogItem 的头部 (timestamp + uniqueId + padding + charId 指针)
-            # 0x00~0x17: 24 bytes
-            raw1 = pymem.memory.read_bytes(handle, li1, 24)
-            raw2 = pymem.memory.read_bytes(handle, li2, 24)
-
-            ts1, uid1, charid1 = struct.unpack_from("<f4xI4xQ", raw1, 0)
-            ts2, uid2, charid2 = struct.unpack_from("<f4xI4xQ", raw2, 0)
-
-            # 时间戳有效且递增
-            if not (0.0 <= ts1 <= 100000.0 and 0.0 <= ts2 <= 100000.0):
-                return False
-            if not (ts2 > ts1):
-                return False
-
-            # uniqueId 必须连续 (配对: 前一个的 uid = N, 后一个 = N+1)
-            if not (uid2 == uid1 + 1):
-                return False
-
-            # charId 指针必须有效
-            if charid1 < 0x10000 or charid2 < 0x10000:
-                return False
-
-            return True
-        except (struct.error, pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
+            raw1 = pymem.memory.read_bytes(handle, li1, LOGITEM_SIZE)
+            raw2 = pymem.memory.read_bytes(handle, li2, LOGITEM_SIZE)
+        except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
             return False
+
+        try:
+            ts1, uid1, cid1, op1, dir1, r1, c1, ext1 = struct.unpack_from(LOGITEM_STRUCT, raw1)
+            ts2, uid2, cid2, op2, dir2, r2, c2, ext2 = struct.unpack_from(LOGITEM_STRUCT, raw2)
+        except struct.error:
+            return False
+
+        # 时间戳有效且递增
+        if not (0.0 < ts1 < 100000.0 and 0.0 < ts2 < 100000.0):
+            return False
+        if ts2 <= ts1:
+            return False
+
+        # op 必须是 SPAWN
+        if op1 != 0 or op2 != 0:
+            return False
+
+        # uniqueId 连续
+        if uid2 != uid1 + 1:
+            return False
+
+        # charId 指针有效 (堆范围)
+        if cid1 < 0x10000 or cid2 < 0x10000:
+            return False
+
+        # extraInfo 指针有效 (堆范围，可为 0 表示空串)
+        if ext1 != 0 and ext1 < 0x10000:
+            return False
+        if ext2 != 0 and ext2 < 0x10000:
+            return False
+
+        # grid 坐标在合理范围 (方舟地图坐标 0~20)
+        if not (0 <= r1 <= 20 and 0 <= c1 <= 20):
+            return False
+        if not (0 <= r2 <= 20 and 0 <= c2 <= 20):
+            return False
+
+        # 验证 charId 字符串内容：以 "char_" 开头且长度合理
+        s1 = self._read_string(cid1)
+        if not s1 or not s1.startswith("char_"):
+            return False
+        s2 = self._read_string(cid2)
+        if not s2 or not s2.startswith("char_"):
+            return False
+
+        return True
 
     # ---- 内存区域枚举 ----
 
