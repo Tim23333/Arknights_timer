@@ -634,28 +634,46 @@ class CoachWindow(QMainWindow):
             return self._last_status_payload, self._status_version
 
     def _on_open_timer_tool(self) -> None:
-        script = _REPO_ROOT / "tools" / "timer" / "ak_timer_ui.py"
-        if not script.is_file():
-            QMessageBox.critical(self, "寻址工具", f"未找到脚本：\n{script}")
-            return
         try:
             env = os.environ.copy()
             env["AK_HOOK_PORT"] = str(self._hook_port)
-            # 冻结后 sys.executable 指向当前主程序 exe，直接调用会重新打开自身。
+
             if getattr(sys, "frozen", False):
-                py_cmd = shutil.which("python") or shutil.which("py")
-                if not py_cmd:
+                # 打包后：从内嵌资源中提取并运行寻址工具
+                import tempfile
+                import shutil
+
+                # 内嵌的寻址工具路径（PyInstaller 解压后的临时目录）
+                embedded_exe = Path(sys._MEIPASS) / "tools" / "AKTimerTool.exe"
+                if not embedded_exe.is_file():
                     QMessageBox.critical(
                         self,
                         "寻址工具",
-                        "未找到可用的 Python 解释器（python/py）。\n"
-                        f"请手动运行：\n{script}",
+                        f"未找到内嵌的寻址工具：\n{embedded_exe}\n\n"
+                        "请重新打包程序。"
                     )
                     return
-                cmd = [py_cmd, str(script)]
+
+                # 提取到用户临时目录（避免重复提取）
+                temp_dir = Path(tempfile.gettempdir()) / "ArknightsTimeline"
+                temp_dir.mkdir(exist_ok=True)
+                temp_exe = temp_dir / "AKTimerTool.exe"
+
+                # 如果临时文件不存在或大小不同，则提取
+                if not temp_exe.exists() or temp_exe.stat().st_size != embedded_exe.stat().st_size:
+                    shutil.copy2(embedded_exe, temp_exe)
+                    print(f"[INFO] 已提取寻址工具到: {temp_exe}")
+
+                cmd = [str(temp_exe)]
+                subprocess.Popen(cmd, env=env)
             else:
+                # 开发模式：直接调用 Python 脚本
+                script = _REPO_ROOT / "tools" / "timer" / "ak_timer_ui.py"
+                if not script.is_file():
+                    QMessageBox.critical(self, "寻址工具", f"未找到脚本：\n{script}")
+                    return
                 cmd = [sys.executable, str(script)]
-            subprocess.Popen(cmd, cwd=str(script.parent), env=env, close_fds=sys.platform != "win32")
+                subprocess.Popen(cmd, cwd=str(script.parent), env=env, close_fds=sys.platform != "win32")
         except OSError as e:
             QMessageBox.critical(self, "寻址工具", f"无法启动：{e}")
 

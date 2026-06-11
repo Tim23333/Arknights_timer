@@ -81,17 +81,39 @@ python -c "import json; d=json.load(open('skills.json')); [print(k,v.get('f3',[{
 
 ## 数据来源文件
 
-| 文件 | 路径 | 内容 |
-|---|---|---|
-| character_table | `data/tables/character_tabled88efb.bin` | 干员基础数据（2.3MB） |
-| skill_table | `data/tables/skill_tableafb859.bin` | 技能完整数据（4.3MB） |
+### 自动提取流程
 
-原始 AB 文件位于：
-`E:\Hypergryph Launcher\games\Arknights Game\Arknights_Data\StreamingAssets\AB\Windows\anon\`
+1. 使用 AssetStudio-Arknights 解包 AB 文件到 `data/anon/` 目录
+2. 运行提取脚本：
+```bash
+python extract_tables.py
+```
 
-提取命令（需 AssetStudio-Arknights）：
-- 干员表：`anon/f6fd9166f495ddacd926efd5498d0efb.bin`
-- 技能表：`anon/f7364e53d817f3143b501a1cba05ec9b.bin`
+脚本会自动扫描 `data/anon/` 中的 CAB 文件，识别并提取所有数据表到 `data/tables/`。
+
+### 提取的数据表
+
+| 表名 | 内容 |
+|---|---|
+| character_table | 干员基础数据 |
+| skill_table | 技能完整数据 |
+| stage_table | 关卡数据 |
+| activity_table | 活动数据 |
+| charword_table | 干员语音/台词 |
+| handbook_info_table | 干员档案 |
+| uniequip_table | 模组数据 |
+| battle_equip_table | 战斗装备 |
+| skin_table | 皮肤数据 |
+| retro_table | 复刻活动数据 |
+| roguelike_topic_table | 肉鸽主题数据 |
+| sandbox_perm_table | 沙盒权限数据 |
+| building_data | 基建数据 |
+
+### 原始 AB 文件位置
+
+游戏目录：`E:\Hypergryph Launcher\games\Arknights Game\Arknights_Data\StreamingAssets\AB\Windows\anon\`
+
+> **注意：** AB 包文件名的 hash 后缀会随游戏版本更新变化，`extract_tables.py` 通过表名前缀匹配，无需手动更新文件名。
 
 ---
 
@@ -208,7 +230,105 @@ ark_parser/
     ├── svash2_strings.txt       # 所有中文文本
     └── svash2_skills_strings.txt # 技能详细文本
 
+extract_tables.py                # 自动从 data/anon/ 提取数据表到 data/tables/
+
 data/tables/
-├── character_tabled88efb.bin    # 干员表二进制（从AB包提取）
-└── skill_tableafb859.bin        # 技能表二进制（从AB包提取）
+├── character_tabled88efb.bin    # 干员表二进制
+├── skill_tableafb859.bin        # 技能表二进制
+├── stage_table*.bin             # 关卡数据
+├── activity_table*.bin          # 活动数据
+└── ... (共13个数据表)
+```
+
+---
+
+## API 接口文档
+
+`ark_api_docs/` 目录包含明日方舟游戏服务器接口的完整文档，基于 `Ark_data/dump.cs` 逆向分析。
+
+### 文档目录
+
+| 文件 | 内容 |
+|------|------|
+| `01_architecture.md` | 网络架构总览、请求流程、错误码 |
+| `02_auth.md` | 认证体系 (SDK登录/OAuth2/云认证/游戏内登录) |
+| `03_account.md` | 账户核心接口 (登录/同步/版本) |
+| `04_battle.md` | 战斗系统 (普通关卡/剿灭/活动/编队/回放) |
+| `05_gacha.md` | 抽卡系统 (公开招募/寻访/凭证兑换) |
+| `06_building.md` | 基建系统 (房间/制造站/贸易站/会客室) |
+| `07_shop.md` | 商店/支付 (时装/源石/高级商店/U8支付) |
+| `08_charbuild.md` | 角色养成 (升级/精英化/技能/模组/皮肤) |
+| `09_social.md` | 社交系统 (好友/名片/邮件) |
+| `10_roguelike.md` | 肉鸽/集成战略 |
+| `11_crisis.md` | 危机合约 V1/V2 |
+| `12_tower.md` | 爬塔系统 |
+| `13_mail_mission.md` | 任务/签到/活动/公告 |
+| `14_sync.md` | 数据同步 (全量/增量/推送/心跳) |
+| `15_common_types.md` | 通用数据结构 (物品/干员/错误码) |
+
+### 使用说明
+
+每个接口文档包含:
+- **ServiceCode**: 请求路径标识
+- **请求结构**: JSON 格式的请求体示例
+- **响应结构**: JSON 格式的响应体示例
+- **枚举值**: 相关枚举类型的可选值
+- **注意事项**: 特殊处理逻辑和边界情况
+
+---
+
+## 桌面程序打包
+
+### 环境要求
+
+- Python 3.8+
+- PyInstaller: `pip install pyinstaller`
+- 项目依赖: `pip install -r backend/requirements.txt`
+- 可选依赖（加速内存扫描）: `pip install numpy`
+
+### 打包命令
+
+```bash
+# 一键打包主程序 + 寻址工具（推荐）
+cd backend
+python build_exe.py
+
+# 只打包主程序（跳过寻址工具）
+python build_exe.py --skip-timer
+
+# 使用 onedir 模式（调试用）
+python build_exe.py --onedir
+
+# 自定义程序名
+python build_exe.py --name MyArknightsTool
+
+# 显示控制台窗口（调试用）
+python build_exe.py --console
+```
+
+### 输出文件
+
+打包完成后，`backend/dist/` 目录下会生成：
+
+| 文件 | 说明 |
+|------|------|
+| `ArknightsTimeline.exe` | 主程序（打轴工具） |
+| `AKTimerTool.exe` | 内存寻址工具 |
+
+### 分发说明
+
+1. 将 `backend/dist/` 下的两个 exe 文件一起分发给用户
+2. 两个 exe 必须放在同一目录下
+3. 寻址工具需要管理员权限才能读取游戏内存
+4. 首次运行可能被 Windows 安全提示拦截，选择"仍要运行"即可
+
+### 测试打包结果
+
+```bash
+cd backend
+python test_packaged_exe.py
+```
+
+该脚本会检查 exe 文件是否存在、大小是否正常，并尝试启动测试。
+
 ```

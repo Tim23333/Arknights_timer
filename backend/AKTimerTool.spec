@@ -2,11 +2,11 @@
 
 
 a = Analysis(
-    ['G:\\Arknights\\backend\\run.py'],
-    pathex=['G:\\Arknights'],
+    ['G:\\Arknights\\tools\\timer\\ak_timer_ui.py'],
+    pathex=['G:\\Arknights\\tools\\timer'],
     binaries=[],
-    datas=[('G:\\Arknights\\aaa.ico', '.'), ('G:\\Arknights\\tools', 'tools'), ('G:\\Arknights\\backend\\data', 'backend/data'), ('G:\\Arknights\\backend\\app\\static', 'backend/app/static'), ('G:\\Arknights\\backend\\dist\\AKTimerTool.exe', 'tools')],
-    hiddenimports=['tools.timer.ak_memory_reader', 'tools.deploy_tracker.ak_deploy_reader', 'pymem', 'PySide6'],
+    datas=[('G:\\Arknights\\aaa.ico', '.')],
+    hiddenimports=['ak_memory_reader', 'pymem', 'numpy'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -22,7 +22,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='ArknightsTimeline',
+    name='AKTimerTool',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
