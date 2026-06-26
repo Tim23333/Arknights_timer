@@ -47,6 +47,7 @@ const isPlaying = ref(false);
 const timelineViewport = ref(null);
 const hScrollTrackEl = ref(null);
 const fileInput = ref(null);
+const zuoshouFileInput = ref(null);
 const trackLeftOffset = ref(TRACK_X_OFFSET);
 
 let createRange = null;
@@ -1451,6 +1452,65 @@ async function importJson(event) {
   }
 }
 
+function triggerZuoshouImport() {
+  zuoshouFileInput.value?.click();
+}
+
+async function importZuoshouJson(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  try {
+    const before = buildHistorySnapshot();
+    const parsed = JSON.parse(await file.text());
+    if (!Array.isArray(parsed?.actions)) {
+      statusText.value = "导入失败：缺少 actions 数组";
+      return;
+    }
+
+    // map_code → userId
+    if (parsed.map_code) {
+      userId.value = String(parsed.map_code);
+    }
+
+    // Group actions by oper → rows
+    const operMap = new Map(); // oper name → { id, name, segments[] }
+    for (const act of parsed.actions) {
+      const operName = act.oper || "未知";
+      if (!operMap.has(operName)) {
+        operMap.set(operName, { id: crypto.randomUUID(), name: operName, segments: [] });
+      }
+      const row = operMap.get(operName);
+      const frame = Math.max(0, Math.round(Number(act.frame) || 0));
+      // note = action_type_pos_direction (direction may be absent)
+      const parts = [act.action_type, act.pos, act.direction].filter(Boolean);
+      row.segments.push({
+        id: crypto.randomUUID(),
+        startFrame: frame,
+        endFrame: frame,
+        color: selectedColor.value,
+        label: `${operName} F${frame}`,
+        note: parts.join("_"),
+      });
+    }
+
+    const newRows = Array.from(operMap.values());
+    if (!newRows.length) {
+      statusText.value = "导入失败：actions 为空";
+      return;
+    }
+
+    rows.value = newRows;
+    selectedKeys.value = [];
+    pushUndoSnapshot(before);
+    statusText.value = `已导入左手json：${newRows.length} 行，${parsed.actions.length} 个动作`;
+    scheduleSave();
+  } catch {
+    statusText.value = "导入失败：无法解析 JSON";
+  } finally {
+    event.target.value = "";
+  }
+}
+
 function updateViewportWidth() {
   if (!timelineViewport.value) return;
   const viewportRect = timelineViewport.value.getBoundingClientRect();
@@ -1518,6 +1578,8 @@ onUnmounted(() => {
         <button @click="exportJson">导出JSON</button>
         <button @click="triggerImport">导入JSON</button>
         <input ref="fileInput" type="file" accept="application/json" class="hidden" @change="importJson" />
+        <button @click="triggerZuoshouImport">导入左手json</button>
+        <input ref="zuoshouFileInput" type="file" accept="application/json" class="hidden" @change="importZuoshouJson" />
       </div>
       <div class="right-tools">
         <span>FPS: 60</span>
