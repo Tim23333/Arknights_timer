@@ -37,6 +37,7 @@ def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args) -
     data_dir = backend_dir / "data"
     static_dir = backend_dir / "app" / "static"
     timer_exe = backend_dir / "dist" / "AKTimerTool.exe"
+    speed_exe = backend_dir / "dist" / "AKSpeedTool.exe"
 
     if not entry.is_file():
         print(f"[ERROR] 未找到入口脚本: {entry}")
@@ -45,6 +46,11 @@ def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args) -
     if not timer_exe.is_file():
         print(f"[ERROR] 未找到寻址工具: {timer_exe}")
         print("[ERROR] 请先打包寻址工具")
+        return 1
+
+    if not speed_exe.is_file():
+        print(f"[ERROR] 未找到倍速寻址工具: {speed_exe}")
+        print("[ERROR] 请先打包倍速寻址工具")
         return 1
 
     cmd = [
@@ -88,10 +94,12 @@ def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args) -
 
     # 内嵌寻址工具
     cmd.extend(["--add-data", _add_data_arg(timer_exe, "tools")])
+    cmd.extend(["--add-data", _add_data_arg(speed_exe, "tools")])
 
     # 常用隐藏导入（避免运行时漏模块）
     cmd.extend(["--hidden-import", "tools.timer.ak_memory_reader"])
     cmd.extend(["--hidden-import", "tools.deploy_tracker.ak_deploy_reader"])
+    cmd.extend(["--hidden-import", "tools.speed_scanner.ak_speed_reader"])
     cmd.extend(["--hidden-import", "pymem"])
     cmd.extend(["--hidden-import", "PySide6"])
 
@@ -165,6 +173,59 @@ def _build_timer_tool(backend_dir: Path, repo_root: Path, icon_path: Path, args)
     return 0
 
 
+def _build_speed_tool(backend_dir: Path, repo_root: Path, icon_path: Path, args) -> int:
+    """打包倍速寻址工具 AKSpeedTool.exe"""
+    speed_dir = repo_root / "tools" / "speed_scanner"
+    entry = speed_dir / "ak_speed_ui.py"
+
+    if not entry.is_file():
+        print(f"[ERROR] 未找到倍速寻址工具脚本: {entry}")
+        return 1
+
+    cmd = [
+        sys.executable,
+        "-m",
+        "PyInstaller",
+        "--noconfirm",
+        "--clean",
+        "--name",
+        "AKSpeedTool",
+        "--icon",
+        str(icon_path),
+        "--paths",
+        str(speed_dir),
+        "--distpath",
+        str(backend_dir / "dist"),
+        "--workpath",
+        str(backend_dir / "build" / "speed"),
+        "--specpath",
+        str(backend_dir),
+        "--onefile",
+        "--windowed",
+    ]
+
+    if icon_path.is_file():
+        cmd.extend(["--add-data", _add_data_arg(icon_path, ".")])
+
+    cmd.extend(["--hidden-import", "ak_speed_reader"])
+    cmd.extend(["--hidden-import", "pymem"])
+    cmd.extend(["--hidden-import", "numpy"])
+
+    cmd.append(str(entry))
+
+    print("[INFO] 开始打包倍速寻址工具...")
+    print("[INFO] 命令:\n  " + " ".join(f'"{c}"' if " " in c else c for c in cmd))
+
+    proc = subprocess.run(cmd, cwd=str(backend_dir))
+    if proc.returncode != 0:
+        print(f"[ERROR] 倍速寻址工具打包失败，退出码={proc.returncode}")
+        return proc.returncode
+
+    out = backend_dir / "dist" / "AKSpeedTool.exe"
+    print(f"[OK] 倍速寻址工具打包完成: {out}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build backend desktop EXE with PyInstaller.")
     parser.add_argument("--name", default="ArknightsTimeline", help="输出程序名（默认 ArknightsTimeline）")
@@ -200,25 +261,34 @@ def main() -> int:
 
     # 步骤 1: 先打包寻址工具为临时 exe
     print("\n" + "=" * 60)
-    print("[步骤 1/2] 打包寻址工具...")
+    print("[步骤 1/3] 打包寻址工具...")
     print("=" * 60)
     ret = _build_timer_tool(backend_dir, repo_root, icon_path, args)
     if ret != 0:
         return ret
 
-    # 步骤 2: 打包主程序，将寻址工具内嵌进去
+    # 步骤 2: 打包倍速寻址工具
     print("\n" + "=" * 60)
-    print("[步骤 2/2] 打包主程序（内嵌寻址工具）...")
+    print("[步骤 2/3] 打包倍速寻址工具...")
+    print("=" * 60)
+    ret = _build_speed_tool(backend_dir, repo_root, icon_path, args)
+    if ret != 0:
+        return ret
+
+    # 步骤 3: 打包主程序，将寻址工具内嵌进去
+    print("\n" + "=" * 60)
+    print("[步骤 3/3] 打包主程序（内嵌寻址工具）...")
     print("=" * 60)
     ret = _build_main_app(backend_dir, repo_root, icon_path, args)
     if ret != 0:
         return ret
 
-    # 清理临时的 AKTimerTool.exe（已内嵌到主程序中）
-    timer_exe = backend_dir / "dist" / "AKTimerTool.exe"
-    if timer_exe.exists():
-        timer_exe.unlink()
-        print(f"[INFO] 已清理临时文件: {timer_exe.name}")
+    # 清理临时 exe（已内嵌到主程序中）
+    for name in ("AKTimerTool.exe", "AKSpeedTool.exe"):
+        tmp = backend_dir / "dist" / name
+        if tmp.exists():
+            tmp.unlink()
+            print(f"[INFO] 已清理临时文件: {name}")
 
     print("\n" + "=" * 60)
     print("[OK] 打包完成！")

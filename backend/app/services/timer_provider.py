@@ -24,6 +24,7 @@ def _bootstrap_import_path() -> None:
 
 _bootstrap_import_path()
 from tools.timer.ak_memory_reader import AKMemoryReader
+from tools.speed_scanner.ak_speed_reader import AKSpeedReader
 
 
 class TimerDataProvider:
@@ -43,7 +44,15 @@ class TimerDataProvider:
             "frame_count": None,
             "message": "请先运行「打开寻址工具」完成扫描。",
             "last_refresh": None,
+            # 倍速/暂停
+            "speed_level": None,
+            "speed_name": "未知",
+            "timescale": None,
+            "is_paused": None,
         }
+        # 倍速/暂停读取器
+        self._speed_reader: Optional[AKSpeedReader] = None
+        self._speed_configured: bool = False
         self._build_reader()
 
     def _build_reader(self) -> None:
@@ -111,8 +120,40 @@ class TimerDataProvider:
                 "time_address": self.time_address_hex,
             }
 
+    def apply_speed_hook(self, process_name: str, speed_address: str, timescale_address: str) -> Dict[str, Any]:
+        """接收倍速寻址工具通过 TCP 推送的 speed_address + timescale_address。"""
+        with self._lock:
+            pn = (process_name or "").strip()
+            sa = (speed_address or "").strip()
+            ta = (timescale_address or "").strip()
+            if not pn or not sa or not ta:
+                return {"ok": False, "message": "缺少参数。"}
+
+            if not self._speed_reader or self._speed_reader.process_name != pn:
+                self._speed_reader = AKSpeedReader(process_name=pn)
+                if not self._speed_reader.connect():
+                    return {"ok": False, "message": "倍速读取器无法附加到进程。"}
+
+            if not self._speed_reader.set_speed_address(sa):
+                return {"ok": False, "message": "倍速地址无效。"}
+            if not self._speed_reader.set_timescale_address(ta):
+                return {"ok": False, "message": "暂停地址无效。"}
+
+            self._speed_configured = True
+
+            # 首次采样验证
+            data = self._speed_reader.get_all()
+            self._game_cache = {
+                **self._game_cache,
+                "speed_level": data.get("speed_level"),
+                "speed_name": data.get("speed_name", "未知"),
+                "timescale": data.get("timescale"),
+                "is_paused": data.get("is_paused"),
+            }
+            return {"ok": True, "message": "已接收倍速/暂停配置。"}
+
     def refresh_sample(self) -> Dict[str, Any]:
-        """仅做内存采样（读 game_time + frame_count），不读文件。需先调用 apply_hook 配置地址。"""
+        """仅做内存采样（读 game_time + frame_count + 倍速/暂停），不读文件。需先调用 apply_hook 配置地址。"""
         with self._lock:
             if not self.reader or not self.reader.time_address:
                 return {"ok": False, "message": self._game_cache.get("message", "未配置地址。")}
@@ -140,6 +181,17 @@ class TimerDataProvider:
                 }
                 return {"ok": False, "message": self._game_cache["message"]}
 
+            # 读取倍速/暂停数据（如果已配置）
+            speed_data = {}
+            if self._speed_configured and self._speed_reader:
+                sd = self._speed_reader.get_all()
+                speed_data = {
+                    "speed_level": sd.get("speed_level"),
+                    "speed_name": sd.get("speed_name", "未知"),
+                    "timescale": sd.get("timescale"),
+                    "is_paused": sd.get("is_paused"),
+                }
+
             self._game_cache = {
                 "connected": True,
                 "configured": True,
@@ -147,6 +199,7 @@ class TimerDataProvider:
                 "frame_count": frame_count,
                 "message": "ok",
                 "last_refresh": now,
+                **speed_data,
             }
             return {"ok": True, "game_time": game_time, "frame_count": frame_count}
 
