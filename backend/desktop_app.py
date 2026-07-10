@@ -164,12 +164,9 @@ class CoachWindow(QMainWindow):
         l_cfg = QHBoxLayout(box_cfg)
         btn_tool = QPushButton("打开寻址工具")
         btn_tool.clicked.connect(self._on_open_timer_tool)
-        btn_speed_tool = QPushButton("倍速寻址工具")
-        btn_speed_tool.clicked.connect(self._on_open_speed_tool)
         btn_refresh = QPushButton("刷新游戏状态")
         btn_refresh.clicked.connect(self._on_refresh_game)
         l_cfg.addWidget(btn_tool)
-        l_cfg.addWidget(btn_speed_tool)
         l_cfg.addWidget(btn_refresh)
         l_cfg.addWidget(QLabel("（寻址工具需管理员权限；扫描完成后自动推送地址到本工具）"))
         l_cfg.addStretch(1)
@@ -330,24 +327,6 @@ class CoachWindow(QMainWindow):
         cfd_l.addWidget(self.lbl_frame_big)
         right_panel.addWidget(card_frame_disp)
 
-        card_speed_disp = QFrame()
-        card_speed_disp.setObjectName("GameSpeedCard")
-        card_speed_disp.setStyleSheet(
-            "#GameSpeedCard { background: #252526; border: 1px solid #3c3c3c; border-radius: 8px; }"
-        )
-        csd_l = QVBoxLayout(card_speed_disp)
-        csd_l.setContentsMargins(16, 12, 16, 12)
-        csd_l.setSpacing(4)
-        lbl_speed_title = QLabel("倍速 / 状态")
-        lbl_speed_title.setStyleSheet("color:#9a9a9a; font-size:12px; font-weight:600;")
-        lbl_speed_title.setAlignment(Qt.AlignCenter)
-        csd_l.addWidget(lbl_speed_title)
-        self.lbl_speed_big = QLabel("—")
-        self.lbl_speed_big.setStyleSheet("font-size:32px; font-weight:700; color:#ffd66b;")
-        self.lbl_speed_big.setAlignment(Qt.AlignCenter)
-        csd_l.addWidget(self.lbl_speed_big)
-        right_panel.addWidget(card_speed_disp)
-
         self.lbl_game = QLabel("正在等待实时刷新…")
         self.lbl_game.setWordWrap(True)
         self.lbl_game.setStyleSheet("color:#9a9a9a; font-size:11px;")
@@ -471,23 +450,18 @@ class CoachWindow(QMainWindow):
         addr = f"ws://127.0.0.1:{self._ws_port}"
         text = (
             f"WebSocket 接口地址：\n{addr}\n\n"
-            "服务端实时推送游戏数据，客户端只需连接即可接收。\n\n"
+            "服务端实时推送游戏时间与逻辑帧，客户端只需连接即可接收数据。\n\n"
             "消息格式（JSON）：\n"
             '{\n'
-            '  "game_time": 12.345,       // float，游戏内时间（秒）\n'
-            '  "frame_count": 741,        // int，游戏逻辑帧\n'
-            '  "connected": true,         // bool，内存读取是否正常\n'
-            '  "speed_level": 2,          // int|null，倍速等级（1=1倍速, 2=2倍速）\n'
-            '  "speed_name": "2倍速",     // string|null，倍速名称\n'
-            '  "timescale": 2.0,          // float|null，Unity Time.timeScale\n'
-            '  "is_paused": false         // bool|null，是否暂停（timescale==0）\n'
+            '  "game_time": 12.345,    // float，游戏内时间（秒）\n'
+            '  "frame_count": 741,     // int，游戏逻辑帧\n'
+            '  "connected": true       // bool，内存读取是否正常\n'
             '}\n\n'
-            "注：speed_level/timescale/is_paused 需先运行「倍速寻址工具」扫描后才有值。\n\n"
             "JavaScript 连接示例：\n"
             f'const ws = new WebSocket("{addr}");\n'
             "ws.onmessage = (e) => {\n"
-            "  const d = JSON.parse(e.data);\n"
-            "  console.log(d.game_time, d.frame_count, d.speed_name, d.is_paused);\n"
+            "  const data = JSON.parse(e.data);\n"
+            "  console.log(data.game_time, data.frame_count);\n"
             "};"
         )
         dlg = QMessageBox(self)
@@ -532,12 +506,8 @@ class CoachWindow(QMainWindow):
                         raw = json.loads(data.decode("utf-8").strip())
                         pn = (raw.get("process_name") or "").strip()
                         addr = (raw.get("time_address") or "").strip()
-                        speed_addr = (raw.get("speed_address") or "").strip()
-                        ts_addr = (raw.get("timescale_address") or "").strip()
                         if pn and addr:
                             self._provider.apply_hook(pn, addr)
-                        if pn and speed_addr and ts_addr:
-                            self._provider.apply_speed_hook(pn, speed_addr, ts_addr)
                 except Exception:
                     pass
                 finally:
@@ -558,10 +528,6 @@ class CoachWindow(QMainWindow):
                 "game_time": game.get("game_time"),
                 "frame_count": game.get("frame_count"),
                 "connected": game.get("connected", False),
-                "speed_level": game.get("speed_level"),
-                "speed_name": game.get("speed_name"),
-                "timescale": game.get("timescale"),
-                "is_paused": game.get("is_paused"),
             })
 
         async def _send_one(ws, msg: str) -> None:
@@ -711,43 +677,6 @@ class CoachWindow(QMainWindow):
         except OSError as e:
             QMessageBox.critical(self, "寻址工具", f"无法启动：{e}")
 
-    def _on_open_speed_tool(self) -> None:
-        try:
-            env = os.environ.copy()
-            env["AK_HOOK_PORT"] = str(self._hook_port)
-
-            if getattr(sys, "frozen", False):
-                import tempfile
-                import shutil
-
-                embedded_exe = Path(sys._MEIPASS) / "tools" / "AKSpeedTool.exe"
-                if not embedded_exe.is_file():
-                    QMessageBox.critical(
-                        self, "倍速寻址工具",
-                        f"未找到内嵌的倍速寻址工具：\n{embedded_exe}\n\n请重新打包程序。"
-                    )
-                    return
-
-                temp_dir = Path(tempfile.gettempdir()) / "ArknightsTimeline"
-                temp_dir.mkdir(exist_ok=True)
-                temp_exe = temp_dir / "AKSpeedTool.exe"
-
-                if not temp_exe.exists() or temp_exe.stat().st_size != embedded_exe.stat().st_size:
-                    shutil.copy2(embedded_exe, temp_exe)
-                    print(f"[INFO] 已提取倍速寻址工具到: {temp_exe}")
-
-                cmd = [str(temp_exe)]
-                subprocess.Popen(cmd, env=env)
-            else:
-                script = _REPO_ROOT / "tools" / "speed_scanner" / "ak_speed_ui.py"
-                if not script.is_file():
-                    QMessageBox.critical(self, "倍速寻址工具", f"未找到脚本：\n{script}")
-                    return
-                cmd = [sys.executable, str(script)]
-                subprocess.Popen(cmd, cwd=str(script.parent), env=env, close_fds=sys.platform != "win32")
-        except OSError as e:
-            QMessageBox.critical(self, "倍速寻址工具", f"无法启动：{e}")
-
     def _on_refresh_game(self) -> None:
         res = self._provider.refresh_sample()
         if not res.get("ok"):
@@ -822,19 +751,6 @@ class CoachWindow(QMainWindow):
         self.lbl_game_time_big.setText(_format_game_time(game.get("game_time")))
         fc = game.get("frame_count")
         self.lbl_frame_big.setText(f"F{int(fc)}" if fc is not None else "—")
-
-        # 倍速/状态
-        speed_name = game.get("speed_name")
-        is_paused = game.get("is_paused")
-        if speed_name and speed_name != "未知":
-            if is_paused:
-                self.lbl_speed_big.setText(f"{speed_name} ⏸")
-                self.lbl_speed_big.setStyleSheet("font-size:32px; font-weight:700; color:#ff4444;")
-            else:
-                self.lbl_speed_big.setText(f"{speed_name} ▶")
-                self.lbl_speed_big.setStyleSheet("font-size:32px; font-weight:700; color:#ffd66b;")
-        else:
-            self.lbl_speed_big.setText("—")
 
     def _tick_step(self) -> None:
         st, version = self._latest_status()
