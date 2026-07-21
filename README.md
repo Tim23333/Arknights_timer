@@ -1,0 +1,169 @@
+# Arknights 明日方舟打轴工具
+
+明日方舟游戏数据解析、内存读取、排轴打轴一体化工具集。
+
+## 项目结构
+
+```
+├── backend/                # 打轴工具主程序（PySide6 桌面端）
+│   ├── desktop_app.py      # 主窗口 + WebSocket 服务
+│   ├── run.py              # 启动入口
+│   ├── build_exe.py        # 一键打包脚本
+│   └── app/                # Web 服务（FastAPI）
+│
+├── frontend/               # 前端（Vite + Vue）
+│   ├── src/                # 源码
+│   └── standalone/         # 独立 HTML 版本（v0.1 ~ v0.25）
+│
+├── tools/                  # 内存读取工具
+│   ├── timer/              # 游戏时间 & 逻辑帧寻址
+│   ├── speed_scanner/      # 倍速 & 暂停状态寻址
+│   ├── deploy_tracker/     # 干员部署追踪
+│   └── enemy_health/       # 敌方血量读取
+│
+├── ark_parser/             # 游戏数据解析
+│   ├── parse_characters.py # 批量提取干员数据
+│   ├── parse_skill_table.py# 批量提取技能数据
+│   ├── deep_parse.py       # 单干员深度解析
+│   └── extract_tables.py   # 从 AB 包提取数据表
+│
+├── ark_api_docs/           # 服务端接口逆向文档
+│
+├── Ark_data/               # dump.cs 等逆向原始数据
+│
+└── AssetStudio-ArknightsStudio/  # AB 包解包工具
+```
+
+## 功能概览
+
+### 打轴工具（backend/）
+
+桌面端排轴工具，用于明日方舟关卡攻略视频的时间轴规划。
+
+- 实时读取游戏内存中的时间、帧数、倍速、暂停状态
+- 加载排轴 JSON，按帧对齐显示当前执行步骤
+- WebSocket 推送游戏数据，支持外部客户端接入
+- 支持从其他打轴工具导入 JSON
+
+### 内存寻址工具（tools/timer/）
+
+通过内存扫描定位游戏中的 `game_time`（float32）和 `frame_count`（uint32）地址。
+
+- 多步扫描向导，逐步缩小候选地址
+- 自动推送到打轴工具主程序
+- 支持 MuMu、雷电、夜神、BlueStacks 等模拟器
+
+### 倍速/暂停扫描工具（tools/speed_scanner/）
+
+扫描游戏中的倍速等级和暂停状态。
+
+- Phase 1：扫描 `m_speedLevel`（int32），交替 1x/2x 筛选
+- Phase 2：扫描 `Time.timeScale`（float），手动切换 0/1/2 筛选
+- 剩余 ≤10 个候选时弹出实时值列表，支持手动选择
+
+### 游戏数据解析（ark_parser/）
+
+从游戏 AB 包中提取并解析数据表。
+
+- 干员数据：属性、天赋、技能、潜能
+- 技能数据：描述、blackboard 参数
+- 支持 FlatBuffers 自定义格式解析
+
+### API 接口文档（ark_api_docs/）
+
+基于 `dump.cs` 逆向分析的游戏服务器接口文档，覆盖认证、战斗、抽卡、基建、商店等全部系统。
+
+## 快速开始
+
+### 环境要求
+
+- Python 3.8+
+- Windows 10/11
+- 管理员权限（读取游戏内存）
+
+### 安装依赖
+
+```bash
+pip install pymem PySide6 websockets numpy
+```
+
+### 启动打轴工具
+
+```bash
+cd backend
+python run.py
+```
+
+### 启动内存寻址工具
+
+```bash
+cd tools/timer
+python ak_timer_ui.py
+```
+
+### 启动倍速/暂停扫描工具
+
+```bash
+cd tools/speed_scanner
+python ak_speed_ui.py
+```
+
+### 解析游戏数据
+
+```bash
+cd ark_parser
+
+# 批量提取干员数据
+python parse_characters.py
+
+# 批量提取技能数据
+python parse_skill_table.py
+
+# 深度解析单个干员
+python deep_parse.py char_1045_svash2
+```
+
+## 打包为 exe
+
+```bash
+cd backend
+python build_exe.py
+```
+
+输出：
+- `backend/dist/ArknightsTimeline.exe` — 主程序（内嵌寻址工具）
+
+打包详情见 [backend/README_BUILD.md](backend/README_BUILD.md)。
+
+## WebSocket 接口
+
+打轴工具启动后会开启 WebSocket 服务，推送实时游戏数据：
+
+```json
+{
+  "game_time": 12.345,
+  "frame_count": 741,
+  "connected": true,
+  "speed_level": 2,
+  "speed_name": "2倍速",
+  "timescale": 2.0,
+  "is_paused": false
+}
+```
+
+连接地址见程序右上角「接口说明」按钮。
+
+## 技术栈
+
+| 组件 | 技术 |
+|------|------|
+| 桌面端 | Python + PySide6 |
+| 前端 | Vite + Vue 3 |
+| Web 服务 | FastAPI |
+| 内存读取 | pymem |
+| 数据解析 | FlatBuffers (自定义变体) |
+| 打包 | PyInstaller |
+
+## 许可证
+
+[MIT License](LICENSE)
