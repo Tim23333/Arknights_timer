@@ -21,6 +21,13 @@ except ImportError:
 from ak_memory_reader import AKMemoryReader
 
 
+# 单次 ReadProcessMemory 的最大读取量。扫描任务会按该大小切块，避免把模拟器的
+# 整块 Guest RAM 一次性复制到 Python 进程中。
+SCAN_CHUNK_SIZE = 4 * 1024 * 1024
+MAX_SCAN_WORKERS = 32
+MAX_PENDING_TASKS_PER_WORKER = 2
+
+
 def _send_hook_via_tcp(process_name: str, time_address_hex: str) -> bool:
     """通过 TCP 将 hook 数据推送给打轴工具。失败时静默返回 False（不影响寻址工具自身功能）。"""
     port_str = os.getenv("AK_HOOK_PORT", "").strip()
@@ -63,6 +70,16 @@ def scan_memory_chunk(handle, base_address, region_size, min_val, max_val):
             return results
     except Exception:
         return []
+
+
+def iter_scan_chunks(regions, chunk_size=SCAN_CHUNK_SIZE):
+    """把 VirtualQueryEx 返回的区域惰性拆成固定大小的扫描块。"""
+    for base, size in regions:
+        offset = 0
+        while offset < size:
+            current_size = min(chunk_size, size - offset)
+            yield base + offset, current_size
+            offset += current_size
 
 
 class MemoryScannerWizard:
@@ -152,35 +169,48 @@ class MemoryScannerWizard:
             except Exception:
                 break
 
-        # Merge contiguous regions to reduce task count
-        if regions:
-            regions.sort(key=lambda r: r[0])
-            merged = []
-            buf_base, buf_size = regions[0]
-            for base, size in regions[1:]:
-                if base == buf_base + buf_size:
-                    buf_size += size
-                else:
-                    merged.append((buf_base, buf_size))
-                    buf_base, buf_size = base, size
-            merged.append((buf_base, buf_size))
-            regions = merged
+        total_bytes = sum(size for _, size in regions)
+        if total_bytes == 0:
+            return
 
-        max_workers = min(32, os.cpu_count() * 2)
-        total = len(regions)
-        completed = 0
+        max_workers = min(MAX_SCAN_WORKERS, max(1, (os.cpu_count() or 1) * 2))
+        max_pending = max_workers * MAX_PENDING_TASKS_PER_WORKER
+        chunks = iter(iter_scan_chunks(regions))
+        scanned_bytes = 0
         last_update = time.monotonic()
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(scan_memory_chunk, handle, base, size, min_val, max_val) for base, size in regions]
-            for future in concurrent.futures.as_completed(futures):
-                res = future.result()
-                if res:
-                    self.candidate_addresses.extend(res)
-                completed += 1
+            pending = {}
+
+            def submit_next_chunk():
+                try:
+                    base, size = next(chunks)
+                except StopIteration:
+                    return False
+                future = executor.submit(scan_memory_chunk, handle, base, size, min_val, max_val)
+                pending[future] = size
+                return True
+
+            for _ in range(max_pending):
+                if not submit_next_chunk():
+                    break
+
+            while pending:
+                done, _ = concurrent.futures.wait(
+                    pending,
+                    return_when=concurrent.futures.FIRST_COMPLETED,
+                )
+                for future in done:
+                    chunk_bytes = pending.pop(future)
+                    res = future.result()
+                    if res:
+                        self.candidate_addresses.extend(res)
+                    scanned_bytes += chunk_bytes
+                    submit_next_chunk()
+
                 now = time.monotonic()
                 if now - last_update >= 0.2:
-                    self.scan_btn.config(text=f"Scanning... {int((completed / total) * 100)}%")
+                    self.scan_btn.config(text=f"Scanning... {int((scanned_bytes / total_bytes) * 100)}%")
                     self.root.update()
                     last_update = now
 
