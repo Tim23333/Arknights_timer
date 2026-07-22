@@ -86,8 +86,8 @@ def find_entry(data, char_id):
     """Find a specific character entry and return its data table position."""
     size = len(data)
 
-    # Scan all regions
-    regions = [(311764, 338788), (500576, 2319636), (4676, 311764), (338788, 500576)]
+    # Scan all regions (full file range)
+    regions = [(4000, size - 8)]
 
     for start, end in regions:
         for pos in range(start, min(end, size - 8), 4):
