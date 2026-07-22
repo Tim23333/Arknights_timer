@@ -1,43 +1,43 @@
 """
-明日方舟打轴工具 — 独立桌面程序（PySide6）。
-读取游戏时间与帧（tools/timer 内存方案），加载前端导出的排轴 JSON，显示事项与当前步骤。
+明日方舟游戏数据显示工具 — 独立桌面程序（PySide6）。
+读取游戏时间与帧（tools/timer 内存方案）；通过 tools/enemy_health
+实时展示关卡内敌人数据（名称/血量/坐标/属性）。
 """
 from __future__ import annotations
 
 import asyncio
+import ctypes
 import json
 import os
-import shutil
 import socket
 import subprocess
 import sys
-import ctypes
 import threading
+import time
 from pathlib import Path
 
-from PySide6.QtCore import QTimer, Qt
+from PySide6.QtCore import Qt, QThread, QTimer, Signal
 from PySide6.QtGui import QColor, QCursor, QIcon
 from PySide6.QtWidgets import (
     QApplication,
-    QFileDialog,
     QFrame,
     QGroupBox,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
-    QLineEdit,
     QMainWindow,
     QMessageBox,
+    QProgressBar,
     QPushButton,
     QScrollArea,
     QSizePolicy,
-    QSpinBox,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
 
-# 保证可导入 app.services（从 backend 目录运行），并兼容 PyInstaller 冻结路径。
+# 保证可导入 app.services 与 tools/*（从 backend 目录运行），并兼容 PyInstaller 冻结路径。
 if getattr(sys, "frozen", False):
     _RUNTIME_ROOT = Path(getattr(sys, "_MEIPASS", Path(sys.executable).resolve().parent))
     _BACKEND_ROOT = _RUNTIME_ROOT / "backend"
@@ -45,34 +45,24 @@ if getattr(sys, "frozen", False):
 else:
     _BACKEND_ROOT = Path(__file__).resolve().parent
     _REPO_ROOT = _BACKEND_ROOT.parent
-if str(_BACKEND_ROOT) not in sys.path:
-    sys.path.insert(0, str(_BACKEND_ROOT))
+for _p in (str(_BACKEND_ROOT), str(_REPO_ROOT)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
-from app.services.schedule_engine import build_status_payload, game_frame_for_anchor
-from app.services.schedule_store import ScheduleStore
 from app.services.timer_provider import TimerDataProvider
-from app.services.timeline_cache import TimelineCacheService
+from tools.enemy_health import EnemyReader
+from tools.enemy_health import game_structs as enemy_gs
 
 AUTO_REFRESH_MS = 8
-STATUS_BUILD_MS = 33
 FAST_UI_MS = 8
-STEP_UI_MS = 33
 SLOW_UI_MS = 150
 WS_PUSH_MS = 8
+ENEMY_POLL_SEC = 0.01      # 敌人轮询间隔 (memsrv 通道单帧 <1ms, 2倍速 60fps=16.7ms)
+ENEMY_RENDER_SEC = 0.016   # 表格渲染节流 (60fps)
 
-COLS = ["轨道", "时间范围", "状态", "距开始 / 剩余", "备注"]
-
-
-def _validate_payload(data: dict) -> tuple[bool, str]:
-    if not isinstance(data, dict):
-        return False, "不是有效的 JSON 对象。"
-    if "rows" not in data or "meta" not in data:
-        return False, "缺少 rows 或 meta（需与前端导出格式一致）。"
-    if not isinstance(data.get("rows"), list):
-        return False, "rows 必须是数组。"
-    if not isinstance(data.get("meta"), dict):
-        return False, "meta 必须是对象。"
-    return True, ""
+ENEMY_COLS = ['#', '名称', '编号', '敌人ID', '血量', '坐标',
+              '攻击', '防御', '法抗', '移速', '攻速', '状态']
+ENEMY_STATE_NAMES = {0: 'NONE', 1: 'INITED', 2: '战斗中', 3: '已结束'}
 
 
 def _format_game_time(value: object) -> str:
@@ -84,33 +74,85 @@ def _format_game_time(value: object) -> str:
         return str(value)
 
 
+class EnemyScanWorker(QThread):
+    """后台线程: 连接 + 全堆扫描定位敌人列表"""
+    log = Signal(str)
+    progress = Signal(int, str)
+    done = Signal(bool, str)
+
+    def __init__(self, reader: EnemyReader, force: bool = True) -> None:
+        super().__init__()
+        self.reader = reader
+        self.force = force
+
+    def run(self) -> None:
+        try:
+            self.reader.log = lambda m: self.log.emit(str(m))
+            self.reader.progress = lambda pct, desc: self.progress.emit(int(pct), str(desc))
+            pid = self.reader.connect()
+            self.log.emit(f"游戏 PID = {pid}")
+            ok = self.reader.bootstrap(force=self.force)
+            if ok:
+                self.done.emit(True, f"定位完成, 敌人 {len(self.reader.enemy_addrs)} 个")
+            else:
+                self.done.emit(False, "定位失败: 请确认已进入关卡且场上有敌人")
+        except Exception as e:
+            self.done.emit(False, f"出错: {e}")
+
+
+class EnemyPollWorker(QThread):
+    """后台线程: 常驻通道准实时轮询敌人数据"""
+    snapshot = Signal(dict)
+
+    def __init__(self, reader: EnemyReader, interval: float = ENEMY_POLL_SEC) -> None:
+        super().__init__()
+        self.reader = reader
+        self.interval = interval
+
+    def run(self) -> None:
+        # Windows 默认睡眠粒度 15.6ms, 提到 1ms 才能睡出 <16ms 的轮询间隔
+        winmm = getattr(ctypes.windll, 'winmm', None) if sys.platform == 'win32' else None
+        if winmm:
+            winmm.timeBeginPeriod(1)
+        try:
+            while not self.isInterruptionRequested():
+                t0 = time.time()
+                try:
+                    snap = self.reader.poll_fast()
+                except Exception as e:
+                    snap = {'ok': False, 'state': -1, 'speed_level': -1, 'time_scale': 0.0,
+                            'play_time': 0.0, 'enemies': [], 'msg': f'轮询出错: {e}'}
+                self.snapshot.emit(snap)
+                dt = time.time() - t0
+                wait = max(0.001, self.interval - dt)
+                self.msleep(int(wait * 1000))
+        finally:
+            if winmm:
+                winmm.timeEndPeriod(1)
+
+
 class CoachWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("明日方舟打轴工具")
+        self.setWindowTitle("明日方舟游戏数据显示工具")
         self.resize(1180, 760)
         self.setMinimumSize(900, 560)
 
         self._provider = TimerDataProvider()
-        self._store = ScheduleStore()
-        self._cache = TimelineCacheService()
-
-        self._anchor_game_frame: int | None = None
-        self._exec_from_current = False
-        self._schedule_state_lock = threading.Lock()
-        self._state_lock = threading.Lock()
         self._stop_event = threading.Event()
-        self._last_status_payload: dict | None = None
-        self._status_version = 0
-        self._rendered_step_version = -1
-        self._rendered_slow_version = -1
-        self._last_list_signature: tuple[tuple[object, ...], ...] = ()
-        self._last_scroll_target_index = -1
 
         self._hook_port: int = 0
         self._ws_port: int = 0
         self._ws_clients: set = set()
         self._ws_loop: asyncio.AbstractEventLoop | None = None
+
+        # 敌人数据
+        self._enemy_reader = EnemyReader(log=lambda m: None)
+        self._enemy_scan: EnemyScanWorker | None = None
+        self._enemy_poll: EnemyPollWorker | None = None
+        self._enemy_last_render = 0.0
+        self._enemy_rows: dict = {}    # enemy addr -> 表格行号 (行位置稳定, 新敌人底部新增)
+        self._bar_colors: dict = {}    # enemy addr -> 当前血条颜色
 
         self._build_ui()
         self._start_hook_server()
@@ -140,7 +182,7 @@ class CoachWindow(QMainWindow):
         main.setSpacing(8)
 
         title_row = QHBoxLayout()
-        title = QLabel("明日方舟打轴工具 · 桌面版 Made by Tim(321346659)")
+        title = QLabel("明日方舟游戏数据显示工具 · 桌面版 Made by Tim(321346659)")
         title.setStyleSheet("font-size: 20px; font-weight: 700; color: #e8e8e8;")
         title_row.addWidget(title)
         title_row.addStretch(1)
@@ -156,7 +198,7 @@ class CoachWindow(QMainWindow):
         self._style_secondary_button(btn_ws_info)
         title_row.addWidget(btn_ws_info)
         main.addLayout(title_row)
-        sub = QLabel("用「寻址工具」逐步扫描内存；完成后会自动读取时间与逻辑帧并实时刷新显示。")
+        sub = QLabel("寻址工具读取游戏时间/逻辑帧；进入关卡后点「开始扫描」实时展示敌人数据。")
         sub.setStyleSheet("color: #9a9a9a;")
         main.addWidget(sub)
 
@@ -172,124 +214,11 @@ class CoachWindow(QMainWindow):
         l_cfg.addStretch(1)
         main.addWidget(box_cfg)
 
-        box_game_json = QGroupBox("游戏状态 & 排轴数据")
-        l_gj = QHBoxLayout(box_game_json)
-        l_gj.setContentsMargins(4, 4, 4, 4)
-        l_gj.setSpacing(10)
-
-        # ---- 左侧：排轴数据 ----
-        json_left = QVBoxLayout()
-        json_left.setSpacing(10)
-
-        card_file = QFrame()
-        card_file.setObjectName("ScheduleSubCard")
-        card_file.setStyleSheet(
-            "#ScheduleSubCard { background: #252526; border: 1px solid #3c3c3c; border-radius: 8px; }"
-            "QLabel#CardTitle { color: #b0b0b0; font-size: 11px; font-weight: 600; }"
-        )
-        cf_l = QVBoxLayout(card_file)
-        cf_l.setContentsMargins(12, 10, 12, 10)
-        title_file = QLabel("数据与缓存")
-        title_file.setObjectName("CardTitle")
-        cf_l.addWidget(title_file)
-        row_file = QHBoxLayout()
-        row_file.setSpacing(10)
-        btn_load = QPushButton("从文件加载 JSON")
-        btn_load.setToolTip("选择前端导出的排轴 JSON 文件")
-        btn_load.clicked.connect(self._on_load_json)
-        self._style_primary_button(btn_load)
-        btn_clear = QPushButton("清空排轴")
-        btn_clear.setToolTip("清空已加载的排轴数据")
-        btn_clear.clicked.connect(self._on_clear_schedule)
-        self._style_muted_button(btn_clear)
-        row_file.addWidget(btn_load)
-        row_file.addWidget(btn_clear)
-        row_file.addStretch(1)
-        lbl_uid = QLabel("用户 ID")
-        lbl_uid.setStyleSheet("color:#9a9a9a;")
-        self.ed_cache_user = QLineEdit("default")
-        self.ed_cache_user.setPlaceholderText("default")
-        self.ed_cache_user.setMaximumWidth(160)
-        self.ed_cache_user.setMinimumHeight(30)
-        btn_cache = QPushButton("从缓存载入")
-        btn_cache.setToolTip("从 backend/data/timeline_cache 读取对应用户的缓存")
-        btn_cache.clicked.connect(self._on_load_cache)
-        self._style_secondary_button(btn_cache)
-        row_file.addWidget(lbl_uid)
-        row_file.addWidget(self.ed_cache_user)
-        row_file.addWidget(btn_cache)
-        cf_l.addLayout(row_file)
-        json_left.addWidget(card_file)
-
-        card_time = QFrame()
-        card_time.setObjectName("ScheduleSubCard2")
-        card_time.setStyleSheet(
-            "#ScheduleSubCard2 { background: #252526; border: 1px solid #3c3c3c; border-radius: 8px; }"
-            "QLabel#CardTitle { color: #b0b0b0; font-size: 11px; font-weight: 600; }"
-        )
-        ct_l = QVBoxLayout(card_time)
-        ct_l.setContentsMargins(12, 10, 12, 10)
-        title_time = QLabel("时间基准与提醒")
-        title_time.setObjectName("CardTitle")
-        ct_l.addWidget(title_time)
-
-        row_mode = QHBoxLayout()
-        row_mode.setSpacing(8)
-        lbl_mode = QLabel("时间基准")
-        lbl_mode.setStyleSheet("color:#9a9a9a; min-width:64px;")
-        self.btn_exec_start = QPushButton("从头执行")
-        self.btn_exec_start.setCheckable(True)
-        self.btn_exec_start.setChecked(True)
-        self.btn_exec_start.setToolTip("轴上帧数与游戏逻辑帧一一对应")
-        self.btn_exec_current = QPushButton("从当前帧起算")
-        self.btn_exec_current.setCheckable(True)
-        self.btn_exec_current.setToolTip("将当前游戏帧对齐到下方「起始轴帧」")
-        self._style_toggle_exec_button(self.btn_exec_start, checked=True)
-        self._style_toggle_exec_button(self.btn_exec_current, checked=False)
-        self.btn_exec_start.toggled.connect(self._on_exec_start_toggled)
-        self.btn_exec_current.toggled.connect(self._on_exec_current_toggled)
-        row_mode.addWidget(lbl_mode)
-        row_mode.addWidget(self.btn_exec_start)
-        row_mode.addWidget(self.btn_exec_current)
-        row_mode.addStretch(1)
-        ct_l.addLayout(row_mode)
-
-        row_anchor = QHBoxLayout()
-        row_anchor.setSpacing(10)
-        lbl_sf = QLabel("起始轴帧")
-        lbl_sf.setStyleSheet("color:#9a9a9a;")
-        self.ed_start_frame = QLineEdit("0")
-        self.ed_start_frame.setMaximumWidth(100)
-        self.ed_start_frame.setMinimumHeight(30)
-        self.ed_start_frame.setPlaceholderText("0")
-        btn_apply_anchor = QPushButton("应用当前帧对齐")
-        btn_apply_anchor.setToolTip("把当前游戏帧映射到上面的起始轴帧，并切换到「从当前帧起算」")
-        btn_apply_anchor.clicked.connect(self._apply_anchor_from_current_frame)
-        self._style_secondary_button(btn_apply_anchor)
-        lbl_remind = QLabel("即将开始提醒")
-        lbl_remind.setStyleSheet("color:#9a9a9a;")
-        self.spin_remind_sec = QSpinBox()
-        self.spin_remind_sec.setRange(0, 999)
-        self.spin_remind_sec.setValue(5)
-        self.spin_remind_sec.setSuffix(" 秒")
-        self.spin_remind_sec.setToolTip("距开始小于该时间的事项会出现在「即将开始提醒」")
-        self.spin_remind_sec.setMinimumHeight(30)
-        self.spin_remind_sec.setMinimumWidth(110)
-        row_anchor.addWidget(lbl_sf)
-        row_anchor.addWidget(self.ed_start_frame)
-        row_anchor.addWidget(btn_apply_anchor)
-        row_anchor.addSpacing(24)
-        row_anchor.addWidget(lbl_remind)
-        row_anchor.addWidget(self.spin_remind_sec)
-        row_anchor.addStretch(1)
-        ct_l.addLayout(row_anchor)
-        json_left.addWidget(card_time)
-
-        l_gj.addLayout(json_left, 3)
-
-        # ---- 右侧：游戏时间 & 逻辑帧 ----
-        right_panel = QVBoxLayout()
-        right_panel.setSpacing(10)
+        # ---- 游戏时间 & 逻辑帧 ----
+        box_game = QGroupBox("游戏状态")
+        l_game = QHBoxLayout(box_game)
+        l_game.setContentsMargins(4, 4, 4, 4)
+        l_game.setSpacing(10)
 
         card_time_disp = QFrame()
         card_time_disp.setObjectName("GameTimeCard")
@@ -307,7 +236,7 @@ class CoachWindow(QMainWindow):
         self.lbl_game_time_big.setStyleSheet("font-size:48px; font-weight:700; color:#7ec8ff;")
         self.lbl_game_time_big.setAlignment(Qt.AlignCenter)
         ctd_l.addWidget(self.lbl_game_time_big)
-        right_panel.addWidget(card_time_disp)
+        l_game.addWidget(card_time_disp, 1)
 
         card_frame_disp = QFrame()
         card_frame_disp.setObjectName("GameFrameCard")
@@ -325,39 +254,54 @@ class CoachWindow(QMainWindow):
         self.lbl_frame_big.setStyleSheet("font-size:48px; font-weight:700; color:#ffd66b;")
         self.lbl_frame_big.setAlignment(Qt.AlignCenter)
         cfd_l.addWidget(self.lbl_frame_big)
-        right_panel.addWidget(card_frame_disp)
+        l_game.addWidget(card_frame_disp, 1)
 
         self.lbl_game = QLabel("正在等待实时刷新…")
         self.lbl_game.setWordWrap(True)
         self.lbl_game.setStyleSheet("color:#9a9a9a; font-size:11px;")
-        right_panel.addWidget(self.lbl_game)
-        right_panel.addStretch(1)
+        l_game.addWidget(self.lbl_game, 1)
+        main.addWidget(box_game)
 
-        l_gj.addLayout(right_panel, 1)
+        # ---- 敌人数据控制 ----
+        box_enemy = QGroupBox("敌人数据（tools/enemy_health）")
+        l_enemy = QVBoxLayout(box_enemy)
+        row_btn = QHBoxLayout()
+        self.btn_enemy_scan = QPushButton("开始扫描")
+        self.btn_enemy_scan.setToolTip("全堆扫描定位敌人列表 (进关卡且场上有敌人后点击, 约 1-3 分钟)")
+        self.btn_enemy_scan.clicked.connect(self._on_enemy_scan)
+        self._style_primary_button(self.btn_enemy_scan)
+        self.btn_enemy_stop = QPushButton("停止监控")
+        self.btn_enemy_stop.setEnabled(False)
+        self.btn_enemy_stop.clicked.connect(self._stop_enemy_poll)
+        self._style_muted_button(self.btn_enemy_stop)
+        self.enemy_progress = QProgressBar()
+        self.enemy_progress.setRange(0, 100)
+        self.enemy_progress.setValue(0)
+        self.enemy_progress.setTextVisible(True)
+        self.enemy_progress.setFormat('就绪')
+        row_btn.addWidget(self.btn_enemy_scan)
+        row_btn.addWidget(self.btn_enemy_stop)
+        row_btn.addWidget(self.enemy_progress, 1)
+        l_enemy.addLayout(row_btn)
+        self.lbl_enemy_status = QLabel("未开始扫描")
+        self.lbl_enemy_status.setStyleSheet("color:#9a9a9a;")
+        l_enemy.addWidget(self.lbl_enemy_status)
+        main.addWidget(box_enemy)
 
-        main.addWidget(box_game_json)
-
-        box_step = QGroupBox("当前进度")
-        l_step = QVBoxLayout(box_step)
-        self.lbl_step = QLabel("—")
-        self.lbl_step.setWordWrap(True)
-        self.lbl_step.setStyleSheet("background:#252526;color:#7ec8ff;font-weight:700;padding:6px;")
-        self.lbl_remind = QLabel("提醒：—")
-        self.lbl_remind.setWordWrap(True)
-        self.lbl_remind.setStyleSheet("background:#252526;color:#ffd66b;font-weight:700;padding:6px;")
-        l_step.addWidget(self.lbl_step)
-        l_step.addWidget(self.lbl_remind)
-        main.addWidget(box_step)
-
-        box_table = QGroupBox("时间轴事项")
+        # ---- 底部: 敌人信息表 ----
+        box_table = QGroupBox("敌人信息")
         l_table = QVBoxLayout(box_table)
-        self.table = QTableWidget(0, len(COLS))
-        self.table.setHorizontalHeaderLabels(COLS)
-        self.table.verticalHeader().setVisible(False)
-        self.table.setSelectionMode(QTableWidget.NoSelection)
-        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
-        self.table.setAlternatingRowColors(True)
-        l_table.addWidget(self.table)
+        self.enemy_table = QTableWidget(0, len(ENEMY_COLS))
+        self.enemy_table.setHorizontalHeaderLabels(ENEMY_COLS)
+        self.enemy_table.verticalHeader().setVisible(False)
+        self.enemy_table.setSelectionMode(QTableWidget.NoSelection)
+        self.enemy_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.enemy_table.setAlternatingRowColors(True)
+        hdr = self.enemy_table.horizontalHeader()
+        hdr.setSectionResizeMode(QHeaderView.ResizeToContents)
+        hdr.setSectionResizeMode(1, QHeaderView.Stretch)   # 名称
+        hdr.setSectionResizeMode(4, QHeaderView.Stretch)   # 血量条
+        l_table.addWidget(self.enemy_table)
         main.addWidget(box_table, 1)
 
         app = QApplication.instance()
@@ -411,37 +355,6 @@ class CoachWindow(QMainWindow):
                 "QPushButton{background:#333;color:#9a9a9a;border:1px solid #444;border-radius:6px;padding:6px 16px;}"
                 "QPushButton:hover{background:#3d3d3d;color:#cccccc;}"
             )
-
-    def _on_exec_start_toggled(self, checked: bool) -> None:
-        if not checked:
-            if not self.btn_exec_current.isChecked():
-                self.btn_exec_start.blockSignals(True)
-                self.btn_exec_start.setChecked(True)
-                self.btn_exec_start.blockSignals(False)
-            return
-        self.btn_exec_current.blockSignals(True)
-        self.btn_exec_current.setChecked(False)
-        self.btn_exec_current.blockSignals(False)
-        self._style_toggle_exec_button(self.btn_exec_start, True)
-        self._style_toggle_exec_button(self.btn_exec_current, False)
-        with self._schedule_state_lock:
-            self._anchor_game_frame = None
-            self._exec_from_current = False
-
-    def _on_exec_current_toggled(self, checked: bool) -> None:
-        if not checked:
-            if not self.btn_exec_start.isChecked():
-                self.btn_exec_current.blockSignals(True)
-                self.btn_exec_current.setChecked(True)
-                self.btn_exec_current.blockSignals(False)
-            return
-        self.btn_exec_start.blockSignals(True)
-        self.btn_exec_start.setChecked(False)
-        self.btn_exec_start.blockSignals(False)
-        self._style_toggle_exec_button(self.btn_exec_start, False)
-        self._style_toggle_exec_button(self.btn_exec_current, True)
-        with self._schedule_state_lock:
-            self._exec_from_current = True
 
     def _show_ws_info(self) -> None:
         if self._ws_port == 0:
@@ -579,15 +492,11 @@ class CoachWindow(QMainWindow):
 
     def _start_workers(self) -> None:
         threading.Thread(target=self._memory_worker, name="ak-memory-worker", daemon=True).start()
-        threading.Thread(target=self._status_worker, name="ak-status-worker", daemon=True).start()
 
     def _start_timers(self) -> None:
         self.t_fast = QTimer(self)
         self.t_fast.timeout.connect(self._tick_fast)
         self.t_fast.start(FAST_UI_MS)
-        self.t_step = QTimer(self)
-        self.t_step.timeout.connect(self._tick_step)
-        self.t_step.start(STEP_UI_MS)
         self.t_slow = QTimer(self)
         self.t_slow.timeout.connect(self._tick_slow)
         self.t_slow.start(SLOW_UI_MS)
@@ -600,19 +509,10 @@ class CoachWindow(QMainWindow):
                 pass
             self._stop_event.wait(AUTO_REFRESH_MS / 1000)
 
-    def _status_worker(self) -> None:
-        while not self._stop_event.is_set():
-            try:
-                st = self._build_status()
-                with self._state_lock:
-                    self._last_status_payload = st
-                    self._status_version += 1
-            except Exception:
-                pass
-            self._stop_event.wait(STATUS_BUILD_MS / 1000)
-
     def closeEvent(self, event) -> None:  # type: ignore[override]
         self._stop_event.set()
+        self._stop_enemy_poll()
+        self._enemy_reader.close()
         if self._ws_clients:
             for ws in list(self._ws_clients):
                 try:
@@ -620,18 +520,6 @@ class CoachWindow(QMainWindow):
                 except Exception:
                     pass
         return super().closeEvent(event)
-
-    def _build_status(self) -> dict:
-        game = self._provider.get_game_data()
-        payload = self._store.get()
-        with self._schedule_state_lock:
-            use_anchor = self._exec_from_current
-            anchor = self._anchor_game_frame if use_anchor else None
-        return build_status_payload(payload, game, relative_anchor_game_frame=anchor)
-
-    def _latest_status(self) -> tuple[dict | None, int]:
-        with self._state_lock:
-            return self._last_status_payload, self._status_version
 
     def _on_open_timer_tool(self) -> None:
         try:
@@ -682,69 +570,151 @@ class CoachWindow(QMainWindow):
         if not res.get("ok"):
             QMessageBox.warning(self, "游戏状态", res.get("message", "刷新失败"))
 
-    def _apply_anchor_from_current_frame(self) -> None:
-        payload = self._store.get()
-        if not payload:
-            QMessageBox.warning(self, "时间基准", "请先加载排轴 JSON。")
+    # ================= 敌人数据 =================
+
+    def _on_enemy_scan(self) -> None:
+        self._stop_enemy_poll()
+        self.enemy_table.setRowCount(0)   # 换关卡重扫: 清掉旧敌人行
+        self._enemy_rows.clear()
+        self._bar_colors.clear()
+        self.btn_enemy_scan.setEnabled(False)
+        self.enemy_progress.setValue(0)
+        self.enemy_progress.setFormat('开始全堆扫描 ... %p%')
+        self._enemy_scan = EnemyScanWorker(self._enemy_reader, force=True)
+        self._enemy_scan.log.connect(self._on_enemy_log)
+        self._enemy_scan.progress.connect(self._on_enemy_progress)
+        self._enemy_scan.done.connect(self._on_enemy_scan_done)
+        self._enemy_scan.start()
+
+    def _on_enemy_log(self, msg: str) -> None:
+        msg = msg.strip()
+        if msg:
+            self.lbl_enemy_status.setText(msg)
+
+    def _on_enemy_progress(self, pct: int, desc: str) -> None:
+        self.enemy_progress.setValue(pct)
+        self.enemy_progress.setFormat(f'{desc} %p%')
+
+    def _on_enemy_scan_done(self, ok: bool, msg: str) -> None:
+        self.lbl_enemy_status.setText(msg)
+        self.btn_enemy_scan.setEnabled(True)
+        self.btn_enemy_scan.setText('重新扫描')
+        if ok:
+            self.enemy_progress.setValue(100)
+            self.enemy_progress.setFormat('就绪')
+            self._start_enemy_poll()
+        else:
+            self.enemy_progress.setFormat('定位失败')
+
+    def _start_enemy_poll(self) -> None:
+        self._stop_enemy_poll()
+        self._enemy_poll = EnemyPollWorker(self._enemy_reader)
+        self._enemy_poll.snapshot.connect(self._on_enemy_snapshot)
+        self._enemy_poll.start()
+        self.btn_enemy_stop.setEnabled(True)
+        self.lbl_enemy_status.setText('实时监控中 ...')
+
+    def _stop_enemy_poll(self) -> None:
+        if self._enemy_poll:
+            self._enemy_poll.requestInterruption()
+            self._enemy_poll.wait(3000)
+            self._enemy_poll = None
+        self.btn_enemy_stop.setEnabled(False)
+
+    def _on_enemy_snapshot(self, snap: dict) -> None:
+        # 渲染节流: 轮询 33ms, 渲染 30fps
+        now = time.time()
+        if snap.get('ok') and now - self._enemy_last_render < ENEMY_RENDER_SEC:
             return
+        self._enemy_last_render = now
+        st = ENEMY_STATE_NAMES.get(snap['state'], '?') if snap['state'] >= 0 else '-'
+        spd = enemy_gs.SpeedLevel.NAMES.get(snap['speed_level'], '?') if snap['speed_level'] >= 0 else '-'
+        t = int(snap['play_time'])
+        text = (f"状态: {st}   倍速: {spd} (x{snap['time_scale']:g})   "
+                f"战斗时间: {t // 60:02d}:{t % 60:02d}   敌人数: {len(snap['enemies'])}")
+        if snap.get('frame_ms'):
+            text += f"   {snap['frame_ms']:.0f}ms/帧"
+        if snap.get('msg'):
+            text += f"   ({snap['msg']})"
+        self.lbl_enemy_status.setText(text)
+        self._render_enemy_table(snap['enemies'])
+
+    def _render_enemy_table(self, enemies) -> None:
+        tbl = self.enemy_table
+        # 增量刷新: 按敌人地址锚定行, 已有行原地更新, 新敌人底部新增,
+        # 消失的行才删除——杜绝整表重建导致的闪烁
+        tbl.setUpdatesEnabled(False)
         try:
-            start_frame = int((self.ed_start_frame.text() or "0").strip())
-        except ValueError:
-            QMessageBox.warning(self, "时间基准", "起始轴帧必须是整数。")
-            return
-        cf = game_frame_for_anchor(payload, self._provider.get_game_data())
-        if cf is None:
-            QMessageBox.warning(self, "时间基准", "无法解析当前游戏帧，请确认寻址完成。")
-            return
-        with self._schedule_state_lock:
-            self._anchor_game_frame = int(cf) - start_frame
-            self._exec_from_current = True
-        self.btn_exec_start.blockSignals(True)
-        self.btn_exec_start.setChecked(False)
-        self.btn_exec_start.blockSignals(False)
-        self.btn_exec_current.blockSignals(True)
-        self.btn_exec_current.setChecked(True)
-        self.btn_exec_current.blockSignals(False)
-        self._style_toggle_exec_button(self.btn_exec_start, False)
-        self._style_toggle_exec_button(self.btn_exec_current, True)
-        QMessageBox.information(self, "时间基准", f"已应用：当前游戏帧 F{int(cf)} 对齐到轴上 F{start_frame}。")
+            seen = set()
+            for e in enemies:
+                seen.add(e.addr)
+                row = self._enemy_rows.get(e.addr)
+                if row is None:
+                    row = tbl.rowCount()
+                    tbl.insertRow(row)
+                    self._make_enemy_row(row, e.addr)
+                    self._enemy_rows[e.addr] = row
+                self._update_enemy_row(row, e)
+            gone = [a for a in self._enemy_rows if a not in seen]
+            for a in sorted(gone, key=lambda a: -self._enemy_rows[a]):
+                tbl.removeRow(self._enemy_rows.pop(a))
+                self._bar_colors.pop(a, None)
+            if gone:   # removeRow 后行号位移, 依 item(0) 存的 addr 重建映射
+                self._enemy_rows = {tbl.item(r, 0).data(Qt.UserRole): r
+                                    for r in range(tbl.rowCount())}
+        finally:
+            tbl.setUpdatesEnabled(True)
 
-    def _on_load_json(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(self, "选择排轴 JSON", str(_REPO_ROOT), "JSON Files (*.json);;All Files (*.*)")
-        if not path:
-            return
-        try:
-            data = json.loads(Path(path).read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as e:
-            QMessageBox.critical(self, "加载失败", str(e))
-            return
-        ok, msg = _validate_payload(data)
-        if not ok:
-            QMessageBox.critical(self, "格式错误", msg)
-            return
-        self._store.load(data)
-        QMessageBox.information(self, "排轴", "已加载，列表将自动刷新。")
+    def _make_enemy_row(self, row: int, addr: int) -> None:
+        tbl = self.enemy_table
+        for c in range(len(ENEMY_COLS)):
+            if c != 4:
+                it = QTableWidgetItem()
+                it.setTextAlignment(Qt.AlignCenter)
+                tbl.setItem(row, c, it)
+        tbl.item(row, 0).setData(Qt.UserRole, addr)
+        tbl.item(row, 1).setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        tbl.item(row, 3).setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        bar = QProgressBar()
+        bar.setTextVisible(True)
+        tbl.setCellWidget(row, 4, bar)
 
-    def _on_clear_schedule(self) -> None:
-        self._store.clear()
-        QMessageBox.information(self, "排轴", "已清空。")
+    def _update_enemy_row(self, row: int, e) -> None:
+        tbl = self.enemy_table
 
-    def _on_load_cache(self) -> None:
-        uid = self.ed_cache_user.text().strip() or "default"
-        res = self._cache.load(uid)
-        if not res.get("ok"):
-            QMessageBox.critical(self, "缓存", res.get("message", "读取失败"))
-            return
-        if not res.get("has_cache") or not res.get("data"):
-            QMessageBox.warning(self, "缓存", f"用户「{uid}」无缓存文件。")
-            return
-        data = res["data"]
-        ok, msg = _validate_payload(data)
-        if not ok:
-            QMessageBox.critical(self, "格式错误", msg)
-            return
-        self._store.load(data)
-        QMessageBox.information(self, "排轴", f"已从缓存载入用户 {res.get('user_id', uid)}。")
+        def setc(c, text, grey=False):
+            it = tbl.item(row, c)
+            it.setText(str(text))
+            if grey:
+                it.setForeground(QColor('#888888'))
+
+        setc(0, row)
+        setc(1, e.name or e.eid or '?')
+        setc(2, e.code or '-')
+        setc(3, e.eid)
+
+        bar = tbl.cellWidget(row, 4)
+        mx = max(1, int(e.max_hp))
+        bar.setMaximum(mx)
+        bar.setValue(max(0, int(e.hp)))
+        bar.setFormat(f'{int(e.hp)} / {int(e.max_hp)}  %p%')
+        ratio = e.hp / e.max_hp if e.max_hp > 0 else 0
+        color = '#5cb85c' if ratio > 0.5 else ('#f0ad4e' if ratio > 0.2 else '#d9534f')
+        if not e.alive:
+            color = '#888888'
+        if self._bar_colors.get(e.addr) != color:   # 颜色变化才重设样式 (触发重排版)
+            self._bar_colors[e.addr] = color
+            bar.setStyleSheet(f'QProgressBar::chunk {{ background-color: {color}; }}')
+
+        setc(5, f'({e.pos_x:.2f}, {e.pos_y:.2f})')
+        setc(6, int(e.atk))
+        setc(7, int(e.def_))
+        setc(8, int(e.res))
+        setc(9, f'{e.mspd:.2f}')
+        setc(10, int(e.aspd))
+        setc(11, '存活' if e.alive else ('退场' if e.finish else '阵亡'), grey=not e.alive)
+
+    # ================= 定时刷新 =================
 
     def _tick_fast(self) -> None:
         game = self._provider.get_game_data()
@@ -752,108 +722,18 @@ class CoachWindow(QMainWindow):
         fc = game.get("frame_count")
         self.lbl_frame_big.setText(f"F{int(fc)}" if fc is not None else "—")
 
-    def _tick_step(self) -> None:
-        st, version = self._latest_status()
-        if st is None or version == self._rendered_step_version:
-            return
-        items = st.get("items") or []
-        active = [it for it in items if it.get("phase") == "active"]
-        if active:
-            lines = [f"{i + 1}. {it.get('row_name', '')} — {it.get('label') or '区间'}（{it.get('until_end_text', '—')}）" for i, it in enumerate(active)]
-            self.lbl_step.setText("正在执行：\n" + "\n".join(lines))
-        else:
-            step = st.get("current_step") or {}
-            self.lbl_step.setText(step.get("summary") or st.get("message") or "—")
-
-        remind_sec = float(max(0, self.spin_remind_sec.value()))
-        fps = max(1, int(st.get("fps") or 60))
-        remind_frames = int(remind_sec * fps)
-        upcoming = [
-            it for it in items
-            if it.get("phase") == "upcoming"
-            and isinstance(it.get("frames_until_start"), int)
-            and 0 <= int(it.get("frames_until_start")) <= remind_frames
-        ]
-        if upcoming:
-            lines = [f"{i + 1}. {it.get('row_name', '')} — {it.get('label') or '区间'}（{it.get('until_start_text', '—')}）" for i, it in enumerate(upcoming)]
-            self.lbl_remind.setText("即将开始提醒：\n" + "\n".join(lines))
-        else:
-            self.lbl_remind.setText(f"即将开始提醒：未来 {remind_sec:g} 秒内无新事项")
-        self._rendered_step_version = version
-
     def _tick_slow(self) -> None:
-        st, version = self._latest_status()
-        if st is None or version == self._rendered_slow_version:
-            return
         game = self._provider.get_game_data()
         lr = game.get("last_refresh")
-        start_frame = (self.ed_start_frame.text() or "0").strip()
-        with self._schedule_state_lock:
-            from_current = self._exec_from_current
-            anchor_val = self._anchor_game_frame
-        if from_current:
-            mode_line = f"时间基准: 从当前帧起算（当前帧映射到轴上 F{start_frame}，锚点={anchor_val}）"
-        else:
-            mode_line = "时间基准: 从头执行"
         self.lbl_game.setText(
             "\n".join(
                 [
-                    mode_line,
                     f"连接: {'是' if game.get('connected') else '否'}  |  已配置地址: {'是' if game.get('configured') else '否'}",
-                    f"排轴对照帧: {st.get('current_frame') if st.get('current_frame') is not None else '—'}  FPS={st.get('fps', 60)}",
                     f"最近一次刷新: {lr if lr else '—'}",
                     f"说明: {game.get('message', '')}",
                 ]
             )
         )
-        self._render_table(st.get("items") or [])
-        self._rendered_slow_version = version
-
-    def _render_table(self, items: list[dict]) -> None:
-        signature = tuple(
-            (
-                it.get("row_name", ""),
-                it.get("range_text", "") or "—",
-                it.get("phase", ""),
-                it.get("until_start_text", "—"),
-                it.get("until_end_text", "—"),
-                (it.get("note") or "")[:120],
-            )
-            for it in items
-        )
-        if signature == self._last_list_signature:
-            return
-        self.table.setRowCount(len(items))
-        for i, it in enumerate(items):
-            phase = it.get("phase", "")
-            phase_zh = {"active": "进行中", "upcoming": "未开始", "past": "已结束", "unknown": "未知"}.get(phase, phase)
-            values = [
-                it.get("row_name", ""),
-                it.get("range_text", "") or "—",
-                phase_zh,
-                f"{it.get('until_start_text', '—')} / {it.get('until_end_text', '—')}",
-                (it.get("note") or "")[:120],
-            ]
-            for c, v in enumerate(values):
-                cell = self.table.item(i, c)
-                if cell is None:
-                    cell = QTableWidgetItem()
-                    self.table.setItem(i, c, cell)
-                cell.setText(str(v))
-                if phase == "active":
-                    cell.setBackground(QColor("#1a3d5c"))
-                elif phase == "past":
-                    cell.setBackground(QColor("#2d2d2d"))
-                    cell.setForeground(QColor("#777777"))
-                else:
-                    cell.setBackground(QColor("#2d2d2d"))
-                    cell.setForeground(QColor("#e8e8e8"))
-        active_indices = [idx for idx, it in enumerate(items) if it.get("phase") == "active"]
-        target = active_indices[-1] if active_indices else 0
-        if target != self._last_scroll_target_index and self.table.rowCount() > 0:
-            self.table.scrollToItem(self.table.item(target, 0), QTableWidget.PositionAtTop)
-            self._last_scroll_target_index = target
-        self._last_list_signature = signature
 
 
 def _is_admin() -> bool:

@@ -16,9 +16,11 @@
 """
 
 import os
+import sys
 import time
 import pickle
 import struct
+import tempfile
 import threading
 from concurrent.futures import ThreadPoolExecutor
 
@@ -35,7 +37,11 @@ NEEDLE_ENEMY = 'enemy_'.encode('utf-16-le')   # UTF-16LE "enemy_"
 HP_MIN, HP_MAX = 50, 1_000_000                # HP 签名高32位范围
 SCAN_CAP = 32 * 1024 * 1024                   # 每块 32MB
 
-CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'enemy_cache.pkl')
+if getattr(sys, 'frozen', False):
+    # 打包模式: _MEIPASS 是每次启动重建的临时目录, 缓存放 exe 旁以便跨启动复用
+    CACHE_FILE = os.path.join(os.path.dirname(sys.executable), 'enemy_cache.pkl')
+else:
+    CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'enemy_cache.pkl')
 
 
 def _u64(b, o):
@@ -48,6 +54,49 @@ def _i32(b, o):
 
 def _f32x2(b, o):
     return struct.unpack_from('<2f', b, o)
+
+
+class _HeapSnapshot:
+    """首次扫描的堆快照: 第 1 遍扫描边扫边落盘, 后续各遍从本地磁盘读。
+
+    adb 隧道聚合带宽 ~20MB/s 且 4 路并发即饱和, 5 遍全量扫描 = 传 5 份堆;
+    快照把传输压到 1 份 (耗时 ~堆大小/带宽), 其余 4 遍本地读盘 (GB/s 级)。
+    IL2CPP Boehm GC 不移动对象, 扫描窗口 (~1 分钟) 内长寿命对象地址稳定,
+    快照自洽。临时文件用完即删。"""
+
+    def __init__(self):
+        fd, self.path = tempfile.mkstemp(prefix='ak_heap_', suffix='.bin')
+        self.fd = fd
+        self.size = 0
+        self.ranges = []          # (base, file_off, size), 写入顺序
+        self._lock = threading.Lock()
+
+    def write(self, base: int, data: bytes):
+        with self._lock:
+            off = self.size
+            view = memoryview(data)
+            while view:
+                n = os.write(self.fd, view)
+                view = view[n:]
+            self.size += len(data)
+            self.ranges.append((base, off, len(data)))
+
+    def iter_chunks(self):
+        """按基址升序产出 (base, bytes)"""
+        with open(self.path, 'rb', buffering=1024 * 1024) as f:
+            for base, off, size in sorted(self.ranges):
+                f.seek(off)
+                yield base, f.read(size)
+
+    def discard(self):
+        try:
+            os.close(self.fd)
+        except OSError:
+            pass
+        try:
+            os.remove(self.path)
+        except OSError:
+            pass
 
 
 class EnemyInfo:
@@ -82,7 +131,7 @@ class EnemyInfo:
 
 class EnemyReader:
     def __init__(self, adb_path=None, package='com.hypergryph.arknights',
-                 cache_file=CACHE_FILE, with_bc=True, log=print, workers=4, mc=None):
+                 cache_file=CACHE_FILE, with_bc=True, log=print, workers=8, mc=None):
         self.mc = mc if mc is not None else MemCore(adb_path, package)
         self.cache_file = cache_file
         self.with_bc = with_bc
@@ -113,6 +162,7 @@ class EnemyReader:
         self._bc_snap = None          # BC 块缓存 (state, speed, time_scale, play_time)
         self._attr_ptrs = {}          # enemy addr -> Attributes* (属性轮换读取用)
         self._chan_fail = 0           # 通道连续异常计数 (日志节流)
+        self._chan_dead_ts = 0.0      # 通道上次失败时间 (冷却期内直接走慢速)
 
     # ================= 连接 =================
 
@@ -123,10 +173,11 @@ class EnemyReader:
 
     # ================= 底层扫描 =================
 
-    def _scan_pass(self, on_chunk, desc):
+    def _scan_pass(self, on_chunk, desc, sink=None):
         """对 GC 堆做一次扫描, on_chunk(base, bytes) 回调。
         多路 adb 并行读取 (有界并发, 在飞块数=workers, 内存可控);
-        on_chunk 在锁内串行执行, 回调写法与顺序版一致。"""
+        on_chunk 在锁内串行执行, 回调写法与顺序版一致。
+        sink 非空时把成功读取的块同时写入 _HeapSnapshot。"""
         targets = self.mc.scan_targets()
         total = sum(e - s for s, e in targets)
         segs = []
@@ -136,14 +187,23 @@ class EnemyReader:
                 segs.append((a, min(a + SCAN_CAP, e)))
                 a += SCAN_CAP
         done = [0]
+        miss = [0]
         t0 = time.time()
         lock = threading.Lock()
         sem = threading.Semaphore(self.workers)   # 有界提交: 在飞任务 ≤ workers
 
         def job(a, b):
             try:
-                d = self.mc.read(a, b - a, timeout=120)
-                if d:
+                try:
+                    d = self.mc.read(a, b - a, timeout=30)
+                except Exception:
+                    d = None   # dd 偶发卡死/超时: 跳过该块, 不让整遍扫描崩
+                if d is None:
+                    with lock:
+                        miss[0] += b - a
+                else:
+                    if sink is not None:
+                        sink.write(a, d)
                     on_chunk(a, d)   # 无锁调用; 各回调用 _merge_lock 自行合并
                 with lock:
                     done[0] += b - a
@@ -165,11 +225,30 @@ class EnemyReader:
             for f in futs:
                 f.result()
         print()
+        if miss[0]:
+            self.log(f"[扫描] 警告: {miss[0]/1e6:.1f} MB 读取失败被跳过 ({desc})")
+
+    def _scan_pass_local(self, snap, on_chunk, desc):
+        """从堆快照重放一次扫描 (零 adb, 磁盘 GB/s 级)"""
+        t0 = time.time()
+        for base, d in snap.iter_chunks():
+            on_chunk(base, d)
+        self.log(f"[扫描] {desc} (快照) {time.time()-t0:.1f}s")
+        if self.progress:
+            self.progress(100, desc)
+
+    def _pass(self, snap, on_chunk, desc):
+        """有快照走本地, 否则走网络扫描"""
+        if snap is not None:
+            self._scan_pass_local(snap, on_chunk, desc)
+        else:
+            self._scan_pass(on_chunk, desc)
 
     # ---------------- bootstrap 各阶段 ----------------
 
-    def _find_strings_and_hp(self):
-        """第 1 遍: enemy_ 字符串对象集合 S + HP 签名位置 P"""
+    def _find_strings_and_hp(self, snap=None):
+        """第 1 遍: enemy_ 字符串对象集合 S + HP 签名位置 P
+        (同时把全部扫描块写入快照 snap, 供后续各遍本地复用)"""
         S, P = set(), []
         hp_min, hp_max = HP_MIN, HP_MAX
 
@@ -197,11 +276,11 @@ class EnemyReader:
                     if (v & 0xFFFFFFFF) == 0 and hp_min <= v >> 32 <= hp_max:
                         P.append(base + off)
 
-        self._scan_pass(on_chunk, "enemy字符串+HP签名")
+        self._scan_pass(on_chunk, "enemy字符串+HP签名", sink=snap)
         self.log(f"[扫描] 字符串 {len(S)} 个, HP签名 {len(P)} 处")
         return S, P
 
-    def _find_refs(self, S):
+    def _find_refs(self, S, snap=None):
         """第 2 遍: 指向 S 的指针位置集合 R"""
         R = set()
         if np is not None:
@@ -217,7 +296,7 @@ class EnemyReader:
                     if _u64(d, off) in S:
                         R.add(base + off)
 
-        self._scan_pass(on_chunk, "字符串引用")
+        self._pass(snap, on_chunk, "字符串引用")
         self.log(f"[扫描] 引用 {len(R)} 处")
         return R
 
@@ -238,7 +317,7 @@ class EnemyReader:
                 self.log(f"  敌人 @ {hex(B)}")
         return out
 
-    def _find_items_array(self, enemies):
+    def _find_items_array(self, enemies, snap=None):
         """第 3 遍: 指向敌人的指针 -> items 数组候选 (块内局部解析, 无额外 adb)。
         返回按匹配分降序的候选地址列表 (可能有重复引用的干扰数组, 由第 4 遍验证)。"""
         eset = set(enemies)
@@ -276,14 +355,14 @@ class EnemyReader:
                         if score > cand.get(A, 0):
                             cand[A] = score
 
-        self._scan_pass(on_chunk, "敌人指针")
+        self._pass(snap, on_chunk, "敌人指针")
         if not cand:
             return []
         cands = sorted(((s, a) for a, s in cand.items() if s >= 1), reverse=True)
         self.log(f"[扫描] items 候选 {len(cands)} 个, 最高匹配 {cands[0][0]}/{len(enemies)}")
         return [a for s, a in cands[:16]]
 
-    def _find_list(self, items_cands, expect_cnt):
+    def _find_list(self, items_cands, expect_cnt, snap=None):
         """第 4 遍: 单遍扫描同时找多个 items 候选的引用 -> List<Enemy> 候选。
         返回 (exact, fallback): exact=[(L, items), ...] 为 count==expect_cnt 的
         候选 (按 items 匹配分降序), fallback=(L, items) 为近似匹配或 None。
@@ -307,7 +386,7 @@ class EnemyReader:
                         hits.append((a, base + i))
                         pos = i + 8
 
-        self._scan_pass(on_chunk, "List指针")
+        self._pass(snap, on_chunk, "List指针")
         self.log(f"[扫描] List 引用命中 {len(hits)} 处")
         exact = []   # (L, items) count==expect_cnt
         seen = set()
@@ -331,7 +410,7 @@ class EnemyReader:
         self.log(f"[扫描] List 候选 {len(exact)} 个" + (" (+近似 1 个)" if fallback else ""))
         return exact, fallback
 
-    def _find_scheduler_bc(self, list_addrs):
+    def _find_scheduler_bc(self, list_addrs, snap=None):
         """第 5 遍: 单遍扫描指向任一 List 候选的指针 -> Scheduler -> SchedulerDriver
         -> BattleController。返回 (list_addr, sched_addr, bc_addr);
         哪个候选被真 Scheduler 持有, 哪个才是真 m_managedWaveEnemies。
@@ -355,7 +434,7 @@ class EnemyReader:
                         hits.append((a, base + i))
                         pos = i + 8
 
-        self._scan_pass(on_chunk, "Scheduler指针")
+        self._pass(snap, on_chunk, "Scheduler指针")
         self.log(f"[扫描] 命中 {len(hits)} 处")
         for L, h in hits:
             X = h - gs.SchedulerFields.M_MANAGED_WAVE_ENEMIES
@@ -373,7 +452,6 @@ class EnemyReader:
                                  f"BattleController @ {hex(bc)}")
                         return L, X, bc
         return 0, 0, 0
-        return 0, 0
 
     # ================= bootstrap =================
 
@@ -424,34 +502,43 @@ class EnemyReader:
             self.log("[缓存] 已失效, 重新扫描 ...")
 
         t0 = time.time()
-        S, P = self._find_strings_and_hp()
-        R = self._find_refs(S)
-        self.enemy_addrs = self._filter_enemies(P, R)
-        if not self.enemy_addrs:
-            self.log("[扫描] 未发现敌人 (关卡未开始或已全部退场?)")
-            return False
-        items_cands = self._find_items_array(self.enemy_addrs)
-        if not items_cands:
-            self.log("[扫描] 未找到 items 数组")
-            return False
-        exact, fallback = self._find_list(items_cands, len(self.enemy_addrs))
-        if not exact and not fallback:
-            self.log("[扫描] 未找到 List<Enemy>")
-            return False
-        self.sched_addr = self.bc_addr = 0
-        self.list_addr = 0
-        if self.with_bc:
-            cands = [L for L, _ in exact] + ([fallback[0]] if fallback else [])
-            L, self.sched_addr, self.bc_addr = self._find_scheduler_bc(cands)
-            if L:
-                self.list_addr = L   # 被真 Scheduler 持有的才是活列表
-            else:
-                self.log("[扫描] 未找到 BattleController (继续, 仅无战斗状态信息)")
-        if not self.list_addr:
-            self.list_addr = exact[0][0] if exact else fallback[0]
-            self.log(f"[扫描] List<Enemy> @ {hex(self.list_addr)} (取首候选)")
-        d = self.mc.read(self.list_addr, 0x20)
-        self.items_addr = _u64(d, gs.ListInternal.ITEMS) if d else 0
+        snap = None
+        try:
+            snap = _HeapSnapshot()   # 1 遍传输 + 4 遍本地复用; 失败回退 5 遍网络扫
+        except OSError as e:
+            self.log(f"[扫描] 快照不可用 ({e}), 回退多遍网络扫描")
+        try:
+            S, P = self._find_strings_and_hp(snap=snap)
+            R = self._find_refs(S, snap=snap)
+            self.enemy_addrs = self._filter_enemies(P, R)
+            if not self.enemy_addrs:
+                self.log("[扫描] 未发现敌人 (关卡未开始或已全部退场?)")
+                return False
+            items_cands = self._find_items_array(self.enemy_addrs, snap=snap)
+            if not items_cands:
+                self.log("[扫描] 未找到 items 数组")
+                return False
+            exact, fallback = self._find_list(items_cands, len(self.enemy_addrs), snap=snap)
+            if not exact and not fallback:
+                self.log("[扫描] 未找到 List<Enemy>")
+                return False
+            self.sched_addr = self.bc_addr = 0
+            self.list_addr = 0
+            if self.with_bc:
+                cands = [L for L, _ in exact] + ([fallback[0]] if fallback else [])
+                L, self.sched_addr, self.bc_addr = self._find_scheduler_bc(cands, snap=snap)
+                if L:
+                    self.list_addr = L   # 被真 Scheduler 持有的才是活列表
+                else:
+                    self.log("[扫描] 未找到 BattleController (继续, 仅无战斗状态信息)")
+            if not self.list_addr:
+                self.list_addr = exact[0][0] if exact else fallback[0]
+                self.log(f"[扫描] List<Enemy> @ {hex(self.list_addr)} (取首候选)")
+            d = self.mc.read(self.list_addr, 0x20)
+            self.items_addr = _u64(d, gs.ListInternal.ITEMS) if d else 0
+        finally:
+            if snap is not None:
+                snap.discard()
 
         pickle.dump({'ver': 2, 'pid': self.mc.pid, 'enemies': self.enemy_addrs,
                      'items': self.items_addr, 'list': self.list_addr,
@@ -585,19 +672,26 @@ class EnemyReader:
                 pass
             self._chan = None
 
+    CHAN_RETRY_SEC = 5.0   # 通道失败后的重建冷却 (open 含 adb 部署, 每帧重试太贵)
+
     def poll_fast(self):
         """准实时轮询 (稳态 ~15-25ms/帧): 常驻 TCP 通道 (设备侧 nc -L sh +
         adb forward, raw 二进制)。稳态每帧仅 1 次敌人簇 dd; List 头每 4
         帧/属性轮换每 3 帧/BC 每 10 帧搭车同批。通道异常 -> 回退慢速 poll()。"""
         if self._chan is None:
+            if time.time() - self._chan_dead_ts < self.CHAN_RETRY_SEC:
+                return self.poll()   # 冷却期内直接慢速, 避免每帧昂贵重连
             self._chan = TcpChannel(self.mc)
         try:
-            return self._poll_fast_impl()
+            snap = self._poll_fast_impl()
+            self._chan_fail = 0
+            return snap
         except Exception as e:
             self._chan_fail += 1
             if self._chan_fail <= 3 or self._chan_fail % 50 == 0:
                 self.log(f'[轮询] 通道异常 ({type(e).__name__}: {e}), 本帧回退慢速读')
             self.close()
+            self._chan_dead_ts = time.time()
             return self.poll()
 
     @staticmethod

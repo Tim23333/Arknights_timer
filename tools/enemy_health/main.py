@@ -10,7 +10,7 @@
     python -m tools.enemy_health --adb <adb.exe路径>
 
 原理: 通过 adb 读取 MuMu 模拟器中游戏进程内存 (需要 adb root)。
-首次运行需全堆扫描定位敌人列表 (~5-8 分钟), 结果缓存后秒级启动。
+首次运行需全堆扫描定位敌人列表 (~1-3 分钟), 结果缓存后秒级启动。
 """
 
 import argparse

@@ -2,7 +2,8 @@
 ADB 内存读取底层 (明日方舟 @ MuMu 模拟器)
 
 - 通过 adb exec-out dd 读取 Android 进程 /proc/<pid>/mem
-- 4MB 大块对齐读取 (比 bs=1 快几个数量级)
+- 大块读取: 头/尾 4MB 不对齐部分走 4KB 页对齐, 中部走 4MB 块
+  (dd 起点/终点落在区域外未映射洞会 EIO 整块丢失, 必须避开)
 - /proc/<pid>/maps 解析与指针有效性校验
 - Il2CppString / C 字符串读取
 - TcpChannel: 设备侧常驻 TCP 通道 (adb forward)。优先使用自编译的
@@ -119,20 +120,16 @@ class TcpChannel:
         except Exception:
             return False
 
-    def _ensure_server(self):
-        """启动设备侧服务并建立 adb forward (幂等)"""
+    def _server_up(self) -> bool:
+        """端口可连 (注意: nc 活着但服务程序 exec 失败的半死状态也返回 True)"""
         try:
             socket.create_connection(("127.0.0.1", self.PORT), timeout=2).close()
-            return   # 服务与 forward 均已在
+            return True
         except OSError:
-            pass
-        self.mc.adb("forward", f"tcp:{self.PORT}", f"tcp:{self.PORT}")
-        try:
-            socket.create_connection(("127.0.0.1", self.PORT), timeout=2).close()
-            return   # forward 已有, 服务已在
-        except OSError:
-            pass
-        # 启动服务 (setsid 防 adb 会话退出时被杀; 5555 是 adbd 占用, 避开)
+            return False
+
+    def _start_service(self):
+        """启动设备侧 nc -L 服务 (memsrv 优先, 否则 sh; setsid 防 adb 会话退出时被杀)"""
         if self._push_memsrv():
             self.mc.shell(f"setsid nc -L -p {self.PORT} "
                           f"{self.SRV_DIR}/memsrv.sh </dev/null >/dev/null 2>&1 &")
@@ -140,11 +137,35 @@ class TcpChannel:
             self.mc.shell(f"setsid nc -L -p {self.PORT} sh </dev/null >/dev/null 2>&1 &")
         time.sleep(0.5)
 
+    def _ensure_server(self):
+        """启动设备侧服务并建立 adb forward (幂等; 5555 是 adbd 占用, 避开)"""
+        if self._server_up():
+            return   # 服务与 forward 均已在
+        self.mc.adb("forward", f"tcp:{self.PORT}", f"tcp:{self.PORT}")
+        if self._server_up():
+            return   # forward 已有, 服务已在
+        self._start_service()
+
     # ---------- 连接 ----------
 
     def open(self):
         self.close()
         self._ensure_server()
+        try:
+            self._connect_once()
+            return
+        except (IOError, OSError):
+            self.close()
+        # 半死状态 (端口可连但协议不通, 如服务程序 exec 失败): 杀掉 nc 强制重启再试
+        try:
+            self.mc.shell("kill $(pidof nc) 2>/dev/null", timeout=10)
+        except Exception:
+            pass
+        time.sleep(0.3)
+        self._start_service()
+        self._connect_once()   # 再失败自然抛出, 由调用方回退慢速 read()
+
+    def _connect_once(self):
         self.sock = socket.create_connection(("127.0.0.1", self.PORT), timeout=10)
         self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         # 模式探测: memsrv 会主动发 8 字节横幅; sh 不会主动发任何字节
@@ -285,9 +306,14 @@ class MemCore:
 
     # ---------- adb ----------
 
+    # Windows 下主程序打包为无控制台 (windowed) 后, 每次调 adb.exe 都会
+    # 弹出控制台窗口; CREATE_NO_WINDOW 抑制之
+    _NO_WINDOW = getattr(subprocess, 'CREATE_NO_WINDOW', 0) if os.name == 'nt' else 0
+
     def adb(self, *args, timeout=30) -> bytes:
         return subprocess.run([self.adb_path] + list(args),
-                              capture_output=True, timeout=timeout).stdout
+                              capture_output=True, timeout=timeout,
+                              creationflags=self._NO_WINDOW).stdout
 
     def shell(self, cmd: str, timeout=30) -> str:
         return self.adb("shell", cmd, timeout=timeout).decode('utf-8', errors='replace')
@@ -312,7 +338,7 @@ class MemCore:
     # ---------- 内存读取 ----------
 
     def read(self, addr: int, size: int, timeout=30) -> Optional[bytes]:
-        """读取 addr 处 size 字节 (小块走 4KB 页对齐, 大块走 4MB 对齐)"""
+        """读取 addr 处 size 字节 (小块走 4KB 页对齐, 大块头尾 4KB + 中部 4MB)"""
         if size <= 0x10000:
             a0 = addr & ~0xFFF
             a1 = (addr + size + 0xFFF) & ~0xFFF
@@ -323,15 +349,37 @@ class MemCore:
             if len(data) < off + size:
                 return None
             return data[off:off + size]
-        a0 = addr & ~(BS - 1)
-        a1 = (addr + size + BS - 1) & ~(BS - 1)
+        # 大块: dd 起点/终点若落在区域外的未映射洞会 EIO 整块丢失 (确定性!),
+        # 因此头/尾 4MB 不对齐部分走 4KB 页对齐, 中部整 4MB 块保证全在区域内
+        body0 = (addr + BS - 1) & ~(BS - 1)      # 第一个 4MB 边界
+        body1 = (addr + size) & ~(BS - 1)        # 末端向下 4MB 边界
+        if body0 >= body1:
+            return self._read_pages(addr, size, timeout)
+        out = bytearray()
+        if addr < body0:
+            d = self._read_pages(addr, body0 - addr, timeout)
+            if d is None:
+                return None
+            out += d
         data = self.adb("exec-out",
-                        f"dd if=/proc/{self.pid}/mem bs={BS} skip={a0 // BS} count={(a1 - a0) // BS} 2>/dev/null",
+                        f"dd if=/proc/{self.pid}/mem bs={BS} skip={body0 // BS} count={(body1 - body0) // BS} 2>/dev/null",
                         timeout=timeout)
-        off = addr - a0
-        if len(data) < off + size:
+        if len(data) < body1 - body0:
             return None
-        return data[off:off + size]
+        out += data[:body1 - body0]
+        if body1 < addr + size:
+            d = self._read_pages(body1, addr + size - body1, timeout)
+            if d is None:
+                return None
+            out += d
+        return bytes(out)
+
+    def _read_pages(self, addr: int, size: int, timeout=30) -> Optional[bytes]:
+        """4KB 页对齐精确读取 (addr/size 须 4KB 对齐, 调用方保证在映射区域内)"""
+        data = self.adb("exec-out",
+                        f"dd if=/proc/{self.pid}/mem bs=4096 skip={addr // 4096} count={size // 4096} 2>/dev/null",
+                        timeout=timeout)
+        return data if len(data) >= size else None
 
     def read_ptr(self, addr: int) -> Optional[int]:
         d = self.read(addr, 8)

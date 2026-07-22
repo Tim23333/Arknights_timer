@@ -1,5 +1,5 @@
 """
-启动明日方舟打轴工具（独立桌面程序，无 Web 服务）。
+启动明日方舟游戏数据显示工具（独立桌面程序，无 Web 服务）。
 """
 import sys
 from pathlib import Path

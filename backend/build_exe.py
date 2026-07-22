@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
 """
-一键打包 Arknights 后端桌面程序为 Windows EXE。
+一键打包 Arknights 游戏数据显示工具为 Windows EXE。
 
 特性：
 1) 打包主程序：backend/run.py → ArknightsTimeline.exe
-2) 打包寻址工具：tools/timer/ak_timer_ui.py → AKTimerTool.exe
-3) 自动包含 tools/ 目录（含内存寻址工具）
-4) 自动包含 backend/data 与 backend/app/static
-5) 默认图标：仓库根目录下的 aaa.ico（可命令行覆盖）
+   （游戏时间/帧显示 + 敌人实时监控, tools/enemy_health）
+2) 打包寻址工具：tools/timer/ak_timer_ui.py → AKTimerTool.exe（内嵌进主程序）
+3) 自动包含 tools/ 目录（含 enemy_health/bin/memsrv 设备侧内存服务）
+4) 自动构建 memsrv（memsrv.c 比 bin/memsrv 新时用 ziglang 交叉编译）
+5) 自动包含敌人名称数据库 data/tables/enemy_handbook_table*.bin
+6) 默认图标：仓库根目录下的 aaa.ico（可命令行覆盖）
 
 用法：
   python build_exe.py
   python build_exe.py --icon "<仓库根目录>\\aaa.ico" --name ArknightsTimeline
   python build_exe.py --onedir
+  python build_exe.py --skip-timer   # 只打包主程序
 """
 from __future__ import annotations
 
@@ -22,6 +25,29 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+
+def _ensure_memsrv(tools_dir: Path) -> None:
+    """memsrv.c 更新或 bin/memsrv 缺失时, 用 ziglang 交叉编译 aarch64 静态二进制。
+    构建失败不阻断打包 (TCP 通道会自动回退 sh+dd 模式, 只是慢)。"""
+    src = tools_dir / "enemy_health" / "memsrv.c"
+    out = tools_dir / "enemy_health" / "bin" / "memsrv"
+    if not src.is_file():
+        print("[WARN] 未找到 memsrv.c, 跳过 memsrv 构建")
+        return
+    if out.is_file() and out.stat().st_mtime >= src.stat().st_mtime:
+        print(f"[INFO] memsrv 已是最新: {out}")
+        return
+    print("[INFO] 构建 memsrv (zig cc -> aarch64-linux-musl 静态)...")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    cmd = [sys.executable, "-m", "ziglang", "cc", "-target", "aarch64-linux-musl",
+           "-static", "-O2", "-o", str(out), str(src)]
+    proc = subprocess.run(cmd)
+    if proc.returncode != 0 or not out.is_file():
+        print("[WARN] memsrv 构建失败 (pip install ziglang 可修复); "
+              "打包继续, 运行时将回退 sh+dd 慢速模式")
+    else:
+        print(f"[OK] memsrv 构建完成: {out} ({out.stat().st_size} bytes)")
 
 
 def _add_data_arg(src: Path, dst: str) -> str:
@@ -36,16 +62,16 @@ def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args) -
     tools_dir = repo_root / "tools"
     data_dir = backend_dir / "data"
     static_dir = backend_dir / "app" / "static"
+    tables_dir = repo_root / "data" / "tables"
     timer_exe = backend_dir / "dist" / "AKTimerTool.exe"
 
     if not entry.is_file():
         print(f"[ERROR] 未找到入口脚本: {entry}")
         return 1
 
-    if not timer_exe.is_file():
-        print(f"[ERROR] 未找到寻址工具: {timer_exe}")
-        print("[ERROR] 请先打包寻址工具")
-        return 1
+    embed_timer = timer_exe.is_file()
+    if not embed_timer:
+        print("[WARN] 未找到寻址工具, 主程序将不包含内嵌 AKTimerTool.exe")
 
     cmd = [
         sys.executable,
@@ -85,13 +111,23 @@ def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args) -
         cmd.extend(["--add-data", _add_data_arg(data_dir, "backend/data")])
     if static_dir.is_dir():
         cmd.extend(["--add-data", _add_data_arg(static_dir, "backend/app/static")])
+    # 敌人名称数据库 (tools/enemy_health 运行时按 data/tables 相对路径查找)
+    if tables_dir.is_dir():
+        for f in tables_dir.glob("enemy_handbook_table*.bin"):
+            cmd.extend(["--add-data", _add_data_arg(f, "data/tables")])
 
     # 内嵌寻址工具
-    cmd.extend(["--add-data", _add_data_arg(timer_exe, "tools")])
+    if embed_timer:
+        cmd.extend(["--add-data", _add_data_arg(timer_exe, "tools")])
 
     # 常用隐藏导入（避免运行时漏模块）
     cmd.extend(["--hidden-import", "tools.timer.ak_memory_reader"])
     cmd.extend(["--hidden-import", "tools.deploy_tracker.ak_deploy_reader"])
+    cmd.extend(["--hidden-import", "tools.enemy_health.enemy_reader"])
+    cmd.extend(["--hidden-import", "tools.enemy_health.memcore"])
+    cmd.extend(["--hidden-import", "tools.enemy_health.enemy_db"])
+    cmd.extend(["--hidden-import", "tools.enemy_health.game_structs"])
+    cmd.extend(["--hidden-import", "numpy"])
     cmd.extend(["--hidden-import", "pymem"])
     cmd.extend(["--hidden-import", "PySide6"])
 
@@ -176,6 +212,7 @@ def main() -> int:
     parser.add_argument("--onedir", action="store_true", help="使用 onedir 模式（默认 onefile）")
     parser.add_argument("--no-clean", action="store_true", help="不清理 build/dist 临时目录")
     parser.add_argument("--console", action="store_true", help="显示控制台窗口（默认无控制台）")
+    parser.add_argument("--skip-timer", action="store_true", help="跳过寻址工具打包（主程序将不含内嵌寻址工具）")
     args = parser.parse_args()
 
     backend_dir = Path(__file__).resolve().parent
@@ -198,13 +235,26 @@ def main() -> int:
             if d.exists():
                 shutil.rmtree(d, ignore_errors=True)
 
-    # 步骤 1: 先打包寻址工具为临时 exe
+    # 步骤 0: 构建 memsrv 设备侧内存服务 (源码更新时)
     print("\n" + "=" * 60)
-    print("[步骤 1/2] 打包寻址工具...")
+    print("[步骤 0] 检查 memsrv 设备侧内存服务...")
     print("=" * 60)
-    ret = _build_timer_tool(backend_dir, repo_root, icon_path, args)
-    if ret != 0:
-        return ret
+    _ensure_memsrv(tools_dir)
+
+    # 步骤 1: 先打包寻址工具为临时 exe
+    timer_exe = backend_dir / "dist" / "AKTimerTool.exe"
+    if args.skip_timer:
+        print("\n[INFO] --skip-timer: 跳过寻址工具打包")
+        # 主程序内嵌寻址工具; 跳过时拿旧的 (若有) 顶用, 没有则仅警告
+        if not timer_exe.is_file():
+            print("[WARN] dist/AKTimerTool.exe 不存在, 主程序将无法内嵌寻址工具")
+    else:
+        print("\n" + "=" * 60)
+        print("[步骤 1/2] 打包寻址工具...")
+        print("=" * 60)
+        ret = _build_timer_tool(backend_dir, repo_root, icon_path, args)
+        if ret != 0:
+            return ret
 
     # 步骤 2: 打包主程序，将寻址工具内嵌进去
     print("\n" + "=" * 60)
@@ -215,7 +265,6 @@ def main() -> int:
         return ret
 
     # 清理临时的 AKTimerTool.exe（已内嵌到主程序中）
-    timer_exe = backend_dir / "dist" / "AKTimerTool.exe"
     if timer_exe.exists():
         timer_exe.unlink()
         print(f"[INFO] 已清理临时文件: {timer_exe.name}")
@@ -232,6 +281,7 @@ def main() -> int:
                 print(f"  - {f.name} ({size_mb:.1f} MB)")
     print("=" * 60)
     print('[TIP] 寻址工具已内嵌到主程序中，点击"打开寻址工具"即可使用。')
+    print('[TIP] 敌人监控需要 MuMu 模拟器已启动并 adb root（MuMu 默认支持）。')
     print('[TIP] 若首次运行被拦截，请在 Windows 安全提示中选择"仍要运行"。')
     print(f"[TIP] 当前工作区根目录: {workspace_root}")
     return 0

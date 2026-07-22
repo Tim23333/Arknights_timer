@@ -285,6 +285,7 @@ data/tables/
 - PyInstaller: `pip install pyinstaller`
 - 项目依赖: `pip install -r backend/requirements.txt`
 - 可选依赖（加速内存扫描）: `pip install numpy`
+- 可选依赖（memsrv.c 改动后重新交叉编译设备侧内存服务）: `pip install ziglang`
 
 ### 打包命令
 
@@ -306,20 +307,25 @@ python build_exe.py --name MyArknightsTool
 python build_exe.py --console
 ```
 
+打包流程：步骤 0 若 `tools/enemy_health/memsrv.c` 有更新会用 ziglang 自动重编
+`bin/memsrv`（失败不阻断，运行时回退 sh+dd 慢速模式）；步骤 1 打包
+AKTimerTool.exe；步骤 2 打包主程序并把寻址工具内嵌进去（同时自动打包
+`tools/` 目录含 `enemy_health/bin/memsrv`、敌人名称数据库
+`enemy_handbook_table*.bin`）。
+
 ### 输出文件
 
 打包完成后，`backend/dist/` 目录下会生成：
 
 | 文件 | 说明 |
 |------|------|
-| `ArknightsTimeline.exe` | 主程序（打轴工具） |
-| `AKTimerTool.exe` | 内存寻址工具 |
+| `ArknightsTimeline.exe` | 主程序（游戏数据显示工具，已内嵌寻址工具） |
 
 ### 分发说明
 
-1. 将 `backend/dist/` 下的两个 exe 文件一起分发给用户
-2. 两个 exe 必须放在同一目录下
-3. 寻址工具需要管理员权限才能读取游戏内存
+1. 只需分发 `ArknightsTimeline.exe` 单个文件（寻址工具已内嵌，点击"打开寻址工具"自动提取运行）
+2. 寻址工具需要管理员权限才能读取游戏内存
+3. 敌人监控需要 MuMu 模拟器已启动且 adb root 可用（MuMu 默认支持）；首次扫描后地址缓存保存在 exe 同目录的 `enemy_cache.pkl`
 4. 首次运行可能被 Windows 安全提示拦截，选择"仍要运行"即可
 
 ### 测试打包结果
