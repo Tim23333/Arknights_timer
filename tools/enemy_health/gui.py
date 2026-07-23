@@ -23,7 +23,7 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QProgressBar, QTableWidget, QTableWidgetItem,
     QPlainTextEdit, QHeaderView, QDoubleSpinBox, QStyleFactory,
-    QFileDialog, QMessageBox,
+    QFileDialog, QMessageBox, QSpinBox,
 )
 
 from .enemy_reader import EnemyReader, format_skill_cd
@@ -110,6 +110,8 @@ class MainWindow(QMainWindow):
         self._row_of = {}        # enemy addr -> 表格行号 (行位置稳定, 新敌人底部新增)
         self._bar_colors = {}    # enemy addr -> 当前血条颜色
         self._skill_lines = {}   # enemy addr -> 技能格行数 (变化才调整行高)
+        self._dec = 4            # 数值小数位数 (0-6)
+        self._last_enemies = []  # 最近一帧敌人 (改小数位时立即重绘用)
 
         # ---------- 顶部状态 ----------
         top = QHBoxLayout()
@@ -138,6 +140,13 @@ class MainWindow(QMainWindow):
         self.spin_interval.setSuffix(' 秒')
         self.spin_interval.setPrefix('刷新 ')
         self.spin_interval.valueChanged.connect(self.on_interval_changed)
+        self.spin_dec = QSpinBox()
+        self.spin_dec.setRange(0, 6)
+        self.spin_dec.setValue(4)
+        self.spin_dec.setPrefix('小数 ')
+        self.spin_dec.setSuffix(' 位')
+        self.spin_dec.setToolTip('敌方数值显示的小数位数 (0-6)')
+        self.spin_dec.valueChanged.connect(self.on_dec_changed)
         self.progress = QProgressBar()
         self.progress.setRange(0, 100)
         self.progress.setValue(0)
@@ -146,6 +155,7 @@ class MainWindow(QMainWindow):
         ctrl.addWidget(self.btn_scan)
         ctrl.addWidget(self.btn_monitor)
         ctrl.addWidget(self.spin_interval)
+        ctrl.addWidget(self.spin_dec)
         ctrl.addWidget(self.progress)
         ctrl.addStretch(1)
 
@@ -273,6 +283,10 @@ class MainWindow(QMainWindow):
         if self.poll_worker:
             self.poll_worker.interval = v
 
+    def on_dec_changed(self, v):
+        self._dec = v
+        self._render_table(self._last_enemies)   # 立即按新精度重绘
+
     # ---------- 快照渲染 ----------
 
     def on_snapshot(self, snap):
@@ -294,6 +308,7 @@ class MainWindow(QMainWindow):
         self._render_table(snap['enemies'])
 
     def _render_table(self, enemies):
+        self._last_enemies = enemies
         tbl = self.table
         # 增量刷新: 按敌人地址锚定行, 已有行原地更新, 新敌人底部新增,
         # 消失的行才删除——杜绝整表重建导致的闪烁
@@ -337,6 +352,7 @@ class MainWindow(QMainWindow):
 
     def _update_row(self, row, e):
         tbl = self.table
+        p = self._dec
 
         def setc(c, text, grey=False):
             it = tbl.item(row, c)
@@ -353,7 +369,7 @@ class MainWindow(QMainWindow):
         mx = max(1, int(e.max_hp))
         bar.setMaximum(mx)
         bar.setValue(max(0, int(e.hp)))
-        bar.setFormat(f'{int(e.hp)} / {int(e.max_hp)}  %p%')
+        bar.setFormat(f'{e.hp:.{p}f} / {e.max_hp:.{p}f}  %p%')
         ratio = e.hp / e.max_hp if e.max_hp > 0 else 0
         color = '#5cb85c' if ratio > 0.5 else ('#f0ad4e' if ratio > 0.2 else '#d9534f')
         if not e.alive:
@@ -362,13 +378,13 @@ class MainWindow(QMainWindow):
             self._bar_colors[e.addr] = color
             bar.setStyleSheet(f'QProgressBar::chunk {{ background-color: {color}; }}')
 
-        setc(5, f'({e.pos_x:.4f}, {e.pos_y:.4f})')
-        setc(6, int(e.atk))
-        setc(7, int(e.def_))
-        setc(8, int(e.res))
-        setc(9, f'{e.mspd:.2f}')
-        setc(10, int(e.aspd))
-        cd_text = format_skill_cd(e.skills, sep='\n')
+        setc(5, f'({e.pos_x:.{p}f}, {e.pos_y:.{p}f})')
+        setc(6, f'{e.atk:.{p}f}')
+        setc(7, f'{e.def_:.{p}f}')
+        setc(8, f'{e.res:.{p}f}')
+        setc(9, f'{e.mspd:.{p}f}')
+        setc(10, f'{e.aspd:.{p}f}')
+        cd_text = format_skill_cd(e.skills, sep='\n', prec=p)
         setc(11, cd_text)
         n_lines = cd_text.count('\n')          # 行数变化才重排行高 (重排会触发布局)
         if self._skill_lines.get(e.addr) != n_lines:

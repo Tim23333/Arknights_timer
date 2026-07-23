@@ -32,6 +32,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSizePolicy,
+    QSpinBox,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -155,6 +156,8 @@ class CoachWindow(QMainWindow):
         self._enemy_rows: dict = {}    # enemy addr -> 表格行号 (行位置稳定, 新敌人底部新增)
         self._bar_colors: dict = {}    # enemy addr -> 当前血条颜色
         self._skill_lines: dict = {}   # enemy addr -> 技能格行数 (变化才调整行高)
+        self._enemy_dec: int = 4       # 数值小数位数 (0-6)
+        self._enemy_last: list = []    # 最近一帧敌人 (改小数位时立即重绘用)
 
         self._build_ui()
         self._start_hook_server()
@@ -281,8 +284,16 @@ class CoachWindow(QMainWindow):
         self.enemy_progress.setValue(0)
         self.enemy_progress.setTextVisible(True)
         self.enemy_progress.setFormat('就绪')
+        self.spin_enemy_dec = QSpinBox()
+        self.spin_enemy_dec.setRange(0, 6)
+        self.spin_enemy_dec.setValue(4)
+        self.spin_enemy_dec.setPrefix('小数 ')
+        self.spin_enemy_dec.setSuffix(' 位')
+        self.spin_enemy_dec.setToolTip('敌方数值显示的小数位数 (0-6)')
+        self.spin_enemy_dec.valueChanged.connect(self._on_enemy_dec_changed)
         row_btn.addWidget(self.btn_enemy_scan)
         row_btn.addWidget(self.btn_enemy_stop)
+        row_btn.addWidget(self.spin_enemy_dec)
         row_btn.addWidget(self.enemy_progress, 1)
         l_enemy.addLayout(row_btn)
         self.lbl_enemy_status = QLabel("未开始扫描")
@@ -665,6 +676,7 @@ class CoachWindow(QMainWindow):
         self._render_enemy_table(snap['enemies'])
 
     def _render_enemy_table(self, enemies) -> None:
+        self._enemy_last = enemies
         tbl = self.enemy_table
         # 增量刷新: 按敌人地址锚定行, 已有行原地更新, 新敌人底部新增,
         # 消失的行才删除——杜绝整表重建导致的闪烁
@@ -691,6 +703,10 @@ class CoachWindow(QMainWindow):
         finally:
             tbl.setUpdatesEnabled(True)
 
+    def _on_enemy_dec_changed(self, v: int) -> None:
+        self._enemy_dec = v
+        self._render_enemy_table(self._enemy_last)   # 立即按新精度重绘
+
     def _make_enemy_row(self, row: int, addr: int) -> None:
         tbl = self.enemy_table
         for c in range(len(ENEMY_COLS)):
@@ -708,6 +724,7 @@ class CoachWindow(QMainWindow):
 
     def _update_enemy_row(self, row: int, e) -> None:
         tbl = self.enemy_table
+        p = self._enemy_dec
 
         def setc(c, text, grey=False):
             it = tbl.item(row, c)
@@ -724,7 +741,7 @@ class CoachWindow(QMainWindow):
         mx = max(1, int(e.max_hp))
         bar.setMaximum(mx)
         bar.setValue(max(0, int(e.hp)))
-        bar.setFormat(f'{int(e.hp)} / {int(e.max_hp)}  %p%')
+        bar.setFormat(f'{e.hp:.{p}f} / {e.max_hp:.{p}f}  %p%')
         ratio = e.hp / e.max_hp if e.max_hp > 0 else 0
         color = '#5cb85c' if ratio > 0.5 else ('#f0ad4e' if ratio > 0.2 else '#d9534f')
         if not e.alive:
@@ -733,13 +750,13 @@ class CoachWindow(QMainWindow):
             self._bar_colors[e.addr] = color
             bar.setStyleSheet(f'QProgressBar::chunk {{ background-color: {color}; }}')
 
-        setc(5, f'({e.pos_x:.4f}, {e.pos_y:.4f})')
-        setc(6, int(e.atk))
-        setc(7, int(e.def_))
-        setc(8, int(e.res))
-        setc(9, f'{e.mspd:.2f}')
-        setc(10, int(e.aspd))
-        cd_text = format_skill_cd(e.skills, sep='\n')
+        setc(5, f'({e.pos_x:.{p}f}, {e.pos_y:.{p}f})')
+        setc(6, f'{e.atk:.{p}f}')
+        setc(7, f'{e.def_:.{p}f}')
+        setc(8, f'{e.res:.{p}f}')
+        setc(9, f'{e.mspd:.{p}f}')
+        setc(10, f'{e.aspd:.{p}f}')
+        cd_text = format_skill_cd(e.skills, sep='\n', prec=p)
         setc(11, cd_text)
         n_lines = cd_text.count('\n')          # 行数变化才重排行高 (重排会触发布局)
         if self._skill_lines.get(e.addr) != n_lines:

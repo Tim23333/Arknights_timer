@@ -130,9 +130,9 @@ class EnemyInfo:
         self.skills = []          # [(prefabKey, remaining, period), ...]
 
 
-def format_skill_cd(skills, sep='; '):
+def format_skill_cd(skills, sep='; ', prec=1):
     """技能 CD 列表 -> 显示文本, 如 'SummonBallis 11.4/15s; CriticalHit 就绪'
-    sep='\\n' 时每个技能一行 (表格单元格多行展示)"""
+    sep='\\n' 时每个技能一行 (表格单元格多行展示); prec 为小数位数 (0-6)"""
     if not skills:
         return '-'
     parts = []
@@ -140,7 +140,7 @@ def format_skill_cd(skills, sep='; '):
         if remain <= 0.05:
             parts.append(f'{key} 就绪')
         else:
-            parts.append(f'{key} {remain:.1f}/{period:.0f}s')
+            parts.append(f'{key} {remain:.{prec}f}/{period:.{prec}f}s')
     return sep.join(parts)
 
 
