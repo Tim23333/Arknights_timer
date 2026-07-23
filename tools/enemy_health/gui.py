@@ -108,6 +108,7 @@ class MainWindow(QMainWindow):
         self.poll_worker = None
         self._row_of = {}        # enemy addr -> 表格行号 (行位置稳定, 新敌人底部新增)
         self._bar_colors = {}    # enemy addr -> 当前血条颜色
+        self._skill_lines = {}   # enemy addr -> 技能格行数 (变化才调整行高)
 
         # ---------- 顶部状态 ----------
         top = QHBoxLayout()
@@ -205,6 +206,7 @@ class MainWindow(QMainWindow):
         self.table.setRowCount(0)   # 换关卡重扫: 清掉旧敌人行
         self._row_of.clear()
         self._bar_colors.clear()
+        self._skill_lines.clear()
         self._start_scan(force=True)
 
     def on_scan_done(self, ok, msg):
@@ -287,6 +289,7 @@ class MainWindow(QMainWindow):
             for a in sorted(gone, key=lambda a: -self._row_of[a]):
                 tbl.removeRow(self._row_of.pop(a))
                 self._bar_colors.pop(a, None)
+                self._skill_lines.pop(a, None)
             if gone:   # removeRow 后行号位移, 依 item(0) 存的 addr 重建映射
                 self._row_of = {tbl.item(r, 0).data(Qt.UserRole): r
                                 for r in range(tbl.rowCount())}
@@ -335,13 +338,18 @@ class MainWindow(QMainWindow):
             self._bar_colors[e.addr] = color
             bar.setStyleSheet(f'QProgressBar::chunk {{ background-color: {color}; }}')
 
-        setc(5, f'({e.pos_x:.2f}, {e.pos_y:.2f})')
+        setc(5, f'({e.pos_x:.4f}, {e.pos_y:.4f})')
         setc(6, int(e.atk))
         setc(7, int(e.def_))
         setc(8, int(e.res))
         setc(9, f'{e.mspd:.2f}')
         setc(10, int(e.aspd))
-        setc(11, format_skill_cd(e.skills))
+        cd_text = format_skill_cd(e.skills, sep='\n')
+        setc(11, cd_text)
+        n_lines = cd_text.count('\n')          # 行数变化才重排行高 (重排会触发布局)
+        if self._skill_lines.get(e.addr) != n_lines:
+            self._skill_lines[e.addr] = n_lines
+            tbl.resizeRowToContents(row)
         setc(12, '存活' if e.alive else ('退场' if e.finish else '阵亡'), grey=not e.alive)
 
     # ---------- 关闭 ----------
