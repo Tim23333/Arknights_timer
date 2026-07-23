@@ -30,12 +30,31 @@ DEFAULT_PKG = "com.hypergryph.arknights"
 BS = 4 * 1024 * 1024  # dd 块大小
 
 
-def find_mumu_adb() -> Optional[str]:
-    """查找 MuMu adb.exe: 配置缓存 -> PATH -> 常见路径 -> 注册表"""
-    import os
+def _config_file() -> str:
+    """adb 路径配置持久化位置: 打包模式放 exe 旁 (_MEIPASS 是临时目录,
+    写进去重启即丢); 开发模式放模块目录"""
+    import sys
+    if getattr(sys, 'frozen', False):
+        return os.path.join(os.path.dirname(sys.executable), 'enemy_adb_config.json')
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.json')
+
+
+def save_adb_path(path: str) -> None:
+    """持久化手动选择的 adb 路径 (下次启动直接生效)"""
     import json
-    cfg_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
     try:
+        with open(_config_file(), 'w', encoding='utf-8') as f:
+            json.dump({'adb_path': path}, f)
+    except Exception:
+        pass
+
+
+def find_mumu_adb() -> Optional[str]:
+    """查找 adb.exe: 配置缓存 -> PATH -> ANDROID_HOME -> 多盘符常见路径 -> 注册表"""
+    import json
+    import shutil
+    try:
+        cfg_file = _config_file()
         if os.path.isfile(cfg_file):
             with open(cfg_file, 'r', encoding='utf-8') as f:
                 saved = json.load(f).get("adb_path")
@@ -43,31 +62,57 @@ def find_mumu_adb() -> Optional[str]:
                 return saved
     except Exception:
         pass
-    import shutil
     p = shutil.which("adb")
     if p:
         return p
-    import os as _os
-    quick = [
-        r"D:\Program Files\MuMu9\emulator\MuMuPlayer-12.0\shell\adb.exe",
-        r"C:\Program Files\Netease\MuMuPlayer-12.0\shell\adb.exe",
-        r"D:\Program Files\Netease\MuMuPlayer-12.0\shell\adb.exe",
-        r"C:\Program Files\MuMu\shell\adb.exe",
-        r"D:\MuMu\shell\adb.exe",
+    # Android SDK platform-tools
+    for env in ("ANDROID_HOME", "ANDROID_SDK_ROOT"):
+        home = os.environ.get(env)
+        if home:
+            q = os.path.join(home, "platform-tools", "adb.exe")
+            if os.path.isfile(q):
+                return q
+    # 常见 MuMu 安装布局 x 各盘符
+    patterns = [
+        os.path.join("MuMu9", "emulator", "MuMuPlayer-12.0", "shell", "adb.exe"),
+        os.path.join("Netease", "MuMuPlayer-12.0", "shell", "adb.exe"),
+        os.path.join("MuMuPlayer-12.0", "shell", "adb.exe"),
+        os.path.join("MuMu Player 12", "shell", "adb.exe"),
+        os.path.join("MuMuPlayer", "shell", "adb.exe"),
+        os.path.join("MuMu", "shell", "adb.exe"),
     ]
-    for q in quick:
-        if _os.path.isfile(q):
-            return q
+    for drive in "CDEFG":
+        for base in (f"{drive}:\\Program Files", f"{drive}:\\Program Files (x86)",
+                     f"{drive}:\\"):
+            for pat in patterns:
+                q = os.path.join(base, pat)
+                if os.path.isfile(q):
+                    return q
     try:
         import winreg
-        for kp in (r"SOFTWARE\Netease\MuMuPlayer", r"SOFTWARE\Netease\MuMuPlayer-12.0"):
-            try:
-                key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, kp)
-                adb = _os.path.join(winreg.QueryValueEx(key, "InstallDir")[0], "shell", "adb.exe")
-                if _os.path.isfile(adb):
-                    return adb
-            except Exception:
-                pass
+        for root in (winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER):
+            for kp in (r"SOFTWARE\Netease\MuMuPlayer", r"SOFTWARE\Netease\MuMuPlayer-12.0",
+                       r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\MuMuPlayer-12.0",
+                       r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\MuMuPlayer-12.0"):
+                try:
+                    key = winreg.OpenKey(root, kp)
+                    install = None
+                    for val in ("InstallDir", "InstallLocation", "DisplayIcon"):
+                        try:
+                            install = winreg.QueryValueEx(key, val)[0]
+                            break
+                        except Exception:
+                            continue
+                    if not install:
+                        continue
+                    install = install.strip('"')
+                    if os.path.isfile(install):        # DisplayIcon 指向 exe
+                        install = os.path.dirname(install)
+                    adb = os.path.join(install, "shell", "adb.exe")
+                    if os.path.isfile(adb):
+                        return adb
+                except Exception:
+                    pass
     except Exception:
         pass
     return None
@@ -295,14 +340,22 @@ class MemCore:
 
     def __init__(self, adb_path: Optional[str] = None, package: str = DEFAULT_PKG):
         self.adb_path = adb_path or find_mumu_adb()
-        if not self.adb_path:
-            raise RuntimeError("找不到 adb.exe, 请用 --adb 指定")
+        # 注意: 此处不强制要求 adb 存在 — 延迟到真正使用时 (_require_adb) 报错,
+        # 避免找不到 adb 时整个程序无法启动
         self.package = package
         self.pid: Optional[int] = None
         # maps
         self.regions: List[Tuple[int, int, str, str]] = []
         self._rw_starts: List[int] = []
         self._rw_ends: List[int] = []
+
+    def _require_adb(self) -> str:
+        """返回可用的 adb 路径, 找不到时重新探测一次再报错"""
+        if not self.adb_path or not os.path.isfile(self.adb_path):
+            self.adb_path = find_mumu_adb()
+        if not self.adb_path:
+            raise RuntimeError("找不到 adb.exe (MuMu 安装目录 shell\\adb.exe)")
+        return self.adb_path
 
     # ---------- adb ----------
 
@@ -311,7 +364,7 @@ class MemCore:
     _NO_WINDOW = getattr(subprocess, 'CREATE_NO_WINDOW', 0) if os.name == 'nt' else 0
 
     def adb(self, *args, timeout=30) -> bytes:
-        return subprocess.run([self.adb_path] + list(args),
+        return subprocess.run([self._require_adb()] + list(args),
                               capture_output=True, timeout=timeout,
                               creationflags=self._NO_WINDOW).stdout
 

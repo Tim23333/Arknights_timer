@@ -20,6 +20,7 @@ from PySide6.QtCore import Qt, QThread, QTimer, Signal
 from PySide6.QtGui import QColor, QCursor, QIcon
 from PySide6.QtWidgets import (
     QApplication,
+    QFileDialog,
     QFrame,
     QGroupBox,
     QHBoxLayout,
@@ -573,7 +574,29 @@ class CoachWindow(QMainWindow):
 
     # ================= 敌人数据 =================
 
+    def _ensure_adb(self) -> bool:
+        """扫描前确保 adb 可用; 找不到时弹框让用户手动选择并持久化"""
+        mc = self._enemy_reader.mc
+        if mc.adb_path and os.path.isfile(mc.adb_path):
+            return True
+        QMessageBox.information(
+            self, "需要 adb",
+            "未找到 adb.exe。\n\n"
+            "请选择 MuMu 模拟器安装目录下的 shell\\adb.exe，例如：\n"
+            "D:\\Program Files\\MuMu9\\emulator\\MuMuPlayer-12.0\\shell\\adb.exe")
+        path, _ = QFileDialog.getOpenFileName(
+            self, "选择 adb.exe", "", "adb (adb.exe);;所有文件 (*)")
+        if path and os.path.isfile(path):
+            mc.adb_path = path
+            from tools.enemy_health.memcore import save_adb_path
+            save_adb_path(path)
+            return True
+        return False
+
     def _on_enemy_scan(self) -> None:
+        if not self._ensure_adb():
+            self.lbl_enemy_status.setText('状态: 未选择 adb.exe, 取消扫描')
+            return
         self._stop_enemy_poll()
         self.enemy_table.setRowCount(0)   # 换关卡重扫: 清掉旧敌人行
         self._enemy_rows.clear()

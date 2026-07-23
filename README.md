@@ -146,7 +146,7 @@ MuMu 模拟器 (Android arm64)
 - Python 3.8+
 - Windows 10/11
 - 管理员权限（读取游戏内存）
-- 敌人监控需要 MuMu 模拟器且 adb root 可用（MuMu 默认支持）
+- 敌人监控需要 MuMu 模拟器且 adb root 可用（MuMu 默认支持）；程序会自动探测 adb.exe（多盘符常见路径/注册表/PATH/ANDROID_HOME），探测失败时可在点击「开始扫描」后手动选择 MuMu 安装目录下的 `shell\adb.exe`，选择一次即记住
 
 ### 安装依赖
 
