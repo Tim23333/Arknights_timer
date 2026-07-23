@@ -20,7 +20,10 @@ from PySide6.QtCore import Qt, QThread, QTimer, Signal
 from PySide6.QtGui import QColor, QCursor, QIcon
 from PySide6.QtWidgets import (
     QApplication,
+    QDialog,
+    QDialogButtonBox,
     QFileDialog,
+    QFormLayout,
     QFrame,
     QGroupBox,
     QHBoxLayout,
@@ -78,6 +81,34 @@ ENEMY_RENDER_SEC = 0.016   # 表格渲染节流 (60fps)
 ENEMY_COLS = ['#', '名称', '编号', '敌人ID', '血量', '坐标',
               '攻击', '防御', '法抗', '移速', '攻速', '技能 CD', '状态']
 ENEMY_STATE_NAMES = {0: 'NONE', 1: 'INITED', 2: '战斗中', 3: '已结束'}
+
+# 支持自定义小数位的数值列 (key, 显示名)
+ENEMY_DEC_COLS = [('hp', '血量'), ('pos', '坐标'), ('atk', '攻击'), ('def', '防御'),
+                  ('res', '法抗'), ('mspd', '移速'), ('aspd', '攻速'), ('skill', '技能CD')]
+
+
+class EnemyPrecisionDialog(QDialog):
+    """每列小数位数设置 (0-6)"""
+
+    def __init__(self, parent, dec: dict) -> None:
+        super().__init__(parent)
+        self.setWindowTitle('小数位设置')
+        form = QFormLayout(self)
+        self.spins: dict = {}
+        for k, label in ENEMY_DEC_COLS:
+            s = QSpinBox()
+            s.setRange(0, 6)
+            s.setValue(dec.get(k, 4))
+            s.setSuffix(' 位')
+            form.addRow(f'{label}:', s)
+            self.spins[k] = s
+        btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        btns.accepted.connect(self.accept)
+        btns.rejected.connect(self.reject)
+        form.addRow(btns)
+
+    def values(self) -> dict:
+        return {k: s.value() for k, s in self.spins.items()}
 
 
 def _format_game_time(value: object) -> str:
@@ -182,8 +213,11 @@ class CoachWindow(QMainWindow):
         self._enemy_rows: dict = {}    # enemy addr -> 表格行号 (行位置稳定, 新敌人底部新增)
         self._bar_colors: dict = {}    # enemy addr -> 当前血条颜色
         self._skill_lines: dict = {}   # enemy addr -> 技能格行数 (变化才调整行高)
-        self._enemy_dec: int = 4       # 数值小数位数 (0-6)
+        self._enemy_dec: dict = {k: 4 for k, _ in ENEMY_DEC_COLS}   # 每列小数位数 (0-6)
         self._enemy_last: list = []    # 最近一帧敌人 (改小数位时立即重绘用)
+        self._frame_txt: str = ''      # ms/帧 显示 (0.5s 节流, 避免高频抖动)
+        self._frame_ts: float = 0.0
+        self._widths_fitted: bool = False   # 首次有数据时已做过列宽自适应
 
         self._build_ui()
         self._start_hook_server()
@@ -310,16 +344,18 @@ class CoachWindow(QMainWindow):
         self.enemy_progress.setValue(0)
         self.enemy_progress.setTextVisible(True)
         self.enemy_progress.setFormat('就绪')
-        self.spin_enemy_dec = QSpinBox()
-        self.spin_enemy_dec.setRange(0, 6)
-        self.spin_enemy_dec.setValue(4)
-        self.spin_enemy_dec.setPrefix('小数 ')
-        self.spin_enemy_dec.setSuffix(' 位')
-        self.spin_enemy_dec.setToolTip('敌方数值显示的小数位数 (0-6)')
-        self.spin_enemy_dec.valueChanged.connect(self._on_enemy_dec_changed)
+        self.btn_enemy_precision = QPushButton("小数位设置")
+        self.btn_enemy_precision.setToolTip("分别设置每一列数值的小数位数 (0-6)")
+        self.btn_enemy_precision.clicked.connect(self._on_enemy_precision)
+        self._style_muted_button(self.btn_enemy_precision)
+        self.btn_enemy_fit = QPushButton("列宽自适应")
+        self.btn_enemy_fit.setToolTip("按内容自动调整所有列宽 (也可直接拖动表头分隔线手动调整)")
+        self.btn_enemy_fit.clicked.connect(lambda: self.enemy_table.resizeColumnsToContents())
+        self._style_muted_button(self.btn_enemy_fit)
         row_btn.addWidget(self.btn_enemy_scan)
         row_btn.addWidget(self.btn_enemy_stop)
-        row_btn.addWidget(self.spin_enemy_dec)
+        row_btn.addWidget(self.btn_enemy_precision)
+        row_btn.addWidget(self.btn_enemy_fit)
         row_btn.addWidget(self.enemy_progress, 1)
         l_enemy.addLayout(row_btn)
         self.lbl_enemy_status = QLabel("未开始扫描")
@@ -337,7 +373,7 @@ class CoachWindow(QMainWindow):
         self.enemy_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.enemy_table.setAlternatingRowColors(True)
         hdr = self.enemy_table.horizontalHeader()
-        hdr.setSectionResizeMode(QHeaderView.ResizeToContents)
+        hdr.setSectionResizeMode(QHeaderView.Interactive)   # 列宽可拖动调整
         hdr.setSectionResizeMode(1, QHeaderView.Stretch)   # 名称
         hdr.setSectionResizeMode(4, QHeaderView.Stretch)   # 血量条
         l_table.addWidget(self.enemy_table)
@@ -697,10 +733,12 @@ class CoachWindow(QMainWindow):
         st = ENEMY_STATE_NAMES.get(snap['state'], '?') if snap['state'] >= 0 else '-'
         spd = enemy_gs.SpeedLevel.NAMES.get(snap['speed_level'], '?') if snap['speed_level'] >= 0 else '-'
         t = int(snap['play_time'])
+        if now - self._frame_ts >= 0.5:   # ms/帧 0.5s 节流, 避免高频刷新抖动
+            self._frame_ts = now
+            self._frame_txt = f"   {snap['frame_ms']:.0f}ms/帧" if snap.get('frame_ms') else ''
         text = (f"状态: {st}   倍速: {spd} (x{snap['time_scale']:g})   "
-                f"战斗时间: {t // 60:02d}:{t % 60:02d}   敌人数: {len(snap['enemies'])}")
-        if snap.get('frame_ms'):
-            text += f"   {snap['frame_ms']:.0f}ms/帧"
+                f"战斗时间: {t // 60:02d}:{t % 60:02d}   敌人数: {len(snap['enemies'])}"
+                + self._frame_txt)
         if snap.get('msg'):
             text += f"   ({snap['msg']})"
         self.lbl_enemy_status.setText(text)
@@ -709,6 +747,9 @@ class CoachWindow(QMainWindow):
     def _render_enemy_table(self, enemies) -> None:
         self._enemy_last = enemies
         tbl = self.enemy_table
+        if enemies and not self._widths_fitted:
+            self._widths_fitted = True
+            tbl.resizeColumnsToContents()   # 首次有数据时自适应一次, 之后交用户手调
         # 增量刷新: 按敌人地址锚定行, 已有行原地更新, 新敌人底部新增,
         # 消失的行才删除——杜绝整表重建导致的闪烁
         tbl.setUpdatesEnabled(False)
@@ -734,9 +775,11 @@ class CoachWindow(QMainWindow):
         finally:
             tbl.setUpdatesEnabled(True)
 
-    def _on_enemy_dec_changed(self, v: int) -> None:
-        self._enemy_dec = v
-        self._render_enemy_table(self._enemy_last)   # 立即按新精度重绘
+    def _on_enemy_precision(self) -> None:
+        dlg = EnemyPrecisionDialog(self, self._enemy_dec)
+        if dlg.exec() == QDialog.Accepted:
+            self._enemy_dec = dlg.values()
+            self._render_enemy_table(self._enemy_last)   # 立即按新精度重绘
 
     def _make_enemy_row(self, row: int, addr: int) -> None:
         tbl = self.enemy_table
@@ -755,7 +798,7 @@ class CoachWindow(QMainWindow):
 
     def _update_enemy_row(self, row: int, e) -> None:
         tbl = self.enemy_table
-        p = self._enemy_dec
+        d = self._enemy_dec
 
         def setc(c, text, grey=False):
             it = tbl.item(row, c)
@@ -772,7 +815,7 @@ class CoachWindow(QMainWindow):
         mx = max(1, int(e.max_hp))
         bar.setMaximum(mx)
         bar.setValue(max(0, int(e.hp)))
-        bar.setFormat(f'{e.hp:.{p}f} / {e.max_hp:.{p}f}  %p%')
+        bar.setFormat(f'{e.hp:.{d["hp"]}f} / {e.max_hp:.{d["hp"]}f}  %p%')
         ratio = e.hp / e.max_hp if e.max_hp > 0 else 0
         color = '#5cb85c' if ratio > 0.5 else ('#f0ad4e' if ratio > 0.2 else '#d9534f')
         if not e.alive:
@@ -781,13 +824,13 @@ class CoachWindow(QMainWindow):
             self._bar_colors[e.addr] = color
             bar.setStyleSheet(f'QProgressBar::chunk {{ background-color: {color}; }}')
 
-        setc(5, f'({e.pos_x:.{p}f}, {e.pos_y:.{p}f})')
-        setc(6, f'{e.atk:.{p}f}')
-        setc(7, f'{e.def_:.{p}f}')
-        setc(8, f'{e.res:.{p}f}')
-        setc(9, f'{e.mspd:.{p}f}')
-        setc(10, f'{e.aspd:.{p}f}')
-        cd_text = format_skill_cd(e.skills, sep='\n', prec=p)
+        setc(5, f'({e.pos_x:.{d["pos"]}f}, {e.pos_y:.{d["pos"]}f})')
+        setc(6, f'{e.atk:.{d["atk"]}f}')
+        setc(7, f'{e.def_:.{d["def"]}f}')
+        setc(8, f'{e.res:.{d["res"]}f}')
+        setc(9, f'{e.mspd:.{d["mspd"]}f}')
+        setc(10, f'{e.aspd:.{d["aspd"]}f}')
+        cd_text = format_skill_cd(e.skills, sep='\n', prec=d['skill'])
         setc(11, cd_text)
         n_lines = cd_text.count('\n')          # 行数变化才重排行高 (重排会触发布局)
         if self._skill_lines.get(e.addr) != n_lines:

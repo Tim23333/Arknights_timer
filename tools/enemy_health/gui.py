@@ -23,13 +23,41 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QProgressBar, QTableWidget, QTableWidgetItem,
     QPlainTextEdit, QHeaderView, QDoubleSpinBox, QStyleFactory,
-    QFileDialog, QMessageBox, QSpinBox,
+    QFileDialog, QMessageBox, QSpinBox, QDialog, QFormLayout, QDialogButtonBox,
 )
 
 from .enemy_reader import EnemyReader, format_skill_cd
 from . import game_structs as gs
 
 STATE_NAMES = {0: 'NONE', 1: 'INITED', 2: '战斗中', 3: '已结束'}
+
+# 支持自定义小数位的数值列 (key, 显示名)
+DEC_COLS = [('hp', '血量'), ('pos', '坐标'), ('atk', '攻击'), ('def', '防御'),
+            ('res', '法抗'), ('mspd', '移速'), ('aspd', '攻速'), ('skill', '技能CD')]
+
+
+class PrecisionDialog(QDialog):
+    """每列小数位数设置 (0-6)"""
+
+    def __init__(self, parent, dec):
+        super().__init__(parent)
+        self.setWindowTitle('小数位设置')
+        form = QFormLayout(self)
+        self.spins = {}
+        for k, label in DEC_COLS:
+            s = QSpinBox()
+            s.setRange(0, 6)
+            s.setValue(dec.get(k, 4))
+            s.setSuffix(' 位')
+            form.addRow(f'{label}:', s)
+            self.spins[k] = s
+        btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        btns.accepted.connect(self.accept)
+        btns.rejected.connect(self.reject)
+        form.addRow(btns)
+
+    def values(self):
+        return {k: s.value() for k, s in self.spins.items()}
 
 
 # ============================================================
@@ -110,8 +138,11 @@ class MainWindow(QMainWindow):
         self._row_of = {}        # enemy addr -> 表格行号 (行位置稳定, 新敌人底部新增)
         self._bar_colors = {}    # enemy addr -> 当前血条颜色
         self._skill_lines = {}   # enemy addr -> 技能格行数 (变化才调整行高)
-        self._dec = 4            # 数值小数位数 (0-6)
+        self._dec = {k: 4 for k, _ in DEC_COLS}   # 每列小数位数 (0-6)
         self._last_enemies = []  # 最近一帧敌人 (改小数位时立即重绘用)
+        self._frame_txt = ''     # ms/帧 显示 (0.5s 节流, 避免高频抖动)
+        self._frame_ts = 0.0
+        self._widths_fitted = False   # 首次有数据时已做过列宽自适应
 
         # ---------- 顶部状态 ----------
         top = QHBoxLayout()
@@ -140,13 +171,12 @@ class MainWindow(QMainWindow):
         self.spin_interval.setSuffix(' 秒')
         self.spin_interval.setPrefix('刷新 ')
         self.spin_interval.valueChanged.connect(self.on_interval_changed)
-        self.spin_dec = QSpinBox()
-        self.spin_dec.setRange(0, 6)
-        self.spin_dec.setValue(4)
-        self.spin_dec.setPrefix('小数 ')
-        self.spin_dec.setSuffix(' 位')
-        self.spin_dec.setToolTip('敌方数值显示的小数位数 (0-6)')
-        self.spin_dec.valueChanged.connect(self.on_dec_changed)
+        self.btn_precision = QPushButton('小数位设置')
+        self.btn_precision.setToolTip('分别设置每一列数值的小数位数 (0-6)')
+        self.btn_precision.clicked.connect(self.on_precision)
+        self.btn_fit = QPushButton('列宽自适应')
+        self.btn_fit.setToolTip('按内容自动调整所有列宽 (也可直接拖动表头分隔线手动调整)')
+        self.btn_fit.clicked.connect(lambda: self.table.resizeColumnsToContents())
         self.progress = QProgressBar()
         self.progress.setRange(0, 100)
         self.progress.setValue(0)
@@ -155,7 +185,8 @@ class MainWindow(QMainWindow):
         ctrl.addWidget(self.btn_scan)
         ctrl.addWidget(self.btn_monitor)
         ctrl.addWidget(self.spin_interval)
-        ctrl.addWidget(self.spin_dec)
+        ctrl.addWidget(self.btn_precision)
+        ctrl.addWidget(self.btn_fit)
         ctrl.addWidget(self.progress)
         ctrl.addStretch(1)
 
@@ -166,7 +197,7 @@ class MainWindow(QMainWindow):
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.table.setSelectionMode(QTableWidget.NoSelection)
         hdr = self.table.horizontalHeader()
-        hdr.setSectionResizeMode(QHeaderView.ResizeToContents)
+        hdr.setSectionResizeMode(QHeaderView.Interactive)   # 列宽可拖动调整
         hdr.setSectionResizeMode(1, QHeaderView.Stretch)   # 名称
         hdr.setSectionResizeMode(4, QHeaderView.Stretch)   # 血量条
 
@@ -283,9 +314,11 @@ class MainWindow(QMainWindow):
         if self.poll_worker:
             self.poll_worker.interval = v
 
-    def on_dec_changed(self, v):
-        self._dec = v
-        self._render_table(self._last_enemies)   # 立即按新精度重绘
+    def on_precision(self):
+        dlg = PrecisionDialog(self, self._dec)
+        if dlg.exec() == QDialog.Accepted:
+            self._dec = dlg.values()
+            self._render_table(self._last_enemies)   # 立即按新精度重绘
 
     # ---------- 快照渲染 ----------
 
@@ -301,8 +334,10 @@ class MainWindow(QMainWindow):
         self.lbl_speed.setText(f"倍速: {spd} (x{snap['time_scale']:g})")
         t = int(snap['play_time'])
         self.lbl_time.setText(f"时间: {t // 60:02d}:{t % 60:02d}")
-        self.lbl_count.setText(f"敌人数: {len(snap['enemies'])}"
-                               + (f" · {snap['frame_ms']:.0f}ms/帧" if snap.get('frame_ms') else ''))
+        if now - self._frame_ts >= 0.5:   # ms/帧 0.5s 节流, 避免高频刷新抖动
+            self._frame_ts = now
+            self._frame_txt = f" · {snap['frame_ms']:.0f}ms/帧" if snap.get('frame_ms') else ''
+        self.lbl_count.setText(f"敌人数: {len(snap['enemies'])}" + self._frame_txt)
         if snap.get('msg'):
             self.append_log(snap['msg'])
         self._render_table(snap['enemies'])
@@ -310,6 +345,9 @@ class MainWindow(QMainWindow):
     def _render_table(self, enemies):
         self._last_enemies = enemies
         tbl = self.table
+        if enemies and not self._widths_fitted:
+            self._widths_fitted = True
+            tbl.resizeColumnsToContents()   # 首次有数据时自适应一次, 之后交用户手调
         # 增量刷新: 按敌人地址锚定行, 已有行原地更新, 新敌人底部新增,
         # 消失的行才删除——杜绝整表重建导致的闪烁
         tbl.setUpdatesEnabled(False)
@@ -352,7 +390,7 @@ class MainWindow(QMainWindow):
 
     def _update_row(self, row, e):
         tbl = self.table
-        p = self._dec
+        d = self._dec
 
         def setc(c, text, grey=False):
             it = tbl.item(row, c)
@@ -369,7 +407,7 @@ class MainWindow(QMainWindow):
         mx = max(1, int(e.max_hp))
         bar.setMaximum(mx)
         bar.setValue(max(0, int(e.hp)))
-        bar.setFormat(f'{e.hp:.{p}f} / {e.max_hp:.{p}f}  %p%')
+        bar.setFormat(f'{e.hp:.{d["hp"]}f} / {e.max_hp:.{d["hp"]}f}  %p%')
         ratio = e.hp / e.max_hp if e.max_hp > 0 else 0
         color = '#5cb85c' if ratio > 0.5 else ('#f0ad4e' if ratio > 0.2 else '#d9534f')
         if not e.alive:
@@ -378,13 +416,13 @@ class MainWindow(QMainWindow):
             self._bar_colors[e.addr] = color
             bar.setStyleSheet(f'QProgressBar::chunk {{ background-color: {color}; }}')
 
-        setc(5, f'({e.pos_x:.{p}f}, {e.pos_y:.{p}f})')
-        setc(6, f'{e.atk:.{p}f}')
-        setc(7, f'{e.def_:.{p}f}')
-        setc(8, f'{e.res:.{p}f}')
-        setc(9, f'{e.mspd:.{p}f}')
-        setc(10, f'{e.aspd:.{p}f}')
-        cd_text = format_skill_cd(e.skills, sep='\n', prec=p)
+        setc(5, f'({e.pos_x:.{d["pos"]}f}, {e.pos_y:.{d["pos"]}f})')
+        setc(6, f'{e.atk:.{d["atk"]}f}')
+        setc(7, f'{e.def_:.{d["def"]}f}')
+        setc(8, f'{e.res:.{d["res"]}f}')
+        setc(9, f'{e.mspd:.{d["mspd"]}f}')
+        setc(10, f'{e.aspd:.{d["aspd"]}f}')
+        cd_text = format_skill_cd(e.skills, sep='\n', prec=d['skill'])
         setc(11, cd_text)
         n_lines = cd_text.count('\n')          # 行数变化才重排行高 (重排会触发布局)
         if self._skill_lines.get(e.addr) != n_lines:
