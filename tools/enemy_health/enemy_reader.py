@@ -359,7 +359,10 @@ class EnemyReader:
                     if not (len(enemies) <= cap <= 64):
                         continue
                     klass = _u64(d, a0 * 8)
-                    if not (0x700000000000 <= klass < 0x730000000000):
+                    # klass 指针合理性: 48 位用户态高地址段 (1TB-256TB)。
+                    # 不能按具体设备 ASLR 写死范围 (曾写死 0x70-0x72,
+                    # 换机后堆映射到 0x74 段导致全部误杀)
+                    if not (0x10000000000 <= klass < 0x1000000000000):
                         continue
                     body0 = a0 + gs.Il2CppArray.ITEMS // 8
                     if body0 + cap > n:
