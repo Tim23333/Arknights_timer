@@ -356,7 +356,10 @@ class EnemyReader:
                     if a0 < 0:
                         continue
                     cap = _i32(d, a0 * 8 + gs.Il2CppArray.MAX_LENGTH)
-                    if not (len(enemies) <= cap <= 64):
+                    # cap 只作粗过滤: 扫描发现的敌人数常偏离真实列表长度
+                    # (退场对象未回收/非整数血量漏检/扫描期间刷怪),
+                    # 精确性交给匹配分排序与第 5 遍 Scheduler 反查
+                    if not (1 <= cap <= 300):
                         continue
                     klass = _u64(d, a0 * 8)
                     # klass 指针合理性: 48 位用户态高地址段 (1TB-256TB)。
@@ -381,13 +384,15 @@ class EnemyReader:
             return []
         cands = sorted(((s, a) for a, s in cand.items() if s >= 1), reverse=True)
         self.log(f"[扫描] items 候选 {len(cands)} 个, 最高匹配 {cands[0][0]}/{len(enemies)}")
-        return [a for s, a in cands[:16]]
+        return [a for s, a in cands[:32]]
 
     def _find_list(self, items_cands, expect_cnt, snap=None):
         """第 4 遍: 单遍扫描同时找多个 items 候选的引用 -> List<Enemy> 候选。
-        返回 (exact, fallback): exact=[(L, items), ...] 为 count==expect_cnt 的
-        候选 (按 items 匹配分降序), fallback=(L, items) 为近似匹配或 None。
-        哪个是真 m_managedWaveEnemies 由第 5 遍 Scheduler 反查判定。"""
+        返回 (exact, near): exact=[(L, items), ...] 为 count==expect_cnt 的
+        候选 (按 items 匹配分降序), near=[(L, items), ...] 为 count 合理但
+        不等于 expect_cnt 的近似候选 (扫描发现的敌人数常因退场未回收/
+        漏检/刷怪偏离真实列表长度)。哪个是真 m_managedWaveEnemies
+        由第 5 遍 Scheduler 反查判定。"""
         narr = np.array(sorted(items_cands), dtype='<u8') if np is not None else None
         needle_map = {a: struct.pack('<Q', a) for a in items_cands}
         hits = []  # (items_addr, hit_pos)
@@ -409,9 +414,8 @@ class EnemyReader:
 
         self._pass(snap, on_chunk, "List指针")
         self.log(f"[扫描] List 引用命中 {len(hits)} 处")
-        exact = []   # (L, items) count==expect_cnt
+        exact, near = [], []
         seen = set()
-        fallback = None
         for items in items_cands:   # 已按匹配分降序
             for v, h in hits:
                 if v != items:
@@ -423,13 +427,15 @@ class EnemyReader:
                 if not d or _u64(d, gs.ListInternal.ITEMS) != items:
                     continue
                 cnt = _i32(d, gs.ListInternal.SIZE)
+                if not (0 < cnt <= 300):
+                    continue
+                seen.add(L)
                 if cnt == expect_cnt:
-                    seen.add(L)
                     exact.append((L, items))
-                elif expect_cnt <= cnt <= expect_cnt + 16 and fallback is None:
-                    fallback = (L, items)
-        self.log(f"[扫描] List 候选 {len(exact)} 个" + (" (+近似 1 个)" if fallback else ""))
-        return exact, fallback
+                else:
+                    near.append((L, items))
+        self.log(f"[扫描] List 候选 {len(exact)} 个 (+近似 {len(near)} 个)")
+        return exact, near
 
     def _find_scheduler_bc(self, list_addrs, snap=None):
         """第 5 遍: 单遍扫描指向任一 List 候选的指针 -> Scheduler -> SchedulerDriver
@@ -539,21 +545,21 @@ class EnemyReader:
             if not items_cands:
                 self.log("[扫描] 未找到 items 数组")
                 return False
-            exact, fallback = self._find_list(items_cands, len(self.enemy_addrs), snap=snap)
-            if not exact and not fallback:
-                self.log("[扫描] 未找到 List<Enemy>")
+            exact, near = self._find_list(items_cands, len(self.enemy_addrs), snap=snap)
+            if not exact and not near:
+                self.log("[扫描] 未找到 List<Enemy> (可在敌人刚出场满血时重扫)")
                 return False
             self.sched_addr = self.bc_addr = 0
             self.list_addr = 0
             if self.with_bc:
-                cands = [L for L, _ in exact] + ([fallback[0]] if fallback else [])
+                cands = [L for L, _ in exact] + [L for L, _ in near]
                 L, self.sched_addr, self.bc_addr = self._find_scheduler_bc(cands, snap=snap)
                 if L:
                     self.list_addr = L   # 被真 Scheduler 持有的才是活列表
                 else:
                     self.log("[扫描] 未找到 BattleController (继续, 仅无战斗状态信息)")
             if not self.list_addr:
-                self.list_addr = exact[0][0] if exact else fallback[0]
+                self.list_addr = exact[0][0] if exact else near[0][0]
                 self.log(f"[扫描] List<Enemy> @ {hex(self.list_addr)} (取首候选)")
             d = self.mc.read(self.list_addr, 0x20)
             self.items_addr = _u64(d, gs.ListInternal.ITEMS) if d else 0
