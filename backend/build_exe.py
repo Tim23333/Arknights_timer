@@ -16,6 +16,8 @@
   python build_exe.py --icon "<仓库根目录>\\aaa.ico" --name ArknightsTimeline
   python build_exe.py --onedir
   python build_exe.py --skip-timer   # 只打包主程序
+  python build_exe.py --test         # 测试版: 带控制台窗口实时显示日志,
+                                     # 输出 ArknightsTimeline_Test.exe (不覆盖正式版)
 """
 from __future__ import annotations
 
@@ -106,6 +108,12 @@ def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args) -
     # 打包附加数据
     if icon_path.is_file():
         cmd.extend(["--add-data", _add_data_arg(icon_path, ".")])
+    if getattr(args, "test", False):
+        # 测试版标记文件: desktop_app 检测到 _MEIPASS/TEST_BUILD 即开启控制台日志
+        marker = backend_dir / "build" / "TEST_BUILD"
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.write_text("test build\n", encoding="utf-8")
+        cmd.extend(["--add-data", _add_data_arg(marker, ".")])
     cmd.extend(["--add-data", _add_data_arg(tools_dir, "tools")])
     if data_dir.is_dir():
         cmd.extend(["--add-data", _add_data_arg(data_dir, "backend/data")])
@@ -214,7 +222,14 @@ def main() -> int:
     parser.add_argument("--no-clean", action="store_true", help="不清理 build/dist 临时目录")
     parser.add_argument("--console", action="store_true", help="显示控制台窗口（默认无控制台）")
     parser.add_argument("--skip-timer", action="store_true", help="跳过寻址工具打包（主程序将不含内嵌寻址工具）")
+    parser.add_argument("--test", action="store_true",
+                        help="打包测试版: 强制控制台窗口 (实时日志), 内嵌 TEST_BUILD 标记, 输出名自动加 _Test 后缀")
     args = parser.parse_args()
+
+    if args.test:
+        args.console = True
+        if args.name == "ArknightsTimeline":   # 未自定义名称时自动加后缀, 避免覆盖正式版
+            args.name = "ArknightsTimeline_Test"
 
     backend_dir = Path(__file__).resolve().parent
     repo_root = backend_dir.parent

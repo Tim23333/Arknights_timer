@@ -55,6 +55,19 @@ from app.services.timer_provider import TimerDataProvider
 from tools.enemy_health import EnemyReader, format_skill_cd
 from tools.enemy_health import game_structs as enemy_gs
 
+# 测试版检测: build_exe.py --test 打包时内嵌 TEST_BUILD 标记文件
+# (开发调试可设环境变量 AK_TEST_BUILD=1)。测试版带控制台窗口,
+# 全部内部日志实时输出到控制台, 用于现场排查 (如换机扫描失败)。
+TEST_BUILD = os.environ.get("AK_TEST_BUILD") == "1" or (
+    getattr(sys, "frozen", False)
+    and (Path(getattr(sys, "_MEIPASS", ".")) / "TEST_BUILD").is_file())
+
+
+def _tlog(*a) -> None:
+    """测试版控制台日志 (正式版为空操作, 开销可忽略)"""
+    if TEST_BUILD:
+        print(f"[{time.strftime('%H:%M:%S')}]", *a, flush=True)
+
 AUTO_REFRESH_MS = 8
 FAST_UI_MS = 8
 SLOW_UI_MS = 150
@@ -89,8 +102,21 @@ class EnemyScanWorker(QThread):
 
     def run(self) -> None:
         try:
-            self.reader.log = lambda m: self.log.emit(str(m))
+            if TEST_BUILD:   # 测试版: 日志同时进 GUI 标签和控制台
+                self.reader.log = lambda m: (self.log.emit(str(m)), _tlog(m))
+            else:
+                self.reader.log = lambda m: self.log.emit(str(m))
             self.reader.progress = lambda pct, desc: self.progress.emit(int(pct), str(desc))
+            if TEST_BUILD:   # 换机扫描失败排查: 先输出 adb 链路诊断
+                mc = self.reader.mc
+                _tlog("诊断 adb_path =", mc.adb_path)
+                try:
+                    _tlog("诊断 adb devices:",
+                          mc.adb("devices", timeout=10).decode(errors="replace").strip().replace("\r", "").replace("\n", " | "))
+                    _tlog("诊断 adb root:", mc.adb("root", timeout=10).decode(errors="replace").strip())
+                    _tlog("诊断 pidof:", mc.shell(f"pidof {mc.package}", timeout=10).strip() or "(空, 游戏未运行?)")
+                except Exception as ex:
+                    _tlog("诊断 adb 检查失败:", f"{type(ex).__name__}: {ex}")
             pid = self.reader.connect()
             self.log.emit(f"游戏 PID = {pid}")
             ok = self.reader.bootstrap(force=self.force)
@@ -136,7 +162,7 @@ class EnemyPollWorker(QThread):
 class CoachWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("明日方舟游戏数据显示工具")
+        self.setWindowTitle("明日方舟游戏数据显示工具" + (" [测试版]" if TEST_BUILD else ""))
         self.resize(1180, 760)
         self.setMinimumSize(900, 560)
 
@@ -149,7 +175,7 @@ class CoachWindow(QMainWindow):
         self._ws_loop: asyncio.AbstractEventLoop | None = None
 
         # 敌人数据
-        self._enemy_reader = EnemyReader(log=lambda m: None)
+        self._enemy_reader = EnemyReader(log=_tlog)   # 测试版日志进控制台, 正式版空操作
         self._enemy_scan: EnemyScanWorker | None = None
         self._enemy_poll: EnemyPollWorker | None = None
         self._enemy_last_render = 0.0
@@ -658,6 +684,11 @@ class CoachWindow(QMainWindow):
         self.btn_enemy_stop.setEnabled(False)
 
     def _on_enemy_snapshot(self, snap: dict) -> None:
+        if TEST_BUILD:   # 轮询错误 (数据链失效/重建) 去重后输出控制台
+            msg = snap.get('msg')
+            if msg and msg != getattr(self, '_last_snap_msg', None):
+                self._last_snap_msg = msg
+                _tlog("轮询:", msg)
         # 渲染节流: 轮询 33ms, 渲染 30fps
         now = time.time()
         if snap.get('ok') and now - self._enemy_last_render < ENEMY_RENDER_SEC:
@@ -803,6 +834,24 @@ def main() -> None:
         params = " ".join([f'"{arg}"' for arg in sys.argv[1:]])
         ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, f'"{script}" {params}', None, 1)
         sys.exit()
+
+    if TEST_BUILD:
+        import faulthandler
+        import traceback
+        faulthandler.enable()
+
+        def _thread_hook(args):
+            print(f"!!! 线程 {args.thread.name if args.thread else '?'} 未捕获异常:", flush=True)
+            traceback.print_exception(args.exc_type, args.exc_value, args.exc_traceback)
+        threading.excepthook = _thread_hook
+        _tlog("========== 测试版 (控制台实时日志) ==========")
+        _tlog("frozen:", getattr(sys, "frozen", False), "| exe:", sys.executable)
+        _tlog("工作目录:", os.getcwd(), "| 管理员权限:", _is_admin())
+        try:
+            from tools.enemy_health.memcore import find_mumu_adb
+            _tlog("adb 探测:", find_mumu_adb() or "(未找到)")
+        except Exception as e:
+            _tlog("adb 探测异常:", e)
 
     app = QApplication.instance() or QApplication(sys.argv)
 
