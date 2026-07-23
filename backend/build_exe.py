@@ -130,6 +130,7 @@ def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args) -
     cmd.extend(["--hidden-import", "numpy"])
     cmd.extend(["--hidden-import", "pymem"])
     cmd.extend(["--hidden-import", "PySide6"])
+    cmd.extend(["--hidden-import", "websockets"])   # WS 推送服务 (桌面_app 内延迟导入)
 
     cmd.append(str(entry))
 
