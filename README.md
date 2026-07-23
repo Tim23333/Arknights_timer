@@ -1,8 +1,43 @@
-# Arknights 明日方舟打轴工具
+# Arknights 明日方舟游戏数据显示工具
 
-明日方舟游戏数据解析、内存读取、排轴打轴一体化工具集。
+明日方舟游戏数据实时显示工具集：通过内存读取，实时显示**游戏时间、逻辑帧数、倍速状态、场上所有敌人的名称/血量/属性/坐标**，并附带游戏数据解析与服务器接口逆向文档。
 
-## 内存寻址使用说明
+## 主程序功能（backend/）
+
+`ArknightsTimeline.exe`（PySide6 桌面端，单文件分发）：
+
+- **时间/帧数卡片**：实时读取游戏内置时间（float）与逻辑帧数（uint32），经内嵌寻址工具一次性定位地址后秒级启动
+- **敌人实时监控**：进关卡后点「开始扫描」一次性定位敌人列表（约 1-3 分钟，结果缓存），随后准实时展示所有敌人的：
+  - 名称 / 编号 / 敌人 ID
+  - 血量（进度条 + 数值）、攻击 / 防御 / 法抗 / 移速 / 攻速
+  - 地图坐标、存活状态
+  - 战斗状态、倍速、战斗时间
+  - 轮询间隔 0.01s、渲染 60fps，新敌人自动追加到列表底部
+- **内嵌寻址工具**：点击即自动提取运行，无需安装 Python
+- **WebSocket 推送**：游戏数据实时推送给外部客户端
+- 窗口置顶、管理员权限自动提权
+
+## 敌人监控原理（tools/enemy_health/）
+
+通过 adb 读取 MuMu 模拟器中游戏进程（IL2CPP, arm64）的内存：
+
+```
+MuMu 模拟器 (Android arm64)
+  └── 明日方舟进程
+       └── Scheduler.m_managedWaveEnemies (List<Enemy>)
+            └── Enemy: m_hp / <id> / Attributes.m_cachedData
+```
+
+- **定位**：首次运行时按内容特征（`enemy_` 字符串 + HP 定点数签名）在 GC 堆中
+  定位敌人列表与 BattleController。扫描共 5 个阶段，仅第 1 阶段走网络传输
+  （扫描块同时落盘为临时快照，后 4 阶段本地重放），地址链缓存到
+  `enemy_cache.pkl`，之后秒级启动
+- **轮询**：设备侧常驻内存服务 `memsrv`（aarch64 静态二进制，`nc -L` +
+  `adb forward` TCP 长连接），打开 `/proc/<pid>/mem` 一次后每次读取仅一个
+  pread，稳态 ~1-2ms/帧；服务不可用时自动回退慢速 adb 读取
+- **独立 GUI**：`python -m tools.enemy_health.gui` 可脱离主程序单独使用
+
+## 内存寻址使用说明（时间/帧数）
 
 ### 基本原理
 
@@ -46,21 +81,17 @@
 ## 项目结构
 
 ```
-├── backend/                # 打轴工具主程序（PySide6 桌面端）
-│   ├── desktop_app.py      # 主窗口 + WebSocket 服务
+├── backend/                # 游戏数据显示工具主程序（PySide6 桌面端）
+│   ├── desktop_app.py      # 主窗口 + WebSocket 服务 + 敌人监控界面
 │   ├── run.py              # 启动入口
-│   ├── build_exe.py        # 一键打包脚本
+│   ├── build_exe.py        # 一键打包脚本（自动重编 memsrv）
 │   └── app/                # Web 服务（FastAPI）
-│
-├── frontend/               # 前端（Vite + Vue）
-│   ├── src/                # 源码
-│   └── standalone/         # 独立 HTML 版本（v0.1 ~ v0.25）
 │
 ├── tools/                  # 内存读取工具
 │   ├── timer/              # 游戏时间 & 逻辑帧寻址
+│   ├── enemy_health/       # 敌方血量/属性实时监控 (adb + memsrv)
 │   ├── speed_scanner/      # 倍速 & 暂停状态寻址
-│   ├── deploy_tracker/     # 干员部署追踪
-│   └── enemy_health/       # 敌方血量读取
+│   └── deploy_tracker/     # 干员部署追踪
 │
 ├── ark_parser/             # 游戏数据解析
 │   ├── parse_characters.py # 批量提取干员数据
@@ -72,26 +103,19 @@
 │
 ├── Ark_data/               # dump.cs 等逆向原始数据
 │
+├── frontend/               # 旧排轴前端（已停用）
+│
 └── AssetStudio-ArknightsStudio/  # AB 包解包工具
 ```
 
 ## 功能概览
-
-### 打轴工具（backend/）
-
-桌面端排轴工具，用于明日方舟关卡攻略视频的时间轴规划。
-
-- 实时读取游戏内存中的时间、帧数、倍速、暂停状态
-- 加载排轴 JSON，按帧对齐显示当前执行步骤
-- WebSocket 推送游戏数据，支持外部客户端接入
-- 支持从其他打轴工具导入 JSON
 
 ### 内存寻址工具（tools/timer/）
 
 通过内存扫描定位游戏中的 `game_time`（float32）和 `frame_count`（uint32）地址。
 
 - 多步扫描向导，逐步缩小候选地址
-- 自动推送到打轴工具主程序
+- 自动推送到主程序
 - 支持 MuMu、雷电、夜神、BlueStacks 等模拟器
 
 ### 倍速/暂停扫描工具（tools/speed_scanner/）
@@ -121,18 +145,26 @@
 - Python 3.8+
 - Windows 10/11
 - 管理员权限（读取游戏内存）
+- 敌人监控需要 MuMu 模拟器且 adb root 可用（MuMu 默认支持）
 
 ### 安装依赖
 
 ```bash
+pip install -r backend/requirements.txt
 pip install pymem PySide6 websockets numpy
 ```
 
-### 启动打轴工具
+### 启动主程序
 
 ```bash
 cd backend
 python run.py
+```
+
+### 启动敌人监控（独立 GUI）
+
+```bash
+python -m tools.enemy_health.gui
 ```
 
 ### 启动内存寻址工具
@@ -140,13 +172,6 @@ python run.py
 ```bash
 cd tools/timer
 python ak_timer_ui.py
-```
-
-### 启动倍速/暂停扫描工具
-
-```bash
-cd tools/speed_scanner
-python ak_speed_ui.py
 ```
 
 ### 解析游戏数据
@@ -172,13 +197,13 @@ python build_exe.py
 ```
 
 输出：
-- `backend/dist/ArknightsTimeline.exe` — 主程序（内嵌寻址工具）
+- `backend/dist/ArknightsTimeline.exe` — 主程序（内嵌寻址工具与 memsrv）
 
 打包详情见 [backend/README_BUILD.md](backend/README_BUILD.md)。
 
 ## WebSocket 接口
 
-打轴工具启动后会开启 WebSocket 服务，推送实时游戏数据：
+主程序启动后会开启 WebSocket 服务，推送实时游戏数据：
 
 ```json
 {
@@ -199,9 +224,9 @@ python build_exe.py
 | 组件 | 技术 |
 |------|------|
 | 桌面端 | Python + PySide6 |
-| 前端 | Vite + Vue 3 |
-| Web 服务 | FastAPI |
-| 内存读取 | pymem |
+| Web 服务 | FastAPI + WebSocket |
+| 内存读取 | pymem（模拟器进程）/ adb + memsrv（设备侧服务, zig cc 交叉编译 aarch64） |
+| 扫描加速 | numpy + 堆快照落盘复用 |
 | 数据解析 | FlatBuffers (自定义变体) |
 | 打包 | PyInstaller |
 

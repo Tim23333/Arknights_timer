@@ -124,9 +124,11 @@ python test_packaged_exe.py
 ### 用户使用说明
 
 1. 双击 `ArknightsTimeline.exe` 启动主程序
-2. 点击"打开寻址工具"按钮启动内存扫描
+2. 点击"打开寻址工具"按钮启动内存扫描（定位游戏时间/帧数地址）
 3. 首次点击时，程序会自动提取寻址工具到临时目录
 4. **注意**：寻址工具需要管理员权限才能读取游戏内存
+5. 敌人监控：MuMu 模拟器进关卡且场上有敌人后，点击"开始扫描"（约 1-3 分钟，
+   仅首次/换关卡需要），完成后自动准实时展示所有敌人信息
 
 ## 常见问题
 
@@ -219,11 +221,14 @@ if getattr(sys, "frozen", False):
 ### 模块依赖关系
 
 ```
-ArknightsTimeline.exe (90.2 MB)
+ArknightsTimeline.exe (~85 MB)
 ├── PySide6 (GUI)
-├── pymem (内存读取)
+├── pymem (内存读取: 时间/帧数)
 ├── tools/timer/ak_memory_reader.py
 ├── tools/deploy_tracker/ak_deploy_reader.py
+├── tools/enemy_health/ (敌人监控: adb + TCP 通道)
+│   ├── bin/memsrv (设备侧内存服务, aarch64)
+│   └── data/tables/enemy_handbook_table*.bin (敌人名称数据库)
 └── tools/AKTimerTool.exe (内嵌)
     ├── tkinter (GUI)
     ├── pymem (内存读取)
