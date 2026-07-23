@@ -25,7 +25,7 @@ from PySide6.QtWidgets import (
     QPlainTextEdit, QHeaderView, QDoubleSpinBox, QStyleFactory,
 )
 
-from .enemy_reader import EnemyReader
+from .enemy_reader import EnemyReader, format_skill_cd
 from . import game_structs as gs
 
 STATE_NAMES = {0: 'NONE', 1: 'INITED', 2: '战斗中', 3: '已结束'}
@@ -95,7 +95,8 @@ class PollWorker(QThread):
 # 主窗口
 # ============================================================
 class MainWindow(QMainWindow):
-    COLS = ['#', '名称', '编号', '敌人ID', '血量', '坐标', '攻击', '防御', '法抗', '移速', '攻速', '状态']
+    COLS = ['#', '名称', '编号', '敌人ID', '血量', '坐标', '攻击', '防御', '法抗', '移速',
+            '攻速', '技能 CD', '状态']
 
     def __init__(self):
         super().__init__()
@@ -302,6 +303,7 @@ class MainWindow(QMainWindow):
         tbl.item(row, 0).setData(Qt.UserRole, addr)
         tbl.item(row, 1).setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         tbl.item(row, 3).setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        tbl.item(row, 11).setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         bar = QProgressBar()
         bar.setTextVisible(True)
         tbl.setCellWidget(row, 4, bar)
@@ -339,7 +341,8 @@ class MainWindow(QMainWindow):
         setc(8, int(e.res))
         setc(9, f'{e.mspd:.2f}')
         setc(10, int(e.aspd))
-        setc(11, '存活' if e.alive else ('退场' if e.finish else '阵亡'), grey=not e.alive)
+        setc(11, format_skill_cd(e.skills))
+        setc(12, '存活' if e.alive else ('退场' if e.finish else '阵亡'), grey=not e.alive)
 
     # ---------- 关闭 ----------
 

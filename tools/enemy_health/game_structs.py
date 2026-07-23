@@ -13,6 +13,13 @@
   - SchedulerDriver: +0x10=BattleController; BC: state=0x220 speed=0x228
     timeScale=0x280 playTime=0x284 (dump.cs 旧偏移 0x30/0x22C/0x234/0x294 已失效)
 
+  [实测验证 2026-07-23] (5-10 浮士德 + 4 小怪)
+  - m_skills=0x498 (List<EnemySkill>) / m_allSkills=0x410 (数组) 均有效
+  - EnemySkill: cooldownTimer=0x48 data=0x80; PeriodicTimer: period=0x10
+    remaining=0x18 (普通 FP); ESkillData: prefabKey=0x10 cooldown=0x1C
+    initCooldown=0x20。浮士德 SummonBallis/CriticalHit 两计时器出场
+    经过时间互相吻合 (3.63s), 链路确认
+
 所有偏移均为相对对象起始地址的绝对偏移 (含 0x10 对象头)。
 """
 
@@ -119,14 +126,44 @@ class EntityFields:
 
 
 # ============================================================
-# Enemy (敌方单位)  [dump.cs 偏移, 需 e2e 验证]
+# Enemy (敌方单位)
 # ============================================================
 class EnemyFields:
     M_CURRENT_TILE = 0x320      # Tile*
     M_BLOCK_POSITION = 0x3C0    # Vector2 (float x,y) 阻挡位置
     M_POS_IN_LAST_FRAME = 0x3D0 # Vector2 (float x,y) 上一帧地图坐标
+    M_ALL_SKILLS = 0x410        # EnemySkill[] 全部技能组件 [实测]
     ROUTE_SPAWN_POS = 0x478     # GridPosition (int32 row,col) 出生格
-    READ_SIZE = 0x480           # 稳态每敌读取跨度
+    READ_SIZE = 0x4A0           # 稳态每敌读取跨度 (含 m_skills 指针 0x498+8)
+    M_SKILLS = 0x498            # List<EnemySkill> 激活技能列表 [实测]
+
+
+# ============================================================
+# EnemySkill (敌方技能)  [已实测验证 2026-07-23]
+# 注意: EnemySkill 是 MonoBehaviour, 字段含 0x10 对象头 + 0x8 m_CachedPtr
+# ============================================================
+class EnemySkillFields:
+    MAX_TRIGGER_TIME = 0x2C     # int32 最多触发次数
+    OVERWRITE_INIT_CD = 0x34    # int32 初始冷却覆盖
+    M_SP_COST = 0x3C            # int32
+    M_TRIGGER_CNT = 0x40        # int32 已触发次数
+    M_COOLDOWN_TIMER = 0x48     # PeriodicTimer* 冷却计时器
+    M_MAIN_ABILITY = 0x58       # Ability*
+    DATA = 0x80                 # ESkillData* 静态配置
+    OWNER = 0x88                # Enemy*
+
+
+class PeriodicTimerFields:
+    M_PERIOD_TIME = 0x10        # FP 周期 (技能总 CD, 秒)
+    M_REMAINING_TIME = 0x18     # FP 剩余 (当前 CD 剩余, 秒)
+
+
+class ESkillDataFields:
+    PREFAB_KEY = 0x10           # string 技能 ID
+    PRIORITY = 0x18             # int32
+    COOLDOWN = 0x1C             # float 配置 CD
+    INIT_COOLDOWN = 0x20        # float 初始 CD (出场后首次)
+    SP_COST = 0x24              # int32
 
 
 # ============================================================

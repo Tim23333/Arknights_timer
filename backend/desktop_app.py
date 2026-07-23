@@ -50,7 +50,7 @@ for _p in (str(_BACKEND_ROOT), str(_REPO_ROOT)):
         sys.path.insert(0, _p)
 
 from app.services.timer_provider import TimerDataProvider
-from tools.enemy_health import EnemyReader
+from tools.enemy_health import EnemyReader, format_skill_cd
 from tools.enemy_health import game_structs as enemy_gs
 
 AUTO_REFRESH_MS = 8
@@ -61,7 +61,7 @@ ENEMY_POLL_SEC = 0.01      # 敌人轮询间隔 (memsrv 通道单帧 <1ms, 2倍�
 ENEMY_RENDER_SEC = 0.016   # 表格渲染节流 (60fps)
 
 ENEMY_COLS = ['#', '名称', '编号', '敌人ID', '血量', '坐标',
-              '攻击', '防御', '法抗', '移速', '攻速', '状态']
+              '攻击', '防御', '法抗', '移速', '攻速', '技能 CD', '状态']
 ENEMY_STATE_NAMES = {0: 'NONE', 1: 'INITED', 2: '战斗中', 3: '已结束'}
 
 
@@ -675,6 +675,7 @@ class CoachWindow(QMainWindow):
         tbl.item(row, 0).setData(Qt.UserRole, addr)
         tbl.item(row, 1).setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         tbl.item(row, 3).setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        tbl.item(row, 11).setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         bar = QProgressBar()
         bar.setTextVisible(True)
         tbl.setCellWidget(row, 4, bar)
@@ -712,7 +713,8 @@ class CoachWindow(QMainWindow):
         setc(8, int(e.res))
         setc(9, f'{e.mspd:.2f}')
         setc(10, int(e.aspd))
-        setc(11, '存活' if e.alive else ('退场' if e.finish else '阵亡'), grey=not e.alive)
+        setc(11, format_skill_cd(e.skills))
+        setc(12, '存活' if e.alive else ('退场' if e.finish else '阵亡'), grey=not e.alive)
 
     # ================= 定时刷新 =================
 
