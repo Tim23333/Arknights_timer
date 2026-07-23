@@ -6,18 +6,23 @@
 1) 打包主程序：backend/run.py → ArknightsTimeline.exe
    （游戏时间/帧显示 + 敌人实时监控, tools/enemy_health）
 2) 打包寻址工具：tools/timer/ak_timer_ui.py → AKTimerTool.exe（内嵌进主程序）
+3) 默认连打测试版：同源 + 控制台实时日志 → ArknightsTimeline_Test.exe
 3) 自动包含 tools/ 目录（含 enemy_health/bin/memsrv 设备侧内存服务）
 4) 自动构建 memsrv（memsrv.c 比 bin/memsrv 新时用 ziglang 交叉编译）
 5) 自动包含敌人名称数据库 data/tables/enemy_handbook_table*.bin
 6) 默认图标：仓库根目录下的 aaa.ico（可命令行覆盖）
 
 用法：
-  python build_exe.py
+  python build_exe.py                # 默认连打正式版 + 测试版 (带控制台日志)
   python build_exe.py --icon "<仓库根目录>\\aaa.ico" --name ArknightsTimeline
   python build_exe.py --onedir
-  python build_exe.py --skip-timer   # 只打包主程序
-  python build_exe.py --test         # 测试版: 带控制台窗口实时显示日志,
-                                     # 输出 ArknightsTimeline_Test.exe (不覆盖正式版)
+  python build_exe.py --skip-timer   # 只打包主程序 (不内嵌寻址工具)
+  python build_exe.py --skip-test    # 只打正式版, 跳过测试版
+
+说明：测试版 = 同源代码 + 控制台窗口实时日志 + TEST_BUILD 标记,
+输出 <名称>_Test.exe (默认 ArknightsTimeline_Test.exe), 用于现场排查
+(如换机扫描失败)。desktop_app 检测标记或环境变量 AK_TEST_BUILD=1
+即开启控制台日志。
 """
 from __future__ import annotations
 
@@ -222,14 +227,10 @@ def main() -> int:
     parser.add_argument("--no-clean", action="store_true", help="不清理 build/dist 临时目录")
     parser.add_argument("--console", action="store_true", help="显示控制台窗口（默认无控制台）")
     parser.add_argument("--skip-timer", action="store_true", help="跳过寻址工具打包（主程序将不含内嵌寻址工具）")
+    parser.add_argument("--skip-test", action="store_true", help="跳过测试版打包（默认与正式版一起产出）")
     parser.add_argument("--test", action="store_true",
-                        help="打包测试版: 强制控制台窗口 (实时日志), 内嵌 TEST_BUILD 标记, 输出名自动加 _Test 后缀")
+                        help="(已废弃, 默认即会同时打包测试版) 仅保留兼容, 效果等同默认行为")
     args = parser.parse_args()
-
-    if args.test:
-        args.console = True
-        if args.name == "ArknightsTimeline":   # 未自定义名称时自动加后缀, 避免覆盖正式版
-            args.name = "ArknightsTimeline_Test"
 
     backend_dir = Path(__file__).resolve().parent
     repo_root = backend_dir.parent
@@ -266,7 +267,7 @@ def main() -> int:
             print("[WARN] dist/AKTimerTool.exe 不存在, 主程序将无法内嵌寻址工具")
     else:
         print("\n" + "=" * 60)
-        print("[步骤 1/2] 打包寻址工具...")
+        print("[步骤 1/3] 打包寻址工具...")
         print("=" * 60)
         ret = _build_timer_tool(backend_dir, repo_root, icon_path, args)
         if ret != 0:
@@ -274,11 +275,24 @@ def main() -> int:
 
     # 步骤 2: 打包主程序，将寻址工具内嵌进去
     print("\n" + "=" * 60)
-    print("[步骤 2/2] 打包主程序（内嵌寻址工具）...")
+    print("[步骤 2/3] 打包主程序（内嵌寻址工具）...")
     print("=" * 60)
     ret = _build_main_app(backend_dir, repo_root, icon_path, args)
     if ret != 0:
         return ret
+
+    # 步骤 3: 测试版 (控制台实时日志), 名称加 _Test 后缀, 内嵌 TEST_BUILD 标记
+    if not args.skip_test:
+        print("\n" + "=" * 60)
+        print("[步骤 3/3] 打包测试版（控制台实时日志）...")
+        print("=" * 60)
+        test_args = argparse.Namespace(**vars(args))
+        test_args.test = True        # _build_main_app 据此内嵌 TEST_BUILD 标记
+        test_args.console = True     # 测试版必须带控制台窗口
+        test_args.name = args.name if args.name.endswith("_Test") else f"{args.name}_Test"
+        ret = _build_main_app(backend_dir, repo_root, icon_path, test_args)
+        if ret != 0:
+            return ret
 
     # 清理临时的 AKTimerTool.exe（已内嵌到主程序中）
     if timer_exe.exists():

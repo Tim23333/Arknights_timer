@@ -306,14 +306,15 @@ python build_exe.py --name MyArknightsTool
 # 显示控制台窗口（调试用）
 python build_exe.py --console
 
-# 测试版（带控制台窗口实时显示日志，输出 ArknightsTimeline_Test.exe 不覆盖正式版）
-python build_exe.py --test
+# 跳过测试版（默认每次都会连打 正式版 + 测试版 两个 exe）
+python build_exe.py --skip-test
 ```
 
-测试版说明：`--test` 会强制控制台模式并内嵌 `TEST_BUILD` 标记文件，
-`desktop_app` 检测到后（或开发时设环境变量 `AK_TEST_BUILD=1`）将全部
-内部日志（扫描各阶段/adb 诊断/通道异常/线程未捕获异常）实时输出到
-控制台窗口，用于现场排查（如换机扫描失败）。
+测试版说明：默认与正式版一同产出（`ArknightsTimeline_Test.exe`），
+强制控制台模式并内嵌 `TEST_BUILD` 标记文件；`desktop_app` 检测到后
+（或开发时设环境变量 `AK_TEST_BUILD=1`）将全部内部日志（扫描各阶段/
+adb 诊断/通道异常/线程未捕获异常）实时输出到控制台窗口，用于现场
+排查（如换机扫描失败）。
 
 打包流程：步骤 0 若 `tools/enemy_health/memsrv.c` 有更新会用 ziglang 自动重编
 `bin/memsrv`（失败不阻断，运行时回退 sh+dd 慢速模式）；步骤 1 打包
