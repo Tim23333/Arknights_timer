@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>代理作战序列 — 部署时间轴</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #141518; color: #ddd; font-family: Consolas, "Microsoft YaHei", monospace; }
+  #bar { display: flex; align-items: center; gap: 14px; padding: 8px 14px;
+         background: #1e2026; border-bottom: 1px solid #333; flex-wrap: wrap; }
+  #status { font-weight: bold; }
+  .ok { color: #4caf50; } .warn { color: #ffc107; } .err { color: #ef5350; }
+  .info { color: #90a4ae; font-size: 13px; }
+  button { background: #2f3b52; color: #e0e6f0; border: 1px solid #46587a;
+           padding: 5px 14px; cursor: pointer; border-radius: 3px; font-family: inherit; }
+  button:hover { background: #3b4a68; }
+  label { font-size: 13px; color: #aaa; cursor: pointer; }
+  #msg { width: 100%; color: #8a93a5; font-size: 12px; }
+  #tl-wrap { overflow-x: auto; padding: 10px 14px; }
+  svg { display: block; }
+  .rowlabel { font-size: 12px; fill: #cfd8dc; }
+  .tick { font-size: 10px; fill: #667; }
+  table { border-collapse: collapse; margin: 6px 14px 20px; font-size: 12px; }
+  th, td { border: 1px solid #333; padding: 3px 8px; text-align: center; }
+  th { background: #23252b; color: #9fb3c8; position: sticky; top: 0; }
+  .op-SPAWN { color: #69f0ae; } .op-WITHDRAW { color: #ff8a80; }
+  .op-SKILL { color: #40c4ff; } .op-CHEAT { color: #ffb74d; }
+  #detail { margin: 0 14px 10px; font-size: 12px; color: #80cbc4; min-height: 16px; }
+</style>
+</head>
+<body>
+<div id="bar">
+  <span id="status" class="warn">连接中…</span>
+  <span id="proc" class="info"></span>
+  <span id="stage" class="info"></span>
+  <span id="btime" class="info"></span>
+  <span id="cnt" class="info"></span>
+  <span id="src" class="info"></span>
+  <label><input type="checkbox" id="f-spawn" checked> 部署</label>
+  <label><input type="checkbox" id="f-skill" checked> 技能</label>
+  <label><input type="checkbox" id="f-withdraw" checked> 撤退</label>
+  <button id="btn-export">导出 JSON</button>
+  <button id="btn-rescan">重新定位</button>
+  <span id="msg"></span>
+</div>
+<div id="tl-wrap"><svg id="tl" width="1200" height="100"></svg></div>
+<div id="detail"></div>
+<table id="tbl">
+  <thead><tr><th>#</th><th>时间(s)</th><th>干员</th><th>charId</th><th>操作</th>
+  <th>位置</th><th>方向</th><th>UID</th><th>额外信息</th></tr></thead>
+  <tbody></tbody>
+</table>
+
+<script>
+const OP_COLOR = { SPAWN: "#69f0ae", WITHDRAW: "#ff8a80", SKILL: "#40c4ff", CHEAT: "#ffb74d" };
+const OP_MARK  = { SPAWN: "▲", WITHDRAW: "✕", SKILL: "★", CHEAT: "◆" };
+const OP_CN    = { SPAWN: "部署", WITHDRAW: "撤退", SKILL: "技能", CHEAT: "特殊" };
+const DIR_CN   = { UP: "上", RIGHT: "右", DOWN: "下", LEFT: "左", NONE: "-" };
+let lastState = null;
+
+function fmtT(t) { return t.toFixed(1); }
+
+async function refresh() {
+  let s;
+  try { s = await (await fetch("/api/state")).json(); }
+  catch (e) { setStatus("服务不可达", "err"); return; }
+  lastState = s;
+  const st = document.getElementById("status");
+  if (s.scanning) setStatus("定位扫描中…", "warn");
+  else if (s.located) setStatus("已锁定", "ok");
+  else if (s.connected) setStatus("已连接·未锁定", "warn");
+  else setStatus("未连接", "err");
+  document.getElementById("proc").textContent = s.processName || "";
+  document.getElementById("stage").textContent = s.stageId ? "关卡 " + s.stageId : "";
+  const b = s.battle || {};
+  document.getElementById("btime").textContent =
+    b.playTime !== undefined ? `战斗 ${fmtT(b.playTime)}s (${b.stateName})` : "";
+  document.getElementById("msg").textContent = s.message || "";
+
+  const events = (s.journalEvents && s.journalEvents.length) ? s.journalEvents : (s.events || []);
+  document.getElementById("cnt").textContent = `事件 ${events.length}`;
+  document.getElementById("src").textContent =
+    s.source === "journal" ? "来源: 代理作战序列" : s.source === "live" ? "来源: 实时记录" : "";
+  render(events, b.playTime);
+}
+
+function setStatus(t, cls) {
+  const st = document.getElementById("status");
+  st.textContent = t; st.className = cls;
+}
+
+function visibleOps() {
+  const ops = [];
+  if (document.getElementById("f-spawn").checked) ops.push("SPAWN");
+  if (document.getElementById("f-skill").checked) ops.push("SKILL");
+  if (document.getElementById("f-withdraw").checked) ops.push("WITHDRAW");
+  ops.push("CHEAT");
+  return ops;
+}
+
+function render(events, playTime) {
+  const ops = visibleOps();
+  const evs = events.filter(e => ops.includes(e.opName));
+  // 行: 按干员首次出现排序
+  const rows = [];
+  const rowOf = {};
+  for (const e of evs) {
+    const key = e.charName ? `${e.charName}` : (e.charId || `#${e.uniqueId}`);
+    if (!(key in rowOf)) { rowOf[key] = rows.length; rows.push(key); }
+  }
+  const maxT = Math.max(60, playTime || 0, ...evs.map(e => e.timestamp)) * 1.05;
+
+  const L = 130, R = 20, T = 26, RH = 26, W = Math.max(1000, innerWidth - 60);
+  const H = T + rows.length * RH + 22;
+  const sx = t => L + (W - L - R) * (t / maxT);
+  const svg = document.getElementById("tl");
+  svg.setAttribute("width", W); svg.setAttribute("height", H);
+  let h = "";
+
+  // 时间刻度 (自适应步长)
+  const steps = [5, 10, 15, 30, 60];
+  const step = steps.find(v => (maxT / v) <= 24) || 120;
+  for (let t = 0; t <= maxT; t += step) {
+    const x = sx(t);
+    h += `<line x1="${x}" y1="${T - 6}" x2="${x}" y2="${H - 20}" stroke="#2a2d34"/>`;
+    h += `<text class="tick" x="${x}" y="${T - 10}" text-anchor="middle">${t}s</text>`;
+  }
+  // 行
+  rows.forEach((name, i) => {
+    const y = T + i * RH + RH / 2;
+    h += `<text class="rowlabel" x="${L - 8}" y="${y + 4}" text-anchor="end">${esc(name)}</text>`;
+    h += `<line x1="${L}" y1="${y}" x2="${W - R}" y2="${y}" stroke="#23252b"/>`;
+  });
+  // 事件标记
+  for (const e of evs) {
+    const key = e.charName ? `${e.charName}` : (e.charId || `#${e.uniqueId}`);
+    const y = T + rowOf[key] * RH + RH / 2;
+    const x = sx(e.timestamp);
+    const future = playTime !== undefined && e.timestamp > playTime + 0.01;
+    const opa = future ? 0.35 : 1;
+    const tip = `${fmtT(e.timestamp)}s ${key} ${OP_CN[e.opName] || e.opName} ` +
+                `(${e.gridRow},${e.gridCol}) ${DIR_CN[e.directionName] || ""} ${e.extraInfo || ""}`;
+    h += `<text x="${x}" y="${y + 5}" text-anchor="middle" font-size="15"
+          fill="${OP_COLOR[e.opName] || "#fff"}" opacity="${opa}"
+          style="cursor:pointer" onclick='showDetail(${JSON.stringify(tip)})'>${OP_MARK[e.opName] || "•"}<title>${esc(tip)}</title></text>`;
+  }
+  // 当前时间游标
+  if (playTime !== undefined) {
+    const x = sx(playTime);
+    h += `<line x1="${x}" y1="${T - 16}" x2="${x}" y2="${H - 20}" stroke="#ffeb3b" stroke-width="1.5"/>`;
+    h += `<text x="${x}" y="${T - 18}" text-anchor="middle" font-size="10" fill="#ffeb3b">${fmtT(playTime)}s</text>`;
+  }
+  svg.innerHTML = h;
+
+  // 表格
+  const tb = document.querySelector("#tbl tbody");
+  tb.innerHTML = evs.map((e, i) =>
+    `<tr><td>${i + 1}</td><td>${fmtT(e.timestamp)}</td><td>${esc(e.charName || "")}</td>` +
+    `<td>${esc(e.charId)}</td><td class="op-${e.opName}">${OP_CN[e.opName] || e.opName}</td>` +
+    `<td>(${e.gridRow},${e.gridCol})</td><td>${DIR_CN[e.directionName] || e.directionName}</td>` +
+    `<td>${e.uniqueId}</td><td>${esc(e.extraInfo || "")}</td></tr>`).join("");
+}
+
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function showDetail(t) { document.getElementById("detail").textContent = t; }
+
+document.getElementById("btn-export").onclick = () => { location.href = "/api/export"; };
+document.getElementById("btn-rescan").onclick = async () => {
+  await fetch("/api/scan", { method: "POST" });
+};
+["f-spawn", "f-skill", "f-withdraw"].forEach(id =>
+  document.getElementById(id).onchange = () => { if (lastState) refresh(); });
+
+refresh();
+setInterval(refresh, 1000);
+</script>
+</body>
+</html>

@@ -134,28 +134,38 @@ class TcpChannel:
 
     PORT = 27271
     SRV_DIR = '/data/local/tmp'
-    BANNER = b"AKMSRV1\n"
+    BANNER_V1 = b"AKMSRV1\n"   # 仅读取
+    BANNER_V2 = b"AKMSRV2\n"   # 读取 + 设备侧扫描 (memsrv.c v2)
+    BANNER = BANNER_V1          # 兼容旧引用
+    SCAN_MAGIC = 0xFFFFFFFFFFFFFFFF
 
     def __init__(self, mc: 'MemCore', read_timeout: float = 5.0):
         self.mc = mc
         self.read_timeout = read_timeout
         self.sock: Optional[socket.socket] = None
         self.mode: Optional[str] = None   # 'srv' | 'sh'
+        self.srv_version = 0              # 1=读取, 2=读取+扫描
+        self._memsrv_restarted = False    # 本次 _push_memsrv 是否重推并杀了旧服务
         self._lock = threading.Lock()   # 同一时间只允许一个 batch_read
 
     # ---------- 服务部署 ----------
 
     def _push_memsrv(self) -> bool:
-        """推送 memsrv 二进制 + 包装脚本到设备 (幂等)"""
+        """推送 memsrv 二进制 + 包装脚本到设备 (幂等; 大小不同视为版本变更重推)"""
+        self._memsrv_restarted = False
         try:
-            out = self.mc.shell(f"ls {self.SRV_DIR}/memsrv 2>/dev/null")
-            if 'memsrv' not in out:
-                local = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                     'bin', 'memsrv')
-                if not os.path.exists(local):
-                    return False
+            local = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                 'bin', 'memsrv')
+            if not os.path.exists(local):
+                return False
+            local_size = os.path.getsize(local)
+            out = self.mc.shell(f"stat -c %s {self.SRV_DIR}/memsrv 2>/dev/null").strip()
+            if out != str(local_size):
                 self.mc.adb('push', local, f'{self.SRV_DIR}/memsrv')
                 self.mc.shell(f"chmod 755 {self.SRV_DIR}/memsrv")
+                # 版本变更: 杀掉旧 nc 强制下次连接重建服务
+                self.mc.shell("kill $(pidof nc) 2>/dev/null")
+                self._memsrv_restarted = True
             # 包装脚本每次重写: 每次连接都用 pidof 动态解析 PID (游戏重启自愈)
             self.mc.shell(
                 f"printf '#!/system/bin/sh\\nexec {self.SRV_DIR}/memsrv "
@@ -183,10 +193,19 @@ class TcpChannel:
         time.sleep(0.5)
 
     def _ensure_server(self):
-        """启动设备侧服务并建立 adb forward (幂等; 5555 是 adbd 占用, 避开)"""
-        if self._server_up():
-            return   # 服务与 forward 均已在
+        """启动设备侧服务并建立 adb forward (幂等; 5555 是 adbd 占用, 避开)。
+        每次连接都先查版本: 二进制变更时 _push_memsrv 会杀旧服务, 此处负责重启。"""
         self.mc.adb("forward", f"tcp:{self.PORT}", f"tcp:{self.PORT}")
+        if not self._push_memsrv():
+            # 无本地二进制: 只能依赖现有服务或 sh 兜底
+            if self._server_up():
+                return
+            self._start_service()
+            return
+        if self._memsrv_restarted:
+            time.sleep(0.3)           # 等旧 nc 退出
+            self._start_service()
+            return
         if self._server_up():
             return   # forward 已有, 服务已在
         self._start_service()
@@ -220,8 +239,13 @@ class TcpChannel:
         except (socket.timeout, OSError):
             b = b''
         self.sock.settimeout(self.read_timeout)
-        if b == self.BANNER:
+        if b == self.BANNER_V2:
             self.mode = 'srv'
+            self.srv_version = 2
+            return
+        if b == self.BANNER_V1:
+            self.mode = 'srv'
+            self.srv_version = 1
             return
         # sh 模式 (或 memsrv 启动失败): 尝试 sh 同步
         self.mode = None
@@ -246,10 +270,45 @@ class TcpChannel:
             self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             self.sock.settimeout(self.read_timeout)
             b = self._read_exact(8)
-            if b != self.BANNER:
+            if b not in (self.BANNER_V1, self.BANNER_V2):
                 self.close()
                 raise IOError("memsrv 升级后握手失败")
             self.mode = 'srv'
+            self.srv_version = 2 if b == self.BANNER_V2 else 1
+
+    # ---------- 设备侧扫描 (srv v2) ----------
+
+    def scan(self, addr: int, size: int, needles: List[bytes]) -> Optional[dict]:
+        """设备侧模式扫描: 在 [addr, addr+size) 内搜索全部 needle,
+        返回 {needle: [命中绝对地址...]}; 仅 srv v2 可用, 否则返回 None。
+        命中地址数单针上限 65536 (memsrv MAX_HITS)。"""
+        if self.mode != 'srv' or self.srv_version < 2:
+            return None
+        with self._lock:
+            if not self.sock:
+                self.open()
+            if self.srv_version < 2:
+                return None
+            try:
+                hdr = struct.pack('<Q', self.SCAN_MAGIC)
+                hdr += struct.pack('<QQI', addr, size, len(needles))
+                for nd in needles:
+                    if not (0 < len(nd) <= 64):
+                        raise ValueError("needle 长度须为 1..64")
+                    hdr += struct.pack('<I', len(nd)) + nd
+                self.sock.sendall(hdr)
+                out = {}
+                for nd in needles:
+                    (cnt,) = struct.unpack('<q', self._read_exact(8))
+                    if cnt < 0:
+                        out[nd] = []
+                        continue
+                    data = self._read_exact(cnt * 8)
+                    out[nd] = list(struct.unpack('<%dQ' % cnt, data))
+                return out
+            except Exception:
+                self.close()
+                raise
 
     def close(self):
         if self.sock:

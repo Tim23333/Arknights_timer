@@ -2,7 +2,6 @@ import json
 import os
 import socket
 import sys
-import ctypes
 import threading
 from pathlib import Path
 from tkinter import messagebox, ttk
@@ -13,17 +12,8 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-import pymem
-
 from tools.deploy_tracker.ak_deploy_reader import DeployTrackerReader
-
-EMULATOR_PROCESSES = [
-    "MuMuVMMHeadless.exe", "NemuHeadless.exe", "Ld9BoxHeadless.exe",
-    "LdBoxHeadless.exe", "dnplayer.exe", "NoxVMMHeadless.exe",
-    "HD-Player.exe", "MEmuHeadless.exe",
-]
-
-DIRECTION_OPTIONS = ["UP (上)", "RIGHT (右)", "DOWN (下)", "LEFT (左)"]
+from tools.enemy_health.memcore import MemCore
 
 
 def _send_events_via_tcp(process_name: str, events: list) -> bool:
@@ -92,6 +82,12 @@ class DeployDisplayApp:
         )
         tcp_btn.pack(side="right", padx=5, pady=5)
 
+        web_btn = tk.Button(
+            toolbar, text="网页可视化", command=self._open_web,
+            bg="#444444", fg="white", font=("Consolas", 9),
+        )
+        web_btn.pack(side="right", padx=5, pady=5)
+
         tree_frame = tk.Frame(self.root, bg="#1E1E1E")
         tree_frame.pack(fill="both", expand=True, padx=5, pady=5)
 
@@ -146,8 +142,6 @@ class DeployDisplayApp:
                     self._populate_table(events)
                     self.status_label.config(text="已连接", fg="#00FF00")
                     self.event_count_label.config(text=f"事件: {len(events)}")
-        except pymem.exception.MemoryReadError:
-            self.status_label.config(text="连接断开", fg="#FF0000")
         except Exception:
             pass
         self.root.after(200, self._refresh)
@@ -190,22 +184,41 @@ class DeployDisplayApp:
         else:
             messagebox.showwarning("推送", "推送失败，未设置 AK_HOOK_PORT 或后端未运行。")
 
+    def _open_web(self):
+        """启动 Web 可视化服务并在浏览器打开 (独立进程, 自带定位)。"""
+        import subprocess
+        import webbrowser
+        port = os.getenv("AK_DEPLOY_PORT", "8793")
+        try:
+            subprocess.Popen(
+                [sys.executable, "-m", "tools.deploy_tracker.web_server", "--port", port],
+                cwd=str(_PROJECT_ROOT),
+                creationflags=subprocess.CREATE_NEW_CONSOLE,
+            )
+        except OSError as exc:
+            messagebox.showerror("启动失败", str(exc))
+            return
+        webbrowser.open(f"http://127.0.0.1:{port}/")
+
 
 class DeployWizardApp:
-    """主流程：等待进程 → 引导部署 → 多次扫描 → 显示时间轴。"""
+    """主流程：等待进程 → 全自动定位 → 显示时间轴 (可打开网页可视化)。"""
 
-    def __init__(self, root, process_name, pm):
+    def __init__(self, root, process_name, mc):
         self.root = root
         self._process_name = process_name
-        self._pm = pm
-        self._reader = DeployTrackerReader(self._pm)
+        self._mc = mc
+        self._reader = DeployTrackerReader(self._mc)
+        self._reader.set_status_callback(
+            lambda m: self.root.after(0, lambda: self.status_var.set(m)))
 
-        self.root.geometry("520x400")
-        self.root.title("摸轴工具 — 部署引导")
+        self.root.geometry("520x320")
+        self.root.title("摸轴工具 — 自动定位")
         self.root.configure(bg="#1E1E1E")
         self.root.attributes("-topmost", False)
 
         self._build_ui()
+        self.root.after(300, self._start_locate)
 
     def _build_ui(self):
         tk.Label(
@@ -214,134 +227,61 @@ class DeployWizardApp:
         ).pack(pady=(10, 5))
 
         tk.Label(
-            self.root, text="增量扫描引导",
+            self.root, text="全自动定位",
             fg="#00FF00", bg="#1E1E1E", font=("Consolas", 14, "bold"),
         ).pack(pady=10)
 
         guide = tk.Frame(self.root, bg="#252526", padx=15, pady=12)
         guide.pack(fill="x", padx=20, pady=5)
+        for s in [
+            "1. 进入作战关卡（尚未部署干员也可定位）",
+            "2. 定位自动进行 (扫描约需数十秒)",
+            "3. 代理指挥作战可直接读取完整代理序列",
+        ]:
+            tk.Label(guide, text=s, fg="#AAAAAA", bg="#252526",
+                     font=("Consolas", 10)).pack(anchor="w", pady=1)
 
-        steps = [
-            "1. 进入作战关卡，部署第1个干员(记住朝向)",
-            "2. 选择朝向后点击「第一步扫描」",
-            "3. 再部署第2个干员(同样朝向)，点击「再次扫描」",
-            "4. 若还不行，部署第3个干员再扫，直到锁定",
-        ]
-        for s in steps:
-            tk.Label(
-                guide, text=s, fg="#AAAAAA", bg="#252526",
-                font=("Consolas", 10),
-            ).pack(anchor="w", pady=1)
-
-        # 朝向选择
-        row = tk.Frame(self.root, bg="#1E1E1E")
-        row.pack(fill="x", padx=40, pady=(15, 15))
-        tk.Label(row, text="部署朝向:", fg="white", bg="#1E1E1E", font=("Consolas", 11)).pack(side="left", padx=(0, 8))
-        self.dir_var = tk.StringVar(value=DIRECTION_OPTIONS[1])
-        dir_dropdown = ttk.Combobox(
-            row, textvariable=self.dir_var,
-            values=DIRECTION_OPTIONS, state="readonly", width=15,
-        )
-        dir_dropdown.pack(side="left")
-
-        # 按钮
         btn_row = tk.Frame(self.root, bg="#1E1E1E")
-        btn_row.pack(pady=10)
-        self.scan_btn = tk.Button(
-            btn_row, text="第一步扫描", command=self._first_scan,
-            bg="#3d7eff", fg="white", font=("Consolas", 12, "bold"),
-            width=16, height=2,
+        btn_row.pack(pady=12)
+        self.rescan_btn = tk.Button(
+            btn_row, text="重新定位", command=self._start_locate,
+            bg="#3d7eff", fg="white", font=("Consolas", 11, "bold"),
+            width=12, height=1, state="disabled",
         )
-        self.scan_btn.pack(side="left", padx=5)
+        self.rescan_btn.pack(side="left", padx=5)
 
-        self.scan_again_btn = tk.Button(
-            btn_row, text="再次扫描", command=self._scan_again,
-            bg="#555555", fg="#AAAAAA", font=("Consolas", 12, "bold"),
-            width=16, height=2, state="disabled",
-        )
-        self.scan_again_btn.pack(side="left", padx=5)
-
-        # 状态
-        self.status_var = tk.StringVar(value="就绪 — 部署第1个干员, 选择朝向, 点「第一步扫描」")
-        self.status_label = tk.Label(
+        self.status_var = tk.StringVar(value="准备定位 ...")
+        tk.Label(
             self.root, textvariable=self.status_var,
-            fg="#FFFF00", bg="#1E1E1E", font=("Consolas", 10), wraplength=480,
-        )
-        self.status_label.pack(pady=5, fill="x", padx=20)
+            fg="#FFFF00", bg="#1E1E1E", font=("Consolas", 9), wraplength=480,
+        ).pack(pady=5, fill="x", padx=20)
 
-        self._step_count = tk.Label(
-            self.root, text="步数: 0", fg="#888888", bg="#1E1E1E", font=("Consolas", 9),
-        )
-        self._step_count.pack(pady=5)
-
-    def _first_scan(self):
-        dir_idx = DIRECTION_OPTIONS.index(self.dir_var.get())
-
-        self.scan_btn.config(state="disabled")
-        self.dir_var.set(self.dir_var.get())  # lock dropdown
+    def _start_locate(self):
+        self.rescan_btn.config(state="disabled", text="定位中 ...")
 
         def task():
-            n = self._reader.start_scan(direction=dir_idx)
-            self.root.after(0, lambda: self._on_first_scan_done(n))
+            ok = self._reader.locate()
+            self.root.after(0, lambda: self._on_locate_done(ok))
 
         threading.Thread(target=task, daemon=True).start()
 
-    def _on_first_scan_done(self, n):
-        self._step_count.config(text=f"步数: 1")
-        self.scan_again_btn.config(
-            state="normal", bg="#3d7eff", fg="white",
-            text="再次扫描 (部署第2个)",
-        )
-        self.status_var.set(
-            f"第一步完成: {n} 个匹配\n"
-            "→ 请部署第 2 个干员 (相同朝向), 然后点「再次扫描」"
-        )
-
-    def _scan_again(self):
-        self.scan_again_btn.config(state="disabled", text="扫描中...")
-
-        def task():
-            result = self._reader.scan_again()
-            self.root.after(0, lambda: self._on_scan_again_done(result))
-
-        threading.Thread(target=task, daemon=True).start()
-
-    def _on_scan_again_done(self, result):
-        step = self._reader._round
-        self._step_count.config(text=f"步数: {step}")
-
-        if result == "found":
+    def _on_locate_done(self, ok):
+        self.rescan_btn.config(state="normal", text="重新定位")
+        if ok:
             self._launch_display()
-        elif result == "more":
-            self.scan_again_btn.config(
-                state="normal", bg="#3d7eff", fg="white",
-                text=f"再次扫描 (部署第{step + 1}个)",
-            )
+        else:
             self.status_var.set(
-                f"候选仍较多, 请部署第 {step + 1} 个干员 (同朝向), 再点「再次扫描」"
+                "定位失败 — 请确认游戏进程正常且已进入作战关卡,\n"
+                "然后点「重新定位」"
             )
-        else:  # failed
-            self.scan_btn.config(state="normal")
-            self.scan_again_btn.config(
-                state="normal", bg="#555555", fg="#AAAAAA",
-                text=f"再次扫描 (部署第{step + 1}个)",
-            )
-            self.status_var.set(
-                "未找到相邻配对。请确认:\n"
-                "→ 两次部署朝向相同\n"
-                "→ 均为 SPAWN (部署) 操作\n"
-                "可点「第一步扫描」重新开始"
-            )
-            messagebox.showwarning("失败", "未找到有效的相邻配对。\n请检查部署朝向是否一致。")
 
     def _launch_display(self):
         for w in self.root.winfo_children():
             w.destroy()
         DeployDisplayApp(self.root, self._reader, self._process_name)
 
-
 class ProcessWaiter:
-    """哨兵模式：等待模拟器进程，找到后直接进入部署引导。"""
+    """哨兵模式：等待 adb 设备上的游戏进程，找到后直接进入部署引导。"""
 
     def __init__(self, root):
         self.root = root
@@ -351,45 +291,38 @@ class ProcessWaiter:
         self.root.attributes("-topmost", True)
 
         self.label = tk.Label(
-            self.root, text="等待模拟器启动...",
+            self.root, text="等待游戏进程...",
             fg="#00FFFF", bg="#1E1E1E", font=("Consolas", 14, "bold"),
         )
         self.label.pack(expand=True, fill="both")
 
         self._dot_count = 0
+        self._checking = False
         self._check()
 
     def _check(self):
         self._dot_count = (self._dot_count + 1) % 4
-        self.label.config(text=f"正在监听模拟器进程{'.' * self._dot_count}")
+        self.label.config(text=f"正在监听游戏进程{'.' * self._dot_count}")
+        if not self._checking:
+            self._checking = True
+            threading.Thread(target=self._try_connect, daemon=True).start()
+        self.root.after(1000, self._check)
 
-        found = None
-        pm = None
-        for proc in EMULATOR_PROCESSES:
-            try:
-                pm = pymem.Pymem(proc)
-                found = proc
-                break
-            except Exception:
-                pass
+    def _try_connect(self):
+        try:
+            mc = MemCore()
+            pid = mc.connect()
+        except Exception:
+            self._checking = False
+            return
+        name = f"{mc.package} (pid {pid})"
+        self.root.after(0, lambda: self._launch_wizard(name, mc))
 
-        if found:
-            self._launch_wizard(found, pm)
-        else:
-            self.root.after(1000, self._check)
-
-    def _launch_wizard(self, process_name, pm):
+    def _launch_wizard(self, process_name, mc):
         for w in self.root.winfo_children():
             w.destroy()
         self.root.attributes("-topmost", False)
-        DeployWizardApp(self.root, process_name, pm)
-
-
-def is_admin():
-    try:
-        return ctypes.windll.shell32.IsUserAnAdmin()
-    except Exception:
-        return False
+        DeployWizardApp(self.root, process_name, mc)
 
 
 def main():
@@ -399,10 +332,4 @@ def main():
 
 
 if __name__ == "__main__":
-    if is_admin():
-        main()
-    else:
-        script = os.path.abspath(sys.argv[0])
-        params = " ".join([f'"{arg}"' for arg in sys.argv[1:]])
-        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, f'"{script}" {params}', None, 1)
-        sys.exit()
+    main()

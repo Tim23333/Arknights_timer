@@ -31,6 +31,10 @@ MuMu 模拟器 (Android)
     打开 `/proc/<pid>/mem` 一次后每次读取仅一个 pread 系统调用。协议为
     小端二进制（横幅 `AKMSRV1\n`；请求 `u64 N + N×{addr,size}`；响应
     `i64 n + data`，n<0 为 -errno）。
+    **v2（横幅 `AKMSRV2\n`）** 在读取协议不变的基础上新增设备侧模式扫描命令
+    （`u64 SCAN_MAGIC + {addr,size,k} + k×{len,needle}` → `k×{count, addrs}`，
+    k≤256，单针命中上限 65536），供 `tools/ak_live_rng` 全盘定位使用；
+    客户端按二进制大小判断版本变更并自动重推重启服务，v1/旧 sh 服务自动降级。
   - **sh 兜底模式（~45ms/请求）**：`nc -L sh`，每请求 fork 一次 dd。
     memsrv 缺失或握手失败时自动使用；若 memsrv 可部署会自动升级。
   稳态每帧仅 1 次请求（上一帧敌人聚簇 span，含血量/状态/坐标/id/属性指针），

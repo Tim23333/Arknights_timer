@@ -277,6 +277,57 @@ data/tables/
 
 ---
 
+## 代理作战序列工具 (tools/deploy_tracker)
+
+通过读取模拟器内存获取关卡内操作序列（部署/技能/撤退的时间、位置、朝向），
+不改动游戏代码。
+
+### 内存通道（adb 方案）
+
+复用 `tools/enemy_health/memcore.py` 的 `MemCore`（adb + memsrv/`dd` 读 Android
+进程 `/proc/<pid>/mem`）。游戏指针是 Android guest 虚拟地址，宿主机 pymem 直接读
+模拟器进程无法解引用（旧方案不可行的根因），必须在设备侧读取。**不需要 Windows
+管理员权限**，需要 MuMu 模拟器 adb root 可用。
+
+### 数据来源（dump.cs 逆向 + 现网实测）
+
+- `BattleLogger.m_logs` (+0x20) — 当前战斗的实时操作记录（`List<BattleLogger.LogItem>`）
+- `BattleController` 字段区 → `ReplayController.m_journal` (+0x18, inline) — 代理指挥的
+  完整代理序列（metadata 含 stageId、squad 编队、logs 完整操作列表）；仅代理指挥模式存在
+- `BattleLogger.LogItem` (0x30 字节): timestamp@0, uniqueId@0x8（高位含 PlayerSide 标志,
+  `& 0x7FFFFFFF` 得 charInstId）, charId@0x10, op@0x18 (0=SPAWN 1=WITHDRAW 2=SKILL 3=CHEAT),
+  direction@0x1C (0上1右2下3左), row@0x20, col@0x24, extraInfo@0x28
+- `BattleLogger.CharInfo` (0x50 字节): charInstId@0, skinId@0x8, tmplId@0x10（现网为 NULL,
+  需从 skinId 去 `#` 后缀推导）, skillId@0x18, skillIndex/skillLvl/level/phase/potentialRank 之后
+- BattleController 标量用现网实测偏移 (enemy_health 2026-07 验证):
+  state=0x220, speedLevel=0x228, realPlayTime=0x284；dump.cs 中旧偏移已漂移
+- il2cpp 数组 `max_length` 是 int32@+0x18（+0x1C 填充是垃圾，不可按 int64 读），
+  数组数据起于 +0x20；List: `_items@0x10`、`_size@0x18`
+
+### 使用方法
+
+```bash
+# 控制台实时监控 (推荐): 实时打印每次 部署/技能/撤退, 自动增量+结束导出 JSON
+python -m tools.deploy_tracker.ak_live_log [--out deploy_log.json] [--interval 0.5]
+
+# Web 可视化: 浏览器打开 http://127.0.0.1:8793/ 实时查看时间轴, 可导出 JSON
+python -m tools.deploy_tracker.web_server --port 8793
+
+# tkinter 桌面版: 全自动定位 + 表格视图 + 导出/推送打轴工具
+python tools/deploy_tracker/ak_deploy_ui.py
+```
+
+注意：自动开启的技能（SP 满自动触发）不是玩家操作，BattleLogger 不记录；
+手动技能/部署/撤退均有记录。
+
+定位全自动（无需按朝向多次部署）：关卡内至少有 1 条操作记录后，三遍堆扫描
+（① 4 线程 adb 堆快照 + numpy LogItem 数值预过滤 → ② 快照内 charId 字符串校验 +
+反推 items 数组 + 批量 klass 名找 List<LogItem> → ③ 批量 klass 名找持有者
+BattleLogger；ReplayController 由 BattleController 字段区 klass 名扫描获得）。
+进关卡部署干员后若未锁定，点页面上的「重新定位」。
+
+---
+
 ## 桌面程序打包
 
 ### 环境要求
@@ -347,3 +398,69 @@ python test_packaged_exe.py
 该脚本会检查 exe 文件是否存在、大小是否正常，并尝试启动测试。
 
 ```
+
+
+---
+
+## 实时 RNG 追踪器 (tools/ak_live_rng)
+
+读取模拟器内存，经静态指针链精确定位战斗随机数引擎，实时还原每次随机数调用结果
+并预测后续序列（控制台实时显示）。
+
+```bash
+cd tools/ak_live_rng
+python ak_live_rng.py                    # adb 后端 (默认, 免管理员)
+python ak_live_rng.py --backend pymem    # pymem 后端 (读模拟器进程, 需管理员)
+python ak_live_rng.py --engine trivial   # 改看表现随机 (默认 imp=关键随机)
+python ak_live_rng.py --no-cache         # 忽略地址缓存, 强制全量扫描
+python ak_live_rng.py --heuristic        # 静态链外追加启发式兜底 (调试, 会捞到无关 Random)
+python test_ak_live_rng.py               # 离线自测 (算法向量/扫描/追踪/静态链/缓存校验, 无需模拟器)
+```
+
+逆向结论（Ark_data 解包 + 联网考证）：
+
+- **战斗 RNG = System.Random（mono mscorlib, Knuth 减法门，56×int32 种子）**，
+  判定方式为 `NextDouble() < 阈值`；种子从代理数据获取或开局随机生成，保存进代理
+  序列复现（PRTS 代理学；贴吧逆向帖 tieba.baidu.com/p/7475697026 确认实现）。
+- 引擎对象即 `BattleController.s_randomImp` / `s_randomTrivial`（dump.cs:317298，
+  静态块 +0x30/+0x38），由 `RandomFactory.Create(seed, DEFAULT)` 创建。
+- **游戏自身持有指向 RNG 的指针链**（主定位路径，现网已端到端验证）：
+  `Il2CppClass("Torappu.Battle.BattleController")` — name@0x10 / namespaze@0x18 /
+  static_fields@0xB8（布局见 il2cpp.h:99-106）→ 静态块 +0x30/+0x38 →
+  **`Torappu.Battle.BattleRandomWrapper` 外壳（+0x10 下钻）** →
+  `Torappu.LegacyRandom` 对象 → SeedArray@0x28、inext@0x20/inextp@0x24。
+  注意：本地 dump.cs 是旧版（静态字段直接声明 Random，无包装层），现网新版
+  多一层 BattleRandomWrapper，klass 名运行时判定兼容。mscorlib Random /
+  CompatilizedRandom(MT19937) 分支同样保留。
+- **LegacyRandom 游标间距实测为 31**（mscorlib System.Random 为 21）：
+  现网两次读取 (inext,inextp)=(31,0)/(0,31) 证实。追踪/推演从观测快照克隆出发、
+  双游标同步自增，与间距常量无关，同一复刻代码兼容；tracker 校验放行 21/-34/31/-24。
+- **类名/命名空间 C 字符串与 Il2CppClass 都在大号匿名 rw 映射里**；
+  libil2cpp.so 只读段里没有，全局 metadata magic 0xFAB11BAF 也全盘搜不到
+  —— metadata 被加密加载后在堆中重建。GC 堆里虽有字符串拷贝，但 klass 只引用
+  metadata 区原件，故静态链**直接全 rw 单遍扫**（不做 gc 分区裁剪，否则会扫到
+  拷贝串假命中）。
+- 启发式兜底（`--heuristic`）：扫描 len=56/624 数组 → 反查持有者指针 + klass 名校验
+  → 静态字段对。未开战时会捞到几百个无关 System.Random，故默认关闭。
+- 序列还原：轮询完整状态快照，用纯 Python 复刻引擎（rng_engines.py）从上次快照
+  向前推演至与观测逐字节一致，两次轮询间的每一次消耗一个不漏；预测同理。
+
+读取后端与性能（MuMu 实测）：
+
+- adb 后端复用 `tools/enemy_health` 的 `MemCore` + 设备侧 **memsrv v2**
+  （`memsrv.c` 新增模式扫描命令：u64 地址对齐哈希快路径，4MB 滑动窗口 + 64B 重叠；
+  客户端 `TcpChannel.scan()`，按二进制大小判断版本自动重推）。
+  设备侧扫描吞吐 ~300-600 MB/s：1.9GB gc 分区 ~2s，3.7GB 全 rw ~12s；
+  对比 adb forward TCP 直读 ~16-23 MB/s（全 rw ~4min）。
+- 静态链定位全程 ~15s（rw 全扫：字符串 ~4s + klass 指针回扫 ~11s + 少量校验读；
+  设备繁忙时扫描吞吐可能腰斩）。定位成功后地址写入 `ak_rng_cache.pkl`，
+  下次启动经三重校验（klass 名 / SeedArray 指针 / 游标范围）命中则免扫描，
+  游戏重启自动失效（已现网验证缓存命中与 tracker 实时预测）。
+- 扫描命中后的批量校验（数组 klass 指针预筛 + 内容读回）必须走 `read_many`
+  批量读（单次 TCP 往返）；逐命中单读是毫秒级往返，几千候选会拖到几分钟。
+- memsrv 单次扫描上限 MAX_NEEDLES=256（超出直接断连）：针数过多时客户端
+  按 256 分批合并结果；旧版服务无扫描命令时自动回退逐块 python 扫描。
+
+文件：`rng_engines.py`（算法复刻）、`memscan.py`（静态链 + 启发式定位）、
+`tracker.py`（轮询/恢复/预测）、`adb_reader.py`（adb 后端封装）、
+`ak_live_rng.py`（控制台主程序）、`test_ak_live_rng.py`（自测，46 项）。

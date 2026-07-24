@@ -1,456 +1,1174 @@
-import concurrent.futures
-import os
-import struct
+"""明日方舟 代理作战序列 / 实时操作日志 内存读取器
 
-import pymem
-import pymem.exception
-import pymem.memory
+内存通道: tools/enemy_health/memcore.py (adb + memsrv/dd 读 Android 进程
+/proc/<pid>/mem)。游戏指针是 Android 进程虚拟地址, 必须在设备侧读取,
+宿主机直接读模拟器进程内存无法解引用指针 (旧 pymem 方案不可行的根因)。
+
+数据来源 (基于 Ark_data/dump.cs 2.7.x 逆向分析):
+
+  BattleLogger.LogItem (0x30 字节, dump.cs:329958)
+    +0x00 float  timestamp          战斗时间(秒)
+    +0x08 Signiture                 { uint uniqueId@0x0, string charId@0x8 }
+    +0x18 int    op                 PlayerOperationType: 0=SPAWN 1=WITHDRAW 2=SKILL 3=CHEAT
+    +0x1C int    direction          SharedConsts.Direction: 0=UP 1=RIGHT 2=DOWN 3=LEFT 4=NONE
+    +0x20 int    pos.row / +0x24 int pos.col
+    +0x28 string extraInfo
+
+  BattleLogger (dump.cs:330259)            —— 手动/代理战斗的实时操作记录
+    +0x18 BattleController m_controller
+    +0x20 List<LogItem>  m_logs
+    +0x28 List<CharInfo> m_squad
+
+  BattleController.ReplayController (dump.cs:316953) —— 代理作战(回放)的完整序列
+    +0x18 Journal m_journal (inline 结构)
+          +0x00 Metadata { float standardPlayTime, int gameResult, DateTime saveTime@0x8,
+                           int remainingCost@0x10, int remainingLifePoint@0x14,
+                           int killedEnemiesCnt@0x18, int missedEnemiesCnt@0x1C,
+                           string levelId@0x20, string stageId@0x28, ... }
+          +0x38 List<CharInfo> squad   (=> ReplayController + 0x50)
+          +0x40 List<LogItem>  logs    (=> ReplayController + 0x58)
+
+  BattleLogger.CharInfo (0x50 字节, dump.cs:329934)
+    +0x00 int charInstId (= LogItem.uniqueId)
+    +0x08 string skinId / +0x10 string tmplId / +0x18 string skillId
+    +0x20 int skillIndex / +0x24 skillLvl / +0x28 level / +0x2C phase / +0x30 potentialRank
+
+  BattleController 现网实测标量偏移 (tools/enemy_health/game_structs.py, 2026-07 验证):
+    +0x220 int State (0=NONE 1=INITED 2=PLAYING 3=FINISHED)
+    +0x228 int SpeedLevel / +0x284 float realPlayTime
+
+定位策略 (全自动, 支持进入关卡后 0 条操作记录):
+  1. GC 堆快照 (一次性传输, 落盘), 用标量指纹 + klass 名定位当前 BattleController
+  2. 优先读取现网实测 BattleController.m_logger, 并以
+     BattleLogger.m_controller 反向指针、List<LogItem> 结构完成强校验
+  3. 若当前版本字段漂移, 在 BC 小范围字段区内搜索 BattleLogger
+  4. 仅当 BC 链定位失败时, 才回退到 LogItem -> List -> BattleLogger 的旧扫描路径
+"""
+
+import bisect
+import concurrent.futures
+import json
+import mmap
+import os
+import re
+import struct
+import tempfile
+import threading
+import time
+
+try:
+    import numpy as _np
+except ImportError:  # 可选加速
+    _np = None
+
+from tools.enemy_health.game_structs import BattleControllerFields
+from tools.enemy_health.memcore import MemCore, TcpChannel
 
 
 DIRECTION_NAMES = {0: "UP", 1: "RIGHT", 2: "DOWN", 3: "LEFT", 4: "NONE"}
 OP_NAMES = {0: "SPAWN", 1: "WITHDRAW", 2: "SKILL", 3: "CHEAT"}
+BATTLE_STATE_NAMES = {0: "NONE", 1: "INITED", 2: "PLAYING", 3: "FINISHED"}
 
 LOGITEM_SIZE = 0x30
 LOGITEM_STRUCT = "<f4xI4xQiiiiQ"
+CHARINFO_SIZE = 0x50
+CHAR_ID_RE = re.compile(r"^(char|trap|token)_\w+$")
+STAGE_ID_RE = re.compile(r"^[A-Za-z0-9_\-#]+$")
+
+# BattleController 现网实测偏移 (enemy_health 2026-07 验证)。统一引用
+# game_structs，避免 deploy_tracker 与 enemy_health 各自维护后再次漂移。
+BC_LOGGER = BattleControllerFields.M_LOGGER
+BC_STATE = BattleControllerFields.M_STATE
+BC_SPEED_LEVEL = BattleControllerFields.M_SPEED_LEVEL
+BC_REAL_PLAY_TIME = BattleControllerFields.M_REAL_PLAY_TIME
+UNITY_CACHED_PTR = 0x10
+
+# BattleLogger 字段 (当前 dump 与现网一致)
+LOGGER_CONTROLLER = 0x18
+LOGGER_LOGS = 0x20
+LOGGER_SQUAD = 0x28
+
+# IL2CPP 布局
+LIST_ITEMS = 0x10
+LIST_SIZE = 0x18
+ARRAY_MAX_LENGTH = 0x18
+ARRAY_ITEMS = 0x20
+STR_LENGTH = 0x10
+STR_CHARS = 0x14
+
+SCAN_CAP = 32 * 1024 * 1024   # 单次读取上限 32MB
+SCAN_WORKERS = 4              # adb 并发 (4 路即饱和)
+DEVICE_SCAN_CAP = 256 * 1024 * 1024
 
 
-def _scan_chunk_for_op_dir(handle, base, size, needle):
-    """按 8 字节对齐扫描 [op, direction] 模式，附带结构预过滤。
+# ============================================================
+# 堆快照 (扫描期一次性传输落盘, 支持随机访问)
+# ============================================================
+class _HeapSnap:
+    """GC 堆快照: write() 追加区域, read() 按 guest VA 随机访问。"""
 
-    对每个命中立即检查前后上下文字段：
-    - charId 指针 (前 8 字节) 必须在有效堆地址范围
-    - grid_col (后 8~11 字节) 必须是 1..15 的小整数
-    """
-    try:
-        data = pymem.memory.read_bytes(handle, base, size)
-    except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
-        return set()
+    def __init__(self):
+        fd, self.path = tempfile.mkstemp(prefix="ak_deploy_heap_", suffix=".bin")
+        self.fd = fd
+        self.size = 0
+        self.ranges = []          # (base, file_off, size)
+        self._sorted = []         # 排序后的 ranges
+        self._starts = []
+        self._mmap = None
+        self._lock = threading.Lock()
 
-    results = set()
-    data_len = len(data)
+    def write(self, base: int, data: bytes):
+        with self._lock:
+            off = self.size
+            view = memoryview(data)
+            while view:
+                n = os.write(self.fd, view)
+                view = view[n:]
+            self.size += len(data)
+            self.ranges.append((base, off, len(data)))
 
-    # 按 8 字节步进，仅检查对齐位置，跳过非对齐的误匹配
-    for off in range(0, data_len - 7, 8):
-        # 快速比对 op(4B)=0 + dir(4B)=方向
-        if data[off:off + 8] != needle:
-            continue
+    def finish(self):
+        self._sorted = sorted(self.ranges)
+        self._starts = [b for b, _, _ in self._sorted]
+        self._mmap = mmap.mmap(self.fd, 0, access=mmap.ACCESS_READ)
 
-        addr = base + off
+    def read(self, addr: int, size: int):
+        """随机读取 (完全落在某个区域内才返回, 否则 None)"""
+        i = bisect.bisect_right(self._starts, addr) - 1
+        if i < 0:
+            return None
+        base, off, rsize = self._sorted[i]
+        if addr < base or addr + size > base + rsize:
+            return None
+        p = off + (addr - base)
+        return self._mmap[p:p + size]
 
-        #  预过滤 1: 前 8 字节是 charId 指针，必须 > 0x10000 (堆地址)
-        if off < 8:
-            continue
-        char_ptr = struct.unpack_from("<Q", data, off - 8)[0]
-        if char_ptr < 0x10000:
-            continue
+    def read_u64(self, addr: int):
+        d = self.read(addr, 8)
+        return struct.unpack("<Q", d)[0] if d else None
 
-        #  预过滤 2: 后 8~11 字节是 grid_col (int)，必须在 1..15 范围
-        gc_off = off + 8
-        if gc_off + 4 > data_len:
-            continue
-        grid_col = struct.unpack_from("<i", data, gc_off)[0]
-        if not (1 <= grid_col <= 15):
-            continue
+    def read_ustring(self, addr: int):
+        """就地解引用 il2cpp 字符串 (UTF-16LE)"""
+        d = self.read(addr, 0x60)
+        if not d:
+            return None
+        ln = struct.unpack_from("<i", d, STR_LENGTH)[0]
+        if ln <= 0 or ln > 64:
+            return None
+        if len(d) < STR_CHARS + ln * 2:
+            d = self.read(addr, STR_CHARS + ln * 2)
+            if not d:
+                return None
+        try:
+            s = d[STR_CHARS:STR_CHARS + ln * 2].decode("utf-16-le")
+        except UnicodeDecodeError:
+            return None
+        return s if s.isprintable() else None
 
-        results.add(addr)
+    def iter_chunks(self):
+        with open(self.path, "rb", buffering=1024 * 1024) as f:
+            for base, off, size in self._sorted:
+                f.seek(off)
+                yield base, f.read(size)
 
-    return results
+    def discard(self):
+        try:
+            if self._mmap is not None:
+                self._mmap.close()
+        except Exception:
+            pass
+        try:
+            os.close(self.fd)
+        except OSError:
+            pass
+        try:
+            os.remove(self.path)
+        except OSError:
+            pass
+
+
+def _numeric_filter_chunk(base, data):
+    """LogItem 数值预过滤 (8 字节对齐): op/direction/grid/timestamp/uniqueId/指针范围。"""
+    hits = []
+    if _np is not None:
+        a = _np.frombuffer(data, dtype="<u4")
+        n = a.size
+        if n < 12:
+            return []
+        f = a.view("<f4")
+        j = _np.arange(0, n - 11, 2)
+        m = a[j + 6] <= 3                        # op
+        m &= a[j + 7] <= 4                       # direction
+        m &= a[j + 2] >= 1                       # uniqueId (全局计数器, 可能很大, 不设上限)
+        row = a[j + 8].view("<i4")
+        col = a[j + 9].view("<i4")
+        m &= (row >= 0) & (row <= 31) & (col >= 0) & (col <= 31)
+        ts = f[j]
+        m &= (ts > 0.0) & (ts < 100000.0)
+        m &= a[j + 5] >= 0x100                   # charId 指针高 32 位 (>=1TB 用户态)
+        m &= a[j + 5] < 0x10000
+        m &= (a[j + 11] == 0) | ((a[j + 11] >= 0x100) & (a[j + 11] < 0x10000))  # extraInfo
+        hits = [base + int(j[k]) * 4 for k in _np.nonzero(m)[0]]
+    else:
+        for off in range(0, len(data) - LOGITEM_SIZE, 8):
+            if data[off + 0x19] or data[off + 0x1A] or data[off + 0x1B]:
+                continue
+            if data[off + 0x18] > 3:
+                continue
+            if data[off + 0x1D] or data[off + 0x1E] or data[off + 0x1F]:
+                continue
+            if data[off + 0x1C] > 4:
+                continue
+            ts, uid, cptr, _op, _d, r, c, ext = struct.unpack_from(LOGITEM_STRUCT, data, off)
+            if uid < 1:
+                continue
+            if not (0.0 < ts < 100000.0):
+                continue
+            if not (0 <= r <= 31 and 0 <= c <= 31):
+                continue
+            if not (0x10000000000 <= cptr < 0x1000000000000):
+                continue
+            if ext != 0 and not (0x10000000000 <= ext < 0x1000000000000):
+                continue
+            hits.append(base + off)
+    return hits
 
 
 class DeployTrackerReader:
-    def __init__(self, pm: pymem.Pymem):
-        self._pm = pm
-        self._bc_addr = None
-        self._logger_addr = None
-        self._logs_list_addr = None
+    def __init__(self, mc: MemCore):
+        self.mc = mc
+        self._bc_addr = 0
+        self._logger_addr = 0
+        self._logs_list_addr = 0
+        self._replay_addr = 0
+        self._journal_logs_list_addr = 0
+        self._squad_list_addr = 0        # BattleLogger.m_squad
+        self._journal_squad_list_addr = 0
+        self._journal_meta = {}
         self._status_callback = None
+        self._char_names = None          # charId -> 中文名 (ark_parser/characters.json)
+        self._channel = None             # TcpChannel 快速批量读取
 
-        # 增量扫描状态
-        self._stable: set[int] = set()
-        self._round: int = 0
-        self._scan_direction: int = 0
+    # ---------------- 基础 ----------------
 
     def set_status_callback(self, cb):
         self._status_callback = cb
 
     def _status(self, msg):
-        print(f"[INFO] {msg}")
+        print(f"[INFO] {msg}", flush=True)
         if self._status_callback:
             self._status_callback(msg)
 
-    # ---- 增量多步扫描 ----
+    def _read(self, addr, size):
+        try:
+            return self.mc.read(addr, size)
+        except Exception:
+            return None
 
-    def start_scan(self, direction: int) -> int:
-        """第一步：部署第一个干员后扫描，返回匹配数量。"""
-        self._scan_direction = direction
-        self._stable = self._do_scan()  # S1
-        self._round = 1
-        self._status(f"第 1 次扫描: {len(self._stable)} 个匹配")
-        return len(self._stable)
+    def _ptr(self, addr):
+        d = self._read(addr, 8)
+        return struct.unpack("<Q", d)[0] if d else 0
 
-    def scan_again(self) -> str:
-        """再次部署后扫描，交集+相邻过滤。
+    def _i32(self, addr):
+        d = self._read(addr, 4)
+        return struct.unpack("<i", d)[0] if d else 0
 
-        Returns:
-            "found"  — 找到 BattleController
-            "more"   — 需要再部署
-            "failed" — 失败
-        """
-        self._round += 1
-        handle = self._pm.process_handle
-        needle = struct.pack("<ii", 0, self._scan_direction)
+    def _read_string(self, ptr):
+        if not self.mc.is_ptr(ptr):
+            return ""
+        try:
+            return self.mc.read_ustring(ptr) or ""
+        except Exception:
+            return ""
 
-        if self._round <= 2:
-            # 前两步：全盘扫描
-            fresh = self._do_scan()
-        else:
-            # 第3步起：快速增量扫描
-            # ① 验证稳定地址中哪些仍然匹配
-            verified = set()
-            for addr in self._stable:
+    def _klass_name(self, obj):
+        if not self.mc.is_ptr(obj):
+            return None
+        try:
+            return self.mc.read_klass_name(obj)
+        except Exception:
+            return None
+
+    def _get_channel(self):
+        """快速批量读取通道 (memsrv), 失败回退 None (调用方走 mc.read)。"""
+        if self._channel is None:
+            try:
+                ch = TcpChannel(self.mc, read_timeout=30.0)
+                ch.open()
+                self._channel = ch
+            except Exception:
+                self._channel = None
+        return self._channel
+
+    def _read_many(self, requests):
+        """批量读取 [(addr, size)], 优先 TCP 通道, 失败逐条 mc.read。"""
+        ch = self._get_channel()
+        if ch is not None:
+            try:
+                return ch.batch_read(requests)
+            except Exception:
+                self._channel = None
+        return [self._read(a, s) for a, s in requests]
+
+    def _klass_names_batch(self, objs):
+        """批量解析一组对象的 klass 名 {addr: name} (TCP 通道三轮批量读)。"""
+        objs = [o for o in objs if self.mc.is_ptr(o)]
+        if not objs:
+            return {}
+        klasses = {}
+        for o, d in zip(objs, self._read_many([(o, 8) for o in objs])):
+            if d:
+                k = struct.unpack("<Q", d)[0]
+                if self.mc.is_ptr(k):
+                    klasses[o] = k
+        name_ptrs = {}
+        items = list(klasses.items())
+        for o, d in zip([o for o, _ in items],
+                        self._read_many([(k + 0x10, 8) for _, k in items])):
+            if d:
+                np_ = struct.unpack("<Q", d)[0]
+                if self.mc.is_ptr(np_):
+                    name_ptrs[o] = np_
+        out = {}
+        items = list(name_ptrs.items())
+        for o, d in zip([o for o, _ in items],
+                        self._read_many([(p, 48) for _, p in items])):
+            if not d:
+                continue
+            end = d.find(b"\x00")
+            if end > 0:
                 try:
-                    val = pymem.memory.read_bytes(handle, addr, 8)
-                    if val == needle:
-                        verified.add(addr)
-                except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
+                    s = d[:end].decode("ascii")
+                    if all(32 <= ord(c) < 127 for c in s):
+                        out[o] = s
+                except UnicodeDecodeError:
                     pass
+        return out
 
-            # ② 扫描稳定地址所在的内存页，找新出现的
-            PAGE_SIZE = 0x1000
-            PAGE_MASK = ~(PAGE_SIZE - 1)
-            fresh = set(verified)
-            scanned_pages = set()
+    def _read_cstring(self, addr, max_len=128):
+        if not self.mc.is_ptr(addr):
+            return ""
+        d = self._read(addr, max_len)
+        if not d:
+            return ""
+        end = d.find(b"\x00")
+        if end < 0:
+            return ""
+        try:
+            return d[:end].decode("ascii")
+        except UnicodeDecodeError:
+            return ""
 
-            for addr in self._stable:
-                page = addr & PAGE_MASK
-                if page in scanned_pages:
-                    continue
-                scanned_pages.add(page)
-                try:
-                    data = pymem.memory.read_bytes(handle, page, PAGE_SIZE)
-                except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
-                    continue
-                data_len = len(data)
-                for off in range(0, data_len - 7, 8):
-                    if data[off:off + 8] != needle:
-                        continue
-                    addr_candidate = page + off
-                    # 结构预过滤（与 _scan_chunk_for_op_dir 一致）
-                    if off < 8:
-                        continue
-                    char_ptr = struct.unpack_from("<Q", data, off - 8)[0]
-                    if char_ptr < 0x10000:
-                        continue
-                    gc_off = off + 8
-                    if gc_off + 4 > data_len:
-                        continue
-                    grid_col = struct.unpack_from("<i", data, gc_off)[0]
-                    if not (1 <= grid_col <= 15):
-                        continue
-                    fresh.add(addr_candidate)
+    def _device_scan_regions(self, regions, needles):
+        """使用 memsrv v2 在设备侧扫描，只回传命中地址。不可用时返回 None。"""
+        ch = self._get_channel()
+        if ch is None or getattr(ch, "srv_version", 0) < 2:
+            return None
+        needles = list(dict.fromkeys(needles))
+        out = {nd: [] for nd in needles}
+        try:
+            for start, end in regions:
+                addr = start
+                while addr < end:
+                    size = min(DEVICE_SCAN_CAP, end - addr)
+                    found = ch.scan(addr, size, needles)
+                    if found is None:
+                        return None
+                    for nd in needles:
+                        out[nd].extend(found.get(nd) or [])
+                    addr += size
+        except Exception as exc:
+            self._status(f"  设备侧扫描不可用: {exc}")
+            if self._channel is not None:
+                self._channel.close()
+            self._channel = None
+            return None
+        return out
 
-            self._status(f"快速扫描: {len(scanned_pages)} 页, 命中 {len(fresh)}")
+    def _locate_via_device_class_scan(self) -> bool:
+        """快速主路径: klass 名 -> Il2CppClass -> 当前 BC 对象 -> Logger。
 
-        # 1. 取交集
-        common = self._stable & fresh
-        self._status(f"交集: {len(common)} (剔除 {len(self._stable) - len(common)})")
-
-        # 2. 收缩
-        self._stable = common
-
-        # 3. 新出现
-        new_only = fresh - common
-        self._status(f"新出现: {len(new_only)}")
-
-        if not new_only:
-            self._status("无新出现地址")
-            return "failed"
-
-        # 4. 相邻过滤 + 深度验证
-        # 快速相邻检查
-        adjacent = []
-        for addr in new_only:
-            neighbor = addr - LOGITEM_SIZE
-            if neighbor in common:
-                adjacent.append((neighbor, addr))
-
-        self._status(f"相邻候选: {len(adjacent)}")
-
-        # 深度验证：读 LogItem 结构，验证 uniqueId 连续、timestamp 递增
-        candidates = set()
-        for prev_op, cur_op in adjacent:
-            if self._validate_logitem_pair(prev_op - 0x18, cur_op - 0x18):
-                candidates.add(cur_op)
-
-        self._status(f"深度过滤后: {len(candidates)}")
-
-        if not candidates:
-            self._status("无相邻候选")
-            return "failed"
-
-        if len(candidates) == 1:
-            addr = next(iter(candidates))
-            logitem_base = addr - 0x18
-            self._status(f"锁定 @ {hex(logitem_base)}")
-            bc = self._trace_logitem_to_battle_controller(logitem_base)
-            if bc is not None:
-                self._bc_addr = bc
-                self._refresh_chain()
-                return "found"
-            self._status("逆向追踪失败")
-            return "failed"
-
-        self._stable = candidates
-        self._status(f"剩余 {len(candidates)} 个候选, 请再部署一次")
-        return "more"
-
-    def _do_scan(self) -> set[int]:
-        """全盘扫描 [op=SPAWN, dir=self._scan_direction]。"""
-        needle = struct.pack("<ii", 0, self._scan_direction)
-        direction_name = DIRECTION_NAMES.get(self._scan_direction, str(self._scan_direction))
-        self._status(f"扫描 [SPAWN + {direction_name}] ...")
-
-        regions = self._collect_readable_regions()
-        total = len(regions)
-        handle = self._pm.process_handle
-        all_hits = set()
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=min(32, (os.cpu_count() or 4) * 2)) as executor:
-            futures = [
-                executor.submit(_scan_chunk_for_op_dir, handle, base, size, needle)
-                for base, size in regions
-            ]
-            for i, future in enumerate(concurrent.futures.as_completed(futures)):
-                res = future.result()
-                if res:
-                    all_hits.update(res)
-                if (i + 1) % 20 == 0:
-                    self._status(f"  扫描... {int((i + 1) / total * 100)}%")
-
-        return all_hits
-
-    def _validate_logitem_pair(self, li1: int, li2: int) -> bool:
-        """验证两个 LogItem 是否为真实的连续部署记录。
-
-        Args:
-            li1, li2: LogItem 基址 (li2 应在 li1 + 0x30)
-        Returns:
-            True 如果 timestamp 递增、uniqueId 连续、charId 和 extraInfo 指针有效、
-            grid 坐标在合理范围、charId 字符串以 "char_" 开头
+        扫描在 Android 设备侧完成，不下载完整 GC 堆；命中地址返回宿主后再做
+        Unity m_CachedPtr、战斗标量和 Logger 反向指针校验。
         """
-        handle = self._pm.process_handle
-        try:
-            raw1 = pymem.memory.read_bytes(handle, li1, LOGITEM_SIZE)
-            raw2 = pymem.memory.read_bytes(handle, li2, LOGITEM_SIZE)
-        except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
+        rw_regions = [(s, e) for s, e, perms, _name in self.mc.regions if "rw" in perms]
+        if not rw_regions:
             return False
+        t0 = time.time()
+        self._status("快速定位: 设备侧搜索 BattleController klass ...")
+        class_name = b"BattleController\x00"
+        name_scan = self._device_scan_regions(rw_regions, [class_name])
+        if name_scan is None:
+            return False
+        name_addrs = []
+        for addr in name_scan.get(class_name, []):
+            prev = self._read(addr - 1, 1)
+            if not prev or prev == b"\x00":
+                name_addrs.append(addr)
+        if not name_addrs:
+            self._status("  未找到 BattleController 类名字符串")
+            return False
+
+        name_needles = [struct.pack("<Q", addr) for addr in name_addrs]
+        ref_scan = self._device_scan_regions(rw_regions, name_needles)
+        if ref_scan is None:
+            return False
+        klasses = set()
+        for addr, needle in zip(name_addrs, name_needles):
+            for ref in ref_scan.get(needle, []):
+                klass = ref - 0x10  # Il2CppClass.name
+                if self._ptr(klass + 0x10) != addr:
+                    continue
+                namespace = self._read_cstring(self._ptr(klass + 0x18))
+                if namespace == "Torappu.Battle":
+                    klasses.add(klass)
+        if not klasses:
+            self._status("  未找到 Torappu.Battle.BattleController Il2CppClass")
+            return False
+
+        gc_regions = self.mc.scan_targets()
+        klass_needles = [struct.pack("<Q", klass) for klass in sorted(klasses)]
+        obj_scan = self._device_scan_regions(gc_regions, klass_needles)
+        if obj_scan is None:
+            return False
+        candidates = set()
+        for needle in klass_needles:
+            for obj in obj_scan.get(needle, []):
+                if obj & 7:
+                    continue
+                d = self._read(obj, BC_REAL_PLAY_TIME + 4)
+                if not d:
+                    continue
+                state = struct.unpack_from("<i", d, BC_STATE)[0]
+                speed = struct.unpack_from("<i", d, BC_SPEED_LEVEL)[0]
+                play_time = struct.unpack_from("<f", d, BC_REAL_PLAY_TIME)[0]
+                if (state in (1, 2, 3) and 0 <= speed <= 8
+                        and 0.0 <= play_time < 100000.0):
+                    candidates.add(obj)
+        self._status(f"  klass {len(klasses)} 个, BC 对象候选 {len(candidates)} 个 "
+                     f"({time.time() - t0:.1f}s)")
+        return self._bind_battle_controller_candidates(candidates)
+
+    # ---------------- 定位流程 ----------------
+
+    def locate(self) -> bool:
+        """全自动定位: 返回 True 表示找到实时日志链 (和/或代理序列)。"""
+        self._bc_addr = self._logger_addr = self._logs_list_addr = 0
+        self._replay_addr = self._journal_logs_list_addr = 0
+        self._squad_list_addr = self._journal_squad_list_addr = 0
+        self._journal_meta = {}
 
         try:
-            ts1, uid1, cid1, op1, dir1, r1, c1, ext1 = struct.unpack_from(LOGITEM_STRUCT, raw1)
-            ts2, uid2, cid2, op2, dir2, r2, c2, ext2 = struct.unpack_from(LOGITEM_STRUCT, raw2)
-        except struct.error:
+            self.mc.reload_maps()
+        except Exception as exc:
+            self._status(f"读取 maps 失败: {exc}")
             return False
 
-        # 时间戳有效且递增
-        if not (0.0 < ts1 < 100000.0 and 0.0 < ts2 < 100000.0):
-            return False
-        if ts2 <= ts1:
+        # memsrv v2 可在设备侧按 klass 指针精确扫描，通常十几秒即可定位，且
+        # 零日志可用。旧版服务或扫描失败时，保留下面的完整堆快照兼容路径。
+        if self._locate_via_device_class_scan():
+            return True
+        self._status("快速定位未成功, 回退完整堆快照 ...")
+
+        # ---- 第 1 遍: 堆快照 + LogItem 数值候选 ----
+        targets = self.mc.scan_targets()
+        total = sum(e - s for s, e in targets)
+        self._status(f"第 1 遍: 堆扫描 ({total / 1024 / 1024:.0f} MB) + LogItem 预过滤 ...")
+        snap = _HeapSnap()
+        candidates = []
+        done = [0]
+        lock = threading.Lock()
+        t0 = time.time()
+        sem = threading.Semaphore(SCAN_WORKERS)
+
+        def job(a, b):
+            try:
+                try:
+                    d = self.mc.read(a, b - a, timeout=30)
+                except Exception:
+                    d = None
+                if d is not None:
+                    snap.write(a, d)
+                    candidates.extend(_numeric_filter_chunk(a, d))
+                with lock:
+                    done[0] += b - a
+                    pct = done[0] * 100 // total
+                    if pct // 10 != (done[0] - (b - a)) * 100 // total // 10:
+                        self._status(f"  堆扫描 {pct}% ({time.time() - t0:.0f}s)")
+            finally:
+                sem.release()
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=SCAN_WORKERS) as ex:
+            for s, e in targets:
+                a = s
+                while a < e:
+                    b = min(a + SCAN_CAP, e)
+                    sem.acquire()
+                    ex.submit(job, a, b)
+                    a = b
+        snap.finish()
+        self._status(f"  数值候选 {len(candidates)} 个 ({time.time() - t0:.0f}s), 校验 charId ...")
+
+        # 当前 BattleController 是零日志和有日志场景共同的可靠根节点。优先走这条链，
+        # 避免当前战斗尚无操作时被 GC 堆中上一局遗留的 LogItem/Logger 误导。
+        self._status("优先按 BattleController 定位当前 BattleLogger ...")
+        if self._locate_via_battle_controller(snap):
+            snap.discard()
+            return True
+        self._status("BattleController 链定位未通过, 回退 LogItem 反向定位 ...")
+
+        # ---- charId 字符串校验 (快照内就地解引用) ----
+        valid = []
+        for addr in candidates:
+            cptr = snap.read_u64(addr + 0x10)
+            if cptr is None:
+                continue
+            s = snap.read_ustring(cptr)
+            if s and CHAR_ID_RE.match(s):
+                valid.append(addr)
+        self._status(f"  字符串校验后剩余 {len(valid)} 个")
+        if not valid:
+            snap.discard()
+            self._status("定位失败 — 已进入关卡但未找到有效的当前 BattleController")
             return False
 
-        # op 必须是 SPAWN
-        if op1 != 0 or op2 != 0:
+        # ---- 反推 items 数组 (快照内) ----
+        arrays = set()
+        for addr in valid:
+            arr = self._find_items_array(snap, addr)
+            if arr:
+                arrays.add(arr)
+        self._status(f"  反推出 {len(arrays)} 个 items 数组")
+        if not arrays:
+            snap.discard()
             return False
 
-        # uniqueId 连续
-        if uid2 != uid1 + 1:
+        # ---- 第 2 遍 (快照本地): 数组 -> List<LogItem> ----
+        self._status("第 2 遍: 查找持有数组的 List<LogItem> ...")
+        raw_lists = {}  # list_addr -> array_base
+        for lst, arr in self._snap_find_refs(snap, arrays, back=LIST_ITEMS):
+            d = snap.read(lst, 0x20)
+            if not d or struct.unpack_from("<Q", d, LIST_ITEMS)[0] != arr:
+                continue
+            size = struct.unpack_from("<i", d, LIST_SIZE)[0]
+            if not (0 < size <= 50000):
+                continue
+            raw_lists[lst] = arr
+        # 批量 klass 名校验 (避免逐个 adb 往返)
+        list_names = self._klass_names_batch(list(raw_lists))
+        lists = {lst: arr for lst, arr in raw_lists.items()
+                 if list_names.get(lst, "").startswith("List")}
+        self._status(f"  有效 List<LogItem>: {len(lists)} 个")
+        if not lists:
+            snap.discard()
             return False
 
-        # charId 指针有效 (堆范围)
-        if cid1 < 0x10000 or cid2 < 0x10000:
+        # ---- 第 3 遍 (快照本地): List -> 持有者 (批量解析 klass 名) ----
+        self._status("第 3 遍: 识别 List 持有者 ...")
+        t3 = time.time()
+        refs = self._snap_find_refs(snap, set(lists), back=None)  # [(list_addr, hit_addr)]
+        self._status(f"  引用 {len(refs)} 处 ({time.time() - t3:.0f}s)")
+        owner_cands = {hit - xoff: (lst, xoff)
+                       for lst, hit in refs for xoff in range(0x10, 0x90, 8)}
+        # 快照侧预过滤: owner 的 klass 指针必须是有效 VA (避免对垃圾候选逐个 adb 读)
+        owners = [o for o in owner_cands
+                  if (v := snap.read_u64(o)) is not None
+                  and 0x10000000000 <= v < 0x1000000000000]
+        self._status(f"  owner 候选 {len(owners)} 个, 批量解析 klass 名 ...")
+        names = self._klass_names_batch(owners)
+        self._status(f"  klass 名解析完成 ({time.time() - t3:.0f}s)")
+        found_logger = False
+        for owner, name in names.items():
+            if name != "BattleLogger":
+                continue
+            lst, xoff = owner_cands[owner]
+            bc = self._resolve_battle_controller(owner)
+            state = self._i32(bc + BC_STATE) if bc else 0
+            cached_ptr = self._ptr(bc + UNITY_CACHED_PTR) if bc else 0
+            if (bc and state in (1, 2, 3) and self.mc.is_ptr(cached_ptr)
+                    and self._bind_battle_logger(bc, owner, xoff)):
+                # 反推得到的 List 必须和 Logger 自身的 m_logs 一致。
+                if self._logs_list_addr != lst:
+                    self._bc_addr = self._logger_addr = self._logs_list_addr = 0
+                    continue
+                found_logger = True
+                self._status(f"  BattleController @ {hex(bc)} "
+                             f"(state={BATTLE_STATE_NAMES.get(state, state)})")
+                break
+        snap.discard()
+
+        if found_logger:
+            self._squad_list_addr = self._find_squad_list(self._logger_addr, 0x20, 0x50)
+            # 代理指挥: 从 BattleController 字段区找 ReplayController (手动模式没有)
+            self._resolve_replay_controller()
+
+        ok = found_logger or bool(self._replay_addr)
+        if not ok:
+            self._status("定位失败: 未找到 BattleLogger / ReplayController")
+        return ok
+
+    def _validate_log_list(self, list_addr) -> bool:
+        """校验 List<LogItem> 容器；size==0 是刚进关卡时的正常状态。"""
+        if not self.mc.is_ptr(list_addr):
+            return False
+        name = self._klass_name(list_addr)
+        if not (name and name.startswith("List")):
+            return False
+        d = self._read(list_addr, 0x20)
+        if not d:
+            return False
+        items = struct.unpack_from("<Q", d, LIST_ITEMS)[0]
+        size = struct.unpack_from("<i", d, LIST_SIZE)[0]
+        if not (0 <= size <= 50000):
+            return False
+        # 空 List 在不同运行时中可能使用共享空数组，也可能暂时为 NULL。
+        if size == 0:
+            return items == 0 or self.mc.is_ptr(items)
+        if not self.mc.is_ptr(items):
+            return False
+        max_d = self._read(items + ARRAY_MAX_LENGTH, 4)
+        if not max_d:
+            return False
+        max_len = struct.unpack("<i", max_d)[0]
+        return size <= max_len <= 50000
+
+    def _bind_battle_logger(self, bc_addr, logger_addr, field_offset) -> bool:
+        """强校验并绑定 BC -> BattleLogger -> m_logs 链。"""
+        if self._klass_name(logger_addr) != "BattleLogger":
+            return False
+        # 防止命中上一局仍滞留在 GC 堆中的 Logger。
+        if self._ptr(logger_addr + LOGGER_CONTROLLER) != bc_addr:
+            return False
+        logs = self._ptr(logger_addr + LOGGER_LOGS)
+        if not self._validate_log_list(logs):
             return False
 
-        # extraInfo 指针有效 (堆范围，可为 0 表示空串)
-        if ext1 != 0 and ext1 < 0x10000:
-            return False
-        if ext2 != 0 and ext2 < 0x10000:
-            return False
-
-        # grid 坐标在合理范围 (方舟地图坐标 0~20)
-        if not (0 <= r1 <= 20 and 0 <= c1 <= 20):
-            return False
-        if not (0 <= r2 <= 20 and 0 <= c2 <= 20):
-            return False
-
-        # 验证 charId 字符串内容：以 "char_" 开头且长度合理
-        s1 = self._read_string(cid1)
-        if not s1 or not s1.startswith("char_"):
-            return False
-        s2 = self._read_string(cid2)
-        if not s2 or not s2.startswith("char_"):
-            return False
-
+        self._bc_addr = bc_addr
+        self._logger_addr = logger_addr
+        self._logs_list_addr = logs
+        size = self._i32(logs + LIST_SIZE)
+        self._status(f"  BattleLogger @ {hex(logger_addr)} (BC +{hex(field_offset)}), "
+                     f"m_logs @ {hex(logs)} ({size} 条)")
         return True
 
-    # ---- 内存区域枚举 ----
-
-    def _collect_readable_regions(self):
-        regions = []
-        curr = 0
-        handle = self._pm.process_handle
-        while True:
-            try:
-                mbi = pymem.memory.virtual_query(handle, curr)
-                curr += mbi.RegionSize
-                if mbi.State == 0x1000 and (mbi.Protect & 0x66) and mbi.RegionSize >= 1024:
-                    regions.append((mbi.BaseAddress, mbi.RegionSize))
-            except Exception:
-                break
-        if regions:
-            regions.sort(key=lambda r: r[0])
-            merged = []
-            buf_base, buf_size = regions[0]
-            for base, size in regions[1:]:
-                if base == buf_base + buf_size:
-                    buf_size += size
-                else:
-                    merged.append((buf_base, buf_size))
-                    buf_base, buf_size = base, size
-            merged.append((buf_base, buf_size))
-            regions = merged
-        return regions
-
-    # ---- 指针链追踪 ----
-
-    def _refresh_chain(self) -> bool:
-        try:
-            self._logger_addr = self._pm.read_longlong(self._bc_addr + 0x100)
-            if self._logger_addr == 0:
-                return False
-            self._logs_list_addr = self._pm.read_longlong(self._logger_addr + 0x20)
-            if self._logs_list_addr == 0:
-                return False
-            return True
-        except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
+    def _bind_battle_controller_candidates(self, bc_list) -> bool:
+        """从候选中选出仍绑定 Unity 原生对象的当前 BC，并解析 Logger。"""
+        state_rank = {2: 0, 1: 1, 3: 2}
+        ranked = []
+        for bc in set(bc_list):
+            state = self._i32(bc + BC_STATE)
+            cached_ptr = self._ptr(bc + UNITY_CACHED_PTR)
+            # UnityEngine.Object.m_CachedPtr 在对象销毁后变为 0。它比残留的
+            # state/playTime 更能区分当前关卡和 GC 尚未回收的上一局对象。
+            native_rank = 0 if self.mc.is_ptr(cached_ptr) else 1
+            ranked.append((native_rank, state_rank.get(state, 9), bc, state))
+        ranked.sort()
+        live_native = sum(1 for native_rank, _sr, _bc, _st in ranked if native_rank == 0)
+        self._status(f"  找到 {len(ranked)} 个 BattleController 候选, "
+                     f"其中 {live_native} 个仍绑定 Unity 原生对象")
+        if not live_native:
+            self._status("  候选均为已销毁的旧 BattleController")
             return False
 
-    def _trace_logitem_to_battle_controller(self, logitem_addr: int):
-        handle = self._pm.process_handle
-
-        # 1. 确定数组基址
-        array_base = None
-        for N in range(256):
-            candidate_arr = logitem_addr - 0x20 - N * LOGITEM_SIZE
-            try:
-                length = self._pm.read_longlong(candidate_arr + 0x18)
-                if N < length < 50000:
-                    if (logitem_addr - candidate_arr - 0x20) % LOGITEM_SIZE == 0:
-                        array_base = candidate_arr
-                        break
-            except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
+        # 当前实测偏移优先；其余范围仅作版本漂移兜底，并覆盖旧 dump 的 0x100。
+        xoffs = [BC_LOGGER] + [x for x in range(0xC0, 0x148, 8) if x != BC_LOGGER]
+        for native_rank, _state_rank, bc, state in ranked:
+            if native_rank:
                 continue
-        if array_base is None:
-            return None
+            ptrs = {}
+            for xoff, d in zip(xoffs, self._read_many([(bc + x, 8) for x in xoffs])):
+                if d:
+                    p = struct.unpack("<Q", d)[0]
+                    if self.mc.is_ptr(p):
+                        ptrs[xoff] = p
+            names = self._klass_names_batch(list(ptrs.values()))
+            for xoff in xoffs:
+                logger = ptrs.get(xoff, 0)
+                if not logger or names.get(logger) != "BattleLogger":
+                    continue
+                if not self._bind_battle_logger(bc, logger, xoff):
+                    continue
+                self._status(f"  BattleController @ {hex(bc)} "
+                             f"(state={BATTLE_STATE_NAMES.get(state, state)}, "
+                             f"m_CachedPtr={hex(self._ptr(bc + UNITY_CACHED_PTR))})")
+                self._squad_list_addr = self._find_squad_list(
+                    self._logger_addr, LOGGER_LOGS, 0x50)
+                self._resolve_replay_controller()
+                return True
 
-        # 2. 搜索 List._items 指针
-        logs_list_addr = None
-        for region_base, region_size in self._collect_readable_regions():
-            try:
-                region_data = pymem.memory.read_bytes(handle, region_base, region_size)
-            except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
-                continue
-            offset = 0
-            needle = struct.pack("<Q", array_base)
-            while True:
-                idx = region_data.find(needle, offset)
-                if idx == -1:
-                    break
-                list_candidate = region_base + idx - 0x10
-                try:
-                    mbi = pymem.memory.virtual_query(handle, list_candidate)
-                    if mbi.State != 0x1000:
-                        offset = idx + 8
+        self._status("  未找到能反向指回当前 BattleController 的 BattleLogger")
+        return False
+
+    def _locate_via_battle_controller(self, snap) -> bool:
+        """用 BattleController 指纹定位当前战斗，支持 m_logs.size == 0。
+
+        优先读取现网实测 m_logger 偏移；若版本字段漂移，再小范围扫描。所有
+        BattleLogger 候选都必须反向指回同一个 BC，并拥有结构有效的日志 List。
+        """
+        # ---- 快照内向量化指纹扫描 (含 klass 指针预过滤) ----
+        cands = []
+        st_lo, st_hi = 1, 3
+        if _np is not None:
+            for base, d in snap.iter_chunks():
+                a = _np.frombuffer(d, dtype="<u4")
+                n = a.size
+                if n < (BC_REAL_PLAY_TIME + 4) // 4 + 2:
+                    continue
+                f = a.view("<f4")
+                j = _np.arange(0, n - (BC_REAL_PLAY_TIME + 4) // 4, 2)  # 8 字节对齐
+                m = (a[j + BC_STATE // 4] >= st_lo) & (a[j + BC_STATE // 4] <= st_hi)
+                m &= a[j + BC_SPEED_LEVEL // 4] <= 8
+                pt = f[j + BC_REAL_PLAY_TIME // 4]
+                m &= (pt >= 0.0) & (pt < 100000.0)
+                m &= a[j + 1] >= 0x100      # klass 指针高 32 位 (>=1TB 用户态)
+                m &= a[j + 1] < 0x10000
+                cands += [base + int(k) * 4 for k in j[_np.nonzero(m)[0]]]
+        else:
+            for base, d in snap.iter_chunks():
+                for off in range(0, len(d) - (BC_REAL_PLAY_TIME + 4), 8):
+                    kp = struct.unpack_from("<Q", d, off)[0]
+                    if not (0x10000000000 <= kp < 0x1000000000000):
                         continue
-                    _size = self._pm.read_int(list_candidate + 0x18)
-                    _version = self._pm.read_int(list_candidate + 0x1C)
-                    if 0 <= _size <= length and _version >= 0:
-                        logs_list_addr = list_candidate
-                        break
-                except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
+                    state = struct.unpack_from("<i", d, off + BC_STATE)[0]
+                    if not (st_lo <= state <= st_hi):
+                        continue
+                    if not (0 <= struct.unpack_from("<i", d, off + BC_SPEED_LEVEL)[0] <= 8):
+                        continue
+                    pt = struct.unpack_from("<f", d, off + BC_REAL_PLAY_TIME)[0]
+                    if 0.0 <= pt < 100000.0:
+                        cands.append(base + off)
+        self._status(f"  BC 指纹候选 {len(cands)} 个, klass 指针去重 ...")
+
+        # ---- klass 指针快照内提取 + 去重 (只解析唯一 klass 的名字) ----
+        klass_of = {}
+        for addr in cands:
+            kp = snap.read_u64(addr)
+            if kp is not None and self.mc.is_ptr(kp):
+                klass_of[addr] = kp
+        uniq = sorted(set(klass_of.values()))
+        self._status(f"  唯一 klass {len(uniq)} 个, 批量解析名字 ...")
+        klass_names = {}
+        name_ptrs = {}
+        for k, d in zip(uniq, self._read_many([(k + 0x10, 8) for k in uniq])):
+            if d:
+                p = struct.unpack("<Q", d)[0]
+                if self.mc.is_ptr(p):
+                    name_ptrs[k] = p
+        items = list(name_ptrs.items())
+        for k, d in zip([k for k, _ in items],
+                        self._read_many([(p, 48) for _, p in items])):
+            if not d:
+                continue
+            end = d.find(b"\x00")
+            if end > 0:
+                try:
+                    s = d[:end].decode("ascii")
+                    if all(32 <= ord(c) < 127 for c in s):
+                        klass_names[k] = s
+                except UnicodeDecodeError:
                     pass
-                offset = idx + 8
-            if logs_list_addr is not None:
+        bc_list = sorted(a for a, kp in klass_of.items()
+                         if klass_names.get(kp) == "BattleController")
+        if not bc_list:
+            self._status("  未找到 BattleController (不在关卡中?)")
+            return False
+        return self._bind_battle_controller_candidates(bc_list)
+
+    def _resolve_replay_controller(self):
+        """在 BattleController 字段区找 ReplayController (仅代理指挥模式存在)。
+        找到后解析 journal.logs / journal.squad / metadata。"""
+        if not self._bc_addr:
+            return
+        # 批量取 BC 字段区指针
+        xoffs = list(range(0xD0, 0x170, 8))
+        ptrs = {}
+        for xoff, d in zip(xoffs, self._read_many([(self._bc_addr + x, 8) for x in xoffs])):
+            if d:
+                p = struct.unpack("<Q", d)[0]
+                if self.mc.is_ptr(p):
+                    ptrs[xoff] = p
+        names = self._klass_names_batch(list(ptrs.values()))
+        for xoff, p in ptrs.items():
+            if names.get(p) != "ReplayController":
+                continue
+            self._replay_addr = p
+            self._status(f"  ReplayController @ {hex(p)} (BC +{hex(xoff)})")
+            # journal.logs: 首元素像 LogItem 的 List
+            for l_off in range(0x40, 0x78, 8):
+                lst = self._ptr(p + l_off)
+                if not self.mc.is_ptr(lst):
+                    continue
+                if not (self._klass_name(lst) or "").startswith("List"):
+                    continue
+                items = self._ptr(lst + LIST_ITEMS)
+                size = self._i32(lst + LIST_SIZE)
+                if not (self.mc.is_ptr(items) and 0 < size <= 50000):
+                    continue
+                d = self._read(items + ARRAY_ITEMS, LOGITEM_SIZE)
+                if not d:
+                    continue
+                ts, uid, cptr, op, _dir, row, col, _ext = struct.unpack_from(
+                    LOGITEM_STRUCT, d, 0)
+                s = self._read_string(cptr)
+                if (0.0 < ts < 100000.0 and uid >= 1 and 0 <= op <= 3
+                        and 0 <= row <= 31 and 0 <= col <= 31
+                        and s and CHAR_ID_RE.match(s)):
+                    self._journal_logs_list_addr = lst
+                    self._status(f"  journal.logs @ {hex(lst)} (ReplayController +{hex(l_off)}, "
+                                 f"{size} 条)")
+                    break
+            self._journal_squad_list_addr = self._find_squad_list(p, 0x40, 0x70)
+            self._journal_meta = self._read_journal_meta(p)
+            return
+
+    def _snap_find_refs(self, snap, targets, back):
+        """在快照中找指向 targets 中任一地址的 8 字节引用。
+        back 为整数时返回 (target - back 修正前的对象基址, target), 即 (hit - back, target);
+        back 为 None 时返回 (target, hit_addr) 原样对。"""
+        out = []
+        if _np is not None:
+            narr = _np.array(sorted(targets), dtype="<u8")
+            for base, d in snap.iter_chunks():
+                q = _np.frombuffer(d, dtype="<u8")
+                for k in _np.nonzero(_np.isin(q, narr))[0]:
+                    v = int(q[int(k)])
+                    haddr = base + int(k) * 8
+                    out.append((haddr - back, v) if back is not None else (v, haddr))
+        else:
+            tset = set(targets)
+            for base, d in snap.iter_chunks():
+                for off in range(0, len(d) - 8, 8):
+                    v = struct.unpack_from("<Q", d, off)[0]
+                    if v in tset:
+                        haddr = base + off
+                        out.append((haddr - back, v) if back is not None else (v, haddr))
+        return out
+
+    def _resolve_battle_controller(self, logger_addr):
+        """BattleLogger.m_controller 正常在 +0x18, 漂移时小范围搜索。"""
+        for xoff in range(0x10, 0x30, 8):
+            bc = self._ptr(logger_addr + xoff)
+            if self._klass_name(bc) == "BattleController":
+                return bc
+        return 0
+
+    def _find_items_array(self, snap, logitem_addr):
+        """由 LogItem 地址反推所属 items 数组头 (数组数据起于 +0x20)。
+        max_length 是 int32@+0x18 (+0x1C 的 4 字节填充可能是垃圾, 不可按 int64 读)。"""
+        for k in range(300):
+            arr = logitem_addr - ARRAY_ITEMS - k * LOGITEM_SIZE
+            if arr < 0x10000:
                 break
-        if logs_list_addr is None:
-            return None
+            d = snap.read(arr + ARRAY_MAX_LENGTH, 4)
+            if not d:
+                continue
+            length = struct.unpack("<i", d)[0]
+            if k < length < 50000:
+                return arr
+        return 0
 
-        # 3. BattleLogger → BattleController
-        battle_logger = logs_list_addr - 0x20
-        try:
-            battle_controller = self._pm.read_longlong(battle_logger + 0x18)
-            if battle_controller == 0 or battle_controller < 0x10000:
-                return None
-            verify_logger = self._pm.read_longlong(battle_controller + 0x100)
-            if verify_logger != battle_logger:
-                return None
-            return battle_controller
-        except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
-            return None
+    def _find_squad_list(self, owner_addr, lo, hi):
+        """在持有者字段区查找 List<CharInfo>。
+        判别: 首元素 tmplId/skinId 是 char_/trap_ 前缀, 且 skillId 以 "sk" 开头
+        (排除 m_logs — LogItem 的 charId 也在 +0x10, 但 +0x18 是 int op 非字符串)。"""
+        for xoff in range(lo, hi, 8):
+            lst = self._ptr(owner_addr + xoff)
+            if not self.mc.is_ptr(lst):
+                continue
+            if lst in (self._logs_list_addr, self._journal_logs_list_addr):
+                continue
+            name = self._klass_name(lst)
+            if not (name and name.startswith("List")):
+                continue
+            items = self._ptr(lst + LIST_ITEMS)
+            size = self._i32(lst + LIST_SIZE)
+            if not (self.mc.is_ptr(items) and 0 < size <= 64):
+                continue
+            d = self._read(items + ARRAY_ITEMS, CHARINFO_SIZE)
+            if not d:
+                continue
+            tmpl_ptr, skill_ptr = struct.unpack_from("<QQ", d, 0x10)
+            s = self._read_string(tmpl_ptr)
+            if not (s and CHAR_ID_RE.match(s)):
+                # tmplId 现网常为 NULL, 回退校验 skinId (+0x8)
+                skin_ptr = struct.unpack_from("<Q", d, 0x8)[0]
+                s = self._read_string(skin_ptr)
+                if not (s and CHAR_ID_RE.match(s.split("#", 1)[0])):
+                    continue
+            skill = self._read_string(skill_ptr)
+            if not skill.startswith("sk"):
+                continue
+            return lst
+        return 0
 
-    # ---- 读取部署事件 ----
+    def _read_journal_meta(self, replay_addr):
+        """读取 ReplayController.m_journal.metadata (inline @ +0x18, 漂移时扫描字符串)。"""
+        meta = {}
+        base = replay_addr + 0x18
+        d = self._read(base, 0x38)
+        if not d:
+            return meta
+        standard_play_time, game_result = struct.unpack_from("<fi", d, 0)
+        save_time_raw, remaining_cost, life_pt, killed, missed = struct.unpack_from("<qiiii", d, 0x8)
+        meta.update({
+            "standardPlayTime": round(standard_play_time, 3),
+            "gameResult": game_result,
+            "saveTimeRaw": save_time_raw,
+            "remainingCost": remaining_cost,
+            "remainingLifePoint": life_pt,
+            "killedEnemiesCnt": killed,
+            "missedEnemiesCnt": missed,
+        })
+        # levelId @ +0x20 / stageId @ +0x28 (相对 metadata 基址); 校验失败则小范围搜索
+        level_id = self._read_string(self._ptr(base + 0x20))
+        stage_id = self._read_string(self._ptr(base + 0x28))
+        if not (level_id and STAGE_ID_RE.match(level_id)):
+            level_id = ""
+        if not (stage_id and STAGE_ID_RE.match(stage_id)):
+            stage_id = ""
+        if not stage_id:
+            for xoff in range(0x18, 0x38, 8):
+                s = self._read_string(self._ptr(base + xoff))
+                if s and "_" in s and STAGE_ID_RE.match(s):
+                    stage_id = s
+                    break
+        meta["levelId"] = level_id
+        meta["stageId"] = stage_id
+        return meta
 
-    def get_events(self):
-        if not self._logs_list_addr or not self._refresh_chain():
+    # ---------------- 链有效性 ----------------
+
+    def is_chain_valid(self) -> bool:
+        """廉价校验已定位的链是否仍有效 (不触发重扫)。"""
+        if (self._bc_addr and self._logger_addr
+                and self._klass_name(self._bc_addr) == "BattleController"
+                and self.mc.is_ptr(self._ptr(self._bc_addr + UNITY_CACHED_PTR))
+                and self._klass_name(self._logger_addr) == "BattleLogger"
+                and self._ptr(self._logger_addr + LOGGER_CONTROLLER) == self._bc_addr):
+            logs = self._ptr(self._logger_addr + LOGGER_LOGS)
+            if logs == self._logs_list_addr and self._validate_log_list(logs):
+                return True
+        return bool(self._replay_addr and
+                    self._klass_name(self._replay_addr) == "ReplayController")
+
+    def ensure_located(self) -> bool:
+        """验证已定位的链仍然有效, 失效时自动重新定位。"""
+        if self._logs_list_addr or self._journal_logs_list_addr:
+            if self.is_chain_valid():
+                return True
+        return self.locate()
+
+    # ---------------- 数据读取 ----------------
+
+    def _read_log_list(self, list_addr):
+        """读取 List<LogItem> 全部元素。"""
+        if not list_addr:
             return []
-        try:
-            items_ptr = self._pm.read_longlong(self._logs_list_addr + 0x10)
-            size = self._pm.read_int(self._logs_list_addr + 0x18)
-            max_len = self._pm.read_longlong(items_ptr + 0x18)
-            count = min(size, max_len)
-        except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
+        d = self._read(list_addr, 0x20)
+        if not d:
             return []
-        count = max(0, min(count, 50000))
-
-        events = []
-        try:
-            raw = self._pm.read_bytes(items_ptr + 0x20, count * LOGITEM_SIZE)
-        except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
-            return events
-
+        items = struct.unpack_from("<Q", d, LIST_ITEMS)[0]
+        size = struct.unpack_from("<i", d, LIST_SIZE)[0]
+        if not self.mc.is_ptr(items) or size <= 0:
+            return []
+        d = self._read(items + ARRAY_MAX_LENGTH, 4)
+        max_len = struct.unpack("<i", d)[0] if d else 0
+        count = max(0, min(size, max_len, 50000))
+        if count == 0:
+            return []
+        raw = self._read(items + ARRAY_ITEMS, count * LOGITEM_SIZE)
+        if not raw:
+            return []
+        # 先批量取全部字符串指针, 再批量读字符串
+        reqs = []
+        metas = []
         for i in range(count):
             try:
-                vals = struct.unpack_from(LOGITEM_STRUCT, raw, i * LOGITEM_SIZE)
-                ts, unique_id, char_ptr, op, direction, grid_row, grid_col, extra_ptr = vals
-                char_id = self._read_string(char_ptr) if char_ptr else ""
-                extra = self._read_string(extra_ptr) if extra_ptr else ""
-            except (struct.error, UnicodeDecodeError):
+                ts, uid, cptr, op, direction, row, col, ext = struct.unpack_from(
+                    LOGITEM_STRUCT, raw, i * LOGITEM_SIZE)
+            except struct.error:
                 continue
+            metas.append((ts, uid, cptr, op, direction, row, col, ext))
+            reqs.append((cptr, 0x60))
+            if ext:
+                reqs.append((ext, 0x60))
+        blobs = self._read_many(reqs) if reqs else []
+        strings = {}
+        for (addr, _s), blob in zip(reqs, blobs):
+            if not blob:
+                continue
+            ln = struct.unpack_from("<i", blob, STR_LENGTH)[0]
+            if 0 < ln <= 64 and len(blob) >= STR_CHARS + ln * 2:
+                try:
+                    strings[addr] = blob[STR_CHARS:STR_CHARS + ln * 2].decode("utf-16-le")
+                except UnicodeDecodeError:
+                    pass
+        events = []
+        for ts, uid, cptr, op, direction, row, col, ext in metas:
+            char_id = strings.get(cptr, "")
+            extra = strings.get(ext, "") if ext else ""
+            inst_id = uid & 0x7FFFFFFF   # 高位是 PlayerSide 标志位
             events.append({
-                "timestamp": round(ts, 6), "uniqueId": unique_id, "charId": char_id,
-                "op": op, "opName": OP_NAMES.get(op, f"UNKNOWN({op})"),
+                "timestamp": round(ts, 3),
+                "uniqueId": uid,
+                "charInstId": inst_id,
+                "charId": char_id,
+                "charName": self._lookup_char_name(char_id),
+                "op": op,
+                "opName": OP_NAMES.get(op, f"UNKNOWN({op})"),
                 "direction": direction,
                 "directionName": DIRECTION_NAMES.get(direction, str(direction)),
-                "gridRow": grid_row, "gridCol": grid_col, "extraInfo": extra,
+                "gridRow": row,
+                "gridCol": col,
+                "extraInfo": extra,
             })
         return events
+
+    def _read_squad(self, list_addr):
+        """读取 List<CharInfo> 编队信息。"""
+        if not list_addr:
+            return []
+        items = self._ptr(list_addr + LIST_ITEMS)
+        size = self._i32(list_addr + LIST_SIZE)
+        if not (self.mc.is_ptr(items) and 0 < size <= 64):
+            return []
+        raw = self._read(items + ARRAY_ITEMS, size * CHARINFO_SIZE)
+        if not raw:
+            return []
+        reqs = []
+        for i in range(size):
+            try:
+                skin_ptr, tmpl_ptr, skill_ptr = struct.unpack_from(
+                    "<QQQ", raw, i * CHARINFO_SIZE + 0x8)
+            except struct.error:
+                continue
+            reqs += [(skin_ptr, 0x60), (tmpl_ptr, 0x60), (skill_ptr, 0x60)]
+        blobs = self._read_many(reqs) if reqs else []
+        strings = {}
+        for (addr, _s), blob in zip(reqs, blobs):
+            if not blob:
+                continue
+            ln = struct.unpack_from("<i", blob, STR_LENGTH)[0]
+            if 0 < ln <= 128 and len(blob) >= STR_CHARS + ln * 2:
+                try:
+                    strings[addr] = blob[STR_CHARS:STR_CHARS + ln * 2].decode("utf-16-le")
+                except UnicodeDecodeError:
+                    pass
+        squad = []
+        for i in range(size):
+            try:
+                inst_id = struct.unpack_from("<i", raw, i * CHARINFO_SIZE)[0]
+                skin_ptr, tmpl_ptr, skill_ptr = struct.unpack_from(
+                    "<QQQ", raw, i * CHARINFO_SIZE + 0x8)
+                skill_index, skill_lvl, level, phase, potential = struct.unpack_from(
+                    "<iiiii", raw, i * CHARINFO_SIZE + 0x20)
+            except struct.error:
+                continue
+            tmpl_id = strings.get(tmpl_ptr, "")
+            if not tmpl_id:
+                # 现网 tmplId 为空, 从 skinId 推导 (char_4228_closur#2 -> char_4228_closur)
+                tmpl_id = strings.get(skin_ptr, "").split("#", 1)[0]
+            squad.append({
+                "charInstId": inst_id,
+                "charId": tmpl_id,
+                "charName": self._lookup_char_name(tmpl_id),
+                "skinId": strings.get(skin_ptr, ""),
+                "skillId": strings.get(skill_ptr, ""),
+                "skillIndex": skill_index,
+                "skillLvl": skill_lvl,
+                "level": level,
+                "phase": phase,
+                "potentialRank": potential,
+            })
+        return squad
+
+    # ---------------- 名称解析 ----------------
+
+    def _load_char_names(self):
+        if self._char_names is not None:
+            return
+        self._char_names = {}
+        try:
+            from tools.deploy_tracker.char_names import load_char_names
+            root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+            self._char_names = load_char_names(root)
+        except Exception:
+            pass
+
+    def _lookup_char_name(self, char_id):
+        if not char_id:
+            return ""
+        self._load_char_names()
+        # 编队中的 charId 可能带皮肤后缀 (char_2025_shu@nian), 去掉再查
+        return self._char_names.get(char_id.split("@", 1)[0], "")
+
+    # ---------------- 对外接口 ----------------
+
+    def get_events(self):
+        """实时操作日志 (BattleLogger.m_logs)。"""
+        return self._read_log_list(self._logs_list_addr)
 
     def get_spawn_events(self):
         return [e for e in self.get_events() if e["op"] == 0]
 
-    def is_battle_active(self) -> bool:
-        try:
-            logger = self._pm.read_longlong(self._bc_addr + 0x100)
-            return logger != 0
-        except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError):
-            return False
+    def get_journal_events(self):
+        """代理作战完整序列 (ReplayController.m_journal.logs), 非代理作战返回 []。"""
+        return self._read_log_list(self._journal_logs_list_addr)
 
-    def _read_string(self, ptr):
-        if ptr == 0:
-            return ""
-        try:
-            length = self._pm.read_int(ptr + 0x10)
-            if length <= 0 or length > 4096:
-                return ""
-            raw = self._pm.read_bytes(ptr + 0x14, length * 2)
-            return raw.decode("utf-16-le", errors="replace")
-        except (pymem.exception.MemoryReadError, pymem.exception.WinAPIError, UnicodeDecodeError):
-            return ""
+    def get_squad(self):
+        """编队信息 (优先代理序列中的完整编队)。"""
+        squad = self._read_squad(self._journal_squad_list_addr)
+        if squad:
+            return squad
+        return self._read_squad(self._squad_list_addr)
+
+    def get_battle_state(self):
+        """BattleController 状态: state/speedLevel/playTime。"""
+        if not self._bc_addr:
+            return {}
+        d = self._read(self._bc_addr + BC_STATE, 0x90)
+        if not d:
+            return {}
+        state = struct.unpack_from("<i", d, 0)[0]
+        speed = struct.unpack_from("<i", d, BC_SPEED_LEVEL - BC_STATE)[0]
+        play_time = struct.unpack_from("<f", d, BC_REAL_PLAY_TIME - BC_STATE)[0]
+        if not (0 <= state <= 3 and 0.0 <= play_time < 100000.0):
+            return {}
+        return {
+            "state": state,
+            "stateName": BATTLE_STATE_NAMES.get(state, str(state)),
+            "speedLevel": speed,
+            "playTime": round(play_time, 3),
+        }
+
+    def is_battle_active(self) -> bool:
+        st = self.get_battle_state()
+        if st:
+            return st["state"] in (1, 2)
+        return bool(self._replay_addr and
+                    self._klass_name(self._replay_addr) == "ReplayController")
+
+    def get_state(self):
+        """聚合当前全部可读信息 (供 Web API / 导出使用)。"""
+        live = self.get_events()
+        journal = self.get_journal_events()
+        squad = self.get_squad()
+        # 用编队表补充 charId -> 中文名映射 (覆盖 trap/token 等不在 characters.json 的)
+        inst_names = {c["charInstId"]: c["charName"] for c in squad if c.get("charName")}
+        id_names = {c["charId"]: c["charName"] for c in squad if c.get("charName")}
+        for ev in live + journal:
+            if not ev["charName"]:
+                ev["charName"] = (inst_names.get(ev["uniqueId"])
+                                  or id_names.get(ev["charId"], ""))
+        return {
+            "located": bool(self._logs_list_addr or self._journal_logs_list_addr),
+            "battle": self.get_battle_state(),
+            "battleActive": self.is_battle_active(),
+            "source": "journal" if journal else ("live" if live else ""),
+            "stageId": self._journal_meta.get("stageId", ""),
+            "levelId": self._journal_meta.get("levelId", ""),
+            "journalMeta": self._journal_meta,
+            "squad": squad,
+            "events": live,
+            "journalEvents": journal,
+        }
