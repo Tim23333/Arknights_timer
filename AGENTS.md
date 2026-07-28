@@ -282,6 +282,14 @@ data/tables/
 通过读取模拟器内存获取关卡内操作序列（部署/技能/撤退的时间、位置、朝向），
 不改动游戏代码。
 
+**已集成进主程序**（`backend/desktop_app.py`「游戏状态 / 操作记录」区块右侧）：
+点「扫描操作记录」后台 locate 后 0.3s 轮询 `get_events()` 增量追加表格
+（时间/操作/干员/朝向/位置，新行自动滚底）；代理作战显示静态完整序列不轮询；
+「导出 JSON」与 ak_live_log 同格式（source/exportTime/stageId/battle/squad/events）。
+集成要点：读取器 TCP 通道用端口 **27273**（`_get_channel`，与敌人 27271 /
+RNG 27272 共存隔离）；干员中文名走 `char_names.load_char_names`，打包时已把
+`ark_parser/char_names.json` + `data/tables/character_table*.bin` 内嵌（build_exe.py）。
+
 ### 内存通道（adb 方案）
 
 复用 `tools/enemy_health/memcore.py` 的 `MemCore`（adb + memsrv/`dd` 读 Android

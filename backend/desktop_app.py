@@ -57,6 +57,8 @@ for _p in (str(_BACKEND_ROOT), str(_REPO_ROOT)):
 from app.services.timer_provider import TimerDataProvider
 from tools.enemy_health import EnemyReader, format_skill_cd
 from tools.enemy_health import game_structs as enemy_gs
+from tools.enemy_health.memcore import MemCore
+from tools.deploy_tracker.ak_deploy_reader import DeployTrackerReader
 
 # tools/ak_live_rng 为扁平模块结构 (无 __init__.py), 将其目录加入 sys.path 按文件导入;
 # 打包时 tools/ 已整体作为数据文件内嵌 (_MEIPASS/tools/ak_live_rng/*.py), 冻结下同样可导入。
@@ -205,6 +207,57 @@ RNG_PREDICT_LEN = 30    # 未来预测默认发数 (界面可改, 1-500)
 RNG_HISTORY_LEN = 18    # 最近消耗展示条数
 RNG_UI_MS = 150         # 快照刷新间隔 (服务自带 5ms 轮询线程, UI 只读快照)
 
+DEPLOY_COLS = ['时间', '操作', '干员', '朝向', '位置', '附加信息']
+DEPLOY_COL_WIDTHS = [80, 60, 120, 50, 80, 120]
+DEPLOY_POLL_SEC = 0.3   # 操作记录轮询间隔 (memsrv 批量读每次仅数 ms)
+DEPLOY_OP_CN = {0: '部署', 1: '撤退', 2: '技能', 3: 'CHEAT'}
+DEPLOY_DIR_CN = {0: '上', 1: '右', 2: '下', 3: '左', 4: '-'}
+
+
+class DeployScanWorker(QThread):
+    """后台线程: 连接 + 定位 BattleLogger (首次全堆扫描较慢, 不阻塞 UI)"""
+    log = Signal(str)
+    done = Signal(object, str)   # (DeployTrackerReader|None, 错误消息)
+
+    def __init__(self, adb_path: str) -> None:
+        super().__init__()
+        self.adb_path = adb_path
+
+    def run(self) -> None:
+        try:
+            mc = MemCore(adb_path=self.adb_path)
+            pid = mc.connect()
+            self.log.emit(f"游戏 PID = {pid}")
+            reader = DeployTrackerReader(mc)
+            reader.set_status_callback(lambda m: (self.log.emit(str(m)), _tlog('[部署]', m)))
+            if reader.locate():
+                self.done.emit(reader, '')
+            else:
+                self.done.emit(None, '定位失败: 请确认已进入作战关卡')
+        except Exception as e:
+            self.done.emit(None, f'出错: {e}')
+
+
+class DeployPollWorker(QThread):
+    """后台线程: 准实时轮询操作日志 (BattleLogger.m_logs)"""
+    snapshot = Signal(list, dict, bool)   # events, battle_state, chain_ok
+
+    def __init__(self, reader: DeployTrackerReader, interval: float = DEPLOY_POLL_SEC) -> None:
+        super().__init__()
+        self.reader = reader
+        self.interval = interval
+
+    def run(self) -> None:
+        while not self.isInterruptionRequested():
+            try:
+                ok = self.reader.is_chain_valid()
+                events = self.reader.get_events() if ok else []
+                battle = self.reader.get_battle_state() if ok else {}
+                self.snapshot.emit(events, battle, ok)
+            except Exception:
+                self.snapshot.emit([], {}, True)   # 偶发读失败不判死, 下轮重试
+            self.msleep(int(self.interval * 1000))
+
 
 class RngScanWorker(QThread):
     """后台线程: attach + 扫描定位 RNG 引擎 (慢, 不能阻塞 UI)"""
@@ -264,6 +317,16 @@ class CoachWindow(QMainWindow):
         self._rng_worker: RngScanWorker | None = None
         self._rng_timer = QTimer(self)
         self._rng_timer.timeout.connect(self._on_rng_tick)
+
+        # 操作记录 (deploy_tracker): 定位后轮询 BattleLogger.m_logs
+        self._deploy_reader: DeployTrackerReader | None = None
+        self._deploy_scan: DeployScanWorker | None = None
+        self._deploy_poll: DeployPollWorker | None = None
+        self._deploy_events: list = []     # 实时操作 (live)
+        self._deploy_journal: list = []    # 代理作战序列 (静态, 非代理模式为空)
+        self._deploy_squad: list = []
+        self._deploy_stage: str = ''
+        self._deploy_seen: int = 0         # 已渲染到表格的事件数
 
         self._build_ui()
         self._start_hook_server()
@@ -325,12 +388,14 @@ class CoachWindow(QMainWindow):
         l_cfg.addStretch(1)
         main.addWidget(box_cfg)
 
-        # ---- 游戏时间 & 逻辑帧 ----
-        box_game = QGroupBox("游戏状态")
+        # ---- 游戏时间 & 逻辑帧 (左) + 全局操作记录 (右) ----
+        box_game = QGroupBox("游戏状态 / 操作记录（tools/deploy_tracker）")
         l_game = QHBoxLayout(box_game)
         l_game.setContentsMargins(4, 4, 4, 4)
         l_game.setSpacing(10)
 
+        # 左列: 时间/帧卡片上下排列
+        left_col = QVBoxLayout()
         card_time_disp = QFrame()
         card_time_disp.setObjectName("GameTimeCard")
         card_time_disp.setStyleSheet(
@@ -347,7 +412,7 @@ class CoachWindow(QMainWindow):
         self.lbl_game_time_big.setStyleSheet("font-size:48px; font-weight:700; color:#7ec8ff;")
         self.lbl_game_time_big.setAlignment(Qt.AlignCenter)
         ctd_l.addWidget(self.lbl_game_time_big)
-        l_game.addWidget(card_time_disp, 1)
+        left_col.addWidget(card_time_disp)
 
         card_frame_disp = QFrame()
         card_frame_disp.setObjectName("GameFrameCard")
@@ -365,12 +430,53 @@ class CoachWindow(QMainWindow):
         self.lbl_frame_big.setStyleSheet("font-size:48px; font-weight:700; color:#ffd66b;")
         self.lbl_frame_big.setAlignment(Qt.AlignCenter)
         cfd_l.addWidget(self.lbl_frame_big)
-        l_game.addWidget(card_frame_disp, 1)
+        left_col.addWidget(card_frame_disp)
 
         self.lbl_game = QLabel("正在等待实时刷新…")
         self.lbl_game.setWordWrap(True)
         self.lbl_game.setStyleSheet("color:#9a9a9a; font-size:11px;")
-        l_game.addWidget(self.lbl_game, 1)
+        left_col.addWidget(self.lbl_game)
+        left_col.addStretch(1)
+        l_game.addLayout(left_col)
+
+        # 右列: 全局操作记录 (部署/技能/撤退)
+        right_col = QVBoxLayout()
+        deploy_ctrl = QHBoxLayout()
+        self.btn_deploy_scan = QPushButton("扫描操作记录")
+        self.btn_deploy_scan.setToolTip(
+            "定位 BattleLogger (首次全堆扫描约 1-2 分钟; 进关卡后即可点击, 无操作记录也可定位)")
+        self.btn_deploy_scan.clicked.connect(self._on_deploy_scan)
+        self._style_primary_button(self.btn_deploy_scan)
+        self.btn_deploy_stop = QPushButton("停止")
+        self.btn_deploy_stop.setEnabled(False)
+        self.btn_deploy_stop.clicked.connect(self._on_deploy_stop)
+        self._style_muted_button(self.btn_deploy_stop)
+        self.btn_deploy_export = QPushButton("导出 JSON")
+        self.btn_deploy_export.setToolTip("导出当前操作记录为 JSON (同 ak_live_log 格式)")
+        self.btn_deploy_export.setEnabled(False)
+        self.btn_deploy_export.clicked.connect(self._on_deploy_export)
+        self._style_muted_button(self.btn_deploy_export)
+        self.lbl_deploy_status = QLabel("未扫描")
+        self.lbl_deploy_status.setStyleSheet("color:#9a9a9a;")
+        deploy_ctrl.addWidget(self.btn_deploy_scan)
+        deploy_ctrl.addWidget(self.btn_deploy_stop)
+        deploy_ctrl.addWidget(self.btn_deploy_export)
+        deploy_ctrl.addWidget(self.lbl_deploy_status, 1)
+        right_col.addLayout(deploy_ctrl)
+        self.deploy_table = QTableWidget(0, len(DEPLOY_COLS))
+        self.deploy_table.setHorizontalHeaderLabels(DEPLOY_COLS)
+        self.deploy_table.verticalHeader().setVisible(False)
+        self.deploy_table.setSelectionMode(QTableWidget.NoSelection)
+        self.deploy_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.deploy_table.setAlternatingRowColors(True)
+        self.deploy_table.setMinimumHeight(190)
+        dhdr = self.deploy_table.horizontalHeader()
+        dhdr.setSectionResizeMode(QHeaderView.Interactive)
+        dhdr.setStretchLastSection(True)
+        for i, w in enumerate(DEPLOY_COL_WIDTHS):
+            self.deploy_table.setColumnWidth(i, w)
+        right_col.addWidget(self.deploy_table)
+        l_game.addLayout(right_col, 1)
         main.addWidget(box_game)
 
         # ---- 敌人数据控制 ----
@@ -703,6 +809,7 @@ class CoachWindow(QMainWindow):
         self._stop_event.set()
         self._stop_enemy_poll()
         self._enemy_reader.close()
+        self._stop_deploy_poll()
         self._rng_timer.stop()
         if self._rng_svc is not None:
             try:
@@ -912,6 +1019,147 @@ class CoachWindow(QMainWindow):
                      QTableWidgetItem(f"0x{h.get('raw', 0) & 0xFFFFFFFF:08X}")]
             for c, it in enumerate(items):
                 self.rng_hist_table.setItem(i, c, it)
+
+    # ================= 操作记录 (deploy_tracker) =================
+
+    def _on_deploy_scan(self) -> None:
+        if not self._ensure_adb():
+            self.lbl_deploy_status.setText('未选择 adb.exe, 取消扫描')
+            return
+        self._on_deploy_stop()
+        self.deploy_table.setRowCount(0)
+        self._deploy_events = []
+        self._deploy_journal = []
+        self._deploy_squad = []
+        self._deploy_stage = ''
+        self._deploy_seen = 0
+        self.btn_deploy_scan.setEnabled(False)
+        self.btn_deploy_export.setEnabled(False)
+        self.lbl_deploy_status.setText('定位中 (首次全堆扫描约 1-2 分钟) ...')
+        self._deploy_scan = DeployScanWorker(self._enemy_reader.mc.adb_path)
+        self._deploy_scan.log.connect(
+            lambda m: self.lbl_deploy_status.setText(str(m).strip() or self.lbl_deploy_status.text()))
+        self._deploy_scan.done.connect(self._on_deploy_scan_done)
+        self._deploy_scan.start()
+
+    def _on_deploy_scan_done(self, reader, msg: str) -> None:
+        self.btn_deploy_scan.setEnabled(True)
+        if reader is None:
+            self.lbl_deploy_status.setText(msg)
+            return
+        self._deploy_reader = reader
+        try:
+            st = reader.get_state()   # 一次性取 编队/代理序列/关卡信息 (顺带补齐干员名)
+            self._deploy_squad = st.get('squad') or []
+            self._deploy_journal = st.get('journalEvents') or []
+            self._deploy_stage = st.get('stageId') or ''
+        except Exception:
+            pass
+        if self._deploy_journal:
+            # 代理作战: 序列为静态完整记录, 无需轮询
+            self._append_deploy_rows(self._deploy_journal)
+            stage = f"   {self._deploy_stage}" if self._deploy_stage else ''
+            self.lbl_deploy_status.setText(
+                f"代理作战序列 {len(self._deploy_journal)} 条 (静态){stage}")
+        else:
+            self._start_deploy_poll()
+        self.btn_deploy_export.setEnabled(
+            bool(self._deploy_journal or self._deploy_events))
+
+    def _start_deploy_poll(self) -> None:
+        self._stop_deploy_poll()
+        self._deploy_poll = DeployPollWorker(self._deploy_reader)
+        self._deploy_poll.snapshot.connect(self._on_deploy_snapshot)
+        self._deploy_poll.start()
+        self.btn_deploy_stop.setEnabled(True)
+        self.lbl_deploy_status.setText('监控中 ...')
+
+    def _stop_deploy_poll(self) -> None:
+        if self._deploy_poll:
+            self._deploy_poll.requestInterruption()
+            self._deploy_poll.wait(3000)
+            self._deploy_poll = None
+        self.btn_deploy_stop.setEnabled(False)
+
+    def _on_deploy_stop(self) -> None:
+        self._stop_deploy_poll()
+        self.btn_deploy_scan.setEnabled(True)
+        if self._deploy_reader is not None:
+            self.lbl_deploy_status.setText('已停止')
+
+    def _on_deploy_snapshot(self, events: list, battle: dict, chain_ok: bool) -> None:
+        if not chain_ok:
+            self._stop_deploy_poll()
+            self.lbl_deploy_status.setText('地址链失效 (关卡已结束?), 请重新扫描')
+            return
+        if battle:
+            self.lbl_deploy_status.setText(
+                f"监控中   战斗时间 {battle.get('playTime', 0.0):.1f}s   "
+                f"{battle.get('stateName', '')}   x{battle.get('speedLevel', '?')}")
+        self._deploy_events = events
+        if len(events) < self._deploy_seen:   # 列表重建 (新一局), 重渲染
+            self.deploy_table.setRowCount(0)
+            self._deploy_seen = 0
+        new = events[self._deploy_seen:]
+        if new:
+            self._append_deploy_rows(new)
+            self._deploy_seen = len(events)
+        self.btn_deploy_export.setEnabled(bool(events))
+
+    def _append_deploy_rows(self, events: list) -> None:
+        # 编队表补充 charId/instId -> 中文名 (覆盖 trap/token 等)
+        inst_names = {c.get('charInstId'): c.get('charName')
+                      for c in self._deploy_squad if c.get('charName')}
+        id_names = {c.get('charId'): c.get('charName')
+                    for c in self._deploy_squad if c.get('charName')}
+        tbl = self.deploy_table
+        for ev in events:
+            name = (ev.get('charName')
+                    or inst_names.get(ev.get('uniqueId'))
+                    or id_names.get(ev.get('charId'))
+                    or ev.get('charId') or '')
+            row = tbl.rowCount()
+            tbl.insertRow(row)
+            tbl.setItem(row, 0, QTableWidgetItem(f"{ev.get('timestamp', 0.0):.2f}"))
+            tbl.setItem(row, 1, QTableWidgetItem(
+                DEPLOY_OP_CN.get(ev.get('op'), ev.get('opName', ''))))
+            tbl.setItem(row, 2, QTableWidgetItem(name))
+            tbl.setItem(row, 3, QTableWidgetItem(
+                DEPLOY_DIR_CN.get(ev.get('direction'), str(ev.get('direction', '')))))
+            tbl.setItem(row, 4, QTableWidgetItem(
+                f"({ev.get('gridRow', 0)},{ev.get('gridCol', 0)})"))
+            tbl.setItem(row, 5, QTableWidgetItem(ev.get('extraInfo') or ''))
+        tbl.scrollToBottom()
+
+    def _on_deploy_export(self) -> None:
+        events = self._deploy_journal or self._deploy_events
+        if not events:
+            QMessageBox.information(self, '导出', '当前没有可导出的操作记录')
+            return
+        default = f"deploy_log_{time.strftime('%Y%m%d_%H%M%S')}.json"
+        path, _ = QFileDialog.getSaveFileName(self, '导出操作记录', default, 'JSON (*.json)')
+        if not path:
+            return
+        try:
+            battle = self._deploy_reader.get_battle_state() if self._deploy_reader else {}
+        except Exception:
+            battle = {}
+        payload = {
+            "source": "journal" if self._deploy_journal else "live",
+            "exportTime": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "stageId": self._deploy_stage,
+            "battle": battle,
+            "squad": self._deploy_squad,
+            "events": events,
+        }
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(payload, f, ensure_ascii=False, indent=2)
+        except OSError as e:
+            QMessageBox.critical(self, '导出失败', str(e))
+            return
+        self.lbl_deploy_status.setText(f'已导出 {len(events)} 条 -> {path}')
+        self._tlog(f'[部署] 已导出 {len(events)} 条 -> {path}')
 
     def _on_enemy_snapshot(self, snap: dict) -> None:
         if TEST_BUILD:   # 轮询错误 (数据链失效/重建) 去重后输出控制台

@@ -128,6 +128,13 @@ def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args) -
     if tables_dir.is_dir():
         for f in tables_dir.glob("enemy_handbook_table*.bin"):
             cmd.extend(["--add-data", _add_data_arg(f, "data/tables")])
+        # 干员名数据库 (tools/deploy_tracker/char_names 按 data/tables 相对路径重建)
+        for f in tables_dir.glob("character_table*.bin"):
+            cmd.extend(["--add-data", _add_data_arg(f, "data/tables")])
+    # 干员名缓存 (deploy_tracker 优先读缓存, ark_parser 相对路径)
+    char_names_json = repo_root / "ark_parser" / "char_names.json"
+    if char_names_json.is_file():
+        cmd.extend(["--add-data", _add_data_arg(char_names_json, "ark_parser")])
 
     # 内嵌寻址工具
     if embed_timer:

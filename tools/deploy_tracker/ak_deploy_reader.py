@@ -290,10 +290,11 @@ class DeployTrackerReader:
             return None
 
     def _get_channel(self):
-        """快速批量读取通道 (memsrv), 失败回退 None (调用方走 mc.read)。"""
+        """快速批量读取通道 (memsrv), 失败回退 None (调用方走 mc.read)。
+        端口 27273: 与敌人监控 (27271) / RNG (27272) 通道共存时互不干扰。"""
         if self._channel is None:
             try:
-                ch = TcpChannel(self.mc, read_timeout=30.0)
+                ch = TcpChannel(self.mc, read_timeout=30.0, port=27273)
                 ch.open()
                 self._channel = ch
             except Exception:
