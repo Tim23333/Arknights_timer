@@ -16,7 +16,7 @@ import threading
 import time
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QThread, QTimer, Signal
+from PySide6.QtCore import QSettings, Qt, QThread, QTimer, Signal
 from PySide6.QtGui import QColor, QCursor, QIcon
 from PySide6.QtWidgets import (
     QApplication,
@@ -55,9 +55,13 @@ for _p in (str(_BACKEND_ROOT), str(_REPO_ROOT)):
         sys.path.insert(0, _p)
 
 from app.services.timer_provider import TimerDataProvider
-from tools.enemy_health import EnemyReader, format_skill_cd
+from tools.enemy_health import EnemyReader
 from tools.enemy_health import game_structs as enemy_gs
 from tools.enemy_health.memcore import MemCore
+from tools.enemy_health.ui_common import (
+    ENEMY_COLUMN_DEFS, ENEMY_COLUMN_INDEX, EnemyColumnDialog, EnemyDetailDialog,
+    format_column_value, load_visible_columns, save_visible_columns,
+)
 from tools.deploy_tracker.ak_deploy_reader import DeployTrackerReader
 
 # tools/ak_live_rng 为扁平模块结构 (无 __init__.py), 将其目录加入 sys.path 按文件导入;
@@ -90,9 +94,8 @@ WS_PUSH_MS = 8
 ENEMY_POLL_SEC = 0.01      # 敌人轮询间隔 (memsrv 通道单帧 <1ms, 2倍速 60fps=16.7ms)
 ENEMY_RENDER_SEC = 0.016   # 表格渲染节流 (60fps)
 
-ENEMY_COLS = ['#', '名称', '编号', '敌人ID', '血量', '坐标',
-              '攻击', '防御', '法抗', '移速', '攻速', '技能 CD', '状态']
-ENEMY_COL_WIDTHS = [36, 130, 60, 150, 170, 110, 70, 70, 60, 60, 60, 140, 60]   # 初始列宽
+ENEMY_COLS = [col['label'] for col in ENEMY_COLUMN_DEFS]
+ENEMY_COL_WIDTHS = [col['width'] for col in ENEMY_COLUMN_DEFS]
 ENEMY_STATE_NAMES = {0: 'NONE', 1: 'INITED', 2: '战斗中', 3: '已结束'}
 
 # 支持自定义小数位的数值列 (key, 显示名)
@@ -311,7 +314,11 @@ class CoachWindow(QMainWindow):
         self._bar_colors: dict = {}    # enemy addr -> 当前血条颜色
         self._skill_lines: dict = {}   # enemy addr -> 技能格行数 (变化才调整行高)
         self._enemy_dec: dict = {k: 4 for k, _ in ENEMY_DEC_COLS}   # 每列小数位数 (0-6)
+        self._enemy_dec['default'] = 4
         self._enemy_last: list = []    # 最近一帧敌人 (改小数位时立即重绘用)
+        self._settings = QSettings('ArknightsTools', 'ArknightsTimeline')
+        self._enemy_visible_cols = load_visible_columns(
+            self._settings, 'enemy_table/visible_columns')
         self._frame_txt: str = ''      # ms/帧 显示 (0.5s 节流, 避免高频抖动)
         self._frame_ts: float = 0.0
         self._widths_fitted: bool = False   # 首次有数据时已做过列宽自适应
@@ -505,6 +512,10 @@ class CoachWindow(QMainWindow):
         self.btn_enemy_precision.setToolTip("分别设置每一列数值的小数位数 (0-6)")
         self.btn_enemy_precision.clicked.connect(self._on_enemy_precision)
         self._style_muted_button(self.btn_enemy_precision)
+        self.btn_enemy_columns = QPushButton("显示列")
+        self.btn_enemy_columns.setToolTip("勾选主表需要展示的身份、状态、损伤条和每一项最终属性")
+        self.btn_enemy_columns.clicked.connect(self._on_enemy_columns)
+        self._style_muted_button(self.btn_enemy_columns)
         self.btn_enemy_fit = QPushButton("列宽自适应")
         self.btn_enemy_fit.setToolTip("按内容自动调整所有列宽 (也可直接拖动表头分隔线手动调整)")
         self.btn_enemy_fit.clicked.connect(lambda: self.enemy_table.resizeColumnsToContents())
@@ -512,6 +523,7 @@ class CoachWindow(QMainWindow):
         row_btn.addWidget(self.btn_enemy_scan)
         row_btn.addWidget(self.btn_enemy_stop)
         row_btn.addWidget(self.btn_enemy_precision)
+        row_btn.addWidget(self.btn_enemy_columns)
         row_btn.addWidget(self.btn_enemy_fit)
         row_btn.addWidget(self.enemy_progress, 1)
         l_enemy.addLayout(row_btn)
@@ -534,6 +546,7 @@ class CoachWindow(QMainWindow):
         hdr.setStretchLastSection(True)   # 末列 (状态) 自动填满剩余宽度
         for i, w in enumerate(ENEMY_COL_WIDTHS):
             self.enemy_table.setColumnWidth(i, w)
+        self._apply_enemy_column_visibility()
         l_table.addWidget(self.enemy_table)
         main.addWidget(box_table, 1)
 
@@ -1338,40 +1351,84 @@ class CoachWindow(QMainWindow):
     def _on_enemy_precision(self) -> None:
         dlg = EnemyPrecisionDialog(self, self._enemy_dec)
         if dlg.exec() == QDialog.Accepted:
-            self._enemy_dec = dlg.values()
+            self._enemy_dec.update(dlg.values())
             self._render_enemy_table(self._enemy_last)   # 立即按新精度重绘
+
+    def _apply_enemy_column_visibility(self) -> None:
+        if not hasattr(self, 'enemy_table'):
+            return
+        for idx, col in enumerate(ENEMY_COLUMN_DEFS):
+            self.enemy_table.setColumnHidden(idx, col['key'] not in self._enemy_visible_cols)
+
+    def _on_enemy_columns(self) -> None:
+        dlg = EnemyColumnDialog(self, self._enemy_visible_cols)
+        if dlg.exec() != QDialog.Accepted:
+            return
+        self._enemy_visible_cols = dlg.values()
+        save_visible_columns(
+            self._settings, 'enemy_table/visible_columns', self._enemy_visible_cols)
+        self._apply_enemy_column_visibility()
+        self._render_enemy_table(self._enemy_last)
+
+    def _open_enemy_detail(self, addr: int) -> None:
+        try:
+            enemy = self._enemy_reader.read_enemy_detail(addr)
+        except Exception as exc:
+            QMessageBox.warning(self, '敌人详情', f'读取详情失败：{exc}')
+            return
+        if enemy is None:
+            QMessageBox.information(self, '敌人详情', '该敌人已退场或对象已失效。')
+            return
+        EnemyDetailDialog(
+            self, enemy, refresh_callback=self._enemy_reader.read_enemy_detail).exec()
 
     def _make_enemy_row(self, row: int, addr: int) -> None:
         tbl = self.enemy_table
+        hp_col = ENEMY_COLUMN_INDEX['hp']
+        detail_col = ENEMY_COLUMN_INDEX['detail']
         for c in range(len(ENEMY_COLS)):
-            if c != 4:
+            if c not in (hp_col, detail_col):
                 it = QTableWidgetItem()
                 it.setTextAlignment(Qt.AlignCenter)
                 tbl.setItem(row, c, it)
-        tbl.item(row, 0).setData(Qt.UserRole, addr)
-        tbl.item(row, 1).setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        tbl.item(row, 3).setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        tbl.item(row, 11).setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        row_col = ENEMY_COLUMN_INDEX['row']
+        tbl.item(row, row_col).setData(Qt.UserRole, addr)
+        for key in ('name', 'eid', 'skill', 'abnormal_status', 'immune_status'):
+            item = tbl.item(row, ENEMY_COLUMN_INDEX[key])
+            if item:
+                item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         bar = QProgressBar()
         bar.setTextVisible(True)
-        tbl.setCellWidget(row, 4, bar)
+        tbl.setCellWidget(row, hp_col, bar)
+        detail = QPushButton('详情')
+        detail.setToolTip('读取并显示该敌人的完整属性、状态、损伤条、Buff 与关卡效果')
+        detail.clicked.connect(lambda _checked=False, a=addr: self._open_enemy_detail(a))
+        tbl.setCellWidget(row, detail_col, detail)
 
     def _update_enemy_row(self, row: int, e) -> None:
         tbl = self.enemy_table
         d = self._enemy_dec
 
-        def setc(c, text, grey=False):
+        def setc(key, text, grey=False):
+            c = ENEMY_COLUMN_INDEX[key]
             it = tbl.item(row, c)
+            if it is None:
+                return
             it.setText(str(text))
             if grey:
                 it.setForeground(QColor('#888888'))
+            else:
+                it.setData(Qt.ForegroundRole, None)
 
-        setc(0, row)
-        setc(1, e.name or e.eid or '?')
-        setc(2, e.code or '-')
-        setc(3, e.eid)
+        for col in ENEMY_COLUMN_DEFS:
+            key = col['key']
+            if key in ('hp', 'detail'):
+                continue
+            setc(key, format_column_value(key, e, d, row),
+                 grey=(key == 'life_status' and not e.alive))
 
-        bar = tbl.cellWidget(row, 4)
+        hp_col = ENEMY_COLUMN_INDEX['hp']
+        bar = tbl.cellWidget(row, hp_col)
         mx = max(1, int(e.max_hp))
         bar.setMaximum(mx)
         bar.setValue(max(0, int(e.hp)))
@@ -1384,19 +1441,11 @@ class CoachWindow(QMainWindow):
             self._bar_colors[e.addr] = color
             bar.setStyleSheet(f'QProgressBar::chunk {{ background-color: {color}; }}')
 
-        setc(5, f'({e.pos_x:.{d["pos"]}f}, {e.pos_y:.{d["pos"]}f})')
-        setc(6, f'{e.atk:.{d["atk"]}f}')
-        setc(7, f'{e.def_:.{d["def"]}f}')
-        setc(8, f'{e.res:.{d["res"]}f}')
-        setc(9, f'{e.mspd:.{d["mspd"]}f}')
-        setc(10, f'{e.aspd:.{d["aspd"]}f}')
-        cd_text = format_skill_cd(e.skills, sep='\n', prec=d['skill'])
-        setc(11, cd_text)
+        cd_text = format_column_value('skill', e, d, row)
         n_lines = cd_text.count('\n')          # 行数变化才重排行高 (重排会触发布局)
         if self._skill_lines.get(e.addr) != n_lines:
             self._skill_lines[e.addr] = n_lines
             tbl.resizeRowToContents(row)
-        setc(12, '存活' if e.alive else ('退场' if e.finish else '阵亡'), grey=not e.alive)
 
     # ================= 定时刷新 =================
 

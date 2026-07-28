@@ -81,6 +81,9 @@ python -m tools.enemy_health --gui
 - 启动后自动尝试缓存地址秒级进入监控
 - **一键扫描**: 全堆扫描重新定位 (多路 adb 并行, 约 1-3 分钟)
 - 表格准实时展示 (默认 0.016 秒刷新=60Hz, 可调至 0.008): 名称/编号/ID/坐标/血条/攻击/防御/法抗/移速/攻速/状态
+- **显示列**可逐项勾选全部最终属性、异常状态、状态免疫、护盾，以及神经/侵蚀/灼燃/凋亡/狂躁五类损伤条；选择会持久化
+- 每行的**详情**按钮按需读取原始/最终属性、45 项状态与免疫计数、当前 Buff、关卡全局 Buff、技能和精确损伤条，不增加常态轮询负担
+- Buff/关卡效果同时显示中文名称、自动归纳的效果说明、中文属性公式和 Blackboard 参数解释；内部键与原始参数仍保留用于逆向核对
 - 状态栏显示每帧读取耗时 (ms/帧); 轮询线程用 timeBeginPeriod(1) 保证亚 16ms 睡眠精度
 
 ### 命令行
@@ -128,6 +131,8 @@ enemy_health/
 ├── memcore.py           # ADB 内存读取底层 (maps/dd/字符串/klass/TcpChannel)
 ├── memsrv.c             # 设备侧常驻内存服务源码 (zig cc 交叉编译为 bin/memsrv)
 ├── enemy_reader.py      # 敌人定位(并行bootstrap) + 轮询(poll_fast/poll)
+├── buff_descriptions.py # Buff/GlobalBuff 中文名称、效果和参数说明
+├── ui_common.py         # 可定制列、敌人详情页（独立 GUI/主程序共用）
 ├── enemy_db.py          # enemy_handbook_table 解析 (ID->中文名/编号/描述)
 ├── game_structs.py      # IL2CPP 结构偏移定义 (全部实测验证)
 └── README.md            # 本文件
@@ -149,16 +154,21 @@ enemy_health/
 | 字段 | 偏移 | 说明 |
 |------|------|------|
 | Entity.m_hp | 0x40 | FP 当前血量 |
+| Entity.m_es / m_epArray | 0x48 / 0x80 | 元素护盾 / 六槽 FP 损伤剩余容量数组 |
 | Entity.m_attributes | 0x98 | Attributes* |
+| Entity.m_stateMachine | 0x38 | currentStateId 位于 StateMachine+0x48 |
+| Entity.buffContainer | 0x150 | 当前活跃 Buff 双缓冲列表 |
 | Entity.<id> | 0x130 | 敌人 ID 字符串 |
 | Enemy.m_currentTile | 0x320 | Tile*（dump.cs 偏移，待验证） |
 | Enemy.m_blockPosition | 0x3C0 | Vector2 float 阻挡位置（待验证） |
 | Enemy.m_posInLastFrame | 0x3D0 | Vector2 float 地图坐标（待验证） |
 | Enemy.m_routeSpawnPosition | 0x478 | GridPosition (row,col) 出生格（待验证） |
 | Attributes.m_cachedData | 0x50 | ObscuredFP[] (步长 0x28, XOR 解密) |
+| Attributes 状态/免疫/反制计数 | 0x20 / 0x28 / 0x30 | short[45] |
 | List._items / _size | 0x10 / 0x18 | |
 | Scheduler.m_managedWaveEnemies | 0xB8 | List<Enemy> |
 | BattleController state/speed/timeScale/playTime | 0x220/0x228/0x280/0x284 | dump.cs 旧偏移已失效 |
+| BattleController.m_globalBuffs | 0x68 | List<GlobalBuff>，含目标映射与 Blackboard |
 
 属性索引： MAX_HP=0 ATK=1 DEF=2 RES=3 MOVE_SPEED=6 ATTACK_SPEED=7
 

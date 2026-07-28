@@ -17,7 +17,7 @@ if __package__ in (None, ''):  # 允许直接 python gui.py 运行
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
     __package__ = 'tools.enemy_health'
 
-from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtCore import QSettings, Qt, QThread, Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -26,8 +26,12 @@ from PySide6.QtWidgets import (
     QFileDialog, QMessageBox, QSpinBox, QDialog, QFormLayout, QDialogButtonBox,
 )
 
-from .enemy_reader import EnemyReader, format_skill_cd
+from .enemy_reader import EnemyReader
 from . import game_structs as gs
+from .ui_common import (
+    ENEMY_COLUMN_DEFS, ENEMY_COLUMN_INDEX, EnemyColumnDialog, EnemyDetailDialog,
+    format_column_value, load_visible_columns, save_visible_columns,
+)
 
 STATE_NAMES = {0: 'NONE', 1: 'INITED', 2: '战斗中', 3: '已结束'}
 
@@ -124,9 +128,8 @@ class PollWorker(QThread):
 # 主窗口
 # ============================================================
 class MainWindow(QMainWindow):
-    COLS = ['#', '名称', '编号', '敌人ID', '血量', '坐标', '攻击', '防御', '法抗', '移速',
-            '攻速', '技能 CD', '状态']
-    COL_WIDTHS = [36, 130, 60, 150, 170, 110, 70, 70, 60, 60, 60, 140, 60]   # 初始列宽
+    COLS = [col['label'] for col in ENEMY_COLUMN_DEFS]
+    COL_WIDTHS = [col['width'] for col in ENEMY_COLUMN_DEFS]
 
     def __init__(self):
         super().__init__()
@@ -140,7 +143,11 @@ class MainWindow(QMainWindow):
         self._bar_colors = {}    # enemy addr -> 当前血条颜色
         self._skill_lines = {}   # enemy addr -> 技能格行数 (变化才调整行高)
         self._dec = {k: 4 for k, _ in DEC_COLS}   # 每列小数位数 (0-6)
+        self._dec['default'] = 4
         self._last_enemies = []  # 最近一帧敌人 (改小数位时立即重绘用)
+        self._settings = QSettings('ArknightsTools', 'EnemyHealthGui')
+        self._visible_cols = load_visible_columns(
+            self._settings, 'enemy_table/visible_columns')
         self._frame_txt = ''     # ms/帧 显示 (0.5s 节流, 避免高频抖动)
         self._frame_ts = 0.0
         self._widths_fitted = False   # 首次有数据时已做过列宽自适应
@@ -175,6 +182,9 @@ class MainWindow(QMainWindow):
         self.btn_precision = QPushButton('小数位设置')
         self.btn_precision.setToolTip('分别设置每一列数值的小数位数 (0-6)')
         self.btn_precision.clicked.connect(self.on_precision)
+        self.btn_columns = QPushButton('显示列')
+        self.btn_columns.setToolTip('勾选主表需要展示的身份、状态、损伤条和每一项最终属性')
+        self.btn_columns.clicked.connect(self.on_columns)
         self.btn_fit = QPushButton('列宽自适应')
         self.btn_fit.setToolTip('按内容自动调整所有列宽 (也可直接拖动表头分隔线手动调整)')
         self.btn_fit.clicked.connect(lambda: self.table.resizeColumnsToContents())
@@ -187,6 +197,7 @@ class MainWindow(QMainWindow):
         ctrl.addWidget(self.btn_monitor)
         ctrl.addWidget(self.spin_interval)
         ctrl.addWidget(self.btn_precision)
+        ctrl.addWidget(self.btn_columns)
         ctrl.addWidget(self.btn_fit)
         ctrl.addWidget(self.progress)
         ctrl.addStretch(1)
@@ -202,6 +213,7 @@ class MainWindow(QMainWindow):
         hdr.setStretchLastSection(True)   # 末列 (状态) 自动填满剩余宽度
         for i, w in enumerate(self.COL_WIDTHS):
             self.table.setColumnWidth(i, w)
+        self._apply_column_visibility()
 
         # ---------- 日志 ----------
         self.log_view = QPlainTextEdit()
@@ -319,8 +331,35 @@ class MainWindow(QMainWindow):
     def on_precision(self):
         dlg = PrecisionDialog(self, self._dec)
         if dlg.exec() == QDialog.Accepted:
-            self._dec = dlg.values()
+            self._dec.update(dlg.values())
             self._render_table(self._last_enemies)   # 立即按新精度重绘
+
+    def _apply_column_visibility(self):
+        if not hasattr(self, 'table'):
+            return
+        for idx, col in enumerate(ENEMY_COLUMN_DEFS):
+            self.table.setColumnHidden(idx, col['key'] not in self._visible_cols)
+
+    def on_columns(self):
+        dlg = EnemyColumnDialog(self, self._visible_cols)
+        if dlg.exec() != QDialog.Accepted:
+            return
+        self._visible_cols = dlg.values()
+        save_visible_columns(
+            self._settings, 'enemy_table/visible_columns', self._visible_cols)
+        self._apply_column_visibility()
+        self._render_table(self._last_enemies)
+
+    def _open_detail(self, addr):
+        try:
+            enemy = self.reader.read_enemy_detail(addr)
+        except Exception as exc:
+            QMessageBox.warning(self, '敌人详情', f'读取详情失败：{exc}')
+            return
+        if enemy is None:
+            QMessageBox.information(self, '敌人详情', '该敌人已退场或对象已失效。')
+            return
+        EnemyDetailDialog(self, enemy, refresh_callback=self.reader.read_enemy_detail).exec()
 
     # ---------- 快照渲染 ----------
 
@@ -377,35 +416,49 @@ class MainWindow(QMainWindow):
 
     def _make_row(self, row, addr):
         tbl = self.table
+        hp_col = ENEMY_COLUMN_INDEX['hp']
+        detail_col = ENEMY_COLUMN_INDEX['detail']
         for c in range(len(self.COLS)):
-            if c != 4:
+            if c not in (hp_col, detail_col):
                 it = QTableWidgetItem()
                 it.setTextAlignment(Qt.AlignCenter)
                 tbl.setItem(row, c, it)
-        tbl.item(row, 0).setData(Qt.UserRole, addr)
-        tbl.item(row, 1).setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        tbl.item(row, 3).setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        tbl.item(row, 11).setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        tbl.item(row, ENEMY_COLUMN_INDEX['row']).setData(Qt.UserRole, addr)
+        for key in ('name', 'eid', 'skill', 'abnormal_status', 'immune_status'):
+            item = tbl.item(row, ENEMY_COLUMN_INDEX[key])
+            if item:
+                item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         bar = QProgressBar()
         bar.setTextVisible(True)
-        tbl.setCellWidget(row, 4, bar)
+        tbl.setCellWidget(row, hp_col, bar)
+        detail = QPushButton('详情')
+        detail.setToolTip('读取并显示该敌人的完整属性、状态、损伤条、Buff 与关卡效果')
+        detail.clicked.connect(lambda _checked=False, a=addr: self._open_detail(a))
+        tbl.setCellWidget(row, detail_col, detail)
 
     def _update_row(self, row, e):
         tbl = self.table
         d = self._dec
 
-        def setc(c, text, grey=False):
+        def setc(key, text, grey=False):
+            c = ENEMY_COLUMN_INDEX[key]
             it = tbl.item(row, c)
+            if it is None:
+                return
             it.setText(str(text))
             if grey:
                 it.setForeground(QColor('#888888'))
+            else:
+                it.setData(Qt.ForegroundRole, None)
 
-        setc(0, row)
-        setc(1, e.name or e.eid or '?')
-        setc(2, e.code or '-')
-        setc(3, e.eid)
+        for col in ENEMY_COLUMN_DEFS:
+            key = col['key']
+            if key in ('hp', 'detail'):
+                continue
+            setc(key, format_column_value(key, e, d, row),
+                 grey=(key == 'life_status' and not e.alive))
 
-        bar = tbl.cellWidget(row, 4)
+        bar = tbl.cellWidget(row, ENEMY_COLUMN_INDEX['hp'])
         mx = max(1, int(e.max_hp))
         bar.setMaximum(mx)
         bar.setValue(max(0, int(e.hp)))
@@ -418,19 +471,11 @@ class MainWindow(QMainWindow):
             self._bar_colors[e.addr] = color
             bar.setStyleSheet(f'QProgressBar::chunk {{ background-color: {color}; }}')
 
-        setc(5, f'({e.pos_x:.{d["pos"]}f}, {e.pos_y:.{d["pos"]}f})')
-        setc(6, f'{e.atk:.{d["atk"]}f}')
-        setc(7, f'{e.def_:.{d["def"]}f}')
-        setc(8, f'{e.res:.{d["res"]}f}')
-        setc(9, f'{e.mspd:.{d["mspd"]}f}')
-        setc(10, f'{e.aspd:.{d["aspd"]}f}')
-        cd_text = format_skill_cd(e.skills, sep='\n', prec=d['skill'])
-        setc(11, cd_text)
+        cd_text = format_column_value('skill', e, d, row)
         n_lines = cd_text.count('\n')          # 行数变化才重排行高 (重排会触发布局)
         if self._skill_lines.get(e.addr) != n_lines:
             self._skill_lines[e.addr] = n_lines
             tbl.resizeRowToContents(row)
-        setc(12, '存活' if e.alive else ('退场' if e.finish else '阵亡'), grey=not e.alive)
 
     # ---------- 关闭 ----------
 

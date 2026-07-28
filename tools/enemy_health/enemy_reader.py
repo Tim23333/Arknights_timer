@@ -102,7 +102,13 @@ class _HeapSnapshot:
 class EnemyInfo:
     __slots__ = ('addr', 'eid', 'name', 'code', 'hp', 'max_hp', 'atk', 'def_', 'res',
                  'mspd', 'aspd', 'direction', 'finish', 'alive', 'id_ptr', 'attr_ptr',
-                 'pos_x', 'pos_y', 'blk_x', 'blk_y', 'spawn_row', 'spawn_col', 'skills')
+                 'pos_x', 'pos_y', 'blk_x', 'blk_y', 'spawn_row', 'spawn_col', 'skills',
+                 'state_ptr', 'state_id', 'ep_ptr', 'ep_controller_ptr',
+                 'shield_controller_ptr', 'es', 'shield',
+                 'ep_remaining', 'ep_break_recovery', 'buff_container_ptr',
+                 'attributes', 'raw_attributes', 'abnormal_flags', 'abnormal_immunes',
+                 'abnormal_antis', 'abnormal_combos', 'abnormal_combo_immunes',
+                 'buffs', 'global_buffs')
 
     def __init__(self, addr):
         self.addr = addr
@@ -128,6 +134,58 @@ class EnemyInfo:
         self.spawn_row = 0
         self.spawn_col = 0
         self.skills = []          # [(prefabKey, remaining, period), ...]
+        self.state_ptr = 0
+        self.state_id = gs.EnemyState.DEFAULT
+        self.ep_ptr = 0
+        self.ep_controller_ptr = 0
+        self.shield_controller_ptr = 0
+        self.es = 0.0
+        self.shield = 0.0
+        self.ep_remaining = {}    # ElementType -> 剩余损伤容量
+        self.ep_break_recovery = False
+        self.buff_container_ptr = 0
+        self.attributes = {}      # AttributeType -> 最终值 (cachedData)
+        self.raw_attributes = {}  # AttributeType -> 原始值 (rawData), 详情读取
+        self.abnormal_flags = [0] * gs.AbnormalFlag.E_NUM
+        self.abnormal_immunes = [0] * gs.AbnormalFlag.E_NUM
+        self.abnormal_antis = [0] * gs.AbnormalFlag.E_NUM
+        self.abnormal_combos = [0] * gs.AbnormalCombo.E_NUM
+        self.abnormal_combo_immunes = [0] * gs.AbnormalCombo.E_NUM
+        self.buffs = []
+        self.global_buffs = []
+
+    def attribute(self, index, default=0.0):
+        return self.attributes.get(index, default)
+
+    @property
+    def status_resistance(self):
+        """游戏保存的是 1 - 状态抗性；界面对外展示实际状态抗性。"""
+        return 1.0 - self.attribute(gs.AttributeType.ONE_MINUS_STATUS_RESISTANCE, 1.0)
+
+    def active_status_names(self):
+        names = [gs.ABNORMAL_FLAG_CN_NAMES.get(i, str(i))
+                 for i, count in enumerate(self.abnormal_flags) if count > 0]
+        names.extend(gs.ABNORMAL_COMBO_CN_NAMES.get(i, str(i))
+                     for i, count in enumerate(self.abnormal_combos) if count > 0)
+        # 状态机是另一条独立数据链。有些极短状态先切状态机、后更新计数，合并显示。
+        state_status = {
+            gs.EnemyState.STUN: '眩晕', gs.EnemyState.FROZEN: '冻结',
+            gs.EnemyState.LEVITATE: '浮空', gs.EnemyState.PALSY: '麻痹',
+            gs.EnemyState.UNBALANCE: '失衡',
+        }.get(self.state_id)
+        if state_status and state_status not in names:
+            names.append(state_status)
+        return names
+
+    def status_text(self):
+        names = self.active_status_names()
+        return '、'.join(names) if names else '正常'
+
+    def element_damage(self, element_type):
+        maximum = max(0.0, self.attribute(gs.AttributeType.MAX_EP, 0.0))
+        remaining = max(0.0, self.ep_remaining.get(element_type, maximum))
+        damage = max(0.0, maximum - remaining)
+        return damage, remaining, maximum
 
 
 def format_skill_cd(skills, sep='; ', prec=1):
@@ -169,7 +227,9 @@ class EnemyReader:
         # 准实时轮询 (常驻 TCP 通道)
         self._chan = None             # TcpChannel, 惰性打开
         self._fast_tick = 0
-        self._attr_snapshot = {}      # enemy addr -> (max_hp, atk, def_, res, mspd, aspd)
+        self._attr_snapshot = {}      # enemy addr -> {AttributeType: 最终属性值}
+        self._runtime_snapshot = {}   # enemy addr -> 状态/损伤条/异常计数
+        self._runtime_ptrs = {}       # enemy addr -> 运行时详情指针缓存
         self._f_items = 0             # 上一帧 items 数组地址 (投机读用)
         self._f_cnt = 0               # 上一帧敌人数量
         self._f_ptrs = []             # 上一帧敌人指针列表
@@ -579,9 +639,8 @@ class EnemyReader:
     def _prefill(self):
         """预热名称/属性缓存, 让 poll_fast 首帧即全速"""
         for ep in self.enemy_addrs:
-            full = self._read_enemy(ep)
-            self._attr_snapshot[ep] = (full.max_hp, full.atk, full.def_,
-                                       full.res, full.mspd, full.aspd)
+            full = self._read_enemy(ep, with_runtime=False)
+            self._attr_snapshot[ep] = dict(full.attributes)
 
     # ================= 轮询 =================
 
@@ -590,7 +649,7 @@ class EnemyReader:
         cd = None
         cdp = self._attr_cache.get(ep, 0)
         if cdp:
-            cd = self.mc.read(cdp, 0x20 + 36 * gs.OBSCURED_FP_SIZE)
+            cd = self.mc.read(cdp, 0x20 + gs.AttributeType.E_NUM * gs.OBSCURED_FP_SIZE)
             if not cd or not (0 < _i32(cd, gs.Il2CppArray.MAX_LENGTH) <= 64):
                 self._attr_cache.pop(ep, None)
                 cd = None
@@ -599,7 +658,8 @@ class EnemyReader:
             ab = self.mc.read(attrp, 0x60) if self.mc.is_ptr(attrp) else None
             cdp2 = _u64(ab, gs.AttributesFields.M_CACHED_DATA) if ab else 0
             if cdp2 and self.mc.is_ptr(cdp2):
-                cd2 = self.mc.read(cdp2, 0x20 + 36 * gs.OBSCURED_FP_SIZE)
+                cd2 = self.mc.read(
+                    cdp2, 0x20 + gs.AttributeType.E_NUM * gs.OBSCURED_FP_SIZE)
                 if cd2 and 0 < _i32(cd2, gs.Il2CppArray.MAX_LENGTH) <= 64:
                     self._attr_cache[ep] = cdp2
                     cd = cd2
@@ -610,17 +670,32 @@ class EnemyReader:
     @staticmethod
     def _apply_cached_data(cd, info):
         base = gs.Il2CppArray.ITEMS
-
-        def attr(idx):
+        count = min(_i32(cd, gs.Il2CppArray.MAX_LENGTH), gs.AttributeType.E_NUM)
+        attrs = {}
+        for idx in range(max(0, count)):
             o = base + idx * gs.OBSCURED_FP_SIZE
-            return gs.obscured_fp_to_float(_u64(cd, o), _u64(cd, o + 8))
+            if o + 16 > len(cd):
+                break
+            attrs[idx] = gs.obscured_fp_to_float(_u64(cd, o), _u64(cd, o + 8))
+        info.attributes = attrs
+        info.max_hp = attrs.get(gs.AttributeType.MAX_HP, 0.0)
+        info.atk = attrs.get(gs.AttributeType.ATK, 0.0)
+        info.def_ = attrs.get(gs.AttributeType.DEF, 0.0)
+        info.res = attrs.get(gs.AttributeType.MAGIC_RESISTANCE, 0.0)
+        info.mspd = attrs.get(gs.AttributeType.MOVE_SPEED, 0.0)
+        info.aspd = attrs.get(gs.AttributeType.ATTACK_SPEED, 0.0)
 
-        info.max_hp = attr(gs.AttributeType.MAX_HP)
-        info.atk = attr(gs.AttributeType.ATK)
-        info.def_ = attr(gs.AttributeType.DEF)
-        info.res = attr(gs.AttributeType.MAGIC_RESISTANCE)
-        info.mspd = attr(gs.AttributeType.MOVE_SPEED)
-        info.aspd = attr(gs.AttributeType.ATTACK_SPEED)
+    @staticmethod
+    def _apply_raw_data(raw, info):
+        base = gs.Il2CppArray.ITEMS
+        count = min(_i32(raw, gs.Il2CppArray.MAX_LENGTH), gs.AttributeType.E_NUM)
+        values = {}
+        for idx in range(max(0, count)):
+            o = base + idx * gs.OBSCURED_FP_SIZE
+            if o + 16 > len(raw):
+                break
+            values[idx] = gs.obscured_fp_to_float(_u64(raw, o), _u64(raw, o + 8))
+        info.raw_attributes = values
 
     def _fill_skills(self, ep, blk, info):
         """慢速路径技能 CD 解析: m_skills List -> EnemySkill -> PeriodicTimer
@@ -672,24 +747,136 @@ class EnemyReader:
         info.eid, info.name, info.code = self._names[ep]
         return info
 
-    def _read_enemy(self, ep):
+    @staticmethod
+    def _parse_enemy_block(ep, blk):
+        """解析 Enemy 主对象块；不跟随指针，供慢速与聚簇快读共用。"""
         info = EnemyInfo(ep)
-        blk = self.mc.read(ep, gs.EnemyFields.READ_SIZE)
         if not blk or len(blk) < 0x148:
             info.alive = False
             return info
         info.hp = gs.fp_to_float(_u64(blk, gs.EntityFields.M_HP))
+        info.es = gs.fp_to_float(_u64(blk, gs.EntityFields.M_ES))
         info.direction = _i32(blk, gs.EntityFields.M_DIRECTION)
         info.finish = _i32(blk, gs.EntityFields.FINISH_REASON)
+        info.id_ptr = _u64(blk, gs.EntityFields.ID)
+        info.attr_ptr = _u64(blk, gs.EntityFields.M_ATTRIBUTES)
+        info.state_ptr = _u64(blk, gs.EntityFields.M_STATE_MACHINE)
+        info.ep_ptr = _u64(blk, gs.EntityFields.M_EP_ARRAY)
+        info.ep_controller_ptr = _u64(blk, gs.EntityFields.M_EP_CONTROLLER)
+        info.shield_controller_ptr = _u64(blk, gs.EntityFields.M_SHIELD_CONTROLLER)
+        info.buff_container_ptr = _u64(blk, gs.EntityFields.BUFF_CONTAINER)
         if len(blk) >= gs.EnemyFields.READ_SIZE:
             info.pos_x, info.pos_y = _f32x2(blk, gs.EnemyFields.M_POS_IN_LAST_FRAME)
             info.blk_x, info.blk_y = _f32x2(blk, gs.EnemyFields.M_BLOCK_POSITION)
             info.spawn_row = _i32(blk, gs.EnemyFields.ROUTE_SPAWN_POS)
             info.spawn_col = _i32(blk, gs.EnemyFields.ROUTE_SPAWN_POS + 4)
+        info.alive = info.hp > 0 and info.finish == 0
+        return info
+
+    @staticmethod
+    def _decode_short_array(data, limit):
+        if not data or len(data) < gs.Il2CppArray.ITEMS:
+            return [0] * limit
+        count = min(max(0, _i32(data, gs.Il2CppArray.MAX_LENGTH)), limit)
+        out = [0] * limit
+        for idx in range(count):
+            off = gs.Il2CppArray.ITEMS + idx * 2
+            if off + 2 > len(data):
+                break
+            out[idx] = struct.unpack_from('<h', data, off)[0]
+        return out
+
+    @staticmethod
+    def _decode_fp_array(data, limit):
+        if not data or len(data) < gs.Il2CppArray.ITEMS:
+            return {}
+        count = min(max(0, _i32(data, gs.Il2CppArray.MAX_LENGTH)), limit)
+        out = {}
+        for idx in range(count):
+            off = gs.Il2CppArray.ITEMS + idx * 8
+            if off + 8 > len(data):
+                break
+            out[idx] = gs.fp_to_float(_u64(data, off))
+        return out
+
+    @staticmethod
+    def _copy_runtime(info, runtime):
+        if not runtime:
+            return
+        info.state_id = runtime.get('state_id', info.state_id)
+        info.shield = runtime.get('shield', info.shield)
+        info.ep_remaining = dict(runtime.get('ep_remaining', {}))
+        info.ep_break_recovery = bool(runtime.get('ep_break_recovery', False))
+        info.abnormal_flags = list(runtime.get('abnormal_flags', info.abnormal_flags))
+        info.abnormal_immunes = list(runtime.get('abnormal_immunes', info.abnormal_immunes))
+        info.abnormal_antis = list(runtime.get('abnormal_antis', info.abnormal_antis))
+        info.abnormal_combos = list(runtime.get('abnormal_combos', info.abnormal_combos))
+        info.abnormal_combo_immunes = list(
+            runtime.get('abnormal_combo_immunes', info.abnormal_combo_immunes))
+
+    def _fill_runtime_slow(self, info):
+        """无 TCP 通道时的完整状态读取兜底。"""
+        state = self.mc.read(info.state_ptr + gs.StateMachineFields.CURRENT_STATE_ID, 4) \
+            if self.mc.is_ptr(info.state_ptr) else None
+        ep = self.mc.read(
+            info.ep_ptr, gs.Il2CppArray.ITEMS + gs.ElementType.E_NUM * 8) \
+            if self.mc.is_ptr(info.ep_ptr) else None
+        shield_ptr = info.shield_controller_ptr
+        shield = self.mc.read(shield_ptr + gs.ShieldUIControllerFields.M_SHIELD_TO_SHOW, 8) \
+            if self.mc.is_ptr(shield_ptr) else None
+        epc = self.mc.read(info.ep_controller_ptr + gs.EPControllerFields.M_IS_IN_BREAK_RECOVERY, 1) \
+            if self.mc.is_ptr(info.ep_controller_ptr) else None
+        attr = self.mc.read(info.attr_ptr, 0x40) if self.mc.is_ptr(info.attr_ptr) else None
+        ptrs = {}
+        if attr:
+            ptrs = {
+                'flags': _u64(attr, gs.AttributesFields.M_ABNORMAL_FLAGS_COUNTER),
+                'immunes': _u64(attr, gs.AttributesFields.M_ABNORMAL_IMMUNE_COUNTER),
+                'antis': _u64(attr, gs.AttributesFields.M_ABNORMAL_ANTI_COUNTER),
+            }
+            combo_mgr = _u64(attr, gs.AttributesFields.M_ABNORMAL_COMBO_MGR)
+            combo = self.mc.read(combo_mgr, 0x20) if self.mc.is_ptr(combo_mgr) else None
+            if combo:
+                ptrs['combos'] = _u64(combo, gs.AbnormalComboManagerFields.M_ABNORMAL_COMBO_COUNTER)
+                ptrs['combo_immunes'] = _u64(
+                    combo, gs.AbnormalComboManagerFields.M_ABNORMAL_COMBO_IMMUNE_COUNTER)
+        arrays = {}
+        sizes = {
+            'flags': gs.AbnormalFlag.E_NUM, 'immunes': gs.AbnormalFlag.E_NUM,
+            'antis': gs.AbnormalFlag.E_NUM, 'combos': gs.AbnormalCombo.E_NUM,
+            'combo_immunes': gs.AbnormalCombo.E_NUM,
+        }
+        for key, count in sizes.items():
+            p = ptrs.get(key, 0)
+            arrays[key] = self._decode_short_array(
+                self.mc.read(p, gs.Il2CppArray.ITEMS + count * 2)
+                if self.mc.is_ptr(p) else None, count)
+        runtime = {
+            'state_id': _i32(state, 0) if state else gs.EnemyState.DEFAULT,
+            'shield': gs.fp_to_float(_u64(shield, 0)) if shield else 0.0,
+            'ep_remaining': self._decode_fp_array(ep, gs.ElementType.E_NUM),
+            'ep_break_recovery': bool(epc and epc[0]),
+            'abnormal_flags': arrays['flags'],
+            'abnormal_immunes': arrays['immunes'],
+            'abnormal_antis': arrays['antis'],
+            'abnormal_combos': arrays['combos'],
+            'abnormal_combo_immunes': arrays['combo_immunes'],
+        }
+        self._runtime_snapshot[info.addr] = runtime
+        self._runtime_ptrs[info.addr] = dict(ptrs, state=info.state_ptr, ep=info.ep_ptr,
+                                             epc=info.ep_controller_ptr, shield=shield_ptr)
+        self._copy_runtime(info, runtime)
+
+    def _read_enemy(self, ep, with_runtime=True):
+        blk = self.mc.read(ep, gs.EnemyFields.READ_SIZE)
+        info = self._parse_enemy_block(ep, blk)
+        if not blk or len(blk) < 0x148:
+            return info
         self._fill_name(ep, blk, info)
         self._fill_attrs(ep, blk, info)
         self._fill_skills(ep, blk, info)
-        info.alive = info.hp > 0 and info.finish == 0
+        if with_runtime:
+            self._fill_runtime_slow(info)
         return info
 
     def poll(self):
@@ -714,7 +901,11 @@ class EnemyReader:
                 ep = _u64(arr, i * 8)
                 if not ep or not self.mc.is_ptr(ep):
                     continue
-                snap['enemies'].append(self._read_enemy(ep))
+                # 回退路径避免为每个敌人逐指针启动十余次 adb 子进程；沿用最近一次
+                # 快速通道的状态快照。详情按钮仍会按需做完整读取。
+                info = self._read_enemy(ep, with_runtime=False)
+                self._copy_runtime(info, self._runtime_snapshot.get(ep))
+                snap['enemies'].append(info)
 
         if self.bc_addr:
             b = self.mc.read(self.bc_addr + 0x200, 0xC0)
@@ -775,10 +966,114 @@ class EnemyReader:
                 clusters.append([p])
         return clusters
 
+    def _refresh_runtime_chan(self, eps, infos):
+        """批量刷新状态机、损伤条、异常状态/免疫计数和护盾。
+
+        Attributes 里的五个计数数组需要一次跟随指针。指针只在对象换代时重建，
+        稳态刷新全部敌人仍然只有一次 batch_read 往返。
+        """
+        if not eps:
+            return
+
+        # 主对象中可直接得到的指针每轮同步；Attributes 换对象时丢弃旧计数数组。
+        missing = []
+        for ep in eps:
+            info = infos.get(ep)
+            if info is None:
+                continue
+            rp = self._runtime_ptrs.setdefault(ep, {})
+            if rp.get('attr_obj') != info.attr_ptr:
+                for key in ('flags', 'immunes', 'antis', 'combos', 'combo_immunes'):
+                    rp.pop(key, None)
+                rp['attr_obj'] = info.attr_ptr
+            rp.update(state=info.state_ptr, ep=info.ep_ptr, epc=info.ep_controller_ptr,
+                      shield=info.shield_controller_ptr)
+            if not all(rp.get(k) for k in ('flags', 'immunes', 'antis',
+                                            'combos', 'combo_immunes')):
+                missing.append(ep)
+
+        # 第一次：Attributes -> 三个 flag 数组 + combo manager。
+        attr_eps = [ep for ep in missing
+                    if self.mc.is_ptr(self._runtime_ptrs[ep].get('attr_obj', 0))]
+        if attr_eps:
+            reqs = [(self._runtime_ptrs[ep]['attr_obj'], 0x40) for ep in attr_eps]
+            combo_mgrs = {}
+            for ep, data in zip(attr_eps, self._chan.batch_read(reqs)):
+                if not data:
+                    continue
+                rp = self._runtime_ptrs[ep]
+                rp['flags'] = _u64(data, gs.AttributesFields.M_ABNORMAL_FLAGS_COUNTER)
+                rp['immunes'] = _u64(data, gs.AttributesFields.M_ABNORMAL_IMMUNE_COUNTER)
+                rp['antis'] = _u64(data, gs.AttributesFields.M_ABNORMAL_ANTI_COUNTER)
+                combo = _u64(data, gs.AttributesFields.M_ABNORMAL_COMBO_MGR)
+                if self.mc.is_ptr(combo):
+                    combo_mgrs[ep] = combo
+            if combo_mgrs:
+                ceps = list(combo_mgrs)
+                for ep, data in zip(
+                        ceps, self._chan.batch_read([(combo_mgrs[x], 0x20) for x in ceps])):
+                    if data:
+                        self._runtime_ptrs[ep]['combos'] = _u64(
+                            data, gs.AbnormalComboManagerFields.M_ABNORMAL_COMBO_COUNTER)
+                        self._runtime_ptrs[ep]['combo_immunes'] = _u64(
+                            data, gs.AbnormalComboManagerFields.M_ABNORMAL_COMBO_IMMUNE_COUNTER)
+
+        reqs, keys = [], []
+        for ep in eps:
+            rp = self._runtime_ptrs.get(ep, {})
+            specs = (
+                ('state', rp.get('state', 0) + gs.StateMachineFields.CURRENT_STATE_ID, 4),
+                ('ep', rp.get('ep', 0), gs.Il2CppArray.ITEMS + gs.ElementType.E_NUM * 8),
+                ('shield', rp.get('shield', 0) + gs.ShieldUIControllerFields.M_SHIELD_TO_SHOW, 8),
+                ('epc', rp.get('epc', 0) + gs.EPControllerFields.M_IS_IN_BREAK_RECOVERY, 1),
+                ('flags', rp.get('flags', 0),
+                 gs.Il2CppArray.ITEMS + gs.AbnormalFlag.E_NUM * 2),
+                ('immunes', rp.get('immunes', 0),
+                 gs.Il2CppArray.ITEMS + gs.AbnormalFlag.E_NUM * 2),
+                ('antis', rp.get('antis', 0),
+                 gs.Il2CppArray.ITEMS + gs.AbnormalFlag.E_NUM * 2),
+                ('combos', rp.get('combos', 0),
+                 gs.Il2CppArray.ITEMS + gs.AbnormalCombo.E_NUM * 2),
+                ('combo_immunes', rp.get('combo_immunes', 0),
+                 gs.Il2CppArray.ITEMS + gs.AbnormalCombo.E_NUM * 2),
+            )
+            for kind, addr, size in specs:
+                if self.mc.is_ptr(addr):
+                    reqs.append((addr, size))
+                    keys.append((ep, kind))
+
+        runtime = {ep: dict(self._runtime_snapshot.get(ep, {})) for ep in eps}
+        for (ep, kind), data in zip(keys, self._chan.batch_read(reqs) if reqs else []):
+            if not data:
+                continue
+            cur = runtime[ep]
+            if kind == 'state':
+                cur['state_id'] = _i32(data, 0)
+            elif kind == 'ep':
+                cur['ep_remaining'] = self._decode_fp_array(data, gs.ElementType.E_NUM)
+            elif kind == 'shield':
+                cur['shield'] = gs.fp_to_float(_u64(data, 0))
+            elif kind == 'epc':
+                cur['ep_break_recovery'] = bool(data[0])
+            elif kind in ('flags', 'immunes', 'antis'):
+                cur['abnormal_' + kind] = self._decode_short_array(data, gs.AbnormalFlag.E_NUM)
+            elif kind == 'combos':
+                cur['abnormal_combos'] = self._decode_short_array(data, gs.AbnormalCombo.E_NUM)
+            elif kind == 'combo_immunes':
+                cur['abnormal_combo_immunes'] = self._decode_short_array(
+                    data, gs.AbnormalCombo.E_NUM)
+
+        for ep in eps:
+            self._runtime_snapshot[ep] = runtime[ep]
+            info = infos.get(ep)
+            if info is not None:
+                self._copy_runtime(info, runtime[ep])
+
     LIST_EVERY = 4    # List 头每 4 tick 读一次 (检测刷怪/退场; 其余帧沿用上一帧指针)
     ATTR_EVERY = 3    # 每 3 tick 轮换刷新 1 个敌人的属性 (摊平尖峰)
     BC_EVERY = 10     # BC 块 (状态/倍速/时间) 每 10 tick 读一次
     SKILL_EVERY = 5   # 每 5 tick 通道内批量刷新全部敌人技能 CD
+    STATUS_EVERY = 2  # 状态/损伤条每 2 tick 批量刷新 (约 20-32ms)
 
     def _poll_fast_impl(self):
         t0 = time.time()
@@ -802,7 +1097,7 @@ class EnemyReader:
             cdp = self._attr_cache.get(aep, 0)
             if cdp:
                 slot['attr'] = (len(reqs), aep)
-                reqs.append((cdp, 0x20 + 36 * gs.OBSCURED_FP_SIZE))
+                reqs.append((cdp, 0x20 + gs.AttributeType.E_NUM * gs.OBSCURED_FP_SIZE))
             else:
                 ap = self._attr_ptrs.get(aep, 0)
                 if ap:
@@ -863,17 +1158,8 @@ class EnemyReader:
                 off = ep - c[0]
                 if off + gs.EnemyFields.READ_SIZE > len(data):
                     continue
-                info = EnemyInfo(ep)
-                info.hp = gs.fp_to_float(_u64(data, off + gs.EntityFields.M_HP))
-                info.direction = _i32(data, off + gs.EntityFields.M_DIRECTION)
-                info.finish = _i32(data, off + gs.EntityFields.FINISH_REASON)
-                info.id_ptr = _u64(data, off + gs.EntityFields.ID)
-                info.attr_ptr = _u64(data, off + gs.EntityFields.M_ATTRIBUTES)
-                info.pos_x, info.pos_y = _f32x2(data, off + gs.EnemyFields.M_POS_IN_LAST_FRAME)
-                info.blk_x, info.blk_y = _f32x2(data, off + gs.EnemyFields.M_BLOCK_POSITION)
-                info.spawn_row = _i32(data, off + gs.EnemyFields.ROUTE_SPAWN_POS)
-                info.spawn_col = _i32(data, off + gs.EnemyFields.ROUTE_SPAWN_POS + 4)
-                info.alive = info.hp > 0 and info.finish == 0
+                blk = data[off:off + gs.EnemyFields.READ_SIZE]
+                info = self._parse_enemy_block(ep, blk)
                 infos[ep] = info
                 self._attr_ptrs[ep] = info.attr_ptr
                 skl = _u64(data, off + gs.EnemyFields.M_SKILLS)
@@ -885,6 +1171,11 @@ class EnemyReader:
         if new_eps:
             self._fill_new_enemies_chan(new_eps, infos)
 
+        # ---- 状态机 / 异常状态 / 免疫 / 五种损伤条 ----
+        runtime_missing = any(ep not in self._runtime_snapshot for ep in ptrs)
+        if ptrs and (runtime_missing or tick % self.STATUS_EVERY == 0):
+            self._refresh_runtime_chan(ptrs, infos)
+
         # ---- 属性轮换刷新 (每 ATTR_EVERY 帧 1 个敌人) ----
         if 'attr' in slot:
             i, aep = slot['attr']
@@ -892,8 +1183,7 @@ class EnemyReader:
             if cd and 0 < _i32(cd, gs.Il2CppArray.MAX_LENGTH) <= 64:
                 tmp = EnemyInfo(aep)
                 self._apply_cached_data(cd, tmp)
-                self._attr_snapshot[aep] = (tmp.max_hp, tmp.atk, tmp.def_,
-                                            tmp.res, tmp.mspd, tmp.aspd)
+                self._attr_snapshot[aep] = dict(tmp.attributes)
             else:
                 self._attr_cache.pop(aep, None)   # 数组已失效, 下轮重建
         elif 'attrp' in slot:
@@ -918,11 +1208,19 @@ class EnemyReader:
                 info.eid, info.name, info.code = nm
             s = self._attr_snapshot.get(ep)
             if s:
-                info.max_hp, info.atk, info.def_, info.res, info.mspd, info.aspd = s
+                info.attributes = dict(s)
+                info.max_hp = s.get(gs.AttributeType.MAX_HP, 0.0)
+                info.atk = s.get(gs.AttributeType.ATK, 0.0)
+                info.def_ = s.get(gs.AttributeType.DEF, 0.0)
+                info.res = s.get(gs.AttributeType.MAGIC_RESISTANCE, 0.0)
+                info.mspd = s.get(gs.AttributeType.MOVE_SPEED, 0.0)
+                info.aspd = s.get(gs.AttributeType.ATTACK_SPEED, 0.0)
+            self._copy_runtime(info, self._runtime_snapshot.get(ep))
             info.skills = self._skill_cd.get(ep, [])
             enemies.append(info)
         # 清理已退场敌人的缓存 (地址可能被 GC 复用)
         for cache in (self._names, self._attr_cache, self._attr_snapshot, self._attr_ptrs,
+                      self._runtime_snapshot, self._runtime_ptrs,
                       self._skill_lp, self._skill_cd):
             for ep in list(cache):
                 if ep not in live:
@@ -1062,25 +1360,394 @@ class EnemyReader:
                         cdps[ep] = cdp
         if cdps:
             eps = list(cdps)
-            reqs = [(cdps[ep], 0x20 + 36 * gs.OBSCURED_FP_SIZE) for ep in eps]
+            reqs = [(cdps[ep], 0x20 + gs.AttributeType.E_NUM * gs.OBSCURED_FP_SIZE)
+                    for ep in eps]
             for ep, cd in zip(eps, self._chan.batch_read(reqs)):
                 if cd and 0 < _i32(cd, gs.Il2CppArray.MAX_LENGTH) <= 64:
                     self._attr_cache[ep] = cdps[ep]
                     tmp = EnemyInfo(ep)
                     self._apply_cached_data(cd, tmp)
-                    self._attr_snapshot[ep] = (tmp.max_hp, tmp.atk, tmp.def_,
-                                               tmp.res, tmp.mspd, tmp.aspd)
+                    self._attr_snapshot[ep] = dict(tmp.attributes)
         # 通道内未解决的走一次完整慢读兜底
         for ep in new_eps:
             if ep not in self._names or ep not in self._attr_snapshot:
-                full = self._read_enemy(ep)
+                full = self._read_enemy(ep, with_runtime=False)
                 if ep not in self._names:
                     self._names[ep] = (full.eid, full.name, full.code)
                 if ep not in self._attr_snapshot:
-                    self._attr_snapshot[ep] = (full.max_hp, full.atk, full.def_,
-                                               full.res, full.mspd, full.aspd)
+                    self._attr_snapshot[ep] = dict(full.attributes)
                 if ep not in infos:
                     infos[ep] = full
+
+    def _detail_batch_read(self, reqs):
+        """详情读取与高频轮询共用同一带锁通道；无通道时回退 MemCore。"""
+        if not reqs:
+            return []
+        if self._chan is not None:
+            return self._chan.batch_read(reqs)
+        return [self.mc.read(addr, size) for addr, size in reqs]
+
+    def _read_strings(self, ptrs, max_chars=256):
+        unique = [p for p in dict.fromkeys(ptrs) if self.mc.is_ptr(p)]
+        if not unique:
+            return {}
+        size = gs.Il2CppString.CHARS + max_chars * 2
+        out = {}
+        for ptr, data in zip(unique, self._detail_batch_read([(p, size) for p in unique])):
+            if not data or len(data) < gs.Il2CppString.CHARS:
+                continue
+            count = _i32(data, gs.Il2CppString.LENGTH)
+            if not (0 <= count <= max_chars):
+                continue
+            try:
+                out[ptr] = data[gs.Il2CppString.CHARS:
+                                gs.Il2CppString.CHARS + count * 2].decode('utf-16-le')
+            except UnicodeDecodeError:
+                continue
+        return out
+
+    def _read_blackboards(self, bb_ptrs):
+        """读取 Blackboard(List<DataPair>)；DataPair 步长为 0x18。"""
+        unique = [p for p in dict.fromkeys(bb_ptrs) if self.mc.is_ptr(p)]
+        result = {p: [] for p in unique}
+        if not unique:
+            return result
+        heads = self._detail_batch_read([(p, 0x20) for p in unique])
+        arrays = {}
+        reqs, owners = [], []
+        for ptr, head in zip(unique, heads):
+            if not head:
+                continue
+            items, count = _u64(head, gs.ListInternal.ITEMS), _i32(head, gs.ListInternal.SIZE)
+            if 0 < count <= 256 and self.mc.is_ptr(items):
+                reqs.append((items + gs.Il2CppArray.ITEMS, count * 0x18))
+                owners.append((ptr, count))
+        for (ptr, count), data in zip(owners, self._detail_batch_read(reqs)):
+            if data:
+                arrays[ptr] = (count, data)
+        string_ptrs = []
+        parsed = {}
+        for ptr, (count, data) in arrays.items():
+            rows = []
+            for idx in range(count):
+                off = idx * 0x18
+                if off + 0x18 > len(data):
+                    break
+                key_ptr = _u64(data, off)
+                value = struct.unpack_from('<f', data, off + 8)[0]
+                value_str_ptr = _u64(data, off + 0x10)
+                string_ptrs.extend((key_ptr, value_str_ptr))
+                rows.append((key_ptr, value, value_str_ptr))
+            parsed[ptr] = rows
+        strings = self._read_strings(string_ptrs)
+        for ptr, rows in parsed.items():
+            result[ptr] = [
+                {'key': strings.get(kp, ''), 'value': value,
+                 'value_str': strings.get(sp, '') if sp else ''}
+                for kp, value, sp in rows
+            ]
+        return result
+
+    @staticmethod
+    def _mask_names(mask, names):
+        return [names.get(idx, str(idx)) for idx in range(64) if mask & (1 << idx)]
+
+    def _read_plain_fp_arrays(self, ptrs):
+        unique = [p for p in dict.fromkeys(ptrs) if self.mc.is_ptr(p)]
+        if not unique:
+            return {}
+        size = gs.Il2CppArray.ITEMS + gs.AttributeType.E_NUM * 8
+        return {ptr: self._decode_fp_array(data, gs.AttributeType.E_NUM)
+                for ptr, data in zip(unique, self._detail_batch_read([(p, size) for p in unique]))
+                if data}
+
+    def _read_active_buffs(self, container_ptr):
+        """读取敌人 BuffContainer 中当前有效的 Buff。"""
+        if not self.mc.is_ptr(container_ptr):
+            return []
+        (container,) = self._detail_batch_read([(container_ptr, 0x30)])
+        dbl_ptr = _u64(container, gs.BuffContainerFields.M_BUFFS) if container else 0
+        if not self.mc.is_ptr(dbl_ptr):
+            return []
+        (dbl,) = self._detail_batch_read([(dbl_ptr, 0x28)])
+        list_ptr = _u64(dbl, gs.DoubleBufferedListFields.M_INTERNAL_LIST) if dbl else 0
+        if not self.mc.is_ptr(list_ptr):
+            return []
+        (head,) = self._detail_batch_read([(list_ptr, 0x20)])
+        if not head:
+            return []
+        items, count = _u64(head, gs.ListInternal.ITEMS), _i32(head, gs.ListInternal.SIZE)
+        if not (0 < count <= 512 and self.mc.is_ptr(items)):
+            return []
+        (array,) = self._detail_batch_read(
+            [(items + gs.Il2CppArray.ITEMS, count * 0x10)])
+        if not array:
+            return []
+        ptrs = [_u64(array, idx * 0x10) for idx in range(count)
+                if idx * 0x10 + 8 <= len(array)]
+        ptrs = [p for p in ptrs if self.mc.is_ptr(p)]
+        blocks = self._detail_batch_read([(p, gs.BuffFields.READ_SIZE) for p in ptrs])
+        records = [(p, data) for p, data in zip(ptrs, blocks) if data]
+        if not records:
+            return []
+
+        string_ptrs, bb_ptrs, fp_ptrs = [], [], []
+        for _, data in records:
+            string_ptrs.extend((_u64(data, gs.BuffFields.KEY),
+                                _u64(data, gs.BuffFields.OVERRIDE_KEY),
+                                _u64(data, gs.BuffFields.EFFECT_KEY)))
+            bb_ptrs.append(_u64(data, gs.BuffFields.M_BLACKBOARD))
+            fp_ptrs.extend(_u64(data, off) for off in (
+                gs.BuffFields.M_ATTRIBUTE_MULTIPLIERS,
+                gs.BuffFields.M_ATTRIBUTE_ADDITIONS,
+                gs.BuffFields.M_ATTRIBUTE_FINAL_ADDITIONS,
+                gs.BuffFields.M_ATTRIBUTE_FINAL_SCALERS))
+        strings = self._read_strings(string_ptrs)
+        blackboards = self._read_blackboards(bb_ptrs)
+        fp_arrays = self._read_plain_fp_arrays(fp_ptrs)
+
+        out = []
+        for ptr, data in records:
+            mask = _u64(data, gs.BuffFields.ATTRIBUTE_MASK)
+            mul_ptr = _u64(data, gs.BuffFields.M_ATTRIBUTE_MULTIPLIERS)
+            add_ptr = _u64(data, gs.BuffFields.M_ATTRIBUTE_ADDITIONS)
+            fadd_ptr = _u64(data, gs.BuffFields.M_ATTRIBUTE_FINAL_ADDITIONS)
+            scale_ptr = _u64(data, gs.BuffFields.M_ATTRIBUTE_FINAL_SCALERS)
+            mul = fp_arrays.get(mul_ptr, {})
+            add = fp_arrays.get(add_ptr, {})
+            fadd = fp_arrays.get(fadd_ptr, {})
+            scale = fp_arrays.get(scale_ptr, {})
+            modifiers = []
+            for idx in range(gs.AttributeType.E_NUM):
+                if not (mask & (1 << idx)):
+                    continue
+                modifiers.append({
+                    'index': idx,
+                    'key': gs.ATTRIBUTE_INTERNAL_NAMES.get(idx, str(idx)),
+                    'name': gs.ATTRIBUTE_CN_NAMES.get(idx, str(idx)),
+                    'addition': add.get(idx, 0.0),
+                    'multiplier': mul.get(idx, 0.0),
+                    'final_addition': fadd.get(idx, 0.0),
+                    'final_scaler': scale.get(idx, 1.0),
+                })
+            source = _u64(data, gs.BuffFields.M_SOURCE)
+            source_name = ''
+            if source in self._names:
+                source_name = self._names[source][1]
+            key_ptr = _u64(data, gs.BuffFields.KEY)
+            override_ptr = _u64(data, gs.BuffFields.OVERRIDE_KEY)
+            effect_ptr = _u64(data, gs.BuffFields.EFFECT_KEY)
+            bb_ptr = _u64(data, gs.BuffFields.M_BLACKBOARD)
+            out.append({
+                'addr': ptr,
+                'key': strings.get(key_ptr, '') or '?',
+                'override_key': strings.get(override_ptr, ''),
+                'effect_key': strings.get(effect_ptr, ''),
+                'instance_uid': struct.unpack_from('<I', data, gs.BuffFields.INSTANCE_UID)[0],
+                'priority': _i32(data, gs.BuffFields.PRIORITY),
+                'life_time': gs.fp_to_float(_u64(data, gs.BuffFields.M_LIFE_TIME)),
+                'remaining_time': gs.fp_to_float(_u64(data, gs.BuffFields.M_REMAINING_TIME)),
+                'existing_time': gs.fp_to_float(_u64(data, gs.BuffFields.M_EXISTING_TIME)),
+                'trigger_count': _i32(data, gs.BuffFields.M_TRIGGER_CNT),
+                'stack_count': _i32(data, gs.BuffFields.M_STACK_CNT),
+                'max_valid_stack_count': _i32(data, gs.BuffFields.M_MAX_VALID_STACK_CNT),
+                'enabled': bool(data[gs.BuffFields.IS_ACTUALLY_ENABLED]),
+                'valid': bool(data[gs.BuffFields.IS_VALID]),
+                'finished': bool(data[gs.BuffFields.IS_FINISHED]),
+                'ep_break_buff': bool(data[gs.BuffFields.IS_EP_BREAK_BUFF]),
+                'source_addr': source,
+                'source': source_name or (hex(source) if source else '关卡/无实体来源'),
+                'ability_addr': _u64(data, gs.BuffFields.M_ABILITY),
+                'attribute_modifiers': modifiers,
+                'abnormal_flags': self._mask_names(
+                    _u64(data, gs.BuffFields.ABNORMAL_FLAG_MASK),
+                    gs.ABNORMAL_FLAG_CN_NAMES),
+                'abnormal_immunes': self._mask_names(
+                    _u64(data, gs.BuffFields.ABNORMAL_IMMUNE_MASK),
+                    gs.ABNORMAL_FLAG_CN_NAMES),
+                'abnormal_antis': self._mask_names(
+                    _u64(data, gs.BuffFields.ABNORMAL_ANTI_MASK),
+                    gs.ABNORMAL_FLAG_CN_NAMES),
+                'abnormal_combos': self._mask_names(
+                    _u64(data, gs.BuffFields.ABNORMAL_COMBO_MASK),
+                    gs.ABNORMAL_COMBO_CN_NAMES),
+                'abnormal_combo_immunes': self._mask_names(
+                    _u64(data, gs.BuffFields.ABNORMAL_COMBO_IMMUNE_MASK),
+                    gs.ABNORMAL_COMBO_CN_NAMES),
+                'has_shield': bool(data[gs.BuffFields.HAS_SHIELD]),
+                'shield_mask': _i32(data, gs.BuffFields.SHIELD_MASK),
+                'blackboard': blackboards.get(bb_ptr, []),
+            })
+        return out
+
+    def _read_global_buffs(self, selected_addr=0):
+        """读取 BattleController.m_globalBuffs，并解析精确目标映射。"""
+        if not self.bc_addr:
+            return []
+        (slot,) = self._detail_batch_read(
+            [(self.bc_addr + gs.BattleControllerFields.M_GLOBAL_BUFFS, 8)])
+        list_ptr = _u64(slot, 0) if slot else 0
+        if not self.mc.is_ptr(list_ptr):
+            return []
+        (head,) = self._detail_batch_read([(list_ptr, 0x20)])
+        if not head:
+            return []
+        items, count = _u64(head, gs.ListInternal.ITEMS), _i32(head, gs.ListInternal.SIZE)
+        if not (0 < count <= 256 and self.mc.is_ptr(items)):
+            return []
+        (array,) = self._detail_batch_read([(items + gs.Il2CppArray.ITEMS, count * 8)])
+        if not array:
+            return []
+        ptrs = [_u64(array, idx * 8) for idx in range(count)]
+        ptrs = [p for p in ptrs if self.mc.is_ptr(p)]
+        records = [(p, data) for p, data in zip(
+            ptrs, self._detail_batch_read([(p, gs.GlobalBuffFields.READ_SIZE) for p in ptrs]))
+                   if data]
+        if not records:
+            return []
+
+        string_ptrs = [_u64(data, gs.GlobalBuffFields.KEY) for _, data in records]
+        bb_ptrs = [_u64(data, gs.GlobalBuffFields.BLACKBOARD) for _, data in records]
+        strings = self._read_strings(string_ptrs)
+        blackboards = self._read_blackboards(bb_ptrs)
+
+        # Dictionary<ObjectPtr<Entity>, List<uint>>：Entry 步长 0x20，key 在 +8。
+        map_ptrs = [_u64(data, gs.GlobalBuffFields.TARGET_MAP) for _, data in records]
+        valid_maps = [p for p in map_ptrs if self.mc.is_ptr(p)]
+        map_targets = {p: [] for p in valid_maps}
+        map_heads = self._detail_batch_read([(p, 0x30) for p in valid_maps])
+        entry_reqs, entry_owners = [], []
+        for mp, mh in zip(valid_maps, map_heads):
+            if not mh:
+                continue
+            entries, used = _u64(mh, 0x18), _i32(mh, 0x20)
+            if 0 < used <= 2048 and self.mc.is_ptr(entries):
+                entry_reqs.append((entries + gs.Il2CppArray.ITEMS, used * 0x20))
+                entry_owners.append((mp, used))
+        for (mp, used), data in zip(entry_owners, self._detail_batch_read(entry_reqs)):
+            if not data:
+                continue
+            for idx in range(used):
+                off = idx * 0x20
+                if off + 0x20 > len(data) or _i32(data, off) < 0:
+                    continue
+                target = _u64(data, off + 8)
+                if self.mc.is_ptr(target):
+                    map_targets[mp].append(target)
+
+        # GlobalBuff._buffs 中的静态 BuffData 概览。
+        buff_arrays = [_u64(data, gs.GlobalBuffFields.BUFFS) for _, data in records]
+        valid_arrays = [p for p in buff_arrays if self.mc.is_ptr(p)]
+        array_heads = self._detail_batch_read([(p, 0x20) for p in valid_arrays])
+        data_ptrs_by_array = {p: [] for p in valid_arrays}
+        data_reqs, data_owners = [], []
+        for ap, ah in zip(valid_arrays, array_heads):
+            if not ah:
+                continue
+            n = _i32(ah, gs.Il2CppArray.MAX_LENGTH)
+            if 0 < n <= 128:
+                data_reqs.append((ap + gs.Il2CppArray.ITEMS, n * 8))
+                data_owners.append((ap, n))
+        all_data_ptrs = []
+        for (ap, n), data in zip(data_owners, self._detail_batch_read(data_reqs)):
+            if not data:
+                continue
+            vals = [_u64(data, idx * 8) for idx in range(n)]
+            vals = [p for p in vals if self.mc.is_ptr(p)]
+            data_ptrs_by_array[ap] = vals
+            all_data_ptrs.extend(vals)
+        data_blocks = {p: data for p, data in zip(
+            all_data_ptrs,
+            self._detail_batch_read([(p, gs.BuffDataFields.READ_SIZE) for p in all_data_ptrs]))
+                       if data}
+        data_string_ptrs = []
+        for data in data_blocks.values():
+            data_string_ptrs.extend((_u64(data, gs.BuffDataFields.BUFF_KEY),
+                                     _u64(data, gs.BuffDataFields.TEMPLATE_KEY),
+                                     _u64(data, gs.BuffDataFields.DURATION_KEY)))
+        data_strings = self._read_strings(data_string_ptrs)
+
+        side_names = {0: '友方', 1: '敌方', 2: '中立', 3: '全部'}
+        out = []
+        for ptr, data in records:
+            key_ptr = _u64(data, gs.GlobalBuffFields.KEY)
+            bb_ptr = _u64(data, gs.GlobalBuffFields.BLACKBOARD)
+            map_ptr = _u64(data, gs.GlobalBuffFields.TARGET_MAP)
+            buff_array = _u64(data, gs.GlobalBuffFields.BUFFS)
+            targets = map_targets.get(map_ptr, [])
+            buff_defs = []
+            for dp in data_ptrs_by_array.get(buff_array, []):
+                dd = data_blocks.get(dp)
+                if not dd:
+                    continue
+                buff_defs.append({
+                    'buff_key': data_strings.get(_u64(dd, gs.BuffDataFields.BUFF_KEY), ''),
+                    'template_key': data_strings.get(
+                        _u64(dd, gs.BuffDataFields.TEMPLATE_KEY), ''),
+                    'duration_key': data_strings.get(
+                        _u64(dd, gs.BuffDataFields.DURATION_KEY), ''),
+                    'life_time_type': dd[gs.BuffDataFields.LIFE_TIME_TYPE],
+                    'life_time': struct.unpack_from('<f', dd, gs.BuffDataFields.LIFE_TIME)[0],
+                    'priority': _i32(dd, gs.BuffDataFields.PRIORITY),
+                })
+            source_type = _i32(data, gs.GlobalBuffFields.SOURCE_TYPE)
+            out.append({
+                'addr': ptr,
+                'key': strings.get(key_ptr, '') or '?',
+                'instance_uid': struct.unpack_from(
+                    '<I', data, gs.GlobalBuffFields.INSTANCE_UID)[0],
+                'source_type': source_type,
+                'source_name': side_names.get(source_type, str(source_type)),
+                'target_count': len(targets),
+                'target_addrs': targets,
+                'applies_to_selected': bool(selected_addr and selected_addr in targets),
+                'blackboard': blackboards.get(bb_ptr, []),
+                'buff_defs': buff_defs,
+            })
+        return out
+
+    def read_enemy_detail(self, addr):
+        """按需读取一个敌人的完整详情；供详情按钮调用，不增加常态轮询负担。"""
+        if not self.mc.is_ptr(addr):
+            return None
+        (blk,) = self._detail_batch_read([(addr, gs.EnemyFields.READ_SIZE)])
+        if not blk or len(blk) < 0x148:
+            return None
+        info = self._parse_enemy_block(addr, blk)
+        self._fill_name(addr, blk, info)
+
+        # 同时读取原始和最终属性，详情页可直接比较 Buff 前后变化。
+        (attr_head,) = self._detail_batch_read([(info.attr_ptr, 0x60)]) \
+            if self.mc.is_ptr(info.attr_ptr) else (None,)
+        if attr_head:
+            raw_ptr = _u64(attr_head, gs.AttributesFields.M_RAW_DATA)
+            cached_ptr = _u64(attr_head, gs.AttributesFields.M_CACHED_DATA)
+            reqs, kinds = [], []
+            size = gs.Il2CppArray.ITEMS + gs.AttributeType.E_NUM * gs.OBSCURED_FP_SIZE
+            if self.mc.is_ptr(raw_ptr):
+                reqs.append((raw_ptr, size)); kinds.append('raw')
+            if self.mc.is_ptr(cached_ptr):
+                reqs.append((cached_ptr, size)); kinds.append('cached')
+            for kind, data in zip(kinds, self._detail_batch_read(reqs)):
+                if not data:
+                    continue
+                if kind == 'raw':
+                    self._apply_raw_data(data, info)
+                else:
+                    self._apply_cached_data(data, info)
+                    self._attr_cache[addr] = cached_ptr
+                    self._attr_snapshot[addr] = dict(info.attributes)
+        elif addr in self._attr_snapshot:
+            info.attributes = dict(self._attr_snapshot[addr])
+
+        if self._chan is not None:
+            self._refresh_runtime_chan([addr], {addr: info})
+        else:
+            self._fill_runtime_slow(info)
+        info.skills = list(self._skill_cd.get(addr, []))
+        info.buffs = self._read_active_buffs(info.buff_container_ptr)
+        info.global_buffs = self._read_global_buffs(addr)
+        return info
 
     def _on_stale(self, snap):
         self._stale_cnt += 1
