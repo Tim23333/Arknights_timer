@@ -71,7 +71,11 @@ async function refresh() {
   else if (s.connected) setStatus("已连接·未锁定", "warn");
   else setStatus("未连接", "err");
   document.getElementById("proc").textContent = s.processName || "";
-  document.getElementById("stage").textContent = s.stageId ? "关卡 " + s.stageId : "";
+  const stage = s.stage || {};
+  const stageText = [stage.code, stage.name].filter(Boolean).join(" ");
+  document.getElementById("stage").textContent = stageText
+    ? "关卡 " + stageText + (s.stageId ? " (" + s.stageId + ")" : "")
+    : (s.stageId ? "关卡 " + s.stageId : "");
   const b = s.battle || {};
   document.getElementById("btime").textContent =
     b.playTime !== undefined ? `战斗 ${fmtT(b.playTime)}s (${b.stateName})` : "";

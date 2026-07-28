@@ -215,8 +215,9 @@ DEPLOY_DIR_CN = {0: '上', 1: '右', 2: '下', 3: '左', 4: '-'}
 
 
 class DeployScanWorker(QThread):
-    """后台线程: 连接 + 定位 BattleLogger (首次全堆扫描较慢, 不阻塞 UI)"""
+    """后台线程: 先定位关卡信息，再定位 BattleLogger；不阻塞 UI。"""
     log = Signal(str)
+    stage = Signal(dict)       # 阶段 1 完成即发出，不等待操作链
     done = Signal(object, str)   # (DeployTrackerReader|None, 错误消息)
 
     def __init__(self, adb_path: str) -> None:
@@ -230,10 +231,13 @@ class DeployScanWorker(QThread):
             self.log.emit(f"游戏 PID = {pid}")
             reader = DeployTrackerReader(mc)
             reader.set_status_callback(lambda m: (self.log.emit(str(m)), _tlog('[部署]', m)))
+            reader.set_stage_callback(lambda info: self.stage.emit(dict(info)))
             if reader.locate():
                 self.done.emit(reader, '')
             else:
-                self.done.emit(None, '定位失败: 请确认已进入作战关卡')
+                suffix = ('；关卡信息已获取，但操作记录定位失败'
+                          if reader.get_stage_info() else '')
+                self.done.emit(None, f'定位失败: 请确认已进入作战关卡{suffix}')
         except Exception as e:
             self.done.emit(None, f'出错: {e}')
 
@@ -326,6 +330,7 @@ class CoachWindow(QMainWindow):
         self._deploy_journal: list = []    # 代理作战序列 (静态, 非代理模式为空)
         self._deploy_squad: list = []
         self._deploy_stage: str = ''
+        self._deploy_stage_info: dict = {}
         self._deploy_seen: int = 0         # 已渲染到表格的事件数
 
         self._build_ui()
@@ -442,9 +447,9 @@ class CoachWindow(QMainWindow):
         # 右列: 全局操作记录 (部署/技能/撤退)
         right_col = QVBoxLayout()
         deploy_ctrl = QHBoxLayout()
-        self.btn_deploy_scan = QPushButton("扫描操作记录")
+        self.btn_deploy_scan = QPushButton("扫描关卡及操作")
         self.btn_deploy_scan.setToolTip(
-            "定位 BattleLogger (首次全堆扫描约 1-2 分钟; 进关卡后即可点击, 无操作记录也可定位)")
+            "先读取当前关卡信息，再定位 BattleLogger；刚进关卡、无操作记录也可定位")
         self.btn_deploy_scan.clicked.connect(self._on_deploy_scan)
         self._style_primary_button(self.btn_deploy_scan)
         self.btn_deploy_stop = QPushButton("停止")
@@ -810,6 +815,9 @@ class CoachWindow(QMainWindow):
         self._stop_enemy_poll()
         self._enemy_reader.close()
         self._stop_deploy_poll()
+        if self._deploy_reader is not None:
+            self._deploy_reader.close()
+            self._deploy_reader = None
         self._rng_timer.stop()
         if self._rng_svc is not None:
             try:
@@ -1032,15 +1040,35 @@ class CoachWindow(QMainWindow):
         self._deploy_journal = []
         self._deploy_squad = []
         self._deploy_stage = ''
+        self._deploy_stage_info = {}
+        if self._deploy_reader is not None:
+            self._deploy_reader.close()
+        self._deploy_reader = None
         self._deploy_seen = 0
         self.btn_deploy_scan.setEnabled(False)
         self.btn_deploy_export.setEnabled(False)
-        self.lbl_deploy_status.setText('定位中 (首次全堆扫描约 1-2 分钟) ...')
+        self.lbl_deploy_status.setText('阶段 1/2：正在扫描关卡信息 ...')
         self._deploy_scan = DeployScanWorker(self._enemy_reader.mc.adb_path)
         self._deploy_scan.log.connect(
             lambda m: self.lbl_deploy_status.setText(str(m).strip() or self.lbl_deploy_status.text()))
+        self._deploy_scan.stage.connect(self._on_deploy_stage)
         self._deploy_scan.done.connect(self._on_deploy_scan_done)
         self._deploy_scan.start()
+
+    def _deploy_stage_label(self) -> str:
+        info = self._deploy_stage_info
+        code = info.get('code') or ''
+        name = info.get('name') or ''
+        stage_id = info.get('stageId') or self._deploy_stage
+        return ' '.join(x for x in (code, name, f'({stage_id})' if stage_id else '') if x)
+
+    def _on_deploy_stage(self, info: dict) -> None:
+        """阶段 1 回调：操作记录仍在定位时，先把关卡信息交给界面/后端状态。"""
+        self._deploy_stage_info = dict(info or {})
+        self._deploy_stage = self._deploy_stage_info.get('stageId') or ''
+        label = self._deploy_stage_label() or self._deploy_stage_info.get('levelId') or '未知关卡'
+        self.lbl_deploy_status.setText(f'已识别关卡 {label}；阶段 2/2：正在定位操作记录 ...')
+        self.btn_deploy_export.setEnabled(bool(self._deploy_stage_info))
 
     def _on_deploy_scan_done(self, reader, msg: str) -> None:
         self.btn_deploy_scan.setEnabled(True)
@@ -1052,19 +1080,20 @@ class CoachWindow(QMainWindow):
             st = reader.get_state()   # 一次性取 编队/代理序列/关卡信息 (顺带补齐干员名)
             self._deploy_squad = st.get('squad') or []
             self._deploy_journal = st.get('journalEvents') or []
+            self._deploy_stage_info = st.get('stage') or self._deploy_stage_info
             self._deploy_stage = st.get('stageId') or ''
         except Exception:
             pass
         if self._deploy_journal:
             # 代理作战: 序列为静态完整记录, 无需轮询
             self._append_deploy_rows(self._deploy_journal)
-            stage = f"   {self._deploy_stage}" if self._deploy_stage else ''
+            stage = f"   {self._deploy_stage_label()}" if self._deploy_stage_label() else ''
             self.lbl_deploy_status.setText(
                 f"代理作战序列 {len(self._deploy_journal)} 条 (静态){stage}")
         else:
             self._start_deploy_poll()
         self.btn_deploy_export.setEnabled(
-            bool(self._deploy_journal or self._deploy_events))
+            bool(self._deploy_stage_info or self._deploy_journal or self._deploy_events))
 
     def _start_deploy_poll(self) -> None:
         self._stop_deploy_poll()
@@ -1072,7 +1101,8 @@ class CoachWindow(QMainWindow):
         self._deploy_poll.snapshot.connect(self._on_deploy_snapshot)
         self._deploy_poll.start()
         self.btn_deploy_stop.setEnabled(True)
-        self.lbl_deploy_status.setText('监控中 ...')
+        stage = f"   {self._deploy_stage_label()}" if self._deploy_stage_label() else ''
+        self.lbl_deploy_status.setText(f'监控中 ...{stage}')
 
     def _stop_deploy_poll(self) -> None:
         if self._deploy_poll:
@@ -1093,8 +1123,9 @@ class CoachWindow(QMainWindow):
             self.lbl_deploy_status.setText('地址链失效 (关卡已结束?), 请重新扫描')
             return
         if battle:
+            stage = f"   {self._deploy_stage_label()}" if self._deploy_stage_label() else ''
             self.lbl_deploy_status.setText(
-                f"监控中   战斗时间 {battle.get('playTime', 0.0):.1f}s   "
+                f"监控中{stage}   战斗时间 {battle.get('playTime', 0.0):.1f}s   "
                 f"{battle.get('stateName', '')}   x{battle.get('speedLevel', '?')}")
         self._deploy_events = events
         if len(events) < self._deploy_seen:   # 列表重建 (新一局), 重渲染
@@ -1104,7 +1135,7 @@ class CoachWindow(QMainWindow):
         if new:
             self._append_deploy_rows(new)
             self._deploy_seen = len(events)
-        self.btn_deploy_export.setEnabled(bool(events))
+        self.btn_deploy_export.setEnabled(bool(self._deploy_stage_info or events))
 
     def _append_deploy_rows(self, events: list) -> None:
         # 编队表补充 charId/instId -> 中文名 (覆盖 trap/token 等)
@@ -1133,8 +1164,8 @@ class CoachWindow(QMainWindow):
 
     def _on_deploy_export(self) -> None:
         events = self._deploy_journal or self._deploy_events
-        if not events:
-            QMessageBox.information(self, '导出', '当前没有可导出的操作记录')
+        if not events and not self._deploy_stage_info:
+            QMessageBox.information(self, '导出', '当前没有可导出的关卡或操作记录')
             return
         default = f"deploy_log_{time.strftime('%Y%m%d_%H%M%S')}.json"
         path, _ = QFileDialog.getSaveFileName(self, '导出操作记录', default, 'JSON (*.json)')
@@ -1148,6 +1179,8 @@ class CoachWindow(QMainWindow):
             "source": "journal" if self._deploy_journal else "live",
             "exportTime": time.strftime("%Y-%m-%d %H:%M:%S"),
             "stageId": self._deploy_stage,
+            "levelId": self._deploy_stage_info.get('levelId', ''),
+            "stage": self._deploy_stage_info,
             "battle": battle,
             "squad": self._deploy_squad,
             "events": events,

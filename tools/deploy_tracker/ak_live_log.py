@@ -39,9 +39,13 @@ def fmt_event(ev):
 
 
 def export_json(path, reader, events, squad):
+    stage = reader.get_stage_info()
     payload = {
         "source": "live",
         "exportTime": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "stageId": stage.get("stageId", ""),
+        "levelId": stage.get("levelId", ""),
+        "stage": stage,
         "battle": reader.get_battle_state(),
         "squad": squad,
         "events": events,
@@ -72,6 +76,12 @@ def main():
         return 1
     print(f"[*] 定位成功 ({time.time() - t0:.0f}s), 开始实时监控 "
           f"(Ctrl+C 结束并导出)", flush=True)
+
+    stage = reader.get_stage_info()
+    if stage:
+        label = " ".join(x for x in (stage.get("code"), stage.get("name")) if x)
+        print(f"[*] 当前关卡: {label or stage.get('levelId', '')} "
+              f"({stage.get('stageId', '')})", flush=True)
 
     squad = reader.get_squad()
     if squad:

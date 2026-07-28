@@ -38,11 +38,17 @@
     +0x228 int SpeedLevel / +0x284 float realPlayTime
 
 定位策略 (全自动, 支持进入关卡后 0 条操作记录):
-  1. GC 堆快照 (一次性传输, 落盘), 用标量指纹 + klass 名定位当前 BattleController
-  2. 优先读取现网实测 BattleController.m_logger, 并以
+  1. 设备侧共享扫描 BattleInOut / BattleController，两类对象只扫一遍大内存
+  2. 先从 BattleInOut.input.stageInfo 发布关卡信息，再读取操作链
+  3. 优先读取现网实测 BattleController.m_logger, 并以
      BattleLogger.m_controller 反向指针、List<LogItem> 结构完成强校验
-  3. 若当前版本字段漂移, 在 BC 小范围字段区内搜索 BattleLogger
-  4. 仅当 BC 链定位失败时, 才回退到 LogItem -> List -> BattleLogger 的旧扫描路径
+  4. 若当前版本字段漂移, 在 BC 小范围字段区内搜索 BattleLogger
+  5. 仅当设备侧扫描不可用时，才回退完整 GC 堆快照路径
+
+后端嵌入:
+  reader.set_stage_callback(on_stage)  # 阶段 1 完成即回调 dict
+  ok = reader.locate()                 # 随后完成阶段 2；ok 表示操作链可用
+  state = reader.get_state()           # stage + battle + squad + events
 """
 
 import bisect
@@ -74,10 +80,12 @@ LOGITEM_STRUCT = "<f4xI4xQiiiiQ"
 CHARINFO_SIZE = 0x50
 CHAR_ID_RE = re.compile(r"^(char|trap|token)_\w+$")
 STAGE_ID_RE = re.compile(r"^[A-Za-z0-9_\-#]+$")
+LEVEL_ID_RE = re.compile(r"^[A-Za-z0-9_./\-#]+$")
 
 # BattleController 现网实测偏移 (enemy_health 2026-07 验证)。统一引用
 # game_structs，避免 deploy_tracker 与 enemy_health 各自维护后再次漂移。
 BC_LOGGER = BattleControllerFields.M_LOGGER
+BC_LEVEL_DATA = BattleControllerFields.LEVEL_DATA
 BC_STATE = BattleControllerFields.M_STATE
 BC_SPEED_LEVEL = BattleControllerFields.M_SPEED_LEVEL
 BC_REAL_PLAY_TIME = BattleControllerFields.M_REAL_PLAY_TIME
@@ -87,6 +95,27 @@ UNITY_CACHED_PTR = 0x10
 LOGGER_CONTROLLER = 0x18
 LOGGER_LOGS = 0x20
 LOGGER_SQUAD = 0x28
+
+# BattleInOut.input (inline InParams @ +0x10) / BattleStageInfo 布局。
+# 与操作日志相互独立，因此刚进关卡、日志列表仍为空时也能读取。
+BATTLE_IN_OUT_INPUT = 0x10
+IN_PARAMS_LEVEL_DATA = 0x08
+IN_PARAMS_STAGE_INFO = 0x18
+IN_PARAMS_IS_PRACTICE = 0x88
+IN_PARAMS_IS_AUTO_BATTLE = 0x89
+IN_PARAMS_IS_FAST_BATTLE = 0x8A
+STAGE_INFO_STAGE_ID = 0x00
+STAGE_INFO_CODE = 0x08
+STAGE_INFO_NAME = 0x10
+STAGE_INFO_LEVEL_ID = 0x18
+STAGE_INFO_ZONE_ID = 0x20
+STAGE_INFO_CAN_BATTLE_REPLAY = 0x28
+STAGE_INFO_DIFFICULTY = 0x2C
+STAGE_INFO_AP_COST = 0x30
+
+# LevelData.levelId；仅用于确认 BattleInOut 属于当前 BattleController，
+# 以及在 BattleInOut 不可用时提供不含 stageId/name 的降级结果。
+LEVEL_DATA_LEVEL_ID = 0x18
 
 # IL2CPP 布局
 LIST_ITEMS = 0x10
@@ -245,7 +274,10 @@ class DeployTrackerReader:
         self._squad_list_addr = 0        # BattleLogger.m_squad
         self._journal_squad_list_addr = 0
         self._journal_meta = {}
+        self._battle_in_out_addr = 0
+        self._stage_info = {}
         self._status_callback = None
+        self._stage_callback = None
         self._char_names = None          # charId -> 中文名 (ark_parser/characters.json)
         self._channel = None             # TcpChannel 快速批量读取
 
@@ -254,10 +286,32 @@ class DeployTrackerReader:
     def set_status_callback(self, cb):
         self._status_callback = cb
 
+    def set_stage_callback(self, cb):
+        """设置关卡信息回调；阶段 1 定位成功后、操作链扫描前立即调用。"""
+        self._stage_callback = cb
+
+    def close(self):
+        """关闭本读取器独占的 memsrv TCP 通道；供后端停止/替换实例时调用。"""
+        channel, self._channel = self._channel, None
+        if channel is not None:
+            try:
+                channel.close()
+            except Exception:
+                pass
+
     def _status(self, msg):
         print(f"[INFO] {msg}", flush=True)
         if self._status_callback:
             self._status_callback(msg)
+
+    def _publish_stage_info(self, info):
+        """保存关卡信息并通知嵌入方；相同结果不重复回调。"""
+        info = dict(info or {})
+        if not info or info == self._stage_info:
+            return
+        self._stage_info = info
+        if self._stage_callback:
+            self._stage_callback(dict(info))
 
     def _read(self, addr, size):
         try:
@@ -386,78 +440,223 @@ class DeployTrackerReader:
             return None
         return out
 
-    def _locate_via_device_class_scan(self) -> bool:
-        """快速主路径: klass 名 -> Il2CppClass -> 当前 BC 对象 -> Logger。
+    def _scan_class_objects(self, class_names):
+        """一次设备侧扫描返回多个 Torappu.Battle 类的对象地址。
 
-        扫描在 Android 设备侧完成，不下载完整 GC 堆；命中地址返回宿主后再做
-        Unity m_CachedPtr、战斗标量和 Logger 反向指针校验。
+        多个类共用三遍大范围扫描（类名、Il2CppClass 引用、对象 klass 指针），
+        既让关卡信息先产出，又避免随后定位操作记录时重新扫描数 GB 内存。
         """
         rw_regions = [(s, e) for s, e, perms, _name in self.mc.regions if "rw" in perms]
         if not rw_regions:
-            return False
+            return None
         t0 = time.time()
-        self._status("快速定位: 设备侧搜索 BattleController klass ...")
-        class_name = b"BattleController\x00"
-        name_scan = self._device_scan_regions(rw_regions, [class_name])
+        class_names = tuple(dict.fromkeys(class_names))
+        class_needles = {name: name.encode("ascii") + b"\x00" for name in class_names}
+        self._status("共享扫描: 设备侧搜索 " + " / ".join(class_names) + " klass ...")
+        name_scan = self._device_scan_regions(rw_regions, list(class_needles.values()))
         if name_scan is None:
-            return False
-        name_addrs = []
-        for addr in name_scan.get(class_name, []):
-            prev = self._read(addr - 1, 1)
-            if not prev or prev == b"\x00":
-                name_addrs.append(addr)
-        if not name_addrs:
-            self._status("  未找到 BattleController 类名字符串")
-            return False
+            return None
 
-        name_needles = [struct.pack("<Q", addr) for addr in name_addrs]
-        ref_scan = self._device_scan_regions(rw_regions, name_needles)
+        names_by_addr = {}
+        for name, needle in class_needles.items():
+            for addr in name_scan.get(needle, []):
+                prev = self._read(addr - 1, 1)
+                if not prev or prev == b"\x00":
+                    names_by_addr[addr] = name
+        if not names_by_addr:
+            self._status("  未找到目标类名字符串")
+            return {name: set() for name in class_names}
+
+        name_needles = {addr: struct.pack("<Q", addr) for addr in names_by_addr}
+        ref_scan = self._device_scan_regions(rw_regions, list(name_needles.values()))
         if ref_scan is None:
-            return False
-        klasses = set()
-        for addr, needle in zip(name_addrs, name_needles):
+            return None
+        klass_names = {}
+        for addr, needle in name_needles.items():
             for ref in ref_scan.get(needle, []):
                 klass = ref - 0x10  # Il2CppClass.name
                 if self._ptr(klass + 0x10) != addr:
                     continue
                 namespace = self._read_cstring(self._ptr(klass + 0x18))
                 if namespace == "Torappu.Battle":
-                    klasses.add(klass)
-        if not klasses:
-            self._status("  未找到 Torappu.Battle.BattleController Il2CppClass")
-            return False
+                    klass_names[klass] = names_by_addr[addr]
+        if not klass_names:
+            self._status("  未找到目标 Torappu.Battle Il2CppClass")
+            return {name: set() for name in class_names}
 
         gc_regions = self.mc.scan_targets()
-        klass_needles = [struct.pack("<Q", klass) for klass in sorted(klasses)]
-        obj_scan = self._device_scan_regions(gc_regions, klass_needles)
+        klass_needles = {klass: struct.pack("<Q", klass) for klass in klass_names}
+        obj_scan = self._device_scan_regions(gc_regions, list(klass_needles.values()))
         if obj_scan is None:
-            return False
-        candidates = set()
-        for needle in klass_needles:
+            return None
+        objects = {name: set() for name in class_names}
+        for klass, needle in klass_needles.items():
             for obj in obj_scan.get(needle, []):
-                if obj & 7:
-                    continue
-                d = self._read(obj, BC_REAL_PLAY_TIME + 4)
-                if not d:
-                    continue
-                state = struct.unpack_from("<i", d, BC_STATE)[0]
-                speed = struct.unpack_from("<i", d, BC_SPEED_LEVEL)[0]
-                play_time = struct.unpack_from("<f", d, BC_REAL_PLAY_TIME)[0]
-                if (state in (1, 2, 3) and 0 <= speed <= 8
-                        and 0.0 <= play_time < 100000.0):
-                    candidates.add(obj)
-        self._status(f"  klass {len(klasses)} 个, BC 对象候选 {len(candidates)} 个 "
+                if not (obj & 7):
+                    objects[klass_names[klass]].add(obj)
+        counts = ", ".join(f"{name}={len(objects[name])}" for name in class_names)
+        self._status(f"  klass {len(klass_names)} 个, 对象命中 {counts} "
                      f"({time.time() - t0:.1f}s)")
-        return self._bind_battle_controller_candidates(candidates)
+        return objects
+
+    def _battle_controller_candidates(self, objects):
+        """用战斗标量指纹过滤 klass 指针命中的 BattleController 对象。"""
+        candidates = set()
+        for obj in objects:
+            d = self._read(obj, BC_REAL_PLAY_TIME + 4)
+            if not d:
+                continue
+            state = struct.unpack_from("<i", d, BC_STATE)[0]
+            speed = struct.unpack_from("<i", d, BC_SPEED_LEVEL)[0]
+            play_time = struct.unpack_from("<f", d, BC_REAL_PLAY_TIME)[0]
+            if (state in (1, 2, 3) and 0 <= speed <= 8
+                    and 0.0 <= play_time < 100000.0):
+                candidates.add(obj)
+        return candidates
+
+    def _rank_live_battle_controllers(self, candidates):
+        state_rank = {2: 0, 1: 1, 3: 2}
+        ranked = []
+        for bc in set(candidates):
+            cached_ptr = self._ptr(bc + UNITY_CACHED_PTR)
+            if not self.mc.is_ptr(cached_ptr):
+                continue
+            state = self._i32(bc + BC_STATE)
+            ranked.append((state_rank.get(state, 9), bc))
+        ranked.sort()
+        return [bc for _rank, bc in ranked]
+
+    def _level_data_id(self, level_data):
+        if not self.mc.is_ptr(level_data) or self._klass_name(level_data) != "LevelData":
+            return ""
+        level_id = self._read_string(self._ptr(level_data + LEVEL_DATA_LEVEL_ID))
+        return level_id if level_id and LEVEL_ID_RE.match(level_id) else ""
+
+    def _read_stage_info_candidate(self, battle_in_out):
+        """解析一个 BattleInOut.input.stageInfo，并用其 LevelData 交叉校验。"""
+        base = battle_in_out + BATTLE_IN_OUT_INPUT
+        raw = self._read(base, IN_PARAMS_IS_FAST_BATTLE + 1)
+        if not raw:
+            return None
+        try:
+            level_data = struct.unpack_from("<Q", raw, IN_PARAMS_LEVEL_DATA)[0]
+            string_ptrs = [
+                struct.unpack_from("<Q", raw, IN_PARAMS_STAGE_INFO + xoff)[0]
+                for xoff in (STAGE_INFO_STAGE_ID, STAGE_INFO_CODE, STAGE_INFO_NAME,
+                             STAGE_INFO_LEVEL_ID, STAGE_INFO_ZONE_ID)
+            ]
+            can_replay = bool(raw[IN_PARAMS_STAGE_INFO + STAGE_INFO_CAN_BATTLE_REPLAY])
+            difficulty = struct.unpack_from(
+                "<i", raw, IN_PARAMS_STAGE_INFO + STAGE_INFO_DIFFICULTY)[0]
+            ap_cost = struct.unpack_from(
+                "<i", raw, IN_PARAMS_STAGE_INFO + STAGE_INFO_AP_COST)[0]
+        except (IndexError, struct.error):
+            return None
+        stage_id, code, name, level_id, zone_id = map(self._read_string, string_ptrs)
+        if not (stage_id and STAGE_ID_RE.match(stage_id)):
+            return None
+        if not (level_id and LEVEL_ID_RE.match(level_id)):
+            return None
+        if not (code and code.isprintable() and name and name.isprintable()):
+            return None
+        if zone_id and not STAGE_ID_RE.match(zone_id):
+            return None
+        level_data_id = self._level_data_id(level_data)
+        if not level_data_id or level_data_id != level_id:
+            return None
+        return {
+            "stageId": stage_id,
+            "code": code,
+            "name": name,
+            "levelId": level_id,
+            "zoneId": zone_id,
+            "canBattleReplay": can_replay,
+            "difficulty": difficulty,
+            "apCost": ap_cost,
+            "isPractice": bool(raw[IN_PARAMS_IS_PRACTICE]),
+            "isAutoBattle": bool(raw[IN_PARAMS_IS_AUTO_BATTLE]),
+            "isFastBattle": bool(raw[IN_PARAMS_IS_FAST_BATTLE]),
+            "source": "battleInOut",
+        }, level_data
+
+    def _locate_stage_from_objects(self, battle_in_out_objects, bc_candidates):
+        """从对象命中中选出与当前 BattleController.LevelData 一致的关卡。"""
+        live_bcs = self._rank_live_battle_controllers(bc_candidates)
+        live_levels = []
+        for bc in live_bcs:
+            level_data = self._ptr(bc + BC_LEVEL_DATA)
+            level_id = self._level_data_id(level_data)
+            if level_id:
+                live_levels.append((level_data, level_id))
+        live_level_ptrs = {p for p, _level_id in live_levels}
+        live_level_ids = {level_id for _p, level_id in live_levels}
+
+        decoded = []
+        for obj in battle_in_out_objects:
+            result = self._read_stage_info_candidate(obj)
+            if result is None:
+                continue
+            info, level_data = result
+            rank = (0 if level_data in live_level_ptrs else
+                    1 if info["levelId"] in live_level_ids else 2)
+            decoded.append((rank, obj, info))
+        decoded.sort(key=lambda item: (item[0], item[1]))
+
+        # 有 BC 时必须与当前 LevelData 对上，防止读取 GC 堆中的上一关 BattleInOut。
+        # 没有 BC 时仅在唯一候选的情况下接受，避免多份残留对象之间猜测。
+        if decoded and ((live_levels and decoded[0][0] <= 1)
+                        or (not live_levels and len(decoded) == 1)):
+            _rank, obj, info = decoded[0]
+            self._battle_in_out_addr = obj
+            self._publish_stage_info(info)
+            self._status(f"  关卡 {info['code']} {info['name']} "
+                         f"({info['stageId']})")
+            return True
+
+        # 降级路径只报告明确读到的 levelId，不推导 stageId；同一 levelId 可能对应
+        # 普通/突袭等多个 stageId，猜测会产生错误的关卡身份。
+        if live_levels:
+            self._publish_stage_info({
+                "stageId": "",
+                "code": "",
+                "name": "",
+                "levelId": live_levels[0][1],
+                "zoneId": "",
+                "source": "battleController.levelData",
+            })
+            self._status(f"  仅定位到 levelId={live_levels[0][1]} (关卡详情降级)")
+        else:
+            self._status("  未找到可确认属于当前战斗的关卡信息")
+        return False
+
+    def _locate_via_device_class_scan(self) -> bool:
+        """快速主路径：阶段 1 产出关卡信息，阶段 2 再绑定操作日志。"""
+        objects = self._scan_class_objects(("BattleInOut", "BattleController"))
+        if objects is None:
+            return False
+        bc_candidates = self._battle_controller_candidates(objects["BattleController"])
+        self._status(f"  BattleController 标量候选 {len(bc_candidates)} 个")
+
+        self._status("[阶段 1/2] 解析当前关卡信息 ...")
+        self._locate_stage_from_objects(objects["BattleInOut"], bc_candidates)
+
+        self._status("[阶段 2/2] 定位关卡内操作记录 ...")
+        return self._bind_battle_controller_candidates(bc_candidates)
 
     # ---------------- 定位流程 ----------------
 
     def locate(self) -> bool:
-        """全自动定位: 返回 True 表示找到实时日志链 (和/或代理序列)。"""
+        """两阶段定位。
+
+        阶段 1 先发布关卡信息（可通过 set_stage_callback 实时接收），阶段 2 再
+        定位 BattleLogger / ReplayController。返回值保持兼容：True 表示操作链可用。
+        """
         self._bc_addr = self._logger_addr = self._logs_list_addr = 0
         self._replay_addr = self._journal_logs_list_addr = 0
         self._squad_list_addr = self._journal_squad_list_addr = 0
         self._journal_meta = {}
+        self._battle_in_out_addr = 0
+        self._stage_info = {}
 
         try:
             self.mc.reload_maps()
@@ -512,7 +711,8 @@ class DeployTrackerReader:
 
         # 当前 BattleController 是零日志和有日志场景共同的可靠根节点。优先走这条链，
         # 避免当前战斗尚无操作时被 GC 堆中上一局遗留的 LogItem/Logger 误导。
-        self._status("优先按 BattleController 定位当前 BattleLogger ...")
+        self._status("[阶段 1/2] 从当前 BattleController 读取关卡 levelId (降级路径) ...")
+        self._status("[阶段 2/2] 优先按 BattleController 定位当前 BattleLogger ...")
         if self._locate_via_battle_controller(snap):
             snap.discard()
             return True
@@ -773,6 +973,8 @@ class DeployTrackerReader:
         if not bc_list:
             self._status("  未找到 BattleController (不在关卡中?)")
             return False
+        if not self._stage_info:
+            self._locate_stage_from_objects((), bc_list)
         return self._bind_battle_controller_candidates(bc_list)
 
     def _resolve_replay_controller(self):
@@ -820,7 +1022,28 @@ class DeployTrackerReader:
                     break
             self._journal_squad_list_addr = self._find_squad_list(p, 0x40, 0x70)
             self._journal_meta = self._read_journal_meta(p)
+            self._merge_stage_from_journal()
             return
+
+    def _merge_stage_from_journal(self):
+        """代理序列 metadata 只补缺失字段，不覆盖 BattleInOut 的精确信息。"""
+        stage_id = self._journal_meta.get("stageId", "")
+        level_id = self._journal_meta.get("levelId", "")
+        if not (stage_id or level_id):
+            return
+        info = dict(self._stage_info)
+        changed = False
+        for key, value in (("stageId", stage_id), ("levelId", level_id)):
+            if value and not info.get(key):
+                info[key] = value
+                changed = True
+        if not info.get("source"):
+            info["source"] = "journal"
+            changed = True
+        elif changed and "journal" not in info["source"]:
+            info["source"] += "+journal"
+        if changed:
+            self._publish_stage_info(info)
 
     def _snap_find_refs(self, snap, targets, back):
         """在快照中找指向 targets 中任一地址的 8 字节引用。
@@ -923,7 +1146,7 @@ class DeployTrackerReader:
         # levelId @ +0x20 / stageId @ +0x28 (相对 metadata 基址); 校验失败则小范围搜索
         level_id = self._read_string(self._ptr(base + 0x20))
         stage_id = self._read_string(self._ptr(base + 0x28))
-        if not (level_id and STAGE_ID_RE.match(level_id)):
+        if not (level_id and LEVEL_ID_RE.match(level_id)):
             level_id = ""
         if not (stage_id and STAGE_ID_RE.match(stage_id)):
             stage_id = ""
@@ -1123,6 +1346,10 @@ class DeployTrackerReader:
             return squad
         return self._read_squad(self._squad_list_addr)
 
+    def get_stage_info(self):
+        """返回阶段 1 已定位的关卡信息副本，适合后端直接序列化。"""
+        return dict(self._stage_info)
+
     def get_battle_state(self):
         """BattleController 状态: state/speedLevel/playTime。"""
         if not self._bc_addr:
@@ -1161,13 +1388,23 @@ class DeployTrackerReader:
             if not ev["charName"]:
                 ev["charName"] = (inst_names.get(ev["uniqueId"])
                                   or id_names.get(ev["charId"], ""))
+        stage = self.get_stage_info()
+        stage_id = stage.get("stageId") or self._journal_meta.get("stageId", "")
+        level_id = stage.get("levelId") or self._journal_meta.get("levelId", "")
         return {
             "located": bool(self._logs_list_addr or self._journal_logs_list_addr),
+            "stageLocated": bool(stage_id or level_id),
             "battle": self.get_battle_state(),
             "battleActive": self.is_battle_active(),
-            "source": "journal" if journal else ("live" if live else ""),
-            "stageId": self._journal_meta.get("stageId", ""),
-            "levelId": self._journal_meta.get("levelId", ""),
+            "source": ("journal" if journal else
+                       ("live" if self._logs_list_addr else "")),
+            # 保留 stageId / levelId 顶层字段，兼容旧调用方；新代码优先使用 stage。
+            "stageId": stage_id,
+            "levelId": level_id,
+            "stageCode": stage.get("code", ""),
+            "stageName": stage.get("name", ""),
+            "zoneId": stage.get("zoneId", ""),
+            "stage": stage,
             "journalMeta": self._journal_meta,
             "squad": squad,
             "events": live,

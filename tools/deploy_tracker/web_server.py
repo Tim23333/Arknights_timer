@@ -43,6 +43,7 @@ class TrackerService:
         self._reader = None
         self.process_name = ""
         self.message = "等待模拟器/游戏进程 ..."
+        self._stage_snapshot = {}
         self._scanning = False
         self._stop = False
         self._last_ensure = 0.0
@@ -59,6 +60,8 @@ class TrackerService:
 
     def stop(self):
         self._stop = True
+        if self._reader is not None:
+            self._reader.close()
 
     def _tick(self):
         with self._lock:
@@ -94,19 +97,29 @@ class TrackerService:
         self._mc = mc
         self.process_name = f"{mc.package} (pid {pid})"
         self._reader = DeployTrackerReader(mc)
+        self._reader.set_stage_callback(self._on_stage)
         self.message = "已连接游戏进程, 定位中 ..."
         self.start_scan()
+
+    def _on_stage(self, info):
+        """扫描线程的阶段 1 回调；此时 API 不触碰尚在扫描的内存通道。"""
+        self._stage_snapshot = dict(info or {})
+        stage = self._stage_snapshot
+        label = " ".join(x for x in (stage.get("code"), stage.get("name")) if x)
+        self.message = f"已识别关卡 {label or stage.get('levelId', '')}, 正在定位操作记录 ..."
 
     def start_scan(self):
         """后台触发一次定位。"""
         if self._reader is None or self._scanning:
             return False
         self._scanning = True
+        self._stage_snapshot = {}
+        self.message = "阶段 1/2: 正在扫描关卡信息 ..."
 
         def task():
             try:
-                with self._lock:
-                    ok = self._reader.locate()
+                # locate 扫描期间 snapshot() 返回阶段缓存，不并发使用同一 TCP 内存通道。
+                ok = self._reader.locate()
                 self.message = ("定位成功, 实时读取中" if ok
                                 else "定位失败 — 请确认已进入作战关卡后点「重新定位」")
             except Exception as exc:
@@ -129,6 +142,19 @@ class TrackerService:
                 "message": self.message,
             }
             if self._reader is None:
+                return base
+            if self._scanning:
+                stage = dict(self._stage_snapshot)
+                base.update({
+                    "located": False,
+                    "stageLocated": bool(stage.get("stageId") or stage.get("levelId")),
+                    "stageId": stage.get("stageId", ""),
+                    "levelId": stage.get("levelId", ""),
+                    "stageCode": stage.get("code", ""),
+                    "stageName": stage.get("name", ""),
+                    "zoneId": stage.get("zoneId", ""),
+                    "stage": stage,
+                })
                 return base
             try:
                 state = self._reader.get_state()
@@ -181,6 +207,7 @@ class ApiHandler(BaseHTTPRequestHandler):
             payload = {
                 "stageId": snap.get("stageId", ""),
                 "levelId": snap.get("levelId", ""),
+                "stage": snap.get("stage", {}),
                 "source": snap.get("source", ""),
                 "exportTime": time.strftime("%Y-%m-%d %H:%M:%S"),
                 "journalMeta": snap.get("journalMeta", {}),
