@@ -207,8 +207,8 @@ RNG_PREDICT_LEN = 30    # 未来预测默认发数 (界面可改, 1-500)
 RNG_HISTORY_LEN = 18    # 最近消耗展示条数
 RNG_UI_MS = 150         # 快照刷新间隔 (服务自带 5ms 轮询线程, UI 只读快照)
 
-DEPLOY_COLS = ['时间', '操作', '干员', '朝向', '位置', '附加信息']
-DEPLOY_COL_WIDTHS = [80, 60, 120, 50, 80, 120]
+DEPLOY_COLS = ['时间', '逻辑帧', '操作', '干员', '朝向', '位置', '附加信息']
+DEPLOY_COL_WIDTHS = [80, 75, 60, 120, 50, 80, 120]
 DEPLOY_POLL_SEC = 0.3   # 操作记录轮询间隔 (memsrv 批量读每次仅数 ms)
 DEPLOY_OP_CN = {0: '部署', 1: '撤退', 2: '技能', 3: 'CHEAT'}
 DEPLOY_DIR_CN = {0: '上', 1: '右', 2: '下', 3: '左', 4: '-'}
@@ -1080,6 +1080,7 @@ class CoachWindow(QMainWindow):
             st = reader.get_state()   # 一次性取 编队/代理序列/关卡信息 (顺带补齐干员名)
             self._deploy_squad = st.get('squad') or []
             self._deploy_journal = st.get('journalEvents') or []
+            self._deploy_journal = self._attach_deploy_frames(self._deploy_journal, [])
             self._deploy_stage_info = st.get('stage') or self._deploy_stage_info
             self._deploy_stage = st.get('stageId') or ''
         except Exception:
@@ -1127,15 +1128,96 @@ class CoachWindow(QMainWindow):
             self.lbl_deploy_status.setText(
                 f"监控中{stage}   战斗时间 {battle.get('playTime', 0.0):.1f}s   "
                 f"{battle.get('stateName', '')}   x{battle.get('speedLevel', '?')}")
-        self._deploy_events = events
         if len(events) < self._deploy_seen:   # 列表重建 (新一局), 重渲染
             self.deploy_table.setRowCount(0)
             self._deploy_seen = 0
+            previous = []
+        else:
+            previous = self._deploy_events
+        events = self._attach_deploy_frames(events, previous)
+        self._deploy_events = events
+        self._update_deploy_frame_cells(events)
         new = events[self._deploy_seen:]
         if new:
             self._append_deploy_rows(new)
             self._deploy_seen = len(events)
         self.btn_deploy_export.setEnabled(bool(self._deploy_stage_info or events))
+
+    @staticmethod
+    def _deploy_event_key(ev: dict) -> tuple:
+        return (ev.get('timestamp'), ev.get('uniqueId'), ev.get('op'),
+                ev.get('direction'), ev.get('gridRow'), ev.get('gridCol'),
+                ev.get('extraInfo'))
+
+    def _attach_deploy_frames(self, events: list, previous: list) -> list:
+        """用主计时器的有界时间-帧缓存给事件补帧，并沿用已经确认的结果。"""
+        unresolved = []
+        for i, ev in enumerate(events):
+            old = previous[i] if i < len(previous) else None
+            if (old and self._deploy_event_key(old) == self._deploy_event_key(ev)
+                    and old.get('frame') is not None):
+                for key in ('frame', 'frameSource', 'frameSampleTime', 'frameTimeDelta'):
+                    if key in old:
+                        ev[key] = old[key]
+                continue
+            unresolved.append((ev, ev.get('timestamp')))
+        matches = self._provider.get_frames_for_game_times(
+            [timestamp for _ev, timestamp in unresolved])
+        for (ev, _timestamp), match in zip(unresolved, matches):
+            if match is None:
+                ev['frame'] = None
+                continue
+            ev['frame'] = match['frame']
+            ev['frameSource'] = match['source']
+            ev['frameSampleTime'] = match['sampleTime']
+            ev['frameTimeDelta'] = match['timeDelta']
+        return events
+
+    def _update_deploy_frame_cells(self, events: list) -> None:
+        """定时器稍后配置成功时，补写已经显示但此前没有帧号的行。"""
+        row_count = min(self.deploy_table.rowCount(), len(events))
+        for row in range(row_count):
+            frame = events[row].get('frame')
+            text = f"F{int(frame)}" if frame is not None else '—'
+            item = self.deploy_table.item(row, 1)
+            if item is None:
+                self.deploy_table.setItem(row, 1, QTableWidgetItem(text))
+            elif item.text() != text:
+                item.setText(text)
+
+    @staticmethod
+    def _deploy_pos_label(ev: dict) -> str:
+        """左手 JSON 坐标：gridRow 0=A，gridCol 0=1，例如 (5,8) -> F9。"""
+        try:
+            row = int(ev.get('gridRow'))
+            col = int(ev.get('gridCol'))
+        except (TypeError, ValueError):
+            return ''
+        if not (0 <= row < 26 and col >= 0):
+            return ''
+        return f'{chr(ord("A") + row)}{col + 1}'
+
+    def _build_deploy_export_payload(self, events: list) -> dict:
+        actions = []
+        for ev in events:
+            action = {
+                'action_type': DEPLOY_OP_CN.get(ev.get('op'), ev.get('opName', '')),
+                'frame': int(ev['frame']),
+                'oper': ev.get('charName') or ev.get('charId') or '',
+                'pos': self._deploy_pos_label(ev),
+            }
+            if ev.get('op') == 0 and ev.get('direction') in DEPLOY_DIR_CN:
+                direction = DEPLOY_DIR_CN[ev['direction']]
+                if direction != '-':
+                    action['direction'] = direction
+            actions.append(action)
+        return {
+            'settings': {
+                'map_code': self._deploy_stage_info.get('code', ''),
+                'map_name': self._deploy_stage_info.get('name', ''),
+            },
+            'actions': actions,
+        }
 
     def _append_deploy_rows(self, events: list) -> None:
         # 编队表补充 charId/instId -> 中文名 (覆盖 trap/token 等)
@@ -1151,15 +1233,18 @@ class CoachWindow(QMainWindow):
                     or ev.get('charId') or '')
             row = tbl.rowCount()
             tbl.insertRow(row)
-            tbl.setItem(row, 0, QTableWidgetItem(f"{ev.get('timestamp', 0.0):.2f}"))
+            tbl.setItem(row, 0, QTableWidgetItem(f"{ev.get('timestamp', 0.0):.3f}"))
+            frame = ev.get('frame')
             tbl.setItem(row, 1, QTableWidgetItem(
+                f"F{int(frame)}" if frame is not None else '—'))
+            tbl.setItem(row, 2, QTableWidgetItem(
                 DEPLOY_OP_CN.get(ev.get('op'), ev.get('opName', ''))))
-            tbl.setItem(row, 2, QTableWidgetItem(name))
-            tbl.setItem(row, 3, QTableWidgetItem(
-                DEPLOY_DIR_CN.get(ev.get('direction'), str(ev.get('direction', '')))))
+            tbl.setItem(row, 3, QTableWidgetItem(name))
             tbl.setItem(row, 4, QTableWidgetItem(
+                DEPLOY_DIR_CN.get(ev.get('direction'), str(ev.get('direction', '')))))
+            tbl.setItem(row, 5, QTableWidgetItem(
                 f"({ev.get('gridRow', 0)},{ev.get('gridCol', 0)})"))
-            tbl.setItem(row, 5, QTableWidgetItem(ev.get('extraInfo') or ''))
+            tbl.setItem(row, 6, QTableWidgetItem(ev.get('extraInfo') or ''))
         tbl.scrollToBottom()
 
     def _on_deploy_export(self) -> None:
@@ -1167,24 +1252,24 @@ class CoachWindow(QMainWindow):
         if not events and not self._deploy_stage_info:
             QMessageBox.information(self, '导出', '当前没有可导出的关卡或操作记录')
             return
+        events = self._attach_deploy_frames(events, events)
+        if self._deploy_journal:
+            self._deploy_journal = events
+        else:
+            self._deploy_events = events
+        self._update_deploy_frame_cells(events)
+        missing_frames = sum(ev.get('frame') is None for ev in events)
+        if missing_frames:
+            QMessageBox.warning(
+                self, '无法导出',
+                f'仍有 {missing_frames} 条操作没有匹配到精确逻辑帧。\n'
+                '请先用寻址工具配置游戏时间/帧地址，并等待对应操作发生后再导出。')
+            return
+        payload = self._build_deploy_export_payload(events)
         default = f"deploy_log_{time.strftime('%Y%m%d_%H%M%S')}.json"
         path, _ = QFileDialog.getSaveFileName(self, '导出操作记录', default, 'JSON (*.json)')
         if not path:
             return
-        try:
-            battle = self._deploy_reader.get_battle_state() if self._deploy_reader else {}
-        except Exception:
-            battle = {}
-        payload = {
-            "source": "journal" if self._deploy_journal else "live",
-            "exportTime": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "stageId": self._deploy_stage,
-            "levelId": self._deploy_stage_info.get('levelId', ''),
-            "stage": self._deploy_stage_info,
-            "battle": battle,
-            "squad": self._deploy_squad,
-            "events": events,
-        }
         try:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(payload, f, ensure_ascii=False, indent=2)
@@ -1323,12 +1408,19 @@ class CoachWindow(QMainWindow):
 
     def _tick_slow(self) -> None:
         game = self._provider.get_game_data()
+        timeline = self._provider.get_frame_timeline_stats()
+        if self._deploy_journal and any(
+                ev.get('frame') is None for ev in self._deploy_journal):
+            self._deploy_journal = self._attach_deploy_frames(
+                self._deploy_journal, self._deploy_journal)
+            self._update_deploy_frame_cells(self._deploy_journal)
         lr = game.get("last_refresh")
         self.lbl_game.setText(
             "\n".join(
                 [
                     f"连接: {'是' if game.get('connected') else '否'}  |  已配置地址: {'是' if game.get('configured') else '否'}",
                     f"最近一次刷新: {lr if lr else '—'}",
+                    f"帧映射缓存: {timeline['size']} / {timeline['maxSize']}",
                     f"说明: {game.get('message', '')}",
                 ]
             )

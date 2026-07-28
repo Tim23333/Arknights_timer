@@ -1,3 +1,5 @@
+import struct
+
 import pymem
 import pymem.exception
 
@@ -39,10 +41,11 @@ class AKMemoryReader:
             return None, None
 
         try:
-            # 读取时间 (单精度浮点数)
-            game_time = self.pm.read_float(self.time_address)
-            # 读取帧数 (4字节无符号整数)
-            frame_count = self.pm.read_uint(self.frame_address)
+            # frame 与 time 位于同一连续结构 (相差 0x14)。一次 ReadProcessMemory
+            # 同时取回，避免两次读取恰好跨越逻辑帧而组成不存在的时间/帧配对。
+            raw = self.pm.read_bytes(self.frame_address, 0x18)
+            frame_count = struct.unpack_from("<I", raw, 0)[0]
+            game_time = struct.unpack_from("<f", raw, 0x14)[0]
 
             if 0 <= game_time <= 100000:
                 return game_time, frame_count

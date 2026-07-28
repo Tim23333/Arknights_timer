@@ -1233,7 +1233,10 @@ class DeployTrackerReader:
             extra = strings.get(ext, "") if ext else ""
             inst_id = uid & 0x7FFFFFFF   # 高位是 PlayerSide 标志位
             events.append({
-                "timestamp": round(ts, 3),
+                # 保留 float32 的微秒级十进制精度，主程序会用它匹配
+                # BattleController.s_fixedPlayTimeFloat 对应的逻辑帧缓存。
+                "timestamp": round(ts, 6),
+                "frame": None,
                 "uniqueId": uid,
                 "charInstId": inst_id,
                 "charId": char_id,
