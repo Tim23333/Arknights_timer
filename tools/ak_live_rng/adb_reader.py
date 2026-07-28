@@ -21,6 +21,7 @@ from tools.enemy_health.memcore import MemCore, TcpChannel  # noqa: E402
 
 SRV_MAX = 4 * 1024 * 1024   # memsrv 单请求上限 (memsrv.c MAX_SIZE)
 SCAN_MERGE_MAX = 256 * 1024 * 1024   # 设备侧扫描单调用合并上限 (防单次过久无进度)
+RNG_TCP_PORT = 27272   # RNG 通道独立端口, 与敌人监控 (默认 27271) 的 adb forward 互不干扰
 
 
 class AdbReader:
@@ -45,7 +46,7 @@ class AdbReader:
 
     def _open_channel(self, status=print):
         try:
-            self.chan = TcpChannel(self.mc)
+            self.chan = TcpChannel(self.mc, port=RNG_TCP_PORT)
             self.chan.open()
             self._chan_failed = False
             status("[adb] TCP 通道建立 (%s 模式)" % self.chan.mode)

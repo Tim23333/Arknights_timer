@@ -58,6 +58,16 @@ from app.services.timer_provider import TimerDataProvider
 from tools.enemy_health import EnemyReader, format_skill_cd
 from tools.enemy_health import game_structs as enemy_gs
 
+# tools/ak_live_rng 为扁平模块结构 (无 __init__.py), 将其目录加入 sys.path 按文件导入;
+# 打包时 tools/ 已整体作为数据文件内嵌 (_MEIPASS/tools/ak_live_rng/*.py), 冻结下同样可导入。
+_rng_dir = str(_REPO_ROOT / 'tools' / 'ak_live_rng')
+if _rng_dir not in sys.path:
+    sys.path.insert(0, _rng_dir)
+try:
+    from rng_service import RngService
+except Exception:   # 模块缺失时禁用随机数区块, 不影响其他功能
+    RngService = None
+
 # 测试版检测: build_exe.py --test 打包时内嵌 TEST_BUILD 标记文件
 # (开发调试可设环境变量 AK_TEST_BUILD=1)。测试版带控制台窗口,
 # 全部内部日志实时输出到控制台, 用于现场排查 (如换机扫描失败)。
@@ -80,6 +90,7 @@ ENEMY_RENDER_SEC = 0.016   # 表格渲染节流 (60fps)
 
 ENEMY_COLS = ['#', '名称', '编号', '敌人ID', '血量', '坐标',
               '攻击', '防御', '法抗', '移速', '攻速', '技能 CD', '状态']
+ENEMY_COL_WIDTHS = [36, 130, 60, 150, 170, 110, 70, 70, 60, 60, 60, 140, 60]   # 初始列宽
 ENEMY_STATE_NAMES = {0: 'NONE', 1: 'INITED', 2: '战斗中', 3: '已结束'}
 
 # 支持自定义小数位的数值列 (key, 显示名)
@@ -190,6 +201,35 @@ class EnemyPollWorker(QThread):
                 winmm.timeEndPeriod(1)
 
 
+RNG_PREDICT_LEN = 30    # 未来预测默认发数 (界面可改, 1-500)
+RNG_HISTORY_LEN = 18    # 最近消耗展示条数
+RNG_UI_MS = 150         # 快照刷新间隔 (服务自带 5ms 轮询线程, UI 只读快照)
+
+
+class RngScanWorker(QThread):
+    """后台线程: attach + 扫描定位 RNG 引擎 (慢, 不能阻塞 UI)"""
+    log = Signal(str)
+    done = Signal(object, str)   # (RngService|None, 错误消息)
+
+    def __init__(self, adb_path: str) -> None:
+        super().__init__()
+        self.adb_path = adb_path
+
+    def run(self) -> None:
+        try:
+            svc = RngService(backend='adb', adb_path=self.adb_path,
+                             on_status=lambda m: (self.log.emit(str(m)), _tlog('[RNG]', m)))
+            if not svc.attach():
+                self.done.emit(None, 'adb 连接失败 (游戏未运行?)')
+                return
+            if not svc.locate():
+                self.done.emit(None, '定位失败: 请确认已进入战斗关卡')
+                return
+            self.done.emit(svc, '')
+        except Exception as e:
+            self.done.emit(None, f'出错: {e}')
+
+
 class CoachWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
@@ -218,6 +258,12 @@ class CoachWindow(QMainWindow):
         self._frame_txt: str = ''      # ms/帧 显示 (0.5s 节流, 避免高频抖动)
         self._frame_ts: float = 0.0
         self._widths_fitted: bool = False   # 首次有数据时已做过列宽自适应
+
+        # 随机数追踪 (ak_live_rng): 扫描定位后服务自带轮询线程, UI 定时读快照
+        self._rng_svc = None               # RngService | None
+        self._rng_worker: RngScanWorker | None = None
+        self._rng_timer = QTimer(self)
+        self._rng_timer.timeout.connect(self._on_rng_tick)
 
         self._build_ui()
         self._start_hook_server()
@@ -373,11 +419,80 @@ class CoachWindow(QMainWindow):
         self.enemy_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.enemy_table.setAlternatingRowColors(True)
         hdr = self.enemy_table.horizontalHeader()
-        hdr.setSectionResizeMode(QHeaderView.Interactive)   # 列宽可拖动调整
-        hdr.setSectionResizeMode(1, QHeaderView.Stretch)   # 名称
-        hdr.setSectionResizeMode(4, QHeaderView.Stretch)   # 血量条
+        hdr.setSectionResizeMode(QHeaderView.Interactive)   # 所有列宽均可拖动调整
+        hdr.setStretchLastSection(True)   # 末列 (状态) 自动填满剩余宽度
+        for i, w in enumerate(ENEMY_COL_WIDTHS):
+            self.enemy_table.setColumnWidth(i, w)
         l_table.addWidget(self.enemy_table)
         main.addWidget(box_table, 1)
+
+        # ---- 随机数追踪 (tools/ak_live_rng) ----
+        box_rng = QGroupBox("随机数追踪（tools/ak_live_rng）")
+        l_rng = QVBoxLayout(box_rng)
+        row_rng = QHBoxLayout()
+        self.btn_rng_scan = QPushButton("扫描随机数")
+        self.btn_rng_scan.setToolTip(
+            "进关卡后点击: 扫描定位随机数引擎并实时监控 (首次约 15-30 秒, 之后走缓存秒级)")
+        self.btn_rng_scan.clicked.connect(self._on_rng_scan)
+        self._style_primary_button(self.btn_rng_scan)
+        self.btn_rng_stop = QPushButton("停止")
+        self.btn_rng_stop.setEnabled(False)
+        self.btn_rng_stop.clicked.connect(self._on_rng_stop)
+        self._style_muted_button(self.btn_rng_stop)
+        row_rng.addWidget(self.btn_rng_scan)
+        row_rng.addWidget(self.btn_rng_stop)
+        row_rng.addWidget(QLabel("预测数:"))
+        self.rng_pred_spin = QSpinBox()
+        self.rng_pred_spin.setRange(1, 500)
+        self.rng_pred_spin.setValue(RNG_PREDICT_LEN)
+        self.rng_pred_spin.setSuffix(" 发")
+        self.rng_pred_spin.setToolTip("未来预测的随机数个数 (1-500)")
+        row_rng.addWidget(self.rng_pred_spin)
+        self.lbl_rng_status = QLabel("未扫描")
+        self.lbl_rng_status.setStyleSheet("color:#9a9a9a;")
+        row_rng.addWidget(self.lbl_rng_status, 1)
+        l_rng.addLayout(row_rng)
+        self.lbl_rng_info = QLabel("—")
+        self.lbl_rng_info.setStyleSheet("color:#e8e8e8; font-family:Consolas,monospace;")
+        l_rng.addWidget(self.lbl_rng_info)
+        row_rng_tables = QHBoxLayout()
+        pred_box = QVBoxLayout()
+        lbl_pred = QLabel("未来预测 (下一发在最上)")
+        lbl_pred.setStyleSheet("color:#9a9a9a;")
+        pred_box.addWidget(lbl_pred)
+        self.rng_pred_table = QTableWidget(0, 2)
+        self.rng_pred_table.setHorizontalHeaderLabels(['第几发', '值'])
+        self.rng_pred_table.verticalHeader().setVisible(False)
+        self.rng_pred_table.setSelectionMode(QTableWidget.NoSelection)
+        self.rng_pred_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.rng_pred_table.setAlternatingRowColors(True)
+        self.rng_pred_table.setColumnWidth(0, 70)
+        self.rng_pred_table.setColumnWidth(1, 110)
+        self.rng_pred_table.setMinimumWidth(200)
+        pred_box.addWidget(self.rng_pred_table)
+        row_rng_tables.addLayout(pred_box)
+        hist_box = QVBoxLayout()
+        lbl_hist = QLabel("最近消耗 (旧→新)")
+        lbl_hist.setStyleSheet("color:#9a9a9a;")
+        hist_box.addWidget(lbl_hist)
+        self.rng_hist_table = QTableWidget(0, 3)
+        self.rng_hist_table.setHorizontalHeaderLabels(['序号', '值', '原始值'])
+        self.rng_hist_table.verticalHeader().setVisible(False)
+        self.rng_hist_table.setSelectionMode(QTableWidget.NoSelection)
+        self.rng_hist_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.rng_hist_table.setAlternatingRowColors(True)
+        self.rng_hist_table.setColumnWidth(0, 80)
+        self.rng_hist_table.setColumnWidth(1, 110)
+        self.rng_hist_table.setColumnWidth(2, 120)
+        self.rng_hist_table.setMinimumWidth(330)
+        hist_box.addWidget(self.rng_hist_table)
+        row_rng_tables.addLayout(hist_box)
+        row_rng_tables.addStretch(1)
+        l_rng.addLayout(row_rng_tables)
+        if RngService is None:
+            self.btn_rng_scan.setEnabled(False)
+            self.lbl_rng_status.setText("模块缺失 (tools/ak_live_rng)")
+        main.addWidget(box_rng)
 
         app = QApplication.instance()
         if app:
@@ -588,6 +703,13 @@ class CoachWindow(QMainWindow):
         self._stop_event.set()
         self._stop_enemy_poll()
         self._enemy_reader.close()
+        self._rng_timer.stop()
+        if self._rng_svc is not None:
+            try:
+                self._rng_svc.stop()
+            except Exception:
+                pass
+            self._rng_svc = None
         if self._ws_clients:
             for ws in list(self._ws_clients):
                 try:
@@ -718,6 +840,78 @@ class CoachWindow(QMainWindow):
             self._enemy_poll.wait(3000)
             self._enemy_poll = None
         self.btn_enemy_stop.setEnabled(False)
+
+    # ================= 随机数追踪 (ak_live_rng) =================
+
+    def _on_rng_scan(self) -> None:
+        if RngService is None:
+            return
+        if not self._ensure_adb():
+            self.lbl_rng_status.setText('未选择 adb.exe, 取消扫描')
+            return
+        self._on_rng_stop()   # 停掉上一轮监控
+        self.btn_rng_scan.setEnabled(False)
+        self.btn_rng_stop.setEnabled(True)
+        self.lbl_rng_status.setText('扫描定位中 ...')
+        self._rng_worker = RngScanWorker(self._enemy_reader.mc.adb_path)
+        self._rng_worker.log.connect(
+            lambda m: self.lbl_rng_status.setText(str(m).strip() or self.lbl_rng_status.text()))
+        self._rng_worker.done.connect(self._on_rng_scan_done)
+        self._rng_worker.start()
+
+    def _on_rng_scan_done(self, svc, msg: str) -> None:
+        self.btn_rng_scan.setEnabled(True)
+        if svc is None:
+            self.lbl_rng_status.setText(msg)
+            self.btn_rng_stop.setEnabled(False)
+            return
+        self._rng_svc = svc
+        svc.select_role('imp')   # 只展示关键随机 (战斗判定), 表现随机不在界面出现
+        svc.start()
+        self._rng_timer.start(RNG_UI_MS)
+        self.lbl_rng_status.setText('监控中')
+        self.btn_rng_stop.setEnabled(True)
+
+    def _on_rng_stop(self) -> None:
+        self._rng_timer.stop()
+        if self._rng_svc is not None:
+            try:
+                self._rng_svc.stop()
+            except Exception:
+                pass
+            self._rng_svc = None
+        self.btn_rng_stop.setEnabled(False)
+        self.btn_rng_scan.setEnabled(RngService is not None)
+        self.lbl_rng_status.setText('已停止')
+
+    def _on_rng_tick(self) -> None:
+        svc = self._rng_svc
+        if svc is None:
+            return
+        try:
+            snap = svc.snapshot(RNG_HISTORY_LEN, self.rng_pred_spin.value())
+        except Exception:
+            return
+        sel = snap.get('selected')
+        if sel is None:
+            self.lbl_rng_info.setText(str(snap.get('status') or '—'))
+            return
+        self.lbl_rng_info.setText(
+            f"游标 #{sel.get('cursor', 0)}   已消耗 {sel.get('total', 0)} 发   "
+            f"{sel.get('rate', 0.0):.1f} 发/秒   [{sel.get('label', '')}]")
+        preds = sel.get('predictions') or []
+        self.rng_pred_table.setRowCount(len(preds))
+        for i, p in enumerate(preds):
+            self.rng_pred_table.setItem(i, 0, QTableWidgetItem(str(p.get('n', i + 1))))
+            self.rng_pred_table.setItem(i, 1, QTableWidgetItem(f"{p.get('frac', 0.0):.4f}"))
+        hist = sel.get('history') or []
+        self.rng_hist_table.setRowCount(len(hist))
+        for i, h in enumerate(hist):
+            items = [QTableWidgetItem(str(h.get('seq', 0))),
+                     QTableWidgetItem(f"{h.get('frac', 0.0):.4f}"),
+                     QTableWidgetItem(f"0x{h.get('raw', 0) & 0xFFFFFFFF:08X}")]
+            for c, it in enumerate(items):
+                self.rng_hist_table.setItem(i, c, it)
 
     def _on_enemy_snapshot(self, snap: dict) -> None:
         if TEST_BUILD:   # 轮询错误 (数据链失效/重建) 去重后输出控制台

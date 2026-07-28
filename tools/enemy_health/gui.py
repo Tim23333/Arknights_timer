@@ -126,6 +126,7 @@ class PollWorker(QThread):
 class MainWindow(QMainWindow):
     COLS = ['#', '名称', '编号', '敌人ID', '血量', '坐标', '攻击', '防御', '法抗', '移速',
             '攻速', '技能 CD', '状态']
+    COL_WIDTHS = [36, 130, 60, 150, 170, 110, 70, 70, 60, 60, 60, 140, 60]   # 初始列宽
 
     def __init__(self):
         super().__init__()
@@ -197,9 +198,10 @@ class MainWindow(QMainWindow):
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.table.setSelectionMode(QTableWidget.NoSelection)
         hdr = self.table.horizontalHeader()
-        hdr.setSectionResizeMode(QHeaderView.Interactive)   # 列宽可拖动调整
-        hdr.setSectionResizeMode(1, QHeaderView.Stretch)   # 名称
-        hdr.setSectionResizeMode(4, QHeaderView.Stretch)   # 血量条
+        hdr.setSectionResizeMode(QHeaderView.Interactive)   # 所有列宽均可拖动调整
+        hdr.setStretchLastSection(True)   # 末列 (状态) 自动填满剩余宽度
+        for i, w in enumerate(self.COL_WIDTHS):
+            self.table.setColumnWidth(i, w)
 
         # ---------- 日志 ----------
         self.log_view = QPlainTextEdit()

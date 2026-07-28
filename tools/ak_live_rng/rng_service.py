@@ -38,8 +38,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import memscan
 from tracker import EngineTracker
 
-CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                          "ak_rng_cache.pkl")   # 定位地址缓存
+if getattr(sys, "frozen", False):
+    # 打包环境: 缓存放 exe 同目录 (__file__ 指向 _MEIPASS 临时目录, 每次启动即丢失)
+    CACHE_FILE = os.path.join(os.path.dirname(sys.executable), "ak_rng_cache.pkl")
+else:
+    CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                              "ak_rng_cache.pkl")   # 定位地址缓存
 RESCAN_DELAY = 5.0     # 未定位到引擎时的自动重试间隔 (秒)
 WATCH_INTERVAL = 2.0   # 静态槽看门狗周期 (秒): 检测新一局对象更换
 

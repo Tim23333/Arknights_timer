@@ -423,6 +423,20 @@ python test_ak_live_rng.py               # 离线自测 (53 项, 无需模拟器
 都只是消费 `svc.snapshot()` 的薄壳；其他程序复用时 `from rng_service import
 RngService` 即可，注入自己的 reader（实现 read/regions）还能离线嵌入。
 
+**已集成进主程序**（`backend/desktop_app.py`「随机数追踪」区块）：点「扫描随机数」
+后台 attach+locate 后 `svc.select_role('imp')`（只展示关键随机）+ `svc.start()`，
+UI 定时器 150ms 读 `snapshot(18, 预测数)` 渲染预测/消耗双表（预测数界面可调 1-500）。集成要点：
+
+- **端口隔离**：RNG 的 adb 通道用 `TcpChannel(mc, port=27272)`（`adb_reader.RNG_TCP_PORT`），
+  与敌人监控默认 27271 互不干扰；`TcpChannel(port=...)` 为可参数化端口，
+  半死恢复时只杀本端口 nc（`_kill_own_nc`），`_push_memsrv` 二进制变更仍会
+  全杀重建（双通道各自自愈）。
+- **缓存路径冻结兼容**：`rng_service.CACHE_FILE` 在 frozen 下指向 exe 同目录
+  （否则指向 _MEIPASS 临时目录每次启动丢失）。
+- **导入方式**：ak_live_rng 是扁平模块（无包），desktop_app 将
+  `tools/ak_live_rng` 加入 sys.path 后 `from rng_service import RngService`；
+  打包时 tools/ 整体作数据文件内嵌，无需额外 hidden-import。
+
 逆向结论（Ark_data 解包 + 联网考证）：
 
 - **战斗 RNG = System.Random（mono mscorlib, Knuth 减法门，56×int32 种子）**，

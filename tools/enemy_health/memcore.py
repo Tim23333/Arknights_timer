@@ -132,16 +132,17 @@ class TcpChannel:
 
     任何读取异常都会关闭 socket 并抛出, 由调用方回退慢速 read()。"""
 
-    PORT = 27271
+    PORT = 27271   # 默认端口; 多通道共存时 (如敌人监控 27271 + RNG 27272) 用 port 参数隔离
     SRV_DIR = '/data/local/tmp'
     BANNER_V1 = b"AKMSRV1\n"   # 仅读取
     BANNER_V2 = b"AKMSRV2\n"   # 读取 + 设备侧扫描 (memsrv.c v2)
     BANNER = BANNER_V1          # 兼容旧引用
     SCAN_MAGIC = 0xFFFFFFFFFFFFFFFF
 
-    def __init__(self, mc: 'MemCore', read_timeout: float = 5.0):
+    def __init__(self, mc: 'MemCore', read_timeout: float = 5.0, port: int = None):
         self.mc = mc
         self.read_timeout = read_timeout
+        self.port = port or self.PORT
         self.sock: Optional[socket.socket] = None
         self.mode: Optional[str] = None   # 'srv' | 'sh'
         self.srv_version = 0              # 1=读取, 2=读取+扫描
@@ -178,7 +179,7 @@ class TcpChannel:
     def _server_up(self) -> bool:
         """端口可连 (注意: nc 活着但服务程序 exec 失败的半死状态也返回 True)"""
         try:
-            socket.create_connection(("127.0.0.1", self.PORT), timeout=2).close()
+            socket.create_connection(("127.0.0.1", self.port), timeout=2).close()
             return True
         except OSError:
             return False
@@ -186,16 +187,24 @@ class TcpChannel:
     def _start_service(self):
         """启动设备侧 nc -L 服务 (memsrv 优先, 否则 sh; setsid 防 adb 会话退出时被杀)"""
         if self._push_memsrv():
-            self.mc.shell(f"setsid nc -L -p {self.PORT} "
+            self.mc.shell(f"setsid nc -L -p {self.port} "
                           f"{self.SRV_DIR}/memsrv.sh </dev/null >/dev/null 2>&1 &")
         else:
-            self.mc.shell(f"setsid nc -L -p {self.PORT} sh </dev/null >/dev/null 2>&1 &")
+            self.mc.shell(f"setsid nc -L -p {self.port} sh </dev/null >/dev/null 2>&1 &")
         time.sleep(0.5)
+
+    def _kill_own_nc(self):
+        """只杀本端口的 nc -L 进程 (其他端口的共存服务不受影响)"""
+        self.mc.shell(
+            f"for p in $(pidof nc); do "
+            f"tr '\\0' ' ' </proc/$p/cmdline 2>/dev/null | "
+            f"grep -q -- '-p {self.port}' && kill $p 2>/dev/null; done",
+            timeout=10)
 
     def _ensure_server(self):
         """启动设备侧服务并建立 adb forward (幂等; 5555 是 adbd 占用, 避开)。
         每次连接都先查版本: 二进制变更时 _push_memsrv 会杀旧服务, 此处负责重启。"""
-        self.mc.adb("forward", f"tcp:{self.PORT}", f"tcp:{self.PORT}")
+        self.mc.adb("forward", f"tcp:{self.port}", f"tcp:{self.port}")
         if not self._push_memsrv():
             # 无本地二进制: 只能依赖现有服务或 sh 兜底
             if self._server_up():
@@ -220,9 +229,9 @@ class TcpChannel:
             return
         except (IOError, OSError):
             self.close()
-        # 半死状态 (端口可连但协议不通, 如服务程序 exec 失败): 杀掉 nc 强制重启再试
+        # 半死状态 (端口可连但协议不通, 如服务程序 exec 失败): 杀掉本端口 nc 强制重启再试
         try:
-            self.mc.shell("kill $(pidof nc) 2>/dev/null", timeout=10)
+            self._kill_own_nc()
         except Exception:
             pass
         time.sleep(0.3)
@@ -230,7 +239,7 @@ class TcpChannel:
         self._connect_once()   # 再失败自然抛出, 由调用方回退慢速 read()
 
     def _connect_once(self):
-        self.sock = socket.create_connection(("127.0.0.1", self.PORT), timeout=10)
+        self.sock = socket.create_connection(("127.0.0.1", self.port), timeout=10)
         self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         # 模式探测: memsrv 会主动发 8 字节横幅; sh 不会主动发任何字节
         self.sock.settimeout(1.0)
@@ -261,12 +270,12 @@ class TcpChannel:
         if not getattr(self.mc, '_memsrv_upgrade_tried', False) and self._push_memsrv():
             self.mc._memsrv_upgrade_tried = True
             self.close()
-            self.mc.shell("kill $(pidof nc) 2>/dev/null")
+            self._kill_own_nc()
             time.sleep(0.3)
-            self.mc.shell(f"setsid nc -L -p {self.PORT} "
+            self.mc.shell(f"setsid nc -L -p {self.port} "
                           f"{self.SRV_DIR}/memsrv.sh </dev/null >/dev/null 2>&1 &")
             time.sleep(0.5)
-            self.sock = socket.create_connection(("127.0.0.1", self.PORT), timeout=10)
+            self.sock = socket.create_connection(("127.0.0.1", self.port), timeout=10)
             self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             self.sock.settimeout(self.read_timeout)
             b = self._read_exact(8)
