@@ -16,6 +16,7 @@ from collections import deque
 from rng_engines import DotNetRandom, MT19937, MBIG, recover_advanced
 
 MT_MOD = 1 << 32
+READ_FAIL_LIMIT = 400      # 连续读失败上限 (~2s @5ms): 超限按状态丢失处理
 
 
 class EngineTracker:
@@ -30,6 +31,7 @@ class EngineTracker:
         self.call_times = deque(maxlen=4000)   # (ts, count)
         self.lock = threading.Lock()
         self.last_poll_ok = 0.0
+        self._none_reads = 0            # 连续读失败计数
 
     # ---------------- 内存状态读取 ----------------
 
@@ -84,7 +86,14 @@ class EngineTracker:
         """返回本次新恢复的输出值列表 [(seq, raw, frac), ...]; 状态丢失返回 None。"""
         observed = self.read_state()
         if observed is None:
+            # 读失败 (对象被释放/映射失效) 与"无消耗"同形; 已建基线后
+            # 连续失败说明引擎对象大概率已死, 按丢失处理触发上层重扫
+            self._none_reads += 1
+            if self._none_reads >= READ_FAIL_LIMIT and self.state is not None:
+                self.status = "lost"
+                return None
             return []
+        self._none_reads = 0
         with self.lock:
             if self.state is None:
                 self.state = observed
@@ -159,6 +168,12 @@ class EngineTracker:
     def snapshot(self, history_len=120, predict_len=16):
         with self.lock:
             hist = list(self.history)[-history_len:] if history_len > 0 else []
+            is_knuth = isinstance(self.state, DotNetRandom)
+            cursor = -1
+            cursor2 = -1
+            if self.state is not None:
+                cursor = self.state.inext if is_knuth else self.state.mti
+                cursor2 = self.state.inextp if is_knuth else -1
         return {
             "id": self.engine["id"],
             "label": self.engine["label"],
@@ -172,8 +187,8 @@ class EngineTracker:
             "total": self.total,
             "rate": self.rate(),
             "activity": self.activity(),
-            "cursor": self.state.inext if isinstance(self.state, DotNetRandom)
-                      else (self.state.mti if self.state else -1),
+            "cursor": cursor,      # knuth=inext / mt=mti (指向下一个随机数的位置)
+            "cursor2": cursor2,    # knuth=inextp (另一游标), mt 为 -1
             "history": hist,
             "predictions": self.predict(predict_len),
         }

@@ -409,13 +409,19 @@ python test_packaged_exe.py
 
 ```bash
 cd tools/ak_live_rng
-python ak_live_rng.py                    # adb 后端 (默认, 免管理员)
+python ak_rng_ui.py                      # tkinter 图形界面 (序列条图/当前值/游标位置)
+python ak_live_rng.py                    # 控制台版: adb 后端 (默认, 免管理员)
 python ak_live_rng.py --backend pymem    # pymem 后端 (读模拟器进程, 需管理员)
 python ak_live_rng.py --engine trivial   # 改看表现随机 (默认 imp=关键随机)
 python ak_live_rng.py --no-cache         # 忽略地址缓存, 强制全量扫描
 python ak_live_rng.py --heuristic        # 静态链外追加启发式兜底 (调试, 会捞到无关 Random)
-python test_ak_live_rng.py               # 离线自测 (算法向量/扫描/追踪/静态链/缓存校验, 无需模拟器)
+python test_ak_live_rng.py               # 离线自测 (53 项, 无需模拟器)
 ```
+
+**功能/展示分离**：`rng_service.RngService` 是可复用的服务层（连接/定位/轮询/
+地址缓存/快照），两个 UI（控制台 `ak_live_rng.py`、tkinter `ak_rng_ui.py`）
+都只是消费 `svc.snapshot()` 的薄壳；其他程序复用时 `from rng_service import
+RngService` 即可，注入自己的 reader（实现 read/regions）还能离线嵌入。
 
 逆向结论（Ark_data 解包 + 联网考证）：
 
@@ -424,6 +430,10 @@ python test_ak_live_rng.py               # 离线自测 (算法向量/扫描/追
   序列复现（PRTS 代理学；贴吧逆向帖 tieba.baidu.com/p/7475697026 确认实现）。
 - 引擎对象即 `BattleController.s_randomImp` / `s_randomTrivial`（dump.cs:317298，
   静态块 +0x30/+0x38），由 `RandomFactory.Create(seed, DEFAULT)` 创建。
+  **为何两条流**：`randomImp`（关键随机）用于影响战局的判定（暴击/闪避/概率天赋
+  技能触发），种子随代理数据保存，代理指挥复现必须逐发一致；`randomTrivial`
+  （表现随机）只驱动特效等外观表现，不进代理。若表现消耗共用同一序列，掉帧/
+  倍速下表现调用次数变化会挤歪关键序列导致代理复现错位，故拆成两条独立流。
 - **游戏自身持有指向 RNG 的指针链**（主定位路径，现网已端到端验证）：
   `Il2CppClass("Torappu.Battle.BattleController")` — name@0x10 / namespaze@0x18 /
   static_fields@0xB8（布局见 il2cpp.h:99-106）→ 静态块 +0x30/+0x38 →
@@ -444,6 +454,11 @@ python test_ak_live_rng.py               # 离线自测 (算法向量/扫描/追
   → 静态字段对。未开战时会捞到几百个无关 System.Random，故默认关闭。
 - 序列还原：轮询完整状态快照，用纯 Python 复刻引擎（rng_engines.py）从上次快照
   向前推演至与观测逐字节一致，两次轮询间的每一次消耗一个不漏；预测同理。
+- **新一局自动检测**：静态链引擎记录带 `watch_addr`（静态槽地址），服务层每 2s
+  反查槽当前指向（`memscan.resolve_engine_obj`，含 wrapper 下钻）——重新开战
+  后槽指向新建对象而旧对象内存原样残留（轮询观测不到变化不会 lost）；另连续
+  ~2s 读失败（对象已释放）也按丢失处理。两者均自动触发重定位；tkinter 界面
+  另有「重新扫描」按钮（`request_rescan(0)`），序号回退自动清空历史列表。
 
 读取后端与性能（MuMu 实测）：
 
@@ -463,4 +478,6 @@ python test_ak_live_rng.py               # 离线自测 (算法向量/扫描/追
 
 文件：`rng_engines.py`（算法复刻）、`memscan.py`（静态链 + 启发式定位）、
 `tracker.py`（轮询/恢复/预测）、`adb_reader.py`（adb 后端封装）、
-`ak_live_rng.py`（控制台主程序）、`test_ak_live_rng.py`（自测，46 项）。
+`rng_service.py`（**可复用服务层**：连接/定位/轮询/缓存/快照）、
+`ak_live_rng.py`（控制台薄壳）、`ak_rng_ui.py`（tkinter 界面薄壳）、
+`test_ak_live_rng.py`（自测，53 项）。

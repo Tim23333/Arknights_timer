@@ -504,6 +504,24 @@ def _mk_engine(engine_id, kind, cls, obj, array, cursor_addr, role, via, wrapper
     }
 
 
+def resolve_engine_obj(reader, slot_addr):
+    """解析静态槽地址 -> 内部 Random 对象地址 (经 BattleRandomWrapper 下钻)。
+
+    槽空/对象非法返回 None。用于新一局检测: 重新开战后静态槽会指向新建的
+    wrapper+引擎对象, 而旧对象内存可能原样残留 (轮询观测不到变化, 不会 lost),
+    必须比对静态槽当前指向才能发现。"""
+    obj = read_u64(reader, slot_addr)
+    if not _is_heap_ptr(obj):
+        return None
+    kc = read_klass(reader, obj)
+    if not kc:
+        return None
+    if kc[1] in WRAPPER_LAYOUTS:
+        inner = read_u64(reader, obj + WRAPPER_LAYOUTS[kc[1]])
+        return inner if _is_heap_ptr(inner) else None
+    return obj
+
+
 def engine_from_random_obj(reader, obj, role, via, engine_id=0, _depth=0):
     """把一个 System.Random 引用解析成引擎记录 (自动识别具体实现类/包装)。"""
     if not _is_heap_ptr(obj):
@@ -586,6 +604,7 @@ def locate_battle_random(reader, status=lambda m: None):
                 e = engine_from_random_obj(reader, obj, role, "static-chain",
                                            engine_id=len(engines))
                 if e:
+                    e["watch_addr"] = static_fields + off   # 静态槽, 新一局检测用
                     seen_obj.add(obj)
                     engines.append(e)
                     status("静态链: s_random%s -> %s obj=%s array=%s" %

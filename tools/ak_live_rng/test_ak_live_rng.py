@@ -7,6 +7,7 @@
 import os
 import struct
 import sys
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -401,6 +402,93 @@ def test_sep31_cursor():
     check("非法间距拒绝", tracker2.poll() == [] and tracker2.status == "init")
 
 
+# ---------------- 8. 服务层 (展示层无关复用接口) ----------------
+
+def test_service():
+    print("== RngService (FakeMem 注入) ==")
+    from rng_service import RngService
+    mem, _, _, _ = build_world()
+    svc = RngService(reader=mem, prefer_role="imp", use_cache=False)
+    check("注入 reader attach", svc.attach())
+    check("locate 静态链", svc.locate() and svc.via == "static-chain")
+    snap = svc.snapshot(5, 5)
+    check("snapshot 引擎数", len(snap["engines"]) == 2, str(len(snap["engines"])))
+    check("默认选中 imp", snap["selected"] and snap["selected"]["role"] == "imp")
+    tr = [t for t in svc.trackers() if t.engine["role"] == "imp"][0]
+    tr.poll()   # 建立基线后游标可读
+    snap = svc.snapshot(5, 5)
+    check("游标字段", snap["selected"]["cursor"] >= 0 and snap["selected"]["cursor2"] >= 0)
+    check("select_role 切换", svc.select_role("trivial")
+          and svc.snapshot(0, 0)["selected"]["role"] == "trivial")
+    svc.start()
+    time.sleep(0.05)
+    svc.stop()
+    # 消耗 37 发后轮询恢复 (经服务层线程模型之外直接 poll 也行, 这里验证 tracker 已建好)
+    ref = DotNetRandom(777)
+    for _ in range(50):
+        ref.next_int()
+    expected = [ref.next_int() for _ in range(37)]
+    mem.w32(0x10000 + 0x20, ref.inext)
+    mem.w32(0x10000 + 0x24, ref.inextp)
+    mem.write(0x30000 + 0x20, struct.pack("<56i", *ref.seeds))
+    tr = [t for t in svc.trackers() if t.engine["role"] == "imp"][0]
+    out = tr.poll()
+    check("服务层 tracker 恢复 37 发", out is not None and len(out) == 37
+          and [v for _, v, _ in out] == expected)
+
+
+# ---------------- 9. 新一局检测 (静态槽看门狗 / 读失败升级) ----------------
+
+def test_watch_and_readfail():
+    print("== 新一局检测 (watch_addr / 读失败升级) ==")
+    from rng_service import RngService
+    mem, _, _, _ = build_world()
+
+    # resolve_engine_obj: 直指 / wrapper / 空槽
+    check("直指槽解析", memscan.resolve_engine_obj(mem, 0x60030) == 0x10000)
+    make_klass(mem, 0x43000, 0x50340, 0x50300, "Torappu.Battle", "BattleRandomWrapper")
+    mem.w64(0x14000, 0x43000)
+    mem.w64(0x14000 + 0x10, 0x10000)
+    mem.w64(0x60030, 0x14000)
+    check("wrapper 槽下钻", memscan.resolve_engine_obj(mem, 0x60030) == 0x10000)
+    mem.w64(0x60030, 0)
+    check("空槽返回 None", memscan.resolve_engine_obj(mem, 0x60030) is None)
+    mem.w64(0x60030, 0x10000)
+
+    # 静态链引擎带 watch_addr
+    engines = memscan.locate_battle_random(mem, status=lambda m: None)
+    imp = [e for e in engines if e["role"] == "imp"][0]
+    check("引擎带 watch_addr", imp.get("watch_addr") == 0x60030,
+          str(imp.get("watch_addr")))
+
+    # 看门狗: 静态槽改指新对象 -> 触发重扫
+    svc = RngService(reader=mem, prefer_role="imp", use_cache=False)
+    svc.locate()
+    svc._watch_objects()
+    check("对象未变不触发", not svc._rescan.is_set())
+    st3 = DotNetRandom(999)
+    make_legacy_random(mem, 0x15000, 0x40000, 0x32000, st3)
+    mem.w64(0x60030, 0x15000)          # 新一局: 静态槽改指新建引擎
+    svc._watch_objects()
+    check("对象更换改状态", "更换" in svc.status_msg)
+    time.sleep(0.7)                    # request_rescan(0.5) 延迟置位
+    check("对象更换触发重扫", svc._rescan.is_set())
+
+    # 读失败升级: 基线后连续读失败 -> lost
+    tr = EngineTracker(mem, imp)
+    check("基线建立", tr.poll() == [] and tr.status == "ok")
+
+    class BrokenMem(FakeMem):
+        def read(self, addr, size):
+            return None
+    tr.reader = BrokenMem()
+    tr.reader.buf = mem.buf
+    r = []
+    for _ in range(400):
+        r = tr.poll()
+    check("连续读失败升级 lost", r is None and tr.status == "lost")
+
+
 if __name__ == "__main__":
     test_vectors()
     test_recover()
@@ -410,5 +498,7 @@ if __name__ == "__main__":
     test_device_scan_path()
     test_validate_engine()
     test_sep31_cursor()
+    test_service()
+    test_watch_and_readfail()
     print("\n结果: %d 通过, %d 失败" % (PASS, FAIL))
     sys.exit(1 if FAIL else 0)
