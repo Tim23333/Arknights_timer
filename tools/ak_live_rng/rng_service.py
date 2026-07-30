@@ -23,7 +23,7 @@
 
     svc = RngService(reader=my_reader, use_cache=False)
 
-定位成功后地址缓存进 ak_rng_cache.pkl (与 memscan.validate_engine 三重校验,
+定位成功后地址缓存进 ak_rng_cache.pkl (与 memscan.validate_engine 四重校验,
 游戏重启自动失效); use_cache=False 时读写均禁用。
 """
 
@@ -73,6 +73,9 @@ class RngService:
         self._selected_id = None
         self._stop = threading.Event()
         self._rescan = threading.Event()
+        self._rescan_lock = threading.Lock()
+        self._rescan_due = None
+        self._rescan_generation = 0
         self._thread = None
 
     # ---------------- 状态 ----------------
@@ -202,12 +205,40 @@ class RngService:
 
     def stop(self):
         self._stop.set()
+        with self._rescan_lock:
+            self._rescan_generation += 1
+            self._rescan_due = None
+            self._rescan.clear()
 
     def request_rescan(self, delay=0):
+        """安排一次重扫；已有更早任务时去重，更紧急的请求会替换较晚任务。"""
+        delay = max(0.0, float(delay))
+        due = time.monotonic() + delay
+        with self._rescan_lock:
+            if self._stop.is_set() or self._rescan.is_set():
+                return False
+            if self._rescan_due is not None and self._rescan_due <= due:
+                return False
+            self._rescan_generation += 1
+            generation = self._rescan_generation
+            self._rescan_due = due
+
         def fire():
-            time.sleep(delay)
-            self._rescan.set()
-        threading.Thread(target=fire, daemon=True).start()
+            remaining = max(0.0, due - time.monotonic())
+            if remaining and self._stop.wait(remaining):
+                return
+            with self._rescan_lock:
+                if (self._stop.is_set()
+                        or generation != self._rescan_generation):
+                    return
+                self._rescan_due = None
+                self._rescan.set()
+
+        if delay == 0:
+            fire()
+        else:
+            threading.Thread(target=fire, daemon=True).start()
+        return True
 
     def _poll_loop(self):
         last_watch = 0.0
@@ -219,9 +250,9 @@ class RngService:
                 try:
                     r = t.poll()
                     if r is None:
-                        self._status("引擎 #%d 状态丢失 (换种子/新一局), 重扫..."
-                                     % t.engine["id"])
-                        self.request_rescan(1.5)
+                        if self.request_rescan(1.5):
+                            self._status("引擎 #%d 状态丢失 (换种子/新一局), 重扫..."
+                                         % t.engine["id"])
                 except Exception:
                     pass
             now = time.time()
@@ -243,8 +274,8 @@ class RngService:
             except Exception:
                 continue
             if cur is not None and cur != t.engine["obj"]:
-                self._status("检测到引擎对象更换 (新一局), 重新定位 ...")
-                self.request_rescan(0.5)
+                if self.request_rescan(0.5):
+                    self._status("检测到引擎对象更换 (新一局), 重新定位 ...")
                 return
 
     # ---------------- 数据 (展示层读取入口) ----------------

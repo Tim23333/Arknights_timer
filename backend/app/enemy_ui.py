@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """主程序敌人表格列定义、列选择器和详情窗口。"""
 
+import time
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QAbstractSpinBox, QCheckBox, QDialog, QDialogButtonBox, QGridLayout,
@@ -90,6 +92,14 @@ def default_precision_values(value=4):
     values = {key: value for key, _label in precision_column_defs()}
     values['default'] = value
     return values
+
+
+def visible_enemy_rows(enemies, hide_departed=True):
+    """应用主表生命周期过滤；默认只隐藏已离场，未出场始终可见。"""
+    if not hide_departed:
+        return list(enemies)
+    return [enemy for enemy in enemies
+            if getattr(enemy, 'lifecycle', 'active') != 'departed']
 
 
 def load_visible_columns(settings, key):
@@ -244,14 +254,17 @@ class EnemyPrecisionDialog(QDialog):
 
 def format_column_value(key, enemy, decimals, row=0):
     precision = decimals.get(key, decimals.get('default', 4))
+    lifecycle = getattr(enemy, 'lifecycle', 'active')
     if key == 'row':
-        return str(row)
+        return str(getattr(enemy, 'spawn_order', 0) or (row + 1))
     if key == 'name':
         return enemy.name or enemy.eid or '?'
     if key == 'code':
         return enemy.code or '-'
     if key == 'eid':
         return enemy.eid
+    if lifecycle == 'pending' and key != 'life_status':
+        return '-'
     if key == 'pos':
         p = decimals.get('pos', precision)
         return f'({enemy.pos_x:.{p}f}, {enemy.pos_y:.{p}f})'
@@ -297,6 +310,10 @@ def format_column_value(key, enemy, decimals, row=0):
     if key == 'skill':
         return format_skill_cd(enemy.skills, sep='\n', prec=decimals.get('skill', precision))
     if key == 'life_status':
+        if lifecycle == 'pending':
+            return '未出场'
+        if lifecycle == 'departed':
+            return '已离场'
         return '存活' if enemy.alive else ('退场' if enemy.finish else '阵亡')
     return ''
 
@@ -324,34 +341,46 @@ def _make_table(headers):
     return table
 
 
-def _fill_table(table, rows, max_column_width=420):
+def _fill_table(table, rows, max_column_width=420, resize_columns=True):
+    table.setUpdatesEnabled(False)
     table.setRowCount(len(rows))
-    for r, row in enumerate(rows):
-        for c, value in enumerate(row):
-            text = _fmt(value)
-            item = QTableWidgetItem(text)
-            item.setToolTip(text)
-            item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-            table.setItem(r, c, item)
-    table.resizeColumnsToContents()
-    for column in range(table.columnCount()):
-        if table.columnWidth(column) > max_column_width:
-            table.setColumnWidth(column, max_column_width)
+    try:
+        for r, row in enumerate(rows):
+            for c, value in enumerate(row):
+                text = _fmt(value)
+                item = table.item(r, c)
+                if item is None:
+                    item = QTableWidgetItem()
+                    item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+                    table.setItem(r, c, item)
+                if item.text() != text:
+                    item.setText(text)
+                    item.setToolTip(text)
+        if resize_columns:
+            table.resizeColumnsToContents()
+            for column in range(table.columnCount()):
+                if table.columnWidth(column) > max_column_width:
+                    table.setColumnWidth(column, max_column_width)
+    finally:
+        table.setUpdatesEnabled(True)
 
 
 class EnemyDetailDialog(QDialog):
     """敌人完整详情：属性、五类损伤、状态/免疫、Buff、关卡 Buff 和技能。"""
 
-    def __init__(self, parent, enemy, refresh_callback=None):
+    def __init__(self, parent, enemy):
         super().__init__(parent)
         self.enemy = enemy
-        self.refresh_callback = refresh_callback
+        self._first_update = True
         self.setWindowTitle('敌人详情')
         self.resize(1080, 760)
         root = QVBoxLayout(self)
         self.title = QLabel()
         self.title.setStyleSheet('font-size:16px;font-weight:600;')
         root.addWidget(self.title)
+        self.live_status = QLabel('正在获取完整详情 ...')
+        self.live_status.setStyleSheet('color:#888888;')
+        root.addWidget(self.live_status)
         self.tabs = QTabWidget()
         root.addWidget(self.tabs, 1)
 
@@ -374,28 +403,27 @@ class EnemyDetailDialog(QDialog):
 
         buttons = QDialogButtonBox(QDialogButtonBox.Close)
         buttons.rejected.connect(self.reject)
-        if refresh_callback is not None:
-            refresh = QPushButton('重新读取详情')
-            refresh.clicked.connect(self._refresh)
-            buttons.addButton(refresh, QDialogButtonBox.ActionRole)
         root.addWidget(buttons)
         self.update_enemy(enemy)
+        self.live_status.setText('正在获取完整详情 ...')
 
-    def _refresh(self):
-        if self.refresh_callback is None:
-            return
-        enemy = self.refresh_callback(self.enemy.addr)
-        if enemy is not None:
-            self.update_enemy(enemy)
+    def set_live_error(self, message):
+        self.live_status.setText(message)
+        self.live_status.setStyleSheet('color:#d99034;')
 
     def update_enemy(self, enemy):
         self.enemy = enemy
+        resize_columns = self._first_update
         self.title.setText(
             f'{enemy.name or enemy.eid or "?"}  ·  {enemy.code or "-"}  ·  {enemy.eid}')
         state = gs.ENEMY_STATE_NAMES.get(enemy.state_id, f'未知({enemy.state_id})')
+        lifecycle = getattr(enemy, 'lifecycle', 'active')
+        life_text = {
+            'pending': '未出场', 'departed': '已离场', 'active': '场上',
+        }.get(lifecycle, '存活' if enemy.alive else '已离场')
         overview = [
             ('实例地址', hex(enemy.addr)), ('实例ID', enemy.eid), ('敌人编号', enemy.code or '-'),
-            ('生存状态', '存活' if enemy.alive else ('退场' if enemy.finish else '阵亡')),
+            ('生存状态', life_text),
             ('行为状态', state), ('异常状态', enemy.status_text()),
             ('当前生命', enemy.hp), ('最大生命', enemy.max_hp),
             ('元素护盾', enemy.es), ('普通护盾汇总', enemy.shield),
@@ -408,7 +436,15 @@ class EnemyDetailDialog(QDialog):
             ('元素损伤减免', enemy.attribute(gs.AttributeType.EP_DAMAGE_RESISTANCE)),
             ('元素抗性', enemy.attribute(gs.AttributeType.EP_RESISTANCE)),
         ]
-        _fill_table(self.overview, overview)
+        if getattr(enemy, 'spawn_order', 0):
+            overview[0:0] = [
+                ('预定出怪顺序', enemy.spawn_order),
+                ('波次/片段/行动',
+                 f'{enemy.wave_index + 1}/{enemy.fragment_index + 1}/{enemy.action_index + 1}'),
+                ('行动内序号', enemy.spawn_index + 1),
+                ('路线索引', enemy.route_index),
+            ]
+        _fill_table(self.overview, overview, resize_columns=resize_columns)
 
         attr_rows = []
         for idx, internal, name in gs.ATTRIBUTE_DEFS:
@@ -420,7 +456,7 @@ class EnemyDetailDialog(QDialog):
             attr_rows.append((name, internal, '-' if raw is None else raw,
                               '-' if final is None else final,
                               '-' if delta is None else delta))
-        _fill_table(self.attrs, attr_rows)
+        _fill_table(self.attrs, attr_rows, resize_columns=resize_columns)
 
         element_rows = []
         for idx, internal, name in gs.ELEMENT_DEFS:
@@ -428,7 +464,7 @@ class EnemyDetailDialog(QDialog):
             ratio = damage / maximum * 100 if maximum > 0 else 0.0
             element_rows.append((name, internal, damage, remaining, maximum,
                                  f'{ratio:.4f}%', '是' if maximum > 0 and remaining <= 0 else '否'))
-        _fill_table(self.elements, element_rows)
+        _fill_table(self.elements, element_rows, resize_columns=resize_columns)
 
         status_rows = []
         for idx, internal, name in gs.ABNORMAL_FLAG_DEFS:
@@ -437,7 +473,7 @@ class EnemyDetailDialog(QDialog):
         for idx, internal, name in gs.ABNORMAL_COMBO_DEFS:
             status_rows.append(('组合状态', name, internal, enemy.abnormal_combos[idx],
                                 enemy.abnormal_combo_immunes[idx], '-'))
-        _fill_table(self.statuses, status_rows)
+        _fill_table(self.statuses, status_rows, resize_columns=resize_columns)
 
         buff_rows = []
         for buff in enemy.buffs:
@@ -474,7 +510,7 @@ class EnemyDetailDialog(QDialog):
                 f"{buff['stack_count']}/{buff['max_valid_stack_count']}", mods,
                 '; '.join(statuses) or '-', shield, describe_blackboard(buff['blackboard']),
                 _bb_text(buff['blackboard'])))
-        _fill_table(self.buffs, buff_rows)
+        _fill_table(self.buffs, buff_rows, resize_columns=resize_columns)
 
         global_rows = []
         for buff in enemy.global_buffs:
@@ -485,8 +521,11 @@ class EnemyDetailDialog(QDialog):
                 buff['source_name'], applies, buff['target_count'],
                 f"实例UID={buff['instance_uid']}", defs,
                 describe_blackboard(buff['blackboard']), _bb_text(buff['blackboard'])))
-        _fill_table(self.globals, global_rows)
+        _fill_table(self.globals, global_rows, resize_columns=resize_columns)
 
         skill_rows = [(key, remain, period, '就绪' if remain <= 0.05 else '冷却中')
                       for key, remain, period in enemy.skills]
-        _fill_table(self.skills, skill_rows)
+        _fill_table(self.skills, skill_rows, resize_columns=resize_columns)
+        self._first_update = False
+        self.live_status.setText(f'实时更新中 · 最近刷新 {time.strftime("%H:%M:%S")}')
+        self.live_status.setStyleSheet('color:#58a66a;')

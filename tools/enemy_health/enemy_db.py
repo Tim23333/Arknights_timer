@@ -37,7 +37,8 @@ def _try_utf8(raw):
 
 def parse_handbook(path):
     """解析 enemy_handbook_table bin -> {enemy_id: {'name','code','desc'}}"""
-    data = open(path, 'rb').read()
+    with open(path, 'rb') as stream:
+        data = stream.read()
     db = {}
     for m in ID_RE.finditer(data):
         eid_b = m.group(0)

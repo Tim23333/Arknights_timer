@@ -40,5 +40,41 @@ class EnemyDetailModelTests(unittest.TestCase):
         enemy.attributes[gs.AttributeType.ONE_MINUS_STATUS_RESISTANCE] = 0.65
         self.assertAlmostEqual(enemy.status_resistance, 0.35)
 
+    def test_spawn_plan_lifecycle_transitions(self):
+        reader = EnemyReader(mc=object())
+        reader._set_spawn_plan([
+            {'key': 'enemy_a'}, {'key': 'enemy_a'}, {'key': 'enemy_b'},
+        ], 'test/level')
+        rows = reader._merge_enemy_roster([], 0)
+        self.assertEqual([row.lifecycle for row in rows],
+                         ['pending', 'pending', 'pending'])
+
+        first = EnemyInfo(0x1000)
+        first.eid = 'enemy_a'
+        rows = reader._merge_enemy_roster([first], 1)
+        self.assertEqual([row.lifecycle for row in rows],
+                         ['active', 'pending', 'pending'])
+        self.assertEqual(rows[0].spawn_order, 1)
+
+        rows = reader._merge_enemy_roster([], 1)
+        self.assertEqual([row.lifecycle for row in rows],
+                         ['departed', 'pending', 'pending'])
+        second = EnemyInfo(0x2000)
+        second.eid = 'enemy_a'
+        rows = reader._merge_enemy_roster([second], 2)
+        self.assertEqual([row.lifecycle for row in rows],
+                         ['departed', 'active', 'pending'])
+
+    def test_midbattle_attach_uses_spawned_prefix(self):
+        reader = EnemyReader(mc=object())
+        reader._set_spawn_plan([{'key': 'enemy_a'} for _ in range(3)])
+        live = [EnemyInfo(0x1000), EnemyInfo(0x2000)]
+        for enemy in live:
+            enemy.eid = 'enemy_a'
+        rows = reader._merge_enemy_roster(live, 3)
+        self.assertEqual([row.lifecycle for row in rows],
+                         ['departed', 'active', 'active'])
+        self.assertEqual([row.spawn_order for row in rows], [1, 2, 3])
+
 if __name__ == '__main__':
     unittest.main()

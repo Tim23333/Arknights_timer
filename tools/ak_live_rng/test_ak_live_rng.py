@@ -374,6 +374,14 @@ def test_validate_engine():
     imp = [e for e in engines if e["role"] == "imp"][0]
     check("有效引擎通过校验", memscan.validate_engine(mem, imp))
 
+    # 新一局时旧对象仍可完整读取，但静态槽已经指向新对象；旧缓存必须失效，
+    # 否则 locate() 会反复命中旧缓存，再被看门狗触发重扫。
+    st_new = DotNetRandom(999)
+    make_legacy_random(mem, 0x15000, 0x40000, 0x32000, st_new)
+    mem.w64(0x60030, 0x15000)
+    check("静态槽换对象 -> 旧缓存失效", not memscan.validate_engine(mem, imp))
+    mem.w64(0x60030, 0x10000)
+
     mt = memscan.engine_from_random_obj(mem, 0x12000, "trivial", "static-chain")
     check("MT 引擎通过校验", memscan.validate_engine(mem, mt))
 
@@ -435,6 +443,17 @@ def test_service():
     out = tr.poll()
     check("服务层 tracker 恢复 37 发", out is not None and len(out) == 37
           and [v for _, v, _ in out] == expected)
+
+    # 同一异常在高频轮询中只保留一个在途重扫；更早的请求可以抢占，停止后作废。
+    queued = RngService(reader=mem, use_cache=False)
+    check("首次重扫请求入队", queued.request_rescan(0.2))
+    check("较晚重复重扫被去重", not queued.request_rescan(0.3))
+    check("立即重扫可抢占", queued.request_rescan(0))
+    check("立即重扫置位", queued._rescan.is_set())
+    queued.stop()
+    time.sleep(0.25)
+    check("停止后在途重扫作废", not queued._rescan.is_set()
+          and queued._rescan_due is None)
 
 
 # ---------------- 9. 新一局检测 (静态槽看门狗 / 读失败升级) ----------------

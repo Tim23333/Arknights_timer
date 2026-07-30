@@ -1,22 +1,22 @@
 # 明日方舟敌人内存扫描模块
 
-通过 ADB 读取 MuMu 模拟器中游戏进程内存，实时获取战斗中每个敌人的
-名称、血量、攻击/防御/法抗/移速/攻速等详细数据。
+通过 ADB 读取 MuMu 模拟器中游戏进程内存：开局读取关卡固定出怪顺序，
+并实时获取每个敌人的名称、生命周期、血量、攻击/防御/法抗/移速/攻速等数据。
 
 ## 原理
 
 ```
 MuMu 模拟器 (Android)
   └── 明日方舟进程 (IL2CPP, arm64)
-       └── Scheduler.m_managedWaveEnemies (List<Enemy>)
-            └── Enemy: m_hp / <id> / Attributes.m_cachedData
+       └── BattleController
+            ├── LevelData.waves → Wave/Fragment/SPAWN 固定出怪序列
+            └── Scheduler.m_managedWaveEnemies → 当前 Enemy 实例
 ```
 
-首次运行通过内容特征在 GC 堆中定位敌人列表（多路 adb 并行扫描，约 1-3 分钟），
-地址链缓存到 `enemy_cache.pkl`，之后秒级启动。扫描共 5 个阶段，但只有第 1 阶段
-走网络传输——扫描块同时落盘为临时快照（IL2CPP Boehm GC 不移动对象，快照窗口内
-地址稳定），后 4 个阶段全部从本地磁盘重放，把 adb 隧道传输量从 5 份堆压到 1 份；
-候选实体的 klass 验证逐个走 `adb exec-out` 小读。
+主定位路径通过设备侧模式扫描查找当前 `BattleController`，沿固定字段直接取得
+`Scheduler`、实时敌人列表和 `LevelData`，通常约 20-40 秒，且场上敌人数为 0 时
+同样可用。地址链缓存到 `enemy_cache.pkl`。旧的内容特征全堆扫描仍保留为版本漂移
+兜底；它会将第一遍扫描落盘为临时快照，后续阶段在本地重放。
 
 > **大块读取注意（2026-07-22 修复）**：`dd` 大块读取必须头/尾 4KB 页对齐、
 > 中部整 4MB 块——若把起点/终点 4MB 对齐到区域外的未映射洞，`dd` 直接 EIO
@@ -64,7 +64,7 @@ python -m ziglang cc -target aarch64-linux-musl -static -O2 \
 
 ## 前置条件
 
-1. **MuMu 模拟器** 已启动，明日方舟已进入战斗关卡且场上有敌人
+1. **MuMu 模拟器** 已启动，明日方舟已进入战斗关卡（无需等待敌人出场）
 2. **adb root** 可用（MuMu 自带 adb 默认支持，工具自动查找路径）
 3. **Python 3.8+**，依赖 `numpy`（扫描加速）
 
@@ -79,7 +79,9 @@ python run.py
 
 - `tools/enemy_health` 不再维护独立 GUI；页面统一由 `backend/desktop_app.py` 承担
 - 主程序启动后可尝试缓存地址秒级进入监控
-- **一键扫描**: 全堆扫描重新定位 (多路 adb 并行, 约 1-3 分钟)
+- **一键扫描**：定位当前关卡、完整固定出怪序列与实时敌人列表（通常约 20-40 秒）
+- 固定敌人按预定顺序从开局显示为“未出场”，出现后实时更新，死亡/漏怪后保留为“已离场”
+- **离场敌方不显示**默认勾选；取消后显示完整历史及离场前最后一帧数据
 - 表格准实时展示 (默认 0.016 秒刷新=60Hz, 可调至 0.008): 名称/编号/ID/坐标/血条/攻击/防御/法抗/移速/攻速/状态
 - **显示列**可逐项勾选全部最终属性、异常状态、状态免疫、护盾，以及神经/侵蚀/灼燃/凋亡/狂躁五类损伤条；选择会持久化
 - 每行的**详情**按钮按需读取原始/最终属性、45 项状态与免疫计数、当前 Buff、关卡全局 Buff、技能和精确损伤条，不增加常态轮询负担
@@ -142,16 +144,17 @@ backend/app/enemy_ui.py                # 表格列、精度设置、详情窗口
 backend/app/enemy_buff_descriptions.py # Buff/GlobalBuff 中文说明
 ```
 
-## 地址发现流程 (bootstrap)
+## 地址发现流程（bootstrap）
 
-1. 扫 GC 堆找 `"enemy_"` UTF-16 字符串对象集合 S
-2. 扫 HP 签名（FP Q32.32 整数血量：低 32 位=0，高 32 位=HP）位置 P
-3. 扫指向 S 的指针位置集合 R；候选实体 B=P-0x40，若 B+0x100..0x1A8
-   内有位置 ∈ R 且 klass 名 == `'Enemy'` → 场上敌人
-4. 扫指向敌人的指针 → items 数组 → `List<Enemy>` 候选（可能含快照拷贝列表）
-5. 单遍扫描指向所有 List 候选的指针 → 候选中持有者经 `SchedulerDriver`
-   验证为真 Scheduler 的才是真 `m_managedWaveEnemies`；
-   SchedulerDriver +0x10 → BattleController（状态/倍速/时间）
+1. 在设备侧搜索 `Torappu.Battle.BattleController` 类名、Il2CppClass 和当前对象
+2. 用状态、倍速、战斗时间和 Unity `m_CachedPtr` 排除已销毁的旧关卡对象
+3. 沿 `BattleController+0x30 → Scheduler+0xC0 → List<Enemy>` 取得实时列表
+4. 沿 `BattleController+0x158 → LevelData+0x80 → waves` 展开有效 SPAWN 动作
+5. 轮询时把当前实例绑定到计划项：未生成=`未出场`，存在=`场上`，消失=`已离场`
+6. 固定 waves 之外的条件分支、召唤或插件动态敌人，在首次成为实例时追加到末尾
+
+若主路径因版本字段漂移失败，才执行原有 `enemy_` 字符串 + HP 定点数签名的五阶段
+全堆特征扫描兜底。
 
 ## 关键偏移 (2.7.51 实测)
 
@@ -170,7 +173,10 @@ backend/app/enemy_buff_descriptions.py # Buff/GlobalBuff 中文说明
 | Attributes.m_cachedData | 0x50 | ObscuredFP[] (步长 0x28, XOR 解密) |
 | Attributes 状态/免疫/反制计数 | 0x20 / 0x28 / 0x30 | short[45] |
 | List._items / _size | 0x10 / 0x18 | |
-| Scheduler.m_managedWaveEnemies | 0xB8 | List<Enemy> |
+| BattleController.Scheduler / LevelData | 0x30 / 0x158 | 当前调度器 / 当前关卡数据 |
+| Scheduler.m_spawnedEnemiesCnt | 0x24 | 本局已生成敌人数 |
+| Scheduler.m_managedWaveEnemies | 0xC0 | 当前场上 `List<Enemy>` |
+| LevelData.waves | 0x80 | 开局固定 Wave/Fragment/SPAWN 序列 |
 | BattleController state/speed/timeScale/playTime | 0x220/0x228/0x280/0x284 | dump.cs 旧偏移已失效 |
 | BattleController.m_globalBuffs | 0x68 | List<GlobalBuff>，含目标映射与 Blackboard |
 
@@ -184,4 +190,5 @@ backend/app/enemy_buff_descriptions.py # Buff/GlobalBuff 中文说明
 2. **MuMu 窗口失去焦点/最小化时游戏会暂停**，此时数值冻结属正常现象
    （是模拟器行为，不是工具问题）；恢复前台后立即继续更新
 3. **换关卡/重启游戏后需 `--rebuild`**（Boehm GC 地址随战斗重建）
-4. **Bootstrap 较慢**（约 1-3 分钟并行扫描，结果缓存磁盘）
+4. 固定 waves 之外的条件分支、召唤和插件动态生成内容无法在开局确定绝对顺序，
+   工具会在这些敌人首次出现时自动追加并继续追踪生命周期

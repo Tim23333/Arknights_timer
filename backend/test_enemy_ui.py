@@ -1,15 +1,26 @@
 # -*- coding: utf-8 -*-
+import os
 import unittest
+
+os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+
+from PySide6.QtWidgets import QApplication, QPushButton
 
 from backend.app.enemy_buff_descriptions import (
     buff_chinese_name, describe_active_buff, describe_blackboard, describe_global_buff,
 )
-from backend.app.enemy_ui import format_column_value, precision_column_defs
+from backend.app.enemy_ui import (
+    EnemyDetailDialog, format_column_value, precision_column_defs, visible_enemy_rows,
+)
 from tools.enemy_health import game_structs as gs
 from tools.enemy_health.enemy_reader import EnemyInfo
 
 
 class EnemyUiTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.app = QApplication.instance() or QApplication([])
+
     def test_precision_columns_follow_current_visible_numeric_columns(self):
         visible = {'name', 'ep_sanity', 'attr_1', 'skill', 'detail'}
         self.assertEqual(
@@ -61,6 +72,46 @@ class EnemyUiTests(unittest.TestCase):
         self.assertIn('寒霜（enemy_1042_frostd）', desc)
         self.assertIn('物理、法术伤害抗性规则', desc)
         self.assertIn('不直接等同于固定减伤百分比', desc)
+
+    def test_detail_dialog_accepts_live_updates_without_manual_refresh_button(self):
+        enemy = EnemyInfo(0x1234)
+        enemy.eid = 'enemy_test'
+        enemy.name = '测试敌人'
+        enemy.hp = 100.0
+        enemy.max_hp = 200.0
+        dialog = EnemyDetailDialog(None, enemy)
+        self.assertFalse(any(
+            button.text() == '重新读取详情'
+            for button in dialog.findChildren(QPushButton)))
+
+        updated = EnemyInfo(0x1234)
+        updated.eid = enemy.eid
+        updated.name = enemy.name
+        updated.hp = 75.5
+        updated.max_hp = 200.0
+        dialog.update_enemy(updated)
+        self.assertEqual(dialog.overview.item(6, 1).text(), '75.5')
+        self.assertIn('实时更新中', dialog.live_status.text())
+        dialog.close()
+
+    def test_pending_and_departed_lifecycle_display_and_filter(self):
+        pending = EnemyInfo(0)
+        pending.eid = 'enemy_pending'
+        pending.spawn_order = 3
+        pending.lifecycle = 'pending'
+        departed = EnemyInfo(0x2000)
+        departed.eid = 'enemy_departed'
+        departed.lifecycle = 'departed'
+        active = EnemyInfo(0x3000)
+        active.eid = 'enemy_active'
+        self.assertEqual(format_column_value('row', pending, {}, 0), '3')
+        self.assertEqual(format_column_value('life_status', pending, {}), '未出场')
+        self.assertEqual(format_column_value('attr_1', pending, {}), '-')
+        self.assertEqual(format_column_value('life_status', departed, {}), '已离场')
+        self.assertEqual(visible_enemy_rows([pending, departed, active]), [pending, active])
+        self.assertEqual(visible_enemy_rows(
+            [pending, departed, active], hide_departed=False),
+            [pending, departed, active])
 
 
 if __name__ == '__main__':

@@ -20,6 +20,7 @@ from PySide6.QtCore import QSettings, Qt, QThread, QTimer, Signal
 from PySide6.QtGui import QColor, QCursor, QIcon
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QDialog,
     QFileDialog,
     QFrame,
@@ -59,7 +60,7 @@ from tools.enemy_health.memcore import MemCore
 from app.enemy_ui import (
     ENEMY_COLUMN_DEFS, ENEMY_COLUMN_INDEX, EnemyColumnDialog, EnemyDetailDialog,
     EnemyPrecisionDialog, default_precision_values, format_column_value,
-    load_visible_columns, save_visible_columns,
+    load_visible_columns, save_visible_columns, visible_enemy_rows,
 )
 from tools.deploy_tracker.ak_deploy_reader import DeployTrackerReader
 
@@ -92,6 +93,7 @@ SLOW_UI_MS = 150
 WS_PUSH_MS = 8
 ENEMY_POLL_SEC = 0.01      # 敌人轮询间隔 (memsrv 通道单帧 <1ms, 2倍速 60fps=16.7ms)
 ENEMY_RENDER_SEC = 0.016   # 表格渲染节流 (60fps)
+ENEMY_DETAIL_POLL_SEC = 0.25  # 详情完整数据刷新间隔（Buff/关卡效果读取较重）
 
 ENEMY_COLS = [col['label'] for col in ENEMY_COLUMN_DEFS]
 ENEMY_COL_WIDTHS = [col['width'] for col in ENEMY_COLUMN_DEFS]
@@ -107,7 +109,7 @@ def _format_game_time(value: object) -> str:
 
 
 class EnemyScanWorker(QThread):
-    """后台线程: 连接 + 全堆扫描定位敌人列表"""
+    """后台线程：定位当前关卡、出怪计划和实时敌人列表。"""
     log = Signal(str)
     progress = Signal(int, str)
     done = Signal(bool, str)
@@ -138,9 +140,12 @@ class EnemyScanWorker(QThread):
             self.log.emit(f"游戏 PID = {pid}")
             ok = self.reader.bootstrap(force=self.force)
             if ok:
-                self.done.emit(True, f"定位完成, 敌人 {len(self.reader.enemy_addrs)} 个")
+                self.done.emit(
+                    True,
+                    f"定位完成，预定敌人 {self.reader.planned_count} 个，"
+                    f"当前场上 {len(self.reader.enemy_addrs)} 个")
             else:
-                self.done.emit(False, "定位失败: 请确认已进入关卡且场上有敌人")
+                self.done.emit(False, "定位失败：请确认明日方舟已进入战斗关卡")
         except Exception as e:
             self.done.emit(False, f"出错: {e}")
 
@@ -153,6 +158,52 @@ class EnemyPollWorker(QThread):
         super().__init__()
         self.reader = reader
         self.interval = interval
+        self._detail_lock = threading.Lock()
+        self._detail_addr = 0
+        self._detail_due = 0.0
+
+    def set_detail_target(self, addr: int = 0) -> None:
+        """选择需要完整实时详情的敌人；0 表示停止详情读取。"""
+        with self._detail_lock:
+            addr = int(addr or 0)
+            if addr != self._detail_addr:
+                self._detail_addr = addr
+                self._detail_due = 0.0
+
+    def _append_detail(self, snap: dict) -> None:
+        now = time.monotonic()
+        with self._detail_lock:
+            addr = self._detail_addr
+            due = self._detail_due
+        if not addr or now < due:
+            return
+        if not snap.get('ok'):
+            with self._detail_lock:
+                if addr == self._detail_addr:
+                    self._detail_due = time.monotonic() + ENEMY_DETAIL_POLL_SEC
+            return
+
+        # 只跟踪当前敌人列表中的同一实例；退场后保留最后一帧并给详情页提示。
+        roster_enemy = next((enemy for enemy in snap.get('enemies', ())
+                             if getattr(enemy, 'addr', 0) == addr
+                             and getattr(enemy, 'lifecycle', 'active') == 'active'), None)
+        live = roster_enemy is not None
+        try:
+            snap['detail_enemy'] = self.reader.read_enemy_detail(addr) if live else None
+            detail_enemy = snap['detail_enemy']
+            if detail_enemy is not None and roster_enemy is not None:
+                for key in ('roster_id', 'spawn_order', 'wave_index', 'fragment_index',
+                            'action_index', 'spawn_index', 'route_index', 'lifecycle', 'planned'):
+                    setattr(detail_enemy, key, getattr(roster_enemy, key))
+            if snap['detail_enemy'] is None:
+                snap['detail_error'] = '敌人已退场或对象已失效，已停止更新。'
+        except Exception as exc:
+            snap['detail_enemy'] = None
+            snap['detail_error'] = f'详情刷新失败：{exc}'
+        finally:
+            with self._detail_lock:
+                if addr == self._detail_addr:
+                    self._detail_due = time.monotonic() + ENEMY_DETAIL_POLL_SEC
 
     def run(self) -> None:
         # Windows 默认睡眠粒度 15.6ms, 提到 1ms 才能睡出 <16ms 的轮询间隔
@@ -167,6 +218,7 @@ class EnemyPollWorker(QThread):
                 except Exception as e:
                     snap = {'ok': False, 'state': -1, 'speed_level': -1, 'time_scale': 0.0,
                             'play_time': 0.0, 'enemies': [], 'msg': f'轮询出错: {e}'}
+                self._append_detail(snap)
                 self.snapshot.emit(snap)
                 dt = time.time() - t0
                 wait = max(0.001, self.interval - dt)
@@ -280,11 +332,13 @@ class CoachWindow(QMainWindow):
         self._enemy_scan: EnemyScanWorker | None = None
         self._enemy_poll: EnemyPollWorker | None = None
         self._enemy_last_render = 0.0
-        self._enemy_rows: dict = {}    # enemy addr -> 表格行号 (行位置稳定, 新敌人底部新增)
-        self._bar_colors: dict = {}    # enemy addr -> 当前血条颜色
-        self._skill_lines: dict = {}   # enemy addr -> 技能格行数 (变化才调整行高)
+        self._enemy_rows: dict = {}    # roster_id -> 表格行号（按关卡预定顺序稳定）
+        self._enemy_row_lifecycle: dict = {}  # roster_id -> 上次生命周期（静态行免重复绘制）
+        self._bar_colors: dict = {}    # roster_id -> 当前血条颜色
+        self._skill_lines: dict = {}   # roster_id -> 技能格行数（变化才调整行高）
         self._enemy_dec: dict = default_precision_values()
         self._enemy_last: list = []    # 最近一帧敌人 (改小数位时立即重绘用)
+        self._enemy_detail_dialog: EnemyDetailDialog | None = None
         self._settings = QSettings('ArknightsTools', 'ArknightsTimeline')
         self._enemy_visible_cols = load_visible_columns(
             self._settings, 'enemy_table/visible_columns')
@@ -465,7 +519,9 @@ class CoachWindow(QMainWindow):
         l_enemy = QVBoxLayout(box_enemy)
         row_btn = QHBoxLayout()
         self.btn_enemy_scan = QPushButton("开始扫描")
-        self.btn_enemy_scan.setToolTip("全堆扫描定位敌人列表 (进关卡且场上有敌人后点击, 约 1-3 分钟)")
+        self.btn_enemy_scan.setToolTip(
+            "进入关卡后定位 BattleController，并读取完整预定出怪序列；"
+            "场上尚无敌人也可扫描（通常约 20-40 秒）")
         self.btn_enemy_scan.clicked.connect(self._on_enemy_scan)
         self._style_primary_button(self.btn_enemy_scan)
         self.btn_enemy_stop = QPushButton("停止监控")
@@ -489,11 +545,16 @@ class CoachWindow(QMainWindow):
         self.btn_enemy_fit.setToolTip("按内容自动调整所有列宽 (也可直接拖动表头分隔线手动调整)")
         self.btn_enemy_fit.clicked.connect(lambda: self.enemy_table.resizeColumnsToContents())
         self._style_muted_button(self.btn_enemy_fit)
+        self.chk_enemy_hide_departed = QCheckBox("离场敌方不显示")
+        self.chk_enemy_hide_departed.setChecked(True)
+        self.chk_enemy_hide_departed.setToolTip("默认隐藏死亡、漏怪或其他原因离场的敌人；取消勾选可查看完整记录")
+        self.chk_enemy_hide_departed.toggled.connect(self._on_enemy_departed_filter)
         row_btn.addWidget(self.btn_enemy_scan)
         row_btn.addWidget(self.btn_enemy_stop)
         row_btn.addWidget(self.btn_enemy_precision)
         row_btn.addWidget(self.btn_enemy_columns)
         row_btn.addWidget(self.btn_enemy_fit)
+        row_btn.addWidget(self.chk_enemy_hide_departed)
         row_btn.addWidget(self.enemy_progress, 1)
         l_enemy.addLayout(row_btn)
         self.lbl_enemy_status = QLabel("未开始扫描")
@@ -892,11 +953,12 @@ class CoachWindow(QMainWindow):
         self._stop_enemy_poll()
         self.enemy_table.setRowCount(0)   # 换关卡重扫: 清掉旧敌人行
         self._enemy_rows.clear()
+        self._enemy_row_lifecycle.clear()
         self._bar_colors.clear()
         self._skill_lines.clear()
         self.btn_enemy_scan.setEnabled(False)
         self.enemy_progress.setValue(0)
-        self.enemy_progress.setFormat('开始全堆扫描 ... %p%')
+        self.enemy_progress.setFormat('开始定位关卡与出怪序列 ... %p%')
         self._enemy_scan = EnemyScanWorker(self._enemy_reader, force=True)
         self._enemy_scan.log.connect(self._on_enemy_log)
         self._enemy_scan.progress.connect(self._on_enemy_progress)
@@ -1267,6 +1329,14 @@ class CoachWindow(QMainWindow):
             if msg and msg != getattr(self, '_last_snap_msg', None):
                 self._last_snap_msg = msg
                 _tlog("轮询:", msg)
+        detail_dialog = self._enemy_detail_dialog
+        if detail_dialog is not None and 'detail_enemy' in snap:
+            detail_enemy = snap.get('detail_enemy')
+            if (detail_enemy is not None
+                    and detail_enemy.addr == detail_dialog.enemy.addr):
+                detail_dialog.update_enemy(detail_enemy)
+            elif snap.get('detail_error'):
+                detail_dialog.set_live_error(snap['detail_error'])
         # 渲染节流: 轮询 33ms, 渲染 30fps
         now = time.time()
         if snap.get('ok') and now - self._enemy_last_render < ENEMY_RENDER_SEC:
@@ -1278,8 +1348,15 @@ class CoachWindow(QMainWindow):
         if now - self._frame_ts >= 0.5:   # ms/帧 0.5s 节流, 避免高频刷新抖动
             self._frame_ts = now
             self._frame_txt = f"   {snap['frame_ms']:.0f}ms/帧" if snap.get('frame_ms') else ''
+        on_field = snap.get('on_field_count', sum(
+            getattr(enemy, 'lifecycle', 'active') == 'active'
+            for enemy in snap['enemies']))
+        planned = snap.get('planned_count', 0)
+        total_text = f"场上敌人: {on_field}"
+        if planned:
+            total_text += f" / 预定: {planned}"
         text = (f"状态: {st}   倍速: {spd} (x{snap['time_scale']:g})   "
-                f"战斗时间: {t // 60:02d}:{t % 60:02d}   敌人数: {len(snap['enemies'])}"
+                f"战斗时间: {t // 60:02d}:{t % 60:02d}   {total_text}"
                 + self._frame_txt)
         if snap.get('msg'):
             text += f"   ({snap['msg']})"
@@ -1288,34 +1365,53 @@ class CoachWindow(QMainWindow):
 
     def _render_enemy_table(self, enemies) -> None:
         self._enemy_last = enemies
+        enemies = visible_enemy_rows(
+            enemies, hide_departed=self.chk_enemy_hide_departed.isChecked())
         tbl = self.enemy_table
         if enemies and not self._widths_fitted:
             self._widths_fitted = True
             tbl.resizeColumnsToContents()   # 首次有数据时自适应一次, 之后交用户手调
-        # 增量刷新: 按敌人地址锚定行, 已有行原地更新, 新敌人底部新增,
-        # 消失的行才删除——杜绝整表重建导致的闪烁
+        # 增量刷新：按本局 roster_id 锚定行；固定敌人保持关卡预定顺序，
+        # 动态召唤/分支敌人首次出现时追加。过滤切换时才重建一次。
         tbl.setUpdatesEnabled(False)
         try:
             seen = set()
             for e in enemies:
-                seen.add(e.addr)
-                row = self._enemy_rows.get(e.addr)
+                row_key = getattr(e, 'roster_id', 0) or e.addr
+                seen.add(row_key)
+                row = self._enemy_rows.get(row_key)
+                is_new = row is None
                 if row is None:
                     row = tbl.rowCount()
                     tbl.insertRow(row)
-                    self._make_enemy_row(row, e.addr)
-                    self._enemy_rows[e.addr] = row
-                self._update_enemy_row(row, e)
+                    self._make_enemy_row(row, row_key)
+                    self._enemy_rows[row_key] = row
+                lifecycle = getattr(e, 'lifecycle', 'active')
+                # 未出场/已离场行是静态的；只有首次或生命周期变化时重绘。
+                if (is_new or lifecycle == 'active'
+                        or self._enemy_row_lifecycle.get(row_key) != lifecycle):
+                    self._update_enemy_row(row, e)
+                self._enemy_row_lifecycle[row_key] = lifecycle
             gone = [a for a in self._enemy_rows if a not in seen]
             for a in sorted(gone, key=lambda a: -self._enemy_rows[a]):
                 tbl.removeRow(self._enemy_rows.pop(a))
                 self._bar_colors.pop(a, None)
                 self._skill_lines.pop(a, None)
+                self._enemy_row_lifecycle.pop(a, None)
             if gone:   # removeRow 后行号位移, 依 item(0) 存的 addr 重建映射
                 self._enemy_rows = {tbl.item(r, 0).data(Qt.UserRole): r
                                     for r in range(tbl.rowCount())}
         finally:
             tbl.setUpdatesEnabled(True)
+
+    def _on_enemy_departed_filter(self, _checked: bool) -> None:
+        # 过滤切换时重建一次，确保重新显示的离场项仍按预定出怪序排列。
+        self.enemy_table.setRowCount(0)
+        self._enemy_rows.clear()
+        self._enemy_row_lifecycle.clear()
+        self._bar_colors.clear()
+        self._skill_lines.clear()
+        self._render_enemy_table(self._enemy_last)
 
     def _on_enemy_precision(self) -> None:
         dlg = EnemyPrecisionDialog(
@@ -1340,19 +1436,30 @@ class CoachWindow(QMainWindow):
         self._apply_enemy_column_visibility()
         self._render_enemy_table(self._enemy_last)
 
-    def _open_enemy_detail(self, addr: int) -> None:
-        try:
-            enemy = self._enemy_reader.read_enemy_detail(addr)
-        except Exception as exc:
-            QMessageBox.warning(self, '敌人详情', f'读取详情失败：{exc}')
-            return
+    def _open_enemy_detail(self, roster_id: int) -> None:
+        # 用主表最近快照立即打开，完整 Buff/关卡效果由轮询线程异步补全并持续刷新。
+        enemy = next((item for item in self._enemy_last
+                      if (getattr(item, 'roster_id', 0) or item.addr) == roster_id), None)
         if enemy is None:
             QMessageBox.information(self, '敌人详情', '该敌人已退场或对象已失效。')
             return
-        EnemyDetailDialog(
-            self, enemy, refresh_callback=self._enemy_reader.read_enemy_detail).exec()
+        dialog = EnemyDetailDialog(self, enemy)
+        self._enemy_detail_dialog = dialog
+        poll = self._enemy_poll
+        lifecycle = getattr(enemy, 'lifecycle', 'active')
+        if lifecycle == 'departed':
+            dialog.set_live_error('敌人已离场，显示最后一次记录。')
+        elif poll is not None and enemy.addr:
+            poll.set_detail_target(enemy.addr)
+        try:
+            dialog.exec()
+        finally:
+            if poll is self._enemy_poll:
+                poll.set_detail_target(0)
+            if self._enemy_detail_dialog is dialog:
+                self._enemy_detail_dialog = None
 
-    def _make_enemy_row(self, row: int, addr: int) -> None:
+    def _make_enemy_row(self, row: int, roster_id: int) -> None:
         tbl = self.enemy_table
         hp_col = ENEMY_COLUMN_INDEX['hp']
         detail_col = ENEMY_COLUMN_INDEX['detail']
@@ -1362,7 +1469,7 @@ class CoachWindow(QMainWindow):
                 it.setTextAlignment(Qt.AlignCenter)
                 tbl.setItem(row, c, it)
         row_col = ENEMY_COLUMN_INDEX['row']
-        tbl.item(row, row_col).setData(Qt.UserRole, addr)
+        tbl.item(row, row_col).setData(Qt.UserRole, roster_id)
         for key in ('name', 'eid', 'skill', 'abnormal_status', 'immune_status'):
             item = tbl.item(row, ENEMY_COLUMN_INDEX[key])
             if item:
@@ -1372,7 +1479,8 @@ class CoachWindow(QMainWindow):
         tbl.setCellWidget(row, hp_col, bar)
         detail = QPushButton('详情')
         detail.setToolTip('读取并显示该敌人的完整属性、状态、损伤条、Buff 与关卡效果')
-        detail.clicked.connect(lambda _checked=False, a=addr: self._open_enemy_detail(a))
+        detail.clicked.connect(
+            lambda _checked=False, rid=roster_id: self._open_enemy_detail(rid))
         tbl.setCellWidget(row, detail_col, detail)
 
     def _update_enemy_row(self, row: int, e) -> None:
@@ -1395,26 +1503,41 @@ class CoachWindow(QMainWindow):
             if key in ('hp', 'detail'):
                 continue
             setc(key, format_column_value(key, e, d, row),
-                 grey=(key == 'life_status' and not e.alive))
+                 grey=(getattr(e, 'lifecycle', 'active') != 'active'
+                       or (key == 'life_status' and not e.alive)))
 
         hp_col = ENEMY_COLUMN_INDEX['hp']
         bar = tbl.cellWidget(row, hp_col)
+        lifecycle = getattr(e, 'lifecycle', 'active')
         mx = max(1, int(e.max_hp))
         bar.setMaximum(mx)
-        bar.setValue(max(0, int(e.hp)))
-        bar.setFormat(f'{e.hp:.{d["hp"]}f} / {e.max_hp:.{d["hp"]}f}  %p%')
+        bar.setValue(max(0, int(e.hp)) if lifecycle != 'pending' else 0)
+        if lifecycle == 'pending':
+            bar.setFormat('未出场')
+        elif lifecycle == 'departed':
+            bar.setFormat(f'已离场  {e.hp:.{d["hp"]}f} / {e.max_hp:.{d["hp"]}f}')
+        else:
+            bar.setFormat(f'{e.hp:.{d["hp"]}f} / {e.max_hp:.{d["hp"]}f}  %p%')
         ratio = e.hp / e.max_hp if e.max_hp > 0 else 0
         color = '#5cb85c' if ratio > 0.5 else ('#f0ad4e' if ratio > 0.2 else '#d9534f')
-        if not e.alive:
+        if lifecycle != 'active' or not e.alive:
             color = '#888888'
-        if self._bar_colors.get(e.addr) != color:   # 颜色变化才重设样式 (触发重排版)
-            self._bar_colors[e.addr] = color
+        row_key = getattr(e, 'roster_id', 0) or e.addr
+        if self._bar_colors.get(row_key) != color:   # 颜色变化才重设样式 (触发重排版)
+            self._bar_colors[row_key] = color
             bar.setStyleSheet(f'QProgressBar::chunk {{ background-color: {color}; }}')
+
+        detail = tbl.cellWidget(row, ENEMY_COLUMN_INDEX['detail'])
+        if detail is not None:
+            detail.setEnabled(lifecycle != 'pending')
+            detail.setToolTip(
+                '未出场，暂无运行时详情' if lifecycle == 'pending'
+                else '显示该敌人的完整属性、状态、损伤条、Buff 与关卡效果')
 
         cd_text = format_column_value('skill', e, d, row)
         n_lines = cd_text.count('\n')          # 行数变化才重排行高 (重排会触发布局)
-        if self._skill_lines.get(e.addr) != n_lines:
-            self._skill_lines[e.addr] = n_lines
+        if self._skill_lines.get(row_key) != n_lines:
+            self._skill_lines[row_key] = n_lines
             tbl.resizeRowToContents(row)
 
     # ================= 定时刷新 =================

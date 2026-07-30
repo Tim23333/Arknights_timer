@@ -629,9 +629,17 @@ def locate_engines(reader, status=lambda m: None):
 def validate_engine(reader, e):
     """校验缓存的引擎地址在当前进程仍然有效 (游戏未重启时地址可复用)。
 
-    三重校验: klass 名不变 / 对象状态字段仍指向缓存的数组 / 数组长度与
-    游标值合法。任一项失败即视为缓存失效 (游戏重启或对象已回收)。"""
+    四重校验: 静态槽仍指向该引擎 / klass 名不变 / 对象状态字段仍指向缓存的
+    数组 / 数组长度与游标值合法。任一项失败即视为缓存失效 (游戏重启、对象
+    已回收，或新一局已替换 RNG 对象)。
+
+    新一局开始后旧 RNG 对象可能仍完整残留在堆中；若只校验旧对象本身，缓存会
+    被误判为有效，看门狗随即再次发现静态槽已换对象，形成无限重扫循环。
+    """
     try:
+        watch_addr = e.get("watch_addr")
+        if watch_addr and resolve_engine_obj(reader, watch_addr) != e["obj"]:
+            return False
         kc = read_klass(reader, e["obj"])
         if not kc:
             return False

@@ -466,7 +466,9 @@ class BuffDataFields:
 # 注意: dump.cs 的标量偏移与现网版本有 ~0x10 漂移, 以下为实测值
 # ============================================================
 class BattleControllerFields:
+    UNITY_CACHED_PTR = 0x10   # UnityEngine.Object.m_CachedPtr；销毁后清零
     MAP = 0x28                # Map* [实测 klass=Map]
+    SCHEDULER = 0x30          # Scheduler* [2026-07-30 现网实测 klass=Scheduler]
     FACTORY = 0x38            # BattleFactory* [实测 klass=BattleFactory]
     M_GLOBAL_BUFFS = 0x68     # List<GlobalBuff> [2026-07 现网实测]
     M_LOGGER = 0xD8           # BattleLogger* [实测 klass=BattleLogger]
@@ -477,8 +479,7 @@ class BattleControllerFields:
     M_SPEED_LEVEL = 0x228     # int32 SpeedLevel (0-3) [实测=1]
     M_TIME_SCALE = 0x280      # float 时间倍率 [实测=1.0]
     M_REAL_PLAY_TIME = 0x284  # float 战斗时间(秒) [实测]
-    # 注意: dump.cs 中 _scheduler=0x30 / m_state=0x22C / m_speedLevel=0x234 /
-    # m_realPlayTime=0x294 在现网版本均不成立 (实测+0x30非指针, +0x294为指针区内)
+    # 注意: 标量字段相对 dump.cs 有漂移；Scheduler/LevelData 等引用字段现网仍匹配。
 
 
 class BattleState:
@@ -497,27 +498,61 @@ class SpeedLevel:
 
 
 # ============================================================
-# Scheduler  [已实测验证]
-# 运行时定位方式: 全堆扫指向 m_managedWaveEnemies List 的指针,
-# 全堆唯一命中即 Scheduler+0xB8 (实测唯一)。该对象的 klass 指针
-# 异常(读不出类名), 但字段内容与 dump.cs Scheduler 类吻合。
-# 注意: dump.cs 的 <battleController>k__BackingField=0x128 在现网
-# 版本是 DialogController; BattleController 需经 SchedulerDriver 到达。
+# Scheduler / LevelData 出怪序列 [2026-07-30 现网实测]
+# BattleController+0x30 直接持有真实 Scheduler 对象；此前从
+# m_managedWaveEnemies 反推时误减了 0xB8（实际字段为 0xC0），得到的是
+# Scheduler+8 的伪基址，后续所有偏移才被迫整体少写 8。这里统一恢复真实基址。
 # ============================================================
 class SchedulerFields:
-    M_SPAWNED_ENEMIES_CNT = 0x1C       # uint32
-    M_WAVES = 0x98                     # WaveData[]
-    M_MANAGED_WAVE_ENEMIES = 0xB8      # List<Enemy> [实测: 全堆唯一引用点]
-    M_MANAGED_FINAL_ENEMIES = 0xC0     # List<Enemy>
-    M_CACHED_ENEMIES = 0xD8            # ListSet<Enemy>
-    SCHEDULER_DRIVER = 0xF0            # SchedulerDriver* [实测 klass=SchedulerDriver]
-    TOTAL_ENEMIES_CNT = 0x120          # int32
+    M_SPAWNED_ENEMIES_CNT = 0x24       # uint32
+    M_WAVES = 0xA0                     # WaveData[]（与 LevelData.waves 同一数组）
+    M_MANAGED_WAVE_ENEMIES = 0xC0      # List<Enemy> [实测]
+    M_MANAGED_FINAL_ENEMIES = 0xC8     # List<Enemy>
+    M_CACHED_ENEMIES = 0xE0            # ListSet<Enemy>
+    SCHEDULER_DRIVER = 0x138           # SchedulerDriver* [实测 klass=SchedulerDriver]
+    TOTAL_ENEMIES_CNT = 0x128          # int32
 
 
 class SchedulerDriverFields:
     """SchedulerDriver (Lua 驱动桥) [实测]"""
     BATTLE_CONTROLLER = 0x10           # BattleController* [实测 klass=BattleController]
     SCHEDULER_WRAPPER = 0x18           # SchedulerWrapper*
+
+
+class LevelDataFields:
+    LEVEL_ID = 0x18                    # string
+    ENEMY_DB_REFS = 0x78               # EnemyDataDbReference[]
+    WAVES = 0x80                       # WaveData[]
+
+
+class WaveDataFields:
+    PRE_DELAY = 0x10                   # float
+    POST_DELAY = 0x14                  # float
+    MAX_WAIT_NEXT = 0x18               # float
+    FRAGMENTS = 0x20                   # FragmentData[]
+
+
+class FragmentDataFields:
+    PRE_DELAY = 0x10                   # float
+    ACTIONS = 0x18                     # ActionData[]
+
+
+class SpawnActionFields:
+    ACTION_TYPE = 0x10                 # int32; SPAWN=0
+    MANAGED_BY_SCHEDULER = 0x14        # bool
+    KEY = 0x18                         # string enemy key
+    COUNT = 0x20                       # int32
+    PRE_DELAY = 0x24                   # float
+    INTERVAL = 0x28                    # float
+    ROUTE_INDEX = 0x30                 # int32
+    HIDDEN_GROUP = 0x38                # string
+    RANDOM_SPAWN_GROUP = 0x40          # string
+    IS_VALID = 0x5E                    # bool（预处理/随机选择后的结果）
+    NOT_COUNT_IN_TOTAL = 0x5F          # bool
+
+
+class SpawnActionType:
+    SPAWN = 0
 
 
 # ============================================================
