@@ -9,7 +9,8 @@
   - m_hp=0x40, <id>=0x130, m_attributes=0x98, m_cachedData=0x50
   - ObscuredFP 步长 0x28, XOR 解密后 Q32.32 定点数
   - List<Enemy>: _items=0x10 _size=0x18, 数组数据 +0x20, 长度 +0x18
-  - Scheduler.m_managedWaveEnemies=0xB8 (全堆唯一引用点定位)
+  - Scheduler.m_managedWaveEnemies=0xC0（此前从引用点反推时误写为 0xB8）
+  - BattleController.unitManager=0x2B8；UnitManager.enemies=0x20
   - SchedulerDriver: +0x10=BattleController; BC: state=0x220 speed=0x228
     timeScale=0x280 playTime=0x284 (dump.cs 旧偏移 0x30/0x22C/0x234/0x294 已失效)
 
@@ -137,8 +138,16 @@ class EnemyFields:
     M_POS_IN_LAST_FRAME = 0x3D0 # Vector2 (float x,y) 上一帧地图坐标
     M_ALL_SKILLS = 0x410        # EnemySkill[] 全部技能组件 [实测]
     ROUTE_SPAWN_POS = 0x478     # GridPosition (int32 row,col) 出生格
-    READ_SIZE = 0x4A0           # 稳态每敌读取跨度 (含 m_skills 指针 0x498+8)
+    READ_SIZE = 0x508           # 含 m_skills 与 Enemy.Options（召唤标记/actionData）
     M_SKILLS = 0x498            # List<EnemySkill> 激活技能列表 [实测]
+    DATA = 0x4D0                # LevelData.EnemyData*
+    OPTIONS = 0x4D8             # inline Enemy.Options
+
+
+class EnemyOptionsFields:
+    IS_SUMMON = 0x08            # bool（相对 Enemy.Options）
+    HIDDEN_GROUP_KEY = 0x10     # string
+    ACTION_DATA = 0x20          # LevelData.ActionData*
 
 
 # ============================================================
@@ -479,6 +488,7 @@ class BattleControllerFields:
     M_SPEED_LEVEL = 0x228     # int32 SpeedLevel (0-3) [实测=1]
     M_TIME_SCALE = 0x280      # float 时间倍率 [实测=1.0]
     M_REAL_PLAY_TIME = 0x284  # float 战斗时间(秒) [实测]
+    UNIT_MANAGER = 0x2B8      # UnitManager*；其 enemies 含非 Scheduler 管理的召唤敌人
     # 注意: 标量字段相对 dump.cs 有漂移；Scheduler/LevelData 等引用字段现网仍匹配。
 
 
@@ -505,12 +515,40 @@ class SpeedLevel:
 # ============================================================
 class SchedulerFields:
     M_SPAWNED_ENEMIES_CNT = 0x24       # uint32
+    M_WAVE_START_TIME = 0x90            # FP，当前波次绝对开始时间
+    M_FRAGMENT_START_TIME = 0x98        # FP，当前片段绝对开始时间
     M_WAVES = 0xA0                     # WaveData[]（与 LevelData.waves 同一数组）
+    M_ACTION_QUEUE = 0xB8              # List<Scheduler.ActionItem> 当前待执行行动
     M_MANAGED_WAVE_ENEMIES = 0xC0      # List<Enemy> [实测]
     M_MANAGED_FINAL_ENEMIES = 0xC8     # List<Enemy>
     M_CACHED_ENEMIES = 0xE0            # ListSet<Enemy>
     SCHEDULER_DRIVER = 0x138           # SchedulerDriver* [实测 klass=SchedulerDriver]
     TOTAL_ENEMIES_CNT = 0x128          # int32
+
+
+class BattleControllerStaticFields:
+    """BattleController Il2CppClass.static_fields 内的战斗逻辑时钟。"""
+    FIXED_FRAME_COUNT = 0x14            # uint32
+    FIXED_PLAY_TIME = 0x18              # FP；Scheduler 各 startTime 使用同一时基
+    FIXED_PLAY_TIME_FLOAT = 0x28        # float，与 FIXED_PLAY_TIME 同步
+
+
+class Il2CppClassFields:
+    STATIC_FIELDS = 0xB8
+
+
+class UnitManagerFields:
+    ALL_UNITS = 0x10
+    CHARACTERS = 0x18
+    ENEMIES = 0x20                    # UnorderedArray<Unit>*
+    NEUTRAL_UNITS = 0x28
+
+
+class UnorderedArrayFields:
+    """Torappu.UnorderedArray<T>（现网 UnitManager.enemies 实测）。"""
+    ITEMS = 0x10                      # T[]
+    ITEM_MAP = 0x18                   # Dictionary<T, int>
+    COUNT = 0x20                      # int32；仅前 count 个数组槽有效
 
 
 class SchedulerDriverFields:
@@ -523,6 +561,7 @@ class LevelDataFields:
     LEVEL_ID = 0x18                    # string
     ENEMY_DB_REFS = 0x78               # EnemyDataDbReference[]
     WAVES = 0x80                       # WaveData[]
+    BRANCHES = 0x88                    # ListDict<string, BranchData>
 
 
 class WaveDataFields:
@@ -537,6 +576,15 @@ class FragmentDataFields:
     ACTIONS = 0x18                     # ActionData[]
 
 
+class BranchDataFields:
+    PHASES = 0x10                      # PhaseData[]
+
+
+class BranchPhaseDataFields:
+    PRE_DELAY = 0x10                   # float
+    ACTIONS = 0x18                     # ActionData[]
+
+
 class SpawnActionFields:
     ACTION_TYPE = 0x10                 # int32; SPAWN=0
     MANAGED_BY_SCHEDULER = 0x14        # bool
@@ -547,8 +595,24 @@ class SpawnActionFields:
     ROUTE_INDEX = 0x30                 # int32
     HIDDEN_GROUP = 0x38                # string
     RANDOM_SPAWN_GROUP = 0x40          # string
+    RANDOM_SPAWN_PACK = 0x48           # string
+    RANDOM_TYPE = 0x50                 # int32
+    REFRESH_TYPE = 0x54                # int32
+    WEIGHT = 0x58                      # int32
+    DONT_BLOCK_WAVE = 0x5C             # bool
+    FORCE_BLOCK_WAVE_IN_BRANCH = 0x5D  # bool
     IS_VALID = 0x5E                    # bool（预处理/随机选择后的结果）
     NOT_COUNT_IN_TOTAL = 0x5F          # bool
+    EXTRA_META = 0x60                  # object
+    ACTION_ID = 0x68                   # LevelData.ActionID（4×int32）
+    READ_SIZE = 0x78
+
+
+class SchedulerActionItemFields:
+    """Scheduler.ActionItem 是内联值类型，存放在 List<ActionItem> 数组中。"""
+    DATA = 0x00                         # ActionData*
+    TIME_OFFSET = 0x08                  # float，距当前片段起点的执行偏移
+    SIZE = 0x10
 
 
 class SpawnActionType:

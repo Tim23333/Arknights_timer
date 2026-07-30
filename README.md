@@ -16,6 +16,7 @@
   - 技能 CD（剩余/总冷却，如浮士德「SummonBallis 11.4/15s」）
   - 战斗状态、倍速、战斗时间
   - 固定敌人从开局起按预定出场顺序显示；条件分支/召唤等动态敌人首次出现后追加
+  - 当前调度片段内显示精确“距离出场”游戏秒数；死亡转换/技能召唤等不可计时项显示触发条件
   - “离场敌方不显示”默认勾选，取消后可回看已离场敌人的最后一帧数据
   - 轮询间隔 0.01s、渲染 60fps
 - **随机数追踪**：进关卡后点「扫描随机数」一次性定位随机数引擎（首次约 15-30 秒，地址缓存后秒级），随后实时展示关键随机（战斗判定）：
@@ -36,12 +37,13 @@
 ```
 MuMu 模拟器 (Android arm64)
   └── 明日方舟进程
-       └── Scheduler.m_managedWaveEnemies (List<Enemy>)
+       ├── Scheduler.m_managedWaveEnemies (固定波次敌人)
+       └── UnitManager.enemies (全部实时敌人，含装置/技能召唤)
             └── Enemy: m_hp / <id> / Attributes.m_cachedData
 ```
 
 - **定位**：主路径在设备侧扫描当前 `BattleController` 的 Il2CppClass/对象，沿
-  `BattleController → Scheduler → m_managedWaveEnemies` 取得实时列表，并从
+  `BattleController → UnitManager → enemies` 取得完整实时列表（Scheduler 列表作兜底），并从
   `BattleController → LevelData.waves` 解析开局即存在的固定 SPAWN 顺序，因此不再
   依赖场上已有敌人。旧的 `enemy_` 字符串 + HP 特征全堆扫描保留为版本漂移兜底；
   地址链缓存到 `enemy_cache.pkl`，有效时可直接复用
@@ -160,7 +162,7 @@ MuMu 模拟器 (Android arm64)
 - Python 3.8+
 - Windows 10/11
 - 管理员权限（读取游戏内存）
-- 敌人监控需要 MuMu 模拟器且 adb root 可用（MuMu 默认支持）；程序会自动探测 adb.exe（多盘符常见路径/注册表/PATH/ANDROID_HOME），探测失败时可在点击「开始扫描」后手动选择 MuMu 安装目录下的 `shell\adb.exe`，选择一次即记住
+- 敌人监控需要 MuMu 模拟器且 adb root 可用（MuMu 默认支持）；程序会自动探测 adb.exe（多盘符常见路径/注册表/PATH/ANDROID_HOME）。也可随时点击主页面顶部「选择 ADB」：手动浏览 MuMu 安装目录下的 `shell\adb.exe`，或在模拟器启动后点击「自动探测运行中模拟器」，程序会从运行进程反推安装目录、验证并记住路径；敌人、随机数和操作记录扫描统一使用该 ADB
 
 ### 安装依赖
 

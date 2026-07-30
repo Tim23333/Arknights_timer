@@ -71,10 +71,18 @@ ENEMY_COLUMN_DEFS.extend([
     _col('ep_break', '元素爆发恢复', 95, False),
     _col('skill', '技能 CD', 150, True, True),
     _col('life_status', '生存状态', 72, True),
+    _col('spawn_wait', '距离出场', 170, True),
     _col('detail', '详情', 64, True),
 ])
 
 ENEMY_COLUMN_INDEX = {col['key']: idx for idx, col in enumerate(ENEMY_COLUMN_DEFS)}
+SPAWN_KIND_NAMES = {
+    'scheduled': '固定波次',
+    'conditional': '条件触发',
+    'summoned': '召唤/死亡转换',
+    'after_death': '死亡后触发',
+    'dynamic': '运行时生成',
+}
 DEFAULT_VISIBLE_COLUMNS = {col['key'] for col in ENEMY_COLUMN_DEFS if col['default']}
 
 
@@ -263,7 +271,7 @@ def format_column_value(key, enemy, decimals, row=0):
         return enemy.code or '-'
     if key == 'eid':
         return enemy.eid
-    if lifecycle == 'pending' and key != 'life_status':
+    if lifecycle == 'pending' and key not in ('life_status', 'spawn_wait'):
         return '-'
     if key == 'pos':
         p = decimals.get('pos', precision)
@@ -315,6 +323,15 @@ def format_column_value(key, enemy, decimals, row=0):
         if lifecycle == 'departed':
             return '已离场'
         return '存活' if enemy.alive else ('退场' if enemy.finish else '阵亡')
+    if key == 'spawn_wait':
+        if lifecycle == 'pending':
+            eta = getattr(enemy, 'spawn_eta', None)
+            if eta is not None:
+                return f'{max(0.0, float(eta)):.1f} 秒'
+            return getattr(enemy, 'spawn_condition', '') or '等待关卡条件触发'
+        if lifecycle == 'active':
+            return '已出场'
+        return '已离场'
     return ''
 
 
@@ -437,12 +454,19 @@ class EnemyDetailDialog(QDialog):
             ('元素抗性', enemy.attribute(gs.AttributeType.EP_RESISTANCE)),
         ]
         if getattr(enemy, 'spawn_order', 0):
+            path = '/'.join(
+                str(value + 1) if value >= 0 else '-'
+                for value in (enemy.wave_index, enemy.fragment_index, enemy.action_index))
             overview[0:0] = [
                 ('预定出怪顺序', enemy.spawn_order),
-                ('波次/片段/行动',
-                 f'{enemy.wave_index + 1}/{enemy.fragment_index + 1}/{enemy.action_index + 1}'),
-                ('行动内序号', enemy.spawn_index + 1),
-                ('路线索引', enemy.route_index),
+                ('波次/片段/行动', path),
+                ('行动内序号', enemy.spawn_index + 1 if enemy.spawn_index >= 0 else '-'),
+                ('路线索引', enemy.route_index if enemy.route_index >= 0 else '-'),
+                ('出场方式', SPAWN_KIND_NAMES.get(
+                    getattr(enemy, 'spawn_kind', ''),
+                    getattr(enemy, 'spawn_kind', '-') or '-')),
+                ('触发来源', getattr(enemy, 'spawn_source', '') or '-'),
+                ('距离/条件', format_column_value('spawn_wait', enemy, {})),
             ]
         _fill_table(self.overview, overview, resize_columns=resize_columns)
 

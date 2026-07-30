@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 import os
+import subprocess
+import tempfile
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
@@ -14,6 +18,7 @@ from backend.app.enemy_ui import (
 )
 from tools.enemy_health import game_structs as gs
 from tools.enemy_health.enemy_reader import EnemyInfo
+from backend.desktop_app import AdbSelectionDialog, probe_adb_executable
 
 
 class EnemyUiTests(unittest.TestCase):
@@ -27,6 +32,25 @@ class EnemyUiTests(unittest.TestCase):
             precision_column_defs(visible),
             [('attr_1', '攻击'), ('ep_sanity', '神经损伤'), ('skill', '技能 CD')],
         )
+
+    def test_adb_probe_handles_executable_path_with_spaces(self):
+        with tempfile.TemporaryDirectory(prefix='adb path ') as temp_dir:
+            adb_path = Path(temp_dir) / 'adb.exe'
+            adb_path.touch()
+            completed = subprocess.CompletedProcess(
+                [str(adb_path), 'version'], 0,
+                stdout='Android Debug Bridge version 1.0.41\n', stderr='')
+            with patch('backend.desktop_app.subprocess.run', return_value=completed) as run:
+                ok, detail = probe_adb_executable(str(adb_path))
+            self.assertTrue(ok)
+            self.assertIn('Android Debug Bridge', detail)
+            self.assertEqual(run.call_args.args[0], [str(adb_path), 'version'])
+
+    def test_adb_selection_dialog_has_running_emulator_detection(self):
+        dialog = AdbSelectionDialog(None, '')
+        self.assertEqual(dialog.btn_auto_detect.text(), '自动探测运行中模拟器')
+        self.assertTrue(dialog.path_combo.isEditable())
+        dialog.close()
 
     def test_column_specific_precision_for_attribute_and_element_damage(self):
         enemy = EnemyInfo(1)

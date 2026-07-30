@@ -33,6 +33,7 @@ from .enemy_db import load_enemy_db
 NEEDLE_ENEMY = 'enemy_'.encode('utf-16-le')   # UTF-16LE "enemy_"
 HP_MIN, HP_MAX = 50, 1_000_000                # HP 签名高32位范围
 SCAN_CAP = 32 * 1024 * 1024                   # 每块 32MB
+DETAIL_TCP_PORT = 27274                        # 与敌人主轮询/RNG/部署通道隔离
 
 if getattr(sys, 'frozen', False):
     # 打包模式: _MEIPASS 是每次启动重建的临时目录, 缓存放 exe 旁以便跨启动复用
@@ -107,7 +108,8 @@ class EnemyInfo:
                  'abnormal_antis', 'abnormal_combos', 'abnormal_combo_immunes',
                  'buffs', 'global_buffs', 'roster_id', 'spawn_order', 'wave_index',
                  'fragment_index', 'action_index', 'spawn_index', 'route_index',
-                 'lifecycle', 'planned')
+                 'lifecycle', 'planned', 'spawn_eta', 'spawn_condition',
+                 'spawn_kind', 'spawn_source', 'is_summon', 'action_ptr')
 
     def __init__(self, addr):
         self.addr = addr
@@ -161,6 +163,12 @@ class EnemyInfo:
         self.route_index = -1
         self.lifecycle = 'active' if addr else 'pending'
         self.planned = False
+        self.spawn_eta = None       # 距出场秒数；条件尚未满足时为 None
+        self.spawn_condition = ''  # 无法给出秒数时的等待条件
+        self.spawn_kind = 'dynamic'
+        self.spawn_source = ''
+        self.is_summon = False
+        self.action_ptr = 0
 
     def attribute(self, index, default=0.0):
         return self.attributes.get(index, default)
@@ -190,7 +198,16 @@ class EnemyInfo:
         return '、'.join(names) if names else '正常'
 
     def element_damage(self, element_type):
-        maximum = max(0.0, self.attribute(gs.AttributeType.MAX_EP, 0.0))
+        # MAX_EP is the base attribute, but some runtime entity subclasses
+        # override Entity.maxEp (giant bosses are one example).  The game
+        # initializes the unused NONE slot in m_epArray with that effective
+        # maxEp, so it is the authoritative live capacity for every concrete
+        # elemental-damage bar.  Keep the attribute as a fallback for pending
+        # enemies and older layouts where the runtime array is unavailable.
+        base_maximum = max(0.0, self.attribute(gs.AttributeType.MAX_EP, 0.0))
+        runtime_maximum = max(
+            0.0, self.ep_remaining.get(gs.ElementType.NONE, 0.0))
+        maximum = max(base_maximum, runtime_maximum)
         remaining = max(0.0, self.ep_remaining.get(element_type, maximum))
         damage = max(0.0, maximum - remaining)
         return damage, remaining, maximum
@@ -211,6 +228,8 @@ class EnemyReader:
         self.list_addr = 0
         self.sched_addr = 0
         self.bc_addr = 0
+        self.unit_manager_addr = 0
+        self.unit_enemies_addr = 0
         # 轮询缓存
         self._names = {}          # enemy addr -> (eid, name, code)
         self._attr_cache = {}     # enemy addr -> cachedData 数组地址
@@ -220,6 +239,8 @@ class EnemyReader:
         self._merge_lock = threading.Lock()  # 并行扫描合并锁
         # 准实时轮询 (常驻 TCP 通道)
         self._chan = None             # TcpChannel, 惰性打开
+        self._detail_chan = None      # 详情独立通道，避免重读取阻塞主轮询
+        self._detail_context = threading.local()
         self._fast_tick = 0
         self._attr_snapshot = {}      # enemy addr -> {AttributeType: 最终属性值}
         self._runtime_snapshot = {}   # enemy addr -> 状态/损伤条/异常计数
@@ -228,7 +249,11 @@ class EnemyReader:
         self._f_cnt = 0               # 上一帧敌人数量
         self._f_ptrs = []             # 上一帧敌人指针列表
         self._f_version = -1          # 上一帧 List._version (变化即重读 items)
+        self._uf_items = 0            # UnitManager.enemies 的 Unit[]
+        self._uf_cnt = 0
+        self._uf_ptrs = []
         self._bc_snap = None          # BC 块缓存 (state, speed, time_scale, play_time)
+        self._scheduler_time_snap = None  # BattleController.s_fixedPlayTime
         self._attr_ptrs = {}          # enemy addr -> Attributes* (属性轮换读取用)
         self._chan_fail = 0           # 通道连续异常计数 (日志节流)
         self._chan_dead_ts = 0.0      # 通道上次失败时间 (冷却期内直接走慢速)
@@ -244,10 +269,25 @@ class EnemyReader:
         self._dynamic_roster_seq = 0
         self._roster_initialized = False
         self._plan_level_id = ''
+        # Scheduler 当前片段的运行时 action 队列。静态 waves 只能给出相对延迟，
+        # 下一波仍可能等待上一批敌人离场；运行时队列才能给出真实剩余秒数。
+        self._runtime_spawn_plan = []
+        self._runtime_action_records = {}
+        self._action_meta = {}
+        self._action_queue_ptr = 0
+        self._action_queue_items = 0
+        self._action_queue_version = -1
+        self._action_queue_entries = []
+        self._fragment_start_time = 0.0
+        self._wave_start_time = 0.0
+        self._current_wave_index = -1
+        self._current_fragment_index = -1
+        self._bc_static_fields = 0
+        self._scheduler_time_snap = None
 
     @property
     def planned_count(self):
-        return len(self._spawn_plan)
+        return len(self._spawn_plan) + len(self._runtime_spawn_plan)
 
     @property
     def plan_level_id(self):
@@ -301,44 +341,164 @@ class EnemyReader:
         except UnicodeDecodeError:
             return ''
 
+    def _read_listdict_pairs(self, list_ptr, max_count=4096):
+        """读取 ListDict<string,T>；其基类是 List<KeyValuePair<string,T>>。"""
+        if not self.mc.is_ptr(list_ptr):
+            return []
+        head = self._detail_batch_read([(list_ptr, 0x20)])[0]
+        if not head:
+            return []
+        items = _u64(head, gs.ListInternal.ITEMS)
+        count = _i32(head, gs.ListInternal.SIZE)
+        if not (0 <= count <= max_count) or (count and not self.mc.is_ptr(items)):
+            return []
+        if not count:
+            return []
+        raw = self._detail_batch_read(
+            [(items + gs.Il2CppArray.ITEMS, count * 0x10)])[0]
+        if not raw:
+            return []
+        pairs = []
+        for index in range(count):
+            key_ptr = _u64(raw, index * 0x10)
+            value_ptr = _u64(raw, index * 0x10 + 8)
+            key = self._read_ustring_fast(key_ptr)
+            if key and self.mc.is_ptr(value_ptr):
+                pairs.append((key, value_ptr))
+        return pairs
+
+    def _expand_spawn_actions(self, action_ptrs, base_meta, base_delay=0.0):
+        """把 ActionData.count 展开为逐实例记录，并按 ActionItem 时间语义排序。"""
+        records = []
+        for action_index, action_ptr in enumerate(action_ptrs):
+            action = self._detail_batch_read(
+                [(action_ptr, gs.SpawnActionFields.READ_SIZE)])[0]
+            if (not action
+                    or _i32(action, gs.SpawnActionFields.ACTION_TYPE)
+                    != gs.SpawnActionType.SPAWN
+                    or not action[gs.SpawnActionFields.IS_VALID]):
+                continue
+            count = _i32(action, gs.SpawnActionFields.COUNT)
+            key = self._read_ustring_fast(_u64(action, gs.SpawnActionFields.KEY))
+            if not key or not (0 < count <= 4096):
+                continue
+            pre_delay = struct.unpack_from(
+                '<f', action, gs.SpawnActionFields.PRE_DELAY)[0]
+            interval = struct.unpack_from(
+                '<f', action, gs.SpawnActionFields.INTERVAL)[0]
+            for spawn_index in range(count):
+                record = dict(base_meta)
+                record.update({
+                    'key': key,
+                    'action_ptr': action_ptr,
+                    'action_index': action_index,
+                    'spawn_index': spawn_index,
+                    'route_index': _i32(action, gs.SpawnActionFields.ROUTE_INDEX),
+                    'time_offset': (float(base_delay) + pre_delay
+                                    + max(0.0, interval) * spawn_index),
+                    'managed': bool(action[gs.SpawnActionFields.MANAGED_BY_SCHEDULER]),
+                    'hidden_group': self._read_ustring_fast(
+                        _u64(action, gs.SpawnActionFields.HIDDEN_GROUP)),
+                    'random_spawn_group': self._read_ustring_fast(
+                        _u64(action, gs.SpawnActionFields.RANDOM_SPAWN_GROUP)),
+                    'not_count_in_total': bool(
+                        action[gs.SpawnActionFields.NOT_COUNT_IN_TOTAL]),
+                })
+                records.append(record)
+        records.sort(key=lambda item: (
+            item['time_offset'], item['action_index'], item['spawn_index']))
+        return records
+
+    def _resolve_battle_clock(self):
+        """解析 Scheduler startTime 所使用的 BattleController 静态 FP 时钟。"""
+        self._bc_static_fields = 0
+        if not self.mc.is_ptr(self.bc_addr):
+            return False
+        klass = self._read_ptr(self.bc_addr)
+        static_fields = self._read_ptr(klass + gs.Il2CppClassFields.STATIC_FIELDS) \
+            if self.mc.is_ptr(klass) else 0
+        if not self.mc.is_ptr(static_fields):
+            return False
+        raw = self._detail_batch_read([(
+            static_fields + gs.BattleControllerStaticFields.FIXED_PLAY_TIME, 8)])[0]
+        if not raw:
+            return False
+        now = gs.fp_to_float(_u64(raw, 0))
+        if not (-1.0 <= now <= 864000.0):
+            return False
+        self._bc_static_fields = static_fields
+        return True
+
+    @staticmethod
+    def _decode_battle_clock(raw):
+        if not raw or len(raw) < 8:
+            return None
+        value = gs.fp_to_float(_u64(raw, 0))
+        return value if -1.0 <= value <= 864000.0 else None
+
+    def _make_plan_record(self, source, order, roster_id):
+        record = dict(source)
+        record['roster_id'] = roster_id
+        record['spawn_order'] = order
+        record['seen'] = False
+        record['addr'] = 0
+        record.setdefault('spawn_eta', None)
+        record.setdefault('spawn_condition', '等待关卡调度')
+        record.setdefault('spawn_kind', 'scheduled')
+        record.setdefault('spawn_source', '')
+        enemy = EnemyInfo(0)
+        enemy.roster_id = roster_id
+        enemy.spawn_order = order
+        enemy.wave_index = record.get('wave_index', -1)
+        enemy.fragment_index = record.get('fragment_index', -1)
+        enemy.action_index = record.get('action_index', -1)
+        enemy.spawn_index = record.get('spawn_index', -1)
+        enemy.route_index = record.get('route_index', -1)
+        enemy.eid = record.get('key', '')
+        db_row = self._db.get(enemy.eid, {})
+        enemy.name = db_row.get('name') or enemy.eid
+        enemy.code = db_row.get('code') or ''
+        enemy.lifecycle = 'pending'
+        enemy.planned = True
+        enemy.alive = False
+        self._copy_plan_metadata(enemy, record, 'pending')
+        record['info'] = enemy
+        self._plan_by_id[roster_id] = record
+        return record
+
+    def _all_plan_records(self):
+        return self._spawn_plan + self._runtime_spawn_plan
+
     def _set_spawn_plan(self, records, level_id=''):
         """重建本局计划表和实例映射；records 已按预定出场顺序排列。"""
         if self._db is None:
             self._db = load_enemy_db()
         self._spawn_plan = []
+        self._runtime_spawn_plan = []
+        self._runtime_action_records = {}
         self._plan_by_id = {}
         self._roster_last = {}
         self._addr_to_roster = {}
         self._dynamic_roster_seq = 0
         self._roster_initialized = False
         self._plan_level_id = level_id or ''
+        self._action_meta = {}
+        self._action_queue_ptr = 0
+        self._action_queue_items = 0
+        self._action_queue_version = -1
+        self._action_queue_entries = []
+        self._fragment_start_time = 0.0
+        self._wave_start_time = 0.0
+        self._current_wave_index = -1
+        self._current_fragment_index = -1
+        self._bc_static_fields = 0
+        self._scheduler_time_snap = None
         for order, source in enumerate(records, 1):
-            record = dict(source)
-            record['roster_id'] = -order
-            record['spawn_order'] = order
-            record['seen'] = False
-            record['addr'] = 0
-            enemy = EnemyInfo(0)
-            enemy.roster_id = record['roster_id']
-            enemy.spawn_order = order
-            enemy.wave_index = record.get('wave_index', -1)
-            enemy.fragment_index = record.get('fragment_index', -1)
-            enemy.action_index = record.get('action_index', -1)
-            enemy.spawn_index = record.get('spawn_index', -1)
-            enemy.route_index = record.get('route_index', -1)
-            enemy.eid = record.get('key', '')
-            db_row = self._db.get(enemy.eid, {})
-            enemy.name = db_row.get('name') or enemy.eid
-            enemy.code = db_row.get('code') or ''
-            enemy.lifecycle = 'pending'
-            enemy.planned = True
-            enemy.alive = False
-            record['info'] = enemy
+            record = self._make_plan_record(source, order, -order)
             self._spawn_plan.append(record)
-            self._plan_by_id[enemy.roster_id] = record
 
     def _load_spawn_plan(self):
-        """从当前 BattleController.LevelData 解析完整 Wave/Fragment/SPAWN 顺序。"""
+        """解析固定 waves、条件 branches 和仅由事件/召唤使用的敌人类型。"""
         if not self.bc_addr:
             self._set_spawn_plan([])
             return False
@@ -364,44 +524,75 @@ class EnemyReader:
                     continue
                 actions_ptr = _u64(fragment, gs.FragmentDataFields.ACTIONS)
                 action_ptrs = self._read_object_array(actions_ptr, 8192)
-                fragment_records = []
-                for action_index, action_ptr in enumerate(action_ptrs):
-                    action = self._detail_batch_read([(action_ptr, 0x60)])[0]
-                    if not action or len(action) <= gs.SpawnActionFields.NOT_COUNT_IN_TOTAL:
-                        continue
-                    if _i32(action, gs.SpawnActionFields.ACTION_TYPE) != gs.SpawnActionType.SPAWN:
-                        continue
-                    if not action[gs.SpawnActionFields.IS_VALID]:
-                        continue
-                    count = _i32(action, gs.SpawnActionFields.COUNT)
-                    key = self._read_ustring_fast(_u64(action, gs.SpawnActionFields.KEY))
-                    if not key or not (0 < count <= 4096):
-                        continue
-                    pre_delay = struct.unpack_from(
-                        '<f', action, gs.SpawnActionFields.PRE_DELAY)[0]
-                    interval = struct.unpack_from(
-                        '<f', action, gs.SpawnActionFields.INTERVAL)[0]
-                    route_index = _i32(action, gs.SpawnActionFields.ROUTE_INDEX)
-                    for spawn_index in range(count):
-                        fragment_records.append({
-                            'key': key,
-                            'wave_index': wave_index,
-                            'fragment_index': fragment_index,
-                            'action_index': action_index,
-                            'spawn_index': spawn_index,
-                            'route_index': route_index,
-                            'time_offset': pre_delay + max(0.0, interval) * spawn_index,
-                            'managed': bool(action[gs.SpawnActionFields.MANAGED_BY_SCHEDULER]),
-                            'not_count_in_total': bool(
-                                action[gs.SpawnActionFields.NOT_COUNT_IN_TOTAL]),
-                        })
-                # 同一片段内不同 Action 可并行，按实际预延迟/间隔确定先后。
-                fragment_records.sort(key=lambda item: (
-                    item['time_offset'], item['action_index'], item['spawn_index']))
-                records.extend(fragment_records)
+                records.extend(self._expand_spawn_actions(action_ptrs, {
+                    'wave_index': wave_index,
+                    'fragment_index': fragment_index,
+                    'spawn_kind': 'scheduled',
+                    'spawn_condition': (
+                        f'等待第 {wave_index + 1} 波第 {fragment_index + 1} 段进入调度'),
+                    'wave_pre_delay': struct.unpack_from(
+                        '<f', wave, gs.WaveDataFields.PRE_DELAY)[0],
+                    'wave_max_wait': struct.unpack_from(
+                        '<f', wave, gs.WaveDataFields.MAX_WAIT_NEXT)[0],
+                }))
+        fixed_count = len(records)
+
+        # branches 由敌人技能、死亡事件或关卡脚本触发；触发时间取决于战局，
+        # 因而开局展示条件而不伪造绝对秒数。若其中出现 SPAWN，仍预列其实例。
+        branches_ptr = self._read_ptr(level_data + gs.LevelDataFields.BRANCHES)
+        branch_records = []
+        for branch_id, branch_ptr in self._read_listdict_pairs(branches_ptr):
+            branch = self._detail_batch_read([(branch_ptr, 0x20)])[0]
+            phases_ptr = _u64(branch, gs.BranchDataFields.PHASES) if branch else 0
+            for phase_index, phase_ptr in enumerate(
+                    self._read_object_array(phases_ptr, 4096)):
+                phase = self._detail_batch_read([(phase_ptr, 0x20)])[0]
+                if not phase:
+                    continue
+                action_ptrs = self._read_object_array(
+                    _u64(phase, gs.BranchPhaseDataFields.ACTIONS), 8192)
+                phase_delay = struct.unpack_from(
+                    '<f', phase, gs.BranchPhaseDataFields.PRE_DELAY)[0]
+                branch_records.extend(self._expand_spawn_actions(action_ptrs, {
+                    'wave_index': -1,
+                    'fragment_index': phase_index,
+                    'branch_id': branch_id,
+                    'spawn_kind': 'conditional',
+                    'spawn_source': branch_id,
+                    'spawn_condition': f'等待分支「{branch_id}」触发（可能由技能/死亡事件触发）',
+                }, phase_delay))
+        records.extend(branch_records)
+
+        # 数据库引用中若还有未被 waves/branches 使用的敌人类型，通常来自召唤、
+        # 死亡转换或插件事件。数量在触发前不可知，先放一个“潜在实例”占位；
+        # 同类额外实例出现时仍会由运行时逻辑继续追加。
+        known_keys = {record['key'] for record in records}
+        ref_count = 0
+        refs_ptr = self._read_ptr(level_data + gs.LevelDataFields.ENEMY_DB_REFS)
+        for ref_ptr in self._read_object_array(refs_ptr, 4096):
+            ref = self._detail_batch_read([(ref_ptr, 0x28)])[0]
+            key = self._read_ustring_fast(_u64(ref, 0x18)) if ref else ''
+            if not key or key in known_keys:
+                continue
+            known_keys.add(key)
+            ref_count += 1
+            records.append({
+                'key': key,
+                'wave_index': -1,
+                'fragment_index': -1,
+                'action_index': -1,
+                'spawn_index': 0,
+                'route_index': -1,
+                'spawn_kind': 'summoned',
+                'spawn_source': '关卡敌人数据库引用',
+                'spawn_condition': '等待召唤者技能、前置敌人死亡转换或关卡事件触发',
+            })
         self._set_spawn_plan(records, level_id)
+        self._resolve_battle_clock()
         if records:
-            self.log(f"[关卡] {level_id or '当前关卡'} 预定出怪 {len(records)} 个")
+            self.log(f"[关卡] {level_id or '当前关卡'} 敌人计划 {len(records)} 个"
+                     f"（固定 {fixed_count}，条件分支 {len(branch_records)}，"
+                     f"潜在召唤类型 {ref_count}）")
         else:
             self.log(f"[关卡] {level_id or '当前关卡'} 未解析到固定 SPAWN 序列")
         return bool(records)
@@ -417,10 +608,16 @@ class EnemyReader:
         enemy.route_index = record.get('route_index', -1)
         enemy.lifecycle = lifecycle
         enemy.planned = True
+        enemy.spawn_eta = record.get('spawn_eta')
+        enemy.spawn_condition = record.get('spawn_condition', '')
+        enemy.spawn_kind = record.get('spawn_kind', 'scheduled')
+        enemy.spawn_source = record.get('spawn_source', '')
         return enemy
 
     def _bind_plan_enemy(self, enemy, record):
         self._copy_plan_metadata(enemy, record, 'active')
+        enemy.spawn_eta = 0.0
+        enemy.spawn_condition = '已出场'
         record['seen'] = True
         record['addr'] = enemy.addr
         record['info'] = enemy
@@ -431,15 +628,20 @@ class EnemyReader:
         self._dynamic_roster_seq += 1
         roster_id = 1_000_000 + self._dynamic_roster_seq
         enemy.roster_id = roster_id
-        enemy.spawn_order = len(self._spawn_plan) + self._dynamic_roster_seq
+        enemy.spawn_order = self.planned_count + self._dynamic_roster_seq
         enemy.lifecycle = 'active'
         enemy.planned = False
+        enemy.spawn_kind = 'summoned'
+        enemy.spawn_condition = '运行时召唤或关卡条件触发'
+        enemy.spawn_eta = 0.0
         self._addr_to_roster[enemy.addr] = roster_id
         self._roster_last[roster_id] = enemy
 
     def _merge_enemy_roster(self, live_enemies, spawned_count=0):
         """把当前实例合并进开局计划，返回含未出场/场上/已离场的稳定顺序。"""
-        live_enemies = list(live_enemies)
+        # UnitManager 在死亡动画/回收前仍短暂保留对象；HP 归零或 finishReason
+        # 非零即应进入“已离场”，不能继续算作场上敌人。
+        live_enemies = [enemy for enemy in live_enemies if enemy.alive]
         live_addrs = {enemy.addr for enemy in live_enemies}
 
         if not self._roster_initialized:
@@ -486,13 +688,27 @@ class EnemyReader:
                     self._roster_last[roster_id] = enemy
                 continue
 
-            record = next((item for item in self._spawn_plan
-                           if item['key'] == enemy.eid
-                           and item['info'].lifecycle == 'pending'), None)
+            # ActionData 指针能精确区分同种敌人的固定波次与运行时召唤；
+            # isSummon 则避免召唤物误认领尚未出场的同名固定波次项。
+            record = None
+            if enemy.action_ptr:
+                record = next((item for item in self._all_plan_records()
+                               if item.get('action_ptr') == enemy.action_ptr
+                               and item['info'].lifecycle == 'pending'), None)
+            if record is None and enemy.is_summon:
+                record = next((item for item in self._all_plan_records()
+                               if item['key'] == enemy.eid
+                               and item.get('spawn_kind') in (
+                                   'summoned', 'conditional', 'after_death')
+                               and item['info'].lifecycle == 'pending'), None)
+            if record is None and not enemy.is_summon:
+                record = next((item for item in self._all_plan_records()
+                               if item['key'] == enemy.eid
+                               and item['info'].lifecycle == 'pending'), None)
             if record is None:
                 # 初次附着中途战斗时，spawned_count 已把未观测的前缀标成离场；
                 # 若实例随后才在 List 中可见，允许认领尚未真正观测过的同类项。
-                candidates = [item for item in self._spawn_plan
+                candidates = [item for item in self._all_plan_records()
                               if item['key'] == enemy.eid
                               and item['info'].lifecycle == 'departed'
                               and not item['seen']]
@@ -502,10 +718,15 @@ class EnemyReader:
             else:
                 self._bind_dynamic_enemy(enemy)
 
-        rows = [record['info'] for record in self._spawn_plan]
+        rows = [record['info'] for record in self._all_plan_records()]
         dynamic = [enemy for roster_id, enemy in self._roster_last.items()
                    if roster_id not in self._plan_by_id]
-        rows.extend(sorted(dynamic, key=lambda enemy: enemy.spawn_order))
+        dynamic.sort(key=lambda enemy: enemy.spawn_order)
+        for index, enemy in enumerate(dynamic, 1):
+            # 运行期间可能补发现条件 Action；动态项始终排在全部可预知项之后，
+            # 避免新增计划项与既有动态项共用同一个显示序号。
+            enemy.spawn_order = self.planned_count + index
+        rows.extend(dynamic)
         return rows
 
     def _spawned_count(self):
@@ -514,6 +735,206 @@ class EnemyReader:
         data = self._detail_batch_read([(
             self.sched_addr + gs.SchedulerFields.M_SPAWNED_ENEMIES_CNT, 4)])[0]
         return struct.unpack('<I', data)[0] if data else 0
+
+    def _read_action_meta_chan(self, action_ptrs):
+        """批量读取新出现的 ActionData；运行时分支 action 同样能在这里识别。"""
+        missing = [ptr for ptr in action_ptrs if ptr not in self._action_meta]
+        if not missing:
+            return
+        for ptr, data in zip(missing, self._chan.batch_read([
+                (ptr, gs.SpawnActionFields.READ_SIZE) for ptr in missing])):
+            if not data:
+                continue
+            action_type = _i32(data, gs.SpawnActionFields.ACTION_TYPE)
+            key_ptr = _u64(data, gs.SpawnActionFields.KEY)
+            self._action_meta[ptr] = {
+                'action_type': action_type,
+                'key_ptr': key_ptr,
+                'count': _i32(data, gs.SpawnActionFields.COUNT),
+                'managed': bool(data[gs.SpawnActionFields.MANAGED_BY_SCHEDULER]),
+                'route_index': _i32(data, gs.SpawnActionFields.ROUTE_INDEX),
+                'hidden_group_ptr': _u64(data, gs.SpawnActionFields.HIDDEN_GROUP),
+                'random_group_ptr': _u64(data, gs.SpawnActionFields.RANDOM_SPAWN_GROUP),
+            }
+        string_reqs, string_keys = [], []
+        for ptr in missing:
+            meta = self._action_meta.get(ptr)
+            if not meta:
+                continue
+            for field in ('key_ptr', 'hidden_group_ptr', 'random_group_ptr'):
+                value = meta.get(field, 0)
+                if self.mc.is_ptr(value):
+                    string_reqs.append((value, 0x100))
+                    string_keys.append((ptr, field[:-4]))
+        for (ptr, field), data in zip(
+                string_keys, self._chan.batch_read(string_reqs) if string_reqs else []):
+            text = ''
+            if data and 0 <= _i32(data, gs.Il2CppString.LENGTH) <= 118:
+                count = _i32(data, gs.Il2CppString.LENGTH)
+                try:
+                    text = data[gs.Il2CppString.CHARS:
+                                gs.Il2CppString.CHARS + count * 2].decode('utf-16-le')
+                except UnicodeDecodeError:
+                    pass
+            self._action_meta[ptr][field] = text
+
+    def _append_runtime_spawn_records(self, entries):
+        """把运行时分支/事件新加入队列的 SPAWN 补进未出场列表。"""
+        static_tokens = {
+            (record.get('action_ptr'), record.get('spawn_index', 0))
+            for record in self._spawn_plan if record.get('action_ptr')
+        }
+        for entry in entries:
+            token = (entry['action_ptr'], entry['occurrence'])
+            if token in static_tokens or token in self._runtime_action_records:
+                continue
+            order = len(self._spawn_plan) + len(self._runtime_spawn_plan) + 1
+            roster_id = -(1_000_000 + len(self._runtime_spawn_plan) + 1)
+            source = {
+                'key': entry['key'],
+                'action_ptr': entry['action_ptr'],
+                'runtime_token': token,
+                'wave_index': self._current_wave_index,
+                'fragment_index': self._current_fragment_index,
+                'action_index': -1,
+                'spawn_index': entry['occurrence'],
+                'route_index': entry.get('route_index', -1),
+                'time_offset': entry['time_offset'],
+                'managed': entry.get('managed', False),
+                'spawn_kind': 'conditional',
+                'spawn_source': '运行时关卡事件/召唤',
+                'spawn_condition': '条件已触发，等待出场',
+            }
+            record = self._make_plan_record(source, order, roster_id)
+            self._runtime_spawn_plan.append(record)
+            self._runtime_action_records[token] = record
+
+    def _refresh_action_queue_chan(self, scheduler_data):
+        """读取当前 Scheduler.ActionItem 队列并缓存真实运行时出场偏移。"""
+        if not scheduler_data:
+            return
+        self._wave_start_time = gs.fp_to_float(
+            _u64(scheduler_data, gs.SchedulerFields.M_WAVE_START_TIME))
+        self._fragment_start_time = gs.fp_to_float(
+            _u64(scheduler_data, gs.SchedulerFields.M_FRAGMENT_START_TIME))
+        queue_ptr = _u64(scheduler_data, gs.SchedulerFields.M_ACTION_QUEUE)
+        if not self.mc.is_ptr(queue_ptr):
+            self._action_queue_entries = []
+            return
+        (head,) = self._chan.batch_read([(queue_ptr, 0x20)])
+        if not head:
+            return
+        items = _u64(head, gs.ListInternal.ITEMS)
+        count = _i32(head, gs.ListInternal.SIZE)
+        version = _i32(head, gs.ListInternal.VERSION)
+        if not (0 <= count <= 8192) or (count and not self.mc.is_ptr(items)):
+            return
+        unchanged = (queue_ptr == self._action_queue_ptr
+                     and items == self._action_queue_items
+                     and version == self._action_queue_version)
+        if unchanged:
+            return
+        raw = b''
+        if count:
+            (raw,) = self._chan.batch_read([(
+                items + gs.Il2CppArray.ITEMS,
+                count * gs.SchedulerActionItemFields.SIZE)])
+            if not raw:
+                return
+        action_ptrs = []
+        raw_entries = []
+        for idx in range(count):
+            off = idx * gs.SchedulerActionItemFields.SIZE
+            action_ptr = _u64(raw, off + gs.SchedulerActionItemFields.DATA)
+            time_offset = struct.unpack_from(
+                '<f', raw, off + gs.SchedulerActionItemFields.TIME_OFFSET)[0]
+            if self.mc.is_ptr(action_ptr) and -3600 <= time_offset <= 86400:
+                action_ptrs.append(action_ptr)
+                raw_entries.append((action_ptr, time_offset))
+        self._read_action_meta_chan(sorted(set(action_ptrs)))
+        occurrence = {}
+        entries = []
+        for action_ptr, time_offset in raw_entries:
+            meta = self._action_meta.get(action_ptr, {})
+            if meta.get('action_type') != gs.SpawnActionType.SPAWN or not meta.get('key'):
+                continue
+            index = occurrence.get(action_ptr, 0)
+            occurrence[action_ptr] = index + 1
+            entries.append({
+                'action_ptr': action_ptr,
+                'occurrence': index,
+                'time_offset': time_offset,
+                'key': meta['key'],
+                'managed': meta.get('managed', False),
+                'route_index': meta.get('route_index', -1),
+            })
+        self._action_queue_ptr = queue_ptr
+        self._action_queue_items = items
+        self._action_queue_version = version
+        self._action_queue_entries = entries
+
+        by_ptr = {record.get('action_ptr'): record for record in self._spawn_plan}
+        current = [by_ptr[entry['action_ptr']] for entry in entries
+                   if entry['action_ptr'] in by_ptr]
+        if current:
+            first = min(current, key=lambda record: (
+                record.get('wave_index', 1 << 30),
+                record.get('fragment_index', 1 << 30)))
+            self._current_wave_index = first.get('wave_index', -1)
+            self._current_fragment_index = first.get('fragment_index', -1)
+        self._append_runtime_spawn_records(entries)
+
+    def _apply_spawn_timing(self, rows, scheduler_time):
+        """为 pending 行填充精确 ETA；尚未进入队列的项显示真实等待条件。"""
+        entry_map = {
+            (entry['action_ptr'], entry['occurrence']): entry
+            for entry in self._action_queue_entries
+        }
+        for record in self._all_plan_records():
+            info = record['info']
+            if info.lifecycle != 'pending':
+                continue
+            token = record.get('runtime_token') or (
+                record.get('action_ptr'), record.get('spawn_index', 0))
+            entry = entry_map.get(token)
+            if (entry is not None and self._fragment_start_time >= 0
+                    and scheduler_time is not None):
+                eta = max(0.0, self._fragment_start_time
+                          + entry['time_offset'] - float(scheduler_time))
+                record['spawn_eta'] = eta
+                record['spawn_condition'] = '按当前调度计时'
+            else:
+                record['spawn_eta'] = None
+                if record.get('hidden_group'):
+                    record['spawn_condition'] = '等待隐藏条件启用'
+                    record['spawn_kind'] = 'conditional'
+                elif record.get('random_spawn_group'):
+                    record['spawn_condition'] = '等待随机分支确定'
+                    record['spawn_kind'] = 'conditional'
+                elif record in self._runtime_spawn_plan:
+                    record['spawn_condition'] = record.get(
+                        'spawn_condition') or '等待运行时关卡事件/召唤'
+                    record['spawn_kind'] = 'conditional'
+                elif record.get('spawn_kind') in ('conditional', 'summoned', 'after_death'):
+                    # 分支/召唤的触发者没有进入 Scheduler 计时队列前，不存在
+                    # 可验证的秒数；保留从关卡数据解析出的真实条件说明。
+                    record['spawn_condition'] = record.get(
+                        'spawn_condition') or '等待召唤、死亡转换或关卡事件触发'
+                elif (self._current_wave_index >= 0
+                      and record.get('wave_index', -1) > self._current_wave_index):
+                    wait = record.get('wave_max_wait', 0.0)
+                    record['spawn_condition'] = '等待上一波清场'
+                    if wait and wait > 0:
+                        record['spawn_condition'] += f'或最长等待 {wait:g} 秒后进入下一波'
+                elif (self._current_fragment_index >= 0
+                      and record.get('wave_index', -1) == self._current_wave_index
+                      and record.get('fragment_index', -1) > self._current_fragment_index):
+                    record['spawn_condition'] = '等待前一片段结束'
+                else:
+                    record['spawn_condition'] = record.get(
+                        'spawn_condition') or '等待关卡调度'
+            self._copy_plan_metadata(info, record, 'pending')
+        return rows
 
     # ================= 底层扫描 =================
 
@@ -828,6 +1249,64 @@ class EnemyReader:
         self.items_addr = items
         return ptrs
 
+    def _read_live_enemy_unordered(self, unordered_addr):
+        """读取 UnitManager.enemies。
+
+        Scheduler 只管理关卡波次敌人；装置、敌人技能和脚本直接召唤且
+        managedByScheduler=false 的实例只会注册到 UnitManager。UnorderedArray
+        的数组容量远大于 count，尾部还会残留已移除指针，因此只能取前 count 项。
+        """
+        if not self.mc.is_ptr(unordered_addr):
+            return None
+        data = self._detail_batch_read([(unordered_addr, 0x28)])[0]
+        if not data:
+            return None
+        items = _u64(data, gs.UnorderedArrayFields.ITEMS)
+        count = _i32(data, gs.UnorderedArrayFields.COUNT)
+        if not (0 <= count <= 1000) or (count and not self.mc.is_ptr(items)):
+            return None
+        if not count:
+            self._uf_items, self._uf_cnt, self._uf_ptrs = items, 0, []
+            return []
+        body = self._detail_batch_read([(
+            items + gs.Il2CppArray.ITEMS, count * 8)])[0]
+        if not body:
+            return None
+        ptrs = [ptr for ptr in (_u64(body, idx * 8) for idx in range(count))
+                if self.mc.is_ptr(ptr)]
+        self._uf_items, self._uf_cnt, self._uf_ptrs = items, count, ptrs
+        return ptrs
+
+    @staticmethod
+    def _union_enemy_ptrs(primary, fallback):
+        """稳定去重：UnitManager 顺序优先，Scheduler 作为版本漂移兜底。"""
+        out, seen = [], set()
+        for ptr in list(primary or ()) + list(fallback or ()):
+            if ptr and ptr not in seen:
+                seen.add(ptr)
+                out.append(ptr)
+        return out
+
+    def _resolve_unit_manager(self, bc_addr=None):
+        bc_addr = int(bc_addr or self.bc_addr or 0)
+        if not self.mc.is_ptr(bc_addr):
+            return False
+        unit_manager = self._read_ptr(
+            bc_addr + gs.BattleControllerFields.UNIT_MANAGER)
+        if (not self.mc.is_ptr(unit_manager)
+                or self.mc.read_klass_name(unit_manager) != 'UnitManager'):
+            return False
+        unordered = self._read_ptr(
+            unit_manager + gs.UnitManagerFields.ENEMIES)
+        if not self.mc.is_ptr(unordered):
+            return False
+        enemies = self._read_live_enemy_unordered(unordered)
+        if enemies is None:
+            return False
+        self.unit_manager_addr = unit_manager
+        self.unit_enemies_addr = unordered
+        return True
+
     def _bootstrap_via_battle_controller(self):
         """设备侧 klass 扫描直达 BC→Scheduler→List；零敌人开局同样可用。"""
         try:
@@ -865,11 +1344,17 @@ class EnemyReader:
                 self.bc_addr = bc_addr
                 self.sched_addr = scheduler
                 self.list_addr = list_addr
-                self.enemy_addrs = enemies
+                unit_enemies = []
+                if self._resolve_unit_manager(bc_addr):
+                    unit_enemies = list(self._uf_ptrs)
+                self.enemy_addrs = self._union_enemy_ptrs(unit_enemies, enemies)
                 if self.progress:
                     self.progress(75, '读取关卡出怪序列')
                 self.log(f"[扫描] BattleController @ {hex(bc_addr)}, "
-                         f"Scheduler @ {hex(scheduler)}, 当前敌人 {len(enemies)} 个")
+                         f"Scheduler @ {hex(scheduler)}, 当前注册实例 "
+                         f"{len(self.enemy_addrs)} 个"
+                         + (f"（UnitManager {len(unit_enemies)}）"
+                            if self.unit_enemies_addr else ''))
                 return True
         except Exception as exc:
             self.log(f"[扫描] BattleController 快速链失败: {exc}")
@@ -910,6 +1395,11 @@ class EnemyReader:
                         scheduler + gs.SchedulerFields.M_MANAGED_WAVE_ENEMIES) != self.list_addr:
                     return False
                 self.sched_addr = scheduler
+                # UnitManager 是实时敌人的权威容器；缓存可来自旧版（尚未保存该
+                # 地址），所以每次都从当前 BattleController 重新解析一次。
+                if not self._resolve_unit_manager(self.bc_addr):
+                    self.unit_manager_addr = 0
+                    self.unit_enemies_addr = 0
             return True
         except Exception:
             return False
@@ -919,13 +1409,19 @@ class EnemyReader:
         if not force and os.path.isfile(self.cache_file):
             try:
                 c = pickle.load(open(self.cache_file, 'rb'))
-                if c.get('ver') == 3 and c.get('pid') == self.mc.pid:
+                if c.get('ver') in (3, 4) and c.get('pid') == self.mc.pid:
                     self.enemy_addrs = c['enemies']
                     self.items_addr = c['items']
                     self.list_addr = c['list']
                     self.sched_addr = c.get('sched', 0)
                     self.bc_addr = c.get('bc', 0)
+                    self.unit_manager_addr = c.get('unit_manager', 0)
+                    self.unit_enemies_addr = c.get('unit_enemies', 0)
                     if self._validate_chain():
+                        scheduler_enemies = self._read_live_enemy_list(self.list_addr) or []
+                        self.enemy_addrs = self._union_enemy_ptrs(
+                            self._uf_ptrs if self.unit_enemies_addr else [],
+                            scheduler_enemies)
                         self.log(f"[缓存] 地址链有效 (敌人 {len(self.enemy_addrs)} 个, "
                                  f"List @ {hex(self.list_addr)})")
                         self._last_bootstrap = time.time()
@@ -938,9 +1434,11 @@ class EnemyReader:
 
         # 主路径不依赖场上已有 Enemy：开局即可从关卡 LevelData 取得完整顺序。
         if self.with_bc and self._bootstrap_via_battle_controller():
-            pickle.dump({'ver': 3, 'pid': self.mc.pid, 'enemies': self.enemy_addrs,
+            pickle.dump({'ver': 4, 'pid': self.mc.pid, 'enemies': self.enemy_addrs,
                          'items': self.items_addr, 'list': self.list_addr,
-                         'sched': self.sched_addr, 'bc': self.bc_addr},
+                         'sched': self.sched_addr, 'bc': self.bc_addr,
+                         'unit_manager': self.unit_manager_addr,
+                         'unit_enemies': self.unit_enemies_addr},
                         open(self.cache_file, 'wb'))
             self._last_bootstrap = time.time()
             self._load_spawn_plan()
@@ -983,13 +1481,20 @@ class EnemyReader:
                 self.log(f"[扫描] List<Enemy> @ {hex(self.list_addr)} (取首候选)")
             d = self.mc.read(self.list_addr, 0x20)
             self.items_addr = _u64(d, gs.ListInternal.ITEMS) if d else 0
+            if self.bc_addr:
+                self._resolve_unit_manager(self.bc_addr)
+                self.enemy_addrs = self._union_enemy_ptrs(
+                    self._uf_ptrs if self.unit_enemies_addr else [],
+                    self.enemy_addrs)
         finally:
             if snap is not None:
                 snap.discard()
 
-        pickle.dump({'ver': 3, 'pid': self.mc.pid, 'enemies': self.enemy_addrs,
+        pickle.dump({'ver': 4, 'pid': self.mc.pid, 'enemies': self.enemy_addrs,
                      'items': self.items_addr, 'list': self.list_addr,
-                     'sched': self.sched_addr, 'bc': self.bc_addr},
+                     'sched': self.sched_addr, 'bc': self.bc_addr,
+                     'unit_manager': self.unit_manager_addr,
+                     'unit_enemies': self.unit_enemies_addr},
                     open(self.cache_file, 'wb'))
         self._last_bootstrap = time.time()
         self._load_spawn_plan()
@@ -1131,6 +1636,11 @@ class EnemyReader:
             info.blk_x, info.blk_y = _f32x2(blk, gs.EnemyFields.M_BLOCK_POSITION)
             info.spawn_row = _i32(blk, gs.EnemyFields.ROUTE_SPAWN_POS)
             info.spawn_col = _i32(blk, gs.EnemyFields.ROUTE_SPAWN_POS + 4)
+            options = gs.EnemyFields.OPTIONS
+            info.is_summon = bool(
+                blk[options + gs.EnemyOptionsFields.IS_SUMMON])
+            info.action_ptr = _u64(
+                blk, options + gs.EnemyOptionsFields.ACTION_DATA)
         info.alive = info.hp > 0 and info.finish == 0
         return info
 
@@ -1243,8 +1753,8 @@ class EnemyReader:
     def poll(self):
         """读取一帧快照; 返回 dict"""
         snap = {'ok': False, 'state': -1, 'speed_level': -1, 'time_scale': 0.0,
-                'play_time': 0.0, 'enemies': [], 'msg': '',
-                'on_field_count': 0, 'planned_count': len(self._spawn_plan)}
+                'play_time': 0.0, 'scheduler_time': None, 'enemies': [], 'msg': '',
+                'on_field_count': 0, 'planned_count': self.planned_count}
         d = self.mc.read(self.list_addr, 0x20)
         if not d:
             snap['msg'] = 'List 读取失败'
@@ -1254,26 +1764,34 @@ class EnemyReader:
             snap['msg'] = f'List 数据异常 (cnt={cnt})'
             return self._on_stale(snap)
 
-        live_enemies = []
+        scheduler_ptrs = []
         if cnt > 0:
             arr = self.mc.read(items + gs.Il2CppArray.ITEMS, cnt * 8)
             if not arr:
                 snap['msg'] = 'items 读取失败'
                 return self._on_stale(snap)
-            for i in range(cnt):
-                ep = _u64(arr, i * 8)
-                if not ep or not self.mc.is_ptr(ep):
-                    continue
-                # 回退路径避免为每个敌人逐指针启动十余次 adb 子进程；沿用最近一次
-                # 快速通道的状态快照。详情按钮仍会按需做完整读取。
-                info = self._read_enemy(ep, with_runtime=False)
-                self._copy_runtime(info, self._runtime_snapshot.get(ep))
-                live_enemies.append(info)
+            scheduler_ptrs = [
+                _u64(arr, i * 8) for i in range(cnt)
+                if self.mc.is_ptr(_u64(arr, i * 8))]
+
+        unit_ptrs = self._read_live_enemy_unordered(self.unit_enemies_addr) \
+            if self.unit_enemies_addr else None
+        ptrs = self._union_enemy_ptrs(unit_ptrs, scheduler_ptrs)
+        self.enemy_addrs = ptrs
+        observed_enemies = []
+        for ep in ptrs:
+            if not ep or not self.mc.is_ptr(ep):
+                continue
+            # 回退路径避免为每个敌人逐指针启动十余次 adb 子进程；沿用最近一次
+            # 快速通道的状态快照。详情按钮仍会按需做完整读取。
+            info = self._read_enemy(ep, with_runtime=False)
+            self._copy_runtime(info, self._runtime_snapshot.get(ep))
+            observed_enemies.append(info)
 
         snap['enemies'] = self._merge_enemy_roster(
-            live_enemies, self._spawned_count())
-        snap['on_field_count'] = len(live_enemies)
-        snap['planned_count'] = len(self._spawn_plan)
+            observed_enemies, self._spawned_count())
+        snap['on_field_count'] = sum(enemy.alive for enemy in observed_enemies)
+        snap['planned_count'] = self.planned_count
 
         if self.bc_addr:
             b = self.mc.read(self.bc_addr + 0x200, 0xC0)
@@ -1284,6 +1802,15 @@ class EnemyReader:
                     '<f', b, gs.BattleControllerFields.M_TIME_SCALE - 0x200)[0]
                 snap['play_time'] = struct.unpack_from(
                     '<f', b, gs.BattleControllerFields.M_REAL_PLAY_TIME - 0x200)[0]
+
+        if self._bc_static_fields:
+            raw_clock = self.mc.read(
+                self._bc_static_fields
+                + gs.BattleControllerStaticFields.FIXED_PLAY_TIME, 8)
+            snap['scheduler_time'] = self._decode_battle_clock(raw_clock)
+
+        snap['enemies'] = self._apply_spawn_timing(
+            snap['enemies'], snap['scheduler_time'])
 
         snap['ok'] = True
         self._stale_cnt = 0
@@ -1297,6 +1824,12 @@ class EnemyReader:
             except Exception:
                 pass
             self._chan = None
+        if self._detail_chan is not None:
+            try:
+                self._detail_chan.close()
+            except Exception:
+                pass
+            self._detail_chan = None
 
     CHAN_RETRY_SEC = 5.0   # 通道失败后的重建冷却 (open 含 adb 部署, 每帧重试太贵)
 
@@ -1439,15 +1972,17 @@ class EnemyReader:
 
     LIST_EVERY = 4    # List 头每 4 tick 读一次 (检测刷怪/退场; 其余帧沿用上一帧指针)
     ATTR_EVERY = 3    # 每 3 tick 轮换刷新 1 个敌人的属性 (摊平尖峰)
-    BC_EVERY = 10     # BC 块 (状态/倍速/时间) 每 10 tick 读一次
+    BC_EVERY = 2      # BC 块 (状态/倍速/时间) 每 2 tick 读一次，供出场倒计时
     SKILL_EVERY = 5   # 每 5 tick 通道内批量刷新全部敌人技能 CD
     STATUS_EVERY = 2  # 状态/损伤条每 2 tick 批量刷新 (约 20-32ms)
+    SPAWN_QUEUE_EVERY = 4  # 当前 ActionItem 队列约每 4 tick 校验一次
 
     def _poll_fast_impl(self):
         t0 = time.time()
         snap = {'ok': False, 'state': -1, 'speed_level': -1, 'time_scale': 0.0,
-                'play_time': 0.0, 'enemies': [], 'msg': '', 'frame_ms': 0.0,
-                'on_field_count': 0, 'planned_count': len(self._spawn_plan)}
+                'play_time': 0.0, 'scheduler_time': None,
+                'enemies': [], 'msg': '', 'frame_ms': 0.0,
+                'on_field_count': 0, 'planned_count': self.planned_count}
         self._fast_tick += 1
         tick = self._fast_tick
         prev_ptrs = self._f_ptrs
@@ -1458,6 +1993,9 @@ class EnemyReader:
         if read_list:
             slot['list'] = len(reqs)
             reqs.append((self.list_addr, 0x20))
+            if self.unit_enemies_addr:
+                slot['unit_enemies'] = len(reqs)
+                reqs.append((self.unit_enemies_addr, 0x28))
         clusters = self._cluster_ptrs(prev_ptrs)
         slot['c0'] = len(reqs)
         reqs += [(c[0], c[-1] + gs.EnemyFields.READ_SIZE - c[0]) for c in clusters]
@@ -1475,12 +2013,19 @@ class EnemyReader:
         if self.bc_addr and tick % self.BC_EVERY == 0:
             slot['bc'] = len(reqs)
             reqs.append((self.bc_addr + 0x200, 0xC0))
+            if self._bc_static_fields:
+                slot['scheduler_clock'] = len(reqs)
+                reqs.append((
+                    self._bc_static_fields
+                    + gs.BattleControllerStaticFields.FIXED_PLAY_TIME, 8))
         if self.sched_addr:
-            slot['spawned'] = len(reqs)
-            reqs.append((self.sched_addr + gs.SchedulerFields.M_SPAWNED_ENEMIES_CNT, 4))
+            slot['scheduler'] = len(reqs)
+            reqs.append((self.sched_addr, 0xC8))
         res = self._chan.batch_read(reqs) if reqs else []
 
-        # ---- List 头 (仅降频帧): _version 捕捉一切列表修改 ----
+        # ---- 实时敌人容器（降频读取）----
+        # Scheduler List 用 _version；UnitManager.enemies 是 UnorderedArray，没有
+        # version，敌人一进一出时 count 甚至可能不变，所以每次都重读前 count 个槽。
         ptrs = prev_ptrs
         if read_list:
             d = res[slot['list']]
@@ -1493,29 +2038,55 @@ class EnemyReader:
             if not (0 <= cnt <= 300) or (cnt > 0 and not self.mc.is_ptr(items)):
                 snap['msg'] = f'List 数据异常 (cnt={cnt})'
                 return self._on_stale(snap)
-            changed = (items != self._f_items or cnt != self._f_cnt
-                       or version != self._f_version)
-            if changed:
-                if cnt > 0:
-                    (arr,) = self._chan.batch_read([(items + gs.Il2CppArray.ITEMS, cnt * 8)])
-                    if not arr:
-                        snap['msg'] = 'items 读取失败'
+
+            unit_items = unit_cnt = 0
+            unit_valid = False
+            if 'unit_enemies' in slot:
+                ud = res[slot['unit_enemies']]
+                if ud:
+                    unit_items = _u64(ud, gs.UnorderedArrayFields.ITEMS)
+                    unit_cnt = _i32(ud, gs.UnorderedArrayFields.COUNT)
+                    unit_valid = (0 <= unit_cnt <= 1000
+                                  and (not unit_cnt or self.mc.is_ptr(unit_items)))
+
+            array_reqs, array_kinds = [], []
+            if cnt:
+                array_reqs.append((items + gs.Il2CppArray.ITEMS, cnt * 8))
+                array_kinds.append(('scheduler', cnt))
+            if unit_valid and unit_cnt:
+                array_reqs.append((unit_items + gs.Il2CppArray.ITEMS, unit_cnt * 8))
+                array_kinds.append(('unit', unit_cnt))
+            scheduler_ptrs = []
+            unit_ptrs = [] if unit_valid else list(self._uf_ptrs)
+            array_data = self._chan.batch_read(array_reqs) if array_reqs else []
+            for (kind, count), arr in zip(array_kinds, array_data):
+                if not arr:
+                    if kind == 'scheduler':
+                        snap['msg'] = 'Scheduler items 读取失败'
                         return self._on_stale(snap)
-                    ptrs = [p for p in (_u64(arr, i * 8) for i in range(cnt))
-                            if p and self.mc.is_ptr(p)]
+                    unit_ptrs = list(self._uf_ptrs)
+                    continue
+                values = [p for p in (_u64(arr, i * 8) for i in range(count))
+                          if self.mc.is_ptr(p)]
+                if kind == 'scheduler':
+                    scheduler_ptrs = values
                 else:
-                    ptrs = []
-                if ptrs != prev_ptrs:
-                    clusters = self._cluster_ptrs(ptrs)
-                    cluster_res = self._chan.batch_read(
-                        [(c[0], c[-1] + gs.EnemyFields.READ_SIZE - c[0])
-                         for c in clusters]) if clusters else []
-                else:
-                    cluster_res = None
+                    unit_ptrs = values
+            if unit_valid and not unit_cnt:
+                unit_ptrs = []
+            ptrs = self._union_enemy_ptrs(unit_ptrs, scheduler_ptrs)
+            self._uf_items, self._uf_cnt, self._uf_ptrs = \
+                unit_items, unit_cnt, unit_ptrs
+            if ptrs != prev_ptrs:
+                clusters = self._cluster_ptrs(ptrs)
+                cluster_res = self._chan.batch_read(
+                    [(c[0], c[-1] + gs.EnemyFields.READ_SIZE - c[0])
+                     for c in clusters]) if clusters else []
             else:
                 cluster_res = None
             self._f_items, self._f_cnt, self._f_ptrs, self._f_version = \
                 items, cnt, ptrs, version
+            self.enemy_addrs = ptrs
         else:
             cluster_res = None
         if cluster_res is None:
@@ -1597,13 +2168,6 @@ class EnemyReader:
             for ep in list(cache):
                 if ep not in live:
                     cache.pop(ep, None)
-        spawned_count = 0
-        if 'spawned' in slot and res[slot['spawned']]:
-            spawned_count = struct.unpack('<I', res[slot['spawned']])[0]
-        snap['enemies'] = self._merge_enemy_roster(enemies, spawned_count)
-        snap['on_field_count'] = len(enemies)
-        snap['planned_count'] = len(self._spawn_plan)
-
         # ---- BC 块 ----
         if 'bc' in slot:
             b = res[slot['bc']]
@@ -1616,6 +2180,24 @@ class EnemyReader:
         if self._bc_snap:
             (snap['state'], snap['speed_level'],
              snap['time_scale'], snap['play_time']) = self._bc_snap
+        if 'scheduler_clock' in slot:
+            value = self._decode_battle_clock(res[slot['scheduler_clock']])
+            if value is not None:
+                self._scheduler_time_snap = value
+        snap['scheduler_time'] = self._scheduler_time_snap
+
+        # ---- Scheduler 当前 ActionItem 队列 / 未出场 ETA ----
+        scheduler_data = res[slot['scheduler']] if 'scheduler' in slot else None
+        spawned_count = (_i32(scheduler_data, gs.SchedulerFields.M_SPAWNED_ENEMIES_CNT)
+                         if scheduler_data else 0)
+        if (scheduler_data and (tick % self.SPAWN_QUEUE_EVERY == 1
+                                or not self._action_queue_entries)):
+            self._refresh_action_queue_chan(scheduler_data)
+        rows = self._merge_enemy_roster(enemies, spawned_count)
+        snap['enemies'] = self._apply_spawn_timing(
+            rows, snap['scheduler_time'])
+        snap['on_field_count'] = sum(enemy.alive for enemy in enemies)
+        snap['planned_count'] = self.planned_count
 
         snap['ok'] = True
         snap['frame_ms'] = round((time.time() - t0) * 1000, 1)
@@ -1757,9 +2339,13 @@ class EnemyReader:
                     infos[ep] = full
 
     def _detail_batch_read(self, reqs):
-        """详情读取与高频轮询共用同一带锁通道；无通道时回退 MemCore。"""
+        """批量读取；详情线程走独立端口，绝不占住高频轮询通道。"""
         if not reqs:
             return []
+        if getattr(self._detail_context, 'active', False):
+            if self._detail_chan is None:
+                self._detail_chan = TcpChannel(self.mc, port=DETAIL_TCP_PORT)
+            return self._detail_chan.batch_read(reqs)
         if self._chan is not None:
             return self._chan.batch_read(reqs)
         return [self.mc.read(addr, size) for addr, size in reqs]
@@ -2083,15 +2669,27 @@ class EnemyReader:
             })
         return out
 
-    def read_enemy_detail(self, addr):
-        """按需读取一个敌人的完整详情；供详情按钮调用，不增加常态轮询负担。"""
+    def read_enemy_detail(self, addr, heavy_only=False):
+        """按需读取一个敌人的详情。
+
+        heavy_only 用于实时详情线程：只取原始属性、Buff 与关卡效果，HP/状态/
+        损伤条/技能由同一帧主轮询对象提供。读取期间使用 27274 独立通道。
+        """
         if not self.mc.is_ptr(addr):
             return None
+        self._detail_context.active = True
+        try:
+            return self._read_enemy_detail_impl(addr, heavy_only)
+        finally:
+            self._detail_context.active = False
+
+    def _read_enemy_detail_impl(self, addr, heavy_only=False):
         (blk,) = self._detail_batch_read([(addr, gs.EnemyFields.READ_SIZE)])
         if not blk or len(blk) < 0x148:
             return None
         info = self._parse_enemy_block(addr, blk)
-        self._fill_name(addr, blk, info)
+        if not heavy_only:
+            self._fill_name(addr, blk, info)
 
         # 同时读取原始和最终属性，详情页可直接比较 Buff 前后变化。
         (attr_head,) = self._detail_batch_read([(info.attr_ptr, 0x60)]) \
@@ -2117,11 +2715,12 @@ class EnemyReader:
         elif addr in self._attr_snapshot:
             info.attributes = dict(self._attr_snapshot[addr])
 
-        if self._chan is not None:
-            self._refresh_runtime_chan([addr], {addr: info})
-        else:
-            self._fill_runtime_slow(info)
-        info.skills = list(self._skill_cd.get(addr, []))
+        if not heavy_only:
+            if self._chan is not None:
+                self._refresh_runtime_chan([addr], {addr: info})
+            else:
+                self._fill_runtime_slow(info)
+            info.skills = list(self._skill_cd.get(addr, []))
         info.buffs = self._read_active_buffs(info.buff_container_ptr)
         info.global_buffs = self._read_global_buffs(addr)
         return info

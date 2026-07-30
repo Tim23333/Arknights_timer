@@ -10,7 +10,8 @@ MuMu 模拟器 (Android)
   └── 明日方舟进程 (IL2CPP, arm64)
        └── BattleController
             ├── LevelData.waves → Wave/Fragment/SPAWN 固定出怪序列
-            └── Scheduler.m_managedWaveEnemies → 当前 Enemy 实例
+            ├── Scheduler.m_actionQueue → 当前片段精确出场计时
+            └── UnitManager.enemies → 全部当前 Enemy（含非调度器召唤）
 ```
 
 主定位路径通过设备侧模式扫描查找当前 `BattleController`，沿固定字段直接取得
@@ -24,7 +25,8 @@ MuMu 模拟器 (Android)
 > 对象所在区域起点前恰好有/没有洞。扫描结束若丢块会打印警告。
 
 轮询分两档：
-- **准实时 `poll_fast()`**（后端主程序/CLI 默认）：常驻 TCP 通道（`adb forward tcp:27271`）。
+- **准实时 `poll_fast()`**（后端主程序/CLI 默认）：常驻 TCP 通道（`adb forward tcp:27271`）；
+  详情重型数据使用独立 `27274` 通道，不阻塞主轮询。
   通道有两种模式，自动探测：
   - **memsrv 模式（默认，实测中位 ~0.7ms/帧）**：`memsrv.c` 交叉编译出的 aarch64 静态
     小程序（`bin/memsrv`），由 `nc -L` 以 socket 为 stdin/stdout 启动，
@@ -38,9 +40,9 @@ MuMu 模拟器 (Android)
   - **sh 兜底模式（~45ms/请求）**：`nc -L sh`，每请求 fork 一次 dd。
     memsrv 缺失或握手失败时自动使用；若 memsrv 可部署会自动升级。
   稳态每帧仅 1 次请求（上一帧敌人聚簇 span，含血量/状态/坐标/id/属性指针），
-  List 头每 4 帧读一次（靠 `List._version` 检测列表修改，含同数量替换，
-  变化才重读 items 并重新聚簇）；属性每 3 帧轮换刷新 1 个敌人，摊平尖峰；
-  BattleController 块每 10 帧读一次；新刷敌人在通道内 2 批解析
+  Scheduler List 与 UnitManager 无序数组每 4 帧检查一次；后者每次重读有效槽，
+  可捕获装置/技能召唤及同数量替换。属性每 3 帧轮换刷新 1 个敌人，摊平尖峰；
+  BattleController/固定战斗时钟每 2 帧读一次；新刷敌人在通道内 2 批解析
   （id 字符串 + cachedData），失败兜底慢读。通道异常会在日志中说明原因
   并回退慢速 `poll()`。
 - **慢速 `poll()`**：每次约 1-2 秒，逐对象 `adb exec-out`，作为兜底路径。
@@ -81,10 +83,11 @@ python run.py
 - 主程序启动后可尝试缓存地址秒级进入监控
 - **一键扫描**：定位当前关卡、完整固定出怪序列与实时敌人列表（通常约 20-40 秒）
 - 固定敌人按预定顺序从开局显示为“未出场”，出现后实时更新，死亡/漏怪后保留为“已离场”
+- 当前 Scheduler 队列内的敌人显示精确剩余游戏秒数；分支、死亡转换或召唤显示真实等待条件，不伪造秒数
 - **离场敌方不显示**默认勾选；取消后显示完整历史及离场前最后一帧数据
 - 表格准实时展示 (默认 0.016 秒刷新=60Hz, 可调至 0.008): 名称/编号/ID/坐标/血条/攻击/防御/法抗/移速/攻速/状态
 - **显示列**可逐项勾选全部最终属性、异常状态、状态免疫、护盾，以及神经/侵蚀/灼燃/凋亡/狂躁五类损伤条；选择会持久化
-- 每行的**详情**按钮按需读取原始/最终属性、45 项状态与免疫计数、当前 Buff、关卡全局 Buff、技能和精确损伤条，不增加常态轮询负担
+- 每行的**详情**按钮与主表同帧更新 HP/状态/损伤条/技能；原始属性、当前 Buff 和关卡全局 Buff 由独立通道持续刷新
 - Buff/关卡效果同时显示中文名称、自动归纳的效果说明、中文属性公式和 Blackboard 参数解释；内部键与原始参数仍保留用于逆向核对
 - 状态栏显示每帧读取耗时 (ms/帧); 轮询线程用 timeBeginPeriod(1) 保证亚 16ms 睡眠精度
 
@@ -148,7 +151,7 @@ backend/app/enemy_buff_descriptions.py # Buff/GlobalBuff 中文说明
 
 1. 在设备侧搜索 `Torappu.Battle.BattleController` 类名、Il2CppClass 和当前对象
 2. 用状态、倍速、战斗时间和 Unity `m_CachedPtr` 排除已销毁的旧关卡对象
-3. 沿 `BattleController+0x30 → Scheduler+0xC0 → List<Enemy>` 取得实时列表
+3. 沿 `BattleController+0x2B8 → UnitManager+0x20 → UnorderedArray<Enemy>` 取得完整实时列表；Scheduler 列表保留作兜底
 4. 沿 `BattleController+0x158 → LevelData+0x80 → waves` 展开有效 SPAWN 动作
 5. 轮询时把当前实例绑定到计划项：未生成=`未出场`，存在=`场上`，消失=`已离场`
 6. 固定 waves 之外的条件分支、召唤或插件动态敌人，在首次成为实例时追加到末尾
@@ -175,7 +178,9 @@ backend/app/enemy_buff_descriptions.py # Buff/GlobalBuff 中文说明
 | List._items / _size | 0x10 / 0x18 | |
 | BattleController.Scheduler / LevelData | 0x30 / 0x158 | 当前调度器 / 当前关卡数据 |
 | Scheduler.m_spawnedEnemiesCnt | 0x24 | 本局已生成敌人数 |
-| Scheduler.m_managedWaveEnemies | 0xC0 | 当前场上 `List<Enemy>` |
+| Scheduler.m_managedWaveEnemies | 0xC0 | 固定调度器管理的 `List<Enemy>`（兜底） |
+| BattleController.unitManager / UnitManager.enemies | 0x2B8 / 0x20 | 全部实时敌人，含运行时召唤 |
+| UnorderedArray.items / count | 0x10 / 0x20 | 仅数组前 count 项有效 |
 | LevelData.waves | 0x80 | 开局固定 Wave/Fragment/SPAWN 序列 |
 | BattleController state/speed/timeScale/playTime | 0x220/0x228/0x280/0x284 | dump.cs 旧偏移已失效 |
 | BattleController.m_globalBuffs | 0x68 | List<GlobalBuff>，含目标映射与 Blackboard |
@@ -190,5 +195,5 @@ backend/app/enemy_buff_descriptions.py # Buff/GlobalBuff 中文说明
 2. **MuMu 窗口失去焦点/最小化时游戏会暂停**，此时数值冻结属正常现象
    （是模拟器行为，不是工具问题）；恢复前台后立即继续更新
 3. **换关卡/重启游戏后需 `--rebuild`**（Boehm GC 地址随战斗重建）
-4. 固定 waves 之外的条件分支、召唤和插件动态生成内容无法在开局确定绝对顺序，
-   工具会在这些敌人首次出现时自动追加并继续追踪生命周期
+4. 固定 waves 之外的显式分支和未使用敌人引用会预列为“条件触发/潜在召唤”；
+   重复技能召唤次数、插件动态内容及其绝对时刻无法在开局确定，实际出现后会自动追加并继续追踪生命周期

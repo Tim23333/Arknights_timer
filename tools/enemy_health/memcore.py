@@ -19,6 +19,7 @@ import time
 import bisect
 import socket
 import threading
+import glob
 from typing import Optional, List, Tuple
 
 try:
@@ -39,14 +40,15 @@ def _config_file() -> str:
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.json')
 
 
-def save_adb_path(path: str) -> None:
+def save_adb_path(path: str) -> bool:
     """持久化手动选择的 adb 路径 (下次启动直接生效)"""
     import json
     try:
         with open(_config_file(), 'w', encoding='utf-8') as f:
             json.dump({'adb_path': path}, f)
+        return True
     except Exception:
-        pass
+        return False
 
 
 def find_mumu_adb() -> Optional[str]:
@@ -116,6 +118,85 @@ def find_mumu_adb() -> Optional[str]:
     except Exception:
         pass
     return None
+
+
+_EMULATOR_PROCESS_HINTS = (
+    'mumu', 'nemu', 'mumunx', 'dnplayer', 'ldplayer', 'ldvboxheadless',
+    'nox', 'memu', 'bluestacks', 'hd-player', 'hd-agent',
+)
+_EMULATOR_ADB_RELATIVE_PATHS = (
+    'adb.exe',
+    os.path.join('shell', 'adb.exe'),
+    os.path.join('nx_device', '12.0', 'shell', 'adb.exe'),
+    os.path.join('emulator', 'MuMuPlayer-12.0', 'shell', 'adb.exe'),
+    os.path.join('MuMuPlayer-12.0', 'shell', 'adb.exe'),
+    os.path.join('platform-tools', 'adb.exe'),
+    'nox_adb.exe',
+    'HD-Adb.exe',
+)
+
+
+def _running_process_paths():
+    """返回 (进程名, 可执行文件路径)；权限不足的单个进程直接跳过。"""
+    try:
+        import psutil
+    except ImportError:
+        return []
+    result = []
+    for proc in psutil.process_iter(('name', 'exe')):
+        try:
+            name = proc.info.get('name') or ''
+            exe = proc.info.get('exe') or ''
+            if name and exe:
+                result.append((name, exe))
+        except (psutil.AccessDenied, psutil.NoSuchProcess, OSError):
+            continue
+    return result
+
+
+def find_running_emulator_adbs(processes=None):
+    """从正在运行的模拟器进程路径反推安装目录中的 ADB 候选。
+
+    返回 [{'adb_path', 'process_name', 'process_path'}]。processes 参数供离线
+    测试注入，格式同样为 (name, executable_path)。这里只做浅层固定路径匹配，
+    不递归扫描整块磁盘。
+    """
+    processes = _running_process_paths() if processes is None else list(processes)
+    found = []
+    seen = set()
+    for process_name, process_path in processes:
+        process_name = str(process_name or '')
+        process_path = os.path.normpath(str(process_path or ''))
+        fingerprint = f'{process_name} {process_path}'.lower()
+        if not process_path or not any(hint in fingerprint for hint in _EMULATOR_PROCESS_HINTS):
+            continue
+
+        roots = []
+        root = os.path.dirname(process_path)
+        for _ in range(5):
+            if not root or root in roots or os.path.dirname(root) == root:
+                break
+            roots.append(root)
+            root = os.path.dirname(root)
+
+        candidates = []
+        for base in roots:
+            candidates.extend(os.path.join(base, rel)
+                              for rel in _EMULATOR_ADB_RELATIVE_PATHS)
+            candidates.extend(glob.glob(os.path.join(base, '*', 'shell', 'adb.exe')))
+            candidates.extend(glob.glob(os.path.join(base, '*', '*', 'shell', 'adb.exe')))
+        for candidate in candidates:
+            candidate = os.path.normpath(candidate)
+            key = os.path.normcase(os.path.abspath(candidate))
+            if key in seen or not os.path.isfile(candidate):
+                continue
+            seen.add(key)
+            found.append({
+                'adb_path': candidate,
+                'process_name': process_name,
+                'process_path': process_path,
+            })
+    return found
 
 
 class TcpChannel:

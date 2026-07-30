@@ -22,12 +22,15 @@ from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
     QDialog,
+    QDialogButtonBox,
+    QComboBox,
     QFileDialog,
     QFrame,
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QMessageBox,
     QProgressBar,
@@ -56,7 +59,9 @@ for _p in (str(_BACKEND_ROOT), str(_REPO_ROOT)):
 from app.services.timer_provider import TimerDataProvider
 from tools.enemy_health import EnemyReader
 from tools.enemy_health import game_structs as enemy_gs
-from tools.enemy_health.memcore import MemCore
+from tools.enemy_health.memcore import (
+    MemCore, find_running_emulator_adbs, save_adb_path,
+)
 from app.enemy_ui import (
     ENEMY_COLUMN_DEFS, ENEMY_COLUMN_INDEX, EnemyColumnDialog, EnemyDetailDialog,
     EnemyPrecisionDialog, default_precision_values, format_column_value,
@@ -93,11 +98,139 @@ SLOW_UI_MS = 150
 WS_PUSH_MS = 8
 ENEMY_POLL_SEC = 0.01      # 敌人轮询间隔 (memsrv 通道单帧 <1ms, 2倍速 60fps=16.7ms)
 ENEMY_RENDER_SEC = 0.016   # 表格渲染节流 (60fps)
-ENEMY_DETAIL_POLL_SEC = 0.25  # 详情完整数据刷新间隔（Buff/关卡效果读取较重）
+ENEMY_DETAIL_FULL_SEC = 0.05  # Buff/关卡效果独立通道约 20Hz；动态数据随主表每帧刷新
 
 ENEMY_COLS = [col['label'] for col in ENEMY_COLUMN_DEFS]
 ENEMY_COL_WIDTHS = [col['width'] for col in ENEMY_COLUMN_DEFS]
 ENEMY_STATE_NAMES = {0: 'NONE', 1: 'INITED', 2: '战斗中', 3: '已结束'}
+
+
+def probe_adb_executable(path: str) -> tuple[bool, str]:
+    """验证用户选择的是可运行的 adb；参数列表调用可正确处理空格和中文路径。"""
+    path = os.path.normpath(path or '')
+    if not path or not os.path.isfile(path):
+        return False, '所选文件不存在'
+    try:
+        result = subprocess.run(
+            [path, 'version'], capture_output=True, text=True, errors='replace',
+            timeout=8,
+            creationflags=(getattr(subprocess, 'CREATE_NO_WINDOW', 0)
+                           if os.name == 'nt' else 0),
+        )
+    except subprocess.TimeoutExpired:
+        return False, '执行 adb version 超时'
+    except OSError as exc:
+        return False, f'无法运行所选文件：{exc}'
+    output = '\n'.join(
+        part.strip() for part in (result.stdout, result.stderr) if part.strip())
+    if result.returncode != 0:
+        return False, output.splitlines()[0] if output else f'退出码 {result.returncode}'
+    return True, output.splitlines()[0] if output else 'ADB 可执行文件验证通过'
+
+
+class AdbSelectionDialog(QDialog):
+    """手动浏览或按运行中模拟器进程自动定位 adb.exe。"""
+
+    def __init__(self, parent=None, current_path: str = '') -> None:
+        super().__init__(parent)
+        self.setWindowTitle('选择 ADB')
+        self.setMinimumWidth(700)
+        self.probe_detail = ''
+
+        layout = QVBoxLayout(self)
+        intro = QLabel(
+            '选择模拟器自带的 adb.exe。也可以先启动模拟器，再点击“自动探测运行中模拟器”。')
+        intro.setWordWrap(True)
+        layout.addWidget(intro)
+
+        self.path_combo = QComboBox()
+        self.path_combo.setEditable(True)
+        self.path_combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        self.path_combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        line_edit = self.path_combo.lineEdit()
+        if line_edit is not None:
+            line_edit.setPlaceholderText('请选择或输入 adb.exe 的完整路径')
+            line_edit.setClearButtonEnabled(True)
+        if current_path:
+            self.path_combo.addItem(os.path.normpath(current_path))
+        layout.addWidget(self.path_combo)
+
+        action_row = QHBoxLayout()
+        browse = QPushButton('浏览 adb.exe…')
+        browse.clicked.connect(self._browse)
+        action_row.addWidget(browse)
+        self.btn_auto_detect = QPushButton('自动探测运行中模拟器')
+        self.btn_auto_detect.clicked.connect(self._auto_detect)
+        action_row.addWidget(self.btn_auto_detect)
+        action_row.addStretch(1)
+        layout.addLayout(action_row)
+
+        self.status = QLabel('')
+        self.status.setWordWrap(True)
+        self.status.setStyleSheet('color:#9a9a9a;')
+        layout.addWidget(self.status)
+
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setText('使用此 ADB')
+        buttons.accepted.connect(self._validate_and_accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def selected_path(self) -> str:
+        return os.path.normpath(self.path_combo.currentText().strip())
+
+    def _browse(self) -> None:
+        current = self.selected_path()
+        start_dir = os.path.dirname(current) if os.path.isfile(current) else ''
+        path, _ = QFileDialog.getOpenFileName(
+            self, '选择 adb.exe', start_dir,
+            'ADB 程序 (adb.exe);;可执行文件 (*.exe);;所有文件 (*)')
+        if path:
+            self.path_combo.setCurrentText(os.path.normpath(path))
+            self.status.setText('已选择文件，点击“使用此 ADB”完成验证。')
+
+    def _auto_detect(self) -> None:
+        self.btn_auto_detect.setEnabled(False)
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        try:
+            detected = find_running_emulator_adbs()
+            usable = []
+            details = []
+            for item in detected:
+                path = item['adb_path']
+                ok, detail = probe_adb_executable(path)
+                if ok:
+                    usable.append(path)
+                    details.append(
+                        f"{item['process_name']} → {path}（{detail}）")
+            if not usable:
+                self.status.setStyleSheet('color:#d07a7a;')
+                self.status.setText(
+                    '未从运行进程中找到可用 ADB。请确认模拟器已完全启动，或使用“浏览 adb.exe…”。')
+                return
+            current = self.selected_path()
+            self.path_combo.clear()
+            for path in usable:
+                self.path_combo.addItem(path)
+            if current in usable:
+                self.path_combo.setCurrentText(current)
+            self.status.setStyleSheet('color:#58a66a;')
+            self.status.setText(
+                f'已发现 {len(usable)} 个可用 ADB：\n' + '\n'.join(details))
+        finally:
+            QApplication.restoreOverrideCursor()
+            self.btn_auto_detect.setEnabled(True)
+
+    def _validate_and_accept(self) -> None:
+        path = self.selected_path()
+        ok, detail = probe_adb_executable(path)
+        if not ok:
+            QMessageBox.warning(
+                self, 'ADB 不可用', f'所选文件未通过验证：\n{path}\n\n{detail}')
+            return
+        self.probe_detail = detail
+        super().accept()
 
 def _format_game_time(value: object) -> str:
     if value is None:
@@ -143,7 +276,7 @@ class EnemyScanWorker(QThread):
                 self.done.emit(
                     True,
                     f"定位完成，预定敌人 {self.reader.planned_count} 个，"
-                    f"当前场上 {len(self.reader.enemy_addrs)} 个")
+                    f"当前注册实例 {len(self.reader.enemy_addrs)} 个（场上数随后实时判定）")
             else:
                 self.done.emit(False, "定位失败：请确认明日方舟已进入战斗关卡")
         except Exception as e:
@@ -161,6 +294,9 @@ class EnemyPollWorker(QThread):
         self._detail_lock = threading.Lock()
         self._detail_addr = 0
         self._detail_due = 0.0
+        self._detail_heavy_cache = None
+        self._detail_loading = False
+        self._detail_error = ''
 
     def set_detail_target(self, addr: int = 0) -> None:
         """选择需要完整实时详情的敌人；0 表示停止详情读取。"""
@@ -169,18 +305,52 @@ class EnemyPollWorker(QThread):
             if addr != self._detail_addr:
                 self._detail_addr = addr
                 self._detail_due = 0.0
+                self._detail_heavy_cache = None
+                self._detail_error = ''
+
+    def _start_detail_refresh(self, addr: int) -> None:
+        with self._detail_lock:
+            if self._detail_loading or addr != self._detail_addr:
+                return
+            self._detail_loading = True
+
+        def load() -> None:
+            cache = None
+            error = ''
+            try:
+                full = self.reader.read_enemy_detail(addr, heavy_only=True)
+                if full is not None:
+                    cache = {
+                        'raw_attributes': dict(full.raw_attributes),
+                        'buffs': list(full.buffs),
+                        'global_buffs': list(full.global_buffs),
+                    }
+                else:
+                    error = '敌人详情对象已失效。'
+            except Exception as exc:
+                error = f'详情刷新失败：{exc}'
+            finally:
+                with self._detail_lock:
+                    if addr == self._detail_addr:
+                        if cache is not None:
+                            self._detail_heavy_cache = cache
+                            self._detail_error = ''
+                        elif error:
+                            self._detail_error = error
+                        self._detail_due = time.monotonic() + ENEMY_DETAIL_FULL_SEC
+                    self._detail_loading = False
+
+        threading.Thread(
+            target=load, name='EnemyDetailRefresh', daemon=True).start()
 
     def _append_detail(self, snap: dict) -> None:
         now = time.monotonic()
         with self._detail_lock:
             addr = self._detail_addr
             due = self._detail_due
-        if not addr or now < due:
+        if not addr:
             return
         if not snap.get('ok'):
-            with self._detail_lock:
-                if addr == self._detail_addr:
-                    self._detail_due = time.monotonic() + ENEMY_DETAIL_POLL_SEC
             return
 
         # 只跟踪当前敌人列表中的同一实例；退场后保留最后一帧并给详情页提示。
@@ -188,22 +358,22 @@ class EnemyPollWorker(QThread):
                              if getattr(enemy, 'addr', 0) == addr
                              and getattr(enemy, 'lifecycle', 'active') == 'active'), None)
         live = roster_enemy is not None
-        try:
-            snap['detail_enemy'] = self.reader.read_enemy_detail(addr) if live else None
-            detail_enemy = snap['detail_enemy']
-            if detail_enemy is not None and roster_enemy is not None:
-                for key in ('roster_id', 'spawn_order', 'wave_index', 'fragment_index',
-                            'action_index', 'spawn_index', 'route_index', 'lifecycle', 'planned'):
-                    setattr(detail_enemy, key, getattr(roster_enemy, key))
-            if snap['detail_enemy'] is None:
-                snap['detail_error'] = '敌人已退场或对象已失效，已停止更新。'
-        except Exception as exc:
+        if not live:
             snap['detail_enemy'] = None
-            snap['detail_error'] = f'详情刷新失败：{exc}'
-        finally:
-            with self._detail_lock:
-                if addr == self._detail_addr:
-                    self._detail_due = time.monotonic() + ENEMY_DETAIL_POLL_SEC
+            snap['detail_error'] = '敌人已退场或对象已失效，已停止更新。'
+            return
+        # 重型数据由独立线程+独立 27274 通道读取，主轮询从不等待它。
+        if now >= due:
+            self._start_detail_refresh(addr)
+        with self._detail_lock:
+            heavy = dict(self._detail_heavy_cache or {})
+            error = self._detail_error
+        roster_enemy.raw_attributes = dict(heavy.get('raw_attributes', {}))
+        roster_enemy.buffs = list(heavy.get('buffs', ()))
+        roster_enemy.global_buffs = list(heavy.get('global_buffs', ()))
+        snap['detail_enemy'] = roster_enemy
+        if error:
+            snap['detail_error'] = error
 
     def run(self) -> None:
         # Windows 默认睡眠粒度 15.6ms, 提到 1ms 才能睡出 <16ms 的轮询间隔
@@ -334,6 +504,7 @@ class CoachWindow(QMainWindow):
         self._enemy_last_render = 0.0
         self._enemy_rows: dict = {}    # roster_id -> 表格行号（按关卡预定顺序稳定）
         self._enemy_row_lifecycle: dict = {}  # roster_id -> 上次生命周期（静态行免重复绘制）
+        self._enemy_row_spawn_wait: dict = {} # roster_id -> 上次倒计时文本（仅变化时更新）
         self._bar_colors: dict = {}    # roster_id -> 当前血条颜色
         self._skill_lines: dict = {}   # roster_id -> 技能格行数（变化才调整行高）
         self._enemy_dec: dict = default_precision_values()
@@ -395,6 +566,11 @@ class CoachWindow(QMainWindow):
         title.setStyleSheet("font-size: 20px; font-weight: 700; color: #e8e8e8;")
         title_row.addWidget(title)
         title_row.addStretch(1)
+        self.btn_select_adb = QPushButton("选择 ADB")
+        self.btn_select_adb.clicked.connect(self._on_select_adb)
+        self._style_secondary_button(self.btn_select_adb)
+        title_row.addWidget(self.btn_select_adb)
+        self._update_adb_button()
         self.btn_pin_top = QPushButton("窗口置顶")
         self.btn_pin_top.setCheckable(True)
         self.btn_pin_top.setToolTip("开启后窗口始终显示在最前")
@@ -927,24 +1103,96 @@ class CoachWindow(QMainWindow):
 
     # ================= 敌人数据 =================
 
+    def _update_adb_button(self) -> None:
+        path = os.path.normpath(self._enemy_reader.mc.adb_path or '')
+        if path and os.path.isfile(path):
+            self.btn_select_adb.setText('选择 ADB（已设置）')
+            self.btn_select_adb.setToolTip(f'当前 ADB：\n{path}\n\n点击可重新选择')
+        else:
+            self.btn_select_adb.setText('选择 ADB')
+            self.btn_select_adb.setToolTip('选择模拟器安装目录中的 adb.exe')
+
+    def _adb_scan_is_running(self) -> bool:
+        return any(worker is not None and worker.isRunning() for worker in (
+            self._enemy_scan, self._rng_worker, self._deploy_scan))
+
+    def _activate_adb_path(self, path: str) -> None:
+        """停止旧连接并让敌人、RNG、操作记录统一改用新 ADB。"""
+        self._stop_enemy_poll()
+        self._on_rng_stop()
+        self._stop_deploy_poll()
+        if self._deploy_reader is not None:
+            self._deploy_reader.close()
+            self._deploy_reader = None
+        self._enemy_reader.close()
+        self._enemy_reader = EnemyReader(adb_path=path, log=_tlog)
+
+        if self._enemy_detail_dialog is not None:
+            self._enemy_detail_dialog.close()
+            self._enemy_detail_dialog = None
+        self.enemy_table.setRowCount(0)
+        self._enemy_last.clear()
+        self._enemy_rows.clear()
+        self._enemy_row_lifecycle.clear()
+        self._enemy_row_spawn_wait.clear()
+        self._bar_colors.clear()
+        self._skill_lines.clear()
+        self.enemy_progress.setValue(0)
+        self.enemy_progress.setFormat('等待扫描')
+        self.btn_enemy_scan.setText('开始扫描')
+        self.lbl_enemy_status.setText('ADB 已切换，请重新扫描')
+
+        self.rng_pred_table.setRowCount(0)
+        self.rng_hist_table.setRowCount(0)
+        self.lbl_rng_status.setText('ADB 已切换，请重新扫描')
+
+        self.deploy_table.setRowCount(0)
+        self._deploy_events = []
+        self._deploy_journal = []
+        self._deploy_squad = []
+        self._deploy_stage = ''
+        self._deploy_stage_info = {}
+        self._deploy_seen = 0
+        self.btn_deploy_export.setEnabled(False)
+        self.lbl_deploy_status.setText('ADB 已切换，请重新扫描')
+        self._update_adb_button()
+
+    def _select_adb(self, show_success: bool = True) -> bool:
+        if self._adb_scan_is_running():
+            QMessageBox.warning(
+                self, '选择 ADB', '当前正在定位扫描，请等待本次扫描完成后再切换 ADB。')
+            return False
+        current = os.path.normpath(self._enemy_reader.mc.adb_path or '')
+        dialog = AdbSelectionDialog(self, current if os.path.isfile(current) else '')
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return False
+        path = dialog.selected_path()
+        detail = dialog.probe_detail
+        persisted = save_adb_path(path)
+        self._activate_adb_path(path)
+        if show_success:
+            suffix = '' if persisted else '\n\n警告：配置文件写入失败，下次启动需要重新选择。'
+            QMessageBox.information(
+                self, 'ADB 已选择',
+                f'已切换到：\n{path}\n\n{detail}\n\n'
+                f'敌人、随机数和操作记录扫描都会使用此 ADB。{suffix}')
+        return True
+
+    def _on_select_adb(self) -> None:
+        self._select_adb(show_success=True)
+
     def _ensure_adb(self) -> bool:
         """扫描前确保 adb 可用; 找不到时弹框让用户手动选择并持久化"""
         mc = self._enemy_reader.mc
         if mc.adb_path and os.path.isfile(mc.adb_path):
+            self._update_adb_button()
             return True
         QMessageBox.information(
             self, "需要 adb",
             "未找到 adb.exe。\n\n"
             "请选择 MuMu 模拟器安装目录下的 shell\\adb.exe，例如：\n"
             "D:\\Program Files\\MuMu9\\emulator\\MuMuPlayer-12.0\\shell\\adb.exe")
-        path, _ = QFileDialog.getOpenFileName(
-            self, "选择 adb.exe", "", "adb (adb.exe);;所有文件 (*)")
-        if path and os.path.isfile(path):
-            mc.adb_path = path
-            from tools.enemy_health.memcore import save_adb_path
-            save_adb_path(path)
-            return True
-        return False
+        return self._select_adb(show_success=False)
 
     def _on_enemy_scan(self) -> None:
         if not self._ensure_adb():
@@ -954,6 +1202,7 @@ class CoachWindow(QMainWindow):
         self.enemy_table.setRowCount(0)   # 换关卡重扫: 清掉旧敌人行
         self._enemy_rows.clear()
         self._enemy_row_lifecycle.clear()
+        self._enemy_row_spawn_wait.clear()
         self._bar_colors.clear()
         self._skill_lines.clear()
         self.btn_enemy_scan.setEnabled(False)
@@ -1329,6 +1578,11 @@ class CoachWindow(QMainWindow):
             if msg and msg != getattr(self, '_last_snap_msg', None):
                 self._last_snap_msg = msg
                 _tlog("轮询:", msg)
+        # 主表与详情页使用同一次 60fps 渲染节流，避免两处显示不同步。
+        now = time.time()
+        if snap.get('ok') and now - self._enemy_last_render < ENEMY_RENDER_SEC:
+            return
+        self._enemy_last_render = now
         detail_dialog = self._enemy_detail_dialog
         if detail_dialog is not None and 'detail_enemy' in snap:
             detail_enemy = snap.get('detail_enemy')
@@ -1337,11 +1591,6 @@ class CoachWindow(QMainWindow):
                 detail_dialog.update_enemy(detail_enemy)
             elif snap.get('detail_error'):
                 detail_dialog.set_live_error(snap['detail_error'])
-        # 渲染节流: 轮询 33ms, 渲染 30fps
-        now = time.time()
-        if snap.get('ok') and now - self._enemy_last_render < ENEMY_RENDER_SEC:
-            return
-        self._enemy_last_render = now
         st = ENEMY_STATE_NAMES.get(snap['state'], '?') if snap['state'] >= 0 else '-'
         spd = enemy_gs.SpeedLevel.NAMES.get(snap['speed_level'], '?') if snap['speed_level'] >= 0 else '-'
         t = int(snap['play_time'])
@@ -1387,10 +1636,12 @@ class CoachWindow(QMainWindow):
                     self._make_enemy_row(row, row_key)
                     self._enemy_rows[row_key] = row
                 lifecycle = getattr(e, 'lifecycle', 'active')
-                # 未出场/已离场行是静态的；只有首次或生命周期变化时重绘。
+                # 场上行全量刷新；未出场行只刷新倒计时列，避免几十行每帧重排。
                 if (is_new or lifecycle == 'active'
                         or self._enemy_row_lifecycle.get(row_key) != lifecycle):
                     self._update_enemy_row(row, e)
+                elif lifecycle == 'pending':
+                    self._update_enemy_spawn_wait(row, e, row_key)
                 self._enemy_row_lifecycle[row_key] = lifecycle
             gone = [a for a in self._enemy_rows if a not in seen]
             for a in sorted(gone, key=lambda a: -self._enemy_rows[a]):
@@ -1398,6 +1649,7 @@ class CoachWindow(QMainWindow):
                 self._bar_colors.pop(a, None)
                 self._skill_lines.pop(a, None)
                 self._enemy_row_lifecycle.pop(a, None)
+                self._enemy_row_spawn_wait.pop(a, None)
             if gone:   # removeRow 后行号位移, 依 item(0) 存的 addr 重建映射
                 self._enemy_rows = {tbl.item(r, 0).data(Qt.UserRole): r
                                     for r in range(tbl.rowCount())}
@@ -1409,9 +1661,20 @@ class CoachWindow(QMainWindow):
         self.enemy_table.setRowCount(0)
         self._enemy_rows.clear()
         self._enemy_row_lifecycle.clear()
+        self._enemy_row_spawn_wait.clear()
         self._bar_colors.clear()
         self._skill_lines.clear()
         self._render_enemy_table(self._enemy_last)
+
+    def _update_enemy_spawn_wait(self, row: int, enemy, row_key: int) -> None:
+        text = format_column_value('spawn_wait', enemy, self._enemy_dec, row)
+        if self._enemy_row_spawn_wait.get(row_key) == text:
+            return
+        self._enemy_row_spawn_wait[row_key] = text
+        item = self.enemy_table.item(row, ENEMY_COLUMN_INDEX['spawn_wait'])
+        if item is not None:
+            item.setText(text)
+            item.setToolTip(text)
 
     def _on_enemy_precision(self) -> None:
         dlg = EnemyPrecisionDialog(
@@ -1505,6 +1768,9 @@ class CoachWindow(QMainWindow):
             setc(key, format_column_value(key, e, d, row),
                  grey=(getattr(e, 'lifecycle', 'active') != 'active'
                        or (key == 'life_status' and not e.alive)))
+        row_key = getattr(e, 'roster_id', 0) or e.addr
+        self._enemy_row_spawn_wait[row_key] = format_column_value(
+            'spawn_wait', e, d, row)
 
         hp_col = ENEMY_COLUMN_INDEX['hp']
         bar = tbl.cellWidget(row, hp_col)
@@ -1522,7 +1788,6 @@ class CoachWindow(QMainWindow):
         color = '#5cb85c' if ratio > 0.5 else ('#f0ad4e' if ratio > 0.2 else '#d9534f')
         if lifecycle != 'active' or not e.alive:
             color = '#888888'
-        row_key = getattr(e, 'roster_id', 0) or e.addr
         if self._bar_colors.get(row_key) != color:   # 颜色变化才重设样式 (触发重排版)
             self._bar_colors[row_key] = color
             bar.setStyleSheet(f'QProgressBar::chunk {{ background-color: {color}; }}')
