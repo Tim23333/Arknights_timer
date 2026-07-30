@@ -36,10 +36,12 @@ class AdbReader:
     # ---------------- 连接 ----------------
 
     @classmethod
-    def connect(cls, adb_path=None, package="com.hypergryph.arknights", status=print):
-        mc = MemCore(adb_path=adb_path, package=package)
+    def connect(cls, adb_path=None, package="com.hypergryph.arknights", status=print,
+                adb_serial=None):
+        mc = MemCore(adb_path=adb_path, package=package, adb_serial=adb_serial)
         pid = mc.connect()          # devices/root/pidof/maps
-        status("[adb] 已连接 %s pid=%d, maps %d 区域" % (package, pid, len(mc.regions)))
+        status("[adb] 已连接 %s / %s pid=%d, maps %d 区域" % (
+            mc.adb_serial, mc.package, pid, len(mc.regions)))
         reader = cls(mc)
         reader._open_channel(status)
         return reader

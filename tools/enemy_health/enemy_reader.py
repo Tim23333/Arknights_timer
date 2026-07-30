@@ -215,8 +215,10 @@ class EnemyInfo:
 
 class EnemyReader:
     def __init__(self, adb_path=None, package='com.hypergryph.arknights',
-                 cache_file=CACHE_FILE, with_bc=True, log=print, workers=8, mc=None):
-        self.mc = mc if mc is not None else MemCore(adb_path, package)
+                 cache_file=CACHE_FILE, with_bc=True, log=print, workers=8, mc=None,
+                 adb_serial=None):
+        self.mc = mc if mc is not None else MemCore(
+            adb_path, package, adb_serial=adb_serial)
         self.cache_file = cache_file
         self.with_bc = with_bc
         self.log = log

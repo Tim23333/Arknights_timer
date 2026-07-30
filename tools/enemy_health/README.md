@@ -67,7 +67,8 @@ python -m ziglang cc -target aarch64-linux-musl -static -O2 \
 ## 前置条件
 
 1. **MuMu 模拟器** 已启动，明日方舟已进入战斗关卡（无需等待敌人出场）
-2. **adb root** 可用（MuMu 自带 adb 默认支持，工具自动查找路径）
+2. **adb root** 可用。MAA 能截图只验证普通 ADB 连接，不代表有权读取 `/proc/<pid>/mem`；若工具提示无 root，请在 MuMu 设置中开启 Root 并重启模拟器
+3. ADB 设备地址选择与 MAA“连接地址”一致（MuMu 主实例通常为 `127.0.0.1:16384`）；主程序“选择 ADB”页面会自动连接常见 MuMu 端口并列出在线设备
 3. **Python 3.8+**，依赖 `numpy`（扫描加速）
 
 ## 使用方法
@@ -86,7 +87,7 @@ python run.py
 - 当前 Scheduler 队列内的敌人显示精确剩余游戏秒数；分支、死亡转换或召唤显示真实等待条件，不伪造秒数
 - **离场敌方不显示**默认勾选；取消后显示完整历史及离场前最后一帧数据
 - 表格准实时展示 (默认 0.016 秒刷新=60Hz, 可调至 0.008): 名称/编号/ID/坐标/血条/攻击/防御/法抗/移速/攻速/状态
-- **显示列**可逐项勾选全部最终属性、异常状态、状态免疫、护盾，以及神经/侵蚀/灼燃/凋亡/狂躁五类损伤条；选择会持久化
+- **显示列**可逐项勾选全部最终属性、异常状态、状态免疫、护盾，以及神经/侵蚀/灼燃/凋亡/狂躁五类损伤条；主表按与游戏 HUD 一致的“剩余/上限（剩余比例）”显示，选择会持久化
 - 每行的**详情**按钮与主表同帧更新 HP/状态/损伤条/技能；原始属性、当前 Buff 和关卡全局 Buff 由独立通道持续刷新
 - Buff/关卡效果同时显示中文名称、自动归纳的效果说明、中文属性公式和 Blackboard 参数解释；内部键与原始参数仍保留用于逆向核对
 - 状态栏显示每帧读取耗时 (ms/帧); 轮询线程用 timeBeginPeriod(1) 保证亚 16ms 睡眠精度
@@ -109,8 +110,8 @@ python -m tools.enemy_health --rebuild
 # 显示敌人描述
 python -m tools.enemy_health --desc
 
-# 指定 adb 路径 / 刷新间隔
-python -m tools.enemy_health --adb "D:\...\adb.exe" --interval 1
+# 指定 adb 路径、设备地址 / 刷新间隔
+python -m tools.enemy_health --adb "D:\...\adb.exe" --serial 127.0.0.1:16384 --interval 1
 ```
 
 ## 输出示例
@@ -191,7 +192,7 @@ backend/app/enemy_buff_descriptions.py # Buff/GlobalBuff 中文说明
 
 ## 已知限制
 
-1. **需要 adb root** 读取 `/proc/<pid>/mem`（MuMu 默认支持）
+1. **需要 adb root** 读取 `/proc/<pid>/mem`；仅截图正常不能证明内存读取权限正常
 2. **MuMu 窗口失去焦点/最小化时游戏会暂停**，此时数值冻结属正常现象
    （是模拟器行为，不是工具问题）；恢复前台后立即继续更新
 3. **换关卡/重启游戏后需 `--rebuild`**（Boehm GC 地址随战斗重建）

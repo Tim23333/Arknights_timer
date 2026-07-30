@@ -63,11 +63,11 @@ for _idx, _internal, _name in gs.ATTRIBUTE_DEFS:
 ENEMY_COLUMN_DEFS.extend([
     _col('es', '元素护盾', 90, False, True),
     _col('shield', '普通护盾', 90, False, True),
-    _col('ep_sanity', '神经损伤', 125, False, True),
-    _col('ep_water', '侵蚀损伤', 125, False, True),
-    _col('ep_fire', '灼燃损伤', 125, False, True),
-    _col('ep_dark', '凋亡损伤', 125, False, True),
-    _col('ep_anger', '狂躁损伤', 125, False, True),
+    _col('ep_sanity', '神经损伤剩余', 145, False, True),
+    _col('ep_water', '侵蚀损伤剩余', 145, False, True),
+    _col('ep_fire', '灼燃损伤剩余', 145, False, True),
+    _col('ep_dark', '凋亡损伤剩余', 145, False, True),
+    _col('ep_anger', '狂躁损伤剩余', 145, False, True),
     _col('ep_break', '元素爆发恢复', 95, False),
     _col('skill', '技能 CD', 150, True, True),
     _col('life_status', '生存状态', 72, True),
@@ -310,9 +310,9 @@ def format_column_value(key, enemy, decimals, row=0):
         'ep_anger': gs.ElementType.ANGER,
     }
     if key in ep_types:
-        damage, _, maximum = enemy.element_damage(ep_types[key])
-        percent = damage / maximum * 100 if maximum > 0 else 0.0
-        return f'{damage:.{precision}f}/{maximum:.{precision}f} ({percent:.{precision}f}%)'
+        _, remaining, maximum = enemy.element_damage(ep_types[key])
+        percent = remaining / maximum * 100 if maximum > 0 else 0.0
+        return f'{remaining:.{precision}f}/{maximum:.{precision}f} ({percent:.{precision}f}%)'
     if key == 'ep_break':
         return '恢复中' if enemy.ep_break_recovery else '-'
     if key == 'skill':
@@ -403,7 +403,9 @@ class EnemyDetailDialog(QDialog):
 
         self.overview = _make_table(['项目', '数值'])
         self.attrs = _make_table(['属性', '内部名', '原始值', '最终值', '变化'])
-        self.elements = _make_table(['损伤类型', '内部名', '已累积', '剩余', '上限', '比例', '爆发'])
+        self.elements = _make_table([
+            '损伤类型', '内部名', '已累积', '剩余', '上限',
+            '已累积比例', '剩余比例', '爆发'])
         self.statuses = _make_table(['类别', '状态', '内部名', '生效计数', '免疫计数', '反制计数'])
         self.buffs = _make_table([
             '中文名称', '内部键', '效果说明', '来源', '运行信息', '时间', '层数',
@@ -485,9 +487,11 @@ class EnemyDetailDialog(QDialog):
         element_rows = []
         for idx, internal, name in gs.ELEMENT_DEFS:
             damage, remaining, maximum = enemy.element_damage(idx)
-            ratio = damage / maximum * 100 if maximum > 0 else 0.0
+            damage_ratio = damage / maximum * 100 if maximum > 0 else 0.0
+            remaining_ratio = remaining / maximum * 100 if maximum > 0 else 0.0
             element_rows.append((name, internal, damage, remaining, maximum,
-                                 f'{ratio:.4f}%', '是' if maximum > 0 and remaining <= 0 else '否'))
+                                 f'{damage_ratio:.4f}%', f'{remaining_ratio:.4f}%',
+                                 '是' if maximum > 0 and remaining <= 0 else '否'))
         _fill_table(self.elements, element_rows, resize_columns=resize_columns)
 
         status_rows = []

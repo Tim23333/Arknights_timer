@@ -1,15 +1,59 @@
 # -*- coding: utf-8 -*-
 import struct
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from tools.enemy_health import game_structs as gs
 from tools.enemy_health.enemy_reader import EnemyInfo, EnemyReader
-from tools.enemy_health.memcore import find_running_emulator_adbs
+from tools.enemy_health.memcore import (
+    MemCore, find_running_emulator_adbs, query_adb_devices,
+)
 
 
 class EnemyDetailModelTests(unittest.TestCase):
+    def test_adb_commands_are_bound_to_selected_device(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            adb = Path(temp_dir) / 'adb.exe'
+            adb.touch()
+            completed = subprocess.CompletedProcess([], 0, stdout=b'ok', stderr=b'')
+            with patch('tools.enemy_health.memcore.subprocess.run',
+                       return_value=completed) as run:
+                mc = MemCore(str(adb), adb_serial='127.0.0.1:16384')
+                self.assertEqual(mc.adb('shell', 'id'), b'ok')
+            self.assertEqual(
+                run.call_args.args[0],
+                [str(adb), '-s', '127.0.0.1:16384', 'shell', 'id'])
+
+    def test_query_adb_devices_parses_serial_and_state(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            adb = Path(temp_dir) / 'adb.exe'
+            adb.touch()
+            output = (
+                b'List of devices attached\n'
+                b'127.0.0.1:16384\tdevice product:MuMu model:MuMu\n'
+                b'127.0.0.1:7555\toffline\n')
+            completed = subprocess.CompletedProcess([], 0, stdout=output, stderr=b'')
+            with patch('tools.enemy_health.memcore.subprocess.run',
+                       return_value=completed):
+                rows = query_adb_devices(str(adb))
+        self.assertEqual(rows[0]['serial'], '127.0.0.1:16384')
+        self.assertEqual(rows[0]['state'], 'device')
+        self.assertEqual(rows[1]['state'], 'offline')
+
+    def test_game_package_is_auto_detected_on_selected_device(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            adb = Path(temp_dir) / 'adb.exe'
+            adb.touch()
+            mc = MemCore(str(adb), adb_serial='127.0.0.1:16384')
+            mc.shell = lambda command, timeout=30: (
+                '4321\n' if command == 'pidof com.hypergryph.arknights.bilibili' else '')
+            package, pid = mc._pid_for_known_package()
+        self.assertEqual(package, 'com.hypergryph.arknights.bilibili')
+        self.assertEqual(pid, 4321)
+
     def test_running_mumu_process_resolves_new_layout_adb(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir) / 'MuMu Player 12'

@@ -80,6 +80,7 @@ def clear_screen():
 def main(argv=None):
     ap = argparse.ArgumentParser(description='明日方舟敌人血量/属性实时监控 (MuMu 模拟器)')
     ap.add_argument('--adb', help='adb.exe 路径 (默认自动查找 MuMu)')
+    ap.add_argument('--serial', help='ADB 设备地址，例如 127.0.0.1:16384（默认自动选择）')
     ap.add_argument('--interval', type=float, default=2.5, help='刷新间隔秒 (默认 2.5)')
     ap.add_argument('--once', action='store_true', help='只读取一次')
     ap.add_argument('--rebuild', action='store_true', help='忽略缓存强制重新扫描')
@@ -87,7 +88,8 @@ def main(argv=None):
     ap.add_argument('--desc', action='store_true', help='显示敌人描述')
     args = ap.parse_args(argv)
 
-    reader = EnemyReader(adb_path=args.adb, with_bc=not args.no_bc)
+    reader = EnemyReader(
+        adb_path=args.adb, adb_serial=args.serial, with_bc=not args.no_bc)
     try:
         reader.connect()
     except RuntimeError as e:

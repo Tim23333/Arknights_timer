@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QPushButton
 
 from backend.app.enemy_buff_descriptions import (
@@ -18,7 +19,10 @@ from backend.app.enemy_ui import (
 )
 from tools.enemy_health import game_structs as gs
 from tools.enemy_health.enemy_reader import EnemyInfo
-from backend.desktop_app import AdbSelectionDialog, probe_adb_executable
+from backend.desktop_app import (
+    AdbSelectionDialog, _system_prefers_dark, _theme_stylesheet,
+    probe_adb_executable,
+)
 
 
 class EnemyUiTests(unittest.TestCase):
@@ -30,7 +34,7 @@ class EnemyUiTests(unittest.TestCase):
         visible = {'name', 'ep_sanity', 'attr_1', 'skill', 'detail'}
         self.assertEqual(
             precision_column_defs(visible),
-            [('attr_1', '攻击'), ('ep_sanity', '神经损伤'), ('skill', '技能 CD')],
+            [('attr_1', '攻击'), ('ep_sanity', '神经损伤剩余'), ('skill', '技能 CD')],
         )
 
     def test_adb_probe_handles_executable_path_with_spaces(self):
@@ -47,10 +51,37 @@ class EnemyUiTests(unittest.TestCase):
             self.assertEqual(run.call_args.args[0], [str(adb_path), 'version'])
 
     def test_adb_selection_dialog_has_running_emulator_detection(self):
-        dialog = AdbSelectionDialog(None, '')
+        dialog = AdbSelectionDialog(None, '', '127.0.0.1:16384')
         self.assertEqual(dialog.btn_auto_detect.text(), '自动探测运行中模拟器')
+        self.assertEqual(dialog.btn_refresh_devices.text(), '刷新设备地址')
         self.assertTrue(dialog.path_combo.isEditable())
+        self.assertTrue(dialog.device_combo.isEditable())
+        self.assertEqual(dialog.selected_serial(), '127.0.0.1:16384')
         dialog.close()
+
+    def test_light_and_dark_themes_style_table_headers_and_rows_together(self):
+        light = _theme_stylesheet(False)
+        dark = _theme_stylesheet(True)
+        for stylesheet in (light, dark):
+            self.assertIn('QHeaderView::section', stylesheet)
+            self.assertIn('alternate-background-color', stylesheet)
+            self.assertIn('QProgressBar', stylesheet)
+            self.assertIn('QPushButton[buttonRole="primary"]', stylesheet)
+        self.assertIn('#e8ecf1', light)
+        self.assertIn('#202124', light)
+        self.assertIn('#343434', dark)
+        self.assertIn('#e8e8e8', dark)
+
+    def test_system_theme_prefers_qt_color_scheme(self):
+        class Hints:
+            def colorScheme(self):
+                return Qt.ColorScheme.Light
+
+        class FakeApp:
+            def styleHints(self):
+                return Hints()
+
+        self.assertFalse(_system_prefers_dark(FakeApp()))
 
     def test_column_specific_precision_for_attribute_and_element_damage(self):
         enemy = EnemyInfo(1)
@@ -61,7 +92,18 @@ class EnemyUiTests(unittest.TestCase):
         self.assertEqual(format_column_value('attr_1', enemy, decimals), '123.46')
         self.assertEqual(
             format_column_value('ep_sanity', enemy, decimals),
-            '374.5/1000.0 (37.5%)',
+            '625.5/1000.0 (62.5%)',
+        )
+
+    def test_boss_element_column_uses_remaining_runtime_capacity(self):
+        enemy = EnemyInfo(1)
+        enemy.attributes[gs.AttributeType.MAX_EP] = 1000.0
+        enemy.ep_remaining[gs.ElementType.NONE] = 2000.0
+        enemy.ep_remaining[gs.ElementType.SANITY] = 818.82
+        self.assertEqual(
+            format_column_value(
+                'ep_sanity', enemy, {'default': 2, 'ep_sanity': 2}),
+            '818.82/2000.00 (40.94%)',
         )
 
     def test_buff_chinese_name_and_attribute_formula(self):

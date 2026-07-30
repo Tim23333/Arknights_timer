@@ -52,12 +52,13 @@ class RngService:
     """线程模型: start() 起后台轮询线程; 数据经 snapshot() 锁保护读取。"""
 
     def __init__(self, backend="adb", package="com.hypergryph.arknights",
-                 adb_path=None, process_names=None, prefer_role="imp",
+                 adb_path=None, adb_serial=None, process_names=None, prefer_role="imp",
                  use_cache=True, allow_heuristic=False, poll_interval=0.005,
                  reader=None, on_status=None):
         self.backend = backend
         self.package = package
         self.adb_path = adb_path
+        self.adb_serial = adb_serial
         self.process_names = process_names
         self.prefer_role = prefer_role
         self.use_cache = use_cache
@@ -95,8 +96,11 @@ class RngService:
                 from adb_reader import AdbReader
                 self.reader = AdbReader.connect(
                     adb_path=self.adb_path, package=self.package,
-                    status=self._status)
-                self.process = "%s (pid %d)" % (self.package, self.reader.mc.pid)
+                    status=self._status, adb_serial=self.adb_serial)
+                self.package = self.reader.mc.package
+                self.adb_serial = self.reader.mc.adb_serial
+                self.process = "%s / %s (pid %d)" % (
+                    self.adb_serial, self.package, self.reader.mc.pid)
                 return True
             except Exception as ex:
                 self._status("adb 连接失败: %s" % ex)

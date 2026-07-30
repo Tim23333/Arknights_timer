@@ -60,7 +60,7 @@ from app.services.timer_provider import TimerDataProvider
 from tools.enemy_health import EnemyReader
 from tools.enemy_health import game_structs as enemy_gs
 from tools.enemy_health.memcore import (
-    MemCore, find_running_emulator_adbs, save_adb_path,
+    MemCore, find_running_emulator_adbs, query_adb_devices, save_adb_config,
 )
 from app.enemy_ui import (
     ENEMY_COLUMN_DEFS, ENEMY_COLUMN_INDEX, EnemyColumnDialog, EnemyDetailDialog,
@@ -105,6 +105,107 @@ ENEMY_COL_WIDTHS = [col['width'] for col in ENEMY_COLUMN_DEFS]
 ENEMY_STATE_NAMES = {0: 'NONE', 1: 'INITED', 2: '战斗中', 3: '已结束'}
 
 
+def _system_prefers_dark(app: QApplication | None = None) -> bool:
+    """读取系统应用主题；Qt 无法判断时回退 Windows 注册表和系统调色板。"""
+    app = app or QApplication.instance()
+    if app is not None:
+        try:
+            scheme = app.styleHints().colorScheme()
+            if scheme == Qt.ColorScheme.Dark:
+                return True
+            if scheme == Qt.ColorScheme.Light:
+                return False
+        except (AttributeError, RuntimeError):
+            pass
+    if sys.platform == 'win32':
+        try:
+            import winreg
+            key = winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER,
+                r'Software\Microsoft\Windows\CurrentVersion\Themes\Personalize')
+            value, _ = winreg.QueryValueEx(key, 'AppsUseLightTheme')
+            winreg.CloseKey(key)
+            return int(value) == 0
+        except (OSError, ValueError, TypeError):
+            pass
+    if app is not None:
+        return app.palette().window().color().lightness() < 128
+    return True
+
+
+def _theme_stylesheet(dark: bool) -> str:
+    """生成覆盖主窗口及其弹窗的完整主题，避免系统控件与硬编码深色混用。"""
+    if dark:
+        c = {
+            'bg': '#1e1e1e', 'panel': '#252526', 'input': '#2d2d2d',
+            'text': '#e8e8e8', 'muted': '#a3a3a3', 'border': '#454545',
+            'header': '#343434', 'alt': '#272727', 'hover': '#3b3b3b',
+            'selection': '#315f9e', 'scroll': '#555555', 'scroll_hover': '#686868',
+            'primary': '#3d7eff', 'primary_hover': '#5a90ff', 'primary_press': '#2d62cc',
+            'secondary': '#3c3c3c', 'secondary_hover': '#4a4a4a',
+            'muted_btn': '#d4a0a0', 'muted_border': '#663333', 'muted_hover': '#3a2525',
+            'toggle': '#333333', 'toggle_text': '#aaaaaa',
+            'toggle_on': '#1a4a7a', 'progress': '#333333',
+            'time': '#7ec8ff', 'frame': '#ffd66b', 'disabled': '#707070',
+        }
+    else:
+        c = {
+            'bg': '#f3f5f7', 'panel': '#ffffff', 'input': '#ffffff',
+            'text': '#202124', 'muted': '#60656d', 'border': '#c9ced6',
+            'header': '#e8ecf1', 'alt': '#f4f6f8', 'hover': '#e6e9ed',
+            'selection': '#c9ddff', 'scroll': '#b4bac2', 'scroll_hover': '#969da6',
+            'primary': '#2563d9', 'primary_hover': '#3475eb', 'primary_press': '#194fae',
+            'secondary': '#f5f6f8', 'secondary_hover': '#e7eaee',
+            'muted_btn': '#9b3434', 'muted_border': '#d7a4a4', 'muted_hover': '#f8e8e8',
+            'toggle': '#eef0f3', 'toggle_text': '#555b63',
+            'toggle_on': '#d9e9ff', 'progress': '#e2e5e9',
+            'time': '#0069b5', 'frame': '#9a6500', 'disabled': '#999ea5',
+        }
+    return f"""
+QWidget {{ background-color:{c['bg']}; color:{c['text']}; }}
+QMainWindow, QDialog, QMessageBox {{ background-color:{c['bg']}; }}
+QLabel, QCheckBox, QRadioButton {{ background-color:transparent; }}
+QToolTip {{ background-color:{c['panel']}; color:{c['text']}; border:1px solid {c['border']}; padding:4px; }}
+QLabel#PageTitle {{ font-size:20px; font-weight:700; color:{c['text']}; }}
+QLabel[role="muted"] {{ color:{c['muted']}; }}
+QLabel[role="primaryText"] {{ color:{c['text']}; }}
+QLabel#GameTimeValue {{ font-size:48px; font-weight:700; color:{c['time']}; }}
+QLabel#GameFrameValue {{ font-size:48px; font-weight:700; color:{c['frame']}; }}
+QFrame#GameTimeCard, QFrame#GameFrameCard {{ background-color:{c['panel']}; border:1px solid {c['border']}; border-radius:8px; }}
+QGroupBox {{ background-color:{c['panel']}; border:1px solid {c['border']}; border-radius:6px; font-weight:600; margin-top:9px; padding-top:9px; }}
+QGroupBox::title {{ subcontrol-origin:margin; subcontrol-position:top left; left:9px; padding:0 4px; background-color:{c['panel']}; }}
+QLineEdit, QComboBox, QAbstractSpinBox, QTextEdit, QPlainTextEdit, QListWidget, QTreeWidget {{ background-color:{c['input']}; color:{c['text']}; border:1px solid {c['border']}; border-radius:4px; padding:4px; selection-background-color:{c['selection']}; }}
+QComboBox QAbstractItemView {{ background-color:{c['input']}; color:{c['text']}; border:1px solid {c['border']}; selection-background-color:{c['selection']}; }}
+QTableWidget {{ background-color:{c['input']}; alternate-background-color:{c['alt']}; color:{c['text']}; gridline-color:{c['border']}; border:1px solid {c['border']}; selection-background-color:{c['selection']}; selection-color:{c['text']}; }}
+QHeaderView::section, QTableCornerButton::section {{ background-color:{c['header']}; color:{c['text']}; border:0; border-right:1px solid {c['border']}; border-bottom:1px solid {c['border']}; padding:5px; }}
+QTabWidget::pane {{ background-color:{c['panel']}; border:1px solid {c['border']}; }}
+QTabBar::tab {{ background-color:{c['header']}; color:{c['text']}; border:1px solid {c['border']}; padding:6px 12px; }}
+QTabBar::tab:selected {{ background-color:{c['panel']}; border-bottom-color:{c['panel']}; }}
+QPushButton {{ background-color:{c['secondary']}; color:{c['text']}; border:1px solid {c['border']}; border-radius:6px; padding:6px 14px; }}
+QPushButton:hover {{ background-color:{c['secondary_hover']}; }}
+QPushButton:disabled {{ color:{c['disabled']}; background-color:{c['bg']}; }}
+QPushButton[buttonRole="primary"] {{ background-color:{c['primary']}; color:white; border:none; font-weight:600; }}
+QPushButton[buttonRole="primary"]:hover {{ background-color:{c['primary_hover']}; }}
+QPushButton[buttonRole="primary"]:pressed {{ background-color:{c['primary_press']}; }}
+QPushButton[buttonRole="secondary"] {{ background-color:{c['secondary']}; color:{c['text']}; border:1px solid {c['border']}; }}
+QPushButton[buttonRole="secondary"]:hover {{ background-color:{c['secondary_hover']}; }}
+QPushButton[buttonRole="muted"] {{ background-color:transparent; color:{c['muted_btn']}; border:1px solid {c['muted_border']}; }}
+QPushButton[buttonRole="muted"]:hover {{ background-color:{c['muted_hover']}; }}
+QPushButton[buttonRole="toggleOff"] {{ background-color:{c['toggle']}; color:{c['toggle_text']}; border:1px solid {c['border']}; }}
+QPushButton[buttonRole="toggleOff"]:hover {{ background-color:{c['secondary_hover']}; color:{c['text']}; }}
+QPushButton[buttonRole="toggleOn"] {{ background-color:{c['toggle_on']}; color:{c['text']}; border:2px solid {c['primary']}; font-weight:600; }}
+QProgressBar {{ background-color:{c['progress']}; color:{c['text']}; border:1px solid {c['border']}; border-radius:4px; text-align:center; }}
+QProgressBar::chunk {{ background-color:{c['primary']}; border-radius:3px; }}
+QCheckBox {{ spacing:6px; }}
+QScrollArea#MainPageScroll {{ background:transparent; border:0; }}
+QScrollBar:vertical {{ width:11px; background:{c['bg']}; margin:0; }}
+QScrollBar:horizontal {{ height:11px; background:{c['bg']}; margin:0; }}
+QScrollBar::handle:vertical, QScrollBar::handle:horizontal {{ min-height:24px; min-width:24px; background:{c['scroll']}; border-radius:4px; }}
+QScrollBar::handle:vertical:hover, QScrollBar::handle:horizontal:hover {{ background:{c['scroll_hover']}; }}
+QScrollBar::add-line, QScrollBar::sub-line {{ width:0; height:0; }}
+"""
+
+
 def probe_adb_executable(path: str) -> tuple[bool, str]:
     """验证用户选择的是可运行的 adb；参数列表调用可正确处理空格和中文路径。"""
     path = os.path.normpath(path or '')
@@ -129,9 +230,10 @@ def probe_adb_executable(path: str) -> tuple[bool, str]:
 
 
 class AdbSelectionDialog(QDialog):
-    """手动浏览或按运行中模拟器进程自动定位 adb.exe。"""
+    """选择 ADB 程序和具体设备地址；两者共同决定内存读取目标。"""
 
-    def __init__(self, parent=None, current_path: str = '') -> None:
+    def __init__(self, parent=None, current_path: str = '',
+                 current_serial: str = '') -> None:
         super().__init__(parent)
         self.setWindowTitle('选择 ADB')
         self.setMinimumWidth(700)
@@ -139,7 +241,8 @@ class AdbSelectionDialog(QDialog):
 
         layout = QVBoxLayout(self)
         intro = QLabel(
-            '选择模拟器自带的 adb.exe。也可以先启动模拟器，再点击“自动探测运行中模拟器”。')
+            '选择模拟器自带的 adb.exe，并指定与 MAA“连接地址”相同的设备地址。'
+            '也可以先启动模拟器，再点击“自动探测运行中模拟器”。')
         intro.setWordWrap(True)
         layout.addWidget(intro)
 
@@ -154,6 +257,24 @@ class AdbSelectionDialog(QDialog):
         if current_path:
             self.path_combo.addItem(os.path.normpath(current_path))
         layout.addWidget(self.path_combo)
+
+        device_row = QHBoxLayout()
+        device_row.addWidget(QLabel('设备地址：'))
+        self.device_combo = QComboBox()
+        self.device_combo.setEditable(True)
+        self.device_combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        self.device_combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        device_edit = self.device_combo.lineEdit()
+        if device_edit is not None:
+            device_edit.setPlaceholderText('例如 127.0.0.1:16384（与 MAA 连接地址一致）')
+            device_edit.setClearButtonEnabled(True)
+        if current_serial:
+            self.device_combo.addItem(current_serial)
+        device_row.addWidget(self.device_combo, 1)
+        self.btn_refresh_devices = QPushButton('刷新设备地址')
+        self.btn_refresh_devices.clicked.connect(self._refresh_devices)
+        device_row.addWidget(self.btn_refresh_devices)
+        layout.addLayout(device_row)
 
         action_row = QHBoxLayout()
         browse = QPushButton('浏览 adb.exe…')
@@ -179,6 +300,52 @@ class AdbSelectionDialog(QDialog):
 
     def selected_path(self) -> str:
         return os.path.normpath(self.path_combo.currentText().strip())
+
+    def selected_serial(self) -> str:
+        return self.device_combo.currentText().strip()
+
+    def _populate_devices(self, rows: list, preferred: str = '') -> list[str]:
+        online = [str(row.get('serial') or '') for row in rows
+                  if row.get('state') == 'device' and row.get('serial')]
+        current = preferred or self.selected_serial()
+        self.device_combo.clear()
+        for serial in online:
+            self.device_combo.addItem(serial)
+        if current:
+            if current not in online:
+                self.device_combo.addItem(current)
+            self.device_combo.setCurrentText(current)
+        elif len(online) == 1:
+            self.device_combo.setCurrentText(online[0])
+        return online
+
+    def _refresh_devices(self) -> None:
+        path = self.selected_path()
+        ok, detail = probe_adb_executable(path)
+        if not ok:
+            QMessageBox.warning(self, 'ADB 不可用', f'请先选择可用的 adb.exe：\n\n{detail}')
+            return
+        self.btn_refresh_devices.setEnabled(False)
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        try:
+            preferred = self.selected_serial()
+            rows = query_adb_devices(
+                path, connect_known=True, connect_serial=preferred)
+            online = self._populate_devices(rows, preferred)
+            all_text = ', '.join(
+                f"{row['serial']}（{row['state']}）" for row in rows) or '无'
+            if online:
+                self.status.setStyleSheet('color:#58a66a;')
+                self.status.setText(
+                    f'ADB 可执行文件：{detail}\n已发现在线设备：{", ".join(online)}')
+            else:
+                self.status.setStyleSheet('color:#d07a7a;')
+                self.status.setText(
+                    f'ADB 可执行文件正常，但未发现在线设备。当前列表：{all_text}\n'
+                    '请确认模拟器已启动，并核对 MAA 中显示的连接地址。')
+        finally:
+            QApplication.restoreOverrideCursor()
+            self.btn_refresh_devices.setEnabled(True)
 
     def _browse(self) -> None:
         current = self.selected_path()
@@ -218,6 +385,13 @@ class AdbSelectionDialog(QDialog):
             self.status.setStyleSheet('color:#58a66a;')
             self.status.setText(
                 f'已发现 {len(usable)} 个可用 ADB：\n' + '\n'.join(details))
+            rows = query_adb_devices(
+                self.selected_path(), connect_known=True,
+                connect_serial=self.selected_serial())
+            online = self._populate_devices(rows)
+            if online:
+                self.status.setText(
+                    self.status.text() + f'\n在线设备：{", ".join(online)}')
         finally:
             QApplication.restoreOverrideCursor()
             self.btn_auto_detect.setEnabled(True)
@@ -229,7 +403,31 @@ class AdbSelectionDialog(QDialog):
             QMessageBox.warning(
                 self, 'ADB 不可用', f'所选文件未通过验证：\n{path}\n\n{detail}')
             return
-        self.probe_detail = detail
+        rows = query_adb_devices(
+            path, connect_known=True, connect_serial=self.selected_serial())
+        online = self._populate_devices(rows)
+        serial = self.selected_serial()
+        if not online:
+            QMessageBox.warning(
+                self, '未发现设备',
+                'adb.exe 可以运行，但没有在线设备。\n\n'
+                '请先启动模拟器，并确认 MAA 中的连接地址。')
+            return
+        if not serial:
+            if len(online) == 1:
+                serial = online[0]
+                self.device_combo.setCurrentText(serial)
+            else:
+                QMessageBox.warning(
+                    self, '请选择设备',
+                    '当前存在多个在线 ADB 设备，请选择与 MAA“连接地址”相同的设备。')
+                return
+        if serial not in online:
+            QMessageBox.warning(
+                self, '设备不在线',
+                f'设备 {serial} 当前不在线。\n\n在线设备：{", ".join(online)}')
+            return
+        self.probe_detail = f'{detail}\n目标设备：{serial}'
         super().accept()
 
 def _format_game_time(value: object) -> str:
@@ -262,15 +460,15 @@ class EnemyScanWorker(QThread):
             if TEST_BUILD:   # 换机扫描失败排查: 先输出 adb 链路诊断
                 mc = self.reader.mc
                 _tlog("诊断 adb_path =", mc.adb_path)
+                _tlog("诊断 adb_serial =", mc.adb_serial or "(自动选择)")
                 try:
                     _tlog("诊断 adb devices:",
-                          mc.adb("devices", timeout=10).decode(errors="replace").strip().replace("\r", "").replace("\n", " | "))
-                    _tlog("诊断 adb root:", mc.adb("root", timeout=10).decode(errors="replace").strip())
-                    _tlog("诊断 pidof:", mc.shell(f"pidof {mc.package}", timeout=10).strip() or "(空, 游戏未运行?)")
+                          mc.adb_host("devices", "-l", timeout=10).decode(errors="replace").strip().replace("\r", "").replace("\n", " | "))
                 except Exception as ex:
                     _tlog("诊断 adb 检查失败:", f"{type(ex).__name__}: {ex}")
             pid = self.reader.connect()
-            self.log.emit(f"游戏 PID = {pid}")
+            self.log.emit(
+                f"ADB {self.reader.mc.adb_serial} / {self.reader.mc.package} / 游戏 PID = {pid}")
             ok = self.reader.bootstrap(force=self.force)
             if ok:
                 self.done.emit(
@@ -415,13 +613,14 @@ class DeployScanWorker(QThread):
     stage = Signal(dict)       # 阶段 1 完成即发出，不等待操作链
     done = Signal(object, str)   # (DeployTrackerReader|None, 错误消息)
 
-    def __init__(self, adb_path: str) -> None:
+    def __init__(self, adb_path: str, adb_serial: str = '') -> None:
         super().__init__()
         self.adb_path = adb_path
+        self.adb_serial = adb_serial
 
     def run(self) -> None:
         try:
-            mc = MemCore(adb_path=self.adb_path)
+            mc = MemCore(adb_path=self.adb_path, adb_serial=self.adb_serial)
             pid = mc.connect()
             self.log.emit(f"游戏 PID = {pid}")
             reader = DeployTrackerReader(mc)
@@ -463,13 +662,15 @@ class RngScanWorker(QThread):
     log = Signal(str)
     done = Signal(object, str)   # (RngService|None, 错误消息)
 
-    def __init__(self, adb_path: str) -> None:
+    def __init__(self, adb_path: str, adb_serial: str = '') -> None:
         super().__init__()
         self.adb_path = adb_path
+        self.adb_serial = adb_serial
 
     def run(self) -> None:
         try:
             svc = RngService(backend='adb', adb_path=self.adb_path,
+                             adb_serial=self.adb_serial,
                              on_status=lambda m: (self.log.emit(str(m)), _tlog('[RNG]', m)))
             if not svc.attach():
                 self.done.emit(None, 'adb 连接失败 (游戏未运行?)')
@@ -534,7 +735,20 @@ class CoachWindow(QMainWindow):
         self._deploy_stage_info: dict = {}
         self._deploy_seen: int = 0         # 已渲染到表格的事件数
 
+        self._theme_dark = _system_prefers_dark()
+        self._theme_timer = QTimer(self)
+        self._theme_timer.setInterval(1500)
+        self._theme_timer.timeout.connect(self._sync_system_theme)
+
         self._build_ui()
+        app = QApplication.instance()
+        if app is not None:
+            try:
+                app.styleHints().colorSchemeChanged.connect(
+                    lambda _scheme: self._sync_system_theme())
+            except (AttributeError, RuntimeError):
+                pass
+        self._theme_timer.start()
         self._start_hook_server()
         self._start_ws_server()
         self._start_workers()
@@ -562,9 +776,9 @@ class CoachWindow(QMainWindow):
         main.setSpacing(8)
 
         title_row = QHBoxLayout()
-        title = QLabel("明日方舟游戏数据显示工具 · 桌面版 Made by Tim(321346659)")
-        title.setStyleSheet("font-size: 20px; font-weight: 700; color: #e8e8e8;")
-        title_row.addWidget(title)
+        self.page_title = QLabel("明日方舟游戏数据显示工具 · 桌面版 Made by Tim(321346659)")
+        self.page_title.setObjectName('PageTitle')
+        title_row.addWidget(self.page_title)
         title_row.addStretch(1)
         self.btn_select_adb = QPushButton("选择 ADB")
         self.btn_select_adb.clicked.connect(self._on_select_adb)
@@ -584,7 +798,7 @@ class CoachWindow(QMainWindow):
         title_row.addWidget(btn_ws_info)
         main.addLayout(title_row)
         sub = QLabel("寻址工具读取游戏时间/逻辑帧；进入关卡后点「开始扫描」实时展示敌人数据。")
-        sub.setStyleSheet("color: #9a9a9a;")
+        sub.setProperty('role', 'muted')
         main.addWidget(sub)
 
         box_cfg = QGroupBox("内存寻址（tools/timer）")
@@ -609,43 +823,40 @@ class CoachWindow(QMainWindow):
         left_col = QVBoxLayout()
         card_time_disp = QFrame()
         card_time_disp.setObjectName("GameTimeCard")
-        card_time_disp.setStyleSheet(
-            "#GameTimeCard { background: #252526; border: 1px solid #3c3c3c; border-radius: 8px; }"
-        )
         ctd_l = QVBoxLayout(card_time_disp)
         ctd_l.setContentsMargins(16, 12, 16, 12)
         ctd_l.setSpacing(4)
         lbl_time_title = QLabel("游戏时间")
-        lbl_time_title.setStyleSheet("color:#9a9a9a; font-size:12px; font-weight:600;")
+        lbl_time_title.setProperty('role', 'muted')
+        lbl_time_title.setStyleSheet("font-size:12px; font-weight:600;")
         lbl_time_title.setAlignment(Qt.AlignCenter)
         ctd_l.addWidget(lbl_time_title)
         self.lbl_game_time_big = QLabel("—")
-        self.lbl_game_time_big.setStyleSheet("font-size:48px; font-weight:700; color:#7ec8ff;")
+        self.lbl_game_time_big.setObjectName('GameTimeValue')
         self.lbl_game_time_big.setAlignment(Qt.AlignCenter)
         ctd_l.addWidget(self.lbl_game_time_big)
         left_col.addWidget(card_time_disp)
 
         card_frame_disp = QFrame()
         card_frame_disp.setObjectName("GameFrameCard")
-        card_frame_disp.setStyleSheet(
-            "#GameFrameCard { background: #252526; border: 1px solid #3c3c3c; border-radius: 8px; }"
-        )
         cfd_l = QVBoxLayout(card_frame_disp)
         cfd_l.setContentsMargins(16, 12, 16, 12)
         cfd_l.setSpacing(4)
         lbl_frame_title = QLabel("逻辑帧")
-        lbl_frame_title.setStyleSheet("color:#9a9a9a; font-size:12px; font-weight:600;")
+        lbl_frame_title.setProperty('role', 'muted')
+        lbl_frame_title.setStyleSheet("font-size:12px; font-weight:600;")
         lbl_frame_title.setAlignment(Qt.AlignCenter)
         cfd_l.addWidget(lbl_frame_title)
         self.lbl_frame_big = QLabel("—")
-        self.lbl_frame_big.setStyleSheet("font-size:48px; font-weight:700; color:#ffd66b;")
+        self.lbl_frame_big.setObjectName('GameFrameValue')
         self.lbl_frame_big.setAlignment(Qt.AlignCenter)
         cfd_l.addWidget(self.lbl_frame_big)
         left_col.addWidget(card_frame_disp)
 
         self.lbl_game = QLabel("正在等待实时刷新…")
         self.lbl_game.setWordWrap(True)
-        self.lbl_game.setStyleSheet("color:#9a9a9a; font-size:11px;")
+        self.lbl_game.setProperty('role', 'muted')
+        self.lbl_game.setStyleSheet("font-size:11px;")
         left_col.addWidget(self.lbl_game)
         left_col.addStretch(1)
         l_game.addLayout(left_col)
@@ -668,7 +879,7 @@ class CoachWindow(QMainWindow):
         self.btn_deploy_export.clicked.connect(self._on_deploy_export)
         self._style_muted_button(self.btn_deploy_export)
         self.lbl_deploy_status = QLabel("未扫描")
-        self.lbl_deploy_status.setStyleSheet("color:#9a9a9a;")
+        self.lbl_deploy_status.setProperty('role', 'muted')
         deploy_ctrl.addWidget(self.btn_deploy_scan)
         deploy_ctrl.addWidget(self.btn_deploy_stop)
         deploy_ctrl.addWidget(self.btn_deploy_export)
@@ -734,7 +945,7 @@ class CoachWindow(QMainWindow):
         row_btn.addWidget(self.enemy_progress, 1)
         l_enemy.addLayout(row_btn)
         self.lbl_enemy_status = QLabel("未开始扫描")
-        self.lbl_enemy_status.setStyleSheet("color:#9a9a9a;")
+        self.lbl_enemy_status.setProperty('role', 'muted')
         l_enemy.addWidget(self.lbl_enemy_status)
         main.addWidget(box_enemy)
 
@@ -779,16 +990,17 @@ class CoachWindow(QMainWindow):
         self.rng_pred_spin.setToolTip("未来预测的随机数个数 (1-500)")
         row_rng.addWidget(self.rng_pred_spin)
         self.lbl_rng_status = QLabel("未扫描")
-        self.lbl_rng_status.setStyleSheet("color:#9a9a9a;")
+        self.lbl_rng_status.setProperty('role', 'muted')
         row_rng.addWidget(self.lbl_rng_status, 1)
         l_rng.addLayout(row_rng)
         self.lbl_rng_info = QLabel("—")
-        self.lbl_rng_info.setStyleSheet("color:#e8e8e8; font-family:Consolas,monospace;")
+        self.lbl_rng_info.setProperty('role', 'primaryText')
+        self.lbl_rng_info.setStyleSheet("font-family:Consolas,monospace;")
         l_rng.addWidget(self.lbl_rng_info)
         row_rng_tables = QHBoxLayout()
         pred_box = QVBoxLayout()
         lbl_pred = QLabel("未来预测 (下一发在最上)")
-        lbl_pred.setStyleSheet("color:#9a9a9a;")
+        lbl_pred.setProperty('role', 'muted')
         pred_box.addWidget(lbl_pred)
         self.rng_pred_table = QTableWidget(0, 2)
         self.rng_pred_table.setHorizontalHeaderLabels(['第几发', '值'])
@@ -803,7 +1015,7 @@ class CoachWindow(QMainWindow):
         row_rng_tables.addLayout(pred_box)
         hist_box = QVBoxLayout()
         lbl_hist = QLabel("最近消耗 (旧→新)")
-        lbl_hist.setStyleSheet("color:#9a9a9a;")
+        lbl_hist.setProperty('role', 'muted')
         hist_box.addWidget(lbl_hist)
         self.rng_hist_table = QTableWidget(0, 3)
         self.rng_hist_table.setHorizontalHeaderLabels(['序号', '值', '原始值'])
@@ -824,57 +1036,44 @@ class CoachWindow(QMainWindow):
             self.lbl_rng_status.setText("模块缺失 (tools/ak_live_rng)")
         main.addWidget(box_rng)
 
-        app = QApplication.instance()
-        if app:
-            app.setStyleSheet(
-                "QWidget{background:#1e1e1e;color:#e8e8e8;}"
-                "QLineEdit,QTableWidget,QGroupBox,QSpinBox{background:#2d2d2d;border:1px solid #444;border-radius:4px;padding:4px;}"
-                "QGroupBox{font-weight:600;margin-top:8px;padding-top:8px;}"
-                "QScrollArea#MainPageScroll{background:transparent;}"
-                "QScrollBar:vertical{width:10px;background:#2d2d2d;margin:0;}"
-                "QScrollBar::handle:vertical{min-height:24px;background:#555;border-radius:4px;}"
-                "QScrollBar::handle:vertical:hover{background:#666;}"
-                "QScrollBar::add-line:vertical,QScrollBar::sub-line:vertical{height:0;}"
-            )
+        self._apply_theme(self._theme_dark, force=True)
 
     def _style_primary_button(self, btn: QPushButton) -> None:
         btn.setMinimumHeight(34)
         btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        btn.setStyleSheet(
-            "QPushButton{background:#3d7eff;color:white;border:none;border-radius:6px;padding:6px 14px;font-weight:600;}"
-            "QPushButton:hover{background:#5a90ff;} QPushButton:pressed{background:#2d62cc;}"
-        )
+        btn.setProperty('buttonRole', 'primary')
 
     def _style_secondary_button(self, btn: QPushButton) -> None:
         btn.setMinimumHeight(34)
         btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        btn.setStyleSheet(
-            "QPushButton{background:#3c3c3c;color:#e8e8e8;border:1px solid #555;border-radius:6px;padding:6px 14px;}"
-            "QPushButton:hover{background:#4a4a4a;}"
-        )
+        btn.setProperty('buttonRole', 'secondary')
 
     def _style_muted_button(self, btn: QPushButton) -> None:
         btn.setMinimumHeight(34)
         btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        btn.setStyleSheet(
-            "QPushButton{background:transparent;color:#d4a0a0;border:1px solid #663333;border-radius:6px;padding:6px 14px;}"
-            "QPushButton:hover{background:#3a2525;}"
-        )
+        btn.setProperty('buttonRole', 'muted')
 
     def _style_toggle_exec_button(self, btn: QPushButton, checked: bool) -> None:
         btn.setMinimumHeight(34)
         btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
-        if checked:
-            btn.setStyleSheet(
-                "QPushButton{background:#1a4a7a;color:#e8e8e8;border:2px solid #3d7eff;border-radius:6px;"
-                "padding:6px 16px;font-weight:600;} QPushButton:hover{background:#224a7a;}"
-            )
-        else:
-            btn.setStyleSheet(
-                "QPushButton{background:#333;color:#9a9a9a;border:1px solid #444;border-radius:6px;padding:6px 16px;}"
-                "QPushButton:hover{background:#3d3d3d;color:#cccccc;}"
-            )
+        btn.setProperty('buttonRole', 'toggleOn' if checked else 'toggleOff')
+        style = btn.style()
+        style.unpolish(btn)
+        style.polish(btn)
+        btn.update()
+
+    def _apply_theme(self, dark: bool, force: bool = False) -> None:
+        dark = bool(dark)
+        if not force and self._theme_dark == dark:
+            return
+        self._theme_dark = dark
+        app = QApplication.instance()
+        if app is not None:
+            app.setStyleSheet(_theme_stylesheet(dark))
+
+    def _sync_system_theme(self) -> None:
+        self._apply_theme(_system_prefers_dark())
 
     def _show_ws_info(self) -> None:
         if self._ws_port == 0:
@@ -1105,9 +1304,11 @@ class CoachWindow(QMainWindow):
 
     def _update_adb_button(self) -> None:
         path = os.path.normpath(self._enemy_reader.mc.adb_path or '')
+        serial = self._enemy_reader.mc.adb_serial or '自动选择'
         if path and os.path.isfile(path):
             self.btn_select_adb.setText('选择 ADB（已设置）')
-            self.btn_select_adb.setToolTip(f'当前 ADB：\n{path}\n\n点击可重新选择')
+            self.btn_select_adb.setToolTip(
+                f'当前 ADB：\n{path}\n\n目标设备：{serial}\n\n点击可重新选择')
         else:
             self.btn_select_adb.setText('选择 ADB')
             self.btn_select_adb.setToolTip('选择模拟器安装目录中的 adb.exe')
@@ -1116,7 +1317,7 @@ class CoachWindow(QMainWindow):
         return any(worker is not None and worker.isRunning() for worker in (
             self._enemy_scan, self._rng_worker, self._deploy_scan))
 
-    def _activate_adb_path(self, path: str) -> None:
+    def _activate_adb_path(self, path: str, serial: str = '') -> None:
         """停止旧连接并让敌人、RNG、操作记录统一改用新 ADB。"""
         self._stop_enemy_poll()
         self._on_rng_stop()
@@ -1125,7 +1326,8 @@ class CoachWindow(QMainWindow):
             self._deploy_reader.close()
             self._deploy_reader = None
         self._enemy_reader.close()
-        self._enemy_reader = EnemyReader(adb_path=path, log=_tlog)
+        self._enemy_reader = EnemyReader(
+            adb_path=path, adb_serial=serial, log=_tlog)
 
         if self._enemy_detail_dialog is not None:
             self._enemy_detail_dialog.close()
@@ -1163,18 +1365,21 @@ class CoachWindow(QMainWindow):
                 self, '选择 ADB', '当前正在定位扫描，请等待本次扫描完成后再切换 ADB。')
             return False
         current = os.path.normpath(self._enemy_reader.mc.adb_path or '')
-        dialog = AdbSelectionDialog(self, current if os.path.isfile(current) else '')
+        current_serial = self._enemy_reader.mc.adb_serial or ''
+        dialog = AdbSelectionDialog(
+            self, current if os.path.isfile(current) else '', current_serial)
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return False
         path = dialog.selected_path()
+        serial = dialog.selected_serial()
         detail = dialog.probe_detail
-        persisted = save_adb_path(path)
-        self._activate_adb_path(path)
+        persisted = save_adb_config(path, serial)
+        self._activate_adb_path(path, serial)
         if show_success:
             suffix = '' if persisted else '\n\n警告：配置文件写入失败，下次启动需要重新选择。'
             QMessageBox.information(
                 self, 'ADB 已选择',
-                f'已切换到：\n{path}\n\n{detail}\n\n'
+                f'已切换到：\n{path}\n设备地址：{serial}\n\n{detail}\n\n'
                 f'敌人、随机数和操作记录扫描都会使用此 ADB。{suffix}')
         return True
 
@@ -1261,7 +1466,8 @@ class CoachWindow(QMainWindow):
         self.btn_rng_scan.setEnabled(False)
         self.btn_rng_stop.setEnabled(True)
         self.lbl_rng_status.setText('扫描定位中 ...')
-        self._rng_worker = RngScanWorker(self._enemy_reader.mc.adb_path)
+        self._rng_worker = RngScanWorker(
+            self._enemy_reader.mc.adb_path, self._enemy_reader.mc.adb_serial)
         self._rng_worker.log.connect(
             lambda m: self.lbl_rng_status.setText(str(m).strip() or self.lbl_rng_status.text()))
         self._rng_worker.done.connect(self._on_rng_scan_done)
@@ -1341,7 +1547,8 @@ class CoachWindow(QMainWindow):
         self.btn_deploy_scan.setEnabled(False)
         self.btn_deploy_export.setEnabled(False)
         self.lbl_deploy_status.setText('阶段 1/2：正在扫描关卡信息 ...')
-        self._deploy_scan = DeployScanWorker(self._enemy_reader.mc.adb_path)
+        self._deploy_scan = DeployScanWorker(
+            self._enemy_reader.mc.adb_path, self._enemy_reader.mc.adb_serial)
         self._deploy_scan.log.connect(
             lambda m: self.lbl_deploy_status.setText(str(m).strip() or self.lbl_deploy_status.text()))
         self._deploy_scan.stage.connect(self._on_deploy_stage)

@@ -28,6 +28,15 @@ except ImportError:  # 允许作为独立脚本直接运行
     from game_structs import Il2CppString
 
 DEFAULT_PKG = "com.hypergryph.arknights"
+KNOWN_GAME_PACKAGES = (
+    DEFAULT_PKG,
+    'com.hypergryph.arknights.bilibili',
+    'com.YoStarEN.Arknights',
+    'com.YoStarJP.Arknights',
+    'com.YoStarKR.Arknights',
+    'tw.txwy.and.arknights',
+)
+KNOWN_MUMU_SERIALS = ('127.0.0.1:16384', '127.0.0.1:16416', '127.0.0.1:7555')
 BS = 4 * 1024 * 1024  # dd 块大小
 
 
@@ -40,30 +49,82 @@ def _config_file() -> str:
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.json')
 
 
-def save_adb_path(path: str) -> bool:
-    """持久化手动选择的 adb 路径 (下次启动直接生效)"""
+def load_adb_config() -> dict:
+    import json
+    try:
+        with open(_config_file(), 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def save_adb_config(path: str, serial: str = '') -> bool:
+    """持久化 ADB 程序和目标设备；列表参数调用无需手工转义路径。"""
     import json
     try:
         with open(_config_file(), 'w', encoding='utf-8') as f:
-            json.dump({'adb_path': path}, f)
+            json.dump({'adb_path': path, 'adb_serial': serial}, f,
+                      ensure_ascii=False, indent=2)
         return True
     except Exception:
         return False
 
 
+def save_adb_path(path: str) -> bool:
+    """兼容旧调用：更新路径，同时保留已经选择的设备地址。"""
+    return save_adb_config(path, load_adb_config().get('adb_serial', ''))
+
+
+def query_adb_devices(adb_path: str, connect_known: bool = False,
+                      connect_serial: str = '') -> list:
+    """查询指定 ADB server 的设备，并可主动连接填写地址或 MuMu 常见本地端口。"""
+    if not adb_path or not os.path.isfile(adb_path):
+        return []
+    flags = getattr(subprocess, 'CREATE_NO_WINDOW', 0) if os.name == 'nt' else 0
+
+    def run(*args, timeout=8):
+        try:
+            return subprocess.run(
+                [adb_path, *args], capture_output=True, timeout=timeout,
+                creationflags=flags)
+        except (OSError, subprocess.TimeoutExpired):
+            return None
+
+    targets = []
+    if connect_serial and ':' in connect_serial:
+        targets.append(connect_serial)
+    if connect_known:
+        targets.extend(KNOWN_MUMU_SERIALS)
+    for serial in dict.fromkeys(targets):
+        if serial:
+            run('connect', serial, timeout=3)
+    result = run('devices', '-l')
+    if result is None:
+        return []
+    rows = []
+    text = result.stdout.decode('utf-8', errors='replace')
+    for line in text.replace('\r', '').split('\n')[1:]:
+        parts = line.split()
+        if len(parts) < 2:
+            continue
+        serial, state = parts[0], parts[1]
+        if state not in ('device', 'offline', 'unauthorized'):
+            continue
+        rows.append({
+            'serial': serial,
+            'state': state,
+            'description': ' '.join(parts[2:]),
+        })
+    return rows
+
+
 def find_mumu_adb() -> Optional[str]:
     """查找 adb.exe: 配置缓存 -> PATH -> ANDROID_HOME -> 多盘符常见路径 -> 注册表"""
-    import json
     import shutil
-    try:
-        cfg_file = _config_file()
-        if os.path.isfile(cfg_file):
-            with open(cfg_file, 'r', encoding='utf-8') as f:
-                saved = json.load(f).get("adb_path")
-            if saved and os.path.isfile(saved):
-                return saved
-    except Exception:
-        pass
+    saved = load_adb_config().get('adb_path')
+    if saved and os.path.isfile(saved):
+        return saved
     p = shutil.which("adb")
     if p:
         return p
@@ -487,8 +548,12 @@ class TcpChannel:
 class MemCore:
     """ADB 内存读取核心"""
 
-    def __init__(self, adb_path: Optional[str] = None, package: str = DEFAULT_PKG):
+    def __init__(self, adb_path: Optional[str] = None, package: str = DEFAULT_PKG,
+                 adb_serial: Optional[str] = None):
+        config = load_adb_config()
         self.adb_path = adb_path or find_mumu_adb()
+        self.adb_serial = adb_serial if adb_serial is not None \
+            else str(config.get('adb_serial') or '')
         # 注意: 此处不强制要求 adb 存在 — 延迟到真正使用时 (_require_adb) 报错,
         # 避免找不到 adb 时整个程序无法启动
         self.package = package
@@ -512,29 +577,136 @@ class MemCore:
     # 弹出控制台窗口; CREATE_NO_WINDOW 抑制之
     _NO_WINDOW = getattr(subprocess, 'CREATE_NO_WINDOW', 0) if os.name == 'nt' else 0
 
+    def _adb_result(self, *args, timeout=30, use_target=True):
+        command = [self._require_adb()]
+        if use_target and self.adb_serial:
+            command += ['-s', self.adb_serial]
+        command += list(args)
+        return subprocess.run(command, capture_output=True, timeout=timeout,
+                              creationflags=self._NO_WINDOW)
+
     def adb(self, *args, timeout=30) -> bytes:
-        return subprocess.run([self._require_adb()] + list(args),
-                              capture_output=True, timeout=timeout,
-                              creationflags=self._NO_WINDOW).stdout
+        return self._adb_result(*args, timeout=timeout, use_target=True).stdout
+
+    def adb_host(self, *args, timeout=30) -> bytes:
+        """执行 devices/connect 等 ADB server 命令，不绑定具体设备。"""
+        return self._adb_result(*args, timeout=timeout, use_target=False).stdout
 
     def shell(self, cmd: str, timeout=30) -> str:
         return self.adb("shell", cmd, timeout=timeout).decode('utf-8', errors='replace')
 
+    def _device_rows(self, connect_known=False):
+        return query_adb_devices(
+            self._require_adb(), connect_known=connect_known,
+            connect_serial=self.adb_serial)
+
+    def _pid_for_known_package(self):
+        packages = []
+        for package in (self.package, *KNOWN_GAME_PACKAGES):
+            if package and package not in packages:
+                packages.append(package)
+        for package in packages:
+            pid_s = self.shell(f'pidof {package}', timeout=8).strip()
+            if pid_s:
+                return package, int(pid_s.split()[0])
+        return '', 0
+
+    def _select_device(self) -> None:
+        rows = self._device_rows(connect_known=True)
+        states = {row['serial']: row['state'] for row in rows}
+        if self.adb_serial:
+            if states.get(self.adb_serial) != 'device':
+                # TCP 设备可能尚未注册到当前 adb server，按用户填写地址连接一次。
+                if ':' in self.adb_serial:
+                    self.adb_host('connect', self.adb_serial, timeout=5)
+                    rows = self._device_rows(connect_known=False)
+                    states = {row['serial']: row['state'] for row in rows}
+            if states.get(self.adb_serial) != 'device':
+                visible = ', '.join(f"{s}({st})" for s, st in states.items()) or '无'
+                raise RuntimeError(
+                    f'ADB 目标 {self.adb_serial} 不在线；当前设备: {visible}')
+            return
+
+        online = [row['serial'] for row in rows if row['state'] == 'device']
+        if not online:
+            raise RuntimeError(
+                'ADB 未发现在线模拟器；请在“选择 ADB”中选择与 MAA 相同的连接地址')
+        if len(online) == 1:
+            self.adb_serial = online[0]
+            return
+
+        # 多设备时先寻找真正运行明日方舟的目标，避免 adb shell 报 more than one device。
+        original = self.adb_serial
+        matches = []
+        for serial in online:
+            self.adb_serial = serial
+            package, pid = self._pid_for_known_package()
+            if pid:
+                matches.append((serial, package))
+        self.adb_serial = original
+        if len(matches) == 1:
+            self.adb_serial, self.package = matches[0]
+            return
+        visible = ', '.join(online)
+        raise RuntimeError(
+            f'ADB 同时存在多个在线设备: {visible}；请在“选择 ADB”中指定连接地址')
+
+    def _ensure_root(self) -> None:
+        result = self._adb_result('root', timeout=10)
+        message = (result.stdout + result.stderr).decode('utf-8', errors='replace').strip()
+        uid = ''
+        # adb root 会重启 adbd；MuMu 忙时一秒内未必重新上线，短轮询避免误报无 root。
+        for attempt in range(8):
+            if attempt:
+                time.sleep(0.5)
+            if ':' in self.adb_serial:
+                try:
+                    self.adb_host('connect', self.adb_serial, timeout=4)
+                except Exception:
+                    pass
+            try:
+                uid = self.shell('id -u', timeout=5).strip()
+            except Exception:
+                uid = ''
+            if uid == '0':
+                return
+            # adbd 没有发生重启时无需无意义等待。
+            if attempt == 0 and 'restarting adbd as root' not in message.lower():
+                break
+        extra = f'（adb root: {message}）' if message else ''
+        raise RuntimeError(
+            'ADB 可以连接/截图，但当前 adbd 没有 root 权限，无法读取游戏进程内存。'
+            '截图只需要普通 ADB 权限；请在 MuMu 设置中开启 Root 权限并重启模拟器。' + extra)
+
     def connect(self) -> int:
-        """连接模拟器并定位游戏 PID"""
-        out = self.adb("devices").decode('utf-8', errors='replace')
-        if '\tdevice' not in out:
-            for port in (16384, 16416, 7555):
-                r = self.adb("connect", f"127.0.0.1:{port}", timeout=5).decode(errors='replace').lower()
-                if "connected" in r or "already" in r:
-                    break
-        self.adb("root")
-        time.sleep(1)
-        pid_s = self.shell(f"pidof {self.package}").strip()
-        if not pid_s:
-            raise RuntimeError(f"找不到游戏进程: {self.package}")
-        self.pid = int(pid_s.split()[0])
+        """绑定指定模拟器、确认 root，并自动定位不同渠道服的游戏 PID。"""
+        self._select_device()
+        self._ensure_root()
+        package, pid = self._pid_for_known_package()
+        if not pid:
+            tried = ', '.join(dict.fromkeys((self.package, *KNOWN_GAME_PACKAGES)))
+            raise RuntimeError(
+                f'ADB 设备 {self.adb_serial} 已连接且具备 root，但找不到游戏进程。'
+                f'已尝试包名: {tried}')
+        self.package = package
+        self.pid = pid
         self.reload_maps()
+        if not self.regions:
+            raise RuntimeError(
+                f'已找到游戏进程 {self.package} (PID {pid})，但无法读取 /proc/{pid}/maps。'
+                '请确认 MuMu Root 权限已经开启并在开启后重启过模拟器。')
+        # maps 可读不等于 /proc/<pid>/mem 可读；在正式全盘扫描前给出明确诊断。
+        readable = False
+        for start, end, perms, _name in self.regions[:32]:
+            if 'r' not in perms or end - start < 0x1000:
+                continue
+            if self.read(start, 1, timeout=8) is not None:
+                readable = True
+                break
+        if not readable:
+            raise RuntimeError(
+                f'ADB 和游戏进程均已找到，但 /proc/{pid}/mem 无法读取。'
+                'MAA 截图正常不代表具备进程内存权限；请开启 MuMu Root 权限并重启模拟器。')
         return self.pid
 
     # ---------- 内存读取 ----------
