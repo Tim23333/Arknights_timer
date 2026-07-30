@@ -8,20 +8,25 @@ from unittest.mock import patch
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication, QPushButton
+from PySide6.QtCore import QSettings, Qt
+from PySide6.QtTest import QTest
+from PySide6.QtWidgets import (
+    QApplication, QProgressBar, QPushButton, QTableWidget, QTableWidgetItem,
+)
 
 from backend.app.enemy_buff_descriptions import (
     buff_chinese_name, describe_active_buff, describe_blackboard, describe_global_buff,
 )
 from backend.app.enemy_ui import (
-    EnemyDetailDialog, format_column_value, precision_column_defs, visible_enemy_rows,
+    ENEMY_COLUMN_DEFS, ENEMY_COLUMN_INDEX, EnemyDetailDialog,
+    default_precision_values, format_column_value, precision_column_defs,
+    visible_enemy_rows,
 )
 from tools.enemy_health import game_structs as gs
 from tools.enemy_health.enemy_reader import EnemyInfo
 from backend.desktop_app import (
-    AdbSelectionDialog, _system_prefers_dark, _theme_stylesheet,
-    probe_adb_executable,
+    AdbSelectionDialog, CoachWindow, _enemy_mini_stylesheet,
+    _system_prefers_dark, _theme_stylesheet, probe_adb_executable,
 )
 
 
@@ -36,6 +41,123 @@ class EnemyUiTests(unittest.TestCase):
             precision_column_defs(visible),
             [('attr_1', '攻击'), ('ep_sanity', '神经损伤剩余'), ('skill', '技能 CD')],
         )
+
+    def test_default_main_table_precision_is_two_decimals(self):
+        values = default_precision_values()
+        self.assertEqual(values['default'], 2)
+        self.assertTrue(all(value == 2 for value in values.values()))
+
+    def test_enemy_column_fit_fills_viewport_and_protects_hp_text(self):
+        table = QTableWidget(1, len(ENEMY_COLUMN_DEFS))
+        table.setHorizontalHeaderLabels([col['label'] for col in ENEMY_COLUMN_DEFS])
+        visible = {'row', 'name', 'hp', 'spawn_wait', 'detail'}
+        for idx, col in enumerate(ENEMY_COLUMN_DEFS):
+            table.setColumnHidden(idx, col['key'] not in visible)
+        table.setItem(0, ENEMY_COLUMN_INDEX['row'], QTableWidgetItem('1'))
+        table.setItem(0, ENEMY_COLUMN_INDEX['name'], QTableWidgetItem('梅菲斯特'))
+        table.setItem(0, ENEMY_COLUMN_INDEX['spawn_wait'], QTableWidgetItem('已出场'))
+        hp = QProgressBar()
+        hp.setFormat('17123.01/28000.00')
+        table.setCellWidget(0, ENEMY_COLUMN_INDEX['hp'], hp)
+        table.setCellWidget(0, ENEMY_COLUMN_INDEX['detail'], QPushButton('详情'))
+        table.resize(900, 260)
+        table.show()
+        self.app.processEvents()
+
+        holder = type('Holder', (), {})()
+        holder.enemy_table = table
+        holder._enemy_visible_cols = visible
+        holder._widths_fitted = False
+        CoachWindow._fit_enemy_columns(holder)
+
+        widths = [table.columnWidth(idx) for idx, col in enumerate(ENEMY_COLUMN_DEFS)
+                  if col['key'] in visible]
+        self.assertLessEqual(abs(sum(widths) - (table.viewport().width() - 2)), 2)
+        expected_hp = min(table.fontMetrics().horizontalAdvance(hp.format()) + 26, 245)
+        self.assertGreaterEqual(table.columnWidth(ENEMY_COLUMN_INDEX['hp']), expected_hp)
+        table.close()
+
+    def test_enemy_mini_mode_expands_to_twenty_and_supports_mouse_actions(self):
+        with tempfile.TemporaryDirectory() as temp_dir, \
+                patch.object(CoachWindow, '_start_hook_server', lambda self: None), \
+                patch.object(CoachWindow, '_start_ws_server', lambda self: None), \
+                patch.object(CoachWindow, '_start_workers', lambda self: None), \
+                patch.object(CoachWindow, '_start_timers', lambda self: None):
+            window = CoachWindow()
+            window._settings = QSettings(
+                str(Path(temp_dir) / 'settings.ini'), QSettings.Format.IniFormat)
+            window.show()
+            self.app.processEvents()
+            enemies = []
+            for index in range(25):
+                enemy = EnemyInfo(0x1000 + index)
+                enemy.roster_id = index + 1
+                enemy.spawn_order = index + 1
+                enemy.eid = f'enemy_{index}'
+                enemy.name = f'敌人 {index}'
+                enemy.hp = enemy.max_hp = 100.0
+                enemies.append(enemy)
+            window._render_enemy_table(enemies)
+            window._enter_enemy_mini_mode()
+            self.app.processEvents()
+            mini = window._enemy_mini
+            self.assertIsNotNone(mini)
+            self.assertFalse(window.isVisible())
+            self.assertIs(window.enemy_table.window(), mini)
+            self.assertEqual((mini.opacity_slider.minimum(), mini.opacity_slider.maximum()),
+                             (25, 100))
+            mini.opacity_slider.setValue(35)
+            self.app.processEvents()
+            # 背景采用 RGBA 透明，文字不再随整个原生窗口一起变淡。
+            self.assertEqual(mini.windowOpacity(), 1.0)
+            self.assertIn('rgba(', mini.styleSheet())
+            self.assertIn('font-weight:600', mini.styleSheet())
+            self.assertIn('border:2px solid', mini.styleSheet())
+
+            name_item = window.enemy_table.item(0, ENEMY_COLUMN_INDEX['name'])
+            click_pos = window.enemy_table.visualItemRect(name_item).center()
+            with patch.object(window, '_open_enemy_detail') as open_detail:
+                QTest.mouseClick(window.enemy_table.viewport(), Qt.MouseButton.LeftButton,
+                                 pos=click_pos)
+                self.app.processEvents()
+                QTest.mouseClick(window.enemy_table.viewport(), Qt.MouseButton.RightButton,
+                                 pos=click_pos)
+                self.app.processEvents()
+                self.assertEqual(open_detail.call_count, 2)
+                open_detail.assert_called_with(1)
+
+            mini.set_locked(True)
+            self.app.processEvents()
+            self.assertTrue(mini.locked)
+            self.assertFalse(mini.toolbar.isVisible())
+            self.assertTrue(
+                bool(mini.windowFlags() & Qt.WindowType.WindowTransparentForInput))
+            self.assertEqual(mini._locked_visible_rows, 20)
+
+            viewport = window.enemy_table.viewport()
+            first_cell = window.enemy_table.visualItemRect(
+                window.enemy_table.item(0, ENEMY_COLUMN_INDEX['name'])).center()
+            global_pos = viewport.mapToGlobal(first_cell)
+            scroll = window.enemy_table.verticalScrollBar()
+            scroll.setValue(0)
+            mini._on_locked_wheel(global_pos.x(), global_pos.y(), -120)
+            self.assertGreater(scroll.value(), 0)
+            scroll.setValue(0)
+            global_pos = viewport.mapToGlobal(first_cell)
+            with patch.object(window, '_open_enemy_detail') as open_detail:
+                mini._on_locked_right_click(global_pos.x(), global_pos.y())
+                open_detail.assert_called_once_with(1)
+
+            mini.toggle_locked()
+            self.app.processEvents()
+            self.assertFalse(mini.locked)
+            self.assertTrue(mini.toolbar.isVisible())
+            window._exit_enemy_mini_mode()
+            self.app.processEvents()
+            self.assertIsNone(window._enemy_mini)
+            self.assertIs(window.enemy_table.parent(), window._enemy_table_box)
+            self.assertTrue(window.isVisible())
+            window.close()
 
     def test_adb_probe_handles_executable_path_with_spaces(self):
         with tempfile.TemporaryDirectory(prefix='adb path ') as temp_dir:
@@ -71,6 +193,15 @@ class EnemyUiTests(unittest.TestCase):
         self.assertIn('#202124', light)
         self.assertIn('#343434', dark)
         self.assertIn('#e8e8e8', dark)
+
+    def test_enemy_mini_styles_keep_text_opaque_in_both_themes(self):
+        dark = _enemy_mini_stylesheet(True, 35)
+        light = _enemy_mini_stylesheet(False, 35)
+        self.assertIn('background-color:rgba(', dark)
+        self.assertIn('color:#ffffff', dark)
+        self.assertIn('color:#11151a', light)
+        self.assertIn('font-weight:700', dark)
+        self.assertIn('gridline-color:rgba(', light)
 
     def test_system_theme_prefers_qt_color_scheme(self):
         class Hints:
@@ -174,10 +305,58 @@ class EnemyUiTests(unittest.TestCase):
         self.assertEqual(format_column_value('life_status', pending, {}), '未出场')
         self.assertEqual(format_column_value('attr_1', pending, {}), '-')
         self.assertEqual(format_column_value('life_status', departed, {}), '已离场')
-        self.assertEqual(visible_enemy_rows([pending, departed, active]), [pending, active])
+        self.assertEqual(visible_enemy_rows([pending, departed, active]), [active, pending])
         self.assertEqual(visible_enemy_rows(
             [pending, departed, active], hide_departed=False),
-            [pending, departed, active])
+            [active, pending, departed])
+
+    def test_living_enemies_are_stably_sorted_above_pending_and_dead(self):
+        pending_a = EnemyInfo(0)
+        pending_a.roster_id = 1
+        pending_b = EnemyInfo(0)
+        pending_b.roster_id = 2
+        alive_a = EnemyInfo(0x1000)
+        alive_a.roster_id = 3
+        alive_b = EnemyInfo(0x2000)
+        alive_b.roster_id = 4
+        dead = EnemyInfo(0x3000)
+        dead.roster_id = 5
+        dead.alive = False
+        rows = visible_enemy_rows(
+            [pending_a, alive_a, pending_b, dead, alive_b], hide_departed=False)
+        self.assertEqual(rows, [alive_a, alive_b, pending_a, pending_b, dead])
+
+    def test_main_table_physically_reorders_when_pending_enemy_spawns(self):
+        with tempfile.TemporaryDirectory() as temp_dir, \
+                patch.object(CoachWindow, '_start_hook_server', lambda self: None), \
+                patch.object(CoachWindow, '_start_ws_server', lambda self: None), \
+                patch.object(CoachWindow, '_start_workers', lambda self: None), \
+                patch.object(CoachWindow, '_start_timers', lambda self: None):
+            window = CoachWindow()
+            window._settings = QSettings(
+                str(Path(temp_dir) / 'settings.ini'), QSettings.Format.IniFormat)
+            pending = EnemyInfo(0)
+            pending.roster_id = 11
+            pending.spawn_order = 1
+            alive = EnemyInfo(0x2000)
+            alive.roster_id = 22
+            alive.spawn_order = 2
+
+            window._render_enemy_table([pending, alive])
+            row_col = ENEMY_COLUMN_INDEX['row']
+            self.assertEqual(
+                [window.enemy_table.item(row, row_col).data(Qt.UserRole)
+                 for row in range(window.enemy_table.rowCount())],
+                [22, 11])
+
+            pending.lifecycle = 'active'
+            pending.addr = 0x1000
+            window._render_enemy_table([pending, alive])
+            self.assertEqual(
+                [window.enemy_table.item(row, row_col).data(Qt.UserRole)
+                 for row in range(window.enemy_table.rowCount())],
+                [11, 22])
+            window.close()
 
 
 if __name__ == '__main__':

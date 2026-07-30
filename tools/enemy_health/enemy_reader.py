@@ -260,6 +260,8 @@ class EnemyReader:
         self._chan_fail = 0           # 通道连续异常计数 (日志节流)
         self._chan_dead_ts = 0.0      # 通道上次失败时间 (冷却期内直接走慢速)
         self._skill_lp = {}           # enemy addr -> m_skills List* (主块内提取)
+        self._skill_ap = {}           # enemy addr -> m_allSkills EnemySkill[]*
+        self._skill_ptrs = {}         # enemy addr -> 最近一次成功解析的 EnemySkill 地址
         self._skill_names = {}        # skill addr -> prefabKey (技能静态名缓存)
         self._skill_cd = {}           # enemy addr -> [(key, remaining, period), ...]
         # 关卡完整出怪表：LevelData.waves 在开局即存在；当前 Enemy 实例按首次出现
@@ -1566,42 +1568,82 @@ class EnemyReader:
         info.raw_attributes = values
 
     def _fill_skills(self, ep, blk, info):
-        """慢速路径技能 CD 解析: m_skills List -> EnemySkill -> PeriodicTimer
-        (period=总CD, remaining=剩余CD) + ESkillData.prefabKey (技能名缓存)"""
+        """慢速路径技能 CD 解析。
+
+        ``m_skills`` 是会在初始化、切阶段或技能启停时短暂清空的动态列表；
+        ``m_allSkills`` 是敌人创建后稳定存在的完整数组。两者合并读取，避免一次
+        临时空列表把已经显示的技能永久清掉，直到用户手动重新扫描。
+        """
         out = []
         lp = _u64(blk, gs.EnemyFields.M_SKILLS) if len(blk) >= gs.EnemyFields.READ_SIZE else 0
+        ap = _u64(blk, gs.EnemyFields.M_ALL_SKILLS) \
+            if len(blk) >= gs.EnemyFields.READ_SIZE else 0
         if self.mc.is_ptr(lp):
             self._skill_lp[ep] = lp
-            hd = self.mc.read(lp, 0x20)
-            items = _u64(hd, gs.ListInternal.ITEMS) if hd else 0
-            n = _i32(hd, gs.ListInternal.SIZE) if hd else 0
-            if 0 < n <= 8 and self.mc.is_ptr(items):
-                arr = self.mc.read(items + gs.Il2CppArray.ITEMS, n * 8)
-                for j in range(n if arr else 0):
-                    s = _u64(arr, j * 8)
-                    if not self.mc.is_ptr(s):
-                        continue
-                    sb = self.mc.read(s, 0x90)
-                    if not sb:
-                        continue
-                    t = _u64(sb, gs.EnemySkillFields.M_COOLDOWN_TIMER)
-                    td = self.mc.read(t, 0x20) if self.mc.is_ptr(t) else None
-                    if not td:
-                        continue
-                    period = gs.fp_to_float(_u64(td, gs.PeriodicTimerFields.M_PERIOD_TIME))
-                    remain = gs.fp_to_float(_u64(td, gs.PeriodicTimerFields.M_REMAINING_TIME))
-                    if not (0 <= period <= 3600):
-                        continue
-                    key = self._skill_names.get(s)
-                    if key is None:
-                        dp = _u64(sb, gs.EnemySkillFields.DATA)
-                        dd = self.mc.read(dp, 0x28) if self.mc.is_ptr(dp) else None
-                        pk = _u64(dd, gs.ESkillDataFields.PREFAB_KEY) if dd else 0
-                        key = (self.mc.read_ustring(pk) if self.mc.is_ptr(pk) else None) or '?'
-                        self._skill_names[s] = key
-                    out.append((key, remain, period))
-        info.skills = out
-        self._skill_cd[ep] = out
+        if self.mc.is_ptr(ap):
+            self._skill_ap[ep] = ap
+
+        skill_ptrs = []
+
+        def append_container(ptr, is_array):
+            if not self.mc.is_ptr(ptr):
+                return False
+            hd = self.mc.read(ptr, 0x20)
+            if not hd:
+                return False
+            if is_array:
+                items = ptr
+                n = _i32(hd, gs.Il2CppArray.MAX_LENGTH)
+            else:
+                items = _u64(hd, gs.ListInternal.ITEMS)
+                n = _i32(hd, gs.ListInternal.SIZE)
+            if not (0 <= n <= 32):
+                return False
+            if n and not self.mc.is_ptr(items):
+                return False
+            arr = self.mc.read(items + gs.Il2CppArray.ITEMS, n * 8) if n else b''
+            if n and not arr:
+                return False
+            for j in range(n):
+                skill = _u64(arr, j * 8)
+                if self.mc.is_ptr(skill) and skill not in skill_ptrs:
+                    skill_ptrs.append(skill)
+            return True
+
+        active_ok = append_container(lp, False)
+        all_ok = append_container(ap, True)
+        # 动态列表临时读取失败时沿用上次成功解析的对象地址；完整数组成功读取
+        # （包括合法空数组）时才有权覆盖旧缓存。
+        if skill_ptrs:
+            self._skill_ptrs[ep] = skill_ptrs
+        elif all_ok or (active_ok and ep not in self._skill_ptrs):
+            self._skill_ptrs[ep] = []
+        else:
+            skill_ptrs = list(self._skill_ptrs.get(ep, ()))
+
+        for s in skill_ptrs:
+            sb = self.mc.read(s, 0x90)
+            if not sb:
+                continue
+            t = _u64(sb, gs.EnemySkillFields.M_COOLDOWN_TIMER)
+            td = self.mc.read(t, 0x20) if self.mc.is_ptr(t) else None
+            if not td:
+                continue
+            period = gs.fp_to_float(_u64(td, gs.PeriodicTimerFields.M_PERIOD_TIME))
+            remain = gs.fp_to_float(_u64(td, gs.PeriodicTimerFields.M_REMAINING_TIME))
+            if not (0 <= period <= 3600 and -1 <= remain <= 3600):
+                continue
+            key = self._skill_names.get(s)
+            if key is None:
+                dp = _u64(sb, gs.EnemySkillFields.DATA)
+                dd = self.mc.read(dp, 0x28) if self.mc.is_ptr(dp) else None
+                pk = _u64(dd, gs.ESkillDataFields.PREFAB_KEY) if dd else 0
+                key = (self.mc.read_ustring(pk) if self.mc.is_ptr(pk) else None) or '?'
+                self._skill_names[s] = key
+            out.append((key, remain, period))
+        if out or not self._skill_cd.get(ep) or (all_ok and not skill_ptrs):
+            self._skill_cd[ep] = out
+        info.skills = list(self._skill_cd.get(ep, ()))
         return info
 
     def _fill_name(self, ep, blk, info):
@@ -2110,6 +2152,9 @@ class EnemyReader:
                 skl = _u64(data, off + gs.EnemyFields.M_SKILLS)
                 if self.mc.is_ptr(skl):
                     self._skill_lp[ep] = skl
+                all_skl = _u64(data, off + gs.EnemyFields.M_ALL_SKILLS)
+                if self.mc.is_ptr(all_skl):
+                    self._skill_ap[ep] = all_skl
 
         # ---- 新敌人: 通道内解析名称+属性 (仅列表变化帧触发) ----
         new_eps = [ep for ep in ptrs if ep not in self._names or ep not in self._attr_snapshot]
@@ -2166,7 +2211,8 @@ class EnemyReader:
         # 清理已退场敌人的缓存 (地址可能被 GC 复用)
         for cache in (self._names, self._attr_cache, self._attr_snapshot, self._attr_ptrs,
                       self._runtime_snapshot, self._runtime_ptrs,
-                      self._skill_lp, self._skill_cd):
+                      self._skill_lp, self._skill_ap, self._skill_ptrs,
+                      self._skill_cd):
             for ep in list(cache):
                 if ep not in live:
                     cache.pop(ep, None)
@@ -2207,38 +2253,83 @@ class EnemyReader:
         return snap
 
     def _refresh_skills_chan(self, ptrs):
-        """通道内批量刷新全部敌人技能 CD: 列表头 -> items -> EnemySkill 块 ->
-        PeriodicTimer 共 4 轮 batch; 技能静态名 (ESkillData.prefabKey) 仅首见时
-        再读 2 轮, 之后走 _skill_names 缓存"""
-        eps = [ep for ep in ptrs if self.mc.is_ptr(self._skill_lp.get(ep, 0))]
+        """通道内批量刷新全部敌人技能 CD。
+
+        动态 ``m_skills`` 与稳定 ``m_allSkills`` 同时读取并去重。完整数组或
+        items 的单次读取失败时沿用最近一次成功解析的技能对象地址，不再把一次
+        瞬态空值直接发布到 UI；下一轮会自动恢复，无需重新扫描地址链。
+        """
+        eps = [ep for ep in ptrs
+               if (self.mc.is_ptr(self._skill_lp.get(ep, 0))
+                   or self.mc.is_ptr(self._skill_ap.get(ep, 0))
+                   or self._skill_ptrs.get(ep))]
         if not eps:
             return
-        heads = self._chan.batch_read([(self._skill_lp[ep], 0x20) for ep in eps])
-        n_of, reqs, keys = {}, [], []
-        for ep, d in zip(eps, heads):
+
+        sources, head_reqs = [], []
+        for ep in eps:
+            lp = self._skill_lp.get(ep, 0)
+            ap = self._skill_ap.get(ep, 0)
+            if self.mc.is_ptr(lp):
+                sources.append((ep, 'active', lp))
+                head_reqs.append((lp, 0x20))
+            if self.mc.is_ptr(ap):
+                sources.append((ep, 'all', ap))
+                head_reqs.append((ap, 0x20))
+
+        decoded_sources = {ep: set() for ep in eps}
+        body_reqs, body_keys = [], []
+        for (ep, kind, ptr), d in zip(
+                sources, self._chan.batch_read(head_reqs) if head_reqs else []):
             if not d:
-                continue                          # 读失败保留旧快照
-            items, n = _u64(d, gs.ListInternal.ITEMS), _i32(d, gs.ListInternal.SIZE)
+                continue
+            if kind == 'all':
+                items = ptr
+                n = _i32(d, gs.Il2CppArray.MAX_LENGTH)
+            else:
+                items = _u64(d, gs.ListInternal.ITEMS)
+                n = _i32(d, gs.ListInternal.SIZE)
+            if not (0 <= n <= 32) or (n and not self.mc.is_ptr(items)):
+                continue
             if n == 0:
-                self._skill_cd[ep] = []
-            elif 0 < n <= 8 and self.mc.is_ptr(items):
-                n_of[ep] = n
-                reqs.append((items + gs.Il2CppArray.ITEMS, n * 8))
-                keys.append(ep)
-        sks_of, reqs2, keys2 = {}, [], []
-        if reqs:
-            for ep, d in zip(keys, self._chan.batch_read(reqs)):
-                if not d:
-                    continue
-                sks = [s for s in (_u64(d, j * 8) for j in range(n_of[ep]))
-                       if self.mc.is_ptr(s)]
-                sks_of[ep] = sks
-                for s in sks:
-                    reqs2.append((s, 0x90))
-                    keys2.append((ep, s))
+                decoded_sources[ep].add(kind)
+            else:
+                body_reqs.append((items + gs.Il2CppArray.ITEMS, n * 8))
+                body_keys.append((ep, kind, n))
+
+        sks_of = {ep: [] for ep in eps}
+        for (ep, kind, n), d in zip(
+                body_keys, self._chan.batch_read(body_reqs) if body_reqs else []):
+            if not d:
+                continue
+            decoded_sources[ep].add(kind)
+            for j in range(n):
+                skill = _u64(d, j * 8)
+                if self.mc.is_ptr(skill) and skill not in sks_of[ep]:
+                    sks_of[ep].append(skill)
+
+        # active 优先、all 补全；若容器读取不完整则继续用上次成功的对象地址。
+        for ep in eps:
+            current = sks_of[ep]
+            all_available = self.mc.is_ptr(self._skill_ap.get(ep, 0))
+            if current:
+                self._skill_ptrs[ep] = current
+            elif all_available and 'all' in decoded_sources[ep]:
+                self._skill_ptrs[ep] = []
+            elif ('active' in decoded_sources[ep]
+                  and ep not in self._skill_ptrs):
+                self._skill_ptrs[ep] = []
+            else:
+                sks_of[ep] = list(self._skill_ptrs.get(ep, ()))
+
+        skill_reqs, skill_keys = [], []
+        for ep in eps:
+            for skill in sks_of[ep]:
+                skill_reqs.append((skill, 0x90))
+                skill_keys.append((ep, skill))
         timers, datas = {}, {}
-        if reqs2:
-            for (ep, s), d in zip(keys2, self._chan.batch_read(reqs2)):
+        if skill_reqs:
+            for (ep, s), d in zip(skill_keys, self._chan.batch_read(skill_reqs)):
                 if not d:
                     continue
                 t = _u64(d, gs.EnemySkillFields.M_COOLDOWN_TIMER)
@@ -2277,11 +2368,18 @@ class EnemyReader:
                         except Exception:
                             pass
         for ep, sks in sks_of.items():
-            self._skill_cd[ep] = [(self._skill_names.get(s, '?'), r, p)
-                                  for s in sks if s in remain_of
-                                  for r, p in (remain_of[s],)]
+            out = [(self._skill_names.get(s, '?'), r, p)
+                   for s in sks if s in remain_of
+                   for r, p in (remain_of[s],)]
+            # 计时器也可能在切阶段的一帧内为 NULL；有旧值时继续保留，下一轮
+            # 自动重试。只有完整数组明确为空时才立即发布空技能列表。
+            if out or not self._skill_cd.get(ep):
+                self._skill_cd[ep] = out
+            elif ('all' in decoded_sources[ep] and not sks
+                  and self.mc.is_ptr(self._skill_ap.get(ep, 0))):
+                self._skill_cd[ep] = []
         # 技能对象随敌人退场释放, 修剪名称缓存防地址复用串名
-        live_sks = {s for sks in sks_of.values() for s in sks}
+        live_sks = {s for ep in ptrs for s in self._skill_ptrs.get(ep, ())}
         for s in list(self._skill_names):
             if s not in live_sks:
                 self._skill_names.pop(s, None)

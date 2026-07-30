@@ -14,6 +14,91 @@ from tools.enemy_health.memcore import (
 
 
 class EnemyDetailModelTests(unittest.TestCase):
+    @staticmethod
+    def _skill_memory(active_count=0, all_count=1):
+        ep, active, all_skills = 0x1000, 0x2000, 0x3000
+        active_items, skill, timer, data, key = 0x4000, 0x5000, 0x6000, 0x7000, 0x8000
+        blocks = {}
+
+        active_head = bytearray(0x20)
+        struct.pack_into('<Q', active_head, gs.ListInternal.ITEMS, active_items)
+        struct.pack_into('<i', active_head, gs.ListInternal.SIZE, active_count)
+        blocks[(active, 0x20)] = bytes(active_head)
+        if active_count:
+            blocks[(active_items + gs.Il2CppArray.ITEMS, active_count * 8)] = \
+                struct.pack('<Q', skill) * active_count
+
+        all_head = bytearray(0x20)
+        struct.pack_into('<i', all_head, gs.Il2CppArray.MAX_LENGTH, all_count)
+        blocks[(all_skills, 0x20)] = bytes(all_head)
+        if all_count:
+            blocks[(all_skills + gs.Il2CppArray.ITEMS, all_count * 8)] = \
+                struct.pack('<Q', skill) * all_count
+
+        skill_block = bytearray(0x90)
+        struct.pack_into('<Q', skill_block, gs.EnemySkillFields.M_COOLDOWN_TIMER, timer)
+        struct.pack_into('<Q', skill_block, gs.EnemySkillFields.DATA, data)
+        blocks[(skill, 0x90)] = bytes(skill_block)
+        timer_block = bytearray(0x20)
+        struct.pack_into('<Q', timer_block, gs.PeriodicTimerFields.M_PERIOD_TIME,
+                         int(30 * gs.FP_ONE))
+        struct.pack_into('<Q', timer_block, gs.PeriodicTimerFields.M_REMAINING_TIME,
+                         int(12.5 * gs.FP_ONE))
+        blocks[(timer, 0x20)] = bytes(timer_block)
+        data_block = bytearray(0x28)
+        struct.pack_into('<Q', data_block, gs.ESkillDataFields.PREFAB_KEY, key)
+        blocks[(data, 0x28)] = bytes(data_block)
+        return (ep, active, all_skills, skill, key), blocks
+
+    def test_skill_cd_falls_back_to_all_skills_when_active_list_is_empty(self):
+        (ep, active, all_skills, _skill, key), blocks = self._skill_memory()
+
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+            @staticmethod
+            def read_ustring(value):
+                return 'FallbackSkill' if value == key else None
+
+            @staticmethod
+            def read(addr, size):
+                return blocks.get((addr, size))
+
+        reader = EnemyReader(mc=FakeMem())
+        enemy_block = bytearray(gs.EnemyFields.READ_SIZE)
+        struct.pack_into('<Q', enemy_block, gs.EnemyFields.M_SKILLS, active)
+        struct.pack_into('<Q', enemy_block, gs.EnemyFields.M_ALL_SKILLS, all_skills)
+        info = EnemyInfo(ep)
+        reader._fill_skills(ep, bytes(enemy_block), info)
+        self.assertEqual(info.skills, [('FallbackSkill', 12.5, 30.0)])
+        self.assertEqual(reader._skill_ptrs[ep], [0x5000])
+
+    def test_skill_cd_keeps_last_value_during_transient_container_read_failure(self):
+        (ep, active, all_skills, skill, _key), blocks = self._skill_memory()
+
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        class FakeChannel:
+            @staticmethod
+            def batch_read(reqs):
+                # 两个容器头和技能块本轮都失败，模拟设备侧一次瞬态空读。
+                return [None for _ in reqs]
+
+        reader = EnemyReader(mc=FakeMem())
+        reader._chan = FakeChannel()
+        reader._skill_lp[ep] = active
+        reader._skill_ap[ep] = all_skills
+        reader._skill_ptrs[ep] = [skill]
+        reader._skill_names[skill] = 'StableSkill'
+        reader._skill_cd[ep] = [('StableSkill', 8.0, 30.0)]
+        reader._refresh_skills_chan([ep])
+        self.assertEqual(reader._skill_cd[ep], [('StableSkill', 8.0, 30.0)])
+
     def test_adb_commands_are_bound_to_selected_device(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             adb = Path(temp_dir) / 'adb.exe'

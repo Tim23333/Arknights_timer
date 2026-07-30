@@ -96,18 +96,29 @@ def precision_column_defs(visible=None):
     ]
 
 
-def default_precision_values(value=4):
+def default_precision_values(value=2):
     values = {key: value for key, _label in precision_column_defs()}
     values['default'] = value
     return values
 
 
 def visible_enemy_rows(enemies, hide_departed=True):
-    """应用主表生命周期过滤；默认只隐藏已离场，未出场始终可见。"""
-    if not hide_departed:
-        return list(enemies)
-    return [enemy for enemy in enemies
-            if getattr(enemy, 'lifecycle', 'active') != 'departed']
+    """过滤并稳定排序：场上存活置顶，未出场居中，阵亡/离场置底。"""
+    rows = list(enemies)
+    if hide_departed:
+        rows = [enemy for enemy in rows
+                if getattr(enemy, 'lifecycle', 'active') != 'departed']
+
+    def priority(enemy):
+        lifecycle = getattr(enemy, 'lifecycle', 'active')
+        if lifecycle == 'active' and getattr(enemy, 'alive', True):
+            return 0
+        if lifecycle == 'pending':
+            return 1
+        return 2
+
+    # sorted 是稳定排序，同一状态组内继续保持关卡预定/首次发现顺序。
+    return sorted(rows, key=priority)
 
 
 def load_visible_columns(settings, key):
@@ -239,7 +250,7 @@ class EnemyPrecisionDialog(QDialog):
             row = idx // 2
             base = (idx % 2) * 2
             name = QLabel(f'{label}:')
-            control = _PrecisionSpin(decimals.get(key, decimals.get('default', 4)))
+            control = _PrecisionSpin(decimals.get(key, decimals.get('default', 2)))
             grid.addWidget(name, row, base)
             grid.addWidget(control, row, base + 1)
             self.controls[key] = control
@@ -261,7 +272,7 @@ class EnemyPrecisionDialog(QDialog):
 
 
 def format_column_value(key, enemy, decimals, row=0):
-    precision = decimals.get(key, decimals.get('default', 4))
+    precision = decimals.get(key, decimals.get('default', 2))
     lifecycle = getattr(enemy, 'lifecycle', 'active')
     if key == 'row':
         return str(getattr(enemy, 'spawn_order', 0) or (row + 1))

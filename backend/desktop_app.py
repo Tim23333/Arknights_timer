@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import ctypes
+from ctypes import wintypes
 import json
 import os
 import socket
@@ -16,7 +17,7 @@ import threading
 import time
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, Qt, QThread, QTimer, Signal
+from PySide6.QtCore import QEvent, QPoint, QSettings, Qt, QThread, QTimer, Signal
 from PySide6.QtGui import QColor, QCursor, QIcon
 from PySide6.QtWidgets import (
     QApplication,
@@ -36,7 +37,9 @@ from PySide6.QtWidgets import (
     QProgressBar,
     QPushButton,
     QScrollArea,
+    QSizeGrip,
     QSizePolicy,
+    QSlider,
     QSpinBox,
     QTableWidget,
     QTableWidgetItem,
@@ -172,6 +175,9 @@ QLabel[role="primaryText"] {{ color:{c['text']}; }}
 QLabel#GameTimeValue {{ font-size:48px; font-weight:700; color:{c['time']}; }}
 QLabel#GameFrameValue {{ font-size:48px; font-weight:700; color:{c['frame']}; }}
 QFrame#GameTimeCard, QFrame#GameFrameCard {{ background-color:{c['panel']}; border:1px solid {c['border']}; border-radius:8px; }}
+QWidget#EnemyMiniWindow {{ background-color:{c['bg']}; border:1px solid {c['border']}; }}
+QFrame#EnemyMiniToolbar {{ background-color:{c['panel']}; border:1px solid {c['border']}; border-radius:5px; }}
+QLabel#EnemyMiniDragLabel {{ color:{c['text']}; font-weight:600; }}
 QGroupBox {{ background-color:{c['panel']}; border:1px solid {c['border']}; border-radius:6px; font-weight:600; margin-top:9px; padding-top:9px; }}
 QGroupBox::title {{ subcontrol-origin:margin; subcontrol-position:top left; left:9px; padding:0 4px; background-color:{c['panel']}; }}
 QLineEdit, QComboBox, QAbstractSpinBox, QTextEdit, QPlainTextEdit, QListWidget, QTreeWidget {{ background-color:{c['input']}; color:{c['text']}; border:1px solid {c['border']}; border-radius:4px; padding:4px; selection-background-color:{c['selection']}; }}
@@ -196,6 +202,9 @@ QPushButton[buttonRole="toggleOff"]:hover {{ background-color:{c['secondary_hove
 QPushButton[buttonRole="toggleOn"] {{ background-color:{c['toggle_on']}; color:{c['text']}; border:2px solid {c['primary']}; font-weight:600; }}
 QProgressBar {{ background-color:{c['progress']}; color:{c['text']}; border:1px solid {c['border']}; border-radius:4px; text-align:center; }}
 QProgressBar::chunk {{ background-color:{c['primary']}; border-radius:3px; }}
+QSlider::groove:horizontal {{ height:5px; background:{c['progress']}; border-radius:2px; }}
+QSlider::sub-page:horizontal {{ background:{c['primary']}; border-radius:2px; }}
+QSlider::handle:horizontal {{ width:14px; margin:-5px 0; background:{c['text']}; border:1px solid {c['border']}; border-radius:7px; }}
 QCheckBox {{ spacing:6px; }}
 QScrollArea#MainPageScroll {{ background:transparent; border:0; }}
 QScrollBar:vertical {{ width:11px; background:{c['bg']}; margin:0; }}
@@ -203,6 +212,108 @@ QScrollBar:horizontal {{ height:11px; background:{c['bg']}; margin:0; }}
 QScrollBar::handle:vertical, QScrollBar::handle:horizontal {{ min-height:24px; min-width:24px; background:{c['scroll']}; border-radius:4px; }}
 QScrollBar::handle:vertical:hover, QScrollBar::handle:horizontal:hover {{ background:{c['scroll_hover']}; }}
 QScrollBar::add-line, QScrollBar::sub-line {{ width:0; height:0; }}
+"""
+
+
+def _enemy_mini_stylesheet(dark: bool, opacity: int) -> str:
+    """Mini 浮层仅淡化背景，文字与边框始终保持清晰。"""
+    opacity = max(25, min(100, int(opacity)))
+    bg_alpha = round(255 * opacity / 100)
+    panel_alpha = min(255, bg_alpha + 18)
+    alt_alpha = min(255, bg_alpha + 28)
+    header_alpha = min(255, bg_alpha + 42)
+    if dark:
+        bg = (24, 25, 27)
+        panel = (32, 34, 38)
+        alternate = (45, 48, 53)
+        header = (55, 59, 65)
+        text = '#ffffff'
+        muted = '#e1e7ef'
+        border = 'rgba(220, 230, 242, 205)'
+        grid = 'rgba(190, 203, 219, 150)'
+        selection = 'rgba(55, 116, 205, 220)'
+        progress = 'rgba(25, 27, 31, 205)'
+        button = 'rgba(49, 53, 59, 225)'
+    else:
+        bg = (241, 244, 248)
+        panel = (255, 255, 255)
+        alternate = (224, 230, 237)
+        header = (211, 219, 228)
+        text = '#11151a'
+        muted = '#252c34'
+        border = 'rgba(32, 43, 56, 190)'
+        grid = 'rgba(43, 55, 69, 135)'
+        selection = 'rgba(87, 145, 225, 205)'
+        progress = 'rgba(232, 236, 241, 220)'
+        button = 'rgba(248, 249, 251, 235)'
+
+    def rgba(rgb: tuple[int, int, int], alpha: int) -> str:
+        return f'rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, {alpha})'
+
+    return f"""
+QWidget#EnemyMiniWindow {{
+    background-color:{rgba(bg, bg_alpha)};
+    border:2px solid {border};
+}}
+QWidget#EnemyMiniWindow QFrame#EnemyMiniToolbar {{
+    background-color:{rgba(panel, panel_alpha)};
+    border:1px solid {border};
+    border-radius:5px;
+}}
+QWidget#EnemyMiniWindow QLabel {{
+    background-color:transparent;
+    color:{text};
+    font-weight:600;
+}}
+QWidget#EnemyMiniWindow QLabel#EnemyMiniDragLabel {{
+    color:{text};
+    font-weight:700;
+}}
+QWidget#EnemyMiniWindow QTableWidget {{
+    background-color:{rgba(panel, panel_alpha)};
+    alternate-background-color:{rgba(alternate, alt_alpha)};
+    color:{text};
+    font-weight:600;
+    gridline-color:{grid};
+    border:2px solid {border};
+    selection-background-color:{selection};
+    selection-color:{text};
+}}
+QWidget#EnemyMiniWindow QTableWidget::item {{
+    color:{text};
+    padding:3px;
+    border-bottom:1px solid {grid};
+}}
+QWidget#EnemyMiniWindow QHeaderView::section,
+QWidget#EnemyMiniWindow QTableCornerButton::section {{
+    background-color:{rgba(header, header_alpha)};
+    color:{text};
+    font-weight:700;
+    border:0;
+    border-right:1px solid {border};
+    border-bottom:2px solid {border};
+    padding:5px;
+}}
+QWidget#EnemyMiniWindow QProgressBar {{
+    background-color:{progress};
+    color:{text};
+    font-weight:700;
+    border:1px solid {border};
+    border-radius:4px;
+    text-align:center;
+}}
+QWidget#EnemyMiniWindow QProgressBar::chunk {{
+    background-color:#3d83ff;
+    border-radius:3px;
+}}
+QWidget#EnemyMiniWindow QPushButton {{
+    background-color:{button};
+    color:{text};
+    font-weight:600;
+    border:1px solid {border};
+    border-radius:5px;
+}}
+QWidget#EnemyMiniWindow QScrollBar {{ color:{muted}; }}
 """
 
 
@@ -683,6 +794,393 @@ class RngScanWorker(QThread):
             self.done.emit(None, f'出错: {e}')
 
 
+class EnemyMiniWindow(QWidget):
+    """置顶敌人表浮层。
+
+    锁定后窗口继续整体穿透，让左键交给后方程序；Windows 低级鼠标钩子只在
+    表格矩形内截获滚轮与右键，分别用于滚动和打开详情。
+    """
+
+    locked_wheel = Signal(int, int, int)       # global x, y, wheel delta
+    locked_right_click = Signal(int, int)      # global x, y
+    MAX_LOCKED_ROWS = 20
+
+    def __init__(self, owner: 'CoachWindow', table: QTableWidget) -> None:
+        flags = (
+            Qt.WindowType.Tool
+            | Qt.WindowType.FramelessWindowHint
+            | Qt.WindowType.WindowStaysOnTopHint
+        )
+        super().__init__(None, flags)
+        self.owner = owner
+        self.table = table
+        self._locked = False
+        self._restoring = False
+        self._drag_offset = None
+        self._unlocked_geometry = None
+        self._locked_visible_rows = 0
+        self._locked_table_rect = None
+        self._mouse_hook_thread = None
+        self._mouse_hook_thread_id = 0
+        self._mouse_hook_proc = None
+        self._mouse_hook_ready = threading.Event()
+        self._mouse_hook_suspended = False
+        self._app_filter_installed = False
+        self.setObjectName('EnemyMiniWindow')
+        # 使用逐像素透明背景，避免 setWindowOpacity 同时冲淡文字和表格线。
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.setWindowTitle('敌人数据 · 迷你模式')
+        self.setMinimumSize(620, 220)
+
+        root = QVBoxLayout(self)
+        root.setContentsMargins(4, 4, 4, 4)
+        root.setSpacing(4)
+        self.toolbar = QFrame()
+        self.toolbar.setObjectName('EnemyMiniToolbar')
+        toolbar_layout = QHBoxLayout(self.toolbar)
+        toolbar_layout.setContentsMargins(8, 4, 4, 4)
+        toolbar_layout.setSpacing(7)
+
+        self.drag_label = QLabel('敌人数据 · 拖动此处移动')
+        self.drag_label.setObjectName('EnemyMiniDragLabel')
+        self.drag_label.setToolTip('按住此处拖动浮层')
+        self.drag_label.installEventFilter(self)
+        toolbar_layout.addWidget(self.drag_label, 1)
+        toolbar_layout.addWidget(QLabel('透明度'))
+        self.opacity_slider = QSlider(Qt.Orientation.Horizontal)
+        self.opacity_slider.setRange(25, 100)
+        self.opacity_slider.setFixedWidth(150)
+        opacity = int(owner._settings.value('enemy_mini/opacity', 78))
+        self.opacity_slider.setValue(max(25, min(100, opacity)))
+        self.opacity_slider.setToolTip('调整整个敌人浮层的透明度')
+        self.opacity_slider.valueChanged.connect(self._on_opacity_changed)
+        toolbar_layout.addWidget(self.opacity_slider)
+        self.opacity_label = QLabel()
+        self.opacity_label.setMinimumWidth(38)
+        toolbar_layout.addWidget(self.opacity_label)
+        self.btn_lock = QPushButton('锁定 (Alt+K)')
+        self.btn_lock.setToolTip(
+            '锁定后左键穿透；表格区域仍可滚轮浏览、右键打开详情；Alt+K 解锁')
+        self.btn_lock.clicked.connect(lambda: self.set_locked(True))
+        toolbar_layout.addWidget(self.btn_lock)
+        self.btn_exit = QPushButton('退出迷你')
+        self.btn_exit.clicked.connect(owner._exit_enemy_mini_mode)
+        toolbar_layout.addWidget(self.btn_exit)
+        self.size_grip = QSizeGrip(self)
+        self.size_grip.setToolTip('拖动调整浮层大小')
+        toolbar_layout.addWidget(self.size_grip)
+        root.addWidget(self.toolbar)
+        root.addWidget(table, 1)
+
+        self.locked_wheel.connect(self._on_locked_wheel)
+        self.locked_right_click.connect(self._on_locked_right_click)
+        app = QApplication.instance()
+        if app is not None:
+            app.installEventFilter(self)
+            self._app_filter_installed = True
+
+        self._on_opacity_changed(self.opacity_slider.value())
+        geometry = owner._settings.value('enemy_mini/geometry')
+        if geometry and self.restoreGeometry(geometry):
+            pass
+        else:
+            self.resize(1080, 420)
+            center = owner.frameGeometry().center()
+            self.move(center.x() - self.width() // 2, center.y() - self.height() // 2)
+
+    @property
+    def locked(self) -> bool:
+        return self._locked
+
+    def _on_opacity_changed(self, value: int) -> None:
+        # 原生窗口始终完全不透明；透明度只由带 alpha 的背景色承担。
+        self.setWindowOpacity(1.0)
+        self.refresh_visual_style(value)
+        self.opacity_label.setText(f'{value}%')
+        self.owner._settings.setValue('enemy_mini/opacity', value)
+
+    def refresh_visual_style(self, opacity: int | None = None) -> None:
+        if opacity is None:
+            opacity = self.opacity_slider.value()
+        self.setStyleSheet(
+            _enemy_mini_stylesheet(bool(self.owner._theme_dark), int(opacity)))
+
+    def set_locked(self, locked: bool) -> None:
+        locked = bool(locked)
+        if locked == self._locked:
+            return
+        geometry = self.geometry()
+        if locked:
+            self._unlocked_geometry = geometry
+        else:
+            self._stop_locked_mouse_hook()
+        self._locked = locked
+        self.toolbar.setVisible(not locked)
+        # WindowTransparentForInput 是窗口系统级穿透，不只是忽略 Qt 子控件事件。
+        self.setWindowFlag(Qt.WindowType.WindowTransparentForInput, locked)
+        self.setWindowFlag(Qt.WindowType.WindowDoesNotAcceptFocus, locked)
+        self.show()
+        if not locked and self._unlocked_geometry is not None:
+            self.setGeometry(self._unlocked_geometry)
+        else:
+            self.setGeometry(geometry)
+        if not locked:
+            self.raise_()
+            self.activateWindow()
+        else:
+            QTimer.singleShot(0, self._finish_locked_setup)
+        QTimer.singleShot(0, self.owner._fit_enemy_columns)
+
+    def _finish_locked_setup(self) -> None:
+        if not self._locked:
+            return
+        self.sync_locked_size()
+        self._update_locked_table_rect()
+        self._start_locked_mouse_hook()
+
+    def sync_locked_size(self) -> None:
+        """按存活敌人行自动扩高，最多在视口中同时容纳 20 行。"""
+        if not self._locked or not self.isVisible():
+            return
+        active_count = sum(
+            getattr(enemy, 'lifecycle', 'active') == 'active'
+            and bool(getattr(enemy, 'alive', False))
+            for enemy in self.owner._enemy_last)
+        if active_count:
+            visible_rows = min(active_count, self.MAX_LOCKED_ROWS)
+        else:
+            visible_rows = min(max(1, self.table.rowCount()), self.MAX_LOCKED_ROWS)
+        visible_rows = min(visible_rows, self.table.rowCount()) if self.table.rowCount() else 0
+        self._locked_visible_rows = visible_rows
+
+        margins = self.layout().contentsMargins()
+        height = margins.top() + margins.bottom() + self.table.horizontalHeader().height()
+        height += self.table.frameWidth() * 2 + 2
+        height += sum(self.table.rowHeight(row) for row in range(visible_rows))
+        if self.table.horizontalScrollBar().isVisible():
+            height += self.table.horizontalScrollBar().sizeHint().height()
+        target = max(self.minimumHeight(), height)
+        available = self.screen().availableGeometry()
+        target = min(target, available.height())
+        if self.height() != target:
+            top_left = self.frameGeometry().topLeft()
+            self.resize(self.width(), target)
+            x = min(max(top_left.x(), available.left()),
+                    max(available.left(), available.right() - self.width() + 1))
+            y = min(max(top_left.y(), available.top()),
+                    max(available.top(), available.bottom() - self.height() + 1))
+            self.move(x, y)
+        self._update_locked_table_rect()
+
+    def _update_locked_table_rect(self) -> None:
+        if not self._locked or not self.table.isVisible():
+            self._locked_table_rect = None
+            return
+        viewport = self.table.viewport()
+        top_left = viewport.mapToGlobal(viewport.rect().topLeft())
+        bottom_right = viewport.mapToGlobal(viewport.rect().bottomRight())
+        self._locked_table_rect = (
+            top_left.x(), top_left.y(), bottom_right.x(), bottom_right.y())
+
+    def _point_in_locked_table(self, x: int, y: int) -> bool:
+        rect = self._locked_table_rect
+        return bool(rect and rect[0] <= x <= rect[2] and rect[1] <= y <= rect[3])
+
+    def _table_row_at_global(self, x: int, y: int) -> int:
+        pos = self.table.viewport().mapFromGlobal(QPoint(x, y))
+        if not self.table.viewport().rect().contains(pos):
+            return -1
+        return self.table.rowAt(pos.y())
+
+    def _open_detail_at_global(self, x: int, y: int) -> None:
+        row = self._table_row_at_global(x, y)
+        if row >= 0:
+            self.owner._open_enemy_detail_from_row(row)
+
+    def _on_locked_wheel(self, x: int, y: int, delta: int) -> None:
+        if not self._locked or not self._point_in_locked_table(x, y) or not delta:
+            return
+        bar = self.table.verticalScrollBar()
+        notches = max(1, abs(delta) // 120)
+        direction = -1 if delta > 0 else 1
+        bar.setValue(bar.value() + direction * notches * 3)
+        self._update_locked_table_rect()
+
+    def _on_locked_right_click(self, x: int, y: int) -> None:
+        if self._locked and self._point_in_locked_table(x, y):
+            self._open_detail_at_global(x, y)
+
+    def set_mouse_hook_suspended(self, suspended: bool) -> None:
+        self._mouse_hook_suspended = bool(suspended)
+
+    def _start_locked_mouse_hook(self) -> None:
+        if (not self._locked or self._mouse_hook_thread is not None
+                or sys.platform != 'win32'
+                or QApplication.platformName().lower() == 'offscreen'):
+            return
+        self._mouse_hook_ready.clear()
+
+        def run_hook():
+            user32 = ctypes.windll.user32
+            kernel32 = ctypes.windll.kernel32
+
+            class Point(ctypes.Structure):
+                _fields_ = [('x', ctypes.c_long), ('y', ctypes.c_long)]
+
+            class MouseData(ctypes.Structure):
+                _fields_ = [
+                    ('pt', Point), ('mouseData', ctypes.c_ulong),
+                    ('flags', ctypes.c_ulong), ('time', ctypes.c_ulong),
+                    ('dwExtraInfo', ctypes.c_size_t),
+                ]
+
+            proc_type = ctypes.WINFUNCTYPE(
+                ctypes.c_ssize_t, ctypes.c_int, ctypes.c_size_t, ctypes.c_ssize_t)
+            user32.SetWindowsHookExW.argtypes = [
+                ctypes.c_int, proc_type, ctypes.c_void_p, ctypes.c_uint]
+            user32.SetWindowsHookExW.restype = ctypes.c_void_p
+            user32.CallNextHookEx.argtypes = [
+                ctypes.c_void_p, ctypes.c_int, ctypes.c_size_t, ctypes.c_ssize_t]
+            user32.CallNextHookEx.restype = ctypes.c_ssize_t
+            user32.UnhookWindowsHookEx.argtypes = [ctypes.c_void_p]
+            user32.UnhookWindowsHookEx.restype = ctypes.c_bool
+            kernel32.GetModuleHandleW.argtypes = [ctypes.c_wchar_p]
+            kernel32.GetModuleHandleW.restype = ctypes.c_void_p
+
+            def callback(code, message, lparam):
+                if code >= 0 and self._locked and not self._mouse_hook_suspended:
+                    data = ctypes.cast(lparam, ctypes.POINTER(MouseData)).contents
+                    x, y = int(data.pt.x), int(data.pt.y)
+                    if self._point_in_locked_table(x, y):
+                        if message == 0x020A:  # WM_MOUSEWHEEL
+                            delta = ctypes.c_short((data.mouseData >> 16) & 0xFFFF).value
+                            self.locked_wheel.emit(x, y, int(delta))
+                            return 1
+                        if message == 0x0205:  # WM_RBUTTONUP
+                            self.locked_right_click.emit(x, y)
+                            return 1
+                        if message == 0x0204:  # WM_RBUTTONDOWN
+                            return 1
+                return user32.CallNextHookEx(None, code, message, lparam)
+
+            self._mouse_hook_proc = proc_type(callback)
+            self._mouse_hook_thread_id = int(kernel32.GetCurrentThreadId())
+            module = kernel32.GetModuleHandleW(None)
+            hook = user32.SetWindowsHookExW(14, self._mouse_hook_proc, module, 0)
+            self._mouse_hook_ready.set()
+            if not hook:
+                self._mouse_hook_thread_id = 0
+                return
+            msg = wintypes.MSG()
+            try:
+                while user32.GetMessageW(ctypes.byref(msg), None, 0, 0) > 0:
+                    user32.TranslateMessage(ctypes.byref(msg))
+                    user32.DispatchMessageW(ctypes.byref(msg))
+            finally:
+                user32.UnhookWindowsHookEx(hook)
+                self._mouse_hook_thread_id = 0
+
+        self._mouse_hook_thread = threading.Thread(
+            target=run_hook, name='EnemyMiniMouseHook', daemon=True)
+        self._mouse_hook_thread.start()
+        self._mouse_hook_ready.wait(0.5)
+        if not self._mouse_hook_thread.is_alive():
+            self._mouse_hook_thread = None
+            self._mouse_hook_proc = None
+            self._mouse_hook_thread_id = 0
+
+    def _stop_locked_mouse_hook(self) -> None:
+        thread = self._mouse_hook_thread
+        if thread is None:
+            return
+        thread_id = self._mouse_hook_thread_id
+        if thread_id and sys.platform == 'win32':
+            try:
+                ctypes.windll.user32.PostThreadMessageW(thread_id, 0x0012, 0, 0)
+            except Exception:
+                pass
+        thread.join(0.8)
+        if thread.is_alive():
+            # 保留回调引用，避免钩子仍在执行时被 GC；_locked=False 时它只透传。
+            return
+        self._mouse_hook_thread = None
+        self._mouse_hook_proc = None
+        self._mouse_hook_thread_id = 0
+
+    def _shutdown_input(self) -> None:
+        self._mouse_hook_suspended = True
+        self._locked = False
+        self._stop_locked_mouse_hook()
+        if self._app_filter_installed:
+            app = QApplication.instance()
+            if app is not None:
+                app.removeEventFilter(self)
+            self._app_filter_installed = False
+
+    def toggle_locked(self) -> None:
+        self.set_locked(not self._locked)
+
+    def eventFilter(self, watched, event):  # type: ignore[override]
+        if watched is self.drag_label and not self._locked:
+            if (event.type() == QEvent.Type.MouseButtonPress
+                    and event.button() == Qt.MouseButton.LeftButton):
+                self._drag_offset = (
+                    event.globalPosition().toPoint() - self.frameGeometry().topLeft())
+                return True
+            if (event.type() == QEvent.Type.MouseMove
+                    and self._drag_offset is not None
+                    and event.buttons() & Qt.MouseButton.LeftButton):
+                self.move(event.globalPosition().toPoint() - self._drag_offset)
+                return True
+            if event.type() == QEvent.Type.MouseButtonRelease:
+                self._drag_offset = None
+                return True
+        if (not self._locked and event.type() == QEvent.Type.MouseButtonRelease
+                and isinstance(watched, QWidget)
+                and (watched is self.table or self.table.isAncestorOf(watched))):
+            button = event.button()
+            # 详情按钮自己的左键 clicked 已连接；右键和其他单元格的左右键在此统一处理。
+            if button in (Qt.MouseButton.LeftButton, Qt.MouseButton.RightButton):
+                if button == Qt.MouseButton.LeftButton and isinstance(watched, QPushButton):
+                    return super().eventFilter(watched, event)
+                global_pos = event.globalPosition().toPoint()
+                row = self._table_row_at_global(global_pos.x(), global_pos.y())
+                if row >= 0:
+                    QTimer.singleShot(0, lambda r=row: self.owner._open_enemy_detail_from_row(r))
+                    event.accept()
+                    return True
+        return super().eventFilter(watched, event)
+
+    def resizeEvent(self, event) -> None:  # type: ignore[override]
+        super().resizeEvent(event)
+        self._update_locked_table_rect()
+        QTimer.singleShot(0, self.owner._fit_enemy_columns)
+
+    def moveEvent(self, event) -> None:  # type: ignore[override]
+        super().moveEvent(event)
+        self._update_locked_table_rect()
+
+    def keyPressEvent(self, event) -> None:  # type: ignore[override]
+        if (event.key() == Qt.Key.Key_K
+                and event.modifiers() & Qt.KeyboardModifier.AltModifier):
+            self.toggle_locked()
+            event.accept()
+            return
+        if event.key() == Qt.Key.Key_Escape and not self._locked:
+            self.owner._exit_enemy_mini_mode()
+            event.accept()
+            return
+        super().keyPressEvent(event)
+
+    def closeEvent(self, event) -> None:  # type: ignore[override]
+        self._shutdown_input()
+        if self._restoring:
+            event.accept()
+            return
+        event.ignore()
+        QTimer.singleShot(0, self.owner._exit_enemy_mini_mode)
+
+
 class CoachWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
@@ -712,6 +1210,12 @@ class CoachWindow(QMainWindow):
         self._enemy_last: list = []    # 最近一帧敌人 (改小数位时立即重绘用)
         self._enemy_detail_dialog: EnemyDetailDialog | None = None
         self._settings = QSettings('ArknightsTools', 'ArknightsTimeline')
+        self._enemy_mini: EnemyMiniWindow | None = None
+        self._mini_hotkey_down = False
+        self._mini_hotkey_timer = QTimer(self)
+        self._mini_hotkey_timer.setInterval(40)
+        self._mini_hotkey_timer.timeout.connect(self._poll_enemy_mini_hotkey)
+        self._mini_hotkey_timer.start()
         self._enemy_visible_cols = load_visible_columns(
             self._settings, 'enemy_table/visible_columns')
         self._frame_txt: str = ''      # ms/帧 显示 (0.5s 节流, 避免高频抖动)
@@ -929,9 +1433,16 @@ class CoachWindow(QMainWindow):
         self.btn_enemy_columns.clicked.connect(self._on_enemy_columns)
         self._style_muted_button(self.btn_enemy_columns)
         self.btn_enemy_fit = QPushButton("列宽自适应")
-        self.btn_enemy_fit.setToolTip("按内容自动调整所有列宽 (也可直接拖动表头分隔线手动调整)")
-        self.btn_enemy_fit.clicked.connect(lambda: self.enemy_table.resizeColumnsToContents())
+        self.btn_enemy_fit.setToolTip(
+            "按当前可见列和表格宽度智能排版；优先保证血量、损伤条完整显示，仍可拖动表头手调")
+        self.btn_enemy_fit.clicked.connect(self._fit_enemy_columns)
         self._style_muted_button(self.btn_enemy_fit)
+        self.btn_enemy_mini = QPushButton("迷你模式")
+        self.btn_enemy_mini.setToolTip(
+            "将实时敌人表显示为半透明置顶浮层；锁定后左键穿透，"
+            "表格仍可滚轮浏览、右键查看详情；Alt+K 锁定/解锁")
+        self.btn_enemy_mini.clicked.connect(self._enter_enemy_mini_mode)
+        self._style_secondary_button(self.btn_enemy_mini)
         self.chk_enemy_hide_departed = QCheckBox("离场敌方不显示")
         self.chk_enemy_hide_departed.setChecked(True)
         self.chk_enemy_hide_departed.setToolTip("默认隐藏死亡、漏怪或其他原因离场的敌人；取消勾选可查看完整记录")
@@ -941,6 +1452,7 @@ class CoachWindow(QMainWindow):
         row_btn.addWidget(self.btn_enemy_precision)
         row_btn.addWidget(self.btn_enemy_columns)
         row_btn.addWidget(self.btn_enemy_fit)
+        row_btn.addWidget(self.btn_enemy_mini)
         row_btn.addWidget(self.chk_enemy_hide_departed)
         row_btn.addWidget(self.enemy_progress, 1)
         l_enemy.addLayout(row_btn)
@@ -952,6 +1464,8 @@ class CoachWindow(QMainWindow):
         # ---- 底部: 敌人信息表 ----
         box_table = QGroupBox("敌人信息")
         l_table = QVBoxLayout(box_table)
+        self._enemy_table_box = box_table
+        self._enemy_table_layout = l_table
         self.enemy_table = QTableWidget(0, len(ENEMY_COLS))
         self.enemy_table.setHorizontalHeaderLabels(ENEMY_COLS)
         self.enemy_table.verticalHeader().setVisible(False)
@@ -960,7 +1474,8 @@ class CoachWindow(QMainWindow):
         self.enemy_table.setAlternatingRowColors(True)
         hdr = self.enemy_table.horizontalHeader()
         hdr.setSectionResizeMode(QHeaderView.Interactive)   # 所有列宽均可拖动调整
-        hdr.setStretchLastSection(True)   # 末列 (状态) 自动填满剩余宽度
+        hdr.setStretchLastSection(False)  # 隐藏列会使“末列拉伸”失效；由智能布局分配全部空间
+        hdr.setMinimumSectionSize(28)
         for i, w in enumerate(ENEMY_COL_WIDTHS):
             self.enemy_table.setColumnWidth(i, w)
         self._apply_enemy_column_visibility()
@@ -1071,6 +1586,8 @@ class CoachWindow(QMainWindow):
         app = QApplication.instance()
         if app is not None:
             app.setStyleSheet(_theme_stylesheet(dark))
+        if self._enemy_mini is not None:
+            self._enemy_mini.refresh_visual_style()
 
     def _sync_system_theme(self) -> None:
         self._apply_theme(_system_prefers_dark())
@@ -1230,6 +1747,11 @@ class CoachWindow(QMainWindow):
 
     def closeEvent(self, event) -> None:  # type: ignore[override]
         self._stop_event.set()
+        self._mini_hotkey_timer.stop()
+        if self._enemy_mini is not None:
+            self._enemy_mini._restoring = True
+            self._enemy_mini.close()
+            self._enemy_mini = None
         self._stop_enemy_poll()
         self._enemy_reader.close()
         self._stop_deploy_poll()
@@ -1398,6 +1920,58 @@ class CoachWindow(QMainWindow):
             "请选择 MuMu 模拟器安装目录下的 shell\\adb.exe，例如：\n"
             "D:\\Program Files\\MuMu9\\emulator\\MuMuPlayer-12.0\\shell\\adb.exe")
         return self._select_adb(show_success=False)
+
+    def _enter_enemy_mini_mode(self) -> None:
+        if self._enemy_mini is not None:
+            self._enemy_mini.show()
+            self._enemy_mini.raise_()
+            if not self._enemy_mini.locked:
+                self._enemy_mini.activateWindow()
+            return
+        self._enemy_table_layout.removeWidget(self.enemy_table)
+        mini = EnemyMiniWindow(self, self.enemy_table)
+        self._enemy_mini = mini
+        mini.show()
+        mini.raise_()
+        mini.activateWindow()
+        self.hide()
+        QTimer.singleShot(0, self._fit_enemy_columns)
+
+    def _exit_enemy_mini_mode(self) -> None:
+        mini = self._enemy_mini
+        if mini is None:
+            return
+        self._settings.setValue('enemy_mini/geometry', mini.saveGeometry())
+        mini._restoring = True
+        mini.hide()
+        layout = mini.layout()
+        if layout is not None:
+            layout.removeWidget(self.enemy_table)
+        self.enemy_table.setParent(self._enemy_table_box)
+        self._enemy_table_layout.addWidget(self.enemy_table)
+        self._enemy_mini = None
+        mini.close()
+        mini.deleteLater()
+        self.show()
+        self.raise_()
+        self.activateWindow()
+        QTimer.singleShot(0, self._fit_enemy_columns)
+
+    def _poll_enemy_mini_hotkey(self) -> None:
+        """全局轮询 Alt+K；锁定浮层无法获取焦点，因此不能只依赖 Qt Shortcut。"""
+        if self._enemy_mini is None or sys.platform != 'win32':
+            self._mini_hotkey_down = False
+            return
+        try:
+            user32 = ctypes.windll.user32
+            alt_down = bool(user32.GetAsyncKeyState(0x12) & 0x8000)  # VK_MENU
+            k_down = bool(user32.GetAsyncKeyState(0x4B) & 0x8000)    # K
+            down = alt_down and k_down
+        except Exception:
+            down = False
+        if down and not self._mini_hotkey_down:
+            self._enemy_mini.toggle_locked()
+        self._mini_hotkey_down = down
 
     def _on_enemy_scan(self) -> None:
         if not self._ensure_adb():
@@ -1824,9 +2398,22 @@ class CoachWindow(QMainWindow):
         enemies = visible_enemy_rows(
             enemies, hide_departed=self.chk_enemy_hide_departed.isChecked())
         tbl = self.enemy_table
-        if enemies and not self._widths_fitted:
-            self._widths_fitted = True
-            tbl.resizeColumnsToContents()   # 首次有数据时自适应一次, 之后交用户手调
+        fit_after_render = bool(enemies and not self._widths_fitted)
+        desired_order = [getattr(e, 'roster_id', 0) or e.addr for e in enemies]
+        current_order = [
+            tbl.item(row, ENEMY_COLUMN_INDEX['row']).data(Qt.UserRole)
+            for row in range(tbl.rowCount())
+            if tbl.item(row, ENEMY_COLUMN_INDEX['row']) is not None
+        ]
+        # 已有未出场敌人变为存活、或动态召唤加入时，真正重排物理行。
+        # 只在顺序变化的那一帧重建，稳定状态下仍保持逐单元格增量刷新。
+        if current_order and current_order != desired_order:
+            tbl.setRowCount(0)
+            self._enemy_rows.clear()
+            self._enemy_row_lifecycle.clear()
+            self._enemy_row_spawn_wait.clear()
+            self._bar_colors.clear()
+            self._skill_lines.clear()
         # 增量刷新：按本局 roster_id 锚定行；固定敌人保持关卡预定顺序，
         # 动态召唤/分支敌人首次出现时追加。过滤切换时才重建一次。
         tbl.setUpdatesEnabled(False)
@@ -1862,6 +2449,12 @@ class CoachWindow(QMainWindow):
                                     for r in range(tbl.rowCount())}
         finally:
             tbl.setUpdatesEnabled(True)
+        if fit_after_render:
+            self._widths_fitted = True
+            self._fit_enemy_columns()
+        mini = self._enemy_mini
+        if mini is not None and mini.locked:
+            mini.sync_locked_size()
 
     def _on_enemy_departed_filter(self, _checked: bool) -> None:
         # 过滤切换时重建一次，确保重新显示的离场项仍按预定出怪序排列。
@@ -1888,13 +2481,133 @@ class CoachWindow(QMainWindow):
             self, self._enemy_dec, self._enemy_visible_cols)
         if dlg.exec() == QDialog.Accepted:
             self._enemy_dec.update(dlg.values())
+            self._widths_fitted = False
             self._render_enemy_table(self._enemy_last)   # 立即按新精度重绘
+            if not self._enemy_last:
+                self._fit_enemy_columns()
 
     def _apply_enemy_column_visibility(self) -> None:
         if not hasattr(self, 'enemy_table'):
             return
         for idx, col in enumerate(ENEMY_COLUMN_DEFS):
             self.enemy_table.setColumnHidden(idx, col['key'] not in self._enemy_visible_cols)
+
+    def _fit_enemy_columns(self) -> None:
+        """按当前可见内容测宽并填满视口，保护进度条文字等 cellWidget 内容。"""
+        if not hasattr(self, 'enemy_table'):
+            return
+        tbl = self.enemy_table
+        visible = [
+            idx for idx, col in enumerate(ENEMY_COLUMN_DEFS)
+            if not tbl.isColumnHidden(idx) and col['key'] in self._enemy_visible_cols
+        ]
+        if not visible:
+            return
+
+        header_metrics = tbl.horizontalHeader().fontMetrics()
+        cell_metrics = tbl.fontMetrics()
+        # 剩余空间优先分给这些信息列；内容过宽时除血量外均可压到可读下限。
+        expanding_keys = {
+            'name', 'code', 'eid', 'abnormal_status', 'immune_status',
+            'skill', 'spawn_wait',
+        }
+        minimum_by_key = {
+            'row': 38, 'name': 64, 'code': 56, 'eid': 105, 'hp': 175,
+            'pos': 92, 'action_state': 66, 'abnormal_status': 82,
+            'immune_status': 82, 'skill': 72, 'life_status': 66,
+            'spawn_wait': 72, 'detail': 62,
+            'ep_sanity': 170, 'ep_water': 170, 'ep_fire': 170,
+            'ep_dark': 170, 'ep_anger': 170,
+        }
+        maximum_by_key = {
+            'row': 46, 'name': 190, 'code': 90, 'eid': 240, 'hp': 245,
+            'pos': 135, 'action_state': 100, 'abnormal_status': 240,
+            'immune_status': 240, 'skill': 260, 'life_status': 100,
+            'spawn_wait': 280, 'detail': 78,
+            'ep_sanity': 220, 'ep_water': 220, 'ep_fire': 220,
+            'ep_dark': 220, 'ep_anger': 220,
+        }
+
+        preferred = {}
+        minimum = {}
+        for idx in visible:
+            col = ENEMY_COLUMN_DEFS[idx]
+            key = col['key']
+            header_width = header_metrics.horizontalAdvance(col['label']) + 18
+            if key.startswith('attr_'):
+                min_width = 64 if key == f'attr_{enemy_gs.AttributeType.MAGIC_RESISTANCE}' else 58
+                max_width = 115
+            else:
+                min_width = minimum_by_key.get(key, 58)
+                max_width = maximum_by_key.get(key, 155)
+            content_width = header_width
+            for row in range(tbl.rowCount()):
+                if key == 'hp':
+                    widget = tbl.cellWidget(row, idx)
+                    text = widget.format().replace('%p%', '100%') if widget else ''
+                elif key == 'detail':
+                    widget = tbl.cellWidget(row, idx)
+                    text = widget.text() if isinstance(widget, QPushButton) else '详情'
+                else:
+                    item = tbl.item(row, idx)
+                    text = item.text() if item is not None else ''
+                for line in str(text).splitlines() or ('',):
+                    content_width = max(
+                        content_width, cell_metrics.horizontalAdvance(line) +
+                        (26 if key == 'hp' else 18))
+            preferred[idx] = max(min_width, min(content_width, max_width))
+            minimum[idx] = min_width
+
+        viewport_width = max(100, tbl.viewport().width() - 2)
+        total = sum(preferred.values())
+        expanding = [idx for idx in visible
+                     if ENEMY_COLUMN_DEFS[idx]['key'] in expanding_keys]
+        shrinkable = [idx for idx in visible
+                      if ENEMY_COLUMN_DEFS[idx]['key'] != 'hp']
+
+        # 内容过宽时只压缩说明性长文本列；血量和损伤条保持完整，必要时出现横向滚动条。
+        if total > viewport_width and shrinkable:
+            overflow = total - viewport_width
+            capacities = {idx: max(0, preferred[idx] - minimum[idx]) for idx in shrinkable}
+            capacity = sum(capacities.values())
+            if capacity:
+                shrink = min(overflow, capacity)
+                used = 0
+                for pos, idx in enumerate(shrinkable):
+                    remaining = max(0, shrink - used)
+                    if pos == len(shrinkable) - 1:
+                        amount = min(capacities[idx], remaining)
+                    else:
+                        amount = min(
+                            capacities[idx], remaining,
+                            round(shrink * capacities[idx] / capacity))
+                    preferred[idx] -= amount
+                    used += amount
+                # 舍入造成的少量余量继续从仍可收缩的列中扣除。
+                remainder = shrink - used
+                for idx in shrinkable:
+                    if remainder <= 0:
+                        break
+                    amount = min(remainder, preferred[idx] - minimum[idx])
+                    preferred[idx] -= amount
+                    remainder -= amount
+
+        # 内容不足时把全部剩余空间平均分配给信息列，不再留下大片空白。
+        total = sum(preferred.values())
+        if total < viewport_width:
+            expand = expanding or [visible[-1]]
+            spare = viewport_width - total
+            each, remainder = divmod(spare, len(expand))
+            for pos, idx in enumerate(expand):
+                preferred[idx] += each + (1 if pos < remainder else 0)
+
+        tbl.setUpdatesEnabled(False)
+        try:
+            for idx in visible:
+                tbl.setColumnWidth(idx, preferred[idx])
+        finally:
+            tbl.setUpdatesEnabled(True)
+        self._widths_fitted = True
 
     def _on_enemy_columns(self) -> None:
         dlg = EnemyColumnDialog(self, self._enemy_visible_cols)
@@ -1904,7 +2617,23 @@ class CoachWindow(QMainWindow):
         save_visible_columns(
             self._settings, 'enemy_table/visible_columns', self._enemy_visible_cols)
         self._apply_enemy_column_visibility()
+        self._widths_fitted = False
         self._render_enemy_table(self._enemy_last)
+        if not self._enemy_last:
+            self._fit_enemy_columns()
+
+    def _open_enemy_detail_from_row(self, row: int) -> None:
+        if not (0 <= row < self.enemy_table.rowCount()):
+            return
+        item = self.enemy_table.item(row, ENEMY_COLUMN_INDEX['row'])
+        roster_id = item.data(Qt.UserRole) if item is not None else None
+        if roster_id is None:
+            return
+        enemy = next((entry for entry in self._enemy_last
+                      if (getattr(entry, 'roster_id', 0) or entry.addr) == roster_id), None)
+        if enemy is None or getattr(enemy, 'lifecycle', 'active') == 'pending':
+            return
+        self._open_enemy_detail(roster_id)
 
     def _open_enemy_detail(self, roster_id: int) -> None:
         # 用主表最近快照立即打开，完整 Buff/关卡效果由轮询线程异步补全并持续刷新。
@@ -1913,7 +2642,8 @@ class CoachWindow(QMainWindow):
         if enemy is None:
             QMessageBox.information(self, '敌人详情', '该敌人已退场或对象已失效。')
             return
-        dialog = EnemyDetailDialog(self, enemy)
+        mini = self._enemy_mini
+        dialog = EnemyDetailDialog(mini or self, enemy)
         self._enemy_detail_dialog = dialog
         poll = self._enemy_poll
         lifecycle = getattr(enemy, 'lifecycle', 'active')
@@ -1921,9 +2651,13 @@ class CoachWindow(QMainWindow):
             dialog.set_live_error('敌人已离场，显示最后一次记录。')
         elif poll is not None and enemy.addr:
             poll.set_detail_target(enemy.addr)
+        if mini is not None:
+            mini.set_mouse_hook_suspended(True)
         try:
             dialog.exec()
         finally:
+            if mini is self._enemy_mini:
+                mini.set_mouse_hook_suspended(False)
             if poll is self._enemy_poll:
                 poll.set_detail_target(0)
             if self._enemy_detail_dialog is dialog:
@@ -1962,7 +2696,9 @@ class CoachWindow(QMainWindow):
             it = tbl.item(row, c)
             if it is None:
                 return
-            it.setText(str(text))
+            text = str(text)
+            it.setText(text)
+            it.setToolTip(text)
             if grey:
                 it.setForeground(QColor('#888888'))
             else:
@@ -1988,9 +2724,10 @@ class CoachWindow(QMainWindow):
         if lifecycle == 'pending':
             bar.setFormat('未出场')
         elif lifecycle == 'departed':
-            bar.setFormat(f'已离场  {e.hp:.{d["hp"]}f} / {e.max_hp:.{d["hp"]}f}')
+            bar.setFormat(f'{e.hp:.{d["hp"]}f}/{e.max_hp:.{d["hp"]}f}')
         else:
-            bar.setFormat(f'{e.hp:.{d["hp"]}f} / {e.max_hp:.{d["hp"]}f}  %p%')
+            # 颜色和填充比例已经表达百分比；紧凑文本优先完整显示精确生命值。
+            bar.setFormat(f'{e.hp:.{d["hp"]}f}/{e.max_hp:.{d["hp"]}f}')
         ratio = e.hp / e.max_hp if e.max_hp > 0 else 0
         color = '#5cb85c' if ratio > 0.5 else ('#f0ad4e' if ratio > 0.2 else '#d9534f')
         if lifecycle != 'active' or not e.alive:
