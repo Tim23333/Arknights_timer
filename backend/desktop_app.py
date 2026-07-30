@@ -21,9 +21,7 @@ from PySide6.QtGui import QColor, QCursor, QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
-    QDialogButtonBox,
     QFileDialog,
-    QFormLayout,
     QFrame,
     QGroupBox,
     QHBoxLayout,
@@ -58,9 +56,10 @@ from app.services.timer_provider import TimerDataProvider
 from tools.enemy_health import EnemyReader
 from tools.enemy_health import game_structs as enemy_gs
 from tools.enemy_health.memcore import MemCore
-from tools.enemy_health.ui_common import (
+from app.enemy_ui import (
     ENEMY_COLUMN_DEFS, ENEMY_COLUMN_INDEX, EnemyColumnDialog, EnemyDetailDialog,
-    format_column_value, load_visible_columns, save_visible_columns,
+    EnemyPrecisionDialog, default_precision_values, format_column_value,
+    load_visible_columns, save_visible_columns,
 )
 from tools.deploy_tracker.ak_deploy_reader import DeployTrackerReader
 
@@ -97,35 +96,6 @@ ENEMY_RENDER_SEC = 0.016   # 表格渲染节流 (60fps)
 ENEMY_COLS = [col['label'] for col in ENEMY_COLUMN_DEFS]
 ENEMY_COL_WIDTHS = [col['width'] for col in ENEMY_COLUMN_DEFS]
 ENEMY_STATE_NAMES = {0: 'NONE', 1: 'INITED', 2: '战斗中', 3: '已结束'}
-
-# 支持自定义小数位的数值列 (key, 显示名)
-ENEMY_DEC_COLS = [('hp', '血量'), ('pos', '坐标'), ('atk', '攻击'), ('def', '防御'),
-                  ('res', '法抗'), ('mspd', '移速'), ('aspd', '攻速'), ('skill', '技能CD')]
-
-
-class EnemyPrecisionDialog(QDialog):
-    """每列小数位数设置 (0-6)"""
-
-    def __init__(self, parent, dec: dict) -> None:
-        super().__init__(parent)
-        self.setWindowTitle('小数位设置')
-        form = QFormLayout(self)
-        self.spins: dict = {}
-        for k, label in ENEMY_DEC_COLS:
-            s = QSpinBox()
-            s.setRange(0, 6)
-            s.setValue(dec.get(k, 4))
-            s.setSuffix(' 位')
-            form.addRow(f'{label}:', s)
-            self.spins[k] = s
-        btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        btns.accepted.connect(self.accept)
-        btns.rejected.connect(self.reject)
-        form.addRow(btns)
-
-    def values(self) -> dict:
-        return {k: s.value() for k, s in self.spins.items()}
-
 
 def _format_game_time(value: object) -> str:
     if value is None:
@@ -313,8 +283,7 @@ class CoachWindow(QMainWindow):
         self._enemy_rows: dict = {}    # enemy addr -> 表格行号 (行位置稳定, 新敌人底部新增)
         self._bar_colors: dict = {}    # enemy addr -> 当前血条颜色
         self._skill_lines: dict = {}   # enemy addr -> 技能格行数 (变化才调整行高)
-        self._enemy_dec: dict = {k: 4 for k, _ in ENEMY_DEC_COLS}   # 每列小数位数 (0-6)
-        self._enemy_dec['default'] = 4
+        self._enemy_dec: dict = default_precision_values()
         self._enemy_last: list = []    # 最近一帧敌人 (改小数位时立即重绘用)
         self._settings = QSettings('ArknightsTools', 'ArknightsTimeline')
         self._enemy_visible_cols = load_visible_columns(
@@ -1349,7 +1318,8 @@ class CoachWindow(QMainWindow):
             tbl.setUpdatesEnabled(True)
 
     def _on_enemy_precision(self) -> None:
-        dlg = EnemyPrecisionDialog(self, self._enemy_dec)
+        dlg = EnemyPrecisionDialog(
+            self, self._enemy_dec, self._enemy_visible_cols)
         if dlg.exec() == QDialog.Accepted:
             self._enemy_dec.update(dlg.values())
             self._render_enemy_table(self._enemy_last)   # 立即按新精度重绘

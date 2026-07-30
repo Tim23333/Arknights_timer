@@ -1,23 +1,42 @@
 # -*- coding: utf-8 -*-
-"""敌人表格列定义、列选择器和详情窗口（两个 PySide6 界面共用）。"""
+"""主程序敌人表格列定义、列选择器和详情窗口。"""
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QCheckBox, QDialog, QDialogButtonBox, QGridLayout, QHBoxLayout, QLabel,
-    QPushButton, QScrollArea, QTabWidget, QTableWidget, QTableWidgetItem,
-    QVBoxLayout, QWidget,
+    QAbstractSpinBox, QCheckBox, QDialog, QDialogButtonBox, QGridLayout,
+    QHBoxLayout, QLabel, QPushButton, QScrollArea, QSpinBox, QTabWidget,
+    QTableWidget, QTableWidgetItem, QToolButton, QVBoxLayout, QWidget,
 )
 
-from . import game_structs as gs
-from .buff_descriptions import (
+from tools.enemy_health import game_structs as gs
+
+from .enemy_buff_descriptions import (
     buff_chinese_name, describe_active_buff, describe_blackboard, describe_buff_def,
     describe_global_buff, global_buff_chinese_name,
 )
-from .enemy_reader import format_skill_cd
 
 
-def _col(key, label, width=80, default=False):
-    return {'key': key, 'label': label, 'width': width, 'default': default}
+def format_skill_cd(skills, sep='; ', prec=1):
+    """技能 CD 列表转成主程序显示文本。"""
+    if not skills:
+        return '-'
+    parts = []
+    for key, remain, period in skills:
+        if remain <= 0.05:
+            parts.append(f'{key} 就绪')
+        else:
+            parts.append(f'{key} {remain:.{prec}f}/{period:.{prec}f}s')
+    return sep.join(parts)
+
+
+def _col(key, label, width=80, default=False, precision=False):
+    return {
+        'key': key,
+        'label': label,
+        'width': width,
+        'default': default,
+        'precision': precision,
+    }
 
 
 ENEMY_COLUMN_DEFS = [
@@ -25,8 +44,8 @@ ENEMY_COLUMN_DEFS = [
     _col('name', '名称', 130, True),
     _col('code', '编号', 60, True),
     _col('eid', '敌人ID', 150, True),
-    _col('hp', '血量', 185, True),
-    _col('pos', '坐标', 110, True),
+    _col('hp', '血量', 185, True, True),
+    _col('pos', '坐标', 110, True, True),
     _col('action_state', '行为状态', 72, True),
     _col('abnormal_status', '异常状态', 160, True),
     _col('immune_status', '状态免疫', 160, False),
@@ -37,24 +56,40 @@ for _idx, _internal, _name in gs.ATTRIBUTE_DEFS:
     _label = '状态抗性' if _idx == gs.AttributeType.ONE_MINUS_STATUS_RESISTANCE else _name
     ENEMY_COLUMN_DEFS.append(
         _col(f'attr_{_idx}', _label, max(72, min(140, len(_label) * 15)),
-             _idx in _DEFAULT_ATTRS))
+             _idx in _DEFAULT_ATTRS, True))
 
 ENEMY_COLUMN_DEFS.extend([
-    _col('es', '元素护盾', 90, False),
-    _col('shield', '普通护盾', 90, False),
-    _col('ep_sanity', '神经损伤', 125, False),
-    _col('ep_water', '侵蚀损伤', 125, False),
-    _col('ep_fire', '灼燃损伤', 125, False),
-    _col('ep_dark', '凋亡损伤', 125, False),
-    _col('ep_anger', '狂躁损伤', 125, False),
+    _col('es', '元素护盾', 90, False, True),
+    _col('shield', '普通护盾', 90, False, True),
+    _col('ep_sanity', '神经损伤', 125, False, True),
+    _col('ep_water', '侵蚀损伤', 125, False, True),
+    _col('ep_fire', '灼燃损伤', 125, False, True),
+    _col('ep_dark', '凋亡损伤', 125, False, True),
+    _col('ep_anger', '狂躁损伤', 125, False, True),
     _col('ep_break', '元素爆发恢复', 95, False),
-    _col('skill', '技能 CD', 150, True),
+    _col('skill', '技能 CD', 150, True, True),
     _col('life_status', '生存状态', 72, True),
     _col('detail', '详情', 64, True),
 ])
 
 ENEMY_COLUMN_INDEX = {col['key']: idx for idx, col in enumerate(ENEMY_COLUMN_DEFS)}
 DEFAULT_VISIBLE_COLUMNS = {col['key'] for col in ENEMY_COLUMN_DEFS if col['default']}
+
+
+def precision_column_defs(visible=None):
+    """返回精度设置项；传入 visible 时仅包含当前显示的数值列。"""
+    chosen = None if visible is None else set(visible)
+    return [
+        (col['key'], col['label'])
+        for col in ENEMY_COLUMN_DEFS
+        if col['precision'] and (chosen is None or col['key'] in chosen)
+    ]
+
+
+def default_precision_values(value=4):
+    values = {key: value for key, _label in precision_column_defs()}
+    values['default'] = value
+    return values
 
 
 def load_visible_columns(settings, key):
@@ -125,6 +160,88 @@ class EnemyColumnDialog(QDialog):
         return {key for key, cb in self.checks.items() if cb.isChecked()}
 
 
+class _PrecisionSpin(QWidget):
+    """使用独立加减按钮，避免 QSpinBox 原生按钮受全局样式挤压。"""
+
+    def __init__(self, value, parent=None):
+        super().__init__(parent)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(4)
+
+        self.minus = QToolButton()
+        self.minus.setText('−')
+        self.minus.setToolTip('减少一位小数')
+        self.minus.setFixedSize(30, 28)
+
+        self.spin = QSpinBox()
+        self.spin.setRange(0, 6)
+        self.spin.setValue(value)
+        self.spin.setSuffix(' 位')
+        self.spin.setAlignment(Qt.AlignCenter)
+        self.spin.setButtonSymbols(QAbstractSpinBox.NoButtons)
+        self.spin.setMinimumWidth(76)
+        self.spin.setFixedHeight(28)
+
+        self.plus = QToolButton()
+        self.plus.setText('+')
+        self.plus.setToolTip('增加一位小数')
+        self.plus.setFixedSize(30, 28)
+
+        self.minus.clicked.connect(self.spin.stepDown)
+        self.plus.clicked.connect(self.spin.stepUp)
+        layout.addWidget(self.minus)
+        layout.addWidget(self.spin, 1)
+        layout.addWidget(self.plus)
+
+    def value(self):
+        return self.spin.value()
+
+
+class EnemyPrecisionDialog(QDialog):
+    """当前显示数值列的小数位数设置（0-6）。"""
+
+    def __init__(self, parent, decimals, visible=None):
+        super().__init__(parent)
+        self.setWindowTitle('小数位设置')
+        self.resize(620, 460)
+        root = QVBoxLayout(self)
+        root.addWidget(QLabel(
+            '仅列出当前显示的数值列；显示列变化后，本列表会自动同步。'))
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        body = QWidget()
+        grid = QGridLayout(body)
+        grid.setHorizontalSpacing(18)
+        grid.setVerticalSpacing(8)
+        self.controls = {}
+        columns = precision_column_defs(visible)
+        for idx, (key, label) in enumerate(columns):
+            row = idx // 2
+            base = (idx % 2) * 2
+            name = QLabel(f'{label}:')
+            control = _PrecisionSpin(decimals.get(key, decimals.get('default', 4)))
+            grid.addWidget(name, row, base)
+            grid.addWidget(control, row, base + 1)
+            self.controls[key] = control
+        if not columns:
+            grid.addWidget(QLabel('当前没有已显示的数值列。'), 0, 0, 1, 4)
+        grid.setColumnStretch(1, 1)
+        grid.setColumnStretch(3, 1)
+        grid.setRowStretch((len(columns) + 1) // 2, 1)
+        scroll.setWidget(body)
+        root.addWidget(scroll, 1)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        root.addWidget(buttons)
+
+    def values(self):
+        return {key: control.value() for key, control in self.controls.items()}
+
+
 def format_column_value(key, enemy, decimals, row=0):
     precision = decimals.get(key, decimals.get('default', 4))
     if key == 'row':
@@ -150,13 +267,13 @@ def format_column_value(key, enemy, decimals, row=0):
         return '、'.join(values) if values else '-'
     if key.startswith('attr_'):
         idx = int(key[5:])
-        precision_key = {
+        legacy_precision_key = {
             gs.AttributeType.ATK: 'atk', gs.AttributeType.DEF: 'def',
             gs.AttributeType.MAGIC_RESISTANCE: 'res',
             gs.AttributeType.MOVE_SPEED: 'mspd', gs.AttributeType.ATTACK_SPEED: 'aspd',
         }.get(idx)
-        if precision_key:
-            precision = decimals.get(precision_key, precision)
+        if key not in decimals and legacy_precision_key:
+            precision = decimals.get(legacy_precision_key, precision)
         value = enemy.status_resistance if idx == gs.AttributeType.ONE_MINUS_STATUS_RESISTANCE \
             else enemy.attribute(idx)
         return f'{value:.{precision}f}'
@@ -174,7 +291,7 @@ def format_column_value(key, enemy, decimals, row=0):
     if key in ep_types:
         damage, _, maximum = enemy.element_damage(ep_types[key])
         percent = damage / maximum * 100 if maximum > 0 else 0.0
-        return f'{damage:.{precision}f}/{maximum:.{precision}f} ({percent:.1f}%)'
+        return f'{damage:.{precision}f}/{maximum:.{precision}f} ({percent:.{precision}f}%)'
     if key == 'ep_break':
         return '恢复中' if enemy.ep_break_recovery else '-'
     if key == 'skill':

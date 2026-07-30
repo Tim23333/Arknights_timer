@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """把战斗 Buff/GlobalBuff 的内部键和 Blackboard 转成可靠的中文说明。"""
 
-from . import game_structs as gs
+from tools.enemy_health import game_structs as gs
 
 
 BUFF_NAME_OVERRIDES = {

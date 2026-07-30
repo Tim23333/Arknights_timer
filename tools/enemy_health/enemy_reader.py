@@ -188,20 +188,6 @@ class EnemyInfo:
         return damage, remaining, maximum
 
 
-def format_skill_cd(skills, sep='; ', prec=1):
-    """技能 CD 列表 -> 显示文本, 如 'SummonBallis 11.4/15s; CriticalHit 就绪'
-    sep='\\n' 时每个技能一行 (表格单元格多行展示); prec 为小数位数 (0-6)"""
-    if not skills:
-        return '-'
-    parts = []
-    for key, remain, period in skills:
-        if remain <= 0.05:
-            parts.append(f'{key} 就绪')
-        else:
-            parts.append(f'{key} {remain:.{prec}f}/{period:.{prec}f}s')
-    return sep.join(parts)
-
-
 class EnemyReader:
     def __init__(self, adb_path=None, package='com.hypergryph.arknights',
                  cache_file=CACHE_FILE, with_bc=True, log=print, workers=8, mc=None):

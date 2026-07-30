@@ -1,4 +1,4 @@
-# 明日方舟敌人血量/属性实时监控工具
+# 明日方舟敌人内存扫描模块
 
 通过 ADB 读取 MuMu 模拟器中游戏进程内存，实时获取战斗中每个敌人的
 名称、血量、攻击/防御/法抗/移速/攻速等详细数据。
@@ -24,7 +24,7 @@ MuMu 模拟器 (Android)
 > 对象所在区域起点前恰好有/没有洞。扫描结束若丢块会打印警告。
 
 轮询分两档：
-- **准实时 `poll_fast()`**（GUI/CLI 默认）：常驻 TCP 通道（`adb forward tcp:27271`）。
+- **准实时 `poll_fast()`**（后端主程序/CLI 默认）：常驻 TCP 通道（`adb forward tcp:27271`）。
   通道有两种模式，自动探测：
   - **memsrv 模式（默认，实测中位 ~0.7ms/帧）**：`memsrv.c` 交叉编译出的 aarch64 静态
     小程序（`bin/memsrv`），由 `nc -L` 以 socket 为 stdin/stdout 启动，
@@ -66,19 +66,19 @@ python -m ziglang cc -target aarch64-linux-musl -static -O2 \
 
 1. **MuMu 模拟器** 已启动，明日方舟已进入战斗关卡且场上有敌人
 2. **adb root** 可用（MuMu 自带 adb 默认支持，工具自动查找路径）
-3. **Python 3.8+**，依赖 `numpy`（扫描加速）；GUI 需 `PySide6`
+3. **Python 3.8+**，依赖 `numpy`（扫描加速）
 
 ## 使用方法
 
-### 图形界面 (推荐)
+### 后端主程序页面
 
 ```bash
-python -m tools.enemy_health.gui
-# 或
-python -m tools.enemy_health --gui
+cd backend
+python run.py
 ```
 
-- 启动后自动尝试缓存地址秒级进入监控
+- `tools/enemy_health` 不再维护独立 GUI；页面统一由 `backend/desktop_app.py` 承担
+- 主程序启动后可尝试缓存地址秒级进入监控
 - **一键扫描**: 全堆扫描重新定位 (多路 adb 并行, 约 1-3 分钟)
 - 表格准实时展示 (默认 0.016 秒刷新=60Hz, 可调至 0.008): 名称/编号/ID/坐标/血条/攻击/防御/法抗/移速/攻速/状态
 - **显示列**可逐项勾选全部最终属性、异常状态、状态免疫、护盾，以及神经/侵蚀/灼燃/凋亡/狂躁五类损伤条；选择会持久化
@@ -126,16 +126,20 @@ python -m tools.enemy_health --adb "D:\...\adb.exe" --interval 1
 enemy_health/
 ├── __init__.py          # 包入口 (导出 EnemyReader)
 ├── __main__.py          # python -m 入口
-├── gui.py               # PySide6 图形界面 (一键扫描+实时监控)
-├── main.py              # CLI 监控界面
+├── main.py              # CLI 扫描诊断入口
 ├── memcore.py           # ADB 内存读取底层 (maps/dd/字符串/klass/TcpChannel)
 ├── memsrv.c             # 设备侧常驻内存服务源码 (zig cc 交叉编译为 bin/memsrv)
 ├── enemy_reader.py      # 敌人定位(并行bootstrap) + 轮询(poll_fast/poll)
-├── buff_descriptions.py # Buff/GlobalBuff 中文名称、效果和参数说明
-├── ui_common.py         # 可定制列、敌人详情页（独立 GUI/主程序共用）
 ├── enemy_db.py          # enemy_handbook_table 解析 (ID->中文名/编号/描述)
 ├── game_structs.py      # IL2CPP 结构偏移定义 (全部实测验证)
 └── README.md            # 本文件
+```
+
+展示层已迁至：
+
+```text
+backend/app/enemy_ui.py                # 表格列、精度设置、详情窗口
+backend/app/enemy_buff_descriptions.py # Buff/GlobalBuff 中文说明
 ```
 
 ## 地址发现流程 (bootstrap)

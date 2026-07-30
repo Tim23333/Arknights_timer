@@ -85,12 +85,7 @@ def main(argv=None):
     ap.add_argument('--rebuild', action='store_true', help='忽略缓存强制重新扫描')
     ap.add_argument('--no-bc', action='store_true', help='不定位 BattleController (省一遍扫描, 无战斗状态)')
     ap.add_argument('--desc', action='store_true', help='显示敌人描述')
-    ap.add_argument('--gui', action='store_true', help='启动 PySide6 图形界面')
     args = ap.parse_args(argv)
-
-    if args.gui:
-        from .gui import main as gui_main
-        return gui_main()
 
     reader = EnemyReader(adb_path=args.adb, with_bc=not args.no_bc)
     try:

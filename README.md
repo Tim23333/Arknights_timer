@@ -43,7 +43,8 @@ MuMu 模拟器 (Android arm64)
 - **轮询**：设备侧常驻内存服务 `memsrv`（aarch64 静态二进制，`nc -L` +
   `adb forward` TCP 长连接），打开 `/proc/<pid>/mem` 一次后每次读取仅一个
   pread，稳态 ~1-2ms/帧；服务不可用时自动回退慢速 adb 读取
-- **独立 GUI**：`python -m tools.enemy_health.gui` 可脱离主程序单独使用
+- **单一展示层**：`tools/enemy_health` 只负责定位、读取与数据模型；敌人表格、
+  列设置和详情窗口统一由 `backend` 主程序维护
 
 ## 内存寻址使用说明（时间/帧数）
 
@@ -170,10 +171,10 @@ cd backend
 python run.py
 ```
 
-### 启动敌人监控（独立 GUI）
+### 运行敌人扫描诊断（命令行）
 
 ```bash
-python -m tools.enemy_health.gui
+python -m tools.enemy_health --once
 ```
 
 ### 启动内存寻址工具
