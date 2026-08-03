@@ -62,6 +62,7 @@ for _p in (str(_BACKEND_ROOT), str(_REPO_ROOT)):
 from app.services.timer_provider import TimerDataProvider
 from tools.enemy_health import EnemyReader
 from tools.enemy_health import game_structs as enemy_gs
+from tools.character_status import CharacterReader
 from tools.enemy_health.memcore import (
     MemCore, find_running_emulator_adbs, query_adb_devices, save_adb_config,
 )
@@ -69,6 +70,12 @@ from app.enemy_ui import (
     ENEMY_COLUMN_DEFS, ENEMY_COLUMN_INDEX, EnemyColumnDialog, EnemyDetailDialog,
     EnemyPrecisionDialog, default_precision_values, format_column_value,
     load_visible_columns, save_visible_columns, visible_enemy_rows,
+)
+from app.character_ui import (
+    CHARACTER_COLS, CHARACTER_COL_WIDTHS, CHARACTER_COLUMN_DEFS,
+    CHARACTER_COLUMN_INDEX, CharacterColumnDialog, CharacterDetailDialog,
+    CharacterPrecisionDialog, default_character_precision,
+    format_character_column, load_character_columns, save_character_columns,
 )
 from tools.deploy_tracker.ak_deploy_reader import DeployTrackerReader
 
@@ -102,6 +109,7 @@ WS_PUSH_MS = 8
 ENEMY_POLL_SEC = 0.01      # 敌人轮询间隔 (memsrv 通道单帧 <1ms, 2倍速 60fps=16.7ms)
 ENEMY_RENDER_SEC = 0.016   # 表格渲染节流 (60fps)
 ENEMY_DETAIL_FULL_SEC = 0.05  # Buff/关卡效果独立通道约 20Hz；动态数据随主表每帧刷新
+CHARACTER_DETAIL_FULL_SEC = 0.05
 
 ENEMY_COLS = [col['label'] for col in ENEMY_COLUMN_DEFS]
 ENEMY_COL_WIDTHS = [col['width'] for col in ENEMY_COLUMN_DEFS]
@@ -173,13 +181,15 @@ QLabel#PageTitle {{ font-size:20px; font-weight:700; color:{c['text']}; }}
 QLabel[role="muted"] {{ color:{c['muted']}; }}
 QLabel[role="primaryText"] {{ color:{c['text']}; }}
 QLabel#GameTimeValue {{ font-size:48px; font-weight:700; color:{c['time']}; }}
-QLabel#GameFrameValue {{ font-size:48px; font-weight:700; color:{c['frame']}; }}
-QFrame#GameTimeCard, QFrame#GameFrameCard {{ background-color:{c['panel']}; border:1px solid {c['border']}; border-radius:8px; }}
+  QLabel#GameFrameValue {{ font-size:48px; font-weight:700; color:{c['frame']}; }}
+  QLabel#EnemyCompactGameStatus {{ color:{c['text']}; border-left:1px solid {c['border']}; padding-left:10px; font-weight:600; }}
+  QFrame#GameTimeCard, QFrame#GameFrameCard {{ background-color:{c['panel']}; border:1px solid {c['border']}; border-radius:8px; }}
 QWidget#EnemyMiniWindow {{ background-color:{c['bg']}; border:1px solid {c['border']}; }}
 QFrame#EnemyMiniToolbar {{ background-color:{c['panel']}; border:1px solid {c['border']}; border-radius:5px; }}
 QLabel#EnemyMiniDragLabel {{ color:{c['text']}; font-weight:600; }}
-QGroupBox {{ background-color:{c['panel']}; border:1px solid {c['border']}; border-radius:6px; font-weight:600; margin-top:9px; padding-top:9px; }}
-QGroupBox::title {{ subcontrol-origin:margin; subcontrol-position:top left; left:9px; padding:0 4px; background-color:{c['panel']}; }}
+  QGroupBox {{ background-color:{c['panel']}; border:1px solid {c['border']}; border-radius:6px; font-weight:600; margin-top:9px; padding-top:9px; }}
+  QGroupBox::title {{ subcontrol-origin:margin; subcontrol-position:top left; left:9px; padding:0 4px; background-color:{c['panel']}; }}
+  QGroupBox::indicator {{ width:14px; height:14px; }}
 QLineEdit, QComboBox, QAbstractSpinBox, QTextEdit, QPlainTextEdit, QListWidget, QTreeWidget {{ background-color:{c['input']}; color:{c['text']}; border:1px solid {c['border']}; border-radius:4px; padding:4px; selection-background-color:{c['selection']}; }}
 QComboBox QAbstractItemView {{ background-color:{c['input']}; color:{c['text']}; border:1px solid {c['border']}; selection-background-color:{c['selection']}; }}
 QTableWidget {{ background-color:{c['input']}; alternate-background-color:{c['alt']}; color:{c['text']}; gridline-color:{c['border']}; border:1px solid {c['border']}; selection-background-color:{c['selection']}; selection-color:{c['text']}; }}
@@ -550,6 +560,172 @@ def _format_game_time(value: object) -> str:
         return str(value)
 
 
+def _format_enemy_read_mode(snapshot: dict) -> str:
+    """把扫描器发布的通道状态转成稳定、可读的界面文案。"""
+    mode = snapshot.get('read_mode', '')
+    backend = snapshot.get('read_backend', '')
+    if mode == 'fast':
+        if backend == 'srv':
+            return '高速通道（memsrv）'
+        if backend == 'sh':
+            return 'TCP 兼容通道（shell）'
+        return '高速通道（TCP）'
+    if mode == 'slow':
+        return '慢速兜底（ADB）'
+    return '检测中'
+
+
+class SectionFloatWindow(QDialog):
+    """承载一个主页面模块的非模态独立窗口。"""
+    dockRequested = Signal()
+    closing = Signal()
+
+    def __init__(self, title: str, owner: QWidget | None = None) -> None:
+        super().__init__(owner, Qt.WindowType.Window)
+        self.setWindowTitle(f'模块浮窗 · {title}')
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(8, 8, 8, 8)
+        root.setSpacing(6)
+        toolbar = QHBoxLayout()
+        label = QLabel(title)
+        label.setStyleSheet('font-weight:600;')
+        toolbar.addWidget(label)
+        toolbar.addStretch(1)
+        dock = QPushButton('停靠回主界面')
+        dock.setToolTip('把此模块放回主程序页面原来的位置')
+        dock.clicked.connect(self.dockRequested)
+        toolbar.addWidget(dock)
+        root.addLayout(toolbar)
+        self.content_layout = QVBoxLayout()
+        self.content_layout.setContentsMargins(0, 0, 0, 0)
+        root.addLayout(self.content_layout, 1)
+
+    def closeEvent(self, event) -> None:  # type: ignore[override]
+        self.closing.emit()
+        super().closeEvent(event)
+
+
+class CollapsibleGroupBox(QGroupBox):
+    """可折叠、可独立浮窗并可无损停靠回原位的通用模块。"""
+    collapsedChanged = Signal(bool)
+    floatingChanged = Signal(bool)
+
+    def __init__(self, title: str, parent: QWidget | None = None) -> None:
+        super().__init__(title, parent)
+        self._section_title = title
+        self._float_window: SectionFloatWindow | None = None
+        self._collapsed_before_float = False
+        self._content = QWidget(self)
+        self._outer = QVBoxLayout(self)
+        self._outer.setContentsMargins(6, 10, 6, 6)
+        self._outer.setSpacing(0)
+        self._floating_hint = QLabel('已在浮窗显示', self)
+        self._floating_hint.setProperty('role', 'muted')
+        self._floating_hint.hide()
+        self.btn_float = QPushButton('浮窗', self)
+        self.btn_float.setFixedSize(58, 24)
+        self.btn_float.setToolTip('将此模块从主页面分离为独立窗口')
+        self.btn_float.clicked.connect(self.float_content)
+        self._outer.addWidget(self._content)
+        self.setCheckable(True)
+        self.setChecked(True)
+        self.setToolTip("点击标题可收起或展开；点击“浮窗”可独立显示此模块")
+        self.toggled.connect(self._on_toggled)
+
+    @property
+    def content_widget(self) -> QWidget:
+        return self._content
+
+    def setContentLayout(self, layout) -> None:
+        self._content.setLayout(layout)
+
+    def resizeEvent(self, event) -> None:  # type: ignore[override]
+        super().resizeEvent(event)
+        margin = 7
+        self.btn_float.move(
+            max(margin, self.width() - self.btn_float.width() - margin), 1)
+        self._floating_hint.adjustSize()
+        self._floating_hint.move(
+            max(margin, self.btn_float.x() - self._floating_hint.width() - 8),
+            max(2, (self.btn_float.height() - self._floating_hint.height()) // 2))
+
+    def is_collapsed(self) -> bool:
+        return not self.isChecked()
+
+    def set_collapsed(self, collapsed: bool) -> None:
+        if self.is_floating():
+            return
+        self.setChecked(not collapsed)
+
+    def is_floating(self) -> bool:
+        return self._float_window is not None
+
+    def float_content(self) -> None:
+        if self._float_window is not None:
+            self._float_window.show()
+            self._float_window.raise_()
+            self._float_window.activateWindow()
+            return
+        self._collapsed_before_float = self.is_collapsed()
+        if self.is_collapsed():
+            self.setChecked(True)
+        window = SectionFloatWindow(self._section_title, self.window())
+        window.dockRequested.connect(self.dock_content)
+        window.closing.connect(lambda: self.dock_content(close_window=False))
+        self._outer.removeWidget(self._content)
+        self._content.setParent(window)
+        window.content_layout.addWidget(self._content)
+        self._content.show()
+        self._float_window = window
+        self.setCheckable(False)
+        self._floating_hint.show()
+        self.btn_float.setText('显示浮窗')
+        self.btn_float.setToolTip('显示并激活此模块的独立窗口')
+        self.setMaximumHeight(self.fontMetrics().height() + 28)
+        preferred = self.size()
+        window.resize(max(620, preferred.width()), max(260, preferred.height()))
+        window.show()
+        self.updateGeometry()
+        parent = self.parentWidget()
+        if parent is not None and parent.layout() is not None:
+            parent.layout().invalidate()
+        self.floatingChanged.emit(True)
+
+    def dock_content(self, close_window: bool = True) -> None:
+        window = self._float_window
+        if window is None:
+            return
+        self._float_window = None
+        window.content_layout.removeWidget(self._content)
+        self._content.setParent(self)
+        self._outer.addWidget(self._content)
+        self.setCheckable(True)
+        self._floating_hint.hide()
+        self.btn_float.setText('浮窗')
+        self.btn_float.setToolTip('将此模块从主页面分离为独立窗口')
+        self.setChecked(not self._collapsed_before_float)
+        self._on_toggled(not self._collapsed_before_float)
+        if close_window:
+            window.close()
+        self.updateGeometry()
+        self.floatingChanged.emit(False)
+
+    def _on_toggled(self, expanded: bool) -> None:
+        if self.is_floating():
+            return
+        self._content.setVisible(expanded)
+        # 隐藏内容后限制区块高度，避免 QScrollArea 继续为其保留空白。
+        self.setMaximumHeight(16777215 if expanded else self.fontMetrics().height() + 28)
+        self.updateGeometry()
+        parent = self.parentWidget()
+        if parent is not None:
+            parent.updateGeometry()
+            if parent.layout() is not None:
+                parent.layout().invalidate()
+        self.collapsedChanged.emit(not expanded)
+
+
 class EnemyScanWorker(QThread):
     """后台线程：定位当前关卡、出怪计划和实时敌人列表。"""
     log = Signal(str)
@@ -596,9 +772,11 @@ class EnemyPollWorker(QThread):
     """后台线程: 常驻通道准实时轮询敌人数据"""
     snapshot = Signal(dict)
 
-    def __init__(self, reader: EnemyReader, interval: float = ENEMY_POLL_SEC) -> None:
+    def __init__(self, reader: EnemyReader, character_reader: CharacterReader | None = None,
+                 interval: float = ENEMY_POLL_SEC) -> None:
         super().__init__()
         self.reader = reader
+        self.character_reader = character_reader
         self.interval = interval
         self._detail_lock = threading.Lock()
         self._detail_addr = 0
@@ -606,6 +784,12 @@ class EnemyPollWorker(QThread):
         self._detail_heavy_cache = None
         self._detail_loading = False
         self._detail_error = ''
+        self._character_detail_lock = threading.Lock()
+        self._character_detail_addr = 0
+        self._character_detail_due = 0.0
+        self._character_detail_cache = None
+        self._character_detail_loading = False
+        self._character_detail_error = ''
 
     def set_detail_target(self, addr: int = 0) -> None:
         """选择需要完整实时详情的敌人；0 表示停止详情读取。"""
@@ -692,6 +876,72 @@ class EnemyPollWorker(QThread):
         if error:
             snap['detail_error'] = error
 
+    def set_character_detail_target(self, addr: int = 0) -> None:
+        with self._character_detail_lock:
+            addr = int(addr or 0)
+            if addr != self._character_detail_addr:
+                self._character_detail_addr = addr
+                self._character_detail_due = 0.0
+                self._character_detail_cache = None
+                self._character_detail_error = ''
+
+    def _start_character_detail_refresh(self, addr: int) -> None:
+        with self._character_detail_lock:
+            if (self._character_detail_loading
+                    or addr != self._character_detail_addr
+                    or self.character_reader is None):
+                return
+            self._character_detail_loading = True
+
+        def load() -> None:
+            detail = None
+            error = ''
+            try:
+                detail = self.character_reader.read_character_detail(addr)
+                if detail is None:
+                    error = '干员详情对象已失效。'
+            except Exception as exc:
+                error = f'干员详情刷新失败：{exc}'
+            finally:
+                with self._character_detail_lock:
+                    if addr == self._character_detail_addr:
+                        if detail is not None:
+                            self._character_detail_cache = detail
+                            self._character_detail_error = ''
+                        elif error:
+                            self._character_detail_error = error
+                        self._character_detail_due = (
+                            time.monotonic() + CHARACTER_DETAIL_FULL_SEC)
+                    self._character_detail_loading = False
+
+        threading.Thread(
+            target=load, name='CharacterDetailRefresh', daemon=True).start()
+
+    def _append_character_detail(self, snap: dict) -> None:
+        with self._character_detail_lock:
+            addr = self._character_detail_addr
+            due = self._character_detail_due
+        if not addr or not snap.get('character_ok'):
+            return
+        live = next((character for character in snap.get('characters', ())
+                     if character.addr == addr), None)
+        if live is None:
+            snap['detail_character'] = None
+            snap['character_detail_error'] = '干员已离场或对象已失效，已停止更新。'
+            return
+        if time.monotonic() >= due:
+            self._start_character_detail_refresh(addr)
+        with self._character_detail_lock:
+            detail = self._character_detail_cache
+            error = self._character_detail_error
+        if detail is not None:
+            live = CharacterReader.merge_detail(live, detail)
+        else:
+            snap['character_detail_loading'] = True
+        snap['detail_character'] = live
+        if error:
+            snap['character_detail_error'] = error
+
     def run(self) -> None:
         # Windows 默认睡眠粒度 15.6ms, 提到 1ms 才能睡出 <16ms 的轮询间隔
         winmm = getattr(ctypes.windll, 'winmm', None) if sys.platform == 'win32' else None
@@ -705,7 +955,20 @@ class EnemyPollWorker(QThread):
                 except Exception as e:
                     snap = {'ok': False, 'state': -1, 'speed_level': -1, 'time_scale': 0.0,
                             'play_time': 0.0, 'enemies': [], 'msg': f'轮询出错: {e}'}
+                if self.character_reader is not None:
+                    try:
+                        char_snap = self.character_reader.poll_fast()
+                    except Exception as e:
+                        char_snap = {
+                            'ok': False, 'characters': [],
+                            'msg': f'干员轮询出错: {e}', 'frame_ms': 0.0,
+                        }
+                    snap['character_ok'] = bool(char_snap.get('ok'))
+                    snap['characters'] = list(char_snap.get('characters', ()))
+                    snap['character_msg'] = char_snap.get('msg', '')
+                    snap['character_frame_ms'] = char_snap.get('frame_ms', 0.0)
                 self._append_detail(snap)
+                self._append_character_detail(snap)
                 self.snapshot.emit(snap)
                 dt = time.time() - t0
                 wait = max(0.001, self.interval - dt)
@@ -1206,6 +1469,9 @@ class CoachWindow(QMainWindow):
 
         # 敌人数据
         self._enemy_reader = EnemyReader(log=_tlog)   # 测试版日志进控制台, 正式版空操作
+        # 干员与敌人共用 BattleController、UnitManager、MemCore 和高速 TCP 通道，
+        # 不再进行第二次全内存定位。
+        self._character_reader = CharacterReader(self._enemy_reader)
         self._enemy_scan: EnemyScanWorker | None = None
         self._enemy_poll: EnemyPollWorker | None = None
         self._enemy_last_render = 0.0
@@ -1226,6 +1492,19 @@ class CoachWindow(QMainWindow):
         self._mini_hotkey_timer.start()
         self._enemy_visible_cols = load_visible_columns(
             self._settings, 'enemy_table/visible_columns')
+        self._character_last_render = 0.0
+        self._character_frame_status_ts = 0.0
+        self._character_frame_ms_sum = 0.0
+        self._character_frame_ms_count = 0
+        self._character_rows: dict[int, int] = {}
+        self._character_bar_colors: dict[int, str] = {}
+        self._character_skill_lines: dict[int, int] = {}
+        self._character_dec = default_character_precision()
+        self._character_last: list = []
+        self._character_detail_dialog: CharacterDetailDialog | None = None
+        self._character_visible_cols = load_character_columns(
+            self._settings, 'character_table/visible_columns')
+        self._character_widths_fitted = False
         self._frame_txt: str = ''      # ms/帧 显示 (0.5s 节流, 避免高频抖动)
         self._frame_ts: float = 0.0
         self._widths_fitted: bool = False   # 首次有数据时已做过列宽自适应
@@ -1284,6 +1563,8 @@ class CoachWindow(QMainWindow):
         page = QWidget()
         self.page_scroll.setWidget(page)
         main = QVBoxLayout(page)
+        self._page_widget = page
+        self._page_layout = main
         main.setContentsMargins(10, 10, 10, 10)
         main.setSpacing(8)
 
@@ -1313,8 +1594,10 @@ class CoachWindow(QMainWindow):
         sub.setProperty('role', 'muted')
         main.addWidget(sub)
 
-        box_cfg = QGroupBox("内存寻址（tools/timer）")
-        l_cfg = QHBoxLayout(box_cfg)
+        box_cfg = CollapsibleGroupBox("内存寻址（tools/timer）")
+        self.box_cfg = box_cfg
+        l_cfg = QHBoxLayout()
+        box_cfg.setContentLayout(l_cfg)
         btn_tool = QPushButton("打开寻址工具")
         btn_tool.clicked.connect(self._on_open_timer_tool)
         btn_refresh = QPushButton("刷新游戏状态")
@@ -1326,8 +1609,10 @@ class CoachWindow(QMainWindow):
         main.addWidget(box_cfg)
 
         # ---- 游戏时间 & 逻辑帧 (左) + 全局操作记录 (右) ----
-        box_game = QGroupBox("游戏状态 / 操作记录（tools/deploy_tracker）")
-        l_game = QHBoxLayout(box_game)
+        box_game = CollapsibleGroupBox("游戏状态 / 操作记录（tools/deploy_tracker）")
+        self.box_game = box_game
+        l_game = QHBoxLayout()
+        box_game.setContentLayout(l_game)
         l_game.setContentsMargins(4, 4, 4, 4)
         l_game.setSpacing(10)
 
@@ -1414,8 +1699,10 @@ class CoachWindow(QMainWindow):
         main.addWidget(box_game)
 
         # ---- 敌人数据控制 ----
-        box_enemy = QGroupBox("敌人数据（tools/enemy_health）")
-        l_enemy = QVBoxLayout(box_enemy)
+        box_enemy = CollapsibleGroupBox("敌人数据（tools/enemy_health）")
+        self.box_enemy = box_enemy
+        l_enemy = QVBoxLayout()
+        box_enemy.setContentLayout(l_enemy)
         row_btn = QHBoxLayout()
         self.btn_enemy_scan = QPushButton("开始扫描")
         self.btn_enemy_scan.setToolTip(
@@ -1463,6 +1750,14 @@ class CoachWindow(QMainWindow):
         row_btn.addWidget(self.btn_enemy_mini)
         row_btn.addWidget(self.chk_enemy_hide_departed)
         row_btn.addWidget(self.enemy_progress, 1)
+        self.lbl_enemy_compact_game = QLabel("游戏时间：—\n逻辑帧：—")
+        self.lbl_enemy_compact_game.setObjectName('EnemyCompactGameStatus')
+        self.lbl_enemy_compact_game.setProperty('role', 'muted')
+        self.lbl_enemy_compact_game.setMinimumWidth(145)
+        self.lbl_enemy_compact_game.setAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self.lbl_enemy_compact_game.hide()
+        row_btn.addWidget(self.lbl_enemy_compact_game)
         l_enemy.addLayout(row_btn)
         self.lbl_enemy_status = QLabel("未开始扫描")
         self.lbl_enemy_status.setProperty('role', 'muted')
@@ -1470,9 +1765,13 @@ class CoachWindow(QMainWindow):
         main.addWidget(box_enemy)
 
         # ---- 底部: 敌人信息表 ----
-        box_table = QGroupBox("敌人信息")
-        l_table = QVBoxLayout(box_table)
+        box_table = CollapsibleGroupBox("敌人信息")
+        self.box_table = box_table
+        box_table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        l_table = QVBoxLayout()
+        box_table.setContentLayout(l_table)
         self._enemy_table_box = box_table
+        self._enemy_table_host = box_table.content_widget
         self._enemy_table_layout = l_table
         self.enemy_table = QTableWidget(0, len(ENEMY_COLS))
         self.enemy_table.setHorizontalHeaderLabels(ENEMY_COLS)
@@ -1480,6 +1779,8 @@ class CoachWindow(QMainWindow):
         self.enemy_table.setSelectionMode(QTableWidget.NoSelection)
         self.enemy_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.enemy_table.setAlternatingRowColors(True)
+        self.enemy_table.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         hdr = self.enemy_table.horizontalHeader()
         hdr.setSectionResizeMode(QHeaderView.Interactive)   # 所有列宽均可拖动调整
         hdr.setStretchLastSection(False)  # 隐藏列会使“末列拉伸”失效；由智能布局分配全部空间
@@ -1490,9 +1791,75 @@ class CoachWindow(QMainWindow):
         l_table.addWidget(self.enemy_table)
         main.addWidget(box_table, 1)
 
+        # ---- 场上干员 / 召唤物（与敌人共用定位和高速读取通道） ----
+        box_character = CollapsibleGroupBox("干员数据（tools/character_status）")
+        self.box_character = box_character
+        l_character = QVBoxLayout()
+        box_character.setContentLayout(l_character)
+        row_character = QHBoxLayout()
+        self.btn_character_scan = QPushButton("扫描干员")
+        self.btn_character_scan.setToolTip(
+            "复用敌人扫描得到的 BattleController/UnitManager，不会再次全量扫描内存")
+        self.btn_character_scan.clicked.connect(self._on_character_scan)
+        self._style_primary_button(self.btn_character_scan)
+        self.btn_character_stop = QPushButton("停止监控")
+        self.btn_character_stop.setEnabled(False)
+        self.btn_character_stop.clicked.connect(self._stop_enemy_poll)
+        self._style_muted_button(self.btn_character_stop)
+        self.btn_character_precision = QPushButton("小数位设置")
+        self.btn_character_precision.clicked.connect(self._on_character_precision)
+        self._style_muted_button(self.btn_character_precision)
+        self.btn_character_columns = QPushButton("显示列")
+        self.btn_character_columns.clicked.connect(self._on_character_columns)
+        self._style_muted_button(self.btn_character_columns)
+        self.btn_character_fit = QPushButton("列宽自适应")
+        self.btn_character_fit.clicked.connect(self._fit_character_columns)
+        self._style_muted_button(self.btn_character_fit)
+        self.chk_character_tokens = QCheckBox("显示召唤物/装置")
+        self.chk_character_tokens.setChecked(True)
+        self.chk_character_tokens.setToolTip(
+            "取消后只显示普通干员；友方召唤物和可部署装置仍可在详情中单独识别")
+        self.chk_character_tokens.toggled.connect(self._on_character_filter)
+        for widget in (
+                self.btn_character_scan, self.btn_character_stop,
+                self.btn_character_precision, self.btn_character_columns,
+                self.btn_character_fit, self.chk_character_tokens):
+            row_character.addWidget(widget)
+        self.lbl_character_status = QLabel("未开始扫描")
+        self.lbl_character_status.setProperty('role', 'muted')
+        row_character.addWidget(self.lbl_character_status, 1)
+        l_character.addLayout(row_character)
+        main.addWidget(box_character)
+
+        box_character_table = CollapsibleGroupBox("干员信息")
+        self.box_character_table = box_character_table
+        box_character_table.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        l_character_table = QVBoxLayout()
+        box_character_table.setContentLayout(l_character_table)
+        self.character_table = QTableWidget(0, len(CHARACTER_COLS))
+        self.character_table.setHorizontalHeaderLabels(CHARACTER_COLS)
+        self.character_table.verticalHeader().setVisible(False)
+        self.character_table.setSelectionMode(QTableWidget.NoSelection)
+        self.character_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.character_table.setAlternatingRowColors(True)
+        self.character_table.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        character_header = self.character_table.horizontalHeader()
+        character_header.setSectionResizeMode(QHeaderView.Interactive)
+        character_header.setStretchLastSection(False)
+        character_header.setMinimumSectionSize(28)
+        for idx, width in enumerate(CHARACTER_COL_WIDTHS):
+            self.character_table.setColumnWidth(idx, width)
+        self._apply_character_column_visibility()
+        l_character_table.addWidget(self.character_table)
+        main.addWidget(box_character_table, 1)
+
         # ---- 随机数追踪 (tools/ak_live_rng) ----
-        box_rng = QGroupBox("随机数追踪（tools/ak_live_rng）")
-        l_rng = QVBoxLayout(box_rng)
+        box_rng = CollapsibleGroupBox("随机数追踪（tools/ak_live_rng）")
+        self.box_rng = box_rng
+        l_rng = QVBoxLayout()
+        box_rng.setContentLayout(l_rng)
         row_rng = QHBoxLayout()
         self.btn_rng_scan = QPushButton("扫描随机数")
         self.btn_rng_scan.setToolTip(
@@ -1559,7 +1926,32 @@ class CoachWindow(QMainWindow):
             self.lbl_rng_status.setText("模块缺失 (tools/ak_live_rng)")
         main.addWidget(box_rng)
 
+        self._collapsible_sections = {
+            'timer': box_cfg,
+            'game': box_game,
+            'enemy': box_enemy,
+            'enemy_table': box_table,
+            'character': box_character,
+            'character_table': box_character_table,
+            'rng': box_rng,
+        }
+        box_game.collapsedChanged.connect(self._on_game_section_collapsed)
+        box_table.floatingChanged.connect(
+            lambda _floating: QTimer.singleShot(0, self._fit_enemy_columns))
+        box_character_table.floatingChanged.connect(
+            lambda _floating: QTimer.singleShot(0, self._fit_character_columns))
+
         self._apply_theme(self._theme_dark, force=True)
+
+    def _on_game_section_collapsed(self, collapsed: bool) -> None:
+        """游戏状态隐藏时，把关键时间信息迁移到敌人控制栏。"""
+        self.lbl_enemy_compact_game.setVisible(collapsed)
+        self._page_layout.invalidate()
+        self._page_widget.updateGeometry()
+
+    def _module_dialog_parent(self, section: CollapsibleGroupBox) -> QWidget:
+        """让模块内弹出的设置/详情窗口跟随对应浮窗，避免被主窗口遮挡。"""
+        return section._float_window or self
 
     def _style_primary_button(self, btn: QPushButton) -> None:
         btn.setMinimumHeight(34)
@@ -1760,6 +2152,8 @@ class CoachWindow(QMainWindow):
             self._enemy_mini._restoring = True
             self._enemy_mini.close()
             self._enemy_mini = None
+        for section in getattr(self, '_collapsible_sections', {}).values():
+            section.dock_content()
         self._stop_enemy_poll()
         self._enemy_reader.close()
         self._stop_deploy_poll()
@@ -1858,10 +2252,14 @@ class CoachWindow(QMainWindow):
         self._enemy_reader.close()
         self._enemy_reader = EnemyReader(
             adb_path=path, adb_serial=serial, log=_tlog)
+        self._character_reader = CharacterReader(self._enemy_reader)
 
         if self._enemy_detail_dialog is not None:
             self._enemy_detail_dialog.close()
             self._enemy_detail_dialog = None
+        if self._character_detail_dialog is not None:
+            self._character_detail_dialog.close()
+            self._character_detail_dialog = None
         self.enemy_table.setRowCount(0)
         self._enemy_last.clear()
         self._enemy_rows.clear()
@@ -1873,6 +2271,13 @@ class CoachWindow(QMainWindow):
         self.enemy_progress.setFormat('等待扫描')
         self.btn_enemy_scan.setText('开始扫描')
         self.lbl_enemy_status.setText('ADB 已切换，请重新扫描')
+        self.character_table.setRowCount(0)
+        self._character_last.clear()
+        self._character_rows.clear()
+        self._character_bar_colors.clear()
+        self._character_skill_lines.clear()
+        self.btn_character_scan.setText('扫描干员')
+        self.lbl_character_status.setText('ADB 已切换，请重新扫描')
 
         self.rng_pred_table.setRowCount(0)
         self.rng_hist_table.setRowCount(0)
@@ -1955,7 +2360,7 @@ class CoachWindow(QMainWindow):
         layout = mini.layout()
         if layout is not None:
             layout.removeWidget(self.enemy_table)
-        self.enemy_table.setParent(self._enemy_table_box)
+        self.enemy_table.setParent(self._enemy_table_host)
         self._enemy_table_layout.addWidget(self.enemy_table)
         self._enemy_mini = None
         mini.close()
@@ -1992,7 +2397,16 @@ class CoachWindow(QMainWindow):
         self._enemy_row_spawn_wait.clear()
         self._bar_colors.clear()
         self._skill_lines.clear()
+        self.character_table.setRowCount(0)
+        self._character_last.clear()
+        self._character_rows.clear()
+        self._character_bar_colors.clear()
+        self._character_skill_lines.clear()
+        self._character_frame_ms_sum = 0.0
+        self._character_frame_ms_count = 0
         self.btn_enemy_scan.setEnabled(False)
+        self.btn_character_scan.setEnabled(False)
+        self.lbl_character_status.setText('等待共享定位完成 ...')
         self.enemy_progress.setValue(0)
         self.enemy_progress.setFormat('开始定位关卡与出怪序列 ... %p%')
         self._enemy_scan = EnemyScanWorker(self._enemy_reader, force=True)
@@ -2013,21 +2427,35 @@ class CoachWindow(QMainWindow):
     def _on_enemy_scan_done(self, ok: bool, msg: str) -> None:
         self.lbl_enemy_status.setText(msg)
         self.btn_enemy_scan.setEnabled(True)
+        self.btn_character_scan.setEnabled(True)
         self.btn_enemy_scan.setText('重新扫描')
         if ok:
             self.enemy_progress.setValue(100)
             self.enemy_progress.setFormat('就绪')
+            char_ok = self._character_reader.bootstrap()
+            self.btn_character_scan.setText('重新扫描')
+            self.lbl_character_status.setText(
+                '共享定位完成，准备读取场上干员' if char_ok
+                else '共享定位完成，正在等待干员容器可读')
             self._start_enemy_poll()
         else:
             self.enemy_progress.setFormat('定位失败')
+            self.lbl_character_status.setText('共享定位失败')
+
+    def _on_character_scan(self) -> None:
+        """干员读取复用敌人定位；按钮用于首次定位或强制刷新整条共享链。"""
+        self._on_enemy_scan()
 
     def _start_enemy_poll(self) -> None:
         self._stop_enemy_poll()
-        self._enemy_poll = EnemyPollWorker(self._enemy_reader)
+        self._enemy_poll = EnemyPollWorker(
+            self._enemy_reader, self._character_reader)
         self._enemy_poll.snapshot.connect(self._on_enemy_snapshot)
         self._enemy_poll.start()
         self.btn_enemy_stop.setEnabled(True)
+        self.btn_character_stop.setEnabled(True)
         self.lbl_enemy_status.setText('实时监控中 ...')
+        self.lbl_character_status.setText('实时监控中 ...')
 
     def _stop_enemy_poll(self) -> None:
         if self._enemy_poll:
@@ -2035,6 +2463,8 @@ class CoachWindow(QMainWindow):
             self._enemy_poll.wait(3000)
             self._enemy_poll = None
         self.btn_enemy_stop.setEnabled(False)
+        if hasattr(self, 'btn_character_stop'):
+            self.btn_character_stop.setEnabled(False)
 
     # ================= 随机数追踪 (ak_live_rng) =================
 
@@ -2380,6 +2810,18 @@ class CoachWindow(QMainWindow):
                 detail_dialog.update_enemy(detail_enemy)
             elif snap.get('detail_error'):
                 detail_dialog.set_live_error(snap['detail_error'])
+        character_dialog = self._character_detail_dialog
+        if character_dialog is not None and 'detail_character' in snap:
+            detail_character = snap.get('detail_character')
+            if (detail_character is not None
+                    and detail_character.addr == character_dialog.character.addr):
+                character_dialog.update_character(detail_character)
+                if snap.get('character_detail_loading'):
+                    character_dialog.live_status.setText(
+                        '动态数据实时更新中，正在首次读取完整 Buff / 天赋详情 ...')
+                    character_dialog.live_status.setStyleSheet('color:#888888;')
+            elif snap.get('character_detail_error'):
+                character_dialog.set_live_error(snap['character_detail_error'])
         st = ENEMY_STATE_NAMES.get(snap['state'], '?') if snap['state'] >= 0 else '-'
         spd = enemy_gs.SpeedLevel.NAMES.get(snap['speed_level'], '?') if snap['speed_level'] >= 0 else '-'
         t = int(snap['play_time'])
@@ -2393,13 +2835,38 @@ class CoachWindow(QMainWindow):
         total_text = f"场上敌人: {on_field}"
         if planned:
             total_text += f" / 预定: {planned}"
-        text = (f"状态: {st}   倍速: {spd} (x{snap['time_scale']:g})   "
+        read_mode = _format_enemy_read_mode(snap)
+        text = (f"读取: {read_mode}   状态: {st}   倍速: {spd} (x{snap['time_scale']:g})   "
                 f"战斗时间: {t // 60:02d}:{t % 60:02d}   {total_text}"
                 + self._frame_txt)
         if snap.get('msg'):
             text += f"   ({snap['msg']})"
         self.lbl_enemy_status.setText(text)
         self._render_enemy_table(snap['enemies'])
+        characters = list(snap.get('characters', ()))
+        if snap.get('character_ok'):
+            char_ms = float(snap.get('character_frame_ms', 0.0) or 0.0)
+            if char_ms > 0:
+                self._character_frame_ms_sum += char_ms
+                self._character_frame_ms_count += 1
+            # 帧耗时本身会随每批读取轻微抖动，只按 0.5 秒采样更新标签；
+            # 表格中的生命、技力和伤害统计仍保持原本的高频刷新。
+            if now - self._character_frame_status_ts >= 0.5:
+                self._character_frame_status_ts = now
+                ordinary = sum(not character.is_token for character in characters)
+                tokens = len(characters) - ordinary
+                average_ms = (self._character_frame_ms_sum
+                              / self._character_frame_ms_count
+                              if self._character_frame_ms_count else 0.0)
+                self._character_frame_ms_sum = 0.0
+                self._character_frame_ms_count = 0
+                self.lbl_character_status.setText(
+                    f'实时监控中  干员 {ordinary} / 召唤物与装置 {tokens}'
+                    + (f'  {average_ms:.1f}ms/帧' if average_ms else ''))
+            self._render_character_table(characters)
+        else:
+            self.lbl_character_status.setText(
+                snap.get('character_msg') or '干员容器暂不可读')
 
     def _render_enemy_table(self, enemies) -> None:
         self._enemy_last = enemies
@@ -2486,7 +2953,8 @@ class CoachWindow(QMainWindow):
 
     def _on_enemy_precision(self) -> None:
         dlg = EnemyPrecisionDialog(
-            self, self._enemy_dec, self._enemy_visible_cols)
+            self._module_dialog_parent(self.box_enemy),
+            self._enemy_dec, self._enemy_visible_cols)
         if dlg.exec() == QDialog.Accepted:
             self._enemy_dec.update(dlg.values())
             self._widths_fitted = False
@@ -2618,7 +3086,8 @@ class CoachWindow(QMainWindow):
         self._widths_fitted = True
 
     def _on_enemy_columns(self) -> None:
-        dlg = EnemyColumnDialog(self, self._enemy_visible_cols)
+        dlg = EnemyColumnDialog(
+            self._module_dialog_parent(self.box_enemy), self._enemy_visible_cols)
         if dlg.exec() != QDialog.Accepted:
             return
         self._enemy_visible_cols = dlg.values()
@@ -2651,7 +3120,8 @@ class CoachWindow(QMainWindow):
             QMessageBox.information(self, '敌人详情', '该敌人已退场或对象已失效。')
             return
         mini = self._enemy_mini
-        dialog = EnemyDetailDialog(mini or self, enemy)
+        dialog = EnemyDetailDialog(
+            mini or self._module_dialog_parent(self.box_table), enemy)
         self._enemy_detail_dialog = dialog
         poll = self._enemy_poll
         lifecycle = getattr(enemy, 'lifecycle', 'active')
@@ -2757,13 +3227,228 @@ class CoachWindow(QMainWindow):
             self._skill_lines[row_key] = n_lines
             tbl.resizeRowToContents(row)
 
+    # ================= 场上干员数据 =================
+
+    def _filtered_characters(self, characters):
+        if self.chk_character_tokens.isChecked():
+            return list(characters)
+        return [character for character in characters if not character.is_token]
+
+    def _render_character_table(self, characters) -> None:
+        self._character_last = list(characters)
+        characters = self._filtered_characters(characters)
+        tbl = self.character_table
+        desired = [character.addr for character in characters]
+        current = [
+            tbl.item(row, CHARACTER_COLUMN_INDEX['row']).data(Qt.UserRole)
+            for row in range(tbl.rowCount())
+            if tbl.item(row, CHARACTER_COLUMN_INDEX['row']) is not None
+        ]
+        if current != desired:
+            tbl.setRowCount(0)
+            self._character_rows.clear()
+            self._character_bar_colors.clear()
+            self._character_skill_lines.clear()
+        fit_after = bool(characters and not self._character_widths_fitted)
+        tbl.setUpdatesEnabled(False)
+        try:
+            for row, character in enumerate(characters):
+                if row >= tbl.rowCount():
+                    tbl.insertRow(row)
+                    self._make_character_row(row, character.addr)
+                self._character_rows[character.addr] = row
+                self._update_character_row(row, character)
+            while tbl.rowCount() > len(characters):
+                tbl.removeRow(tbl.rowCount() - 1)
+        finally:
+            tbl.setUpdatesEnabled(True)
+        if fit_after:
+            self._fit_character_columns()
+
+    def _make_character_row(self, row: int, addr: int) -> None:
+        tbl = self.character_table
+        hp_col = CHARACTER_COLUMN_INDEX['hp']
+        sp_col = CHARACTER_COLUMN_INDEX['sp']
+        detail_col = CHARACTER_COLUMN_INDEX['detail']
+        for column in range(len(CHARACTER_COLS)):
+            if column not in (hp_col, sp_col, detail_col):
+                item = QTableWidgetItem()
+                item.setTextAlignment(Qt.AlignCenter)
+                tbl.setItem(row, column, item)
+        tbl.item(row, CHARACTER_COLUMN_INDEX['row']).setData(Qt.UserRole, addr)
+        for key in ('name', 'cid', 'abnormal_status', 'skill'):
+            item = tbl.item(row, CHARACTER_COLUMN_INDEX[key])
+            if item is not None:
+                item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        hp_bar = QProgressBar()
+        hp_bar.setTextVisible(True)
+        tbl.setCellWidget(row, hp_col, hp_bar)
+        sp_bar = QProgressBar()
+        sp_bar.setTextVisible(True)
+        tbl.setCellWidget(row, sp_col, sp_bar)
+        detail = QPushButton('详情')
+        detail.setToolTip('显示该干员/召唤物的完整属性、状态、技能、Buff、天赋与元素损伤')
+        detail.clicked.connect(
+            lambda _checked=False, target=addr: self._open_character_detail(target))
+        tbl.setCellWidget(row, detail_col, detail)
+
+    def _update_character_row(self, row: int, character) -> None:
+        tbl = self.character_table
+        decimals = self._character_dec
+
+        for col in CHARACTER_COLUMN_DEFS:
+            key = col['key']
+            if key in ('hp', 'sp', 'detail'):
+                continue
+            item = tbl.item(row, CHARACTER_COLUMN_INDEX[key])
+            if item is None:
+                continue
+            text = str(format_character_column(key, character, decimals, row))
+            item.setText(text)
+            item.setToolTip(text)
+
+        hp_bar = tbl.cellWidget(row, CHARACTER_COLUMN_INDEX['hp'])
+        hp_max = max(1, int(character.max_hp))
+        hp_bar.setMaximum(hp_max)
+        hp_bar.setValue(max(0, min(hp_max, int(character.hp))))
+        hp_bar.setFormat(
+            f'{character.hp:.{decimals["hp"]}f}/{character.max_hp:.{decimals["hp"]}f}')
+        hp_ratio = character.hp / character.max_hp if character.max_hp > 0 else 0
+        color = '#5cb85c' if hp_ratio > 0.5 else ('#f0ad4e' if hp_ratio > 0.2 else '#d9534f')
+        if not character.alive:
+            color = '#888888'
+        if self._character_bar_colors.get(character.addr) != color:
+            self._character_bar_colors[character.addr] = color
+            hp_bar.setStyleSheet(
+                f'QProgressBar::chunk {{ background-color: {color}; }}')
+
+        sp_bar = tbl.cellWidget(row, CHARACTER_COLUMN_INDEX['sp'])
+        sp_max = max(1, int(character.max_sp))
+        sp_bar.setMaximum(sp_max)
+        sp_bar.setValue(max(0, min(sp_max, int(character.sp))))
+        sp_bar.setFormat(
+            f'{character.sp:.{decimals["sp"]}f}/{character.max_sp}')
+        sp_bar.setStyleSheet(
+            'QProgressBar::chunk { background-color: #4ca3dd; }')
+
+        skill_text = format_character_column(
+            'skill', character, decimals, row)
+        lines = skill_text.count('\n')
+        if self._character_skill_lines.get(character.addr) != lines:
+            self._character_skill_lines[character.addr] = lines
+            tbl.resizeRowToContents(row)
+
+    def _on_character_filter(self, _checked: bool) -> None:
+        self.character_table.setRowCount(0)
+        self._character_rows.clear()
+        self._character_bar_colors.clear()
+        self._character_skill_lines.clear()
+        self._render_character_table(self._character_last)
+
+    def _on_character_precision(self) -> None:
+        dialog = CharacterPrecisionDialog(
+            self._module_dialog_parent(self.box_character),
+            self._character_dec, self._character_visible_cols)
+        if dialog.exec() == QDialog.Accepted:
+            self._character_dec.update(dialog.values())
+            self._character_widths_fitted = False
+            self._render_character_table(self._character_last)
+
+    def _apply_character_column_visibility(self) -> None:
+        if not hasattr(self, 'character_table'):
+            return
+        for idx, col in enumerate(CHARACTER_COLUMN_DEFS):
+            self.character_table.setColumnHidden(
+                idx, col['key'] not in self._character_visible_cols)
+
+    def _on_character_columns(self) -> None:
+        dialog = CharacterColumnDialog(
+            self._module_dialog_parent(self.box_character),
+            self._character_visible_cols)
+        if dialog.exec() != QDialog.Accepted:
+            return
+        self._character_visible_cols = dialog.values()
+        save_character_columns(
+            self._settings, 'character_table/visible_columns',
+            self._character_visible_cols)
+        self._apply_character_column_visibility()
+        self._character_widths_fitted = False
+        self._render_character_table(self._character_last)
+        if not self._character_last:
+            self._fit_character_columns()
+
+    def _fit_character_columns(self) -> None:
+        if not hasattr(self, 'character_table'):
+            return
+        tbl = self.character_table
+        visible = [idx for idx, col in enumerate(CHARACTER_COLUMN_DEFS)
+                   if (col['key'] in self._character_visible_cols
+                       and not tbl.isColumnHidden(idx))]
+        if not visible:
+            return
+        tbl.resizeColumnsToContents()
+        minimums = {
+            'row': 38, 'name': 80, 'kind': 72, 'cid': 105, 'profession': 62,
+            'level': 72, 'hp': 180, 'sp': 125, 'pos': 70,
+            'action_state': 72, 'abnormal_status': 90, 'skill': 145,
+            'detail': 62,
+        }
+        maximums = {
+            'name': 200, 'cid': 230, 'abnormal_status': 230, 'skill': 285,
+            'hp': 245, 'sp': 180,
+        }
+        widths = {}
+        for idx in visible:
+            key = CHARACTER_COLUMN_DEFS[idx]['key']
+            widths[idx] = max(
+                minimums.get(key, 58),
+                min(tbl.columnWidth(idx) + 8, maximums.get(key, 150)))
+        viewport = max(100, tbl.viewport().width() - 2)
+        total = sum(widths.values())
+        if total < viewport:
+            expanding = [idx for idx in visible
+                         if CHARACTER_COLUMN_DEFS[idx]['key'] in (
+                             'name', 'cid', 'abnormal_status', 'skill')]
+            expanding = expanding or [visible[-1]]
+            each, remainder = divmod(viewport - total, len(expanding))
+            for pos, idx in enumerate(expanding):
+                widths[idx] += each + (1 if pos < remainder else 0)
+        for idx, width in widths.items():
+            tbl.setColumnWidth(idx, width)
+        self._character_widths_fitted = True
+
+    def _open_character_detail(self, addr: int) -> None:
+        character = next(
+            (item for item in self._character_last if item.addr == addr), None)
+        if character is None:
+            QMessageBox.information(
+                self, '干员详情', '该干员已离场或对象已失效。')
+            return
+        dialog = CharacterDetailDialog(
+            self._module_dialog_parent(self.box_character_table), character)
+        self._character_detail_dialog = dialog
+        poll = self._enemy_poll
+        if poll is not None:
+            poll.set_character_detail_target(addr)
+        try:
+            dialog.exec()
+        finally:
+            if poll is self._enemy_poll:
+                poll.set_character_detail_target(0)
+            if self._character_detail_dialog is dialog:
+                self._character_detail_dialog = None
+
     # ================= 定时刷新 =================
 
     def _tick_fast(self) -> None:
         game = self._provider.get_game_data()
-        self.lbl_game_time_big.setText(_format_game_time(game.get("game_time")))
+        game_time = _format_game_time(game.get("game_time"))
+        self.lbl_game_time_big.setText(game_time)
         fc = game.get("frame_count")
-        self.lbl_frame_big.setText(f"F{int(fc)}" if fc is not None else "—")
+        frame = f"F{int(fc)}" if fc is not None else "—"
+        self.lbl_frame_big.setText(frame)
+        self.lbl_enemy_compact_game.setText(
+            f"游戏时间：{game_time}\n逻辑帧：{frame}")
 
     def _tick_slow(self) -> None:
         game = self._provider.get_game_data()

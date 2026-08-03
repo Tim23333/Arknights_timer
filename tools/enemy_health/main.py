@@ -48,7 +48,11 @@ def render(snap, reader, show_desc=False):
     lines = []
     st = STATE_NAMES.get(snap['state'], f"?({snap['state']})") if snap['state'] >= 0 else '未知'
     spd = gs.SpeedLevel.NAMES.get(snap['speed_level'], '?') if snap['speed_level'] >= 0 else '?'
-    lines.append(f"状态: {st}   倍速: {spd} (x{snap['time_scale']:g})   "
+    if snap.get('read_mode') == 'fast':
+        channel = '高速/memsrv' if snap.get('read_backend') == 'srv' else '高速/TCP'
+    else:
+        channel = '慢速/ADB'
+    lines.append(f"通道: {channel}   状态: {st}   倍速: {spd} (x{snap['time_scale']:g})   "
                  f"战斗时间: {fmt_time(snap['play_time'])}   敌人数: {len(snap['enemies'])}"
                  + (f"   {snap['frame_ms']:.0f}ms/帧" if snap.get('frame_ms') else ''))
     lines.append('')

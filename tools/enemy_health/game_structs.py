@@ -132,6 +132,252 @@ class EntityFields:
 
 
 # ============================================================
+# Unit / Character（友方干员与召唤物）[2026-08-03 现网实测]
+# ============================================================
+class UnitFields:
+    CURRENT_MODE = 0x200          # UnitMode*
+    OVERRIDE_ATTACK = 0x208       # Ability*
+    OVERRIDE_COMBAT = 0x218       # Ability*
+    TALENTS = 0x270               # BasicTalent[]
+    DYNAMIC_ABILITIES = 0x278     # List<Ability>
+    SP_SHOWN_BUFF = 0x280         # Buff*
+    ATTACK_RANGE_TILES = 0x2A0    # List<Tile>
+
+
+class CharacterFields:
+    CREATED_TIME = 0x390          # FP
+    DEAD_TIME = 0x398             # FP
+    ROOT_TILE = 0x3A8             # Tile*
+    BLOCKED_ENEMY_MANAGER = 0x3B0 # Character.BlockedEnemyManager*
+    BLOCK_RADIUS_MANAGER = 0x3B8  # Character.BlockRadiusManager*
+    SKILL = 0x3D8                 # BasicSkill*
+    SKILL_DATA = 0x3E0            # SkillData*
+    MAX_ES_RATIO = 0x440          # FP
+    CURRENT_SKIN = 0x458          # CharSkinData*
+    DECK_BUFF_DATA = 0x460        # object*
+    DECK_BUFF_BLACKBOARD = 0x468  # Blackboard*
+    DEPLOY_COST_THIS_TIME = 0x504 # int32
+    CARD_UID = 0x520              # uint32
+    DATA = 0x530                  # BattleCharacterData*
+    READ_SIZE = 0x548
+
+
+class BlockedEnemyManagerFields:
+    TOTAL_VOLUME = 0x10           # int32
+    BLOCKED_ENEMIES = 0x18        # List<Enemy>*
+
+
+class TileFields:
+    GRAPHIC = 0x30                # TileGraphic*
+    DATA = 0x70                   # TileData*
+
+
+class TileGraphicFields:
+    GRID_ROW = 0x20               # GridPosition.row
+    GRID_COL = 0x24               # GridPosition.col
+
+
+class BattleCharacterDataFields:
+    ID = 0x10
+    ALIAS = 0x18
+    TMPL_ID = 0x20
+    NAME_CN = 0x28
+    NAME_EN = 0x30
+    ATTRIBUTES = 0x38
+    LEVEL = 0x40
+    EVOLVE_PHASE = 0x44
+    POTENTIAL_RANK = 0x48
+    FAVOR_BATTLE_PHASE = 0x4C
+    PREFAB_KEY = 0x50
+    RANGE_ID = 0x58
+    UNIQUE_ID = 0x6C
+    PROFESSION = 0x70
+    SUB_PROFESSION_DATA = 0x78
+    RARITY = 0x80
+    DEPLOY_POSITION = 0x84
+    TEAM_KEY = 0x88
+    IS_TOKEN = 0x90
+    IS_PREDEFINED = 0x91
+    IS_HIDDEN = 0x92
+    IS_ASSIST = 0x93
+    TOKEN_OR_HOST_KEY = 0x98
+    TOKEN_OR_HOST_UID = 0xA0
+    TOKEN_INITIAL_COUNT = 0xA4
+    MAIN_SKILL_INDEX = 0x100
+    MAIN_SKILL = 0x108
+    TALENTS = 0x110
+    TRAIT = 0x118
+    UNI_EQUIP_QUERIES = 0x120
+    UNI_EQUIPS = 0x128
+    UNI_EQUIP_SETTINGS = 0x130
+    NATION_ID = 0x138
+    GROUP_ID = 0x140
+    TEAM_ID = 0x148
+    SUB_POWER = 0x150
+    SHARED = 0x158
+    RUNTIME_DATA = 0x178
+    READ_SIZE = 0x180
+
+
+class BattleLoggerFields:
+    LOGS = 0x20
+    SQUAD = 0x28
+    STATS = 0x30
+    READ_SIZE = 0x40
+
+
+class BattleStatsFields:
+    CHAR_ADVANCED_STATS = 0x30
+    TOTAL_HEAL = 0xB8
+    TOTAL_DAMAGE = 0xBC
+    READ_SIZE = 0xC0
+
+
+class CharAdvancedStatsFields:
+    OUTPUT_DAMAGE_RANGE = 0x10       # Vector2，伤害以负 HP 变化记录
+    INPUT_DAMAGE_RANGE = 0x18
+    OUTPUT_DAMAGE_TOTAL = 0x20       # float，伤害通常为负数
+    OUTPUT_ELEMENT_DAMAGE_TOTAL = 0x28  # List<float>，不含 NONE，共 5 项
+    OUTPUT_EP_BREAK_COUNT = 0x30        # List<int>，不含 NONE，共 5 项
+    OUTPUT_DAMAGE_BY_TYPE_TOTAL = 0x38  # List<float>，DamageType 0..5
+    SNAPSHOTS = 0x40
+    READ_SIZE = 0x48
+
+
+class DamageType:
+    NONE = 0
+    PHYSICAL = 1
+    MAGICAL = 2
+    PURE = 3
+    HEAL = 4
+    ELEMENT = 5
+    E_NUM = 6
+
+
+DAMAGE_TYPE_NAMES = {
+    DamageType.NONE: '无', DamageType.PHYSICAL: '物理伤害',
+    DamageType.MAGICAL: '法术伤害', DamageType.PURE: '真实伤害',
+    DamageType.HEAL: '治疗量', DamageType.ELEMENT: '元素伤害',
+}
+
+
+class BasicSkillFields:
+    TRIGGER_COUNT = 0x90
+    RANGE_ID_MODE_INDEX = 0x94
+    WAIT_FOR_SKILL_END = 0x98
+    IS_EARLY_FINISHED = 0x99
+    IS_OVERLOADED = 0x9A
+    COST_MIN_SP = 0x9C
+    OWNER = 0xA8
+    DATA = 0xB0
+    ATTACK_BLACKBOARD = 0xB8
+    ABILITY = 0xC0
+    MAX_TRIGGER_TIME = 0xCC
+    BEHAVIOURS = 0xD8
+    CHANT_BEHAVIOUR = 0xE0
+    CACHED_OPERATION_SIDE = 0x110
+    BLACKBOARD = 0x118
+    READ_SIZE = 0x120
+
+
+class SkillDataFields:
+    NAME = 0x10
+    SKILL_ID = 0x18
+    RANGE_ID = 0x20
+    ICON_ID = 0x28
+    LEVEL = 0x30
+    DESCRIPTION = 0x38
+    SKILL_TYPE = 0x40
+    DURATION_TYPE = 0x44
+    SP_DATA = 0x48
+    PREFAB_KEY = 0x50
+    DURATION = 0x58
+    BLACKBOARD = 0x60
+    READ_SIZE = 0x70
+
+
+class SpDataFields:
+    SP_TYPE = 0x10
+    MAX_CHARGE_TIME = 0x20       # ObscuredInt
+    SP_COST = 0x34               # ObscuredInt
+    INIT_SP = 0x48               # ObscuredInt
+    INCREMENT = 0x5C             # ObscuredFloat
+    INCREMENTS = 0x78
+    READ_SIZE = 0x80
+
+
+class AbilityFields:
+    OWNER = 0x48
+    IS_CASTING = 0x58
+    CAST_START_FRAME = 0x5C
+    COOLDOWN_TIMER = 0x68
+    PASSIVE_BUFF_UIDS = 0x70
+    UNIQUE_ID = 0x78
+    BLACKBOARD = 0x80
+    IS_ATTACHED = 0x88
+    DAMAGE_MISS_FLAG = 0xB0
+    FINISH_REASON = 0xB4
+    READ_SIZE = 0xC0
+
+
+class BasicTalentFields:
+    OVERWRITE_TALENT_KEY = 0x18
+    OWNER = 0x30
+    ABILITY = 0x38
+    PARENT_MODE = 0x40
+    DATA = 0x48
+    READ_SIZE = 0x50
+
+
+class TalentDataFields:
+    REQUIRED_POTENTIAL_RANK = 0x18
+    PREFAB_KEY = 0x20
+    NAME = 0x28
+    DESCRIPTION = 0x30
+    RANGE_ID = 0x38
+    BLACKBOARD = 0x40
+    TOKEN_KEY = 0x48
+    IS_HIDDEN = 0x50
+    READ_SIZE = 0x58
+
+
+class CharacterState:
+    TERMINAL = -1
+    DEFAULT = 0
+    IDLE = 1
+    ATTACK = 2
+    COMBAT = 3
+    SKILL = 4
+    STUN = 5
+    DEAD = 6
+    BORN = 7
+    DISAPPEAR = 8
+    FROZEN = 9
+    REBORN = 10
+    DYING = 11
+    DIALOG = 12
+    DOZE = 13
+    NAMES = {
+        -1: '结束', 0: '默认', 1: '待机', 2: '攻击', 3: '战斗', 4: '技能中',
+        5: '眩晕', 6: '阵亡', 7: '入场', 8: '消失', 9: '冻结',
+        10: '重生', 11: '濒死', 12: '对话', 13: '昏睡',
+    }
+
+
+PROFESSION_CATEGORY_NAMES = {
+    1: '近卫', 2: '狙击', 4: '重装', 8: '医疗', 16: '辅助',
+    32: '术师', 64: '特种', 128: '召唤物', 256: '装置', 512: '先锋',
+}
+BUILDABLE_TYPE_NAMES = {0: '不可部署', 1: '近战位', 2: '远程位', 3: '任意位置'}
+SKILL_TYPE_NAMES = {0: '被动', 1: '手动触发', 2: '自动触发'}
+SKILL_DURATION_TYPE_NAMES = {0: '普通', 1: '弹药'}
+SP_TYPE_NAMES = {
+    0: '无', 1: '自动回复', 2: '攻击回复', 4: '受击回复',
+    6: '攻击或受击回复', 7: '全部方式',
+}
+
+
+# ============================================================
 # Enemy (敌方单位)
 # ============================================================
 class EnemyFields:
@@ -472,13 +718,35 @@ class GlobalBuffFields:
 
 
 class BuffDataFields:
+    ATTRIBUTES = 0x10
     BUFF_KEY = 0x18
+    LOAD_FROM_DB = 0x20
+    IS_DURABLE = 0x21
+    IS_DAMAGE_MISSABLE = 0x22
+    IS_SILENCEABLE = 0x23
+    IS_STUNNABLE = 0x24
+    IS_FREEZABLE = 0x25
+    IS_LEVITATABLE = 0x26
+    IS_GROUND_BOUNDABLE = 0x27
+    STATUS_RESISTABLE = 0x28
     TEMPLATE_KEY = 0x30
+    DISABLE_OVERRIDE = 0x38
+    OVERRIDE_KEY = 0x40
+    OVERRIDE_TYPE = 0x48
+    MAX_STACK_COUNT = 0x4C
+    MAX_VALID_STACK_COUNT = 0x54
+    INDEPENDENT_CHARACTER_SOURCE = 0x58
+    OVERRIDE_EFFECT_KEY = 0x60
+    AUDIO_SIGNAL = 0x70
     LIFE_TIME_TYPE = 0x78
     DURATION_KEY = 0x80
     LIFE_TIME = 0x88
+    TRIGGER_LIFE_TYPE = 0x8C
+    TRIGGER_COUNT = 0x90
+    TRIGGER_INTERVAL = 0x94
     PRIORITY = 0xA0
-    READ_SIZE = 0xB0
+    BLACKBOARD = 0xB8
+    READ_SIZE = 0xC8
 
 
 # ============================================================
@@ -663,6 +931,10 @@ def apply_generated_offsets(path=None):
                 if isinstance(value, str):
                     value = int(value, 0)
                 if isinstance(value, int) and 0 <= value <= 0x10000:
+                    if field_name == 'READ_SIZE':
+                        # 自动脚本只认识它提取到的最后一个字段；手工验证过的扩展字段
+                        # 可能位于其后。读取块可以更大但绝不能被生成值截短。
+                        value = max(int(getattr(target, field_name)), value)
                     setattr(target, field_name, value)
         enums = payload.get('enums', {})
         for enum_name, values in enums.items():

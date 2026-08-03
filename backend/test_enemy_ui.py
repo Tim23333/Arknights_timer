@@ -26,7 +26,8 @@ from tools.enemy_health import game_structs as gs
 from tools.enemy_health.enemy_reader import EnemyInfo
 from backend.desktop_app import (
     AdbSelectionDialog, CoachWindow, _enemy_mini_stylesheet,
-    _system_prefers_dark, _theme_stylesheet, probe_adb_executable,
+    _format_enemy_read_mode, _system_prefers_dark, _theme_stylesheet,
+    probe_adb_executable,
 )
 
 
@@ -46,6 +47,17 @@ class EnemyUiTests(unittest.TestCase):
         values = default_precision_values()
         self.assertEqual(values['default'], 2)
         self.assertTrue(all(value == 2 for value in values.values()))
+
+    def test_enemy_read_channel_status_text_distinguishes_fast_and_fallback(self):
+        self.assertEqual(
+            _format_enemy_read_mode({'read_mode': 'fast', 'read_backend': 'srv'}),
+            '高速通道（memsrv）')
+        self.assertEqual(
+            _format_enemy_read_mode({'read_mode': 'fast', 'read_backend': 'sh'}),
+            'TCP 兼容通道（shell）')
+        self.assertEqual(
+            _format_enemy_read_mode({'read_mode': 'slow', 'read_backend': 'adb'}),
+            '慢速兜底（ADB）')
 
     def test_enemy_column_fit_fills_viewport_and_protects_hp_text(self):
         table = QTableWidget(1, len(ENEMY_COLUMN_DEFS))
@@ -155,8 +167,92 @@ class EnemyUiTests(unittest.TestCase):
             window._exit_enemy_mini_mode()
             self.app.processEvents()
             self.assertIsNone(window._enemy_mini)
-            self.assertIs(window.enemy_table.parent(), window._enemy_table_box)
+            self.assertIs(window.enemy_table.parent(), window._enemy_table_host)
             self.assertTrue(window.isVisible())
+            window.close()
+
+    def test_main_sections_collapse_and_enemy_table_uses_freed_height(self):
+        with patch.object(CoachWindow, '_start_hook_server', lambda self: None), \
+                patch.object(CoachWindow, '_start_ws_server', lambda self: None), \
+                patch.object(CoachWindow, '_start_workers', lambda self: None), \
+                patch.object(CoachWindow, '_start_timers', lambda self: None):
+            window = CoachWindow()
+            window.resize(1180, 760)
+            window.show()
+            self.app.processEvents()
+
+            sections = window._collapsible_sections
+            self.assertEqual(
+                set(sections), {
+                    'timer', 'game', 'enemy', 'enemy_table',
+                    'character', 'character_table', 'rng',
+                })
+            self.assertTrue(all(not section.is_collapsed()
+                                for section in sections.values()))
+            initial_table_height = window.enemy_table.height()
+
+            # “只保留敌人数据”现在还需要收起新增的干员区块。
+            for key in ('timer', 'game', 'character', 'character_table', 'rng'):
+                sections[key].set_collapsed(True)
+            self.app.processEvents()
+
+            self.assertTrue(window.lbl_enemy_compact_game.isVisible())
+            self.assertTrue(sections['game'].content_widget.isHidden())
+            self.assertLess(sections['game'].maximumHeight(), 100)
+            self.assertGreater(window.enemy_table.height(), initial_table_height)
+            self.assertEqual(window.enemy_table.maximumHeight(), 16777215)
+
+            with patch.object(
+                    window._provider, 'get_game_data',
+                    return_value={'game_time': 12.345, 'frame_count': 741}):
+                window._tick_fast()
+            self.assertEqual(
+                window.lbl_enemy_compact_game.text(),
+                '游戏时间：12.345s\n逻辑帧：F741')
+
+            sections['game'].set_collapsed(False)
+            self.app.processEvents()
+            self.assertFalse(window.lbl_enemy_compact_game.isVisible())
+            self.assertFalse(sections['game'].content_widget.isHidden())
+            window.close()
+
+    def test_every_main_section_can_float_and_dock_without_recreating_content(self):
+        with patch.object(CoachWindow, '_start_hook_server', lambda self: None), \
+                patch.object(CoachWindow, '_start_ws_server', lambda self: None), \
+                patch.object(CoachWindow, '_start_workers', lambda self: None), \
+                patch.object(CoachWindow, '_start_timers', lambda self: None):
+            window = CoachWindow()
+            window.show()
+            self.app.processEvents()
+            self.assertTrue(all(section.btn_float.isVisible()
+                                for section in window._collapsible_sections.values()))
+
+            section = window._collapsible_sections['character_table']
+            content = section.content_widget
+            table = window.character_table
+            section.float_content()
+            self.app.processEvents()
+            floating = section._float_window
+            self.assertTrue(section.is_floating())
+            self.assertIsNotNone(floating)
+            self.assertIs(content.parent(), floating)
+            self.assertIs(table.window(), floating)
+            self.assertEqual(section.btn_float.text(), '显示浮窗')
+            self.assertLess(section.maximumHeight(), 100)
+
+            section.dock_content()
+            self.app.processEvents()
+            self.assertFalse(section.is_floating())
+            self.assertIs(content.parent(), section)
+            self.assertIs(table.window(), window)
+            self.assertEqual(section.btn_float.text(), '浮窗')
+
+            section.float_content()
+            floating = section._float_window
+            floating.close()
+            self.app.processEvents()
+            self.assertFalse(section.is_floating())
+            self.assertIs(content.parent(), section)
             window.close()
 
     def test_adb_probe_handles_executable_path_with_spaces(self):
@@ -231,6 +327,12 @@ class EnemyUiTests(unittest.TestCase):
         enemy.attributes[gs.AttributeType.MAX_EP] = 1000.0
         enemy.ep_remaining[gs.ElementType.NONE] = 2000.0
         enemy.ep_remaining[gs.ElementType.SANITY] = 818.82
+        self.assertEqual(
+            format_column_value(
+                f'attr_{gs.AttributeType.MAX_EP}', enemy,
+                {'default': 2, f'attr_{gs.AttributeType.MAX_EP}': 2}),
+            '2000.00',
+        )
         self.assertEqual(
             format_column_value(
                 'ep_sanity', enemy, {'default': 2, 'ep_sanity': 2}),

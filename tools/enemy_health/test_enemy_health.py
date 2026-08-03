@@ -230,8 +230,50 @@ class EnemyDetailModelTests(unittest.TestCase):
         enemy.attributes[gs.AttributeType.MAX_EP] = 1000.0
         enemy.ep_remaining[gs.ElementType.NONE] = 2000.0
         enemy.ep_remaining[gs.ElementType.SANITY] = 1325.0
+        self.assertEqual(enemy.effective_max_ep, 2000.0)
         self.assertEqual(enemy.element_damage(gs.ElementType.SANITY),
                          (675.0, 1325.0, 2000.0))
+
+    def test_slow_fallback_refreshes_element_damage_instead_of_freezing_snapshot(self):
+        ep_ptr = 0x2000
+        data = bytearray(gs.Il2CppArray.ITEMS + gs.ElementType.E_NUM * 8)
+        struct.pack_into('<i', data, gs.Il2CppArray.MAX_LENGTH, gs.ElementType.E_NUM)
+        values = (2000.0, 1325.0, 2000.0, 2000.0, 2000.0, 2000.0)
+        for idx, value in enumerate(values):
+            struct.pack_into(
+                '<Q', data, gs.Il2CppArray.ITEMS + idx * 8,
+                int(value * gs.FP_ONE))
+
+        class FakeMemory:
+            @staticmethod
+            def is_ptr(value):
+                return value == ep_ptr
+
+            @staticmethod
+            def read(addr, _size):
+                return bytes(data) if addr == ep_ptr else None
+
+        reader = EnemyReader(mc=FakeMemory())
+        enemy = EnemyInfo(0x1000)
+        enemy.ep_ptr = ep_ptr
+        reader._runtime_snapshot[enemy.addr] = {
+            'ep_remaining': {idx: 2000.0 for idx in range(gs.ElementType.E_NUM)},
+        }
+        self.assertTrue(reader._refresh_ep_runtime_slow(enemy))
+        self.assertEqual(enemy.element_damage(gs.ElementType.SANITY),
+                         (675.0, 1325.0, 2000.0))
+
+    def test_fast_poll_snapshot_reports_live_channel_backend(self):
+        reader = EnemyReader(mc=object())
+
+        class FakeChannel:
+            mode = 'srv'
+
+        reader._chan = FakeChannel()
+        reader._poll_fast_impl = lambda: {'ok': True}
+        snapshot = reader.poll_fast()
+        self.assertEqual(snapshot['read_mode'], 'fast')
+        self.assertEqual(snapshot['read_backend'], 'srv')
 
     def test_mouse_king_legacy_magic_shield_sums_three_live_segments(self):
         buffs = []

@@ -270,6 +270,14 @@ class EnemyInfo:
         names = self.active_status_names()
         return '、'.join(names) if names else '正常'
 
+    @property
+    def effective_max_ep(self):
+        """实体当前真正使用的损伤条上限，而不是只返回基础属性。"""
+        base_maximum = max(0.0, self.attribute(gs.AttributeType.MAX_EP, 0.0))
+        runtime_maximum = max(
+            0.0, self.ep_remaining.get(gs.ElementType.NONE, 0.0))
+        return max(base_maximum, runtime_maximum)
+
     def element_damage(self, element_type):
         # MAX_EP is the base attribute, but some runtime entity subclasses
         # override Entity.maxEp (giant bosses are one example).  The game
@@ -277,10 +285,7 @@ class EnemyInfo:
         # maxEp, so it is the authoritative live capacity for every concrete
         # elemental-damage bar.  Keep the attribute as a fallback for pending
         # enemies and older layouts where the runtime array is unavailable.
-        base_maximum = max(0.0, self.attribute(gs.AttributeType.MAX_EP, 0.0))
-        runtime_maximum = max(
-            0.0, self.ep_remaining.get(gs.ElementType.NONE, 0.0))
-        maximum = max(base_maximum, runtime_maximum)
+        maximum = self.effective_max_ep
         remaining = max(0.0, self.ep_remaining.get(element_type, maximum))
         damage = max(0.0, maximum - remaining)
         return damage, remaining, maximum
@@ -1928,6 +1933,23 @@ class EnemyReader:
                                              epc=info.ep_controller_ptr, shield=shield_ptr)
         self._copy_runtime(info, runtime)
 
+    def _refresh_ep_runtime_slow(self, info):
+        """TCP 通道回退期间仍刷新损伤数组，避免界面冻结在旧快照。"""
+        if not self.mc.is_ptr(info.ep_ptr):
+            return False
+        data = self.mc.read(
+            info.ep_ptr, gs.Il2CppArray.ITEMS + gs.ElementType.E_NUM * 8)
+        if not data:
+            return False
+        values = self._decode_fp_array(data, gs.ElementType.E_NUM)
+        if not values:
+            return False
+        runtime = dict(self._runtime_snapshot.get(info.addr, {}))
+        runtime['ep_remaining'] = values
+        self._runtime_snapshot[info.addr] = runtime
+        self._copy_runtime(info, runtime)
+        return True
+
     def _read_enemy(self, ep, with_runtime=True):
         blk = self.mc.read(ep, gs.EnemyFields.READ_SIZE)
         info = self._parse_enemy_block(ep, blk)
@@ -1945,7 +1967,8 @@ class EnemyReader:
         """读取一帧快照; 返回 dict"""
         snap = {'ok': False, 'state': -1, 'speed_level': -1, 'time_scale': 0.0,
                 'play_time': 0.0, 'scheduler_time': None, 'enemies': [], 'msg': '',
-                'on_field_count': 0, 'planned_count': self.planned_count}
+                'on_field_count': 0, 'planned_count': self.planned_count,
+                'read_mode': 'slow', 'read_backend': 'adb'}
         d = self.mc.read(self.list_addr, 0x20)
         if not d:
             snap['msg'] = 'List 读取失败'
@@ -1974,9 +1997,11 @@ class EnemyReader:
             if not ep or not self.mc.is_ptr(ep):
                 continue
             # 回退路径避免为每个敌人逐指针启动十余次 adb 子进程；沿用最近一次
-            # 快速通道的状态快照。详情按钮仍会按需做完整读取。
+            # 快速通道的状态快照。损伤数组是用户最关注的连续量，额外做一次
+            # 小块读取确保受击后仍会变化；详情按钮仍按需读取其余完整数据。
             info = self._read_enemy(ep, with_runtime=False)
             self._copy_runtime(info, self._runtime_snapshot.get(ep))
+            self._refresh_ep_runtime_slow(info)
             observed_enemies.append(info)
 
         snap['enemies'] = self._merge_enemy_roster(
@@ -2034,6 +2059,8 @@ class EnemyReader:
             self._chan = TcpChannel(self.mc)
         try:
             snap = self._poll_fast_impl()
+            snap['read_mode'] = 'fast'
+            snap['read_backend'] = self._chan.mode or 'tcp'
             self._chan_fail = 0
             return snap
         except Exception as e:
@@ -2210,7 +2237,8 @@ class EnemyReader:
         snap = {'ok': False, 'state': -1, 'speed_level': -1, 'time_scale': 0.0,
                 'play_time': 0.0, 'scheduler_time': None,
                 'enemies': [], 'msg': '', 'frame_ms': 0.0,
-                'on_field_count': 0, 'planned_count': self.planned_count}
+                'on_field_count': 0, 'planned_count': self.planned_count,
+                'read_mode': 'fast', 'read_backend': 'tcp'}
         self._fast_tick += 1
         tick = self._fast_tick
         prev_ptrs = self._f_ptrs
@@ -2784,17 +2812,36 @@ class EnemyReader:
         if not records:
             return []
 
-        string_ptrs, bb_ptrs, fp_ptrs = [], [], []
+        string_ptrs, bb_ptrs, fp_ptrs, data_ptrs = [], [], [], []
         for _, data in records:
             string_ptrs.extend((_u64(data, gs.BuffFields.KEY),
                                 _u64(data, gs.BuffFields.OVERRIDE_KEY),
                                 _u64(data, gs.BuffFields.EFFECT_KEY)))
             bb_ptrs.append(_u64(data, gs.BuffFields.M_BLACKBOARD))
+            data_ptrs.append(_u64(data, gs.BuffFields.M_DATA))
             fp_ptrs.extend(_u64(data, off) for off in (
                 gs.BuffFields.M_ATTRIBUTE_MULTIPLIERS,
                 gs.BuffFields.M_ATTRIBUTE_ADDITIONS,
                 gs.BuffFields.M_ATTRIBUTE_FINAL_ADDITIONS,
                 gs.BuffFields.M_ATTRIBUTE_FINAL_SCALERS))
+        unique_data_ptrs = [p for p in dict.fromkeys(data_ptrs) if self.mc.is_ptr(p)]
+        data_blocks = {
+            ptr: data for ptr, data in zip(
+                unique_data_ptrs,
+                self._detail_batch_read([
+                    (ptr, gs.BuffDataFields.READ_SIZE) for ptr in unique_data_ptrs]))
+            if data
+        }
+        for data in data_blocks.values():
+            string_ptrs.extend((
+                _u64(data, gs.BuffDataFields.BUFF_KEY),
+                _u64(data, gs.BuffDataFields.TEMPLATE_KEY),
+                _u64(data, gs.BuffDataFields.OVERRIDE_KEY),
+                _u64(data, gs.BuffDataFields.OVERRIDE_EFFECT_KEY),
+                _u64(data, gs.BuffDataFields.AUDIO_SIGNAL),
+                _u64(data, gs.BuffDataFields.DURATION_KEY),
+            ))
+            bb_ptrs.append(_u64(data, gs.BuffDataFields.BLACKBOARD))
         strings = self._read_strings(string_ptrs)
         blackboards = self._read_blackboards(bb_ptrs)
         fp_arrays = self._read_plain_fp_arrays(fp_ptrs)
@@ -2831,6 +2878,69 @@ class EnemyReader:
             override_ptr = _u64(data, gs.BuffFields.OVERRIDE_KEY)
             effect_ptr = _u64(data, gs.BuffFields.EFFECT_KEY)
             bb_ptr = _u64(data, gs.BuffFields.M_BLACKBOARD)
+            data_ptr = _u64(data, gs.BuffFields.M_DATA)
+            definition_data = data_blocks.get(data_ptr)
+            definition = {}
+            if definition_data:
+                definition = {
+                    'addr': data_ptr,
+                    'buff_key': strings.get(_u64(
+                        definition_data, gs.BuffDataFields.BUFF_KEY), ''),
+                    'template_key': strings.get(_u64(
+                        definition_data, gs.BuffDataFields.TEMPLATE_KEY), ''),
+                    'override_key': strings.get(_u64(
+                        definition_data, gs.BuffDataFields.OVERRIDE_KEY), ''),
+                    'override_effect_key': strings.get(_u64(
+                        definition_data, gs.BuffDataFields.OVERRIDE_EFFECT_KEY), ''),
+                    'audio_signal': strings.get(_u64(
+                        definition_data, gs.BuffDataFields.AUDIO_SIGNAL), ''),
+                    'duration_key': strings.get(_u64(
+                        definition_data, gs.BuffDataFields.DURATION_KEY), ''),
+                    'life_time_type': definition_data[
+                        gs.BuffDataFields.LIFE_TIME_TYPE],
+                    'life_time': struct.unpack_from(
+                        '<f', definition_data, gs.BuffDataFields.LIFE_TIME)[0],
+                    'trigger_life_type': definition_data[
+                        gs.BuffDataFields.TRIGGER_LIFE_TYPE],
+                    'trigger_count': _i32(
+                        definition_data, gs.BuffDataFields.TRIGGER_COUNT),
+                    'trigger_interval': struct.unpack_from(
+                        '<f', definition_data,
+                        gs.BuffDataFields.TRIGGER_INTERVAL)[0],
+                    'max_stack_count': _i32(
+                        definition_data, gs.BuffDataFields.MAX_STACK_COUNT),
+                    'max_valid_stack_count': _i32(
+                        definition_data,
+                        gs.BuffDataFields.MAX_VALID_STACK_COUNT),
+                    'override_type': _i32(
+                        definition_data, gs.BuffDataFields.OVERRIDE_TYPE),
+                    'priority': _i32(
+                        definition_data, gs.BuffDataFields.PRIORITY),
+                    'disable_override': bool(definition_data[
+                        gs.BuffDataFields.DISABLE_OVERRIDE]),
+                    'load_from_db': bool(definition_data[
+                        gs.BuffDataFields.LOAD_FROM_DB]),
+                    'durable': bool(definition_data[
+                        gs.BuffDataFields.IS_DURABLE]),
+                    'damage_missable': bool(definition_data[
+                        gs.BuffDataFields.IS_DAMAGE_MISSABLE]),
+                    'silenceable': bool(definition_data[
+                        gs.BuffDataFields.IS_SILENCEABLE]),
+                    'stunnable': bool(definition_data[
+                        gs.BuffDataFields.IS_STUNNABLE]),
+                    'freezable': bool(definition_data[
+                        gs.BuffDataFields.IS_FREEZABLE]),
+                    'levitatable': bool(definition_data[
+                        gs.BuffDataFields.IS_LEVITATABLE]),
+                    'ground_boundable': bool(definition_data[
+                        gs.BuffDataFields.IS_GROUND_BOUNDABLE]),
+                    'status_resistable': definition_data[
+                        gs.BuffDataFields.STATUS_RESISTABLE],
+                    'independent_character_source': bool(definition_data[
+                        gs.BuffDataFields.INDEPENDENT_CHARACTER_SOURCE]),
+                    'blackboard': blackboards.get(_u64(
+                        definition_data, gs.BuffDataFields.BLACKBOARD), []),
+                }
             record = {
                 'addr': ptr,
                 'key': strings.get(key_ptr, '') or '?',
@@ -2851,6 +2961,8 @@ class EnemyReader:
                 'source_addr': source,
                 'source': source_name or (hex(source) if source else '关卡/无实体来源'),
                 'ability_addr': _u64(data, gs.BuffFields.M_ABILITY),
+                'data_addr': data_ptr,
+                'definition': definition,
                 'attribute_modifiers': modifiers,
                 'abnormal_flags': self._mask_names(
                     _u64(data, gs.BuffFields.ABNORMAL_FLAG_MASK),

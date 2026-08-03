@@ -316,8 +316,12 @@ def format_column_value(key, enemy, decimals, row=0):
         }.get(idx)
         if key not in decimals and legacy_precision_key:
             precision = decimals.get(legacy_precision_key, precision)
-        value = enemy.status_resistance if idx == gs.AttributeType.ONE_MINUS_STATUS_RESISTANCE \
-            else enemy.attribute(idx)
+        if idx == gs.AttributeType.ONE_MINUS_STATUS_RESISTANCE:
+            value = enemy.status_resistance
+        elif idx == gs.AttributeType.MAX_EP:
+            value = enemy.effective_max_ep
+        else:
+            value = enemy.attribute(idx)
         return f'{value:.{precision}f}'
     if key == 'es':
         return f'{enemy.es:.{precision}f}'
@@ -512,6 +516,11 @@ class EnemyDetailDialog(QDialog):
         for idx, internal, name in gs.ATTRIBUTE_DEFS:
             raw = enemy.raw_attributes.get(idx)
             final = enemy.attributes.get(idx)
+            if idx == gs.AttributeType.MAX_EP:
+                effective = enemy.effective_max_ep
+                if effective > max(0.0, final or 0.0):
+                    name += '（运行时有效值）'
+                    final = effective
             delta = final - raw if raw is not None and final is not None else None
             if idx == gs.AttributeType.ONE_MINUS_STATUS_RESISTANCE:
                 name += '（实际状态抗性=' + _fmt(enemy.status_resistance) + '）'
