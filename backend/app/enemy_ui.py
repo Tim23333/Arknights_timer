@@ -62,7 +62,7 @@ for _idx, _internal, _name in gs.ATTRIBUTE_DEFS:
 
 ENEMY_COLUMN_DEFS.extend([
     _col('es', '元素护盾', 90, False, True),
-    _col('shield', '普通护盾', 90, False, True),
+    _col('shield', '伤害护盾', 170, True, True),
     _col('ep_sanity', '神经损伤剩余', 145, False, True),
     _col('ep_water', '侵蚀损伤剩余', 145, False, True),
     _col('ep_fire', '灼燃损伤剩余', 145, False, True),
@@ -131,7 +131,17 @@ def load_visible_columns(settings, key):
         chosen = set()
     valid = set(ENEMY_COLUMN_INDEX)
     chosen &= valid
-    return chosen or set(DEFAULT_VISIBLE_COLUMNS)
+    if not chosen:
+        chosen = set(DEFAULT_VISIBLE_COLUMNS)
+    migration_key = key + '/damage_shield_v2'
+    marker = settings.value(migration_key, False)
+    migrated = marker is True or str(marker).lower() in ('1', 'true', 'yes')
+    # 旧版本的“普通护盾”默认隐藏。升级后仅自动展示一次新的伤害护盾列；用户
+    # 此后若主动取消勾选，迁移标记会阻止下一次启动再次强制打开。
+    if not migrated:
+        chosen.add('shield')
+        settings.setValue(migration_key, True)
+    return chosen
 
 
 def save_visible_columns(settings, key, columns):
@@ -312,7 +322,17 @@ def format_column_value(key, enemy, decimals, row=0):
     if key == 'es':
         return f'{enemy.es:.{precision}f}'
     if key == 'shield':
-        return f'{enemy.shield:.{precision}f}'
+        parts = []
+        if enemy.shield > 0:
+            parts.append(f'通用 {enemy.shield:.{precision}f}')
+        special = getattr(enemy, 'special_shield', 0.0)
+        if special > 0:
+            mask = getattr(enemy, 'special_shield_mask', 0)
+            types = [name for bit, name in gs.DAMAGE_TYPE_MASK_CN_NAMES.items()
+                     if mask & bit]
+            label = '/'.join(types) if types else '特殊'
+            parts.append(f'{label} {special:.{precision}f}')
+        return '；'.join(parts) if parts else f'{0.0:.{precision}f}'
     ep_types = {
         'ep_sanity': gs.ElementType.SANITY,
         'ep_water': gs.ElementType.WATER,
@@ -456,7 +476,12 @@ class EnemyDetailDialog(QDialog):
             ('生存状态', life_text),
             ('行为状态', state), ('异常状态', enemy.status_text()),
             ('当前生命', enemy.hp), ('最大生命', enemy.max_hp),
-            ('元素护盾', enemy.es), ('普通护盾汇总', enemy.shield),
+            ('元素护盾', enemy.es), ('通用伤害护盾', enemy.shield),
+            ('特殊伤害护盾', getattr(enemy, 'special_shield', 0.0)),
+            ('伤害护盾合计', getattr(enemy, 'total_shield', enemy.shield)),
+            ('特殊护盾类型', '/'.join(
+                name for bit, name in gs.DAMAGE_TYPE_MASK_CN_NAMES.items()
+                if getattr(enemy, 'special_shield_mask', 0) & bit) or '-'),
             ('位置', f'({enemy.pos_x}, {enemy.pos_y})'),
             ('阻挡位置', f'({enemy.blk_x}, {enemy.blk_y})'),
             ('出生格', f'({enemy.spawn_row}, {enemy.spawn_col})'),
@@ -533,8 +558,18 @@ class EnemyDetailDialog(QDialog):
                     statuses.append(f"{label}:" + '、'.join(buff[key]))
             shield_types = [name for bit, name in gs.DAMAGE_TYPE_MASK_CN_NAMES.items()
                             if buff['shield_mask'] & bit]
-            shield = ('是 (' + ('/'.join(shield_types) or f"mask={buff['shield_mask']}") + ')') \
-                if buff['has_shield'] else '-'
+            custom_value = buff.get('custom_shield_value', 0.0)
+            custom_mask = buff.get('custom_shield_mask', 0)
+            custom_types = [name for bit, name in gs.DAMAGE_TYPE_MASK_CN_NAMES.items()
+                            if custom_mask & bit]
+            if custom_value > 0:
+                shield = (f"是 ({'/'.join(custom_types) or '特殊'}；"
+                          f"当前分段剩余 {_fmt(custom_value)})")
+            elif buff['has_shield']:
+                shield = '是 (' + ('/'.join(shield_types)
+                                   or f"mask={buff['shield_mask']}") + ')'
+            else:
+                shield = '-'
             runtime = (
                 f"实例UID={buff['instance_uid']}；优先级={buff['priority']}；"
                 f"触发次数={buff['trigger_count']}；已启用={'是' if buff['enabled'] else '否'}；"

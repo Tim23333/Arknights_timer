@@ -20,7 +20,7 @@ from backend.app.enemy_buff_descriptions import (
 from backend.app.enemy_ui import (
     ENEMY_COLUMN_DEFS, ENEMY_COLUMN_INDEX, EnemyDetailDialog,
     default_precision_values, format_column_value, precision_column_defs,
-    visible_enemy_rows,
+    load_visible_columns, visible_enemy_rows,
 )
 from tools.enemy_health import game_structs as gs
 from tools.enemy_health.enemy_reader import EnemyInfo
@@ -236,6 +236,37 @@ class EnemyUiTests(unittest.TestCase):
                 'ep_sanity', enemy, {'default': 2, 'ep_sanity': 2}),
             '818.82/2000.00 (40.94%)',
         )
+
+    def test_shield_column_includes_mouse_king_magic_barrier(self):
+        enemy = EnemyInfo(1)
+        enemy.special_shield = 14001.0
+        enemy.special_shield_mask = 4
+        self.assertEqual(
+            format_column_value('shield', enemy, {'default': 2, 'shield': 2}),
+            '法术 14001.00',
+        )
+
+    def test_existing_column_settings_enable_new_shield_column_only_once(self):
+        with tempfile.TemporaryDirectory() as td:
+            settings = QSettings(str(Path(td) / 'settings.ini'), QSettings.IniFormat)
+            key = 'enemy_table/visible_columns'
+            settings.setValue(key, 'name,hp')
+            self.assertIn('shield', load_visible_columns(settings, key))
+            settings.setValue(key, 'name,hp')  # 模拟用户升级后主动取消护盾列
+            self.assertNotIn('shield', load_visible_columns(settings, key))
+
+    def test_custom_shield_buff_has_clear_chinese_description(self):
+        buff = {
+            'key': 'mousek_shield[a]', 'custom_shield_value': 4667.0,
+            'custom_shield_mask': 4, 'has_shield': False,
+            'attribute_modifiers': [], 'abnormal_flags': [],
+            'abnormal_immunes': [], 'abnormal_antis': [],
+            'abnormal_combos': [], 'abnormal_combo_immunes': [],
+        }
+        self.assertEqual(buff_chinese_name(buff), '法术屏障（分段）')
+        description = describe_active_buff(buff)
+        self.assertIn('当前分段剩余 4667', description)
+        self.assertIn('完整屏障为所有有效分段之和', description)
 
     def test_buff_chinese_name_and_attribute_formula(self):
         self.assertEqual(buff_chinese_name({'key': 'common_silence_immue'}), '沉默免疫')

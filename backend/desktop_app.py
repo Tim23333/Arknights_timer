@@ -633,6 +633,9 @@ class EnemyPollWorker(QThread):
                         'raw_attributes': dict(full.raw_attributes),
                         'buffs': list(full.buffs),
                         'global_buffs': list(full.global_buffs),
+                        'special_shield': full.special_shield,
+                        'special_shield_mask': full.special_shield_mask,
+                        'special_shield_sources': list(full.special_shield_sources),
                     }
                 else:
                     error = '敌人详情对象已失效。'
@@ -680,6 +683,11 @@ class EnemyPollWorker(QThread):
         roster_enemy.raw_attributes = dict(heavy.get('raw_attributes', {}))
         roster_enemy.buffs = list(heavy.get('buffs', ()))
         roster_enemy.global_buffs = list(heavy.get('global_buffs', ()))
+        if 'special_shield' in heavy:
+            roster_enemy.special_shield = heavy['special_shield']
+            roster_enemy.special_shield_mask = heavy.get('special_shield_mask', 0)
+            roster_enemy.special_shield_sources = list(
+                heavy.get('special_shield_sources', ()))
         snap['detail_enemy'] = roster_enemy
         if error:
             snap['detail_error'] = error

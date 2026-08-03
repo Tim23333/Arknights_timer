@@ -31,6 +31,8 @@ TABLE_PREFIXES = [
     "roguelike_topic_table",
     "sandbox_perm_table",
     "building_data",
+    "enemy_handbook_table",
+    "enemy_database",
 ]
 
 # Compiled pattern: match any table prefix followed by hex hash

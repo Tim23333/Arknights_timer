@@ -12,6 +12,7 @@ import os
 import re
 import struct
 import glob
+import json
 
 ID_RE = re.compile(rb'enemy_[0-9a-zA-Z_]+')
 CJK_RE = re.compile(r'[一-鿿]')
@@ -100,26 +101,53 @@ def find_handbook_bin(tables_dir=None):
     for pat in ('enemy_handbook_table*.bin',):
         files = glob.glob(os.path.join(tables_dir, pat))
         if files:
-            return files[0]
+            return max(files, key=lambda path: (os.path.getmtime(path), path))
     return None
 
 
 _db_cache = None
+_db_cache_key = None
+
+
+def _find_names_json(tables_dir):
+    files = glob.glob(os.path.join(tables_dir, 'enemy_names*.json'))
+    return max(files, key=lambda path: (os.path.getmtime(path), path)) if files else None
+
+
+def _load_names_json(path):
+    with open(path, 'r', encoding='utf-8') as stream:
+        payload = json.load(stream)
+    rows = payload.get('enemies', payload) if isinstance(payload, dict) else {}
+    return {
+        eid: row for eid, row in rows.items()
+        if eid.startswith('enemy_') and isinstance(row, dict) and row.get('name')
+    }
 
 
 def load_enemy_db(tables_dir=None):
     """加载敌人数据库 (带缓存); 失败返回 {}"""
-    global _db_cache
-    if _db_cache is not None:
-        return _db_cache
+    global _db_cache, _db_cache_key
+    if tables_dir is None:
+        here = os.path.dirname(os.path.abspath(__file__))
+        tables_dir = os.path.join(here, '..', '..', 'data', 'tables')
+    tables_dir = os.path.abspath(tables_dir)
     path = find_handbook_bin(tables_dir)
-    if not path:
-        _db_cache = {}
+    json_path = _find_names_json(tables_dir)
+    cache_key = tuple(
+        (candidate, os.path.getmtime(candidate), os.path.getsize(candidate))
+        for candidate in (path, json_path) if candidate and os.path.isfile(candidate))
+    if _db_cache is not None and _db_cache_key == cache_key:
         return _db_cache
+    db = {}
     try:
-        _db_cache = parse_handbook(path)
+        if path:
+            db.update(parse_handbook(path))
+        if json_path:
+            db.update(_load_names_json(json_path))
     except Exception:
-        _db_cache = {}
+        pass
+    _db_cache = db
+    _db_cache_key = cache_key
     return _db_cache
 
 

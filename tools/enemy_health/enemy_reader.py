@@ -12,6 +12,7 @@
     条件分支或召唤等未出现在固定 waves 中的动态敌人会在首次出现时追加。
 """
 
+import math
 import os
 import sys
 import time
@@ -34,6 +35,68 @@ NEEDLE_ENEMY = 'enemy_'.encode('utf-16-le')   # UTF-16LE "enemy_"
 HP_MIN, HP_MAX = 50, 1_000_000                # HP 签名高32位范围
 SCAN_CAP = 32 * 1024 * 1024                   # 每块 32MB
 DETAIL_TCP_PORT = 27274                        # 与敌人主轮询/RNG/部署通道隔离
+
+# 早期敌人有少量护盾并未接入后来统一的 IShieldSource / ShieldUIController。
+# 这些护盾把实时剩余值放在 Buff Blackboard 中；规则集中放在这里，避免把
+# 敌人地址或关卡地址写死在扫描流程中。鼠王的屏障由 a/b/c 三段组成，三段
+# dynamic 相加才是完整的、仅吸收法术伤害的剩余屏障值。
+CUSTOM_SHIELD_RULES = (
+    {
+        'enemy_ids': frozenset({'enemy_1509_mousek'}),
+        'buff_prefix': 'mousek_shield[',
+        'value_keys': frozenset({'dynamic'}),
+        'mask': 4,  # DamageTypeMask.MAGICAL
+        'label': '法术屏障',
+    },
+)
+
+
+def _custom_shield_rule(enemy_id='', buff_key=''):
+    key = (buff_key or '').lower()
+    for rule in CUSTOM_SHIELD_RULES:
+        enemy_ids = rule.get('enemy_ids', ())
+        if enemy_ids and enemy_id and enemy_id not in enemy_ids:
+            continue
+        if key.startswith(rule['buff_prefix']):
+            return rule
+    return None
+
+
+def summarize_custom_shields(buffs, enemy_id=''):
+    """汇总未接入 ShieldUIController 的旧式 Buff 护盾。
+
+    返回 ``(剩余值, 伤害类型掩码, 来源列表)``。来源列表同时保留 Blackboard
+    数值地址，供主轮询在发现一次后直接刷新，不必持续重扫完整 Buff 链。
+    """
+    total = 0.0
+    mask = 0
+    sources = []
+    for buff in buffs or ():
+        rule = _custom_shield_rule(enemy_id, buff.get('key', ''))
+        if not rule:
+            continue
+        active = (buff.get('enabled', True) and buff.get('valid', True)
+                  and not buff.get('finished', False))
+        for row in buff.get('blackboard') or ():
+            if row.get('key') not in rule['value_keys']:
+                continue
+            value = row.get('value', 0.0)
+            if not isinstance(value, (int, float)) or not math.isfinite(value):
+                continue
+            value = max(0.0, float(value))
+            if active:
+                total += value
+                mask |= rule['mask']
+            sources.append({
+                'buff_addr': buff.get('addr', 0),
+                'buff_key': buff.get('key', ''),
+                'value_addr': row.get('value_addr', 0),
+                'value': value,
+                'mask': rule['mask'],
+                'label': rule['label'],
+                'active': active,
+            })
+    return total, mask, sources
 
 if getattr(sys, 'frozen', False):
     # 打包模式: _MEIPASS 是每次启动重建的临时目录, 缓存放 exe 旁以便跨启动复用
@@ -100,9 +163,11 @@ class _HeapSnapshot:
 class EnemyInfo:
     __slots__ = ('addr', 'eid', 'name', 'code', 'hp', 'max_hp', 'atk', 'def_', 'res',
                  'mspd', 'aspd', 'direction', 'finish', 'alive', 'id_ptr', 'attr_ptr',
+                 'data_ptr',
                  'pos_x', 'pos_y', 'blk_x', 'blk_y', 'spawn_row', 'spawn_col', 'skills',
                  'state_ptr', 'state_id', 'ep_ptr', 'ep_controller_ptr',
                  'shield_controller_ptr', 'es', 'shield',
+                 'special_shield', 'special_shield_mask', 'special_shield_sources',
                  'ep_remaining', 'ep_break_recovery', 'buff_container_ptr',
                  'attributes', 'raw_attributes', 'abnormal_flags', 'abnormal_immunes',
                  'abnormal_antis', 'abnormal_combos', 'abnormal_combo_immunes',
@@ -128,6 +193,7 @@ class EnemyInfo:
         self.alive = True
         self.id_ptr = 0
         self.attr_ptr = 0
+        self.data_ptr = 0
         self.pos_x = 0.0
         self.pos_y = 0.0
         self.blk_x = 0.0
@@ -142,6 +208,9 @@ class EnemyInfo:
         self.shield_controller_ptr = 0
         self.es = 0.0
         self.shield = 0.0
+        self.special_shield = 0.0
+        self.special_shield_mask = 0
+        self.special_shield_sources = []
         self.ep_remaining = {}    # ElementType -> 剩余损伤容量
         self.ep_break_recovery = False
         self.buff_container_ptr = 0
@@ -172,6 +241,10 @@ class EnemyInfo:
 
     def attribute(self, index, default=0.0):
         return self.attributes.get(index, default)
+
+    @property
+    def total_shield(self):
+        return max(0.0, self.shield) + max(0.0, self.special_shield)
 
     @property
     def status_resistance(self):
@@ -247,6 +320,8 @@ class EnemyReader:
         self._attr_snapshot = {}      # enemy addr -> {AttributeType: 最终属性值}
         self._runtime_snapshot = {}   # enemy addr -> 状态/损伤条/异常计数
         self._runtime_ptrs = {}       # enemy addr -> 运行时详情指针缓存
+        self._custom_shield_ptrs = {} # enemy addr -> 旧式 Buff 护盾的值/状态地址
+        self._custom_shield_probe_tick = {} # enemy addr -> 最近一次 Buff 链探测 tick
         self._f_items = 0             # 上一帧 items 数组地址 (投机读用)
         self._f_cnt = 0               # 上一帧敌人数量
         self._f_ptrs = []             # 上一帧敌人指针列表
@@ -470,6 +545,64 @@ class EnemyReader:
         self._plan_by_id[roster_id] = record
         return record
 
+    def _remember_enemy_name(self, eid, name='', code='', desc=''):
+        """合并静态表和关卡运行时名称，并同步所有尚未出场的同类计划项。"""
+        if not eid:
+            return '', ''
+        if self._db is None:
+            self._db = load_enemy_db()
+        old = self._db.get(eid, {})
+        clean_name = name.strip() if isinstance(name, str) else ''
+        if clean_name and len(clean_name) <= 128 and not any(
+                ord(ch) < 0x20 for ch in clean_name):
+            merged = dict(old)
+            merged['name'] = clean_name
+            if code:
+                merged['code'] = code
+            if desc:
+                merged['desc'] = desc
+            self._db[eid] = merged
+            old = merged
+        resolved_name = old.get('name') or eid
+        resolved_code = old.get('code') or code or ''
+        for record in self._all_plan_records():
+            if record.get('key') != eid:
+                continue
+            planned = record.get('info')
+            if planned is not None and planned.lifecycle != 'active':
+                planned.name = resolved_name
+                planned.code = resolved_code
+        return resolved_name, resolved_code
+
+    def _load_level_enemy_names(self, level_data):
+        """从当前 LevelData.EnemyData[] 读取新版敌人名，不依赖旧图鉴表。"""
+        enemies_ptr = self._read_ptr(level_data + gs.LevelDataFields.ENEMIES)
+        data_ptrs = self._read_object_array(enemies_ptr, 4096)
+        if not data_ptrs:
+            return 0
+        blocks = self._detail_batch_read([
+            (ptr, gs.LevelEnemyDataFields.ATTRIBUTES) for ptr in data_ptrs])
+        rows = []
+        string_ptrs = []
+        for block in blocks:
+            if not block:
+                continue
+            name_ptr = _u64(block, gs.LevelEnemyDataFields.NAME)
+            desc_ptr = _u64(block, gs.LevelEnemyDataFields.DESCRIPTION)
+            key_ptr = _u64(block, gs.LevelEnemyDataFields.KEY)
+            rows.append((key_ptr, name_ptr, desc_ptr))
+            string_ptrs.extend((key_ptr, name_ptr, desc_ptr))
+        strings = self._read_strings(string_ptrs, max_chars=512)
+        loaded = 0
+        for key_ptr, name_ptr, desc_ptr in rows:
+            eid = strings.get(key_ptr, '')
+            name = strings.get(name_ptr, '')
+            if eid and name:
+                self._remember_enemy_name(
+                    eid, name, desc=strings.get(desc_ptr, ''))
+                loaded += 1
+        return loaded
+
     def _all_plan_records(self):
         return self._spawn_plan + self._runtime_spawn_plan
 
@@ -513,6 +646,7 @@ class EnemyReader:
             return False
         level_id = self._read_ustring_fast(
             self._read_ptr(level_data + gs.LevelDataFields.LEVEL_ID))
+        runtime_name_count = self._load_level_enemy_names(level_data)
         waves_ptr = self._read_ptr(level_data + gs.LevelDataFields.WAVES)
         wave_ptrs = self._read_object_array(waves_ptr, 1024)
         records = []
@@ -596,7 +730,7 @@ class EnemyReader:
         if records:
             self.log(f"[关卡] {level_id or '当前关卡'} 敌人计划 {len(records)} 个"
                      f"（固定 {fixed_count}，条件分支 {len(branch_records)}，"
-                     f"潜在召唤类型 {ref_count}）")
+                     f"潜在召唤类型 {ref_count}，名称 {runtime_name_count}）")
         else:
             self.log(f"[关卡] {level_id or '当前关卡'} 未解析到固定 SPAWN 序列")
         return bool(records)
@@ -1650,10 +1784,14 @@ class EnemyReader:
         """填充名称 (只读一次, 之后走缓存)"""
         if ep not in self._names:
             eid = self.mc.read_ustring(_u64(blk, gs.EntityFields.ID)) or ''
-            if self._db is None:
-                self._db = load_enemy_db()
-            ent = self._db.get(eid, {})
-            self._names[ep] = (eid, ent.get('name') or eid, ent.get('code') or '')
+            runtime_name = ''
+            data_ptr = info.data_ptr or _u64(blk, gs.EnemyFields.DATA)
+            if self.mc.is_ptr(data_ptr):
+                name_ptr = self._read_ptr(data_ptr + gs.LevelEnemyDataFields.NAME)
+                if self.mc.is_ptr(name_ptr):
+                    runtime_name = self.mc.read_ustring(name_ptr) or ''
+            name, code = self._remember_enemy_name(eid, runtime_name)
+            self._names[ep] = (eid, name, code)
         info.eid, info.name, info.code = self._names[ep]
         return info
 
@@ -1661,7 +1799,9 @@ class EnemyReader:
     def _parse_enemy_block(ep, blk):
         """解析 Enemy 主对象块；不跟随指针，供慢速与聚簇快读共用。"""
         info = EnemyInfo(ep)
-        if not blk or len(blk) < 0x148:
+        min_size = max(gs.EntityFields.BUFF_CONTAINER + 8,
+                       gs.EnemyFields.DATA + 8)
+        if not blk or len(blk) < min_size:
             info.alive = False
             return info
         info.hp = gs.fp_to_float(_u64(blk, gs.EntityFields.M_HP))
@@ -1670,6 +1810,7 @@ class EnemyReader:
         info.finish = _i32(blk, gs.EntityFields.FINISH_REASON)
         info.id_ptr = _u64(blk, gs.EntityFields.ID)
         info.attr_ptr = _u64(blk, gs.EntityFields.M_ATTRIBUTES)
+        info.data_ptr = _u64(blk, gs.EnemyFields.DATA)
         info.state_ptr = _u64(blk, gs.EntityFields.M_STATE_MACHINE)
         info.ep_ptr = _u64(blk, gs.EntityFields.M_EP_ARRAY)
         info.ep_controller_ptr = _u64(blk, gs.EntityFields.M_EP_CONTROLLER)
@@ -1720,6 +1861,11 @@ class EnemyReader:
             return
         info.state_id = runtime.get('state_id', info.state_id)
         info.shield = runtime.get('shield', info.shield)
+        info.special_shield = runtime.get('special_shield', info.special_shield)
+        info.special_shield_mask = runtime.get(
+            'special_shield_mask', info.special_shield_mask)
+        info.special_shield_sources = list(runtime.get(
+            'special_shield_sources', info.special_shield_sources))
         info.ep_remaining = dict(runtime.get('ep_remaining', {}))
         info.ep_break_recovery = bool(runtime.get('ep_break_recovery', False))
         info.abnormal_flags = list(runtime.get('abnormal_flags', info.abnormal_flags))
@@ -1785,7 +1931,8 @@ class EnemyReader:
     def _read_enemy(self, ep, with_runtime=True):
         blk = self.mc.read(ep, gs.EnemyFields.READ_SIZE)
         info = self._parse_enemy_block(ep, blk)
-        if not blk or len(blk) < 0x148:
+        if not blk or len(blk) < max(gs.EntityFields.BUFF_CONTAINER + 8,
+                                    gs.EnemyFields.DATA + 8):
             return info
         self._fill_name(ep, blk, info)
         self._fill_attrs(ep, blk, info)
@@ -1986,6 +2133,16 @@ class EnemyReader:
                 if self.mc.is_ptr(addr):
                     reqs.append((addr, size))
                     keys.append((ep, kind))
+            for idx, source in enumerate(self._custom_shield_ptrs.get(ep, ())):
+                value_addr = source.get('value_addr', 0)
+                buff_addr = source.get('buff_addr', 0)
+                if self.mc.is_ptr(value_addr):
+                    reqs.append((value_addr, 4))
+                    keys.append((ep, f'custom_value:{idx}'))
+                if self.mc.is_ptr(buff_addr):
+                    reqs.append((buff_addr + gs.BuffFields.IS_FINISHED,
+                                 gs.BuffFields.IS_VALID - gs.BuffFields.IS_FINISHED + 1))
+                    keys.append((ep, f'custom_status:{idx}'))
 
         runtime = {ep: dict(self._runtime_snapshot.get(ep, {})) for ep in eps}
         for (ep, kind), data in zip(keys, self._chan.batch_read(reqs) if reqs else []):
@@ -2007,8 +2164,35 @@ class EnemyReader:
             elif kind == 'combo_immunes':
                 cur['abnormal_combo_immunes'] = self._decode_short_array(
                     data, gs.AbnormalCombo.E_NUM)
+            elif kind.startswith('custom_value:'):
+                idx = int(kind.split(':', 1)[1])
+                sources = self._custom_shield_ptrs.get(ep, ())
+                if idx < len(sources):
+                    value = struct.unpack_from('<f', data, 0)[0]
+                    if math.isfinite(value) and 0 <= value <= 1_000_000_000:
+                        sources[idx]['value'] = value
+            elif kind.startswith('custom_status:'):
+                idx = int(kind.split(':', 1)[1])
+                sources = self._custom_shield_ptrs.get(ep, ())
+                if idx < len(sources):
+                    enabled_off = (gs.BuffFields.IS_ACTUALLY_ENABLED
+                                   - gs.BuffFields.IS_FINISHED)
+                    valid_off = gs.BuffFields.IS_VALID - gs.BuffFields.IS_FINISHED
+                    sources[idx]['active'] = (
+                        not bool(data[0]) and bool(data[enabled_off])
+                        and bool(data[valid_off]))
 
         for ep in eps:
+            sources = self._custom_shield_ptrs.get(ep, ())
+            if sources:
+                active = [source for source in sources if source.get('active')]
+                runtime[ep]['special_shield'] = sum(
+                    max(0.0, source.get('value', 0.0)) for source in active)
+                runtime[ep]['special_shield_mask'] = 0
+                for source in active:
+                    runtime[ep]['special_shield_mask'] |= source.get('mask', 0)
+                runtime[ep]['special_shield_sources'] = [
+                    dict(source) for source in sources]
             self._runtime_snapshot[ep] = runtime[ep]
             info = infos.get(ep)
             if info is not None:
@@ -2160,6 +2344,20 @@ class EnemyReader:
         new_eps = [ep for ep in ptrs if ep not in self._names or ep not in self._attr_snapshot]
         if new_eps:
             self._fill_new_enemies_chan(new_eps, infos)
+        # bootstrap 可能已经预填名称/属性缓存，因此不能只依赖 new_eps。对规则中声明的
+        # 敌人至少探测一次；若 Buff 比实体稍晚挂载，则约每 50 tick 低频重试。
+        custom_probe_eps = []
+        for ep in ptrs:
+            enemy_id = self._names.get(ep, ('', '', ''))[0]
+            if not any(enemy_id in rule.get('enemy_ids', ())
+                       for rule in CUSTOM_SHIELD_RULES):
+                continue
+            last_probe = self._custom_shield_probe_tick.get(ep, -10_000)
+            if (ep not in self._custom_shield_ptrs
+                    and tick - last_probe >= 50):
+                custom_probe_eps.append(ep)
+        if custom_probe_eps:
+            self._discover_custom_shields(custom_probe_eps, infos)
 
         # ---- 状态机 / 异常状态 / 免疫 / 五种损伤条 ----
         runtime_missing = any(ep not in self._runtime_snapshot for ep in ptrs)
@@ -2211,6 +2409,7 @@ class EnemyReader:
         # 清理已退场敌人的缓存 (地址可能被 GC 复用)
         for cache in (self._names, self._attr_cache, self._attr_snapshot, self._attr_ptrs,
                       self._runtime_snapshot, self._runtime_ptrs,
+                      self._custom_shield_ptrs, self._custom_shield_probe_tick,
                       self._skill_lp, self._skill_ap, self._skill_ptrs,
                       self._skill_cd):
             for ep in list(cache):
@@ -2385,7 +2584,7 @@ class EnemyReader:
                 self._skill_names.pop(s, None)
 
     def _fill_new_enemies_chan(self, new_eps, infos):
-        """新敌人通道内解析: 第 1 批 id 字符串+Attributes 块, 第 2 批 cachedData"""
+        """新敌人通道内解析：批量读取 ID、关卡名称、Attributes 与 cachedData。"""
         if self._db is None:
             self._db = load_enemy_db()
         reqs, keys = [], []
@@ -2399,7 +2598,10 @@ class EnemyReader:
             if info.attr_ptr and self.mc.is_ptr(info.attr_ptr):
                 reqs.append((info.attr_ptr, 0x60))
                 keys.append(('attr', ep))
-        cdps = {}
+            if info.data_ptr and self.mc.is_ptr(info.data_ptr):
+                reqs.append((info.data_ptr, gs.LevelEnemyDataFields.ATTRIBUTES))
+                keys.append(('data', ep))
+        cdps, eids, name_ptrs = {}, {}, {}
         if reqs:
             for (kind, ep), d in zip(keys, self._chan.batch_read(reqs)):
                 if kind == 'id':
@@ -2411,22 +2613,48 @@ class EnemyReader:
                                     gs.Il2CppString.CHARS + ln * 2].decode('utf-16-le')
                         except Exception:
                             eid = ''
-                    ent = self._db.get(eid, {})
-                    self._names[ep] = (eid, ent.get('name') or eid, ent.get('code') or '')
-                else:
+                    eids[ep] = eid
+                elif kind == 'attr':
                     cdp = _u64(d, gs.AttributesFields.M_CACHED_DATA) if d else 0
                     if cdp and self.mc.is_ptr(cdp):
                         cdps[ep] = cdp
-        if cdps:
-            eps = list(cdps)
-            reqs = [(cdps[ep], 0x20 + gs.AttributeType.E_NUM * gs.OBSCURED_FP_SIZE)
-                    for ep in eps]
-            for ep, cd in zip(eps, self._chan.batch_read(reqs)):
-                if cd and 0 < _i32(cd, gs.Il2CppArray.MAX_LENGTH) <= 64:
-                    self._attr_cache[ep] = cdps[ep]
-                    tmp = EnemyInfo(ep)
-                    self._apply_cached_data(cd, tmp)
-                    self._attr_snapshot[ep] = dict(tmp.attributes)
+                elif d:
+                    name_ptr = _u64(d, gs.LevelEnemyDataFields.NAME)
+                    if self.mc.is_ptr(name_ptr):
+                        name_ptrs[ep] = name_ptr
+
+        reqs, keys = [], []
+        for ep, cdp in cdps.items():
+            reqs.append((cdp, 0x20 + gs.AttributeType.E_NUM * gs.OBSCURED_FP_SIZE))
+            keys.append(('cached', ep))
+        for ep, name_ptr in name_ptrs.items():
+            reqs.append((name_ptr, gs.Il2CppString.CHARS + 128 * 2))
+            keys.append(('name', ep))
+        runtime_names = {}
+        if reqs:
+            for (kind, ep), data in zip(keys, self._chan.batch_read(reqs)):
+                if kind == 'cached':
+                    if data and 0 < _i32(data, gs.Il2CppArray.MAX_LENGTH) <= 64:
+                        self._attr_cache[ep] = cdps[ep]
+                        tmp = EnemyInfo(ep)
+                        self._apply_cached_data(data, tmp)
+                        self._attr_snapshot[ep] = dict(tmp.attributes)
+                    continue
+                if not data:
+                    continue
+                count = _i32(data, gs.Il2CppString.LENGTH)
+                if not (0 < count <= 128):
+                    continue
+                try:
+                    runtime_names[ep] = data[
+                        gs.Il2CppString.CHARS:
+                        gs.Il2CppString.CHARS + count * 2].decode('utf-16-le')
+                except UnicodeDecodeError:
+                    continue
+
+        for ep, eid in eids.items():
+            name, code = self._remember_enemy_name(eid, runtime_names.get(ep, ''))
+            self._names[ep] = (eid, name, code)
         # 通道内未解决的走一次完整慢读兜底
         for ep in new_eps:
             if ep not in self._names or ep not in self._attr_snapshot:
@@ -2484,13 +2712,13 @@ class EnemyReader:
             items, count = _u64(head, gs.ListInternal.ITEMS), _i32(head, gs.ListInternal.SIZE)
             if 0 < count <= 256 and self.mc.is_ptr(items):
                 reqs.append((items + gs.Il2CppArray.ITEMS, count * 0x18))
-                owners.append((ptr, count))
-        for (ptr, count), data in zip(owners, self._detail_batch_read(reqs)):
+                owners.append((ptr, items, count))
+        for (ptr, items, count), data in zip(owners, self._detail_batch_read(reqs)):
             if data:
-                arrays[ptr] = (count, data)
+                arrays[ptr] = (items, count, data)
         string_ptrs = []
         parsed = {}
-        for ptr, (count, data) in arrays.items():
+        for ptr, (items, count, data) in arrays.items():
             rows = []
             for idx in range(count):
                 off = idx * 0x18
@@ -2500,14 +2728,16 @@ class EnemyReader:
                 value = struct.unpack_from('<f', data, off + 8)[0]
                 value_str_ptr = _u64(data, off + 0x10)
                 string_ptrs.extend((key_ptr, value_str_ptr))
-                rows.append((key_ptr, value, value_str_ptr))
+                value_addr = items + gs.Il2CppArray.ITEMS + off + 8
+                rows.append((key_ptr, value, value_str_ptr, value_addr))
             parsed[ptr] = rows
         strings = self._read_strings(string_ptrs)
         for ptr, rows in parsed.items():
             result[ptr] = [
                 {'key': strings.get(kp, ''), 'value': value,
-                 'value_str': strings.get(sp, '') if sp else ''}
-                for kp, value, sp in rows
+                 'value_str': strings.get(sp, '') if sp else '',
+                 'value_addr': value_addr}
+                for kp, value, sp, value_addr in rows
             ]
         return result
 
@@ -2601,7 +2831,7 @@ class EnemyReader:
             override_ptr = _u64(data, gs.BuffFields.OVERRIDE_KEY)
             effect_ptr = _u64(data, gs.BuffFields.EFFECT_KEY)
             bb_ptr = _u64(data, gs.BuffFields.M_BLACKBOARD)
-            out.append({
+            record = {
                 'addr': ptr,
                 'key': strings.get(key_ptr, '') or '?',
                 'override_key': strings.get(override_ptr, ''),
@@ -2640,8 +2870,39 @@ class EnemyReader:
                 'has_shield': bool(data[gs.BuffFields.HAS_SHIELD]),
                 'shield_mask': _i32(data, gs.BuffFields.SHIELD_MASK),
                 'blackboard': blackboards.get(bb_ptr, []),
-            })
+            }
+            custom_value, custom_mask, custom_sources = summarize_custom_shields(
+                [record])
+            record['custom_shield_value'] = custom_value
+            record['custom_shield_mask'] = custom_mask
+            record['custom_shield_sources'] = custom_sources
+            out.append(record)
         return out
+
+    def _discover_custom_shields(self, eps, infos):
+        """首次见到旧式特殊护盾敌人时解析一次 Buff 链并缓存直读地址。"""
+        for ep in eps:
+            self._custom_shield_probe_tick[ep] = self._fast_tick
+            info = infos.get(ep)
+            if info is None or not self.mc.is_ptr(info.buff_container_ptr):
+                continue
+            enemy_id = self._names.get(ep, ('', '', ''))[0]
+            if not any(enemy_id in rule.get('enemy_ids', ())
+                       for rule in CUSTOM_SHIELD_RULES):
+                continue
+            buffs = self._read_active_buffs(info.buff_container_ptr)
+            total, mask, sources = summarize_custom_shields(buffs, enemy_id)
+            sources = [source for source in sources
+                       if self.mc.is_ptr(source.get('buff_addr', 0))
+                       and self.mc.is_ptr(source.get('value_addr', 0))]
+            if not sources:
+                continue
+            self._custom_shield_ptrs[ep] = sources
+            runtime = self._runtime_snapshot.setdefault(ep, {})
+            runtime['special_shield'] = total
+            runtime['special_shield_mask'] = mask
+            runtime['special_shield_sources'] = [dict(source) for source in sources]
+            self._copy_runtime(info, runtime)
 
     def _read_global_buffs(self, selected_addr=0):
         """读取 BattleController.m_globalBuffs，并解析精确目标映射。"""
@@ -2785,7 +3046,8 @@ class EnemyReader:
 
     def _read_enemy_detail_impl(self, addr, heavy_only=False):
         (blk,) = self._detail_batch_read([(addr, gs.EnemyFields.READ_SIZE)])
-        if not blk or len(blk) < 0x148:
+        if not blk or len(blk) < max(gs.EntityFields.BUFF_CONTAINER + 8,
+                                    gs.EnemyFields.DATA + 8):
             return None
         info = self._parse_enemy_block(addr, blk)
         if not heavy_only:
@@ -2822,6 +3084,11 @@ class EnemyReader:
                 self._fill_runtime_slow(info)
             info.skills = list(self._skill_cd.get(addr, []))
         info.buffs = self._read_active_buffs(info.buff_container_ptr)
+        special, special_mask, special_sources = summarize_custom_shields(
+            info.buffs, info.eid)
+        info.special_shield = special
+        info.special_shield_mask = special_mask
+        info.special_shield_sources = special_sources
         info.global_buffs = self._read_global_buffs(addr)
         return info
 

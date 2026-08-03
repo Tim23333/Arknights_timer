@@ -5,7 +5,7 @@ a = Analysis(
     ['G:\\Arknights\\backend\\run.py'],
     pathex=['G:\\Arknights'],
     binaries=[],
-    datas=[('G:\\Arknights\\aaa.ico', '.'), ('G:\\Arknights\\backend\\build\\TEST_BUILD', '.'), ('G:\\Arknights\\tools', 'tools'), ('G:\\Arknights\\backend\\app\\static', 'backend/app/static'), ('G:\\Arknights\\data\\tables\\enemy_handbook_table493349.bin', 'data/tables'), ('G:\\Arknights\\data\\tables\\character_tabled88efb.bin', 'data/tables'), ('G:\\Arknights\\ark_parser\\char_names.json', 'ark_parser'), ('G:\\Arknights\\backend\\dist\\AKTimerTool.exe', 'tools')],
+    datas=[('G:\\Arknights\\aaa.ico', '.'), ('G:\\Arknights\\backend\\build\\TEST_BUILD', '.'), ('G:\\Arknights\\tools', 'tools'), ('G:\\Arknights\\backend\\app\\static', 'backend/app/static'), ('G:\\Arknights\\data\\tables\\enemy_handbook_table493349.bin', 'data/tables'), ('G:\\Arknights\\data\\tables\\enemy_names.json', 'data/tables'), ('G:\\Arknights\\data\\tables\\character_table9fc534.bin', 'data/tables'), ('G:\\Arknights\\ark_parser\\char_names.json', 'ark_parser'), ('G:\\Arknights\\backend\\dist\\AKTimerTool.exe', 'tools')],
     hiddenimports=['tools.timer.ak_memory_reader', 'tools.deploy_tracker.ak_deploy_reader', 'tools.enemy_health.enemy_reader', 'tools.enemy_health.memcore', 'tools.enemy_health.enemy_db', 'tools.enemy_health.game_structs', 'numpy', 'pymem', 'PySide6', 'websockets'],
     hookspath=[],
     hooksconfig={},

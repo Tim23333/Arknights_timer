@@ -117,6 +117,7 @@ BLACKBOARD_LABELS = {
     'final_addition': '最终加算',
     'physical': '作用于物理伤害',
     'magical': '作用于法术伤害',
+    'dynamic': '动态值',
 }
 
 BOOL_KEYS = {
@@ -193,6 +194,10 @@ def _modifier_description(modifier):
 
 def buff_chinese_name(buff):
     key = buff.get('key', '')
+    if buff.get('custom_shield_value', 0.0) > 0:
+        types = [name for bit, name in gs.DAMAGE_TYPE_MASK_CN_NAMES.items()
+                 if buff.get('custom_shield_mask', 0) & bit]
+        return ('/'.join(types) if types else '特殊') + '屏障（分段）'
     if key in BUFF_NAME_OVERRIDES:
         return BUFF_NAME_OVERRIDES[key]
     immunes = buff.get('abnormal_immunes') or []
@@ -227,6 +232,13 @@ def describe_active_buff(buff):
         types = [name for bit, name in gs.DAMAGE_TYPE_MASK_CN_NAMES.items()
                  if buff.get('shield_mask', 0) & bit]
         parts.append('提供' + ('/'.join(types) if types else '指定伤害类型') + '护盾')
+    custom_value = buff.get('custom_shield_value', 0.0)
+    if custom_value > 0:
+        types = [name for bit, name in gs.DAMAGE_TYPE_MASK_CN_NAMES.items()
+                 if buff.get('custom_shield_mask', 0) & bit]
+        parts.append(
+            f"提供{'/'.join(types) if types else '特殊伤害'}屏障；"
+            f"当前分段剩余 {_number(custom_value)}，完整屏障为所有有效分段之和")
     if not parts:
         parts.append('该效果由战斗事件或脚本执行，当前没有直接属性/状态修正项。')
     return '；'.join(parts)

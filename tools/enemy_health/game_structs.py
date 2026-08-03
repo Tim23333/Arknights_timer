@@ -24,6 +24,8 @@
 所有偏移均为相对对象起始地址的绝对偏移 (含 0x10 对象头)。
 """
 
+import json
+import os
 import struct
 
 # ============================================================
@@ -117,31 +119,31 @@ class EntityFields:
     M_SP = 0x50               # ObscuredFP 技力
     M_RESPAWN_CNT = 0x78      # int32
     M_EP_ARRAY = 0x80         # FP[]
-    M_EP_CONTROLLER = 0xE8    # Entity.EPController*
-    M_SHIELD_CONTROLLER = 0xF0  # Entity.ShieldUIController*
-    M_DIRECTION = 0xD4        # int32
-    M_ATTRIBUTES = 0x98       # Attributes* [实测]
-    ID = 0x130                # string <id> [实测]
-    TMPL_ID = 0x138           # string <tmplId>
-    FINISH_REASON = 0x140     # int32
-    BUFF_CONTAINER = 0x150    # Buff.BuffContainer*
-    MAX_SP = 0x160            # int32
-    MINUS_HP = 0x168          # FP
+    M_EP_CONTROLLER = 0x100   # Entity.EPController*
+    M_SHIELD_CONTROLLER = 0x108  # Entity.ShieldUIController*
+    M_DIRECTION = 0xEC        # int32
+    M_ATTRIBUTES = 0xB0       # Attributes* [2026-08 新版实测]
+    ID = 0x148                # string <id> [2026-08 新版实测]
+    TMPL_ID = 0x150           # string <tmplId>
+    FINISH_REASON = 0x158     # int32
+    BUFF_CONTAINER = 0x168    # Buff.BuffContainer*
+    MAX_SP = 0x178            # int32
+    MINUS_HP = 0x180          # FP
 
 
 # ============================================================
 # Enemy (敌方单位)
 # ============================================================
 class EnemyFields:
-    M_CURRENT_TILE = 0x320      # Tile*
-    M_BLOCK_POSITION = 0x3C0    # Vector2 (float x,y) 阻挡位置
-    M_POS_IN_LAST_FRAME = 0x3D0 # Vector2 (float x,y) 上一帧地图坐标
-    M_ALL_SKILLS = 0x410        # EnemySkill[] 全部技能组件 [实测]
-    ROUTE_SPAWN_POS = 0x478     # GridPosition (int32 row,col) 出生格
-    READ_SIZE = 0x508           # 含 m_skills 与 Enemy.Options（召唤标记/actionData）
-    M_SKILLS = 0x498            # List<EnemySkill> 激活技能列表 [实测]
-    DATA = 0x4D0                # LevelData.EnemyData*
-    OPTIONS = 0x4D8             # inline Enemy.Options
+    M_CURRENT_TILE = 0x350      # Tile*
+    M_BLOCK_POSITION = 0x3F8    # Vector2 (float x,y) 阻挡位置
+    M_POS_IN_LAST_FRAME = 0x408 # Vector2 (float x,y) 上一帧地图坐标
+    M_ALL_SKILLS = 0x448        # EnemySkill[] 全部技能组件
+    ROUTE_SPAWN_POS = 0x4B0     # GridPosition (int32 row,col) 出生格
+    READ_SIZE = 0x548           # 含 m_skills、EnemyData 与 Options.actionData
+    M_SKILLS = 0x4D0            # List<EnemySkill> 激活技能列表
+    DATA = 0x510                # LevelData.EnemyData*
+    OPTIONS = 0x518             # inline Enemy.Options
 
 
 class EnemyOptionsFields:
@@ -176,6 +178,14 @@ class ESkillDataFields:
     COOLDOWN = 0x1C             # float 配置 CD
     INIT_COOLDOWN = 0x20        # float 初始 CD (出场后首次)
     SP_COST = 0x24              # int32
+
+
+class LevelEnemyDataFields:
+    """LevelData.EnemyData；运行时可提供新敌人的本地化名称。"""
+    NAME = 0x10                 # string
+    DESCRIPTION = 0x18          # string
+    KEY = 0x20                  # string enemy_xxx
+    ATTRIBUTES = 0x28           # AttributesData
 
 
 # ============================================================
@@ -286,7 +296,7 @@ ATTRIBUTE_CN_NAMES = {idx: name for idx, _, name in ATTRIBUTE_DEFS}
 
 
 class AbnormalFlag:
-    E_NUM = 45
+    E_NUM = 46
 
 
 ABNORMAL_FLAG_DEFS = (
@@ -335,6 +345,7 @@ ABNORMAL_FLAG_DEFS = (
     (42, 'FEARED_PRIVATE', '恐惧（私有）'),
     (43, 'DOZE', '昏睡'),
     (44, 'TELEPORTED', '传送'),
+    (45, 'GROUND_BOUND', '地面束缚'),
 )
 ABNORMAL_FLAG_INTERNAL_NAMES = {idx: key for idx, key, _ in ABNORMAL_FLAG_DEFS}
 ABNORMAL_FLAG_CN_NAMES = {idx: name for idx, _, name in ABNORMAL_FLAG_DEFS}
@@ -430,10 +441,10 @@ class BuffFields:
     M_STACK_CNT = 0x8C
     M_MAX_VALID_STACK_CNT = 0x90
     M_BLACKBOARD = 0xA8
-    IS_FINISHED = 0x1E9
-    IS_ACTUALLY_ENABLED = 0x1EC
-    IS_VALID = 0x1EF
-    IS_EP_BREAK_BUFF = 0x1F0
+    IS_FINISHED = 0x1EA
+    IS_ACTUALLY_ENABLED = 0x1ED
+    IS_VALID = 0x1F0
+    IS_EP_BREAK_BUFF = 0x1F1
     KEY = 0x1F8
     OVERRIDE_KEY = 0x200
     INSTANCE_UID = 0x208
@@ -462,12 +473,12 @@ class GlobalBuffFields:
 
 class BuffDataFields:
     BUFF_KEY = 0x18
-    TEMPLATE_KEY = 0x28
-    LIFE_TIME_TYPE = 0x70
-    DURATION_KEY = 0x78
-    LIFE_TIME = 0x80
-    PRIORITY = 0x98
-    READ_SIZE = 0xA0
+    TEMPLATE_KEY = 0x30
+    LIFE_TIME_TYPE = 0x78
+    DURATION_KEY = 0x80
+    LIFE_TIME = 0x88
+    PRIORITY = 0xA0
+    READ_SIZE = 0xB0
 
 
 # ============================================================
@@ -559,6 +570,7 @@ class SchedulerDriverFields:
 
 class LevelDataFields:
     LEVEL_ID = 0x18                    # string
+    ENEMIES = 0x70                     # EnemyData[]（含本关本地化名称与属性）
     ENEMY_DB_REFS = 0x78               # EnemyDataDbReference[]
     WAVES = 0x80                       # WaveData[]
     BRANCHES = 0x88                    # ListDict<string, BranchData>
@@ -617,6 +629,60 @@ class SchedulerActionItemFields:
 
 class SpawnActionType:
     SPAWN = 0
+
+
+# ============================================================
+# 自动生成偏移覆盖
+# ============================================================
+GENERATED_OFFSET_INFO = {}
+
+
+def apply_generated_offsets(path=None):
+    """加载 update_from_unpack.py 从新版 dump.cs 生成的偏移。
+
+    源码中的数值是最近一次验证通过的安全默认值；生成文件只允许覆盖本模块中
+    已声明的字段，避免损坏文件或新字段名称误改任意模块状态。
+    """
+    global GENERATED_OFFSET_INFO
+    if path is None:
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            'generated_offsets.json')
+    if not os.path.isfile(path):
+        return False
+    try:
+        with open(path, 'r', encoding='utf-8') as stream:
+            payload = json.load(stream)
+        classes = payload.get('classes', {})
+        for class_name, values in classes.items():
+            target = globals().get(class_name)
+            if not isinstance(target, type) or not isinstance(values, dict):
+                continue
+            for field_name, value in values.items():
+                if not hasattr(target, field_name):
+                    continue
+                if isinstance(value, str):
+                    value = int(value, 0)
+                if isinstance(value, int) and 0 <= value <= 0x10000:
+                    setattr(target, field_name, value)
+        enums = payload.get('enums', {})
+        for enum_name, values in enums.items():
+            target = globals().get(enum_name)
+            if not isinstance(target, type) or not isinstance(values, dict):
+                continue
+            count = values.get('E_NUM')
+            if isinstance(count, int) and 0 < count <= 256 and hasattr(target, 'E_NUM'):
+                target.E_NUM = count
+        GENERATED_OFFSET_INFO = {
+            'source': payload.get('source', ''),
+            'source_sha256': payload.get('source_sha256', ''),
+            'generated_at': payload.get('generated_at', ''),
+        }
+        return True
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return False
+
+
+apply_generated_offsets()
 
 
 # ============================================================

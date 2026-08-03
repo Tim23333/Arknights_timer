@@ -11,6 +11,7 @@ TABLE_NAMES = [
     'charword_table', 'handbook_info_table', 'uniequip_table',
     'battle_equip_table', 'skin_table', 'retro_table',
     'roguelike_topic_table', 'sandbox_perm_table', 'building_data',
+    'enemy_handbook_table', 'enemy_database',
 ]
 
 

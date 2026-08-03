@@ -7,7 +7,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 from tools.enemy_health import game_structs as gs
-from tools.enemy_health.enemy_reader import EnemyInfo, EnemyReader
+from tools.enemy_health.enemy_reader import (
+    EnemyInfo, EnemyReader, summarize_custom_shields,
+)
+from tools.enemy_health.update_from_unpack import extract_preunpacked, parse_dump
 from tools.enemy_health.memcore import (
     MemCore, find_running_emulator_adbs, query_adb_devices,
 )
@@ -158,6 +161,62 @@ class EnemyDetailModelTests(unittest.TestCase):
         self.assertEqual({idx for idx, _, _ in gs.ATTRIBUTE_DEFS},
                          set(range(0, 9)) | set(range(13, 38)))
 
+    def test_august_offsets_and_new_abnormal_flag_are_loaded(self):
+        self.assertEqual(gs.EntityFields.M_ATTRIBUTES, 0xB0)
+        self.assertEqual(gs.EntityFields.ID, 0x148)
+        self.assertEqual(gs.EnemyFields.DATA, 0x510)
+        self.assertEqual(gs.EnemyFields.READ_SIZE, 0x548)
+        self.assertEqual(gs.BuffFields.IS_ACTUALLY_ENABLED, 0x1ED)
+        self.assertEqual(gs.AbnormalFlag.E_NUM, 46)
+        self.assertEqual(gs.ABNORMAL_FLAG_CN_NAMES[45], '地面束缚')
+
+    def test_dump_parser_tracks_namespace_fields_and_enum_values(self):
+        source = (
+            '// Namespace: Torappu.Battle\n'
+            'public abstract class Entity : Object\n'
+            '{\n'
+            '    private FP m_hp; // 0x40\n'
+            '    private string <id>k__BackingField; // 0x148\n'
+            '}\n'
+            '// Namespace: Torappu\n'
+            'public enum AbnormalFlag\n'
+            '{\n'
+            '    public int value__; // 0x0\n'
+            '    public const AbnormalFlag GROUND_BOUND = 45;\n'
+            '    public const AbnormalFlag E_NUM = 46;\n'
+            '}\n')
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / 'dump.cs'
+            path.write_text(source, encoding='utf-8')
+            classes, enums = parse_dump(path)
+        self.assertEqual(classes[('Torappu.Battle', 'Entity')]['m_hp'], 0x40)
+        self.assertEqual(classes[('Torappu.Battle', 'Entity')]
+                         ['<id>k__BackingField'], 0x148)
+        self.assertEqual(enums[('Torappu', 'AbnormalFlag')]['E_NUM'], 46)
+
+    def test_explicit_new_table_wins_over_later_old_hash(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            new_dir, old_dir, output = root / 'new', root / 'old', root / 'out'
+            new_dir.mkdir(); old_dir.mkdir()
+            (new_dir / 'enemy_databaseaaaaaa.dat').write_bytes(b'new-data')
+            (old_dir / 'enemy_databasebbbbbb.bin').write_bytes(b'old-data')
+            copied = extract_preunpacked([new_dir, old_dir], output)
+            self.assertEqual([path.name for path in copied],
+                             ['enemy_databaseaaaaaa.bin'])
+            self.assertEqual(copied[0].read_bytes(), b'new-data')
+
+    def test_runtime_name_updates_all_pending_same_id(self):
+        reader = EnemyReader(mc=object())
+        reader._db = {}
+        reader._set_spawn_plan([
+            {'key': 'enemy_new'}, {'key': 'enemy_new'}, {'key': 'enemy_other'},
+        ])
+        name, code = reader._remember_enemy_name('enemy_new', '新版敌人')
+        self.assertEqual((name, code), ('新版敌人', ''))
+        self.assertEqual([row['info'].name for row in reader._spawn_plan],
+                         ['新版敌人', '新版敌人', 'enemy_other'])
+
     def test_anger_translation_and_damage_value(self):
         self.assertEqual(gs.ELEMENT_CN_NAMES[gs.ElementType.ANGER], '狂躁损伤')
         enemy = EnemyInfo(1)
@@ -173,6 +232,38 @@ class EnemyDetailModelTests(unittest.TestCase):
         enemy.ep_remaining[gs.ElementType.SANITY] = 1325.0
         self.assertEqual(enemy.element_damage(gs.ElementType.SANITY),
                          (675.0, 1325.0, 2000.0))
+
+    def test_mouse_king_legacy_magic_shield_sums_three_live_segments(self):
+        buffs = []
+        for index in 'abc':
+            buffs.append({
+                'addr': 0x1000 + len(buffs) * 0x100,
+                'key': f'mousek_shield[{index}]',
+                'enabled': True,
+                'valid': True,
+                'finished': False,
+                'blackboard': [{
+                    'key': 'dynamic', 'value': 4667.0,
+                    'value_addr': 0x5000 + len(buffs) * 0x100,
+                }],
+            })
+        total, mask, sources = summarize_custom_shields(
+            buffs, 'enemy_1509_mousek')
+        self.assertEqual(total, 14001.0)
+        self.assertEqual(mask, 4)
+        self.assertEqual(len(sources), 3)
+
+    def test_finished_custom_shield_segment_is_not_counted(self):
+        buff = {
+            'addr': 0x1000, 'key': 'mousek_shield[a]',
+            'enabled': True, 'valid': True, 'finished': True,
+            'blackboard': [{'key': 'dynamic', 'value': 4667.0,
+                            'value_addr': 0x5000}],
+        }
+        total, mask, sources = summarize_custom_shields(
+            [buff], 'enemy_1509_mousek')
+        self.assertEqual((total, mask), (0.0, 0))
+        self.assertFalse(sources[0]['active'])
 
     def test_common_statuses_are_combined(self):
         enemy = EnemyInfo(1)

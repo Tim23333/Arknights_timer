@@ -88,6 +88,8 @@ python run.py
 - **离场敌方不显示**默认勾选；取消后显示完整历史及离场前最后一帧数据
 - 表格准实时展示 (默认 0.016 秒刷新=60Hz, 可调至 0.008): 名称/编号/ID/坐标/血条/攻击/防御/法抗/移速/攻速/状态
 - **显示列**可逐项勾选全部最终属性、异常状态、状态免疫、护盾，以及神经/侵蚀/灼燃/凋亡/狂躁五类损伤条；主表按与游戏 HUD 一致的“剩余/上限（剩余比例）”显示，选择会持久化
+- **精英/Boss 损伤上限**优先使用运行时 `m_epArray[NONE]`，不再被静态 `MAX_EP=1000` 覆盖；鼠王等单位可正确显示 2000 上限
+- **伤害护盾**同时显示统一 `ShieldUIController` 护盾与旧式特殊护盾。鼠王的法术屏障由三个 `mousek_shield[a/b/c]` Buff 分段保存，工具首次识别后直接轮询 Blackboard 动态值并汇总，不会每帧重扫 Buff 链
 - 主表数值默认保留 **2 位小数**；“列宽自适应”按当前可见列和视口宽度智能排版，优先完整显示生命值与损伤条，并把剩余空间分配给名称、技能和出场条件列
 - **迷你模式**把同一张实时敌人表移动到半透明置顶浮层；透明度只作用于背景，文字、血条数值和表格描边保持高对比。未锁定时可拖动、缩放、调整 25%-100% 透明度，并可用左键或右键点击行查看详情。锁定后按存活敌人数自动扩高、最多同时展示 20 行，左键继续穿透到后方窗口，表格区域保留滚轮浏览和右键详情；默认全局快捷键 `Alt+K` 锁定/解锁
 - 主表始终把当前场上且存活的敌人置顶；未出场敌人随后，阵亡或已离场敌人置底，各组内部仍保持关卡预定/首次发现顺序
@@ -192,6 +194,36 @@ backend/app/enemy_buff_descriptions.py # Buff/GlobalBuff 中文说明
 属性索引： MAX_HP=0 ATK=1 DEF=2 RES=3 MOVE_SPEED=6 ATTACK_SPEED=7
 
 敌人名称来自 `data/tables/enemy_handbook_table*.bin`（约 1630 条）。
+
+## 游戏更新后的通用修复流程
+
+游戏更新后如果新敌人显示为 ID、血量上限/攻防法抗均为 0，通常分别对应两类数据：
+
+- `Ark_data/dump.cs` 决定运行时对象字段偏移，用来修复血量、属性、状态、Buff 和技能 CD。
+- `enemy_handbook_table` 决定跨关卡静态中文名；它不在 Il2CppDumper 输出中，必须从新版游戏 AB 另行解包。
+
+把新版 Il2CppDumper 输出放进 `Ark_data/` 后，在仓库根目录执行：
+
+```bash
+python -m tools.enemy_health.update_from_unpack --ark-data Ark_data
+python -m unittest tools.enemy_health.test_enemy_health backend.test_enemy_ui -q
+```
+
+第一条命令会从 `dump.cs` 生成 `tools/enemy_health/generated_offsets.json`，程序启动时会自动加载；同时会尝试在 `data/anon/` 和 `Ark_data/` 中寻找已经解出的敌人表。
+
+要完整更新未出场敌人的静态名称，推荐用 AssetStudio-Arknights 解出新版 anon AB，然后执行：
+
+```bash
+python -m tools.enemy_health.update_from_unpack \
+  --ark-data Ark_data \
+  --assets "D:/path/to/AssetStudio-output"
+```
+
+脚本会提取 `enemy_handbook_table*.bin`、`enemy_database*.bin`，并生成 `data/tables/enemy_names.json`。也可对 UnityPy 能直接读取的原始 AB 使用 `--ab-dir`。仅检查、不写文件时加 `--check`。
+
+ArknightsStudioCLI 的 `exportRaw` 模式会把 TextAsset 导出为 `.dat`；更新脚本会自动识别 `.dat`、`.bin` 和 `.bytes`，复制进 `data/tables` 时统一保存为 `.bin`。
+
+即使静态图鉴表暂时没更新，扫描器也会从场上 `Enemy.data` 获取已生成新敌人的中文名；新版图鉴表用于让同关未出场敌人和离线打包数据库在生成前就有名称。若脚本提示 handbook 早于 `dump.cs`，说明当前仍是旧表，不能把“解析成功”误当作“已经更新”。
 
 ## 已知限制
 
