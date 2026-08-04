@@ -1,6 +1,6 @@
 import json
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, ttk
 import struct
 import pymem.memory
 import pymem.exception
@@ -19,6 +19,7 @@ except ImportError:
     HAS_NUMPY = False
 
 from ak_memory_reader import AKMemoryReader
+from process_scan import find_emulator_processes, list_processes
 
 
 # 单次 ReadProcessMemory 的最大读取量。扫描任务会按该大小切块，避免把模拟器的
@@ -302,13 +303,91 @@ class TimerApp:
         self.root.after(10, self.update_data)
 
 
+class ProcessPickerDialog:
+    """兜底：自动识别不到模拟器时，手动选择持有游戏内存的进程。"""
+
+    def __init__(self, parent, on_pick):
+        self.on_pick = on_pick
+        self.processes = []
+
+        self.top = tk.Toplevel(parent)
+        self.top.title("手动选择模拟器进程")
+        self.top.geometry("680x440")
+        self.top.configure(bg="#1E1E1E")
+
+        hint = tk.Label(
+            self.top,
+            text="选择持有游戏内存的模拟器虚拟机进程：MuMu 5.0 通常是 MuMuNxDevice.exe，"
+                 "旧版 MuMu 是 MuMuVMMHeadless.exe（不是 MuMuPlayer.exe 界面进程）。",
+            fg="#AAAAAA", bg="#1E1E1E", font=("Consolas", 9),
+            wraplength=640, justify="left")
+        hint.pack(padx=10, pady=(8, 4), anchor="w")
+
+        filter_row = tk.Frame(self.top, bg="#1E1E1E")
+        filter_row.pack(fill="x", padx=10)
+        tk.Label(filter_row, text="筛选:", fg="white", bg="#1E1E1E",
+                 font=("Consolas", 10)).pack(side="left")
+        self.filter_var = tk.StringVar()
+        entry = tk.Entry(filter_row, textvariable=self.filter_var, bg="black",
+                         fg="#00FF00", font=("Consolas", 10))
+        entry.pack(side="left", fill="x", expand=True, padx=5)
+        self.filter_var.trace_add("write", lambda *_: self._reload_rows())
+        entry.focus_set()
+
+        tree_frame = tk.Frame(self.top, bg="#1E1E1E")
+        tree_frame.pack(fill="both", expand=True, padx=10, pady=6)
+        self.tree = ttk.Treeview(tree_frame, columns=("name", "pid", "path"),
+                                 show="headings", height=14)
+        self.tree.heading("name", text="进程名")
+        self.tree.heading("pid", text="PID")
+        self.tree.heading("path", text="路径")
+        self.tree.column("name", width=180)
+        self.tree.column("pid", width=70, anchor="e")
+        self.tree.column("path", width=380)
+        scroll = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=scroll.set)
+        self.tree.pack(side="left", fill="both", expand=True)
+        scroll.pack(side="right", fill="y")
+        self.tree.bind("<Double-1>", lambda _e: self._confirm())
+
+        btn_row = tk.Frame(self.top, bg="#1E1E1E")
+        btn_row.pack(fill="x", padx=10, pady=(0, 10))
+        tk.Button(btn_row, text="使用选中进程", command=self._confirm, bg="#333333",
+                  fg="white", font=("Consolas", 10, "bold")).pack(side="left")
+        tk.Button(btn_row, text="刷新列表", command=self._reload_processes, bg="#333333",
+                  fg="white", font=("Consolas", 10)).pack(side="left", padx=8)
+
+        self._reload_processes()
+
+    def _reload_processes(self):
+        self.processes = sorted(list_processes(), key=lambda item: item[0].lower())
+        self._reload_rows()
+
+    def _reload_rows(self):
+        keyword = self.filter_var.get().strip().lower()
+        self.tree.delete(*self.tree.get_children())
+        for name, pid, path in self.processes:
+            if keyword and keyword not in f"{name} {path}".lower():
+                continue
+            self.tree.insert("", "end", values=(name, pid, path))
+
+    def _confirm(self):
+        selection = self.tree.selection()
+        if not selection:
+            messagebox.showinfo("未选择", "请先在列表中选择一个进程。", parent=self.top)
+            return
+        name = str(self.tree.item(selection[0], "values")[0])
+        self.top.destroy()
+        self.on_pick(name)
+
+
 class ProcessWaiter:
     """哨兵模式：后台静默轮询等待模拟器启动"""
 
     def __init__(self, root):
         self.root = root
         self.root.title("Waiting for Emulator")
-        self.root.geometry("350x120")
+        self.root.geometry("350x160")
         self.root.configure(bg="#1E1E1E")
         self.root.attributes("-topmost", True)
 
@@ -316,16 +395,12 @@ class ProcessWaiter:
                               font=("Consolas", 14, "bold"))
         self.label.pack(expand=True, fill="both")
 
-        self.target_processes = [
-            "MuMuVMMHeadless.exe",
-            "NemuHeadless.exe",
-            "Ld9BoxHeadless.exe",
-            "LdBoxHeadless.exe",
-            "dnplayer.exe",
-            "NoxVMMHeadless.exe",
-            "HD-Player.exe",
-            "MEmuHeadless.exe"
-        ]
+        # 兜底：自动识别失败时手动选择持有游戏内存的模拟器进程
+        self.picker = None
+        self.pick_btn = tk.Button(self.root, text="找不到？手动选择进程",
+                                  command=self.open_process_picker, bg="#333333",
+                                  fg="white", font=("Consolas", 10))
+        self.pick_btn.pack(pady=(0, 10))
 
         self.dot_count = 0
         self.check_process()
@@ -336,28 +411,34 @@ class ProcessWaiter:
         dots = "." * self.dot_count
         self.label.config(text=f"正在监听模拟器进程{dots}")
 
-        found_process = None
-        for proc in self.target_processes:
+        # 已知名单 (含 MuMu 5.0 的 MuMuNxDevice.exe) 优先，名称/路径特征兜底
+        for name, _pid, _path in find_emulator_processes():
             try:
                 # 尝试触碰该进程
-                pymem.Pymem(proc)
-                found_process = proc
-                break
+                pymem.Pymem(name)
             except Exception:
-                pass
-
-        if found_process:
+                continue
             # 找到目标，瞬间切换形态
-            self.launch_wizard(found_process)
-        else:
-            # 没找到，设定 1000 毫秒后再次无阻塞调用自己
-            self.root.after(1000, self.check_process)
+            self.launch_wizard(name)
+            return
 
-    def launch_wizard(self, found_process):
+        # 没找到，设定 1000 毫秒后再次无阻塞调用自己
+        self.root.after(1000, self.check_process)
+
+    def open_process_picker(self):
+        if self.picker is not None and self.picker.top.winfo_exists():
+            self.picker.top.lift()
+            return
+        self.picker = ProcessPickerDialog(
+            self.root, lambda name: self.launch_wizard(name, exit_on_failure=False))
+
+    def launch_wizard(self, found_process, exit_on_failure=True):
         reader = AKMemoryReader(process_name=found_process)
         if not reader.connect():
             messagebox.showerror("连接失败", f"挂载 {found_process} 时被系统拒绝。\n请确保程序以管理员权限运行。")
-            sys.exit()
+            if exit_on_failure:
+                sys.exit()
+            return
 
         # 清除等待界面的UI元素
         for widget in self.root.winfo_children():

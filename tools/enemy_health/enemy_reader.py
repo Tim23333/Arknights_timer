@@ -50,6 +50,16 @@ CUSTOM_SHIELD_RULES = (
     },
 )
 
+# 这些类型都继承 SelectorTrigger，运行时共享 m_lastTarget@0x38 布局。
+# 具体派生类覆写 Search 时仍可能附带额外条件，因此只有“已有有效目标”可以
+# 直接判定通过；空目标不能反向断言下一次 Search 一定失败。
+SELECTOR_TRIGGER_TYPES = frozenset({
+    'SelectorTrigger', 'BoomberangAttackTrigger', 'EntityOnRouteTrigger',
+    'HalfIdleLhdoorSkillTrigger', 'HalfIdleLhportSkillTrigger',
+    'HunterBulletTrigger', 'RangedSelectorTrigger', 'SelectorOrAlwaysTrigger',
+    'SelectorTriggerWithCertainCondition',
+})
+
 
 def _custom_shield_rule(enemy_id='', buff_key=''):
     key = (buff_key or '').lower()
@@ -230,7 +240,8 @@ class EnemyInfo:
                  'buffs', 'global_buffs', 'roster_id', 'spawn_order', 'wave_index',
                  'fragment_index', 'action_index', 'spawn_index', 'route_index',
                  'lifecycle', 'planned', 'spawn_eta', 'spawn_condition',
-                 'spawn_kind', 'spawn_source', 'is_summon', 'action_ptr', 'action')
+                 'spawn_kind', 'spawn_source', 'is_summon', 'action_ptr', 'action',
+                 'skills_detail')
 
     def __init__(self, addr):
         self.addr = addr
@@ -257,6 +268,9 @@ class EnemyInfo:
         self.spawn_row = 0
         self.spawn_col = 0
         self.skills = []          # [(prefabKey, remaining, period), ...]
+        # 技能判定元数据 [{name, remaining, period, priority, sp_cost,
+        # max_triggers, trigger_count, has_trigger, cast_like_attack}, ...]
+        self.skills_detail = []
         self.state_ptr = 0
         self.state_id = gs.EnemyState.DEFAULT
         self.ep_ptr = 0
@@ -407,9 +421,13 @@ class EnemyReader:
         self._skill_lp = {}           # enemy addr -> m_skills List* (主块内提取)
         self._skill_ap = {}           # enemy addr -> m_allSkills EnemySkill[]*
         self._skill_ptrs = {}         # enemy addr -> 最近一次成功解析的 EnemySkill 地址
+        self._active_skill_ptrs = {}  # enemy addr -> m_skills 中当前启用且已排序的技能
         self._skill_names = {}        # skill addr -> prefabKey (技能静态名缓存)
         self._skill_cd = {}           # enemy addr -> [(key, remaining, period), ...]
         self._skill_runtime_meta = {} # skill addr -> family/触发/运行时 Ability
+        self._skill_static_meta = {}  # skill addr -> {priority, sp_cost} (ESkillData)
+        self._skill_enriched = {}     # enemy addr -> [技能判定元数据 dict, ...]
+        self._trigger_type_cache = {} # TargetTrigger addr -> 运行时 klass 名
         self._status_timer_cache = {} # entity addr -> 当前异常态对应的 Buff 地址
         self._animation_name_cache = {} # il2cpp string addr -> animKey/空值
         self._animator_layout_cache = {} # animator -> {klass, skeleton/...}
@@ -442,6 +460,8 @@ class EnemyReader:
         self._scheduler_time_snap = None
         self._fixed_frame_snap = None
         self._frame_duration_snap = 1.0 / 30.0
+        self._route_meta = {}           # routeIndex -> 起点/首个进场路线点
+        self._level_enemy_meta = {}     # enemy key -> 静态移速/delayToBorn
 
     @property
     def planned_count(self):
@@ -618,6 +638,7 @@ class EnemyReader:
 
     def _make_plan_record(self, source, order, roster_id):
         record = dict(source)
+        self._decorate_spawn_record(record)
         record['roster_id'] = roster_id
         record['spawn_order'] = order
         record['seen'] = False
@@ -682,7 +703,7 @@ class EnemyReader:
         if not data_ptrs:
             return 0
         blocks = self._detail_batch_read([
-            (ptr, gs.LevelEnemyDataFields.ATTRIBUTES) for ptr in data_ptrs])
+            (ptr, gs.LevelEnemyDataFields.ATTRIBUTES + 8) for ptr in data_ptrs])
         rows = []
         string_ptrs = []
         for block in blocks:
@@ -691,11 +712,26 @@ class EnemyReader:
             name_ptr = _u64(block, gs.LevelEnemyDataFields.NAME)
             desc_ptr = _u64(block, gs.LevelEnemyDataFields.DESCRIPTION)
             key_ptr = _u64(block, gs.LevelEnemyDataFields.KEY)
-            rows.append((key_ptr, name_ptr, desc_ptr))
+            rows.append((key_ptr, name_ptr, desc_ptr,
+                         _u64(block, gs.LevelEnemyDataFields.ATTRIBUTES)))
             string_ptrs.extend((key_ptr, name_ptr, desc_ptr))
         strings = self._read_strings(string_ptrs, max_chars=512)
+        attr_rows = [(key_ptr, attr_ptr) for key_ptr, _name, _desc, attr_ptr in rows
+                     if self.mc.is_ptr(attr_ptr)]
+        attr_data = self._detail_batch_read([
+            (attr_ptr + gs.StaticAttributesDataFields.MOVE_SPEED, 0x18)
+            for _key_ptr, attr_ptr in attr_rows]) if attr_rows else []
+        self._level_enemy_meta = {}
+        for (key_ptr, _attr_ptr), data in zip(attr_rows, attr_data):
+            if not data or len(data) < 0x18 or not data[0x0C]:
+                continue
+            speed = gs.decrypt_obscured_float(_u32(data, 0), _u32(data, 4))
+            if math.isfinite(speed) and 0.01 <= speed <= 100.0:
+                key = strings.get(key_ptr, '')
+                if key:
+                    self._level_enemy_meta.setdefault(key, {})['move_speed'] = speed
         loaded = 0
-        for key_ptr, name_ptr, desc_ptr in rows:
+        for key_ptr, name_ptr, desc_ptr, _attr_ptr in rows:
             eid = strings.get(key_ptr, '')
             name = strings.get(name_ptr, '')
             if eid and name:
@@ -703,6 +739,145 @@ class EnemyReader:
                     eid, name, desc=strings.get(desc_ptr, ''))
                 loaded += 1
         return loaded
+
+    def _load_route_meta(self, level_data):
+        """读取路线起点及首个 MOVE 点，用玩家真正看到敌人进入地图的口径估时。"""
+        self._route_meta = {}
+        routes = self._read_object_array(
+            self._read_ptr(level_data + gs.LevelDataFields.ROUTES), 4096)
+        blocks = self._detail_batch_read([
+            (route, gs.RouteDataFields.READ_SIZE) for route in routes])
+        for route_index, block in enumerate(blocks):
+            if not block:
+                continue
+            start = (_i32(block, gs.RouteDataFields.START_POSITION),
+                     _i32(block, gs.RouteDataFields.START_POSITION + 4))
+            checkpoints = self._read_object_array(
+                _u64(block, gs.RouteDataFields.CHECKPOINTS), 4096)
+            cp_blocks = self._detail_batch_read([
+                (cp, gs.RouteCheckpointFields.READ_SIZE) for cp in checkpoints])
+            entry = None
+            fixed_wait = 0.0
+            for cp in cp_blocks:
+                if not cp:
+                    continue
+                cp_type = _i32(cp, gs.RouteCheckpointFields.TYPE)
+                if cp_type == gs.RouteCheckpointType.MOVE:
+                    entry = (_i32(cp, gs.RouteCheckpointFields.POSITION),
+                             _i32(cp, gs.RouteCheckpointFields.POSITION + 4))
+                    break
+                if cp_type == gs.RouteCheckpointType.WAIT_FOR_SECONDS:
+                    wait = struct.unpack_from('<f', cp, gs.RouteCheckpointFields.TIME)[0]
+                    if math.isfinite(wait) and 0 < wait <= 3600:
+                        fixed_wait += wait
+            if entry is None:
+                continue
+            row_delta = entry[0] - start[0]
+            col_delta = entry[1] - start[1]
+            diagonal = bool(block[gs.RouteDataFields.ALLOW_DIAGONAL_MOVE])
+            distance = (math.hypot(row_delta, col_delta) if diagonal
+                        else abs(row_delta) + abs(col_delta))
+            if distance <= 0.01:
+                continue
+            self._route_meta[route_index] = {
+                'start': start, 'entry': entry, 'distance': distance,
+                'fixed_wait': fixed_wait, 'diagonal': diagonal,
+            }
+
+    def _load_scheduler_enemy_meta(self):
+        """补读 prefab 的 delayToBorn；该值不在 LevelData.EnemyData 中。"""
+        if not self.sched_addr:
+            return
+        map_ptr = self._read_ptr(self.sched_addr + gs.SchedulerFields.M_ENEMY_MAP)
+        head = self._detail_batch_read([(map_ptr, 0x30)])[0] \
+            if self.mc.is_ptr(map_ptr) else None
+        entries = _u64(head, 0x18) if head else 0
+        count = _i32(head, 0x20) if head else 0
+        if not self.mc.is_ptr(entries) or not (0 <= count <= 4096):
+            return
+        raw = self._detail_batch_read([(
+            entries + gs.Il2CppArray.ITEMS, count * 0x28)])[0] if count else b''
+        if raw is None:
+            return
+        items = []
+        key_ptrs = []
+        for index in range(count):
+            off = index * 0x28
+            if _i32(raw, off) < 0:
+                continue
+            key_ptr = _u64(raw, off + 8)
+            data_ptr = _u64(raw, off + 0x10)
+            delay = struct.unpack_from('<f', raw, off + 0x20)[0]
+            if self.mc.is_ptr(key_ptr) and math.isfinite(delay) and 0 <= delay <= 3600:
+                items.append((key_ptr, delay, data_ptr))
+                key_ptrs.append(key_ptr)
+        strings = self._read_strings(key_ptrs, max_chars=128)
+        data_items = [(key_ptr, data_ptr) for key_ptr, _delay, data_ptr in items
+                      if self.mc.is_ptr(data_ptr)]
+        attr_ptrs = self._detail_batch_read([
+            (data_ptr + gs.LevelEnemyDataFields.ATTRIBUTES, 8)
+            for _key_ptr, data_ptr in data_items]) if data_items else []
+        speed_items = []
+        for (key_ptr, _data_ptr), attr_raw in zip(data_items, attr_ptrs):
+            attr_ptr = _u64(attr_raw, 0) if attr_raw else 0
+            if self.mc.is_ptr(attr_ptr):
+                speed_items.append((key_ptr, attr_ptr))
+        speed_raw = self._detail_batch_read([
+            (attr_ptr + gs.StaticAttributesDataFields.MOVE_SPEED, 0x18)
+            for _key_ptr, attr_ptr in speed_items]) if speed_items else []
+        speeds = {}
+        for (key_ptr, _attr_ptr), data in zip(speed_items, speed_raw):
+            if not data or len(data) < 0x18 or not data[0x0C]:
+                continue
+            speed = gs.decrypt_obscured_float(_u32(data, 0), _u32(data, 4))
+            if math.isfinite(speed) and 0.01 <= speed <= 100:
+                speeds[key_ptr] = speed
+        for key_ptr, delay, _data_ptr in items:
+            key = strings.get(key_ptr, '')
+            if key:
+                meta = self._level_enemy_meta.setdefault(key, {})
+                meta['delay_to_born'] = delay
+                if key_ptr in speeds:
+                    meta['move_speed'] = speeds[key_ptr]
+
+    def _decorate_spawn_record(self, record):
+        """把调度生成时间换算所需的路线/敌人静态参数附到计划项。"""
+        key = record.get('key', '')
+        route = self._route_meta.get(record.get('route_index', -1), {})
+        enemy = self._level_enemy_meta.get(key, {})
+        speed = enemy.get('move_speed', 0.0)
+        delay = enemy.get('delay_to_born', 0.0)
+        distance = route.get('distance', 0.0)
+        walk = distance / speed if distance > 0 and speed > 0 else 0.0
+        fixed_wait = route.get('fixed_wait', 0.0)
+        record.update(
+            route_start=route.get('start'), route_entry=route.get('entry'),
+            route_entry_distance=distance, move_speed_static=speed,
+            delay_to_born=delay,
+            visible_entry_delay=max(0.0, delay + fixed_wait + walk))
+
+    @staticmethod
+    def _remaining_route_entry(enemy, record):
+        """实体已经生成后，估算其到达首个进场路线点的剩余秒数。"""
+        start = record.get('route_start')
+        entry = record.get('route_entry')
+        distance = record.get('route_entry_distance', 0.0)
+        speed = enemy.mspd or record.get('move_speed_static', 0.0)
+        if (not start or not entry or distance <= 0.01 or speed <= 0.01):
+            return None
+        # GridPosition 是 (row, col)，场上 Vector2 是 (col, row)。用投影判断
+        # 是否已经越过第一个路线点，避免出生点存在小幅随机偏移时误判。
+        sx, sy = float(start[1]), float(start[0])
+        ex, ey = float(entry[1]), float(entry[0])
+        vx, vy = ex - sx, ey - sy
+        denom = vx * vx + vy * vy
+        if denom <= 1e-6:
+            return None
+        progress = ((enemy.pos_x - sx) * vx + (enemy.pos_y - sy) * vy) / denom
+        if progress >= 0.98:
+            return 0.0
+        progress = max(0.0, progress)
+        return max(0.0, distance * (1.0 - progress) / speed)
 
     def _all_plan_records(self):
         return self._spawn_plan + self._runtime_spawn_plan
@@ -752,6 +927,8 @@ class EnemyReader:
         level_id = self._read_ustring_fast(
             self._read_ptr(level_data + gs.LevelDataFields.LEVEL_ID))
         runtime_name_count = self._load_level_enemy_names(level_data)
+        self._load_route_meta(level_data)
+        self._load_scheduler_enemy_meta()
         waves_ptr = self._read_ptr(level_data + gs.LevelDataFields.WAVES)
         wave_ptrs = self._read_object_array(waves_ptr, 1024)
         records = []
@@ -858,9 +1035,14 @@ class EnemyReader:
         return enemy
 
     def _bind_plan_enemy(self, enemy, record):
-        self._copy_plan_metadata(enemy, record, 'active')
-        enemy.spawn_eta = 0.0
-        enemy.spawn_condition = '已出场'
+        entry_eta = self._remaining_route_entry(enemy, record)
+        before_entry = isinstance(entry_eta, (int, float)) and entry_eta > 0.05
+        self._copy_plan_metadata(enemy, record, 'pending' if before_entry else 'active')
+        enemy.spawn_eta = entry_eta if before_entry else 0.0
+        enemy.spawn_condition = ('实体已生成，正在地图外进入战场'
+                                 if before_entry else '已出场')
+        record['spawn_eta'] = enemy.spawn_eta
+        record['spawn_condition'] = enemy.spawn_condition
         record['seen'] = True
         record['addr'] = enemy.addr
         record['info'] = enemy
@@ -1137,15 +1319,28 @@ class EnemyReader:
             info = record['info']
             if info.lifecycle != 'pending':
                 continue
+            if record.get('addr') and info.alive:
+                entry_eta = self._remaining_route_entry(info, record)
+                if isinstance(entry_eta, (int, float)) and entry_eta > 0.05:
+                    record['spawn_eta'] = entry_eta
+                    record['spawn_condition'] = '实体已生成，正在地图外进入战场'
+                    self._copy_plan_metadata(info, record, 'pending')
+                    continue
             token = record.get('runtime_token') or (
                 record.get('action_ptr'), record.get('spawn_index', 0))
             entry = entry_map.get(token)
             if (entry is not None and self._fragment_start_time >= 0
                     and scheduler_time is not None):
-                eta = max(0.0, self._fragment_start_time
-                          + entry['time_offset'] - float(scheduler_time))
+                entity_eta = max(0.0, self._fragment_start_time
+                                 + entry['time_offset'] - float(scheduler_time))
+                entry_delay = record.get('visible_entry_delay', 0.0)
+                eta = entity_eta + max(0.0, entry_delay)
                 record['spawn_eta'] = eta
-                record['spawn_condition'] = '按当前调度计时'
+                if entry_delay > 0.05:
+                    record['spawn_condition'] = (
+                        f'按实际进场计时（实体生成后约 {entry_delay:.1f} 秒进入地图）')
+                else:
+                    record['spawn_condition'] = '按当前调度计时'
             else:
                 record['spawn_eta'] = None
                 if record.get('hidden_group'):
@@ -1814,6 +2009,7 @@ class EnemyReader:
         临时空列表把已经显示的技能永久清掉，直到用户手动重新扫描。
         """
         out = []
+        timed = []
         lp = _u64(blk, gs.EnemyFields.M_SKILLS) if len(blk) >= gs.EnemyFields.READ_SIZE else 0
         ap = _u64(blk, gs.EnemyFields.M_ALL_SKILLS) \
             if len(blk) >= gs.EnemyFields.READ_SIZE else 0
@@ -1823,8 +2019,9 @@ class EnemyReader:
             self._skill_ap[ep] = ap
 
         skill_ptrs = []
+        active_ptrs = []
 
-        def append_container(ptr, is_array):
+        def append_container(ptr, is_array, active=False):
             if not self.mc.is_ptr(ptr):
                 return False
             hd = self.mc.read(ptr, 0x20)
@@ -1845,12 +2042,17 @@ class EnemyReader:
                 return False
             for j in range(n):
                 skill = _u64(arr, j * 8)
-                if self.mc.is_ptr(skill) and skill not in skill_ptrs:
-                    skill_ptrs.append(skill)
+                if self.mc.is_ptr(skill):
+                    if active and skill not in active_ptrs:
+                        active_ptrs.append(skill)
+                    if skill not in skill_ptrs:
+                        skill_ptrs.append(skill)
             return True
 
-        active_ok = append_container(lp, False)
+        active_ok = append_container(lp, False, active=True)
         all_ok = append_container(ap, True)
+        if active_ok:
+            self._active_skill_ptrs[ep] = active_ptrs
         # 动态列表临时读取失败时沿用上次成功解析的对象地址；完整数组成功读取
         # （包括合法空数组）时才有权覆盖旧缓存。
         if skill_ptrs:
@@ -1861,9 +2063,26 @@ class EnemyReader:
             skill_ptrs = list(self._skill_ptrs.get(ep, ()))
 
         for s in skill_ptrs:
-            sb = self.mc.read(s, 0x90)
+            sb = self.mc.read(s, gs.EnemySkillFields.READ_SIZE)
             if not sb:
                 continue
+            trigger_addr = _u64(sb, gs.EnemySkillFields.TRIGGER)
+            self._skill_runtime_meta[s] = {
+                'family_mask': _i32(sb, gs.EnemySkillFields.FAMILY_MASK),
+                'cast_like_attack': bool(sb[gs.EnemySkillFields.CAST_LIKE_ATTACK]),
+                'check_parent_active': bool(
+                    sb[gs.EnemySkillFields.CHECK_PARENT_ACTIVE]),
+                'ignore_silence': bool(sb[gs.EnemySkillFields.IGNORE_SILENCE]),
+                'max_triggers': _i32(sb, gs.EnemySkillFields.MAX_TRIGGER_TIME),
+                'trigger_count': _i32(sb, gs.EnemySkillFields.M_TRIGGER_CNT),
+                'trigger_addr': trigger_addr,
+                'has_trigger': self.mc.is_ptr(trigger_addr),
+                'sp_cost_runtime': _i32(sb, gs.EnemySkillFields.M_SP_COST),
+                'ability_addr': (_u64(sb, gs.EnemySkillFields.ABILITY)
+                                 or _u64(sb, gs.EnemySkillFields.M_MAIN_ABILITY)),
+                'parent_mode_addr': _u64(sb, gs.EnemySkillFields.PARENT_MODE),
+                'is_enabled': s in self._active_skill_ptrs.get(ep, ()),
+            }
             t = _u64(sb, gs.EnemySkillFields.M_COOLDOWN_TIMER)
             td = self.mc.read(t, 0x20) if self.mc.is_ptr(t) else None
             if not td:
@@ -1873,16 +2092,34 @@ class EnemyReader:
             if not (0 <= period <= 3600 and -1 <= remain <= 3600):
                 continue
             key = self._skill_names.get(s)
-            if key is None:
+            if key is None or s not in self._skill_static_meta:
                 dp = _u64(sb, gs.EnemySkillFields.DATA)
                 dd = self.mc.read(dp, 0x28) if self.mc.is_ptr(dp) else None
-                pk = _u64(dd, gs.ESkillDataFields.PREFAB_KEY) if dd else 0
-                key = (self.mc.read_ustring(pk) if self.mc.is_ptr(pk) else None) or '?'
-                self._skill_names[s] = key
+                if dd:
+                    prio = _i32(dd, gs.ESkillDataFields.PRIORITY)
+                    sp_cost = _i32(dd, gs.ESkillDataFields.SP_COST)
+                    if -10000 <= prio <= 10000 and 0 <= sp_cost <= 100000:
+                        self._skill_static_meta[s] = {
+                            'priority': prio, 'sp_cost': sp_cost}
+                if key is None:
+                    pk = _u64(dd, gs.ESkillDataFields.PREFAB_KEY) if dd else 0
+                    key = (self.mc.read_ustring(pk) if self.mc.is_ptr(pk) else None) or '?'
+                    self._skill_names[s] = key
             out.append((key, remain, period))
+            timed.append((s, remain, period))
+        trigger_states = self._read_trigger_states_chan([
+            self._skill_runtime_meta.get(s, {}).get('trigger_addr', 0)
+            for s in skill_ptrs])
+        for s in skill_ptrs:
+            meta = self._skill_runtime_meta.get(s, {})
+            meta.update(trigger_states.get(meta.get('trigger_addr', 0), {}))
+        rows = [self._build_skill_row(s, remain, period)
+                for s, remain, period in timed]
         if out or not self._skill_cd.get(ep) or (all_ok and not skill_ptrs):
             self._skill_cd[ep] = out
+            self._skill_enriched[ep] = rows
         info.skills = list(self._skill_cd.get(ep, ()))
+        info.skills_detail = list(self._skill_enriched.get(ep, ()))
         return info
 
     def _fill_name(self, ep, blk, info):
@@ -1934,6 +2171,10 @@ class EnemyReader:
             info.action = {
                 'animator_addr': _u64(blk, gs.UnitFields.ANIMATOR),
                 'current_mode_addr': _u64(blk, gs.UnitFields.CURRENT_MODE),
+                'sp': gs.obscured_fp_to_float(
+                    _u64(blk, gs.EntityFields.M_SP),
+                    _u64(blk, gs.EntityFields.M_SP + 8)),
+                'max_sp': _i32(blk, gs.EntityFields.MAX_SP),
                 'override_attack_addr': _u64(blk, gs.UnitFields.OVERRIDE_ATTACK),
                 'override_combat_addr': _u64(blk, gs.UnitFields.OVERRIDE_COMBAT),
                 'attack_ability_addr': _u64(
@@ -1946,6 +2187,7 @@ class EnemyReader:
                     blk, gs.EnemyFields.ATTACK_WRAPPER),
                 'combat_wrapper_addr': _u64(
                     blk, gs.EnemyFields.COMBAT_WRAPPER),
+                'blocker_addr': _u64(blk, gs.EnemyFields.M_BLOCKER),
             }
         info.alive = info.hp > 0 and info.finish == 0
         return info
@@ -2069,6 +2311,75 @@ class EnemyReader:
                 out[ptr] = raw.decode('utf-8')
             except UnicodeDecodeError:
                 continue
+        return out
+
+    def _read_trigger_states_chan(self, ptrs):
+        """读取 TargetTrigger 的原始运行时判定状态。
+
+        这里只复现能从对象字段无副作用读取的部分。不能调用游戏的 ``Search``，
+        因为它会刷新选择器、消费随机数或触发关卡分支；这类条件返回 ``None``，
+        由上层明确显示为“规则条件待判”，而不是擅自猜测。
+        """
+        ptrs = [ptr for ptr in dict.fromkeys(ptrs) if self.mc.is_ptr(ptr)]
+        if not ptrs:
+            return {}
+        missing = [ptr for ptr in ptrs if ptr not in self._trigger_type_cache]
+        if missing:
+            self._trigger_type_cache.update(self._read_object_class_names_chan(missing))
+        out = {}
+        blocks = self._detail_batch_read([
+            (ptr, gs.TargetTriggerFields.READ_SIZE) for ptr in ptrs])
+        for ptr, data in zip(ptrs, blocks):
+            trigger_type = self._trigger_type_cache.get(ptr, '')
+            item = {
+                'trigger_addr': ptr,
+                'trigger_type': trigger_type or 'TargetTrigger',
+                'trigger_ready': None,
+                'trigger_reason': '该 TargetTrigger 的 Search 条件尚未解析',
+            }
+            if not data:
+                item['trigger_reason'] = 'TargetTrigger 本轮读取失败'
+            elif trigger_type == 'AlwaysTrigger':
+                item.update(trigger_ready=True,
+                            trigger_reason='AlwaysTrigger 原始规则恒为通过')
+            elif trigger_type == 'NeverTrigger':
+                item.update(trigger_ready=False,
+                            trigger_reason='NeverTrigger 原始规则恒为不通过')
+            elif trigger_type in SELECTOR_TRIGGER_TYPES:
+                target = _u64(data, gs.SelectorTriggerFields.LAST_TARGET)
+                minimum = _i32(data, gs.SelectorTriggerFields.MIN_TARGET_NUM)
+                item.update(trigger_target_addr=target,
+                            trigger_min_targets=minimum)
+                if self.mc.is_ptr(target) and minimum <= 1:
+                    item.update(
+                        trigger_ready=True,
+                        trigger_reason=(
+                            f'{trigger_type}.m_lastTarget 已有有效目标，满足最少 '
+                            f'{max(1, minimum)} 个目标'))
+                elif self.mc.is_ptr(target):
+                    item['trigger_reason'] = (
+                        f'{trigger_type} 已缓存目标，但最少目标数为 {minimum}；'
+                        '必须执行选择器才能确认总数')
+                else:
+                    item['trigger_reason'] = (
+                        f'{trigger_type}.m_lastTarget 当前为空；下一次 Search 可能刷新，'
+                        '不能据此判定失败')
+            elif trigger_type == 'LevelBranchTrigger':
+                branch_ptr = _u64(data, 0x30)
+                item.update(
+                    trigger_branch_ptr=branch_ptr,
+                    trigger_reason=(
+                        'LevelBranchTrigger 依赖关卡 Scheduler 的分支完成/循环状态；'
+                        '客户端在 Search 时查询，当前对象没有缓存布尔结果'))
+            elif trigger_type == 'SpTrigger':
+                item.update(
+                    trigger_value_type=_i32(data, gs.SpTriggerFields.VALUE_TYPE),
+                    trigger_value=struct.unpack_from(
+                        '<f', data, gs.SpTriggerFields.VALUE_TO_COMPARE)[0],
+                    trigger_compare_type=_i32(data, gs.SpTriggerFields.COMPARE_TYPE),
+                    trigger_reason=(
+                        'SpTrigger 还需按 CompareType 对 owner 当前技力/充能层数求值'))
+            out[ptr] = item
         return out
 
     def _resolve_spine_animation_meta_chan(self, animation_ptrs):
@@ -2477,8 +2788,16 @@ class EnemyReader:
                     self._status_timer_cache[addr]['last_probe'] = tick - 10
 
     def _predict_enemy_next_action(self, info, action):
-        """只展示游戏已经写入内存的下一动作，不根据 CD 自行预测。"""
-        for key in ('next_action', 'next_action_detail', 'next_action_confidence'):
+        """展示游戏已写入的下一动作，或按客户端原始规则计算当前结果。
+
+        AttackWrapper 没有 next 槽；CombatWrapper 的 picked 槽只在切状态前短暂
+        存在。未写入时复现 MoveState 分流和 Wrapper._PickAbility：只检查
+        ``m_skills`` 的最高 priority 组，逐项执行启用/CD/次数/父模式/SP、family
+        与 TargetTrigger 条件；同优先级多个通过项由游戏随机择一。无法无副作用
+        复现的 Lua、关卡分支或目标重新搜索会明确标为“条件未完全解析”。
+        """
+        for key in ('next_action', 'next_action_detail', 'next_action_confidence',
+                    'next_action_lane', 'next_action_candidates'):
             action.pop(key, None)
         state_id = info.state_id
         if state_id in (gs.EnemyState.TERMINAL, gs.EnemyState.DEAD,
@@ -2517,17 +2836,201 @@ class EnemyReader:
                 next_action_confidence='confirmed')
             return
 
-        if state_id == gs.EnemyState.ATTACK:
-            detail = ('游戏尚未写入下一动作；AttackWrapper 的 curAbility/curSkill '
-                      '仅代表当前攻击，普通攻击或其他动作会在当前攻击结束回调中重新判定')
-        elif state_id == gs.EnemyState.COMBAT:
-            detail = ('当前 CombatWrapper 字段属于正在执行的战斗动作；'
-                      '下一动作会在 NextCombatOrExit/结束回调中重新判定')
-        elif state_id == gs.EnemyState.MOVE:
-            detail = ('游戏尚未设置 CombatWrapper.m_combatAbilityPicked，'
-                      '普通攻击也没有独立预选槽；需等待目标搜索和状态切换')
-        else:
-            detail = '当前没有已写入的 picked Ability 或排队动画，下一动作尚未由游戏决定'
+        if state_id in (gs.EnemyState.MOVE, gs.EnemyState.ATTACK,
+                        gs.EnemyState.COMBAT):
+            snapshot_after_current = state_id != gs.EnemyState.MOVE
+
+            def publish_rule(label, detail, confidence):
+                if snapshot_after_current:
+                    detail = (
+                        '当前动作尚未结束；以下是用当前内存快照执行原始规则的结果，'
+                        '结束回调时目标/CD/状态若变化，游戏会重新计算。' + detail)
+                    if confidence == 'rule_calculated':
+                        confidence = 'rule_snapshot'
+                action.update(next_action=label,
+                              next_action_detail=detail,
+                              next_action_confidence=confidence)
+
+            blocked = self.mc.is_ptr(action.get('blocker_addr', 0))
+            lane = 'combat' if blocked else 'attack'
+            family = (gs.AbilityFamilyMask.COMBAT if blocked
+                      else gs.AbilityFamilyMask.ATTACK)
+            lane_cn = '战斗' if blocked else '普攻'
+            fallback = '基础战斗能力' if blocked else '普通攻击'
+            base_cd = (action.get(f'{lane}_base') or {}).get('cd_remaining')
+            if (base_cd is None
+                    and action.get('ability_addr') == action.get(
+                        f'{lane}_base_ability_addr')):
+                # 当前正在施放的正是基础能力；它的计时器已读到 action 顶层，
+                # 不会再重复生成 attack_base/combat_base 子块。
+                base_cd = action.get('cd_remaining')
+            action['next_action_lane'] = lane
+            target_text = ('已被阻挡，MoveState 下一次检查先进入 COMBAT'
+                           if blocked else
+                           '未被阻挡，MoveState 只会在 SearchTarget 找到目标后进入 ATTACK')
+
+            # _PickAbility 在检查 family/可用性之前就锁定 m_skills 的最高优先级；
+            # 该组全部失败后直接走基础能力，不会改选较低优先级技能。
+            active_rows = [row for row in (info.skills_detail or ())
+                           if row.get('is_enabled') is not False]
+            top = []
+            if active_rows:
+                top_priority = max(row.get('priority', 0) for row in active_rows)
+                top = [row for row in active_rows
+                       if row.get('priority', 0) == top_priority]
+
+            def sp_trigger_result(row):
+                if row.get('trigger_type') != 'SpTrigger':
+                    return row.get('trigger_ready'), row.get('trigger_reason', '')
+                if row.get('trigger_value_type') != 0:
+                    return None, 'SpTrigger 使用充能层数，当前尚未读取该层数'
+                current = action.get('sp')
+                expected = row.get('trigger_value')
+                compare = row.get('trigger_compare_type')
+                if not (isinstance(current, (int, float))
+                        and math.isfinite(current)
+                        and isinstance(expected, (int, float))
+                        and math.isfinite(expected)):
+                    return None, 'SpTrigger 当前技力或比较值不可用'
+                comparisons = {
+                    0: current < expected, 1: current <= expected,
+                    2: current > expected, 3: current >= expected,
+                    4: abs(current - expected) <= 1e-5,
+                }
+                if compare not in comparisons:
+                    return None, f'SpTrigger CompareType={compare} 未知'
+                value = comparisons[compare]
+                return value, f'SpTrigger 原始比较：SP {current:g} 对 {expected:g} -> {value}'
+
+            def evaluate(row):
+                failures, unresolved = [], []
+                if not (row.get('family_mask', 0) & family):
+                    failures.append(f'family 不属于 {lane_cn}')
+                remaining = row.get('remaining')
+                if not isinstance(remaining, (int, float)):
+                    unresolved.append('CD 未读取')
+                elif remaining > 0.05:
+                    failures.append(f'CD {remaining:.2f}秒')
+                maximum = row.get('max_triggers', 0)
+                count = row.get('trigger_count', 0)
+                if maximum > 0 and count >= maximum:
+                    failures.append(f'次数已用尽 {count}/{maximum}')
+                if row.get('check_parent_active'):
+                    parent = row.get('parent_mode_addr', 0)
+                    current_mode = action.get('current_mode_addr', 0)
+                    if self.mc.is_ptr(parent) and self.mc.is_ptr(current_mode):
+                        if parent != current_mode:
+                            failures.append('所属 UnitMode 未激活')
+                    else:
+                        unresolved.append('所属 UnitMode 未读取')
+                if (len(info.abnormal_flags) > 12 and info.abnormal_flags[12] > 0
+                        and not row.get('ignore_silence')):
+                    failures.append('当前被沉默')
+                if (len(info.abnormal_flags) > 24
+                        and info.abnormal_flags[24] > 0):
+                    failures.append('当前技能不可激活')
+                cost = row.get('sp_cost', 0)
+                current_sp = action.get('sp')
+                if isinstance(cost, (int, float)) and cost > 0:
+                    if isinstance(current_sp, (int, float)) and math.isfinite(current_sp):
+                        if current_sp + 1e-5 < cost:
+                            failures.append(f'SP不足 {current_sp:g}/{cost:g}')
+                    else:
+                        unresolved.append('当前 SP 未读取')
+                if row.get('has_trigger'):
+                    trigger_ready, trigger_reason = sp_trigger_result(row)
+                    if trigger_ready is False:
+                        failures.append(trigger_reason or 'TargetTrigger 未通过')
+                    elif trigger_ready is None:
+                        unresolved.append(trigger_reason or 'TargetTrigger 条件待判')
+                if failures:
+                    return False, failures + unresolved
+                if unresolved:
+                    return None, unresolved
+                return True, ['全部原始判据通过']
+
+            passed, uncertain, rejected = [], [], []
+            for row in top:
+                result, reasons = evaluate(row)
+                entry = (row, reasons)
+                if result is True:
+                    passed.append(entry)
+                elif result is None:
+                    uncertain.append(entry)
+                else:
+                    rejected.append(entry)
+
+            def describe(entries):
+                return '；'.join(
+                    f"{row.get('name') or '?'}：{'，'.join(reasons)}"
+                    for row, reasons in entries)
+
+            all_possible = passed + uncertain
+            action['next_action_candidates'] = [
+                row.get('name') or '?' for row, _ in all_possible]
+            basis = f'按客户端 _PickAbility 原始顺序计算：{target_text}'
+            if top:
+                basis += f'；只检查最高 priority={top[0].get("priority", 0)} 组'
+            if rejected:
+                basis += '；未通过：' + describe(rejected)
+
+            if uncertain:
+                possible_names = ' / '.join(
+                    row.get('name') or '?' for row, _ in all_possible)
+                if passed:
+                    label = f'规则候选：{possible_names}'
+                else:
+                    label = f'条件待判：{possible_names}；否则{fallback}'
+                publish_rule(
+                    label,
+                    basis + '；尚未无副作用解析：' + describe(uncertain)
+                    + '。这些条件会在游戏真正调用 Search/CheckTrigger 时确定',
+                    'rule_partial')
+                return
+
+            if passed:
+                names = [row.get('name') or '?' for row, _ in passed]
+                if len(names) == 1:
+                    label = f'技能：{names[0]}'
+                    confidence = 'rule_calculated'
+                    suffix = '；当前只有一个技能通过全部已解析原始判据'
+                else:
+                    label = '随机择一：' + ' / '.join(names)
+                    confidence = 'rule_candidates'
+                    suffix = '；同优先级多个技能通过，客户端会调用战斗 RNG 随机择一'
+                publish_rule(label, basis + suffix, confidence)
+                return
+
+            base_ready = (base_cd <= 0.05 if isinstance(base_cd, (int, float))
+                          else None)
+            if base_ready is False:
+                publish_rule(
+                    f'等待{fallback}冷却（{base_cd:.2f}秒）',
+                    basis + f'；最高优先级技能组全部未通过，{fallback}当前也未就绪',
+                    'rule_calculated')
+                return
+            if blocked:
+                target_ready = True  # blocker 就是 CombatWrapper 的目标
+                target_reason = '当前 blocker 有效'
+            else:
+                target_ready = action.get('attack_trigger_ready')
+                target_reason = action.get('attack_trigger_reason') or '普攻 TargetTrigger 未读取'
+            if base_ready is True and target_ready is True:
+                publish_rule(fallback,
+                             basis + f'；{target_reason}，基础能力已就绪',
+                             'rule_calculated')
+            elif target_ready is False:
+                publish_rule('当前无可执行动作', basis + f'；{target_reason}',
+                             'rule_calculated')
+            else:
+                publish_rule(
+                    f'规则候选：{fallback}',
+                    basis + f'；最高优先级技能组全部未通过；{target_reason}'
+                    + ('；基础能力就绪状态未读取' if base_ready is None else ''),
+                    'rule_partial')
+            return
+
+        detail = '当前没有已写入的 picked Ability 或排队动画，下一动作尚未由游戏决定'
         action.update(next_action='等待游戏判定', next_action_detail=detail,
                       next_action_confidence='unselected')
 
@@ -2539,7 +3042,8 @@ class EnemyReader:
                 'phase', 'name', 'detail', 'remaining', 'remaining_frames',
                 'remaining_kind', 'elapsed_frames', 'skill_name',
                 'ready_skills', 'clock_source', 'next_action',
-                'next_action_detail', 'next_action_confidence'):
+                'next_action_detail', 'next_action_confidence',
+                'next_action_lane', 'next_action_candidates'):
             action.pop(key, None)
         now = now if isinstance(now, (int, float)) and math.isfinite(now) else None
         frame = frame if isinstance(frame, int) and frame >= 0 else None
@@ -2739,6 +3243,16 @@ class EnemyReader:
         if mode:
             action['mode_combat_addr'] = _u64(mode, gs.UnitModeFields.COMBAT)
             action['mode_attack_addr'] = _u64(mode, gs.UnitModeFields.ATTACK)
+            attack_trigger = _u64(mode, gs.UnitModeFields.ATTACK_TRIGGER)
+            action['mode_attack_trigger_addr'] = attack_trigger
+            trigger_state = self._read_trigger_states_chan(
+                [attack_trigger]).get(attack_trigger, {})
+            action['attack_trigger_type'] = trigger_state.get('trigger_type', '')
+            action['attack_trigger_ready'] = trigger_state.get('trigger_ready')
+            action['attack_trigger_reason'] = trigger_state.get(
+                'trigger_reason', '')
+            action['attack_trigger_target_addr'] = trigger_state.get(
+                'trigger_target_addr', 0)
         if state_id == gs.EnemyState.ATTACK:
             ability = action.get('attack_ability_addr', 0)
         elif state_id == gs.EnemyState.COMBAT:
@@ -3127,6 +3641,8 @@ class EnemyReader:
                     data, gs.UnitModeFields.COMBAT)
                 action['mode_attack_addr'] = _u64(
                     data, gs.UnitModeFields.ATTACK)
+                action['mode_attack_trigger_addr'] = _u64(
+                    data, gs.UnitModeFields.ATTACK_TRIGGER)
             elif kind == 'combat_wrapper':
                 action = cur['action']
                 action['combat_wrapper_ability_addr'] = _u64(
@@ -3165,6 +3681,20 @@ class EnemyReader:
                     sources[idx]['active'] = (
                         not bool(data[0]) and bool(data[enabled_off])
                         and bool(data[valid_off]))
+
+        attack_trigger_owners = {}
+        for ep in eps:
+            trigger = runtime[ep]['action'].get('mode_attack_trigger_addr', 0)
+            if self.mc.is_ptr(trigger):
+                attack_trigger_owners[trigger] = ep
+        for trigger, state in self._read_trigger_states_chan(
+                attack_trigger_owners).items():
+            action = runtime[attack_trigger_owners[trigger]]['action']
+            action['attack_trigger_type'] = state.get('trigger_type', '')
+            action['attack_trigger_ready'] = state.get('trigger_ready')
+            action['attack_trigger_reason'] = state.get('trigger_reason', '')
+            action['attack_trigger_target_addr'] = state.get(
+                'trigger_target_addr', 0)
 
         self._resolve_animation_states_chan({
             ep: runtime[ep]['action'] for ep in eps})
@@ -3504,6 +4034,7 @@ class EnemyReader:
                 info.aspd = s.get(gs.AttributeType.ATTACK_SPEED, 0.0)
             self._copy_runtime(info, self._runtime_snapshot.get(ep))
             info.skills = self._skill_cd.get(ep, [])
+            info.skills_detail = list(self._skill_enriched.get(ep, ()))
             self._finalize_enemy_action(
                 info, self._scheduler_time_snap, self._fixed_frame_snap,
                 self._frame_duration_snap)
@@ -3513,7 +4044,8 @@ class EnemyReader:
                       self._runtime_snapshot, self._runtime_ptrs,
                       self._custom_shield_ptrs, self._custom_shield_probe_tick,
                       self._skill_lp, self._skill_ap, self._skill_ptrs,
-                      self._skill_cd):
+                      self._active_skill_ptrs,
+                      self._skill_cd, self._skill_enriched):
             for ep in list(cache):
                 if ep not in live:
                     cache.pop(ep, None)
@@ -3597,6 +4129,7 @@ class EnemyReader:
                 body_keys.append((ep, kind, n))
 
         sks_of = {ep: [] for ep in eps}
+        active_of = {ep: [] for ep in eps}
         for (ep, kind, n), d in zip(
                 body_keys, self._chan.batch_read(body_reqs) if body_reqs else []):
             if not d:
@@ -3604,13 +4137,18 @@ class EnemyReader:
             decoded_sources[ep].add(kind)
             for j in range(n):
                 skill = _u64(d, j * 8)
-                if self.mc.is_ptr(skill) and skill not in sks_of[ep]:
-                    sks_of[ep].append(skill)
+                if self.mc.is_ptr(skill):
+                    if kind == 'active' and skill not in active_of[ep]:
+                        active_of[ep].append(skill)
+                    if skill not in sks_of[ep]:
+                        sks_of[ep].append(skill)
 
         # active 优先、all 补全；若容器读取不完整则继续用上次成功的对象地址。
         for ep in eps:
             current = sks_of[ep]
             all_available = self.mc.is_ptr(self._skill_ap.get(ep, 0))
+            if 'active' in decoded_sources[ep]:
+                self._active_skill_ptrs[ep] = active_of[ep]
             if current:
                 self._skill_ptrs[ep] = current
             elif all_available and 'all' in decoded_sources[ep]:
@@ -3624,28 +4162,42 @@ class EnemyReader:
         skill_reqs, skill_keys = [], []
         for ep in eps:
             for skill in sks_of[ep]:
-                skill_reqs.append((skill, 0x90))
+                skill_reqs.append((skill, gs.EnemySkillFields.READ_SIZE))
                 skill_keys.append((ep, skill))
         timers, datas = {}, {}
         if skill_reqs:
             for (ep, s), d in zip(skill_keys, self._chan.batch_read(skill_reqs)):
                 if not d:
                     continue
+                trigger_addr = _u64(d, gs.EnemySkillFields.TRIGGER)
                 self._skill_runtime_meta[s] = {
                     'family_mask': _i32(d, gs.EnemySkillFields.FAMILY_MASK),
                     'cast_like_attack': bool(d[gs.EnemySkillFields.CAST_LIKE_ATTACK]),
+                    'check_parent_active': bool(
+                        d[gs.EnemySkillFields.CHECK_PARENT_ACTIVE]),
+                    'ignore_silence': bool(d[gs.EnemySkillFields.IGNORE_SILENCE]),
                     'max_triggers': _i32(d, gs.EnemySkillFields.MAX_TRIGGER_TIME),
                     'trigger_count': _i32(d, gs.EnemySkillFields.M_TRIGGER_CNT),
+                    'trigger_addr': trigger_addr,
+                    'has_trigger': self.mc.is_ptr(trigger_addr),
+                    'sp_cost_runtime': _i32(d, gs.EnemySkillFields.M_SP_COST),
                     'ability_addr': (_u64(d, gs.EnemySkillFields.ABILITY)
                                      or _u64(d, gs.EnemySkillFields.M_MAIN_ABILITY)),
                     'parent_mode_addr': _u64(d, gs.EnemySkillFields.PARENT_MODE),
+                    'is_enabled': s in self._active_skill_ptrs.get(ep, ()),
                 }
                 t = _u64(d, gs.EnemySkillFields.M_COOLDOWN_TIMER)
                 dp = _u64(d, gs.EnemySkillFields.DATA)
                 if self.mc.is_ptr(t):
                     timers[s] = t
-                if s not in self._skill_names and self.mc.is_ptr(dp):
+                if (self.mc.is_ptr(dp) and (s not in self._skill_names
+                                            or s not in self._skill_static_meta)):
                     datas[s] = dp
+        trigger_states = self._read_trigger_states_chan([
+            meta.get('trigger_addr', 0)
+            for meta in self._skill_runtime_meta.values()])
+        for meta in self._skill_runtime_meta.values():
+            meta.update(trigger_states.get(meta.get('trigger_addr', 0), {}))
         remain_of = {}
         if timers:
             sks = list(timers)
@@ -3656,14 +4208,20 @@ class EnemyReader:
                 remain = gs.fp_to_float(_u64(d, gs.PeriodicTimerFields.M_REMAINING_TIME))
                 if 0 <= period <= 3600 and -1 <= remain <= 3600:
                     remain_of[s] = (remain, period)
-        if datas:   # 首见技能: data 块 -> prefabKey 字符串
+        if datas:   # 首见技能: data 块 -> prefabKey 字符串 + 静态判定参数
             pks = {}
             sks = list(datas)
             for s, d in zip(sks, self._chan.batch_read([(datas[s], 0x28) for s in sks])):
-                if d:
-                    pk = _u64(d, gs.ESkillDataFields.PREFAB_KEY)
-                    if self.mc.is_ptr(pk):
-                        pks[s] = pk
+                if not d:
+                    continue
+                prio = _i32(d, gs.ESkillDataFields.PRIORITY)
+                sp_cost = _i32(d, gs.ESkillDataFields.SP_COST)
+                if -10000 <= prio <= 10000 and 0 <= sp_cost <= 100000:
+                    self._skill_static_meta[s] = {
+                        'priority': prio, 'sp_cost': sp_cost}
+                pk = _u64(d, gs.ESkillDataFields.PREFAB_KEY)
+                if self.mc.is_ptr(pk):
+                    pks[s] = pk
             if pks:
                 sks = list(pks)
                 for s, d in zip(sks, self._chan.batch_read([(pks[s], 0x80) for s in sks])):
@@ -3679,13 +4237,17 @@ class EnemyReader:
             out = [(self._skill_names.get(s, '?'), r, p)
                    for s in sks if s in remain_of
                    for r, p in (remain_of[s],)]
+            enriched = [self._build_skill_row(s, *remain_of[s])
+                        for s in sks if s in remain_of]
             # 计时器也可能在切阶段的一帧内为 NULL；有旧值时继续保留，下一轮
             # 自动重试。只有完整数组明确为空时才立即发布空技能列表。
             if out or not self._skill_cd.get(ep):
                 self._skill_cd[ep] = out
+                self._skill_enriched[ep] = enriched
             elif ('all' in decoded_sources[ep] and not sks
                   and self.mc.is_ptr(self._skill_ap.get(ep, 0))):
                 self._skill_cd[ep] = []
+                self._skill_enriched[ep] = []
         # 技能对象随敌人退场释放, 修剪名称缓存防地址复用串名
         live_sks = {s for ep in ptrs for s in self._skill_ptrs.get(ep, ())}
         for s in list(self._skill_names):
@@ -3694,6 +4256,49 @@ class EnemyReader:
         for s in list(self._skill_runtime_meta):
             if s not in live_sks:
                 self._skill_runtime_meta.pop(s, None)
+        for s in list(self._skill_static_meta):
+            if s not in live_sks:
+                self._skill_static_meta.pop(s, None)
+        live_triggers = {
+            meta.get('trigger_addr') for meta in self._skill_runtime_meta.values()
+            if self.mc.is_ptr(meta.get('trigger_addr', 0))}
+        live_triggers.update(
+            runtime.get('action', {}).get('mode_attack_trigger_addr', 0)
+            for runtime in self._runtime_snapshot.values()
+            if self.mc.is_ptr(runtime.get('action', {}).get(
+                'mode_attack_trigger_addr', 0)))
+        for trigger in list(self._trigger_type_cache):
+            if trigger not in live_triggers:
+                self._trigger_type_cache.pop(trigger, None)
+
+    def _build_skill_row(self, skill, remain, period):
+        """汇总单个技能的运行时与静态判定参数，供下一动作推断与详情页使用。"""
+        meta = self._skill_runtime_meta.get(skill, {})
+        static = self._skill_static_meta.get(skill, {})
+        return {
+            'addr': skill,
+            'name': self._skill_names.get(skill, '?'),
+            'remaining': remain, 'period': period,
+            'priority': static.get('priority', 0),
+            'sp_cost': meta.get('sp_cost_runtime', static.get('sp_cost', 0)),
+            'max_triggers': meta.get('max_triggers', 0),
+            'trigger_count': meta.get('trigger_count', 0),
+            'has_trigger': bool(meta.get('has_trigger')),
+            'trigger_addr': meta.get('trigger_addr', 0),
+            'trigger_type': meta.get('trigger_type', ''),
+            'trigger_ready': meta.get('trigger_ready'),
+            'trigger_reason': meta.get('trigger_reason', ''),
+            'trigger_target_addr': meta.get('trigger_target_addr', 0),
+            'trigger_value_type': meta.get('trigger_value_type'),
+            'trigger_value': meta.get('trigger_value'),
+            'trigger_compare_type': meta.get('trigger_compare_type'),
+            'family_mask': meta.get('family_mask', 0),
+            'cast_like_attack': bool(meta.get('cast_like_attack')),
+            'check_parent_active': bool(meta.get('check_parent_active')),
+            'parent_mode_addr': meta.get('parent_mode_addr', 0),
+            'ignore_silence': bool(meta.get('ignore_silence')),
+            'is_enabled': meta.get('is_enabled'),
+        }
 
     def _fill_new_enemies_chan(self, new_eps, infos):
         """新敌人通道内解析：批量读取 ID、关卡名称、Attributes 与 cachedData。"""
@@ -4279,6 +4884,7 @@ class EnemyReader:
             else:
                 self._fill_runtime_slow(info)
             info.skills = list(self._skill_cd.get(addr, []))
+            info.skills_detail = list(self._skill_enriched.get(addr, ()))
         info.buffs = self._read_active_buffs(info.buff_container_ptr)
         special, special_mask, special_sources = summarize_custom_shields(
             info.buffs, info.eid)

@@ -324,6 +324,11 @@ def format_column_value(key, enemy, decimals, row=0):
         value = action.get('next_action') or '-'
         prefix = {
             'confirmed': '[确定] ', 'unselected': '[未预选] ',
+            'inferred': '[推断] ',
+            'rule_calculated': '[规则计算] ',
+            'rule_snapshot': '[规则快照] ',
+            'rule_candidates': '[规则随机] ',
+            'rule_partial': '[规则待判] ',
         }.get(action.get('next_action_confidence'), '')
         return prefix + value if value != '-' else value
     if key == 'abnormal_status':
@@ -475,7 +480,7 @@ class EnemyDetailDialog(QDialog):
         self.globals = _make_table([
             '中文名称', '内部键', '效果说明', '来源阵营', '作用当前敌人', '目标数',
             '实例信息', '生成 Buff', '参数说明', '原始 Blackboard'])
-        self.skills = _make_table(['技能', '剩余CD', '总CD', '状态'])
+        self.skills = _make_table(['技能', '优先级', '剩余CD', '总CD', '状态'])
         for label, table in (
                 ('概览', self.overview), ('属性', self.attrs), ('损伤条', self.elements),
                 ('状态与免疫', self.statuses), ('当前 Buff', self.buffs),
@@ -516,6 +521,11 @@ class EnemyDetailDialog(QDialog):
             ('下一动作', action.get('next_action') or '-'),
             ('下一动作可信度', {
                 'confirmed': '游戏已写入', 'unselected': '游戏尚未预选',
+                'inferred': '按游戏判据推断（CD/触发次数/优先级）',
+                'rule_calculated': '按客户端原始规则计算（当前判据唯一）',
+                'rule_snapshot': '按客户端原始规则计算当前快照（动作结束时会重算）',
+                'rule_candidates': '按客户端原始规则得到候选组（战斗 RNG 择一）',
+                'rule_partial': '按客户端原始规则计算，但仍有 Search/Lua/关卡条件待执行',
             }.get(action.get('next_action_confidence'), '-')),
             ('下一动作依据', action.get('next_action_detail') or '-'),
             ('当前逻辑帧', action.get('current_frame')
@@ -661,8 +671,19 @@ class EnemyDetailDialog(QDialog):
                 describe_blackboard(buff['blackboard']), _bb_text(buff['blackboard'])))
         _fill_table(self.globals, global_rows, resize_columns=resize_columns)
 
-        skill_rows = [(key, remain, period, '就绪' if remain <= 0.05 else '冷却中')
-                      for key, remain, period in enemy.skills]
+        detail_rows = getattr(enemy, 'skills_detail', None) or []
+        if detail_rows:
+            skill_rows = [
+                (row.get('name', '?'), row.get('priority', '-'),
+                 row.get('remaining'), row.get('period'),
+                 '就绪' if (row.get('remaining') if isinstance(
+                     row.get('remaining'), (int, float)) else 9) <= 0.05
+                 else '冷却中')
+                for row in detail_rows]
+        else:
+            skill_rows = [(key, '-', remain, period,
+                           '就绪' if remain <= 0.05 else '冷却中')
+                          for key, remain, period in enemy.skills]
         _fill_table(self.skills, skill_rows, resize_columns=resize_columns)
         self._first_update = False
         self.live_status.setText(f'实时更新中 · 最近刷新 {time.strftime("%H:%M:%S")}')

@@ -109,6 +109,19 @@ def decrypt_obscured_int(key: int, hidden: int) -> int:
     return (hidden ^ key) & 0xFFFFFFFF
 
 
+def decrypt_obscured_float(key: int, hidden: int) -> float:
+    """解密 ACTk v2 ``ObscuredFloat``。
+
+    新版 ACTk 在异或前会交换密文的第 1、2 字节。客户端
+    ``ObscuredFloat.Decrypt`` (RVA 0x6135D50) 会先执行同一交换再 XOR；
+    不能直接把 ``hidden ^ key`` 当作 IEEE754。
+    """
+    packed = bytearray(struct.pack('<I', hidden & 0xFFFFFFFF))
+    packed[1], packed[2] = packed[2], packed[1]
+    bits = struct.unpack('<I', packed)[0] ^ (key & 0xFFFFFFFF)
+    return struct.unpack('<f', struct.pack('<I', bits & 0xFFFFFFFF))[0]
+
+
 # ============================================================
 # Entity (战场实体基类)  [已实测验证]
 # ============================================================
@@ -149,7 +162,8 @@ class UnitModeFields:
     """UnitMode 中决定普通攻击/战斗动作的能力指针。"""
     COMBAT = 0x38                 # Ability*
     ATTACK = 0x40                 # Ability*
-    READ_SIZE = 0x48
+    ATTACK_TRIGGER = 0x48         # TargetTrigger*，普通攻击 SearchTarget 使用
+    READ_SIZE = 0x50
 
 
 class UnitAnimatorFields:
@@ -457,6 +471,8 @@ SP_TYPE_NAMES = {
 # ============================================================
 class EnemyFields:
     M_CURRENT_TILE = 0x350      # Tile*
+    M_CURSOR = 0x360            # DirectionCursor*
+    M_BLOCKER = 0x390           # ObjectPtr<Character>（首槽为对象指针）
     M_BLOCK_POSITION = 0x3F8    # Vector2 (float x,y) 阻挡位置
     M_POS_IN_LAST_FRAME = 0x408 # Vector2 (float x,y) 上一帧地图坐标
     M_ALL_SKILLS = 0x448        # EnemySkill[] 全部技能组件
@@ -484,9 +500,12 @@ class EnemyOptionsFields:
 # ============================================================
 class EnemySkillFields:
     FAMILY_MASK = 0x18          # Ability.FamilyGroupMask
+    TRIGGER = 0x20              # TargetTrigger* (NULL=无目标触发器, 就绪即放)
+    CHECK_PARENT_ACTIVE = 0x28  # bool，要求所属 UnitMode 当前激活
     CAST_LIKE_ATTACK = 0x3B     # bool，以普通攻击流程施放
     MAX_TRIGGER_TIME = 0x2C     # int32 最多触发次数
     OVERWRITE_INIT_CD = 0x34    # int32 初始冷却覆盖
+    IGNORE_SILENCE = 0x38       # bool，沉默时仍可使用
     M_SP_COST = 0x3C            # int32
     M_TRIGGER_CNT = 0x40        # int32 已触发次数
     M_COOLDOWN_TIMER = 0x48     # PeriodicTimer* 冷却计时器
@@ -495,6 +514,39 @@ class EnemySkillFields:
     PARENT_MODE = 0x78          # UnitMode*
     DATA = 0x80                 # ESkillData* 静态配置
     OWNER = 0x88                # Enemy*
+    READ_SIZE = 0x90
+
+
+class TargetTriggerFields:
+    """TargetTrigger 及常见派生类的运行时判定字段。"""
+    ABILITY = 0x18              # Ability* backing field
+    READ_SIZE = 0x78
+
+
+class SelectorTriggerFields:
+    KEEP_TARGET = 0x20          # bool
+    MIN_TARGET_NUM = 0x24       # int32
+    OVERRIDE_SEARCH_TICK = 0x28 # int32
+    SELECTOR = 0x30             # TargetSelector*
+    LAST_TARGET = 0x38          # ObjectPtr<Entity> 首槽
+
+
+class SpTriggerFields:
+    VALUE_TYPE = 0x20           # 0=Value, 1=ChargeLayer
+    VALUE_TO_COMPARE = 0x24     # float
+    COMPARE_TYPE = 0x28         # CompareType
+    OWNER = 0x30                # Entity*
+
+
+class AbilityFamilyMask:
+    """Ability.FamilyGroupMask；EnemySkill 只能参加对应动作流程。"""
+    NONE = 0
+    ATTACK = 1
+    COMBAT = 2
+    SKILL = 4
+    TALENT = 8
+    GENERAL = 16
+    ATTACK_OR_COMBAT = ATTACK | COMBAT
 
 
 class EnemyAttackWrapperFields:
@@ -535,6 +587,11 @@ class LevelEnemyDataFields:
     DESCRIPTION = 0x18          # string
     KEY = 0x20                  # string enemy_xxx
     ATTRIBUTES = 0x28           # AttributesData
+
+
+class StaticAttributesDataFields:
+    """关卡 ``AttributesData`` 中用于未出场估时的静态字段。"""
+    MOVE_SPEED = 0x8C           # ObscuredFloat (0x18 bytes)
 
 
 # ============================================================
@@ -902,6 +959,7 @@ class SchedulerFields:
     M_WAVE_START_TIME = 0x90            # FP，当前波次绝对开始时间
     M_FRAGMENT_START_TIME = 0x98        # FP，当前片段绝对开始时间
     M_WAVES = 0xA0                     # WaveData[]（与 LevelData.waves 同一数组）
+    M_ENEMY_MAP = 0xA8                 # Dictionary<string, Scheduler.EnemyItem>
     M_ACTION_QUEUE = 0xB8              # List<Scheduler.ActionItem> 当前待执行行动
     M_MANAGED_WAVE_ENEMIES = 0xC0      # List<Enemy> [实测]
     M_MANAGED_FINAL_ENEMIES = 0xC8     # List<Enemy>
@@ -944,10 +1002,33 @@ class SchedulerDriverFields:
 
 class LevelDataFields:
     LEVEL_ID = 0x18                    # string
+    ROUTES = 0x60                      # RouteData[]
+    EXTRA_ROUTES = 0x68                # RouteData[]
     ENEMIES = 0x70                     # EnemyData[]（含本关本地化名称与属性）
     ENEMY_DB_REFS = 0x78               # EnemyDataDbReference[]
     WAVES = 0x80                       # WaveData[]
     BRANCHES = 0x88                    # ListDict<string, BranchData>
+
+
+class RouteDataFields:
+    MOTION_MODE = 0x10
+    START_POSITION = 0x14              # GridPosition(row, col)
+    END_POSITION = 0x1C
+    CHECKPOINTS = 0x38                 # CheckpointData[]
+    ALLOW_DIAGONAL_MOVE = 0x40
+    READ_SIZE = 0x48
+
+
+class RouteCheckpointFields:
+    TYPE = 0x10
+    TIME = 0x14
+    POSITION = 0x18                    # GridPosition(row, col)
+    READ_SIZE = 0x30
+
+
+class RouteCheckpointType:
+    MOVE = 0
+    WAIT_FOR_SECONDS = 1
 
 
 class WaveDataFields:

@@ -36,7 +36,10 @@ KNOWN_GAME_PACKAGES = (
     'com.YoStarKR.Arknights',
     'tw.txwy.and.arknights',
 )
-KNOWN_MUMU_SERIALS = ('127.0.0.1:16384', '127.0.0.1:16416', '127.0.0.1:7555')
+# MuMu 12 预设端口表: 16384 起步步进 32 覆盖实例 0-6 (与 MAA 兜底表一致);
+# 7555 为旧版 MuMu6 残留端口
+KNOWN_MUMU_SERIALS = tuple(
+    [f'127.0.0.1:{16384 + 32 * i}' for i in range(7)] + ['127.0.0.1:7555'])
 BS = 4 * 1024 * 1024  # dd 块大小
 
 
@@ -120,11 +123,17 @@ def query_adb_devices(adb_path: str, connect_known: bool = False,
 
 
 def find_mumu_adb() -> Optional[str]:
-    """查找 adb.exe: 配置缓存 -> PATH -> ANDROID_HOME -> 多盘符常见路径 -> 注册表"""
+    """查找 adb.exe: 配置缓存 -> 运行中模拟器 -> PATH -> ANDROID_HOME -> 多盘符常见路径 -> 注册表"""
     import shutil
     saved = load_adb_config().get('adb_path')
     if saved and os.path.isfile(saved):
         return saved
+    # 优先使用正在运行的模拟器自带的 adb (参考 MAA 探测链: 新版 MuMu 的 adb
+    # 在 nx_main/ 下, 且只有它自己的 adb server 会自报 127.0.0.1:16384 之类
+    # 的设备地址; PATH/SDK 里的其它 adb 可能认不出模拟器设备)
+    running = find_running_emulator_adbs()
+    if running:
+        return running[0]['adb_path']
     p = shutil.which("adb")
     if p:
         return p
@@ -141,6 +150,9 @@ def find_mumu_adb() -> Optional[str]:
         os.path.join("Netease", "MuMuPlayer-12.0", "shell", "adb.exe"),
         os.path.join("MuMuPlayer-12.0", "shell", "adb.exe"),
         os.path.join("MuMu Player 12", "shell", "adb.exe"),
+        os.path.join("MuMu Player 12", "nx_main", "adb.exe"),
+        os.path.join("MuMuPlayer-12.0", "nx_main", "adb.exe"),
+        os.path.join("MuMu Player 12", "vmonitor", "bin", "adb_server.exe"),
         os.path.join("MuMuPlayer", "shell", "adb.exe"),
         os.path.join("MuMu", "shell", "adb.exe"),
     ]
@@ -171,9 +183,11 @@ def find_mumu_adb() -> Optional[str]:
                     install = install.strip('"')
                     if os.path.isfile(install):        # DisplayIcon 指向 exe
                         install = os.path.dirname(install)
-                    adb = os.path.join(install, "shell", "adb.exe")
-                    if os.path.isfile(adb):
-                        return adb
+                    for sub in (os.path.join("nx_main", "adb.exe"),
+                                os.path.join("shell", "adb.exe")):
+                        adb = os.path.join(install, sub)
+                        if os.path.isfile(adb):
+                            return adb
                 except Exception:
                     pass
     except Exception:
@@ -186,6 +200,10 @@ _EMULATOR_PROCESS_HINTS = (
     'nox', 'memu', 'bluestacks', 'hd-player', 'hd-agent',
 )
 _EMULATOR_ADB_RELATIVE_PATHS = (
+    # 新版 MuMu 12 首选: adb 已移至 nx_main (MAA 探测链第一候选)
+    os.path.join('nx_main', 'adb.exe'),
+    # 新版 MuMu 12 备选: vmonitor 自带的 adb_server
+    os.path.join('vmonitor', 'bin', 'adb_server.exe'),
     'adb.exe',
     os.path.join('shell', 'adb.exe'),
     os.path.join('nx_device', '12.0', 'shell', 'adb.exe'),

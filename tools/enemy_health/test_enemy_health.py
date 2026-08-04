@@ -156,6 +156,40 @@ class EnemyDetailModelTests(unittest.TestCase):
             ])
             self.assertEqual([item['adb_path'] for item in found], [str(adb)])
 
+    def test_running_nx_device_process_resolves_nx_main_adb(self):
+        """新版 MuMu 布局: 进程在 nx_device/12.x/shell 下, adb 在 nx_main/ 下。"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir) / 'MuMu Player 12'
+            process = root / 'nx_device' / '12.0' / 'shell' / 'MuMuNxDevice.exe'
+            adb = root / 'nx_main' / 'adb.exe'
+            process.parent.mkdir(parents=True)
+            adb.parent.mkdir(parents=True)
+            process.touch()
+            adb.touch()
+            found = find_running_emulator_adbs([
+                ('MuMuNxDevice.exe', str(process)),
+            ])
+            self.assertEqual([item['adb_path'] for item in found], [str(adb)])
+
+    def test_known_mumu_serials_cover_preset_port_table(self):
+        from tools.enemy_health.memcore import KNOWN_MUMU_SERIALS
+        for i in range(7):
+            self.assertIn(f'127.0.0.1:{16384 + 32 * i}', KNOWN_MUMU_SERIALS)
+        self.assertIn('127.0.0.1:7555', KNOWN_MUMU_SERIALS)
+
+    def test_find_mumu_adb_prefers_running_emulator_adb(self):
+        from tools.enemy_health import memcore
+        with tempfile.TemporaryDirectory() as temp_dir:
+            adb = Path(temp_dir) / 'MuMu Player 12' / 'nx_main' / 'adb.exe'
+            adb.parent.mkdir(parents=True)
+            adb.touch()
+            detected = [{'adb_path': str(adb), 'process_name': 'MuMuNxDevice.exe',
+                         'process_path': ''}]
+            with patch.object(memcore, 'load_adb_config', return_value={}), \
+                    patch.object(memcore, 'find_running_emulator_adbs',
+                                 return_value=detected):
+                self.assertEqual(memcore.find_mumu_adb(), str(adb))
+
     def test_all_current_attributes_are_declared(self):
         self.assertEqual(gs.AttributeType.E_NUM, 38)
         self.assertEqual({idx for idx, _, _ in gs.ATTRIBUTE_DEFS},
@@ -218,7 +252,7 @@ class EnemyDetailModelTests(unittest.TestCase):
         self.assertIsNone(spine_track_remaining(
             0.0, 3.0, 1.5, 1.0, 1.0, 1.0, loop=True))
 
-    def test_enemy_attack_uses_spine_track_without_inventing_next_action(self):
+    def test_enemy_attack_uses_spine_track_and_marks_rule_snapshot(self):
         class FakeMem:
             @staticmethod
             def is_ptr(value):
@@ -236,10 +270,11 @@ class EnemyDetailModelTests(unittest.TestCase):
         self.assertAlmostEqual(enemy.action['remaining'], 1.2)
         self.assertEqual(enemy.action['remaining_frames'], 36)
         self.assertEqual(enemy.action['clock_source'], 'spine_track')
-        self.assertEqual(enemy.action['next_action_confidence'], 'unselected')
-        self.assertEqual(enemy.action['next_action'], '等待游戏判定')
+        self.assertEqual(enemy.action['next_action_confidence'], 'rule_partial')
+        self.assertIn('规则候选', enemy.action['next_action'])
+        self.assertIn('当前动作尚未结束', enemy.action['next_action_detail'])
 
-    def test_enemy_shortest_skill_cd_is_not_reported_as_game_preselection(self):
+    def test_enemy_on_cooldown_skill_is_not_reported_as_next_action(self):
         class FakeMem:
             @staticmethod
             def is_ptr(value):
@@ -249,15 +284,134 @@ class EnemyDetailModelTests(unittest.TestCase):
         enemy = EnemyInfo(0x1000)
         enemy.state_id = gs.EnemyState.MOVE
         enemy.skills = [('短CD技能', 1.0, 10.0), ('长CD技能', 8.0, 20.0)]
+        enemy.skills_detail = [
+            {'name': '短CD技能', 'remaining': 1.0, 'period': 10.0,
+             'priority': 5, 'max_triggers': 0, 'trigger_count': 0,
+             'has_trigger': False, 'family_mask': gs.AbilityFamilyMask.ATTACK},
+            {'name': '长CD技能', 'remaining': 8.0, 'period': 20.0,
+             'priority': 9, 'max_triggers': 0, 'trigger_count': 0,
+             'has_trigger': False, 'family_mask': gs.AbilityFamilyMask.ATTACK},
+        ]
         enemy.action = {
             'attack_base': {'cd_remaining': 0.0},
+            'attack_trigger_ready': True,
+            'attack_trigger_reason': '测试目标有效',
             'combat_ability_picked': False,
         }
         reader._finalize_enemy_action(
             enemy, now=5.0, frame=130, frame_duration=1 / 30)
-        self.assertEqual(enemy.action['next_action'], '等待游戏判定')
-        self.assertEqual(enemy.action['next_action_confidence'], 'unselected')
+        # 原始 _PickAbility 只检查最高优先级组；其 CD 未就绪后直接兜底，
+        # 不会继续选择低优先级但 CD 更短的技能。
         self.assertNotIn('短CD技能', enemy.action['next_action'])
+        self.assertNotIn('长CD技能', enemy.action['next_action'])
+        self.assertEqual(enemy.action['next_action'], '普通攻击')
+        self.assertEqual(enemy.action['next_action_confidence'], 'rule_calculated')
+        self.assertIn('priority=9', enemy.action['next_action_detail'])
+
+    def test_enemy_attack_lane_candidate_uses_highest_priority(self):
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        reader = EnemyReader(mc=FakeMem())
+        enemy = EnemyInfo(0x1000)
+        enemy.state_id = gs.EnemyState.MOVE
+        enemy.skills_detail = [
+            {'name': '低优先技能', 'remaining': 0.0, 'period': 10.0,
+             'priority': 1, 'max_triggers': 0, 'trigger_count': 0,
+             'has_trigger': False, 'family_mask': gs.AbilityFamilyMask.ATTACK},
+            {'name': '高优先技能', 'remaining': 0.0, 'period': 30.0,
+             'priority': 9, 'max_triggers': 3, 'trigger_count': 1,
+             'has_trigger': True, 'trigger_ready': True,
+             'trigger_type': 'SelectorTrigger',
+             'trigger_reason': '已有有效目标',
+             'family_mask': gs.AbilityFamilyMask.ATTACK},
+        ]
+        enemy.action = {'combat_ability_picked': False}
+        reader._finalize_enemy_action(
+            enemy, now=5.0, frame=130, frame_duration=1 / 30)
+        self.assertEqual(enemy.action['next_action'], '技能：高优先技能')
+        self.assertEqual(enemy.action['next_action_confidence'], 'rule_calculated')
+        self.assertIn('priority=9', enemy.action['next_action_detail'])
+        self.assertNotIn('低优先技能', enemy.action['next_action'])
+
+    def test_enemy_exhausted_skill_is_not_inferred(self):
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        reader = EnemyReader(mc=FakeMem())
+        enemy = EnemyInfo(0x1000)
+        enemy.state_id = gs.EnemyState.MOVE
+        enemy.skills_detail = [
+            {'name': '次数用尽技能', 'remaining': 0.0, 'period': 10.0,
+             'priority': 9, 'max_triggers': 2, 'trigger_count': 2,
+             'has_trigger': False, 'family_mask': gs.AbilityFamilyMask.ATTACK},
+        ]
+        enemy.action = {
+            'combat_ability_picked': False,
+            'attack_base': {'cd_remaining': 0.0},
+            'attack_trigger_ready': True,
+            'attack_trigger_reason': '测试目标有效',
+        }
+        reader._finalize_enemy_action(
+            enemy, now=5.0, frame=130, frame_duration=1 / 30)
+        self.assertNotIn('次数用尽技能', enemy.action['next_action'])
+        self.assertEqual(enemy.action['next_action'], '普通攻击')
+        self.assertEqual(enemy.action['next_action_confidence'], 'rule_calculated')
+
+    def test_enemy_ready_skill_candidate_notes_trigger_gate(self):
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        reader = EnemyReader(mc=FakeMem())
+        enemy = EnemyInfo(0x1000)
+        enemy.state_id = gs.EnemyState.MOVE
+        enemy.skills_detail = [
+            {'name': '触发器技能', 'remaining': 0.0, 'period': 10.0,
+             'priority': 3, 'max_triggers': 0, 'trigger_count': 0,
+             'has_trigger': True, 'family_mask': gs.AbilityFamilyMask.ATTACK},
+        ]
+        enemy.action = {'combat_ability_picked': False}
+        reader._finalize_enemy_action(
+            enemy, now=5.0, frame=130, frame_duration=1 / 30)
+        self.assertEqual(enemy.action['next_action'],
+                         '条件待判：触发器技能；否则普通攻击')
+        self.assertEqual(enemy.action['next_action_confidence'], 'rule_partial')
+        self.assertIn('TargetTrigger', enemy.action['next_action_detail'])
+
+    def test_enemy_blocked_uses_combat_lane_and_ignores_attack_only_skill(self):
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        reader = EnemyReader(mc=FakeMem())
+        enemy = EnemyInfo(0x1000)
+        enemy.state_id = gs.EnemyState.MOVE
+        enemy.skills_detail = [
+            {'name': '普攻技能', 'remaining': 0.0, 'period': 10.0,
+             'priority': 99, 'max_triggers': 0, 'trigger_count': 0,
+             'has_trigger': False, 'family_mask': gs.AbilityFamilyMask.ATTACK},
+            {'name': '阻挡技能', 'remaining': 0.0, 'period': 20.0,
+             'priority': 2, 'max_triggers': 0, 'trigger_count': 0,
+             'has_trigger': False, 'family_mask': gs.AbilityFamilyMask.COMBAT},
+        ]
+        enemy.action = {
+            'blocker_addr': 0x2000, 'combat_ability_picked': False,
+            'combat_base': {'cd_remaining': 0.0},
+        }
+        reader._finalize_enemy_action(
+            enemy, now=5.0, frame=130, frame_duration=1 / 30)
+        # 最高优先级先于 family 锁组；priority=99 的 ATTACK 技能在 COMBAT
+        # 流程不通过后，客户端直接兜底，不会继续看 priority=2。
+        self.assertEqual(enemy.action['next_action'], '基础战斗能力')
+        self.assertNotIn('普攻技能', enemy.action['next_action'])
+        self.assertNotIn('阻挡技能', enemy.action['next_action'])
 
     def test_enemy_picked_combat_ability_is_confirmed_next_action(self):
         class FakeMem:
@@ -294,8 +448,60 @@ class EnemyDetailModelTests(unittest.TestCase):
         }
         reader._finalize_enemy_action(
             enemy, now=5.0, frame=130, frame_duration=1 / 30)
-        self.assertEqual(enemy.action['next_action_confidence'], 'unselected')
-        self.assertEqual(enemy.action['next_action'], '等待游戏判定')
+        self.assertNotEqual(enemy.action['next_action_confidence'], 'confirmed')
+        self.assertIn('当前动作尚未结束', enemy.action['next_action_detail'])
+
+    def test_current_attack_snapshot_does_not_choose_lower_priority_ready_skill(self):
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        reader = EnemyReader(mc=FakeMem())
+        enemy = EnemyInfo(0x1000)
+        enemy.state_id = gs.EnemyState.ATTACK
+        enemy.skills_detail = [
+            {'name': '高优先冷却技能', 'remaining': 10.0, 'period': 30.0,
+             'priority': 1, 'max_triggers': 0, 'trigger_count': 0,
+             'has_trigger': True, 'trigger_ready': None,
+             'family_mask': gs.AbilityFamilyMask.ATTACK},
+            {'name': '低优先就绪技能', 'remaining': 0.0, 'period': 20.0,
+             'priority': 0, 'max_triggers': 0, 'trigger_count': 0,
+             'has_trigger': True, 'trigger_ready': True,
+             'family_mask': gs.AbilityFamilyMask.ATTACK},
+        ]
+        enemy.action = {
+            'attack_base': {'cd_remaining': 0.0},
+            'attack_trigger_ready': True,
+            'attack_trigger_reason': '已有有效目标',
+        }
+        reader._finalize_enemy_action(
+            enemy, now=5.0, frame=130, frame_duration=1 / 30)
+        self.assertEqual(enemy.action['next_action'], '普通攻击')
+        self.assertEqual(enemy.action['next_action_confidence'], 'rule_snapshot')
+        self.assertNotIn('低优先就绪技能', enemy.action['next_action'])
+
+    def test_same_priority_passed_skills_are_rng_candidates(self):
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        reader = EnemyReader(mc=FakeMem())
+        enemy = EnemyInfo(0x1000)
+        enemy.state_id = gs.EnemyState.MOVE
+        enemy.skills_detail = [
+            {'name': name, 'remaining': 0.0, 'period': 10.0,
+             'priority': 4, 'max_triggers': 0, 'trigger_count': 0,
+             'has_trigger': False,
+             'family_mask': gs.AbilityFamilyMask.ATTACK}
+            for name in ('技能甲', '技能乙')]
+        enemy.action = {}
+        reader._finalize_enemy_action(
+            enemy, now=5.0, frame=130, frame_duration=1 / 30)
+        self.assertEqual(enemy.action['next_action'], '随机择一：技能甲 / 技能乙')
+        self.assertEqual(enemy.action['next_action_confidence'], 'rule_candidates')
+        self.assertIn('战斗 RNG', enemy.action['next_action_detail'])
 
     def test_dump_parser_tracks_namespace_fields_and_enum_values(self):
         source = (
@@ -504,6 +710,50 @@ class EnemyDetailModelTests(unittest.TestCase):
             [reader._spawn_plan[0]['info']], scheduler_time=55.25)
         self.assertAlmostEqual(rows[0].spawn_eta, 4.75)
         self.assertEqual(rows[0].spawn_condition, '按当前调度计时')
+
+    def test_spawn_eta_adds_off_map_route_entry_time(self):
+        reader = EnemyReader(mc=object())
+        reader._route_meta = {
+            0: {'start': (2, 11), 'entry': (2, 9), 'distance': 2.0,
+                'fixed_wait': 0.0, 'diagonal': False}}
+        reader._level_enemy_meta = {
+            'enemy_a': {'move_speed': 0.5, 'delay_to_born': 0.0}}
+        reader._set_spawn_plan([{
+            'key': 'enemy_a', 'action_ptr': 0x1000, 'spawn_index': 0,
+            'route_index': 0, 'wave_index': 0, 'fragment_index': 0,
+        }])
+        reader._fragment_start_time = 50.0
+        reader._action_queue_entries = [{
+            'action_ptr': 0x1000, 'occurrence': 0, 'time_offset': 10.0,
+        }]
+        rows = reader._apply_spawn_timing(
+            [reader._spawn_plan[0]['info']], scheduler_time=55.25)
+        self.assertAlmostEqual(rows[0].spawn_eta, 8.75)
+        self.assertIn('4.0 秒进入地图', rows[0].spawn_condition)
+
+    def test_spawned_enemy_stays_pending_until_first_route_entry(self):
+        reader = EnemyReader(mc=object())
+        reader._route_meta = {
+            0: {'start': (2, 11), 'entry': (2, 9), 'distance': 2.0,
+                'fixed_wait': 0.0, 'diagonal': False}}
+        reader._level_enemy_meta = {'enemy_a': {'move_speed': 0.5}}
+        reader._set_spawn_plan([{'key': 'enemy_a', 'route_index': 0}])
+        enemy = EnemyInfo(0x1000)
+        enemy.eid = 'enemy_a'
+        enemy.alive = True
+        enemy.mspd = 0.5
+        enemy.pos_x, enemy.pos_y = 10.0, 2.0
+        rows = reader._merge_enemy_roster([enemy], 1)
+        self.assertEqual(rows[0].lifecycle, 'pending')
+        self.assertAlmostEqual(rows[0].spawn_eta, 2.0)
+        enemy.pos_x = 8.95
+        rows = reader._merge_enemy_roster([enemy], 1)
+        self.assertEqual(rows[0].lifecycle, 'active')
+
+    def test_obscured_float_v2_byte_swap(self):
+        # 现网 Faust moveSpeed=0.5 的 AttributesData 原始字节。
+        self.assertAlmostEqual(gs.decrypt_obscured_float(
+            0x001DD4F8, 0x3FD41DF8), 0.5)
 
     def test_future_wave_does_not_guess_specific_death_trigger(self):
         reader = EnemyReader(mc=object())

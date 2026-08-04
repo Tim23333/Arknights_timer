@@ -206,8 +206,10 @@ def _build_timer_tool(backend_dir: Path, repo_root: Path, icon_path: Path, args)
 
     # 隐藏导入
     cmd.extend(["--hidden-import", "ak_memory_reader"])
+    cmd.extend(["--hidden-import", "process_scan"])
     cmd.extend(["--hidden-import", "pymem"])
     cmd.extend(["--hidden-import", "numpy"])
+    cmd.extend(["--hidden-import", "psutil"])
 
     cmd.append(str(entry))
 

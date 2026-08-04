@@ -190,6 +190,33 @@ backend/app/enemy_buff_descriptions.py # Buff/GlobalBuff 中文说明
 | LevelData.waves | 0x80 | 开局固定 Wave/Fragment/SPAWN 序列 |
 | BattleController state/speed/timeScale/playTime | 0x220/0x228/0x280/0x284 | dump.cs 旧偏移已失效 |
 | BattleController.m_globalBuffs | 0x68 | List<GlobalBuff>，含目标映射与 Blackboard |
+| Enemy.attackWrapper / combatWrapper | 0x550 / 0x558 | dump.cs 一致；combatAbilityPicked 从写入到施放仅约 1 逻辑帧，轮询基本捕不到 |
+| EnemySkill._trigger / maxTriggerTime / triggerCnt | 0x20 / 0x2C / 0x40 | 目标触发器指针（NULL=就绪即放）/ 最多触发次数 / 已触发次数 |
+| EnemySkill.cooldownTimer / data | 0x48 / 0x80 | PeriodicTimer / ESkillData 静态配置 |
+| EnemySkill.checkParentActive / ignoreSilence / m_spCost | 0x28 / 0x38 / 0x3C | 父模式、沉默与运行时 SP 可用性门槛 |
+| UnitMode.attackTrigger | 0x48 | 普通攻击的原始 TargetTrigger（目标搜索依据） |
+| SelectorTrigger.minTargetNum / lastTarget | 0x24 / 0x38 | 最少目标数 / 当前选择器缓存目标 |
+| ESkillData.priority / spCost | 0x18 / 0x24 | 技能优先级 / 静态 SP 消耗 |
+
+下一动作只在游戏真正写入 `CombatWrapper.m_pickedAbility`（或 Spine 已排队下一段
+动画）时标记为“确定”。`AttackWrapper` 没有独立 next 槽；游戏尚未决定时，界面会
+按反汇编得到的原始规则计算：MoveState 先检查阻挡（COMBAT），否则进入 ATTACK
+目标搜索；`Wrapper._PickAbility` 在检查 family/可用性之前锁定 `m_skills` 的最高
+priority 组，然后逐项检查启用、CD、触发次数、父 UnitMode、沉默、SP、family 与
+TargetTrigger。该组全部失败才回退普通攻击/基础战斗能力；同优先级有多个通过项时，
+客户端会使用战斗 RNG 随机择一，不是取列表首项，也不是取 CD 最短项。
+
+读取器不会直接调用游戏的 `TargetTrigger.Search`，因为该函数可能刷新目标、消费随机
+数或触发关卡分支。`AlwaysTrigger`、`NeverTrigger`、Selector 已缓存有效目标以及
+SpTrigger 的数值比较可以直接按字段求值；LevelBranch、Lua 条件和“空目标后的下一次
+搜索”会显示为“规则待判”。因此“规则计算”表示当前只读快照下原始判据得到唯一结果，
+“规则随机”表示原始规则得到同优先级候选组，“规则待判”表示仍需游戏执行有副作用的
+Search/关卡逻辑；三者都与“游戏已写入”严格区分。
+
+未出场倒计时区分“Scheduler 创建实体”和“玩家看到敌人进入地图”。路线常从地图外
+坐标创建（例如列 11），再走到首个 MOVE 路线点（例如列 9）；现在用关卡 RouteData、
+敌人静态 moveSpeed（ACTk v2 ObscuredFloat 解密）和 delayToBorn 把这段 3–5 秒预行走
+计入“距离出场”，实体已创建但尚未到达首个路线点时仍显示为“未出场”。
 
 属性索引： MAX_HP=0 ATK=1 DEF=2 RES=3 MOVE_SPEED=6 ATTACK_SPEED=7
 
