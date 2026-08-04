@@ -113,8 +113,64 @@ def _i32(b, o):
     return struct.unpack_from('<i', b, o)[0]
 
 
+def _u32(b, o):
+    return struct.unpack_from('<I', b, o)[0]
+
+
 def _f32x2(b, o):
     return struct.unpack_from('<2f', b, o)
+
+
+def seconds_to_frames(seconds, frame_duration=1.0 / 30.0):
+    """把可靠的游戏时间倒计时换算为逻辑帧；无倒计时返回 ``None``。"""
+    if not isinstance(seconds, (int, float)) or not math.isfinite(seconds):
+        return None
+    if seconds < 0:
+        return None
+    if not isinstance(frame_duration, (int, float)) or not math.isfinite(frame_duration):
+        frame_duration = 1.0 / 30.0
+    frame_duration = max(1.0 / 240.0, min(1.0, float(frame_duration)))
+    return max(0, int(math.ceil(max(0.0, float(seconds)) / frame_duration - 1e-7)))
+
+
+def spine_track_remaining(animation_start, animation_end, track_time,
+                          entry_scale=1.0, state_scale=1.0,
+                          skeleton_scale=1.0, loop=False):
+    """计算 Spine 非循环 TrackEntry 距动画内容终点的游戏时间。
+
+    ``AnimationState.Update`` 的现网汇编顺序为 SkeletonAnimation.timeScale ×
+    AnimationState.timeScale × TrackEntry.timeScale；TrackEntry.trackTime 已包含
+    已播放进度。循环轨道没有“当前动作结束”语义，因此明确返回 ``None``。
+    """
+    values = (animation_start, animation_end, track_time, entry_scale,
+              state_scale, skeleton_scale)
+    if loop or not all(isinstance(value, (int, float)) and math.isfinite(value)
+                       for value in values):
+        return None
+    duration = float(animation_end) - float(animation_start)
+    speed = float(entry_scale) * float(state_scale) * float(skeleton_scale)
+    if duration < 0 or duration > 3600 or speed <= 0 or speed > 10000:
+        return None
+    if track_time < -3600 or track_time > 1_000_000_000:
+        return None
+    return max(0.0, duration - float(track_time)) / speed
+
+
+def countdown_text(action):
+    """动作倒计时的统一短文本，供敌我两个表格复用。"""
+    action = action or {}
+    frames = action.get('remaining_frames')
+    seconds = action.get('remaining')
+    kind = action.get('remaining_kind') or ''
+    parts = []
+    if isinstance(frames, int) and frames >= 0:
+        parts.append(f'{frames} 帧')
+    if isinstance(seconds, (int, float)) and math.isfinite(seconds) and seconds >= 0:
+        parts.append(f'{seconds:.2f} 秒')
+    if parts:
+        text = ' / '.join(parts)
+        return f'{text}（{kind}）' if kind else text
+    return kind or '条件驱动'
 
 
 class _HeapSnapshot:
@@ -174,7 +230,7 @@ class EnemyInfo:
                  'buffs', 'global_buffs', 'roster_id', 'spawn_order', 'wave_index',
                  'fragment_index', 'action_index', 'spawn_index', 'route_index',
                  'lifecycle', 'planned', 'spawn_eta', 'spawn_condition',
-                 'spawn_kind', 'spawn_source', 'is_summon', 'action_ptr')
+                 'spawn_kind', 'spawn_source', 'is_summon', 'action_ptr', 'action')
 
     def __init__(self, addr):
         self.addr = addr
@@ -238,6 +294,9 @@ class EnemyInfo:
         self.spawn_source = ''
         self.is_summon = False
         self.action_ptr = 0
+        # 当前动作链的结构化快照。phase/name 用于主表；其余字段在详情页展示。
+        # 地址和时间均来自运行时对象，不根据技能 CD 猜测“正在施放”。
+        self.action = {}
 
     def attribute(self, index, default=0.0):
         return self.attributes.get(index, default)
@@ -269,6 +328,12 @@ class EnemyInfo:
     def status_text(self):
         names = self.active_status_names()
         return '、'.join(names) if names else '正常'
+
+    @property
+    def action_text(self):
+        action = self.action or {}
+        return action.get('name') or gs.ENEMY_STATE_NAMES.get(
+            self.state_id, f'未知({self.state_id})')
 
     @property
     def effective_max_ep(self):
@@ -344,6 +409,13 @@ class EnemyReader:
         self._skill_ptrs = {}         # enemy addr -> 最近一次成功解析的 EnemySkill 地址
         self._skill_names = {}        # skill addr -> prefabKey (技能静态名缓存)
         self._skill_cd = {}           # enemy addr -> [(key, remaining, period), ...]
+        self._skill_runtime_meta = {} # skill addr -> family/触发/运行时 Ability
+        self._status_timer_cache = {} # entity addr -> 当前异常态对应的 Buff 地址
+        self._animation_name_cache = {} # il2cpp string addr -> animKey/空值
+        self._animator_layout_cache = {} # animator -> {klass, skeleton/...}
+        self._spine_face_skeleton_cache = {} # FaceConfiguration -> SkeletonAnimation
+        self._spine_skeleton_layout_cache = {} # skeleton -> state/tracks/items
+        self._spine_animation_cache = {} # Spine.Animation -> {name, duration}
         # 关卡完整出怪表：LevelData.waves 在开局即存在；当前 Enemy 实例按首次出现
         # 映射到计划项，退场后保留最后一帧，未生成项保持 pending。
         self._spawn_plan = []
@@ -368,6 +440,8 @@ class EnemyReader:
         self._current_fragment_index = -1
         self._bc_static_fields = 0
         self._scheduler_time_snap = None
+        self._fixed_frame_snap = None
+        self._frame_duration_snap = 1.0 / 30.0
 
     @property
     def planned_count(self):
@@ -504,13 +578,19 @@ class EnemyReader:
         if not self.mc.is_ptr(static_fields):
             return False
         raw = self._detail_batch_read([(
-            static_fields + gs.BattleControllerStaticFields.FIXED_PLAY_TIME, 8)])[0]
+            static_fields + gs.BattleControllerStaticFields.FIXED_FRAME_COUNT,
+            gs.BattleControllerStaticFields.DELTA_PLAY_TIME_FP
+            - gs.BattleControllerStaticFields.FIXED_FRAME_COUNT + 8)])[0]
         if not raw:
             return False
-        now = gs.fp_to_float(_u64(raw, 0))
+        frame, now, frame_duration = self._decode_battle_clock_snapshot(raw)
         if not (-1.0 <= now <= 864000.0):
             return False
         self._bc_static_fields = static_fields
+        self._fixed_frame_snap = frame
+        self._scheduler_time_snap = now
+        if frame_duration:
+            self._frame_duration_snap = frame_duration
         return True
 
     @staticmethod
@@ -519,6 +599,22 @@ class EnemyReader:
             return None
         value = gs.fp_to_float(_u64(raw, 0))
         return value if -1.0 <= value <= 864000.0 else None
+
+    @staticmethod
+    def _decode_battle_clock_snapshot(raw):
+        """解析 static_fields+0x14 起的 frame/time/delta 原子快照。"""
+        delta_off = (gs.BattleControllerStaticFields.DELTA_PLAY_TIME_FP
+                     - gs.BattleControllerStaticFields.FIXED_FRAME_COUNT)
+        if not raw or len(raw) < delta_off + 8:
+            return None, None, None
+        frame = _u32(raw, 0)
+        play_time = gs.fp_to_float(_u64(raw, 4))
+        delta = gs.fp_to_float(_u64(raw, delta_off))
+        if not (-1.0 <= play_time <= 864000.0):
+            play_time = None
+        if not (0.000001 <= delta <= 1.0):
+            delta = None
+        return frame, play_time, delta
 
     def _make_plan_record(self, source, order, roster_id):
         record = dict(source)
@@ -635,6 +731,10 @@ class EnemyReader:
         self._current_fragment_index = -1
         self._bc_static_fields = 0
         self._scheduler_time_snap = None
+        self._fixed_frame_snap = None
+        self._frame_duration_snap = 1.0 / 30.0
+        self._status_timer_cache.clear()
+        self._animation_name_cache.clear()
         for order, source in enumerate(records, 1):
             record = self._make_plan_record(source, order, -order)
             self._spawn_plan.append(record)
@@ -1831,6 +1931,22 @@ class EnemyReader:
                 blk[options + gs.EnemyOptionsFields.IS_SUMMON])
             info.action_ptr = _u64(
                 blk, options + gs.EnemyOptionsFields.ACTION_DATA)
+            info.action = {
+                'animator_addr': _u64(blk, gs.UnitFields.ANIMATOR),
+                'current_mode_addr': _u64(blk, gs.UnitFields.CURRENT_MODE),
+                'override_attack_addr': _u64(blk, gs.UnitFields.OVERRIDE_ATTACK),
+                'override_combat_addr': _u64(blk, gs.UnitFields.OVERRIDE_COMBAT),
+                'attack_ability_addr': _u64(
+                    blk, gs.EnemyFields.ATTACK_ABILITY_CASTED),
+                'combat_ability_addr': _u64(
+                    blk, gs.EnemyFields.COMBAT_ABILITY_CASTED),
+                'combat_escape_time': gs.fp_to_float(_u64(
+                    blk, gs.EnemyFields.COMBAT_NEXT_ESCAPE_TIME)),
+                'attack_wrapper_addr': _u64(
+                    blk, gs.EnemyFields.ATTACK_WRAPPER),
+                'combat_wrapper_addr': _u64(
+                    blk, gs.EnemyFields.COMBAT_WRAPPER),
+            }
         info.alive = info.hp > 0 and info.finish == 0
         return info
 
@@ -1865,6 +1981,7 @@ class EnemyReader:
         if not runtime:
             return
         info.state_id = runtime.get('state_id', info.state_id)
+        info.action = dict(runtime.get('action', info.action))
         info.shield = runtime.get('shield', info.shield)
         info.special_shield = runtime.get('special_shield', info.special_shield)
         info.special_shield_mask = runtime.get(
@@ -1880,9 +1997,704 @@ class EnemyReader:
         info.abnormal_combo_immunes = list(
             runtime.get('abnormal_combo_immunes', info.abnormal_combo_immunes))
 
+    def _resolve_animation_states_chan(self, actions):
+        """从 Spine/Mesh 两种 CurrentAniState 候选中解析当前动画键。"""
+        ptrs = []
+        for action in actions.values():
+            for candidate in action.get('animation_candidates', ()):
+                ptr = candidate.get('key_ptr', 0)
+                speed = candidate.get('speed')
+                if (self.mc.is_ptr(ptr) and isinstance(speed, (int, float))
+                        and math.isfinite(speed) and abs(speed) <= 100
+                        and ptr not in self._animation_name_cache):
+                    ptrs.append(ptr)
+        ptrs = list(dict.fromkeys(ptrs))
+        if ptrs:
+            for ptr, data in zip(ptrs, self._detail_batch_read([(ptr, 0x100)
+                                                                 for ptr in ptrs])):
+                value = ''
+                if data and len(data) >= gs.Il2CppString.CHARS:
+                    count = _i32(data, gs.Il2CppString.LENGTH)
+                    if 0 < count <= 96 and gs.Il2CppString.CHARS + count * 2 <= len(data):
+                        try:
+                            value = data[gs.Il2CppString.CHARS:
+                                         gs.Il2CppString.CHARS + count * 2
+                                         ].decode('utf-16-le')
+                        except UnicodeDecodeError:
+                            value = ''
+                self._animation_name_cache[ptr] = value
+        for action in actions.values():
+            chosen = None
+            for candidate in action.get('animation_candidates', ()):
+                name = self._animation_name_cache.get(candidate.get('key_ptr', 0), '')
+                if name:
+                    chosen = (name, candidate.get('speed'), candidate.get('backend'))
+                    break
+            if chosen:
+                action['animation_key'], action['animation_speed'], \
+                    action['animation_backend'] = chosen
+            else:
+                action.pop('animation_key', None)
+                action.pop('animation_speed', None)
+                action.pop('animation_backend', None)
+            action.pop('animation_candidates', None)
+
+    def _read_object_class_names_chan(self, ptrs):
+        """批量读取托管对象 klass 名；只用于首次校准动画器具体类型。"""
+        ptrs = [ptr for ptr in dict.fromkeys(ptrs) if self.mc.is_ptr(ptr)]
+        if not ptrs:
+            return {}
+        klasses = {}
+        for ptr, data in zip(ptrs, self._detail_batch_read([(ptr, 8) for ptr in ptrs])):
+            klass = _u64(data, 0) if data else 0
+            if self.mc.is_ptr(klass):
+                klasses[ptr] = klass
+        name_ptrs = {}
+        owners = list(klasses)
+        for ptr, data in zip(
+                owners, self._detail_batch_read([
+                    (klasses[ptr] + 0x10, 8) for ptr in owners])):
+            name_ptr = _u64(data, 0) if data else 0
+            if self.mc.is_ptr(name_ptr):
+                name_ptrs[ptr] = name_ptr
+        out = {}
+        owners = list(name_ptrs)
+        for ptr, data in zip(
+                owners, self._detail_batch_read([
+                    (name_ptrs[ptr], 96) for ptr in owners])):
+            if not data:
+                continue
+            raw = data.split(b'\0', 1)[0]
+            try:
+                out[ptr] = raw.decode('utf-8')
+            except UnicodeDecodeError:
+                continue
+        return out
+
+    def _resolve_spine_animation_meta_chan(self, animation_ptrs):
+        missing = [ptr for ptr in dict.fromkeys(animation_ptrs)
+                   if self.mc.is_ptr(ptr) and ptr not in self._spine_animation_cache]
+        if not missing:
+            return
+        name_ptrs = {}
+        for ptr, data in zip(
+                missing, self._detail_batch_read([
+                    (ptr, gs.SpineAnimationFields.READ_SIZE) for ptr in missing])):
+            if not data:
+                continue
+            name_ptr = _u64(data, gs.SpineAnimationFields.NAME)
+            duration = struct.unpack_from(
+                '<f', data, gs.SpineAnimationFields.DURATION)[0]
+            self._spine_animation_cache[ptr] = {
+                'name': '',
+                'duration': duration if math.isfinite(duration) else None,
+            }
+            if self.mc.is_ptr(name_ptr):
+                name_ptrs[ptr] = name_ptr
+        strings = self._read_strings(name_ptrs.values(), 96)
+        for ptr, name_ptr in name_ptrs.items():
+            self._spine_animation_cache[ptr]['name'] = strings.get(name_ptr, '')
+
+    def _discover_spine_skeleton_layouts_chan(self, skeletons):
+        """把 SkeletonAnimation 固定链解析到 track 0 的 items 数组。"""
+        missing = [ptr for ptr in dict.fromkeys(skeletons)
+                   if self.mc.is_ptr(ptr)
+                   and ptr not in self._spine_skeleton_layout_cache]
+        states = {}
+        for skeleton, data in zip(
+                missing, self._detail_batch_read([
+                    (ptr + gs.SkeletonAnimationFields.STATE, 8)
+                    for ptr in missing])):
+            state = _u64(data, 0) if data else 0
+            if self.mc.is_ptr(state):
+                states[skeleton] = state
+        tracks = {}
+        for skeleton, data in zip(
+                states, self._detail_batch_read([
+                    (state + gs.SpineAnimationStateFields.TRACKS, 8)
+                    for state in states.values()])):
+            track_list = _u64(data, 0) if data else 0
+            if self.mc.is_ptr(track_list):
+                tracks[skeleton] = track_list
+        for skeleton, data in zip(
+                tracks, self._detail_batch_read([
+                    (track_list, 0x20) for track_list in tracks.values()])):
+            if not data:
+                continue
+            items = _u64(data, gs.SpineExposedListFields.ITEMS)
+            count = _i32(data, gs.SpineExposedListFields.COUNT)
+            if self.mc.is_ptr(items) and 0 < count <= 16:
+                self._spine_skeleton_layout_cache[skeleton] = {
+                    'state': states[skeleton],
+                    'tracks': tracks[skeleton],
+                    'items': items,
+                }
+
+    def _refresh_animation_tracks_chan(self, actions):
+        """读取 Spine track 0，给当前动作提供精确动画剩余量和排队动画。
+
+        动画器 concrete type 与 Skeleton/AnimationState 链只在首次出现时解析；
+        稳态每轮批量核对三个固定指针，再读取 track 0 小块，避免逐对象 TCP 往返。
+        MeshAnimator 没有 Spine TrackEntry，继续保留状态机/Ability 兜底。
+        """
+        track_keys = (
+            'animation_track_addr', 'animation_track_name', 'animation_loop',
+            'animation_start', 'animation_end', 'animation_track_time',
+            'animation_track_speed', 'animation_remaining',
+            'animation_exact', 'animation_next_track_name',
+        )
+        for action in actions.values():
+            for key in track_keys:
+                action.pop(key, None)
+
+        animator_of = {
+            owner: action.get('animator_addr', 0)
+            for owner, action in actions.items()
+            if self.mc.is_ptr(action.get('animator_addr', 0))
+        }
+        unknown = [animator for animator in dict.fromkeys(animator_of.values())
+                   if animator not in self._animator_layout_cache]
+        for animator, klass in self._read_object_class_names_chan(unknown).items():
+            self._animator_layout_cache[animator] = {'klass': klass}
+
+        skeleton_of = {}
+        direct_reqs, direct_keys = [], []
+        for owner, animator in animator_of.items():
+            layout = self._animator_layout_cache.get(animator, {})
+            klass = layout.get('klass', '')
+            if klass == 'SingleSpineAnimator':
+                skeleton = layout.get('skeleton', 0)
+                if self.mc.is_ptr(skeleton):
+                    skeleton_of[owner] = skeleton
+                else:
+                    direct_reqs.append((
+                        animator + gs.SingleSpineAnimatorFields.SKELETON, 8))
+                    direct_keys.append((owner, animator, 'single'))
+            elif klass == 'CharacterAnimator':
+                direct_reqs.append((
+                    animator + gs.CharacterAnimatorFields.ACTIVE_FACE, 8))
+                direct_keys.append((owner, animator, 'character'))
+            elif klass == 'MultiSpineAnimator':
+                direct_reqs.append((
+                    animator + gs.MultiSpineAnimatorFields.FACES, 0x18))
+                direct_keys.append((owner, animator, 'multi'))
+
+        missing_faces = {}
+        multi_heads = {}
+        for (owner, animator, kind), data in zip(
+                direct_keys,
+                self._detail_batch_read(direct_reqs) if direct_reqs else []):
+            if not data:
+                continue
+            if kind == 'single':
+                skeleton = _u64(data, 0)
+                if self.mc.is_ptr(skeleton):
+                    self._animator_layout_cache[animator]['skeleton'] = skeleton
+                    skeleton_of[owner] = skeleton
+            elif kind == 'character':
+                face = _u64(data, 0)
+                skeleton = self._spine_face_skeleton_cache.get(face, 0)
+                if self.mc.is_ptr(skeleton):
+                    skeleton_of[owner] = skeleton
+                elif self.mc.is_ptr(face):
+                    missing_faces[owner] = face
+            else:
+                faces = _u64(data, 0)
+                index = _i32(data, 0x10)
+                if self.mc.is_ptr(faces) and 0 <= index <= 32:
+                    multi_heads[owner] = (faces, index)
+
+        if missing_faces:
+            for owner, data in zip(
+                    missing_faces, self._detail_batch_read([
+                        (face + gs.SpineFaceFields.SKELETON, 8)
+                        for face in missing_faces.values()])):
+                skeleton = _u64(data, 0) if data else 0
+                if self.mc.is_ptr(skeleton):
+                    face = missing_faces[owner]
+                    self._spine_face_skeleton_cache[face] = skeleton
+                    skeleton_of[owner] = skeleton
+
+        multi_items = {}
+        if multi_heads:
+            for owner, data in zip(
+                    multi_heads, self._detail_batch_read([
+                        (faces, 0x20) for faces, _index in multi_heads.values()])):
+                if not data:
+                    continue
+                items = _u64(data, gs.ListInternal.ITEMS)
+                count = _i32(data, gs.ListInternal.SIZE)
+                index = multi_heads[owner][1]
+                if self.mc.is_ptr(items) and 0 <= index < count <= 32:
+                    multi_items[owner] = (items, index)
+        multi_subs = {}
+        if multi_items:
+            for owner, data in zip(
+                    multi_items, self._detail_batch_read([
+                        (items + gs.Il2CppArray.ITEMS + index * 8, 8)
+                        for items, index in multi_items.values()])):
+                sub = _u64(data, 0) if data else 0
+                if self.mc.is_ptr(sub):
+                    multi_subs[owner] = sub
+        if multi_subs:
+            for owner, data in zip(
+                    multi_subs, self._detail_batch_read([
+                        (sub + gs.SpineFaceFields.SKELETON, 8)
+                        for sub in multi_subs.values()])):
+                skeleton = _u64(data, 0) if data else 0
+                if self.mc.is_ptr(skeleton):
+                    skeleton_of[owner] = skeleton
+
+        self._discover_spine_skeleton_layouts_chan(skeleton_of.values())
+        valid = {
+            owner: (skeleton, self._spine_skeleton_layout_cache[skeleton])
+            for owner, skeleton in skeleton_of.items()
+            if skeleton in self._spine_skeleton_layout_cache
+        }
+        if not valid:
+            return
+
+        # 同一批核对 Skeleton->state、state->tracks、tracks->items，并读倍率。
+        verify_reqs, verify_keys = [], []
+        for owner, (skeleton, layout) in valid.items():
+            verify_reqs.extend((
+                (skeleton + gs.SkeletonAnimationFields.STATE, 0x40),
+                (layout['state'] + gs.SpineAnimationStateFields.TRACKS, 0x58),
+                (layout['tracks'], 0x20),
+            ))
+            verify_keys.extend(((owner, 'skeleton'), (owner, 'state'),
+                                (owner, 'tracks')))
+        verified = {owner: {} for owner in valid}
+        for (owner, kind), data in zip(
+                verify_keys, self._detail_batch_read(verify_reqs)):
+            if not data:
+                continue
+            skeleton, layout = valid[owner]
+            if kind == 'skeleton':
+                state = _u64(data, 0)
+                scale = struct.unpack_from(
+                    '<f', data,
+                    gs.SkeletonAnimationFields.TIME_SCALE
+                    - gs.SkeletonAnimationFields.STATE)[0]
+                if state == layout['state'] and math.isfinite(scale):
+                    verified[owner]['skeleton_scale'] = scale
+            elif kind == 'state':
+                tracks = _u64(data, 0)
+                scale = struct.unpack_from(
+                    '<f', data,
+                    gs.SpineAnimationStateFields.TIME_SCALE
+                    - gs.SpineAnimationStateFields.TRACKS)[0]
+                if tracks == layout['tracks'] and math.isfinite(scale):
+                    verified[owner]['state_scale'] = scale
+            else:
+                items = _u64(data, gs.SpineExposedListFields.ITEMS)
+                count = _i32(data, gs.SpineExposedListFields.COUNT)
+                if items == layout['items'] and 0 < count <= 16:
+                    verified[owner]['items_ok'] = True
+
+        track_owners = [owner for owner, row in verified.items()
+                        if row.get('items_ok')
+                        and 'skeleton_scale' in row and 'state_scale' in row]
+        track_ptrs = {}
+        for owner, data in zip(
+                track_owners, self._detail_batch_read([
+                    (valid[owner][1]['items'] + gs.Il2CppArray.ITEMS, 8)
+                    for owner in track_owners])):
+            track = _u64(data, 0) if data else 0
+            if self.mc.is_ptr(track):
+                track_ptrs[owner] = track
+
+        parsed = {}
+        next_ptrs = {}
+        for owner, data in zip(
+                track_ptrs, self._detail_batch_read([
+                    (track, gs.SpineTrackEntryFields.READ_SIZE)
+                    for track in track_ptrs.values()])):
+            if not data:
+                continue
+            start = struct.unpack_from(
+                '<f', data, gs.SpineTrackEntryFields.ANIMATION_START)[0]
+            end = struct.unpack_from(
+                '<f', data, gs.SpineTrackEntryFields.ANIMATION_END)[0]
+            track_time = struct.unpack_from(
+                '<f', data, gs.SpineTrackEntryFields.TRACK_TIME)[0]
+            entry_scale = struct.unpack_from(
+                '<f', data, gs.SpineTrackEntryFields.TIME_SCALE)[0]
+            loop = bool(data[gs.SpineTrackEntryFields.LOOP])
+            row = verified[owner]
+            remaining = spine_track_remaining(
+                start, end, track_time, entry_scale,
+                row['state_scale'], row['skeleton_scale'], loop)
+            parsed[owner] = {
+                'track': track_ptrs[owner],
+                'animation': _u64(data, gs.SpineTrackEntryFields.ANIMATION),
+                'next': _u64(data, gs.SpineTrackEntryFields.NEXT),
+                'loop': loop, 'start': start, 'end': end,
+                'track_time': track_time,
+                'speed': entry_scale * row['state_scale'] * row['skeleton_scale'],
+                'remaining': remaining,
+            }
+            if self.mc.is_ptr(parsed[owner]['next']):
+                next_ptrs[owner] = parsed[owner]['next']
+
+        next_animations = {}
+        if next_ptrs:
+            for owner, data in zip(
+                    next_ptrs, self._detail_batch_read([
+                        (ptr + gs.SpineTrackEntryFields.ANIMATION, 8)
+                        for ptr in next_ptrs.values()])):
+                animation = _u64(data, 0) if data else 0
+                if self.mc.is_ptr(animation):
+                    next_animations[owner] = animation
+        animation_ptrs = [row['animation'] for row in parsed.values()]
+        animation_ptrs.extend(next_animations.values())
+        self._resolve_spine_animation_meta_chan(animation_ptrs)
+
+        for owner, row in parsed.items():
+            action = actions[owner]
+            meta = self._spine_animation_cache.get(row['animation'], {})
+            action.update({
+                'animation_track_addr': row['track'],
+                'animation_track_name': meta.get('name') or action.get('animation_key', ''),
+                'animation_loop': row['loop'],
+                'animation_start': row['start'],
+                'animation_end': row['end'],
+                'animation_track_time': row['track_time'],
+                'animation_track_speed': row['speed'],
+            })
+            if row['remaining'] is not None:
+                action['animation_remaining'] = row['remaining']
+                action['animation_exact'] = True
+            next_meta = self._spine_animation_cache.get(
+                next_animations.get(owner, 0), {})
+            if next_meta.get('name'):
+                action['animation_next_track_name'] = next_meta['name']
+
+    def _refresh_status_timers_chan(self, targets, snapshots, tick):
+        """低开销读取维持异常状态的 Buff 剩余时间。
+
+        只在进入异常态或缓存失效时遍历 BuffContainer；稳定期间直接读取已缓存
+        Buff 的计时器和 mask，避免每个高速轮询都重新展开整条容器链。
+        ``targets`` 元素为 ``(addr, container, state, flag_bit, combo_bit)``。
+        """
+        targets = [row for row in targets if self.mc.is_ptr(row[1])]
+        if not targets:
+            return
+        active = {addr for addr, *_rest in targets}
+        for addr, container, state_id, flag_bit, combo_bit in targets:
+            cached = self._status_timer_cache.get(addr)
+            signature = (container, state_id, flag_bit, combo_bit)
+            if not cached or cached.get('signature') != signature:
+                self._status_timer_cache[addr] = {
+                    'signature': signature, 'buffs': [], 'last_probe': -10000,
+                }
+
+        probes = [row for row in targets
+                  if (not self._status_timer_cache[row[0]]['buffs']
+                      and tick - self._status_timer_cache[row[0]]['last_probe'] >= 10)]
+        if probes:
+            for addr, *_rest in probes:
+                self._status_timer_cache[addr]['last_probe'] = tick
+            dbls = {}
+            for row, data in zip(probes, self._detail_batch_read([
+                    (row[1], 0x30) for row in probes])):
+                ptr = _u64(data, gs.BuffContainerFields.M_BUFFS) if data else 0
+                if self.mc.is_ptr(ptr):
+                    dbls[row[0]] = ptr
+            lists = {}
+            for addr, data in zip(dbls, self._detail_batch_read([
+                    (ptr, 0x28) for ptr in dbls.values()])):
+                ptr = _u64(data, gs.DoubleBufferedListFields.M_INTERNAL_LIST) \
+                    if data else 0
+                if self.mc.is_ptr(ptr):
+                    lists[addr] = ptr
+            heads = {}
+            for addr, data in zip(lists, self._detail_batch_read([
+                    (ptr, 0x20) for ptr in lists.values()])):
+                if not data:
+                    continue
+                items = _u64(data, gs.ListInternal.ITEMS)
+                count = _i32(data, gs.ListInternal.SIZE)
+                if 0 < count <= 512 and self.mc.is_ptr(items):
+                    heads[addr] = (items, count)
+            for (addr, (_items, count)), data in zip(
+                    heads.items(), self._detail_batch_read([
+                        (items + gs.Il2CppArray.ITEMS, count * 0x10)
+                        for items, count in heads.values()])):
+                ptrs = []
+                if data:
+                    ptrs = [_u64(data, idx * 0x10) for idx in range(count)
+                            if idx * 0x10 + 8 <= len(data)]
+                    ptrs = [ptr for ptr in ptrs if self.mc.is_ptr(ptr)]
+                self._status_timer_cache[addr]['buffs'] = ptrs
+
+        rows, reqs = [], []
+        for addr, _container, state_id, flag_bit, combo_bit in targets:
+            for buff in self._status_timer_cache[addr]['buffs']:
+                rows.append((addr, state_id, flag_bit, combo_bit, buff))
+                reqs.append((buff + gs.BuffFields.M_LIFE_TIME,
+                             gs.BuffFields.ABNORMAL_COMBO_MASK + 8
+                             - gs.BuffFields.M_LIFE_TIME))
+        matches = {addr: [] for addr in active}
+        for (addr, _state, flag_bit, combo_bit, _buff), data in zip(
+                rows, self._detail_batch_read(reqs) if reqs else []):
+            if not data:
+                continue
+            base = gs.BuffFields.M_LIFE_TIME
+            finished = bool(data[gs.BuffFields.IS_FINISHED - base])
+            enabled = bool(data[gs.BuffFields.IS_ACTUALLY_ENABLED - base])
+            valid = bool(data[gs.BuffFields.IS_VALID - base])
+            if finished or not enabled or not valid:
+                continue
+            flag_mask = _u64(data, gs.BuffFields.ABNORMAL_FLAG_MASK - base)
+            combo_mask = _u64(data, gs.BuffFields.ABNORMAL_COMBO_MASK - base)
+            if ((flag_bit is not None and flag_mask & (1 << flag_bit))
+                    or (combo_bit is not None and combo_mask & (1 << combo_bit))):
+                life = gs.fp_to_float(_u64(data, 0))
+                remaining = gs.fp_to_float(_u64(
+                    data, gs.BuffFields.M_REMAINING_TIME - base))
+                matches[addr].append((life, remaining))
+
+        for addr, values in matches.items():
+            action = snapshots.setdefault(addr, {}).setdefault('action', {})
+            if values:
+                finite = [max(0.0, remaining) for life, remaining in values
+                          if life >= 0 and remaining >= 0]
+                action['status_source_count'] = len(values)
+                if len(finite) == len(values):
+                    action['status_remaining'] = max(finite, default=0.0)
+                    action['status_infinite'] = False
+                else:
+                    action.pop('status_remaining', None)
+                    action['status_infinite'] = True
+            else:
+                action.pop('status_remaining', None)
+                action.pop('status_source_count', None)
+                action.pop('status_infinite', None)
+                # 原地址已失效但状态仍在，下轮重新展开容器寻找覆盖后的 Buff。
+                if self._status_timer_cache[addr]['buffs']:
+                    self._status_timer_cache[addr]['buffs'] = []
+                    self._status_timer_cache[addr]['last_probe'] = tick - 10
+
+    def _predict_enemy_next_action(self, info, action):
+        """只展示游戏已经写入内存的下一动作，不根据 CD 自行预测。"""
+        for key in ('next_action', 'next_action_detail', 'next_action_confidence'):
+            action.pop(key, None)
+        state_id = info.state_id
+        if state_id in (gs.EnemyState.TERMINAL, gs.EnemyState.DEAD,
+                        gs.EnemyState.REACH_EXIT):
+            action.update(next_action='无', next_action_detail='实体已结束',
+                          next_action_confidence='confirmed')
+            return
+
+        picked_skill = action.get('combat_skill_addr', 0)
+        picked_name = self._skill_names.get(picked_skill, '')
+        picked_ability = action.get('combat_wrapper_ability_addr', 0)
+        picked_is_current_cast = (
+            state_id == gs.EnemyState.COMBAT and action.get('casting'))
+        if (not picked_is_current_cast
+                and action.get('combat_ability_picked')
+                and self.mc.is_ptr(picked_ability)):
+            if picked_name:
+                label = f'技能：{picked_name}'
+            elif picked_ability == action.get('combat_base_ability_addr', 0):
+                label = '基础战斗能力'
+            else:
+                label = '已选中的战斗能力'
+            action.update(
+                next_action=label,
+                next_action_detail=(
+                    '游戏 CombatWrapper.m_combatAbilityPicked=1，且 '
+                    'm_pickedAbility 已写入；切换前仍可能被异常状态中断'),
+                next_action_confidence='confirmed')
+            return
+
+        queued_animation = action.get('animation_next_track_name', '')
+        if queued_animation:
+            action.update(
+                next_action=f'已排队动画：{queued_animation}',
+                next_action_detail='Spine TrackEntry.next 已存在；这是游戏已排队的下一段动画',
+                next_action_confidence='confirmed')
+            return
+
+        if state_id == gs.EnemyState.ATTACK:
+            detail = ('游戏尚未写入下一动作；AttackWrapper 的 curAbility/curSkill '
+                      '仅代表当前攻击，普通攻击或其他动作会在当前攻击结束回调中重新判定')
+        elif state_id == gs.EnemyState.COMBAT:
+            detail = ('当前 CombatWrapper 字段属于正在执行的战斗动作；'
+                      '下一动作会在 NextCombatOrExit/结束回调中重新判定')
+        elif state_id == gs.EnemyState.MOVE:
+            detail = ('游戏尚未设置 CombatWrapper.m_combatAbilityPicked，'
+                      '普通攻击也没有独立预选槽；需等待目标搜索和状态切换')
+        else:
+            detail = '当前没有已写入的 picked Ability 或排队动画，下一动作尚未由游戏决定'
+        action.update(next_action='等待游戏判定', next_action_detail=detail,
+                      next_action_confidence='unselected')
+
+    def _finalize_enemy_action(self, info, now=None, frame=None,
+                               frame_duration=None):
+        """把状态机、Ability、后摇和 CD 合成为可直接展示的动作阶段。"""
+        action = dict(info.action or {})
+        for key in (
+                'phase', 'name', 'detail', 'remaining', 'remaining_frames',
+                'remaining_kind', 'elapsed_frames', 'skill_name',
+                'ready_skills', 'clock_source', 'next_action',
+                'next_action_detail', 'next_action_confidence'):
+            action.pop(key, None)
+        now = now if isinstance(now, (int, float)) and math.isfinite(now) else None
+        frame = frame if isinstance(frame, int) and frame >= 0 else None
+        frame_duration = frame_duration or self._frame_duration_snap or 1.0 / 30.0
+        state_id = info.state_id
+        state_name = gs.ENEMY_STATE_NAMES.get(state_id, f'未知({state_id})')
+        action['state_name'] = state_name
+        action['current_frame'] = frame
+
+        ability = action.get('ability_addr', 0)
+        skill_ptr = action.get('skill_addr', 0)
+        if not self.mc.is_ptr(skill_ptr) and self.mc.is_ptr(ability):
+            for candidate in self._skill_ptrs.get(info.addr, ()):
+                if self._skill_runtime_meta.get(candidate, {}).get('ability_addr') == ability:
+                    skill_ptr = candidate
+                    break
+        skill_name = self._skill_names.get(skill_ptr, '') if skill_ptr else ''
+        if skill_name:
+            action['skill_name'] = skill_name
+
+        ready_skills = [name for name, remaining, _period in info.skills
+                        if isinstance(remaining, (int, float)) and remaining <= 0.05]
+        action['ready_skills'] = ready_skills
+
+        def set_countdown(seconds, kind, source='runtime'):
+            if not isinstance(seconds, (int, float)) or not math.isfinite(seconds):
+                return False
+            seconds = max(0.0, float(seconds))
+            action['remaining'] = seconds
+            action['remaining_frames'] = (
+                seconds_to_frames(seconds, frame_duration)
+                if frame is not None else None)
+            action['remaining_kind'] = kind
+            action['clock_source'] = source
+            return True
+
+        if action.get('casting') and frame is not None:
+            start = action.get('cast_start_frame')
+            if isinstance(start, int) and 0 <= start <= frame:
+                action['elapsed_frames'] = frame - start
+
+        animation_remaining = action.get('animation_remaining')
+        animation_remaining = (
+            float(animation_remaining)
+            if isinstance(animation_remaining, (int, float))
+            and math.isfinite(animation_remaining) and animation_remaining >= 0
+            else None)
+
+        if state_id in (gs.EnemyState.TERMINAL, gs.EnemyState.DEAD,
+                        gs.EnemyState.REACH_EXIT):
+            action.update(phase='finished', name=state_name,
+                          detail='状态已结束，不再进入下一动作',
+                          remaining=0.0, remaining_frames=0,
+                          remaining_kind='完成态', clock_source='state')
+        elif state_id in (gs.EnemyState.BORN, gs.EnemyState.REBORN):
+            action.update(phase='state_countdown', name=state_name,
+                          detail='状态节点自身倒计时')
+            if not set_countdown(action.get('state_time'), '状态剩余', 'state_node'):
+                action['remaining_kind'] = '等待状态节点退出'
+        elif state_id == gs.EnemyState.COMBAT:
+            if action.get('casting'):
+                label = f'技能动作中：{skill_name}' if skill_name else '战斗动作中'
+                action.update(phase='combat_casting', name=label,
+                              detail='Ability 正在施放；Spine 轨道可给出当前动画终点')
+                deadline = action.get('combat_escape_time')
+                gate = deadline - now if now is not None and isinstance(
+                    deadline, (int, float)) and math.isfinite(deadline) else None
+                gates = [value for value in (animation_remaining, gate)
+                         if isinstance(value, (int, float)) and value > 0]
+                if gates:
+                    kind = ('动作可退出剩余（未中断）' if gate and gate > 0
+                            else '当前动画剩余（未中断）')
+                    set_countdown(max(gates), kind, 'spine/state_gate')
+                else:
+                    action['remaining_kind'] = '能力回调/状态切换条件'
+            else:
+                deadline = action.get('combat_escape_time')
+                remaining = deadline - now if now is not None and isinstance(
+                    deadline, (int, float)) and math.isfinite(deadline) else None
+                if remaining is not None and remaining > 0.0001:
+                    action.update(phase='combat_recovery', name='战斗动作后摇',
+                                  detail='能力已结束，尚未到达可退出战斗状态的时刻')
+                    set_countdown(remaining, '后摇剩余', 'enemy.combatNextEscapeTime')
+                elif action.get('combat_interrupted'):
+                    action.update(phase='combat_interrupted', name='战斗动作被中断',
+                                  detail='等待状态机完成中断切换',
+                                  remaining_kind='状态切换条件')
+                else:
+                    action.update(phase='combat_wait', name='战斗动作收尾',
+                                  detail='CD 就绪也要等待当前战斗状态和目标条件退出',
+                                  remaining_kind='动画/状态切换条件')
+        elif state_id == gs.EnemyState.ATTACK:
+            if action.get('casting'):
+                label = f'攻击型技能：{skill_name}' if skill_name else '普通攻击动作中'
+                action.update(phase='attack_casting', name=label,
+                              detail='Ability 正在施放；倒计时取当前非循环 Spine 动画终点')
+                if not set_countdown(animation_remaining,
+                                     '当前动画剩余（未中断）', 'spine_track'):
+                    action['remaining_kind'] = '动画/能力回调决定'
+            else:
+                action.update(phase='attack_recovery', name='普通攻击收尾',
+                              detail='攻击 Ability 已结束，等待状态机切回待机/移动',
+                              remaining_kind='动画/状态切换条件')
+                if animation_remaining is not None:
+                    set_countdown(animation_remaining,
+                                  '收尾动画剩余（未中断）', 'spine_track')
+        elif state_id in (gs.EnemyState.STUN, gs.EnemyState.FROZEN,
+                          gs.EnemyState.LEVITATE, gs.EnemyState.PALSY):
+            action.update(phase='abnormal', name=state_name,
+                          detail='异常状态由一个或多个 Buff 标志维持')
+            if not set_countdown(action.get('status_remaining'), '异常持续剩余', 'buff'):
+                action['remaining_kind'] = 'Buff/异常条件解除'
+        elif state_id == gs.EnemyState.MOVE:
+            candidates = []
+            value = action.get('cd_remaining')
+            if isinstance(value, (int, float)) and 0 < value < 3600:
+                candidates.append(float(value))
+            for role in ('attack_base', 'combat_base'):
+                value = (action.get(role) or {}).get('cd_remaining')
+                if isinstance(value, (int, float)) and 0 < value < 3600:
+                    candidates.append(float(value))
+            candidates.extend(float(remain) for _name, remain, _period in info.skills
+                              if isinstance(remain, (int, float)) and 0 < remain < 3600)
+            if candidates:
+                action.update(phase='move_cooldown', name='移动 / 等待下一动作',
+                              detail='此倒计时是最早动作可用时间，不等于移动状态必然结束')
+                set_countdown(min(candidates), '下一动作可用', 'ability_cooldown')
+            elif ready_skills:
+                action.update(phase='move_ready', name='移动 / 技能已就绪',
+                              detail='等待目标、技能触发器及状态机允许施放',
+                              remaining_kind='目标/触发/状态条件')
+            else:
+                action.update(phase='moving', name='移动',
+                              detail='路径与阻挡条件决定何时离开移动状态',
+                              remaining_kind='路径/阻挡条件')
+        else:
+            action.update(phase='state_wait', name=state_name,
+                          detail='该状态没有统一的倒计时槽，由状态节点条件退出',
+                          remaining_kind='状态节点条件')
+
+        if ready_skills and state_id in (
+                gs.EnemyState.ATTACK, gs.EnemyState.COMBAT,
+                gs.EnemyState.STUN, gs.EnemyState.FROZEN,
+                gs.EnemyState.LEVITATE, gs.EnemyState.PALSY):
+            action['detail'] += '；已有技能 CD 就绪，但须先退出当前状态'
+        self._predict_enemy_next_action(info, action)
+        info.action = action
+        runtime = self._runtime_snapshot.get(info.addr)
+        if runtime is not None:
+            runtime['action'] = dict(action)
+        return action
+
     def _fill_runtime_slow(self, info):
         """无 TCP 通道时的完整状态读取兜底。"""
-        state = self.mc.read(info.state_ptr + gs.StateMachineFields.CURRENT_STATE_ID, 4) \
+        state = self.mc.read(info.state_ptr + gs.StateMachineFields.CURRENT_STATE_ID, 0x10) \
             if self.mc.is_ptr(info.state_ptr) else None
         ep = self.mc.read(
             info.ep_ptr, gs.Il2CppArray.ITEMS + gs.ElementType.E_NUM * 8) \
@@ -1917,8 +2729,60 @@ class EnemyReader:
             arrays[key] = self._decode_short_array(
                 self.mc.read(p, gs.Il2CppArray.ITEMS + count * 2)
                 if self.mc.is_ptr(p) else None, count)
+        action = dict(info.action or {})
+        state_id = _i32(state, 0) if state else gs.EnemyState.DEFAULT
+        state_node = _u64(state, 8) if state and len(state) >= 0x10 else 0
+        action['state_node_addr'] = state_node
+        mode = self.mc.read(action.get('current_mode_addr', 0),
+                            gs.UnitModeFields.READ_SIZE) \
+            if self.mc.is_ptr(action.get('current_mode_addr', 0)) else None
+        if mode:
+            action['mode_combat_addr'] = _u64(mode, gs.UnitModeFields.COMBAT)
+            action['mode_attack_addr'] = _u64(mode, gs.UnitModeFields.ATTACK)
+        if state_id == gs.EnemyState.ATTACK:
+            ability = action.get('attack_ability_addr', 0)
+        elif state_id == gs.EnemyState.COMBAT:
+            ability = action.get('combat_ability_addr', 0)
+        else:
+            ability = 0
+        action['ability_addr'] = ability
+        ability_data = self.mc.read(ability, gs.AbilityFields.READ_SIZE) \
+            if self.mc.is_ptr(ability) else None
+        if ability_data:
+            action['casting'] = bool(ability_data[gs.AbilityFields.IS_CASTING])
+            action['cast_start_frame'] = _u32(
+                ability_data, gs.AbilityFields.CAST_START_FRAME)
+            action['attached'] = bool(ability_data[gs.AbilityFields.IS_ATTACHED])
+            action['finish_reason'] = _i32(
+                ability_data, gs.AbilityFields.FINISH_REASON)
+        state_time = self.mc.read(state_node + gs.StateNodeFields.ACTION_TIME, 8) \
+            if self.mc.is_ptr(state_node) else None
+        if state_time:
+            action['state_time'] = gs.fp_to_float(_u64(state_time, 0))
+        for role in ('attack', 'combat'):
+            base = (action.get(f'override_{role}_addr', 0)
+                    or action.get(f'mode_{role}_addr', 0))
+            data = self.mc.read(base, gs.AbilityFields.READ_SIZE) \
+                if self.mc.is_ptr(base) else None
+            if not data:
+                continue
+            item = {
+                'casting': bool(data[gs.AbilityFields.IS_CASTING]),
+                'cast_start_frame': _u32(data, gs.AbilityFields.CAST_START_FRAME),
+                'attached': bool(data[gs.AbilityFields.IS_ATTACHED]),
+                'finish_reason': _i32(data, gs.AbilityFields.FINISH_REASON),
+            }
+            timer = _u64(data, gs.AbilityFields.COOLDOWN_TIMER)
+            timer_data = self.mc.read(timer, 0x20) if self.mc.is_ptr(timer) else None
+            if timer_data:
+                item['cd_period'] = gs.fp_to_float(_u64(
+                    timer_data, gs.PeriodicTimerFields.M_PERIOD_TIME))
+                item['cd_remaining'] = gs.fp_to_float(_u64(
+                    timer_data, gs.PeriodicTimerFields.M_REMAINING_TIME))
+            action[f'{role}_base'] = item
         runtime = {
-            'state_id': _i32(state, 0) if state else gs.EnemyState.DEFAULT,
+            'state_id': state_id,
+            'action': action,
             'shield': gs.fp_to_float(_u64(shield, 0)) if shield else 0.0,
             'ep_remaining': self._decode_fp_array(ep, gs.ElementType.E_NUM),
             'ep_break_recovery': bool(epc and epc[0]),
@@ -1967,6 +2831,8 @@ class EnemyReader:
         """读取一帧快照; 返回 dict"""
         snap = {'ok': False, 'state': -1, 'speed_level': -1, 'time_scale': 0.0,
                 'play_time': 0.0, 'scheduler_time': None, 'enemies': [], 'msg': '',
+                'fixed_frame': self._fixed_frame_snap,
+                'frame_duration': self._frame_duration_snap,
                 'on_field_count': 0, 'planned_count': self.planned_count,
                 'read_mode': 'slow', 'read_backend': 'adb'}
         d = self.mc.read(self.list_addr, 0x20)
@@ -2002,6 +2868,9 @@ class EnemyReader:
             info = self._read_enemy(ep, with_runtime=False)
             self._copy_runtime(info, self._runtime_snapshot.get(ep))
             self._refresh_ep_runtime_slow(info)
+            self._finalize_enemy_action(
+                info, self._scheduler_time_snap, self._fixed_frame_snap,
+                self._frame_duration_snap)
             observed_enemies.append(info)
 
         snap['enemies'] = self._merge_enemy_roster(
@@ -2022,8 +2891,24 @@ class EnemyReader:
         if self._bc_static_fields:
             raw_clock = self.mc.read(
                 self._bc_static_fields
-                + gs.BattleControllerStaticFields.FIXED_PLAY_TIME, 8)
-            snap['scheduler_time'] = self._decode_battle_clock(raw_clock)
+                + gs.BattleControllerStaticFields.FIXED_FRAME_COUNT,
+                gs.BattleControllerStaticFields.DELTA_PLAY_TIME_FP
+                - gs.BattleControllerStaticFields.FIXED_FRAME_COUNT + 8)
+            frame, value, frame_duration = self._decode_battle_clock_snapshot(raw_clock)
+            if frame is not None:
+                self._fixed_frame_snap = frame
+            if value is not None:
+                self._scheduler_time_snap = value
+            if frame_duration is not None:
+                self._frame_duration_snap = frame_duration
+            snap['scheduler_time'] = self._scheduler_time_snap
+            snap['fixed_frame'] = self._fixed_frame_snap
+            snap['frame_duration'] = self._frame_duration_snap
+
+        for info in observed_enemies:
+            self._finalize_enemy_action(
+                info, self._scheduler_time_snap, self._fixed_frame_snap,
+                self._frame_duration_snap)
 
         snap['enemies'] = self._apply_spawn_timing(
             snap['enemies'], snap['scheduler_time'])
@@ -2138,10 +3023,18 @@ class EnemyReader:
                             data, gs.AbnormalComboManagerFields.M_ABNORMAL_COMBO_IMMUNE_COUNTER)
 
         reqs, keys = [], []
+        runtime = {ep: dict(self._runtime_snapshot.get(ep, {})) for ep in eps}
+        for ep in eps:
+            info = infos.get(ep)
+            if info is None:
+                continue
+            merged_action = dict(runtime[ep].get('action', {}))
+            merged_action.update(info.action or {})
+            runtime[ep]['action'] = merged_action
         for ep in eps:
             rp = self._runtime_ptrs.get(ep, {})
             specs = (
-                ('state', rp.get('state', 0) + gs.StateMachineFields.CURRENT_STATE_ID, 4),
+                ('state', rp.get('state', 0) + gs.StateMachineFields.CURRENT_STATE_ID, 0x10),
                 ('ep', rp.get('ep', 0), gs.Il2CppArray.ITEMS + gs.ElementType.E_NUM * 8),
                 ('shield', rp.get('shield', 0) + gs.ShieldUIControllerFields.M_SHIELD_TO_SHOW, 8),
                 ('epc', rp.get('epc', 0) + gs.EPControllerFields.M_IS_IN_BREAK_RECOVERY, 1),
@@ -2160,6 +3053,27 @@ class EnemyReader:
                 if self.mc.is_ptr(addr):
                     reqs.append((addr, size))
                     keys.append((ep, kind))
+            action = runtime.get(ep, {}).get('action', {})
+            attack_wrapper = action.get('attack_wrapper_addr', 0)
+            combat_wrapper = action.get('combat_wrapper_addr', 0)
+            current_mode = action.get('current_mode_addr', 0)
+            animator = action.get('animator_addr', 0)
+            if self.mc.is_ptr(current_mode):
+                reqs.append((current_mode, gs.UnitModeFields.READ_SIZE))
+                keys.append((ep, 'unit_mode'))
+            if self.mc.is_ptr(attack_wrapper):
+                reqs.append((attack_wrapper, gs.EnemyAttackWrapperFields.READ_SIZE))
+                keys.append((ep, 'attack_wrapper'))
+            if self.mc.is_ptr(combat_wrapper):
+                reqs.append((combat_wrapper, gs.EnemyCombatWrapperFields.READ_SIZE))
+                keys.append((ep, 'combat_wrapper'))
+            if self.mc.is_ptr(animator):
+                for kind, offset in (
+                        ('anim_spine', gs.UnitAnimatorFields.SPINE_CURRENT_STATE),
+                        ('anim_mesh', gs.UnitAnimatorFields.MESH_CURRENT_STATE)):
+                    reqs.append((animator + offset,
+                                 gs.UnitAnimatorFields.CURRENT_STATE_SIZE))
+                    keys.append((ep, kind))
             for idx, source in enumerate(self._custom_shield_ptrs.get(ep, ())):
                 value_addr = source.get('value_addr', 0)
                 buff_addr = source.get('buff_addr', 0)
@@ -2171,13 +3085,17 @@ class EnemyReader:
                                  gs.BuffFields.IS_VALID - gs.BuffFields.IS_FINISHED + 1))
                     keys.append((ep, f'custom_status:{idx}'))
 
-        runtime = {ep: dict(self._runtime_snapshot.get(ep, {})) for ep in eps}
         for (ep, kind), data in zip(keys, self._chan.batch_read(reqs) if reqs else []):
             if not data:
                 continue
             cur = runtime[ep]
             if kind == 'state':
                 cur['state_id'] = _i32(data, 0)
+                state_node = _u64(data, 8)
+                if cur['action'].get('state_node_addr') != state_node:
+                    cur['action'].pop('state_time', None)
+                    cur['action'].pop('status_remaining', None)
+                cur['action']['state_node_addr'] = state_node
             elif kind == 'ep':
                 cur['ep_remaining'] = self._decode_fp_array(data, gs.ElementType.E_NUM)
             elif kind == 'shield':
@@ -2191,6 +3109,45 @@ class EnemyReader:
             elif kind == 'combo_immunes':
                 cur['abnormal_combo_immunes'] = self._decode_short_array(
                     data, gs.AbnormalCombo.E_NUM)
+            elif kind == 'attack_wrapper':
+                action = cur['action']
+                action['target_addr'] = _u64(
+                    data, gs.EnemyAttackWrapperFields.CURRENT_TARGET)
+                action['attack_skill_addr'] = _u64(
+                    data, gs.EnemyAttackWrapperFields.CURRENT_SKILL)
+                action['attack_wrapper_ability_addr'] = _u64(
+                    data, gs.EnemyAttackWrapperFields.CURRENT_ABILITY)
+                action['last_attack_ability_addr'] = _u64(
+                    data, gs.EnemyAttackWrapperFields.LAST_ABILITY)
+                action['last_attack_skill_addr'] = _u64(
+                    data, gs.EnemyAttackWrapperFields.LAST_SKILL)
+            elif kind == 'unit_mode':
+                action = cur['action']
+                action['mode_combat_addr'] = _u64(
+                    data, gs.UnitModeFields.COMBAT)
+                action['mode_attack_addr'] = _u64(
+                    data, gs.UnitModeFields.ATTACK)
+            elif kind == 'combat_wrapper':
+                action = cur['action']
+                action['combat_wrapper_ability_addr'] = _u64(
+                    data, gs.EnemyCombatWrapperFields.PICKED_ABILITY)
+                action['combat_skill_addr'] = _u64(
+                    data, gs.EnemyCombatWrapperFields.PICKED_SKILL)
+                action['combat_ability_picked'] = bool(
+                    data[gs.EnemyCombatWrapperFields.ABILITY_PICKED])
+                action['combat_interrupted'] = bool(
+                    data[gs.EnemyCombatWrapperFields.INTERRUPTED])
+                action['last_combat_ability_addr'] = _u64(
+                    data, gs.EnemyCombatWrapperFields.LAST_ABILITY)
+                action['last_combat_skill_addr'] = _u64(
+                    data, gs.EnemyCombatWrapperFields.LAST_SKILL)
+            elif kind in ('anim_spine', 'anim_mesh'):
+                speed = struct.unpack_from('<f', data, 8)[0]
+                cur['action'].setdefault('animation_candidates', []).append({
+                    'key_ptr': _u64(data, 0),
+                    'speed': speed,
+                    'backend': 'Spine' if kind == 'anim_spine' else 'Mesh',
+                })
             elif kind.startswith('custom_value:'):
                 idx = int(kind.split(':', 1)[1])
                 sources = self._custom_shield_ptrs.get(ep, ())
@@ -2208,6 +3165,107 @@ class EnemyReader:
                     sources[idx]['active'] = (
                         not bool(data[0]) and bool(data[enabled_off])
                         and bool(data[valid_off]))
+
+        self._resolve_animation_states_chan({
+            ep: runtime[ep]['action'] for ep in eps})
+        self._refresh_animation_tracks_chan({
+            ep: runtime[ep]['action'] for ep in eps})
+
+        # Wrapper/主对象给出“这一次到底选中了哪个 Ability”。第二批只读取
+        # 当前动作能力本身，m_isCasting 与 castStartFrameCnt 不再由 CD 推断。
+        ability_reqs, ability_keys = [], []
+        for ep in eps:
+            cur = runtime.get(ep, {})
+            action = cur.get('action', {})
+            state_id = cur.get('state_id', infos.get(ep).state_id if infos.get(ep) else 0)
+            if state_id == gs.EnemyState.ATTACK:
+                ability = (action.get('attack_ability_addr', 0)
+                           or action.get('attack_wrapper_ability_addr', 0))
+                skill = action.get('attack_skill_addr', 0)
+            elif state_id == gs.EnemyState.COMBAT:
+                ability = (action.get('combat_ability_addr', 0)
+                           or action.get('combat_wrapper_ability_addr', 0))
+                skill = action.get('combat_skill_addr', 0)
+            else:
+                ability = (action.get('combat_ability_addr', 0)
+                           or action.get('attack_ability_addr', 0))
+                skill = 0
+            action['ability_addr'] = ability
+            action['skill_addr'] = skill
+            for key in ('casting', 'cast_start_frame', 'attached',
+                        'finish_reason', 'timer_addr', 'cd_period', 'cd_remaining'):
+                action.pop(key, None)
+            if self.mc.is_ptr(ability):
+                ability_reqs.append((ability, gs.AbilityFields.READ_SIZE))
+                ability_keys.append((ep, 'ability'))
+            for role in ('attack', 'combat'):
+                base_ability = (action.get(f'override_{role}_addr', 0)
+                                or action.get(f'mode_{role}_addr', 0))
+                action[f'{role}_base_ability_addr'] = base_ability
+                action.pop(f'{role}_base', None)
+                if self.mc.is_ptr(base_ability) and base_ability != ability:
+                    ability_reqs.append((base_ability, gs.AbilityFields.READ_SIZE))
+                    ability_keys.append((ep, f'{role}_base'))
+            state_node = action.get('state_node_addr', 0)
+            if self.mc.is_ptr(state_node):
+                ability_reqs.append((
+                    state_node + gs.StateNodeFields.ACTION_TIME, 8))
+                ability_keys.append((ep, 'state_time'))
+        for (ep, kind), data in zip(
+                ability_keys,
+                self._chan.batch_read(ability_reqs) if ability_reqs else []):
+            if not data:
+                continue
+            action = runtime[ep]['action']
+            if kind == 'state_time':
+                action['state_time'] = gs.fp_to_float(_u64(data, 0))
+                continue
+            target = action if kind == 'ability' else action.setdefault(kind, {})
+            target['casting'] = bool(data[gs.AbilityFields.IS_CASTING])
+            target['cast_start_frame'] = _u32(
+                data, gs.AbilityFields.CAST_START_FRAME)
+            target['attached'] = bool(data[gs.AbilityFields.IS_ATTACHED])
+            target['finish_reason'] = _i32(data, gs.AbilityFields.FINISH_REASON)
+            timer = _u64(data, gs.AbilityFields.COOLDOWN_TIMER)
+            target['timer_addr'] = timer
+
+        timer_keys = []
+        for ep, kind in ability_keys:
+            if kind == 'state_time':
+                continue
+            action = runtime[ep]['action']
+            target = action if kind == 'ability' else action.get(kind, {})
+            timer = target.get('timer_addr', 0)
+            if self.mc.is_ptr(timer):
+                timer_keys.append((ep, kind, timer))
+        if timer_keys:
+            timer_reqs = [(timer, 0x20) for _ep, _kind, timer in timer_keys]
+            for (ep, kind, _timer), data in zip(
+                    timer_keys, self._chan.batch_read(timer_reqs)):
+                if not data:
+                    continue
+                action = runtime[ep]['action']
+                target = action if kind == 'ability' else action.get(kind, {})
+                target['cd_period'] = gs.fp_to_float(_u64(
+                    data, gs.PeriodicTimerFields.M_PERIOD_TIME))
+                target['cd_remaining'] = gs.fp_to_float(_u64(
+                    data, gs.PeriodicTimerFields.M_REMAINING_TIME))
+
+        abnormal_bits = {
+            gs.EnemyState.STUN: (0, None),
+            gs.EnemyState.FROZEN: (16, None),
+            gs.EnemyState.LEVITATE: (25, None),
+            gs.EnemyState.PALSY: (39, None),
+        }
+        status_targets = []
+        for ep in eps:
+            state_id = runtime[ep].get('state_id', gs.EnemyState.DEFAULT)
+            bits = abnormal_bits.get(state_id)
+            info = infos.get(ep)
+            if bits and info is not None:
+                status_targets.append((ep, info.buff_container_ptr, state_id,
+                                       bits[0], bits[1]))
+        self._refresh_status_timers_chan(status_targets, runtime, self._fast_tick)
 
         for ep in eps:
             sources = self._custom_shield_ptrs.get(ep, ())
@@ -2236,6 +3294,8 @@ class EnemyReader:
         t0 = time.time()
         snap = {'ok': False, 'state': -1, 'speed_level': -1, 'time_scale': 0.0,
                 'play_time': 0.0, 'scheduler_time': None,
+                'fixed_frame': self._fixed_frame_snap,
+                'frame_duration': self._frame_duration_snap,
                 'enemies': [], 'msg': '', 'frame_ms': 0.0,
                 'on_field_count': 0, 'planned_count': self.planned_count,
                 'read_mode': 'fast', 'read_backend': 'tcp'}
@@ -2270,14 +3330,25 @@ class EnemyReader:
             slot['bc'] = len(reqs)
             reqs.append((self.bc_addr + 0x200, 0xC0))
             if self._bc_static_fields:
-                slot['scheduler_clock'] = len(reqs)
+                slot['battle_clock'] = len(reqs)
                 reqs.append((
                     self._bc_static_fields
-                    + gs.BattleControllerStaticFields.FIXED_PLAY_TIME, 8))
+                    + gs.BattleControllerStaticFields.FIXED_FRAME_COUNT,
+                    gs.BattleControllerStaticFields.DELTA_PLAY_TIME_FP
+                    - gs.BattleControllerStaticFields.FIXED_FRAME_COUNT + 8))
         if self.sched_addr:
             slot['scheduler'] = len(reqs)
             reqs.append((self.sched_addr, 0xC8))
         res = self._chan.batch_read(reqs) if reqs else []
+        if 'battle_clock' in slot:
+            frame, value, frame_duration = self._decode_battle_clock_snapshot(
+                res[slot['battle_clock']])
+            if frame is not None:
+                self._fixed_frame_snap = frame
+            if value is not None:
+                self._scheduler_time_snap = value
+            if frame_duration is not None:
+                self._frame_duration_snap = frame_duration
 
         # ---- 实时敌人容器（降频读取）----
         # Scheduler List 用 _version；UnitManager.enemies 是 UnorderedArray，没有
@@ -2433,6 +3504,9 @@ class EnemyReader:
                 info.aspd = s.get(gs.AttributeType.ATTACK_SPEED, 0.0)
             self._copy_runtime(info, self._runtime_snapshot.get(ep))
             info.skills = self._skill_cd.get(ep, [])
+            self._finalize_enemy_action(
+                info, self._scheduler_time_snap, self._fixed_frame_snap,
+                self._frame_duration_snap)
             enemies.append(info)
         # 清理已退场敌人的缓存 (地址可能被 GC 复用)
         for cache in (self._names, self._attr_cache, self._attr_snapshot, self._attr_ptrs,
@@ -2455,11 +3529,9 @@ class EnemyReader:
         if self._bc_snap:
             (snap['state'], snap['speed_level'],
              snap['time_scale'], snap['play_time']) = self._bc_snap
-        if 'scheduler_clock' in slot:
-            value = self._decode_battle_clock(res[slot['scheduler_clock']])
-            if value is not None:
-                self._scheduler_time_snap = value
         snap['scheduler_time'] = self._scheduler_time_snap
+        snap['fixed_frame'] = self._fixed_frame_snap
+        snap['frame_duration'] = self._frame_duration_snap
 
         # ---- Scheduler 当前 ActionItem 队列 / 未出场 ETA ----
         scheduler_data = res[slot['scheduler']] if 'scheduler' in slot else None
@@ -2559,6 +3631,15 @@ class EnemyReader:
             for (ep, s), d in zip(skill_keys, self._chan.batch_read(skill_reqs)):
                 if not d:
                     continue
+                self._skill_runtime_meta[s] = {
+                    'family_mask': _i32(d, gs.EnemySkillFields.FAMILY_MASK),
+                    'cast_like_attack': bool(d[gs.EnemySkillFields.CAST_LIKE_ATTACK]),
+                    'max_triggers': _i32(d, gs.EnemySkillFields.MAX_TRIGGER_TIME),
+                    'trigger_count': _i32(d, gs.EnemySkillFields.M_TRIGGER_CNT),
+                    'ability_addr': (_u64(d, gs.EnemySkillFields.ABILITY)
+                                     or _u64(d, gs.EnemySkillFields.M_MAIN_ABILITY)),
+                    'parent_mode_addr': _u64(d, gs.EnemySkillFields.PARENT_MODE),
+                }
                 t = _u64(d, gs.EnemySkillFields.M_COOLDOWN_TIMER)
                 dp = _u64(d, gs.EnemySkillFields.DATA)
                 if self.mc.is_ptr(t):
@@ -2610,6 +3691,9 @@ class EnemyReader:
         for s in list(self._skill_names):
             if s not in live_sks:
                 self._skill_names.pop(s, None)
+        for s in list(self._skill_runtime_meta):
+            if s not in live_sks:
+                self._skill_runtime_meta.pop(s, None)
 
     def _fill_new_enemies_chan(self, new_eps, infos):
         """新敌人通道内解析：批量读取 ID、关卡名称、Attributes 与 cachedData。"""

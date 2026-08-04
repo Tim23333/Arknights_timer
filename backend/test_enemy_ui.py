@@ -235,10 +235,19 @@ class EnemyUiTests(unittest.TestCase):
             floating = section._float_window
             self.assertTrue(section.is_floating())
             self.assertIsNotNone(floating)
+            self.assertIsNone(floating.parentWidget())
             self.assertIs(content.parent(), floating)
             self.assertIs(table.window(), floating)
             self.assertEqual(section.btn_float.text(), '显示浮窗')
             self.assertLess(section.maximumHeight(), 100)
+
+            window.showMinimized()
+            self.app.processEvents()
+            self.assertTrue(floating.isVisible())
+            self.assertFalse(bool(
+                floating.windowState() & Qt.WindowState.WindowMinimized))
+            window.showNormal()
+            self.app.processEvents()
 
             section.dock_content()
             self.app.processEvents()
@@ -348,6 +357,16 @@ class EnemyUiTests(unittest.TestCase):
             '法术 14001.00',
         )
 
+    def test_next_action_column_marks_prediction_confidence(self):
+        enemy = EnemyInfo(1)
+        enemy.action = {
+            'next_action': '技能：测试技能',
+            'next_action_confidence': 'confirmed',
+        }
+        self.assertEqual(
+            format_column_value('next_action', enemy, {'default': 2}),
+            '[确定] 技能：测试技能')
+
     def test_existing_column_settings_enable_new_shield_column_only_once(self):
         with tempfile.TemporaryDirectory() as td:
             settings = QSettings(str(Path(td) / 'settings.ini'), QSettings.IniFormat)
@@ -420,7 +439,11 @@ class EnemyUiTests(unittest.TestCase):
         updated.hp = 75.5
         updated.max_hp = 200.0
         dialog.update_enemy(updated)
-        self.assertEqual(dialog.overview.item(6, 1).text(), '75.5')
+        rows = {
+            dialog.overview.item(row, 0).text(): dialog.overview.item(row, 1).text()
+            for row in range(dialog.overview.rowCount())
+        }
+        self.assertEqual(rows['当前生命'], '75.5')
         self.assertIn('实时更新中', dialog.live_status.text())
         dialog.close()
 
@@ -442,6 +465,18 @@ class EnemyUiTests(unittest.TestCase):
         self.assertEqual(visible_enemy_rows(
             [pending, departed, active], hide_departed=False),
             [active, pending, departed])
+
+    def test_enemy_action_phase_and_countdown_are_rendered(self):
+        enemy = EnemyInfo(0x1000)
+        enemy.action = {
+            'name': '战斗动作后摇', 'remaining_frames': 15,
+            'remaining': 0.5, 'remaining_kind': '后摇剩余',
+        }
+        self.assertEqual(
+            format_column_value('action_phase', enemy, {}), '战斗动作后摇')
+        self.assertEqual(
+            format_column_value('remaining_time', enemy, {}),
+            '15 帧 / 0.50 秒（后摇剩余）')
 
     def test_living_enemies_are_stably_sorted_above_pending_and_dead(self):
         pending_a = EnemyInfo(0)

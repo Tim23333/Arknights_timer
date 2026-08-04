@@ -1,21 +1,184 @@
 # -*- coding: utf-8 -*-
 """场上干员/召唤物表格定义与实时详情窗口。"""
 
+import math
 import time
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import (
     QCheckBox, QDialog, QDialogButtonBox, QGridLayout, QHBoxLayout, QLabel,
     QPushButton, QScrollArea, QTabWidget, QTableWidget, QVBoxLayout, QWidget,
 )
 
 from tools.enemy_health import game_structs as gs
+from tools.enemy_health.enemy_reader import countdown_text
 
 from .enemy_buff_descriptions import (
     buff_chinese_name, describe_active_buff, describe_blackboard,
     describe_global_buff, global_buff_chinese_name,
 )
 from .enemy_ui import _PrecisionSpin, _bb_text, _fill_table, _fmt, _make_table
+
+
+OVERVIEW_COLORS = [
+    '#4f8cff', '#55c271', '#ffad42', '#ed5f5f', '#9b72e8', '#35b7bd',
+    '#e979b7', '#8caa3f', '#d17a45', '#6e8fd5', '#48a07a', '#b574d1',
+    '#d3a52f', '#5ba3c9', '#c26d70', '#7f95a8',
+]
+
+
+def build_character_overview(characters):
+    """按 charId 合并干员累计值；同一统计被多个实例引用时不重复相加。"""
+    merged = {}
+    for character in characters or ():
+        if (getattr(character, 'is_global_damage_summary', False)
+                or getattr(character, 'is_token', False)):
+            continue
+        cid = getattr(character, 'cid', '') or ''
+        name = getattr(character, 'name', '') or cid or '未知干员'
+        key = cid or name
+        entry = merged.setdefault(key, {
+            'cid': cid, 'name': name, 'damage': 0.0, 'healing': 0.0,
+        })
+        entry['damage'] = max(
+            entry['damage'], max(0.0, float(
+                getattr(character, 'damage_total', 0.0) or 0.0)))
+        entry['healing'] = max(
+            entry['healing'], max(0.0, float(
+                getattr(character, 'healing_total', 0.0) or 0.0)))
+    return sorted(merged.values(), key=lambda row: (
+        -(row['damage'] + row['healing']), row['name'], row['cid']))
+
+
+class CharacterPieChart(QWidget):
+    """不依赖 QtCharts 的轻量饼图，避免增加打包组件。"""
+
+    def __init__(self, title, parent=None):
+        super().__init__(parent)
+        self.title = title
+        self._data = []
+        self.setMinimumSize(430, 420)
+
+    def set_data(self, rows):
+        data = []
+        for label, value in rows:
+            value = float(value or 0.0)
+            if not math.isfinite(value):
+                value = 0.0
+            data.append((str(label), max(0.0, value)))
+        data.sort(key=lambda row: (-row[1], row[0]))
+        if data != self._data:
+            self._data = data
+            self.update()
+
+    def paintEvent(self, _event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        text_color = self.palette().text().color()
+        muted = QColor(text_color)
+        muted.setAlpha(170)
+        painter.setPen(QPen(text_color))
+
+        title_font = painter.font()
+        title_font.setPointSizeF(title_font.pointSizeF() + 2)
+        title_font.setBold(True)
+        painter.setFont(title_font)
+        painter.drawText(QRectF(12, 8, self.width() - 24, 34),
+                         Qt.AlignCenter, self.title)
+
+        total = sum(value for _label, value in self._data)
+        diameter = max(150.0, min(self.height() - 85.0, self.width() * 0.47))
+        pie = QRectF(18.0, 55.0, diameter, diameter)
+        if total > 0:
+            start = 90 * 16
+            for idx, (_label, value) in enumerate(self._data):
+                if value <= 0:
+                    continue
+                span = -round(value / total * 360 * 16)
+                painter.setBrush(QColor(OVERVIEW_COLORS[idx % len(OVERVIEW_COLORS)]))
+                painter.setPen(QPen(self.palette().window().color(), 1.0))
+                painter.drawPie(pie, start, span)
+                start += span
+            inner = pie.adjusted(
+                diameter * 0.27, diameter * 0.27,
+                -diameter * 0.27, -diameter * 0.27)
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(self.palette().window())
+            painter.drawEllipse(inner)
+            painter.setPen(text_color)
+            total_font = painter.font()
+            total_font.setBold(True)
+            painter.setFont(total_font)
+            painter.drawText(inner, Qt.AlignCenter,
+                             f'合计\n{total:,.2f}')
+        else:
+            painter.setPen(QPen(muted, 2.0))
+            painter.setBrush(Qt.NoBrush)
+            painter.drawEllipse(pie)
+            painter.drawText(pie, Qt.AlignCenter, '暂无数据')
+
+        legend_x = pie.right() + 22.0
+        legend_y = 56.0
+        legend_width = max(80.0, self.width() - legend_x - 12.0)
+        painter.setFont(self.font())
+        metrics = painter.fontMetrics()
+        for idx, (label, value) in enumerate(self._data):
+            y = legend_y + idx * 25.0
+            if y + 22 > self.height():
+                break
+            color = QColor(OVERVIEW_COLORS[idx % len(OVERVIEW_COLORS)])
+            if value <= 0:
+                color.setAlpha(80)
+            painter.fillRect(QRectF(legend_x, y + 4, 12, 12), color)
+            ratio = value / total * 100 if total > 0 else 0.0
+            value_text = f'{value:,.2f}  {ratio:.1f}%'
+            value_width = metrics.horizontalAdvance(value_text) + 8
+            label_width = max(30, int(legend_width - value_width - 20))
+            short_label = metrics.elidedText(label, Qt.ElideRight, label_width)
+            painter.setPen(text_color if value > 0 else muted)
+            painter.drawText(QRectF(legend_x + 18, y, label_width, 22),
+                             Qt.AlignLeft | Qt.AlignVCenter, short_label)
+            painter.drawText(QRectF(
+                legend_x + 18 + label_width, y, value_width, 22),
+                Qt.AlignRight | Qt.AlignVCenter, value_text)
+
+
+class CharacterOverviewDialog(QDialog):
+    def __init__(self, parent, characters=()):
+        super().__init__(parent)
+        self._last_update = 0.0
+        self.setWindowTitle('干员数据总览')
+        self.resize(1120, 620)
+        root = QVBoxLayout(self)
+        self.status = QLabel('随干员数据实时更新；召唤物/装置不单独计入。')
+        self.status.setProperty('role', 'muted')
+        root.addWidget(self.status)
+        charts = QHBoxLayout()
+        self.damage_chart = CharacterPieChart('干员总输出占比')
+        self.healing_chart = CharacterPieChart('干员治疗量占比')
+        charts.addWidget(self.damage_chart, 1)
+        charts.addWidget(self.healing_chart, 1)
+        root.addLayout(charts, 1)
+        buttons = QDialogButtonBox(QDialogButtonBox.Close)
+        buttons.rejected.connect(self.reject)
+        root.addWidget(buttons)
+        self.update_characters(characters, force=True)
+
+    def update_characters(self, characters, force=False):
+        now = time.monotonic()
+        if not force and now - self._last_update < 0.2:
+            return
+        self._last_update = now
+        rows = build_character_overview(characters)
+        self.damage_chart.set_data(
+            [(row['name'], row['damage']) for row in rows])
+        self.healing_chart.set_data(
+            [(row['name'], row['healing']) for row in rows])
+        self.status.setText(
+            f'实时更新中 · 干员 {len(rows)} · '
+            f'总输出 {sum(row["damage"] for row in rows):,.2f} · '
+            f'总治疗 {sum(row["healing"] for row in rows):,.2f}')
 
 
 def _col(key, label, width=80, default=False, precision=False):
@@ -36,6 +199,9 @@ CHARACTER_COLUMN_DEFS = [
     _col('sp', '技力', 125, True, True),
     _col('pos', '位置', 86, True),
     _col('action_state', '行为状态', 84, True),
+    _col('action_phase', '动作阶段', 190, True),
+    _col('remaining_time', '剩余帧/时间', 170, True),
+    _col('next_action', '下一动作', 190, True),
     _col('abnormal_status', '异常状态', 150, True),
 ]
 
@@ -56,6 +222,7 @@ CHARACTER_COLUMN_DEFS.extend([
     _col('blocked', '阻挡敌人', 86, True),
     _col('buff_count', 'Buff 数', 72, True),
     _col('damage_total', '累计伤害', 110, True, True),
+    _col('global_total_damage', '全局总伤', 110, True, True),
     _col('damage_physical', '物理伤害', 105, False, True),
     _col('damage_magical', '法术伤害', 105, False, True),
     _col('damage_pure', '真实伤害', 105, False, True),
@@ -103,6 +270,24 @@ def load_character_columns(settings, key):
     if not migrated:
         selected.add('damage_total')
         settings.setValue(migration_key, True)
+    migration_key = key + '/damage_stats_v2'
+    marker = settings.value(migration_key, False)
+    migrated = marker is True or str(marker).lower() in ('1', 'true', 'yes')
+    if not migrated:
+        selected.add('global_total_damage')
+        settings.setValue(migration_key, True)
+    migration_key = key + '/action_phase_v1'
+    marker = settings.value(migration_key, False)
+    migrated = marker is True or str(marker).lower() in ('1', 'true', 'yes')
+    if not migrated:
+        selected.update(('action_phase', 'remaining_time'))
+        settings.setValue(migration_key, True)
+    migration_key = key + '/next_action_v1'
+    marker = settings.value(migration_key, False)
+    migrated = marker is True or str(marker).lower() in ('1', 'true', 'yes')
+    if not migrated:
+        selected.add('next_action')
+        settings.setValue(migration_key, True)
     return selected
 
 
@@ -131,6 +316,21 @@ def _skill_text(character, precision=2):
 
 def format_character_column(key, character, decimals, row=0):
     precision = decimals.get(key, decimals.get('default', 2))
+    if getattr(character, 'is_global_damage_summary', False):
+        if key == 'row':
+            return str(row + 1)
+        if key == 'name':
+            return character.name
+        if key == 'kind':
+            return character.unit_kind
+        if key == 'damage_total':
+            return f'{character.unattributed_damage_total:.{precision}f}'
+        if key == 'global_total_damage':
+            return f'{character.global_total_damage:.{precision}f}'
+        if key in ('damage_physical', 'damage_magical', 'damage_pure',
+                   'damage_element', 'element_output_total'):
+            return '未分类'
+        return '-'
     if key == 'row':
         return str(row + 1)
     if key == 'name':
@@ -148,6 +348,17 @@ def format_character_column(key, character, decimals, row=0):
         return character.position_text
     if key == 'action_state':
         return character.state_name
+    if key == 'action_phase':
+        return character.action_text
+    if key == 'remaining_time':
+        return countdown_text(getattr(character, 'action', {}))
+    if key == 'next_action':
+        action = getattr(character, 'action', {}) or {}
+        value = action.get('next_action') or '-'
+        prefix = {
+            'confirmed': '[确定] ', 'unselected': '[未预选] ',
+        }.get(action.get('next_action_confidence'), '')
+        return prefix + value if value != '-' else value
     if key == 'abnormal_status':
         return character.status_text()
     if key.startswith('attr_'):
@@ -172,6 +383,10 @@ def format_character_column(key, character, decimals, row=0):
     }
     if key == 'damage_total':
         return f'{character.damage_total:.{precision}f}'
+    if key == 'global_total_damage':
+        if not character.unattributed_tracking_enabled:
+            return '未启用'
+        return f'{character.global_total_damage:.{precision}f}'
     if key in damage_keys:
         return f'{character.damage_by_type.get(damage_keys[key], 0.0):.{precision}f}'
     if key == 'element_output_total':
@@ -256,6 +471,57 @@ class CharacterPrecisionDialog(QDialog):
         return {key: control.value() for key, control in self.controls.items()}
 
 
+class GlobalDamageDetailDialog(QDialog):
+    """BattleStats 全局总伤与无法归属到 charId 的伤害差值。"""
+
+    def __init__(self, parent, summary):
+        super().__init__(parent)
+        self.summary = summary
+        self._first_update = True
+        self.setWindowTitle('无来源&全局伤害统计')
+        self.resize(820, 430)
+        root = QVBoxLayout(self)
+        self.title = QLabel('无来源&全局伤害统计')
+        self.title.setStyleSheet('font-size:16px;font-weight:600;')
+        root.addWidget(self.title)
+        self.live_status = QLabel('随干员数据实时更新')
+        self.live_status.setStyleSheet('color:#888888;')
+        root.addWidget(self.live_status)
+        self.table = _make_table(['类别', '项目', '数值/说明'])
+        root.addWidget(self.table, 1)
+        buttons = QDialogButtonBox(QDialogButtonBox.Close)
+        buttons.rejected.connect(self.reject)
+        root.addWidget(buttons)
+        self.update_summary(summary)
+
+    def update_summary(self, summary):
+        self.summary = summary
+        global_total = max(0.0, summary.global_total_damage)
+        unattributed = max(0.0, summary.unattributed_damage_total)
+        ratio = unattributed / global_total * 100 if global_total > 0 else 0.0
+        rows = [
+            ('全局', '全局总伤', global_total),
+            ('观测', '敌人生命下降累计',
+             summary.observed_enemy_damage_total),
+            ('有来源', 'BattleStats 有来源伤害',
+             summary.attributed_damage_total),
+            ('归属统计', '按干员/召唤物归属伤害合计',
+             summary.character_attributed_damage_total),
+            ('无来源', '无来源&未归属伤害合计（全部）', unattributed),
+            ('无来源', '占全局总伤比例', f'{ratio:.4f}%'),
+            ('统计口径', '计算方式',
+             '敌人生命下降累计 - BattleStats 有来源伤害；两者取值不足时以较大可靠累计兜底'),
+            ('统计口径', '提交延迟',
+             '等待约 0.8 秒让有来源统计追平，再提交无来源累计，避免数值反复增减'),
+            ('统计口径', '类型拆分',
+             '游戏累计结构未提供无来源伤害的逐类型/逐触发者明细，因此不伪造分类'),
+            ('统计口径', '包含范围',
+             '包含神经损伤爆发及其他没有有效 source 的实际生命伤害'),
+        ]
+        _fill_table(self.table, rows, resize_columns=self._first_update)
+        self._first_update = False
+
+
 class CharacterDetailDialog(QDialog):
     """随主表刷新动态数据，重型 Buff/天赋数据由独立通道约 20Hz 补全。"""
 
@@ -312,6 +578,7 @@ class CharacterDetailDialog(QDialog):
         self.title.setText(
             f'{character.name or character.cid or "?"}  ·  {character.unit_kind}  ·  '
             f'{character.profession_name}  ·  {character.cid or "-"}')
+        action = getattr(character, 'action', {}) or {}
         overview = [
             ('实例地址', hex(character.addr)), ('实例 UID', character.unique_id),
             ('模板 ID', character.tmpl_id or '-'), ('别名', character.alias or '-'),
@@ -327,7 +594,32 @@ class CharacterDetailDialog(QDialog):
             ('当前技力', character.sp), ('最大技力', character.max_sp),
             ('元素护盾', character.es), ('伤害护盾', character.shield),
             ('位置', character.position_text), ('朝向枚举', character.direction),
-            ('行为状态', character.state_name), ('异常状态', character.status_text()),
+            ('行为状态', character.state_name), ('动作阶段', character.action_text),
+            ('动作说明', action.get('detail') or '-'),
+            ('剩余帧/时间', countdown_text(action)),
+            ('倒计时含义', action.get('remaining_kind') or '-'),
+            ('倒计时来源', action.get('clock_source') or '-'),
+            ('精确动画计时', '是（当前速度且未被中断）'
+             if action.get('animation_exact') else '否/不适用'),
+            ('下一动作', action.get('next_action') or '-'),
+            ('下一动作可信度', {
+                'confirmed': '游戏已写入', 'unselected': '游戏尚未预选',
+            }.get(action.get('next_action_confidence'), '-')),
+            ('下一动作依据', action.get('next_action_detail') or '-'),
+            ('当前逻辑帧', action.get('current_frame')
+             if action.get('current_frame') is not None else '-'),
+            ('动作已进行帧数', action.get('elapsed_frames')
+             if action.get('elapsed_frames') is not None else '-'),
+            ('当前动画', action.get('animation_track_name')
+             or action.get('animation_key') or '-'),
+            ('动画播放速度', action.get('animation_track_speed')
+             if action.get('animation_track_speed') is not None
+             else action.get('animation_speed', '-')),
+            ('动画已播放时间', action.get('animation_track_time')
+             if action.get('animation_track_time') is not None else '-'),
+            ('循环动画', ('是' if action.get('animation_loop') else '否')
+             if action.get('animation_loop') is not None else '-'),
+            ('异常状态', character.status_text()),
             ('存活', '是' if character.alive else '否'), ('离场原因枚举', character.finish_reason),
             ('阻挡敌人数', character.blocked_count),
             ('阻挡敌人体积', character.blocked_total_volume),

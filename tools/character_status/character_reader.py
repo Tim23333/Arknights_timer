@@ -8,13 +8,22 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from collections import deque
 import math
 import struct
 import time
 
 from tools.enemy_health import game_structs as gs
-from tools.enemy_health.enemy_reader import EnemyInfo, EnemyReader, _i32, _u64
+from tools.enemy_health.enemy_reader import (
+    EnemyInfo, EnemyReader, _i32, _u64, seconds_to_frames,
+)
 from tools.enemy_health.memcore import TcpChannel
+
+
+GLOBAL_DAMAGE_SUMMARY_ADDR = -1
+GLOBAL_DAMAGE_SUMMARY_NAME = '无来源&全局伤害统计'
+UNATTRIBUTED_DAMAGE_EPSILON = 0.01
+UNATTRIBUTED_RECONCILE_SEC = 0.8
 
 
 def _u32(data: bytes, offset: int) -> int:
@@ -86,6 +95,7 @@ class CharacterInfo:
     skill_data_ptr: int = 0
     data_ptr: int = 0
     current_mode_ptr: int = 0
+    action: dict = field(default_factory=dict)
     attributes: dict = field(default_factory=dict)
     raw_attributes: dict = field(default_factory=dict)
     ep_remaining: dict = field(default_factory=dict)
@@ -110,6 +120,13 @@ class CharacterInfo:
     damage_by_type: dict = field(default_factory=dict)
     output_element_damage: dict = field(default_factory=dict)
     output_ep_break_count: dict = field(default_factory=dict)
+    global_total_damage: float = 0.0
+    attributed_damage_total: float = 0.0
+    unattributed_damage_total: float = 0.0
+    character_attributed_damage_total: float = 0.0
+    observed_enemy_damage_total: float = 0.0
+    unattributed_tracking_enabled: bool = False
+    is_global_damage_summary: bool = False
 
     @property
     def profession_name(self) -> str:
@@ -117,6 +134,8 @@ class CharacterInfo:
 
     @property
     def unit_kind(self) -> str:
+        if self.is_global_damage_summary:
+            return '全局统计'
         if self.is_token:
             return '召唤物/装置'
         return '干员'
@@ -130,6 +149,10 @@ class CharacterInfo:
     @property
     def state_name(self) -> str:
         return gs.CharacterState.NAMES.get(self.state_id, f'未知({self.state_id})')
+
+    @property
+    def action_text(self) -> str:
+        return (self.action or {}).get('name') or self.state_name
 
     @property
     def status_resistance(self) -> float:
@@ -186,6 +209,33 @@ class CharacterReader:
         self._damage_layout_tick = 0
         self._damage_entries: dict[str, dict] = {}
         self._damage_snapshots: dict[str, dict] = {}
+        self._battle_stats_total_damage = 0.0
+        self._observed_enemy_damage_total = 0.0
+        self._observed_enemy_hp: dict[tuple[int, int], float] = {}
+        self._seen_enemy_damage_keys: set[tuple[int, int]] = set()
+        self._unattributed_tracking_enabled = False
+        self._committed_unattributed_damage = 0.0
+        self._pending_observed_damage = deque()
+        self._pending_attributed_damage = deque()
+        self._last_observed_damage_total = 0.0
+        self._last_attributed_damage_total = 0.0
+        self._global_damage_summary = self._make_global_damage_summary(
+            0.0, {}, 0.0, 0.0, False)
+
+    def _reset_damage_tracking(self) -> None:
+        self._damage_snapshots.clear()
+        self._battle_stats_total_damage = 0.0
+        self._observed_enemy_damage_total = 0.0
+        self._observed_enemy_hp.clear()
+        self._seen_enemy_damage_keys.clear()
+        self._unattributed_tracking_enabled = False
+        self._committed_unattributed_damage = 0.0
+        self._pending_observed_damage.clear()
+        self._pending_attributed_damage.clear()
+        self._last_observed_damage_total = 0.0
+        self._last_attributed_damage_total = 0.0
+        self._global_damage_summary = self._make_global_damage_summary(
+            0.0, {}, 0.0, 0.0, False)
 
     def bootstrap(self) -> bool:
         if not self.core.unit_manager_addr:
@@ -263,6 +313,15 @@ class CharacterReader:
             block, gs.EntityFields.M_SHIELD_CONTROLLER)
         info.buff_container_ptr = _u64(block, gs.EntityFields.BUFF_CONTAINER)
         info.current_mode_ptr = _u64(block, gs.UnitFields.CURRENT_MODE)
+        animator = _u64(block, gs.UnitFields.ANIMATOR)
+        if not animator:
+            animator = _u64(block, gs.CharacterFields.RUNTIME_ANIMATOR)
+        info.action = {
+            'animator_addr': animator,
+            'current_mode_addr': info.current_mode_ptr,
+            'override_attack_addr': _u64(block, gs.UnitFields.OVERRIDE_ATTACK),
+            'override_combat_addr': _u64(block, gs.UnitFields.OVERRIDE_COMBAT),
+        }
         info.root_tile_ptr = _u64(block, gs.CharacterFields.ROOT_TILE)
         info.skill_ptr = _u64(block, gs.CharacterFields.SKILL)
         info.skill_data_ptr = _u64(block, gs.CharacterFields.SKILL_DATA)
@@ -389,11 +448,18 @@ class CharacterReader:
                 self._runtime_ptrs[addr]['combo_immunes'] = _u64(
                     data, gs.AbnormalComboManagerFields.M_ABNORMAL_COMBO_IMMUNE_COUNTER)
 
+        snapshots = {addr: dict(self._runtime_snapshots.get(addr, {}))
+                     for addr in infos}
+        for addr, info in infos.items():
+            action = dict(snapshots[addr].get('action', {}))
+            action.update(info.action or {})
+            snapshots[addr]['action'] = action
+
         reqs, keys = [], []
         for addr in infos:
             rp = self._runtime_ptrs.get(addr, {})
             specs = (
-                ('state', rp.get('state', 0) + gs.StateMachineFields.CURRENT_STATE_ID, 4),
+                ('state', rp.get('state', 0) + gs.StateMachineFields.CURRENT_STATE_ID, 0x10),
                 ('ep', rp.get('ep', 0), gs.Il2CppArray.ITEMS + gs.ElementType.E_NUM * 8),
                 ('shield', rp.get('shield', 0) + gs.ShieldUIControllerFields.M_SHIELD_TO_SHOW, 8),
                 ('epc', rp.get('epc', 0) + gs.EPControllerFields.M_IS_IN_BREAK_RECOVERY, 1),
@@ -407,14 +473,29 @@ class CharacterReader:
             for kind, ptr, size in specs:
                 if self.mc.is_ptr(ptr):
                     reqs.append((ptr, size)); keys.append((addr, kind))
-        snapshots = {addr: dict(self._runtime_snapshots.get(addr, {}))
-                     for addr in infos}
+            mode = snapshots[addr]['action'].get('current_mode_addr', 0)
+            if self.mc.is_ptr(mode):
+                reqs.append((mode, gs.UnitModeFields.READ_SIZE))
+                keys.append((addr, 'unit_mode'))
+            animator = snapshots[addr]['action'].get('animator_addr', 0)
+            if self.mc.is_ptr(animator):
+                for kind, offset in (
+                        ('anim_spine', gs.UnitAnimatorFields.SPINE_CURRENT_STATE),
+                        ('anim_mesh', gs.UnitAnimatorFields.MESH_CURRENT_STATE)):
+                    reqs.append((animator + offset,
+                                 gs.UnitAnimatorFields.CURRENT_STATE_SIZE))
+                    keys.append((addr, kind))
         for (addr, kind), data in zip(keys, self._batch(reqs)):
             if not data:
                 continue
             snap = snapshots[addr]
             if kind == 'state':
                 snap['state_id'] = _i32(data, 0)
+                state_node = _u64(data, 8)
+                if snap['action'].get('state_node_addr') != state_node:
+                    snap['action'].pop('state_time', None)
+                    snap['action'].pop('status_remaining', None)
+                snap['action']['state_node_addr'] = state_node
             elif kind == 'ep':
                 snap['ep_remaining'] = self.core._decode_fp_array(
                     data, gs.ElementType.E_NUM)
@@ -431,6 +512,85 @@ class CharacterReader:
             elif kind == 'combo_immunes':
                 snap['abnormal_combo_immunes'] = self.core._decode_short_array(
                     data, gs.AbnormalCombo.E_NUM)
+            elif kind == 'unit_mode':
+                snap['action']['mode_combat_addr'] = _u64(
+                    data, gs.UnitModeFields.COMBAT)
+                snap['action']['mode_attack_addr'] = _u64(
+                    data, gs.UnitModeFields.ATTACK)
+            elif kind in ('anim_spine', 'anim_mesh'):
+                snap['action'].setdefault('animation_candidates', []).append({
+                    'key_ptr': _u64(data, 0),
+                    'speed': _f32(data, 8),
+                    'backend': 'Spine' if kind == 'anim_spine' else 'Mesh',
+                })
+
+        self.core._resolve_animation_states_chan({
+            addr: snapshots[addr]['action'] for addr in infos})
+        self.core._refresh_animation_tracks_chan({
+            addr: snapshots[addr]['action'] for addr in infos})
+
+        ability_reqs, ability_keys = [], []
+        for addr, info in infos.items():
+            action = snapshots[addr]['action']
+            for role in ('attack', 'combat'):
+                ability = (action.get(f'override_{role}_addr', 0)
+                           or action.get(f'mode_{role}_addr', 0))
+                action[f'{role}_ability_addr'] = ability
+                action.pop(role, None)
+                if self.mc.is_ptr(ability):
+                    ability_reqs.append((ability, gs.AbilityFields.READ_SIZE))
+                    ability_keys.append((addr, role))
+            state_node = action.get('state_node_addr', 0)
+            if self.mc.is_ptr(state_node):
+                ability_reqs.append((
+                    state_node + gs.StateNodeFields.ACTION_TIME, 8))
+                ability_keys.append((addr, 'state_time'))
+        for (addr, kind), data in zip(ability_keys, self._batch(ability_reqs)):
+            if not data:
+                continue
+            action = snapshots[addr]['action']
+            if kind == 'state_time':
+                action['state_time'] = gs.fp_to_float(_u64(data, 0))
+                continue
+            target = action.setdefault(kind, {})
+            target['casting'] = bool(data[gs.AbilityFields.IS_CASTING])
+            target['cast_start_frame'] = _u32(data, gs.AbilityFields.CAST_START_FRAME)
+            target['attached'] = bool(data[gs.AbilityFields.IS_ATTACHED])
+            target['finish_reason'] = _i32(data, gs.AbilityFields.FINISH_REASON)
+            target['timer_addr'] = _u64(data, gs.AbilityFields.COOLDOWN_TIMER)
+
+        timer_keys = []
+        for addr, kind in ability_keys:
+            if kind == 'state_time':
+                continue
+            timer = snapshots[addr]['action'].get(kind, {}).get('timer_addr', 0)
+            if self.mc.is_ptr(timer):
+                timer_keys.append((addr, kind, timer))
+        for (addr, kind, _timer), data in zip(
+                timer_keys, self._batch([(timer, 0x20)
+                                         for _addr, _kind, timer in timer_keys])):
+            if not data:
+                continue
+            target = snapshots[addr]['action'].setdefault(kind, {})
+            target['cd_period'] = gs.fp_to_float(_u64(
+                data, gs.PeriodicTimerFields.M_PERIOD_TIME))
+            target['cd_remaining'] = gs.fp_to_float(_u64(
+                data, gs.PeriodicTimerFields.M_REMAINING_TIME))
+
+        abnormal_bits = {
+            gs.CharacterState.STUN: (0, None),
+            gs.CharacterState.FROZEN: (16, None),
+            gs.CharacterState.DOZE: (43, 0),
+        }
+        status_targets = []
+        for addr, info in infos.items():
+            state_id = snapshots[addr].get('state_id', gs.CharacterState.DEFAULT)
+            bits = abnormal_bits.get(state_id)
+            if bits:
+                status_targets.append((addr, info.buff_container_ptr, state_id,
+                                       bits[0], bits[1]))
+        self.core._refresh_status_timers_chan(
+            status_targets, snapshots, self._tick)
         self._runtime_snapshots = snapshots
         for addr, info in infos.items():
             for key, value in snapshots.get(addr, {}).items():
@@ -564,6 +724,7 @@ class CharacterReader:
                 'casting': bool(data[gs.AbilityFields.IS_CASTING]),
                 'cast_start_frame': _u32(data, gs.AbilityFields.CAST_START_FRAME),
                 'attached': bool(data[gs.AbilityFields.IS_ATTACHED]),
+                'finish_reason': _i32(data, gs.AbilityFields.FINISH_REASON),
                 'ability_blackboard_ptr': _u64(data, gs.AbilityFields.BLACKBOARD),
             })
             timer = _u64(data, gs.AbilityFields.COOLDOWN_TIMER)
@@ -586,6 +747,201 @@ class CharacterReader:
             static['ready'] = bool(sp_cost > 0 and info.sp >= sp_cost
                                    and not static['runtime'].get('wait_for_end'))
             info.skill = static
+
+    def _predict_character_next_action(self, info: CharacterInfo, action: dict) -> None:
+        """只展示游戏已排队的下一动画；不把技力/CD 候选冒充下一动作。"""
+        for key in ('next_action', 'next_action_detail', 'next_action_confidence'):
+            action.pop(key, None)
+        state_id = info.state_id
+        if state_id in (gs.CharacterState.TERMINAL, gs.CharacterState.DEAD):
+            action.update(next_action='无', next_action_detail='实体已结束',
+                          next_action_confidence='confirmed')
+            return
+
+        queued_animation = action.get('animation_next_track_name', '')
+        if queued_animation:
+            action.update(
+                next_action=f'已排队动画：{queued_animation}',
+                next_action_detail='Spine TrackEntry.next 已存在；这是游戏已排队的下一段动画',
+                next_action_confidence='confirmed')
+            return
+
+        if state_id == gs.CharacterState.ATTACK:
+            detail = ('游戏尚未写入下一动作；AttackState 会在当前攻击结束后的 '
+                      '_NextAttackOrExit 中重新检查目标、技能与普通攻击')
+        elif state_id == gs.CharacterState.SKILL:
+            detail = '技能结束前没有独立的下一 Ability 字段，结束回调触发后才决定'
+        elif state_id == gs.CharacterState.IDLE and (info.skill or {}).get('ready'):
+            detail = '技能虽已就绪，但玩家输入/自动触发尚未发生，不能视为已预选动作'
+        else:
+            detail = '当前没有已排队动画，下一动作尚未由游戏状态机决定'
+        action.update(next_action='等待游戏判定', next_action_detail=detail,
+                      next_action_confidence='unselected')
+
+    def _finalize_character_action(self, info: CharacterInfo) -> dict:
+        """合成我方状态机、普攻/战斗 Ability 与主技能的动作阶段。"""
+        action = dict(info.action or {})
+        for key in (
+                'phase', 'name', 'detail', 'remaining', 'remaining_frames',
+                'remaining_kind', 'elapsed_frames', 'current_frame',
+                'clock_source', 'next_action', 'next_action_detail',
+                'next_action_confidence'):
+            action.pop(key, None)
+        now = self.core._scheduler_time_snap
+        frame = self.core._fixed_frame_snap
+        frame_duration = self.core._frame_duration_snap or 1.0 / 30.0
+        if not isinstance(now, (int, float)) or not math.isfinite(now):
+            now = None
+        if not isinstance(frame, int) or frame < 0:
+            frame = None
+        action['current_frame'] = frame
+        action['state_name'] = info.state_name
+        skill = info.skill or {}
+        skill_runtime = dict(skill.get('runtime') or {})
+        action['skill_runtime'] = skill_runtime
+
+        def set_countdown(seconds, kind, source='runtime'):
+            if not isinstance(seconds, (int, float)) or not math.isfinite(seconds):
+                return False
+            seconds = max(0.0, float(seconds))
+            action['remaining'] = seconds
+            action['remaining_frames'] = (
+                seconds_to_frames(seconds, frame_duration)
+                if frame is not None else None)
+            action['remaining_kind'] = kind
+            action['clock_source'] = source
+            return True
+
+        state_id = info.state_id
+        ability = {}
+        if state_id == gs.CharacterState.ATTACK:
+            ability = action.get('attack') or {}
+        elif state_id == gs.CharacterState.COMBAT:
+            ability = action.get('combat') or {}
+        elif state_id == gs.CharacterState.SKILL:
+            ability = skill_runtime
+        if ability.get('casting') and frame is not None:
+            start = ability.get('cast_start_frame')
+            if isinstance(start, int) and 0 <= start <= frame:
+                action['elapsed_frames'] = frame - start
+
+        animation_remaining = action.get('animation_remaining')
+        animation_remaining = (
+            float(animation_remaining)
+            if isinstance(animation_remaining, (int, float))
+            and math.isfinite(animation_remaining) and animation_remaining >= 0
+            else None)
+
+        if state_id in (gs.CharacterState.TERMINAL, gs.CharacterState.DEAD):
+            action.update(phase='finished', name=info.state_name,
+                          detail='状态已结束，不再进入下一动作', remaining=0.0,
+                          remaining_frames=0, remaining_kind='完成态',
+                          clock_source='state')
+        elif state_id in (gs.CharacterState.BORN, gs.CharacterState.REBORN):
+            action.update(phase='state_countdown', name=info.state_name,
+                          detail='状态节点自身倒计时')
+            if not set_countdown(action.get('state_time'), '状态剩余', 'state_node'):
+                action['remaining_kind'] = '等待状态节点退出'
+        elif state_id in (gs.CharacterState.ATTACK, gs.CharacterState.COMBAT):
+            role = '普通攻击' if state_id == gs.CharacterState.ATTACK else '战斗动作'
+            if ability.get('casting'):
+                action.update(phase='ability_casting', name=f'{role}中',
+                              detail='Ability 正在施放；倒计时取当前非循环 Spine 动画终点')
+                deadline = action.get('state_time')
+                gate = deadline - now if now is not None and isinstance(
+                    deadline, (int, float)) and math.isfinite(deadline) else None
+                gates = [value for value in (animation_remaining, gate)
+                         if isinstance(value, (int, float)) and value > 0]
+                if gates:
+                    kind = ('动作可退出剩余（未中断）' if gate and gate > 0
+                            else '当前动画剩余（未中断）')
+                    set_countdown(max(gates), kind, 'spine/state_gate')
+                else:
+                    action['remaining_kind'] = '动画/能力回调决定'
+            else:
+                deadline = action.get('state_time')
+                remaining = deadline - now if now is not None and isinstance(
+                    deadline, (int, float)) and math.isfinite(deadline) else None
+                if remaining is not None and remaining > 0.0001:
+                    action.update(phase='ability_recovery', name=f'{role}后摇',
+                                  detail='Ability 已结束，等待状态节点可退出时刻')
+                    set_countdown(max(remaining, animation_remaining or 0.0),
+                                  '后摇/动画剩余（未中断）',
+                                  'spine/state_node_deadline')
+                else:
+                    action.update(phase='ability_transition', name=f'{role}收尾',
+                                  detail='等待动画或状态机切回待机',
+                                  remaining_kind='动画/状态切换条件')
+                    if animation_remaining is not None:
+                        set_countdown(animation_remaining,
+                                      '收尾动画剩余（未中断）', 'spine_track')
+        elif state_id == gs.CharacterState.SKILL:
+            skill_name = skill.get('name') or skill.get('skill_id') or '主技能'
+            if skill_runtime.get('casting') or skill_runtime.get('wait_for_end'):
+                action.update(phase='skill_active', name=f'技能中：{skill_name}',
+                              detail='技能 Ability 正在施放或持续生效')
+                timers = [value for value in (
+                    animation_remaining, action.get('state_time'))
+                    if isinstance(value, (int, float))
+                    and math.isfinite(value) and value >= 0]
+                if not (timers and set_countdown(
+                        max(timers), '技能动画/可退出剩余（未中断）',
+                        'spine/skill_state')):
+                    action['remaining_kind'] = '技能/动画回调决定'
+            else:
+                action.update(phase='skill_transition', name=f'技能收尾：{skill_name}',
+                              detail='等待技能状态退出',
+                              remaining_kind='状态切换条件')
+                if animation_remaining is not None:
+                    set_countdown(animation_remaining,
+                                  '收尾动画剩余（未中断）', 'spine_track')
+        elif state_id in (gs.CharacterState.STUN, gs.CharacterState.FROZEN,
+                          gs.CharacterState.DOZE):
+            action.update(phase='abnormal', name=info.state_name,
+                          detail='异常状态由一个或多个 Buff/组合标志维持')
+            if not set_countdown(action.get('status_remaining'),
+                                 '异常持续剩余', 'buff'):
+                action['remaining_kind'] = 'Buff/异常条件解除'
+        elif state_id == gs.CharacterState.IDLE:
+            skill_name = skill.get('name') or skill.get('skill_id') or '主技能'
+            skill_type = skill.get('type')
+            if skill.get('ready'):
+                if skill_type == 1:
+                    action.update(phase='idle_skill_manual', name='待机 / 技能可手动释放',
+                                  detail=f'{skill_name} 技力已满，等待玩家输入',
+                                  remaining_kind='玩家操作')
+                else:
+                    action.update(phase='idle_skill_auto', name='待机 / 技能已就绪',
+                                  detail=f'{skill_name} 等待目标、触发器和状态机允许施放',
+                                  remaining_kind='目标/触发/状态条件')
+            else:
+                candidates = []
+                for role in ('attack', 'combat'):
+                    remain = (action.get(role) or {}).get('cd_remaining')
+                    if isinstance(remain, (int, float)) and 0 < remain < 3600:
+                        candidates.append(float(remain))
+                skill_cd = skill_runtime.get('cooldown_remaining')
+                if isinstance(skill_cd, (int, float)) and 0 < skill_cd < 3600:
+                    candidates.append(float(skill_cd))
+                if candidates:
+                    action.update(phase='idle_cooldown', name='待机 / 等待下一动作',
+                                  detail='显示最早 Ability 可用时间；仍可能受目标条件限制')
+                    set_countdown(min(candidates), '下一动作可用', 'ability_cooldown')
+                else:
+                    action.update(phase='idle', name='待机',
+                                  detail='等待目标、技力或触发条件',
+                                  remaining_kind='目标/技力/触发条件')
+        else:
+            action.update(phase='state_wait', name=info.state_name,
+                          detail='该状态没有统一倒计时槽，由状态节点条件退出',
+                          remaining_kind='状态节点条件')
+
+        self._predict_character_next_action(info, action)
+        info.action = action
+        snap = self._runtime_snapshots.get(info.addr)
+        if snap is not None:
+            snap['action'] = dict(action)
+        return action
 
     def _refresh_buff_counts(self, infos: dict[int, CharacterInfo]) -> None:
         targets = [info for info in infos.values()
@@ -617,19 +973,28 @@ class CharacterReader:
             self.core.bc_addr + gs.BattleControllerFields.M_LOGGER, 8)])
         logger = _u64(logger_slot, 0) if logger_slot else 0
         if not self.mc.is_ptr(logger):
+            self._damage_stats_addr = 0
             self._damage_entries.clear()
+            self._reset_damage_tracking()
             return
         (logger_block,) = self._batch([(logger, gs.BattleLoggerFields.READ_SIZE)])
         stats = _u64(logger_block, gs.BattleLoggerFields.STATS) if logger_block else 0
         if not self.mc.is_ptr(stats):
+            self._damage_stats_addr = 0
             self._damage_entries.clear()
+            self._reset_damage_tracking()
             return
         (stats_block,) = self._batch([(stats, gs.BattleStatsFields.READ_SIZE)])
         stats_list = (_u64(stats_block, gs.BattleStatsFields.CHAR_ADVANCED_STATS)
                       if stats_block else 0)
         if not self.mc.is_ptr(stats_list):
+            self._damage_stats_addr = 0
             self._damage_entries.clear()
+            self._reset_damage_tracking()
             return
+        if stats != self._damage_stats_addr:
+            # BattleLogger 会在新战斗中整体重建；不能把上一局的累计值带进来。
+            self._reset_damage_tracking()
         self._damage_stats_addr = stats
         self._damage_list_addr = stats_list
 
@@ -642,6 +1007,7 @@ class CharacterReader:
             return
         if not count:
             self._damage_entries.clear()
+            self._damage_layout_tick = self._tick
             return
         # ListDict<string, CharAdvancedStats> 继承 List<KeyValuePair<...>>；
         # KeyValuePair 引用类型实参在数组中为 key/value 两个 8 字节指针。
@@ -691,14 +1057,152 @@ class CharacterReader:
     def _safe_float(value: float) -> float:
         return float(value) if math.isfinite(value) else 0.0
 
-    def _refresh_damage_stats(self, infos: dict[int, CharacterInfo]) -> None:
+    @classmethod
+    def _make_global_damage_summary(cls, battle_stats_total: float,
+                                    snapshots: dict[str, dict],
+                                    observed_enemy_total: float,
+                                    unattributed_total: float = 0.0,
+                                    tracking_enabled: bool = True) -> CharacterInfo:
+        battle_stats_total = abs(cls._safe_float(battle_stats_total))
+        observed_enemy_total = max(
+            0.0, cls._safe_float(observed_enemy_total))
+        character_attributed = sum(max(0.0, cls._safe_float(
+            snapshot.get('damage_total', 0.0))) for snapshot in snapshots.values())
+        # BattleStats.totalDamage 在 LogModifier 中只统计有玩家侧 source 的伤害；
+        # charAdvancedStats 读取可能比它早/晚一帧，因此取二者较大值作为有来源值。
+        attributed = max(battle_stats_total, character_attributed)
+        unattributed = max(0.0, cls._safe_float(unattributed_total))
+        global_total = attributed + unattributed
+        if unattributed <= max(UNATTRIBUTED_DAMAGE_EPSILON, global_total * 1e-6):
+            unattributed = 0.0
+            global_total = attributed
+        return CharacterInfo(
+            addr=GLOBAL_DAMAGE_SUMMARY_ADDR,
+            cid='global_damage_summary',
+            name=GLOBAL_DAMAGE_SUMMARY_NAME,
+            alive=False,
+            damage_total=unattributed,
+            global_total_damage=global_total,
+            attributed_damage_total=attributed,
+            unattributed_damage_total=unattributed,
+            character_attributed_damage_total=character_attributed,
+            observed_enemy_damage_total=observed_enemy_total,
+            unattributed_tracking_enabled=bool(tracking_enabled),
+            is_global_damage_summary=True,
+        )
+
+    def _observe_enemy_damage(self, enemies, include_damage=True) -> float:
+        """累计敌方实际 HP 正向损失，用来补齐 BattleStats 漏掉的无来源伤害。"""
+        if enemies is None:
+            return 0.0
+        current: dict[tuple[int, int], float] = {}
+        initial_visible_loss = 0.0
+        for enemy in enemies:
+            addr = int(getattr(enemy, 'addr', 0) or 0)
+            lifecycle = getattr(enemy, 'lifecycle', 'active')
+            if addr <= 0 or lifecycle == 'pending':
+                continue
+            roster_id = int(getattr(enemy, 'roster_id', 0) or 0)
+            key = (addr, roster_id)
+            hp = max(0.0, self._safe_float(getattr(enemy, 'hp', 0.0)))
+            maximum = max(hp, self._safe_float(
+                getattr(enemy, 'max_hp', hp)))
+            initial_visible_loss += max(0.0, maximum - hp)
+            previous = self._observed_enemy_hp.get(key)
+            if include_damage and previous is not None:
+                self._observed_enemy_damage_total += max(0.0, previous - hp)
+            self._seen_enemy_damage_keys.add(key)
+            if lifecycle == 'active':
+                current[key] = hp
+        self._observed_enemy_hp = current
+        return initial_visible_loss
+
+    def _update_unattributed_tracking(self, enabled: bool, enemies,
+                                      attributed_floor: float) -> None:
+        enabled = bool(enabled)
+        if not enabled:
+            if self._unattributed_tracking_enabled:
+                self._observed_enemy_hp.clear()
+                self._seen_enemy_damage_keys.clear()
+            self._unattributed_tracking_enabled = False
+            self._observed_enemy_damage_total = 0.0
+            self._committed_unattributed_damage = 0.0
+            self._pending_observed_damage.clear()
+            self._pending_attributed_damage.clear()
+            self._last_observed_damage_total = 0.0
+            self._last_attributed_damage_total = 0.0
+            return
+        if not self._unattributed_tracking_enabled:
+            self._unattributed_tracking_enabled = True
+            self._observed_enemy_hp.clear()
+            self._seen_enemy_damage_keys.clear()
+            # 中途启用时以“有来源累计”和当前敌人可见生命损失的较大值开局，
+            # 不把同一段有来源伤害重复算成无来源。
+            visible_loss = self._observe_enemy_damage(
+                enemies, include_damage=False)
+            self._observed_enemy_damage_total = max(
+                max(0.0, attributed_floor), visible_loss)
+            self._committed_unattributed_damage = 0.0
+            self._pending_observed_damage.clear()
+            self._pending_attributed_damage.clear()
+            self._last_observed_damage_total = max(0.0, attributed_floor)
+            self._last_attributed_damage_total = max(0.0, attributed_floor)
+        else:
+            self._observe_enemy_damage(enemies)
+        self._reconcile_unattributed_damage(attributed_floor)
+
+    @staticmethod
+    def _consume_damage_queues(left, right) -> None:
+        while left and right:
+            amount = min(left[0][1], right[0][1])
+            left[0][1] -= amount
+            right[0][1] -= amount
+            if left[0][1] <= UNATTRIBUTED_DAMAGE_EPSILON:
+                left.popleft()
+            if right[0][1] <= UNATTRIBUTED_DAMAGE_EPSILON:
+                right.popleft()
+
+    def _reconcile_unattributed_damage(self, attributed_total: float,
+                                       now: float | None = None) -> None:
+        """给 BattleStats 最多 0.8s 追平 HP 变化，再提交真正的无来源差值。"""
+        now = time.monotonic() if now is None else now
+        attributed_total = max(0.0, self._safe_float(attributed_total))
+        observed_delta = max(
+            0.0, self._observed_enemy_damage_total
+            - self._last_observed_damage_total)
+        attributed_delta = max(
+            0.0, attributed_total - self._last_attributed_damage_total)
+        self._last_observed_damage_total = self._observed_enemy_damage_total
+        self._last_attributed_damage_total = attributed_total
+        if observed_delta > UNATTRIBUTED_DAMAGE_EPSILON:
+            self._pending_observed_damage.append([now, observed_delta])
+        if attributed_delta > UNATTRIBUTED_DAMAGE_EPSILON:
+            self._pending_attributed_damage.append([now, attributed_delta])
+        self._consume_damage_queues(
+            self._pending_observed_damage, self._pending_attributed_damage)
+
+        cutoff = now - UNATTRIBUTED_RECONCILE_SEC
+        while (self._pending_observed_damage
+               and self._pending_observed_damage[0][0] <= cutoff):
+            _timestamp, amount = self._pending_observed_damage.popleft()
+            self._committed_unattributed_damage += amount
+        # 有来源伤害可能命中了尚未建立基线或已离场的敌人；过期后不能继续
+        # 抵消未来真正的无来源伤害。
+        while (self._pending_attributed_damage
+               and self._pending_attributed_damage[0][0] <= cutoff):
+            self._pending_attributed_damage.popleft()
+
+    def _refresh_damage_stats(self, infos: dict[int, CharacterInfo],
+                              enemies=None,
+                              track_unattributed_damage=False) -> None:
         if (not self._damage_entries
                 or self._tick - self._damage_layout_tick >= self.DAMAGE_LAYOUT_EVERY):
             self._refresh_damage_layout()
-        if not self._damage_entries:
+        if not self.mc.is_ptr(self._damage_stats_addr):
             return
 
-        reqs, tags = [], []
+        reqs = [(self._damage_stats_addr + gs.BattleStatsFields.TOTAL_DAMAGE, 4)]
+        tags = [('', 'global_total')]
         for cid, entry in self._damage_entries.items():
             reqs.append((entry['addr'] + gs.CharAdvancedStatsFields.OUTPUT_DAMAGE_RANGE,
                          0x14))
@@ -709,8 +1213,13 @@ class CharacterReader:
                     tags.append((cid, kind))
         snapshots = {cid: dict(self._damage_snapshots.get(cid, {}))
                      for cid in self._damage_entries}
+        battle_stats_total = self._battle_stats_total_damage
         for (cid, kind), data in zip(tags, self._batch(reqs)):
             if not data:
+                continue
+            if kind == 'global_total':
+                battle_stats_total = self._safe_float(
+                    struct.unpack_from('<f', data, 0)[0])
                 continue
             snap = snapshots[cid]
             if kind == 'summary':
@@ -746,6 +1255,17 @@ class CharacterReader:
             snap['damage_total'] = total
             snap['healing_total'] = by_type.get(gs.DamageType.HEAL, 0.0)
         self._damage_snapshots = snapshots
+        self._battle_stats_total_damage = abs(battle_stats_total)
+        character_attributed = sum(max(0.0, self._safe_float(
+            snapshot.get('damage_total', 0.0))) for snapshot in snapshots.values())
+        self._update_unattributed_tracking(
+            track_unattributed_damage, enemies,
+            max(self._battle_stats_total_damage, character_attributed))
+        self._global_damage_summary = self._make_global_damage_summary(
+            self._battle_stats_total_damage, snapshots,
+            self._observed_enemy_damage_total,
+            self._committed_unattributed_damage,
+            self._unattributed_tracking_enabled)
 
         for info in infos.values():
             snap = snapshots.get(info.cid, {})
@@ -758,8 +1278,16 @@ class CharacterReader:
                 snap.get('output_element_damage', {}))
             info.output_ep_break_count = dict(
                 snap.get('output_ep_break_count', {}))
+            info.global_total_damage = (
+                self._global_damage_summary.global_total_damage)
+            info.attributed_damage_total = (
+                self._global_damage_summary.attributed_damage_total)
+            info.unattributed_damage_total = (
+                self._global_damage_summary.unattributed_damage_total)
+            info.unattributed_tracking_enabled = (
+                self._global_damage_summary.unattributed_tracking_enabled)
 
-    def poll_fast(self) -> dict:
+    def poll_fast(self, enemies=None, track_unattributed_damage=False) -> dict:
         t0 = time.time()
         snap = {'ok': False, 'characters': [], 'msg': '', 'frame_ms': 0.0}
         try:
@@ -784,16 +1312,22 @@ class CharacterReader:
             self._refresh_attributes(infos)
             self._refresh_runtime(infos)
             self._refresh_positions_and_blocking(infos)
-            self._refresh_damage_stats(infos)
+            self._refresh_damage_stats(
+                infos, enemies, track_unattributed_damage)
             if self._tick % self.SKILL_EVERY == 1 or any(
                     addr not in self._skill_runtime for addr in infos):
                 self._refresh_skills(infos)
             else:
                 for addr, info in infos.items():
                     static = dict(self._skill_static.get(info.skill_data_ptr, {}))
-                    static['runtime'] = dict(self._skill_runtime.get(addr, {}))
+                    runtime = dict(self._skill_runtime.get(addr, {}))
+                    static['runtime'] = runtime
                     static['current_sp'] = info.sp
                     static['max_sp'] = info.max_sp
+                    sp_cost = static.get('sp', {}).get('cost', info.max_sp)
+                    static['ready'] = bool(
+                        sp_cost > 0 and info.sp >= sp_cost
+                        and not runtime.get('wait_for_end'))
                     info.skill = static
             if self._tick % self.BUFF_COUNT_EVERY == 1 or any(
                     addr not in self._buff_counts for addr in infos):
@@ -802,6 +1336,9 @@ class CharacterReader:
                 for addr, info in infos.items():
                     info.buff_count = self._buff_counts.get(addr, 0)
 
+            for info in infos.values():
+                self._finalize_character_action(info)
+
             live = set(infos)
             for cache in (self._identities, self._attr_cached, self._attr_snapshots,
                           self._runtime_ptrs, self._runtime_snapshots, self._positions,
@@ -809,8 +1346,12 @@ class CharacterReader:
                 for addr in list(cache):
                     if addr not in live:
                         cache.pop(addr, None)
-            snap['characters'] = sorted(
+            characters = sorted(
                 infos.values(), key=lambda x: (x.is_token, x.unique_id, x.addr))
+            if self._global_damage_summary.unattributed_damage_total > 0:
+                characters.append(self._global_damage_summary)
+            snap['characters'] = characters
+            snap['global_damage_summary'] = self._global_damage_summary
             snap['ok'] = True
             snap['frame_ms'] = round((time.time() - t0) * 1000, 1)
             return snap

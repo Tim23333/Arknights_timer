@@ -74,7 +74,8 @@ from app.enemy_ui import (
 from app.character_ui import (
     CHARACTER_COLS, CHARACTER_COL_WIDTHS, CHARACTER_COLUMN_DEFS,
     CHARACTER_COLUMN_INDEX, CharacterColumnDialog, CharacterDetailDialog,
-    CharacterPrecisionDialog, default_character_precision,
+    CharacterOverviewDialog, CharacterPrecisionDialog, GlobalDamageDetailDialog,
+    default_character_precision,
     format_character_column, load_character_columns, save_character_columns,
 )
 from tools.deploy_tracker.ak_deploy_reader import DeployTrackerReader
@@ -580,8 +581,13 @@ class SectionFloatWindow(QDialog):
     dockRequested = Signal()
     closing = Signal()
 
-    def __init__(self, title: str, owner: QWidget | None = None) -> None:
-        super().__init__(owner, Qt.WindowType.Window)
+    def __init__(self, title: str, style_source: QWidget | None = None) -> None:
+        # 浮窗不能把主窗口设为 Qt parent，否则 Windows 会将其登记为主窗口的
+        # owned window，主窗口最小化时系统也会连带隐藏浮窗。生命周期由
+        # CollapsibleGroupBox._float_window 持有，并在主程序退出时主动停靠关闭。
+        super().__init__(None, Qt.WindowType.Window)
+        if style_source is not None:
+            self.setWindowIcon(style_source.windowIcon())
         self.setWindowTitle(f'模块浮窗 · {title}')
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
         root = QVBoxLayout(self)
@@ -790,6 +796,10 @@ class EnemyPollWorker(QThread):
         self._character_detail_cache = None
         self._character_detail_loading = False
         self._character_detail_error = ''
+        self.track_unattributed_damage = False
+
+    def set_track_unattributed_damage(self, enabled: bool) -> None:
+        self.track_unattributed_damage = bool(enabled)
 
     def set_detail_target(self, addr: int = 0) -> None:
         """选择需要完整实时详情的敌人；0 表示停止详情读取。"""
@@ -957,7 +967,8 @@ class EnemyPollWorker(QThread):
                             'play_time': 0.0, 'enemies': [], 'msg': f'轮询出错: {e}'}
                 if self.character_reader is not None:
                     try:
-                        char_snap = self.character_reader.poll_fast()
+                        char_snap = self.character_reader.poll_fast(
+                            snap.get('enemies'), self.track_unattributed_damage)
                     except Exception as e:
                         char_snap = {
                             'ok': False, 'characters': [],
@@ -965,6 +976,8 @@ class EnemyPollWorker(QThread):
                         }
                     snap['character_ok'] = bool(char_snap.get('ok'))
                     snap['characters'] = list(char_snap.get('characters', ()))
+                    snap['global_damage_summary'] = char_snap.get(
+                        'global_damage_summary')
                     snap['character_msg'] = char_snap.get('msg', '')
                     snap['character_frame_ms'] = char_snap.get('frame_ms', 0.0)
                 self._append_detail(snap)
@@ -1502,6 +1515,8 @@ class CoachWindow(QMainWindow):
         self._character_dec = default_character_precision()
         self._character_last: list = []
         self._character_detail_dialog: CharacterDetailDialog | None = None
+        self._global_damage_detail_dialog: GlobalDamageDetailDialog | None = None
+        self._character_overview_dialog: CharacterOverviewDialog | None = None
         self._character_visible_cols = load_character_columns(
             self._settings, 'character_table/visible_columns')
         self._character_widths_fitted = False
@@ -1815,15 +1830,30 @@ class CoachWindow(QMainWindow):
         self.btn_character_fit = QPushButton("列宽自适应")
         self.btn_character_fit.clicked.connect(self._fit_character_columns)
         self._style_muted_button(self.btn_character_fit)
+        self.btn_character_overview = QPushButton("数据总览")
+        self.btn_character_overview.clicked.connect(
+            self._open_character_overview)
+        self.btn_character_overview.setToolTip(
+            "实时查看各干员总输出与治疗量占比饼图")
+        self._style_muted_button(self.btn_character_overview)
         self.chk_character_tokens = QCheckBox("显示召唤物/装置")
         self.chk_character_tokens.setChecked(True)
         self.chk_character_tokens.setToolTip(
             "取消后只显示普通干员；友方召唤物和可部署装置仍可在详情中单独识别")
         self.chk_character_tokens.toggled.connect(self._on_character_filter)
+        self.chk_unattributed_damage = QCheckBox("无来源总伤")
+        self.chk_unattributed_damage.setChecked(False)
+        self.chk_unattributed_damage.setToolTip(
+            "从勾选时开始启用敌人生命高速差分，补充 BattleStats 不记录的无来源伤害；"
+            "默认关闭以节省性能")
+        self.chk_unattributed_damage.toggled.connect(
+            self._on_unattributed_damage_tracking)
         for widget in (
                 self.btn_character_scan, self.btn_character_stop,
                 self.btn_character_precision, self.btn_character_columns,
-                self.btn_character_fit, self.chk_character_tokens):
+                self.btn_character_fit, self.btn_character_overview,
+                self.chk_character_tokens,
+                self.chk_unattributed_damage):
             row_character.addWidget(widget)
         self.lbl_character_status = QLabel("未开始扫描")
         self.lbl_character_status.setProperty('role', 'muted')
@@ -2260,6 +2290,12 @@ class CoachWindow(QMainWindow):
         if self._character_detail_dialog is not None:
             self._character_detail_dialog.close()
             self._character_detail_dialog = None
+        if self._global_damage_detail_dialog is not None:
+            self._global_damage_detail_dialog.close()
+            self._global_damage_detail_dialog = None
+        if self._character_overview_dialog is not None:
+            self._character_overview_dialog.close()
+            self._character_overview_dialog = None
         self.enemy_table.setRowCount(0)
         self._enemy_last.clear()
         self._enemy_rows.clear()
@@ -2450,6 +2486,8 @@ class CoachWindow(QMainWindow):
         self._stop_enemy_poll()
         self._enemy_poll = EnemyPollWorker(
             self._enemy_reader, self._character_reader)
+        self._enemy_poll.set_track_unattributed_damage(
+            self.chk_unattributed_damage.isChecked())
         self._enemy_poll.snapshot.connect(self._on_enemy_snapshot)
         self._enemy_poll.start()
         self.btn_enemy_stop.setEnabled(True)
@@ -2822,6 +2860,11 @@ class CoachWindow(QMainWindow):
                     character_dialog.live_status.setStyleSheet('color:#888888;')
             elif snap.get('character_detail_error'):
                 character_dialog.set_live_error(snap['character_detail_error'])
+        global_damage_dialog = self._global_damage_detail_dialog
+        if global_damage_dialog is not None:
+            summary = snap.get('global_damage_summary')
+            if summary is not None:
+                global_damage_dialog.update_summary(summary)
         st = ENEMY_STATE_NAMES.get(snap['state'], '?') if snap['state'] >= 0 else '-'
         spd = enemy_gs.SpeedLevel.NAMES.get(snap['speed_level'], '?') if snap['speed_level'] >= 0 else '-'
         t = int(snap['play_time'])
@@ -2844,6 +2887,9 @@ class CoachWindow(QMainWindow):
         self.lbl_enemy_status.setText(text)
         self._render_enemy_table(snap['enemies'])
         characters = list(snap.get('characters', ()))
+        overview_dialog = self._character_overview_dialog
+        if overview_dialog is not None:
+            overview_dialog.update_characters(characters)
         if snap.get('character_ok'):
             char_ms = float(snap.get('character_frame_ms', 0.0) or 0.0)
             if char_ms > 0:
@@ -2853,8 +2899,12 @@ class CoachWindow(QMainWindow):
             # 表格中的生命、技力和伤害统计仍保持原本的高频刷新。
             if now - self._character_frame_status_ts >= 0.5:
                 self._character_frame_status_ts = now
-                ordinary = sum(not character.is_token for character in characters)
-                tokens = len(characters) - ordinary
+                real_characters = [character for character in characters
+                                   if not getattr(
+                                       character, 'is_global_damage_summary', False)]
+                ordinary = sum(not character.is_token
+                               for character in real_characters)
+                tokens = len(real_characters) - ordinary
                 average_ms = (self._character_frame_ms_sum
                               / self._character_frame_ms_count
                               if self._character_frame_ms_count else 0.0)
@@ -3232,7 +3282,9 @@ class CoachWindow(QMainWindow):
     def _filtered_characters(self, characters):
         if self.chk_character_tokens.isChecked():
             return list(characters)
-        return [character for character in characters if not character.is_token]
+        return [character for character in characters
+                if (not character.is_token
+                    or getattr(character, 'is_global_damage_summary', False))]
 
     def _render_character_table(self, characters) -> None:
         self._character_last = list(characters)
@@ -3287,7 +3339,10 @@ class CoachWindow(QMainWindow):
         sp_bar.setTextVisible(True)
         tbl.setCellWidget(row, sp_col, sp_bar)
         detail = QPushButton('详情')
-        detail.setToolTip('显示该干员/召唤物的完整属性、状态、技能、Buff、天赋与元素损伤')
+        if addr < 0:
+            detail.setToolTip('显示全局总伤、可归属伤害与全部无来源/未归属伤害')
+        else:
+            detail.setToolTip('显示该干员/召唤物的完整属性、状态、技能、Buff、天赋与元素损伤')
         detail.clicked.connect(
             lambda _checked=False, target=addr: self._open_character_detail(target))
         tbl.setCellWidget(row, detail_col, detail)
@@ -3308,6 +3363,19 @@ class CoachWindow(QMainWindow):
             item.setToolTip(text)
 
         hp_bar = tbl.cellWidget(row, CHARACTER_COLUMN_INDEX['hp'])
+        sp_bar = tbl.cellWidget(row, CHARACTER_COLUMN_INDEX['sp'])
+        if getattr(character, 'is_global_damage_summary', False):
+            hp_bar.setRange(0, 1)
+            hp_bar.setValue(0)
+            hp_bar.setFormat('-')
+            hp_bar.setStyleSheet(
+                'QProgressBar::chunk { background-color: #777777; }')
+            sp_bar.setRange(0, 1)
+            sp_bar.setValue(0)
+            sp_bar.setFormat('-')
+            sp_bar.setStyleSheet(
+                'QProgressBar::chunk { background-color: #777777; }')
+            return
         hp_max = max(1, int(character.max_hp))
         hp_bar.setMaximum(hp_max)
         hp_bar.setValue(max(0, min(hp_max, int(character.hp))))
@@ -3322,7 +3390,6 @@ class CoachWindow(QMainWindow):
             hp_bar.setStyleSheet(
                 f'QProgressBar::chunk {{ background-color: {color}; }}')
 
-        sp_bar = tbl.cellWidget(row, CHARACTER_COLUMN_INDEX['sp'])
         sp_max = max(1, int(character.max_sp))
         sp_bar.setMaximum(sp_max)
         sp_bar.setValue(max(0, min(sp_max, int(character.sp))))
@@ -3344,6 +3411,25 @@ class CoachWindow(QMainWindow):
         self._character_bar_colors.clear()
         self._character_skill_lines.clear()
         self._render_character_table(self._character_last)
+
+    def _on_unattributed_damage_tracking(self, checked: bool) -> None:
+        poll = self._enemy_poll
+        if poll is not None:
+            poll.set_track_unattributed_damage(checked)
+        if not checked:
+            # 下一帧读取器会清除无来源累计；先给用户即时反馈。
+            self.lbl_character_status.setText('无来源总伤统计已关闭')
+
+    def _open_character_overview(self) -> None:
+        dialog = CharacterOverviewDialog(
+            self._module_dialog_parent(self.box_character),
+            self._character_last)
+        self._character_overview_dialog = dialog
+        try:
+            dialog.exec()
+        finally:
+            if self._character_overview_dialog is dialog:
+                self._character_overview_dialog = None
 
     def _on_character_precision(self) -> None:
         dialog = CharacterPrecisionDialog(
@@ -3391,6 +3477,7 @@ class CoachWindow(QMainWindow):
             'row': 38, 'name': 80, 'kind': 72, 'cid': 105, 'profession': 62,
             'level': 72, 'hp': 180, 'sp': 125, 'pos': 70,
             'action_state': 72, 'abnormal_status': 90, 'skill': 145,
+            'global_total_damage': 105,
             'detail': 62,
         }
         maximums = {
@@ -3423,6 +3510,16 @@ class CoachWindow(QMainWindow):
         if character is None:
             QMessageBox.information(
                 self, '干员详情', '该干员已离场或对象已失效。')
+            return
+        if getattr(character, 'is_global_damage_summary', False):
+            dialog = GlobalDamageDetailDialog(
+                self._module_dialog_parent(self.box_character_table), character)
+            self._global_damage_detail_dialog = dialog
+            try:
+                dialog.exec()
+            finally:
+                if self._global_damage_detail_dialog is dialog:
+                    self._global_damage_detail_dialog = None
             return
         dialog = CharacterDetailDialog(
             self._module_dialog_parent(self.box_character_table), character)

@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 from tools.enemy_health import game_structs as gs
 from tools.enemy_health.enemy_reader import (
-    EnemyInfo, EnemyReader, summarize_custom_shields,
+    EnemyInfo, EnemyReader, spine_track_remaining, summarize_custom_shields,
 )
 from tools.enemy_health.update_from_unpack import extract_preunpacked, parse_dump
 from tools.enemy_health.memcore import (
@@ -165,10 +165,137 @@ class EnemyDetailModelTests(unittest.TestCase):
         self.assertEqual(gs.EntityFields.M_ATTRIBUTES, 0xB0)
         self.assertEqual(gs.EntityFields.ID, 0x148)
         self.assertEqual(gs.EnemyFields.DATA, 0x510)
-        self.assertEqual(gs.EnemyFields.READ_SIZE, 0x548)
+        self.assertEqual(gs.EnemyFields.ATTACK_ABILITY_CASTED, 0x4E8)
+        self.assertEqual(gs.EnemyFields.COMBAT_NEXT_ESCAPE_TIME, 0x4F8)
+        self.assertEqual(gs.EnemyFields.ATTACK_WRAPPER, 0x550)
+        self.assertEqual(gs.EnemyFields.COMBAT_WRAPPER, 0x558)
+        self.assertEqual(gs.EnemyFields.READ_SIZE, 0x568)
         self.assertEqual(gs.BuffFields.IS_ACTUALLY_ENABLED, 0x1ED)
         self.assertEqual(gs.AbnormalFlag.E_NUM, 46)
         self.assertEqual(gs.ABNORMAL_FLAG_CN_NAMES[45], '地面束缚')
+
+    def test_enemy_combat_post_action_uses_exact_deadline_frames(self):
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        reader = EnemyReader(mc=FakeMem())
+        enemy = EnemyInfo(0x1000)
+        enemy.state_id = gs.EnemyState.COMBAT
+        enemy.action = {
+            'casting': False,
+            'combat_escape_time': 12.0,
+        }
+        reader._finalize_enemy_action(
+            enemy, now=11.5, frame=900, frame_duration=1 / 30)
+        self.assertEqual(enemy.action['phase'], 'combat_recovery')
+        self.assertEqual(enemy.action['remaining_frames'], 15)
+        self.assertAlmostEqual(enemy.action['remaining'], 0.5)
+        self.assertEqual(enemy.action['remaining_kind'], '后摇剩余')
+
+    def test_enemy_casting_reports_elapsed_but_does_not_fabricate_remaining(self):
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        reader = EnemyReader(mc=FakeMem())
+        enemy = EnemyInfo(0x1000)
+        enemy.state_id = gs.EnemyState.ATTACK
+        enemy.action = {'casting': True, 'cast_start_frame': 120}
+        reader._finalize_enemy_action(
+            enemy, now=5.0, frame=138, frame_duration=1 / 30)
+        self.assertEqual(enemy.action['elapsed_frames'], 18)
+        self.assertNotIn('remaining_frames', enemy.action)
+        self.assertEqual(enemy.action['remaining_kind'], '动画/能力回调决定')
+
+    def test_spine_non_loop_track_has_exact_scaled_remaining_time(self):
+        remaining = spine_track_remaining(
+            0.0, 3.0, 1.5, entry_scale=1.0,
+            state_scale=1.0, skeleton_scale=2.0, loop=False)
+        self.assertAlmostEqual(remaining, 0.75)
+        self.assertIsNone(spine_track_remaining(
+            0.0, 3.0, 1.5, 1.0, 1.0, 1.0, loop=True))
+
+    def test_enemy_attack_uses_spine_track_without_inventing_next_action(self):
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        reader = EnemyReader(mc=FakeMem())
+        enemy = EnemyInfo(0x1000)
+        enemy.state_id = gs.EnemyState.ATTACK
+        enemy.action = {
+            'casting': True, 'cast_start_frame': 100,
+            'animation_remaining': 1.2, 'animation_exact': True,
+        }
+        reader._finalize_enemy_action(
+            enemy, now=5.0, frame=130, frame_duration=1 / 30)
+        self.assertAlmostEqual(enemy.action['remaining'], 1.2)
+        self.assertEqual(enemy.action['remaining_frames'], 36)
+        self.assertEqual(enemy.action['clock_source'], 'spine_track')
+        self.assertEqual(enemy.action['next_action_confidence'], 'unselected')
+        self.assertEqual(enemy.action['next_action'], '等待游戏判定')
+
+    def test_enemy_shortest_skill_cd_is_not_reported_as_game_preselection(self):
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        reader = EnemyReader(mc=FakeMem())
+        enemy = EnemyInfo(0x1000)
+        enemy.state_id = gs.EnemyState.MOVE
+        enemy.skills = [('短CD技能', 1.0, 10.0), ('长CD技能', 8.0, 20.0)]
+        enemy.action = {
+            'attack_base': {'cd_remaining': 0.0},
+            'combat_ability_picked': False,
+        }
+        reader._finalize_enemy_action(
+            enemy, now=5.0, frame=130, frame_duration=1 / 30)
+        self.assertEqual(enemy.action['next_action'], '等待游戏判定')
+        self.assertEqual(enemy.action['next_action_confidence'], 'unselected')
+        self.assertNotIn('短CD技能', enemy.action['next_action'])
+
+    def test_enemy_picked_combat_ability_is_confirmed_next_action(self):
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        reader = EnemyReader(mc=FakeMem())
+        enemy = EnemyInfo(0x1000)
+        enemy.state_id = gs.EnemyState.MOVE
+        enemy.action = {
+            'combat_ability_picked': True,
+            'combat_wrapper_ability_addr': 0x2000,
+        }
+        reader._finalize_enemy_action(
+            enemy, now=5.0, frame=130, frame_duration=1 / 30)
+        self.assertEqual(enemy.action['next_action_confidence'], 'confirmed')
+        self.assertIn('战斗能力', enemy.action['next_action'])
+
+    def test_current_combat_pick_is_not_mislabeled_as_next_action(self):
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        reader = EnemyReader(mc=FakeMem())
+        enemy = EnemyInfo(0x1000)
+        enemy.state_id = gs.EnemyState.COMBAT
+        enemy.action = {
+            'casting': True,
+            'combat_ability_picked': True,
+            'combat_wrapper_ability_addr': 0x2000,
+            'combat_ability_addr': 0x2000,
+        }
+        reader._finalize_enemy_action(
+            enemy, now=5.0, frame=130, frame_duration=1 / 30)
+        self.assertEqual(enemy.action['next_action_confidence'], 'unselected')
+        self.assertEqual(enemy.action['next_action'], '等待游戏判定')
 
     def test_dump_parser_tracks_namespace_fields_and_enum_values(self):
         source = (

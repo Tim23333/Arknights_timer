@@ -135,6 +135,7 @@ class EntityFields:
 # Unit / Character（友方干员与召唤物）[2026-08-03 现网实测]
 # ============================================================
 class UnitFields:
+    ANIMATOR = 0x198              # UnitAnimator*
     CURRENT_MODE = 0x200          # UnitMode*
     OVERRIDE_ATTACK = 0x208       # Ability*
     OVERRIDE_COMBAT = 0x218       # Ability*
@@ -142,6 +143,71 @@ class UnitFields:
     DYNAMIC_ABILITIES = 0x278     # List<Ability>
     SP_SHOWN_BUFF = 0x280         # Buff*
     ATTACK_RANGE_TILES = 0x2A0    # List<Tile>
+
+
+class UnitModeFields:
+    """UnitMode 中决定普通攻击/战斗动作的能力指针。"""
+    COMBAT = 0x38                 # Ability*
+    ATTACK = 0x40                 # Ability*
+    READ_SIZE = 0x48
+
+
+class UnitAnimatorFields:
+    """两类常用 UnitAnimator 的 CurrentAniState 内联字段。"""
+    SPINE_CURRENT_STATE = 0xD8   # SpineAnimator.CurrentAniState
+    MESH_CURRENT_STATE = 0x180   # MeshAnimator.CurrentAniState
+    CURRENT_STATE_SIZE = 0x10    # string* animKey + float playSpeed
+
+
+class CharacterAnimatorFields:
+    ACTIVE_FACE = 0x148          # CharacterAnimator.FaceConfiguration*
+
+
+class SingleSpineAnimatorFields:
+    SKELETON = 0xF0             # Spine.Unity.SkeletonAnimation*
+
+
+class MultiSpineAnimatorFields:
+    FACES = 0xF0                # List<SubSpineConfig>*
+    ACTIVE_SPINE_INDEX = 0x100  # int32
+
+
+class SpineFaceFields:
+    SKELETON = 0x10             # FaceConfiguration/SubSpineConfig.skeleton
+
+
+class SkeletonAnimationFields:
+    STATE = 0x100               # Spine.AnimationState*
+    LOOP = 0x138                # bool
+    TIME_SCALE = 0x13C          # float
+
+
+class SpineAnimationStateFields:
+    TRACKS = 0x18               # Spine.ExposedList<TrackEntry>*
+    TIME_SCALE = 0x6C           # float
+
+
+class SpineExposedListFields:
+    ITEMS = 0x10                # T[]
+    COUNT = 0x18                # int32
+
+
+class SpineTrackEntryFields:
+    ANIMATION = 0x10            # Spine.Animation*
+    NEXT = 0x18                 # 已排队的下一轨道项
+    LOOP = 0x64                 # bool
+    ANIMATION_START = 0x74      # float
+    ANIMATION_END = 0x78        # float
+    TRACK_TIME = 0x88           # float
+    TRACK_END = 0x94            # float；通常为 float.MaxValue，不能当动画终点
+    TIME_SCALE = 0x98           # float
+    READ_SIZE = 0xB0
+
+
+class SpineAnimationFields:
+    NAME = 0x10                 # string*
+    DURATION = 0x28             # float
+    READ_SIZE = 0x30
 
 
 class CharacterFields:
@@ -153,7 +219,10 @@ class CharacterFields:
     SKILL = 0x3D8                 # BasicSkill*
     SKILL_DATA = 0x3E0            # SkillData*
     MAX_ES_RATIO = 0x440          # FP
-    CURRENT_SKIN = 0x458          # CharSkinData*
+    # 旧 dump.cs 中此槽是 currentSkin；2026-08-04 现网为 CharacterAnimator*。
+    # Unit.ANIMATOR 对我方实例为 NULL，因此动作轨道必须从此槽兜底。
+    RUNTIME_ANIMATOR = 0x458      # CharacterAnimator* [现网实测]
+    CURRENT_SKIN = 0x458          # 兼容旧名称，勿用于当前现网类型判断
     DECK_BUFF_DATA = 0x460        # object*
     DECK_BUFF_BLACKBOARD = 0x468  # Blackboard*
     DEPLOY_COST_THIS_TIME = 0x504 # int32
@@ -320,6 +389,12 @@ class AbilityFields:
     READ_SIZE = 0xC0
 
 
+class StateNodeFields:
+    """Character 的 Attack/Combat/Skill 状态节点公共计时槽。"""
+    ACTION_TIME = 0x18            # Attack/Combat=绝对截止时间；Skill=剩余后摇
+    READ_SIZE = 0x20
+
+
 class BasicTalentFields:
     OVERWRITE_TALENT_KEY = 0x18
     OWNER = 0x30
@@ -386,10 +461,15 @@ class EnemyFields:
     M_POS_IN_LAST_FRAME = 0x408 # Vector2 (float x,y) 上一帧地图坐标
     M_ALL_SKILLS = 0x448        # EnemySkill[] 全部技能组件
     ROUTE_SPAWN_POS = 0x4B0     # GridPosition (int32 row,col) 出生格
-    READ_SIZE = 0x548           # 含 m_skills、EnemyData 与 Options.actionData
+    ATTACK_ABILITY_CASTED = 0x4E8  # Ability* 当前普通攻击能力
+    COMBAT_ABILITY_CASTED = 0x4F0  # Ability* 当前战斗/技能能力
+    COMBAT_NEXT_ESCAPE_TIME = 0x4F8 # FP 战斗动作可退出的绝对时间
     M_SKILLS = 0x4D0            # List<EnemySkill> 激活技能列表
     DATA = 0x510                # LevelData.EnemyData*
     OPTIONS = 0x518             # inline Enemy.Options
+    ATTACK_WRAPPER = 0x550      # Enemy.AttackWrapper*
+    COMBAT_WRAPPER = 0x558      # Enemy.CombatWrapper*
+    READ_SIZE = 0x568           # 含两个动作 Wrapper 与动作计时字段
 
 
 class EnemyOptionsFields:
@@ -403,14 +483,37 @@ class EnemyOptionsFields:
 # 注意: EnemySkill 是 MonoBehaviour, 字段含 0x10 对象头 + 0x8 m_CachedPtr
 # ============================================================
 class EnemySkillFields:
+    FAMILY_MASK = 0x18          # Ability.FamilyGroupMask
+    CAST_LIKE_ATTACK = 0x3B     # bool，以普通攻击流程施放
     MAX_TRIGGER_TIME = 0x2C     # int32 最多触发次数
     OVERWRITE_INIT_CD = 0x34    # int32 初始冷却覆盖
     M_SP_COST = 0x3C            # int32
     M_TRIGGER_CNT = 0x40        # int32 已触发次数
     M_COOLDOWN_TIMER = 0x48     # PeriodicTimer* 冷却计时器
     M_MAIN_ABILITY = 0x58       # Ability*
+    ABILITY = 0x70              # Ability* 当前运行时能力
+    PARENT_MODE = 0x78          # UnitMode*
     DATA = 0x80                 # ESkillData* 静态配置
     OWNER = 0x88                # Enemy*
+
+
+class EnemyAttackWrapperFields:
+    CURRENT_TARGET = 0x18       # Entity*
+    CURRENT_SKILL = 0x20        # EnemySkill*
+    CURRENT_ABILITY = 0x28      # Ability*
+    LAST_ABILITY = 0x30         # Ability*
+    LAST_SKILL = 0x38           # EnemySkill*
+    READ_SIZE = 0x40
+
+
+class EnemyCombatWrapperFields:
+    PICKED_ABILITY = 0x18       # Ability*
+    PICKED_SKILL = 0x20         # EnemySkill*
+    ABILITY_PICKED = 0x28       # bool
+    INTERRUPTED = 0x29          # bool
+    LAST_ABILITY = 0x30         # Ability*
+    LAST_SKILL = 0x38           # EnemySkill*
+    READ_SIZE = 0x40
 
 
 class PeriodicTimerFields:
@@ -453,6 +556,8 @@ class AbnormalComboManagerFields:
 
 class StateMachineFields:
     CURRENT_STATE_ID = 0x48
+    CURRENT_STATE = 0x50        # 当前 StateNode*
+    READ_SIZE = 0x58
 
 
 class EPControllerFields:
@@ -810,6 +915,7 @@ class BattleControllerStaticFields:
     FIXED_FRAME_COUNT = 0x14            # uint32
     FIXED_PLAY_TIME = 0x18              # FP；Scheduler 各 startTime 使用同一时基
     FIXED_PLAY_TIME_FLOAT = 0x28        # float，与 FIXED_PLAY_TIME 同步
+    DELTA_PLAY_TIME_FP = 0x48           # FP；当前每逻辑帧推进的战斗时间
 
 
 class Il2CppClassFields:

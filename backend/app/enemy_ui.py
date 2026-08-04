@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
 )
 
 from tools.enemy_health import game_structs as gs
+from tools.enemy_health.enemy_reader import countdown_text
 
 from .enemy_buff_descriptions import (
     buff_chinese_name, describe_active_buff, describe_blackboard, describe_buff_def,
@@ -49,6 +50,9 @@ ENEMY_COLUMN_DEFS = [
     _col('hp', '血量', 185, True, True),
     _col('pos', '坐标', 110, True, True),
     _col('action_state', '行为状态', 72, True),
+    _col('action_phase', '动作阶段', 180, True),
+    _col('remaining_time', '剩余帧/时间', 170, True),
+    _col('next_action', '下一动作', 190, True),
     _col('abnormal_status', '异常状态', 160, True),
     _col('immune_status', '状态免疫', 160, False),
 ]
@@ -140,6 +144,18 @@ def load_visible_columns(settings, key):
     # 此后若主动取消勾选，迁移标记会阻止下一次启动再次强制打开。
     if not migrated:
         chosen.add('shield')
+        settings.setValue(migration_key, True)
+    migration_key = key + '/action_phase_v1'
+    marker = settings.value(migration_key, False)
+    migrated = marker is True or str(marker).lower() in ('1', 'true', 'yes')
+    if not migrated:
+        chosen.update(('action_phase', 'remaining_time'))
+        settings.setValue(migration_key, True)
+    migration_key = key + '/next_action_v1'
+    marker = settings.value(migration_key, False)
+    migrated = marker is True or str(marker).lower() in ('1', 'true', 'yes')
+    if not migrated:
+        chosen.add('next_action')
         settings.setValue(migration_key, True)
     return chosen
 
@@ -299,6 +315,17 @@ def format_column_value(key, enemy, decimals, row=0):
         return f'({enemy.pos_x:.{p}f}, {enemy.pos_y:.{p}f})'
     if key == 'action_state':
         return gs.ENEMY_STATE_NAMES.get(enemy.state_id, f'未知({enemy.state_id})')
+    if key == 'action_phase':
+        return enemy.action_text
+    if key == 'remaining_time':
+        return countdown_text(getattr(enemy, 'action', {}))
+    if key == 'next_action':
+        action = getattr(enemy, 'action', {}) or {}
+        value = action.get('next_action') or '-'
+        prefix = {
+            'confirmed': '[确定] ', 'unselected': '[未预选] ',
+        }.get(action.get('next_action_confidence'), '')
+        return prefix + value if value != '-' else value
     if key == 'abnormal_status':
         return enemy.status_text()
     if key == 'immune_status':
@@ -475,10 +502,38 @@ class EnemyDetailDialog(QDialog):
         life_text = {
             'pending': '未出场', 'departed': '已离场', 'active': '场上',
         }.get(lifecycle, '存活' if enemy.alive else '已离场')
+        action = getattr(enemy, 'action', {}) or {}
         overview = [
             ('实例地址', hex(enemy.addr)), ('实例ID', enemy.eid), ('敌人编号', enemy.code or '-'),
             ('生存状态', life_text),
-            ('行为状态', state), ('异常状态', enemy.status_text()),
+            ('行为状态', state), ('动作阶段', enemy.action_text),
+            ('动作说明', action.get('detail') or '-'),
+            ('剩余帧/时间', countdown_text(action)),
+            ('倒计时含义', action.get('remaining_kind') or '-'),
+            ('倒计时来源', action.get('clock_source') or '-'),
+            ('精确动画计时', '是（当前速度且未被中断）'
+             if action.get('animation_exact') else '否/不适用'),
+            ('下一动作', action.get('next_action') or '-'),
+            ('下一动作可信度', {
+                'confirmed': '游戏已写入', 'unselected': '游戏尚未预选',
+            }.get(action.get('next_action_confidence'), '-')),
+            ('下一动作依据', action.get('next_action_detail') or '-'),
+            ('当前逻辑帧', action.get('current_frame')
+             if action.get('current_frame') is not None else '-'),
+            ('动作已进行帧数', action.get('elapsed_frames')
+             if action.get('elapsed_frames') is not None else '-'),
+            ('当前动画', action.get('animation_track_name')
+             or action.get('animation_key') or '-'),
+            ('动画播放速度', action.get('animation_track_speed')
+             if action.get('animation_track_speed') is not None
+             else action.get('animation_speed', '-')),
+            ('动画已播放时间', action.get('animation_track_time')
+             if action.get('animation_track_time') is not None else '-'),
+            ('循环动画', ('是' if action.get('animation_loop') else '否')
+             if action.get('animation_loop') is not None else '-'),
+            ('当前技能', action.get('skill_name') or '-'),
+            ('已就绪技能', '、'.join(action.get('ready_skills') or ()) or '-'),
+            ('异常状态', enemy.status_text()),
             ('当前生命', enemy.hp), ('最大生命', enemy.max_hp),
             ('元素护盾', enemy.es), ('通用伤害护盾', enemy.shield),
             ('特殊伤害护盾', getattr(enemy, 'special_shield', 0.0)),
