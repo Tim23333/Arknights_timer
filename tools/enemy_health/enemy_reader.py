@@ -391,6 +391,8 @@ class EnemyReader:
         self.unit_enemies_addr = 0
         # 轮询缓存
         self._names = {}          # enemy addr -> (eid, name, code)
+        self._buff_source_names = {}  # buff 来源实体 addr -> 名称 (干员/召唤物等)
+        self._char_names = None   # charId -> 中文名 (惰性加载)
         self._attr_cache = {}     # enemy addr -> cachedData 数组地址
         self._db = None
         self._stale_cnt = 0
@@ -892,6 +894,7 @@ class EnemyReader:
         self._plan_by_id = {}
         self._roster_last = {}
         self._addr_to_roster = {}
+        self._buff_source_names = {}   # 新一局实体地址重新分配, 来源缓存作废
         self._dynamic_roster_seq = 0
         self._roster_initialized = False
         self._plan_level_id = level_id or ''
@@ -3330,6 +3333,8 @@ class EnemyReader:
 
     def _read_enemy(self, ep, with_runtime=True):
         blk = self.mc.read(ep, gs.EnemyFields.READ_SIZE)
+        if not blk:
+            blk = self.mc.read(ep, gs.EnemyFields.READ_SIZE)  # 瞬态失败补读一次
         info = self._parse_enemy_block(ep, blk)
         if not blk or len(blk) < max(gs.EntityFields.BUFF_CONTAINER + 8,
                                     gs.EnemyFields.DATA + 8):
@@ -3483,6 +3488,18 @@ class EnemyReader:
             else:
                 clusters.append([p])
         return clusters
+
+    def _refill_failed_reads(self, reqs, results):
+        """同帧重读 results 中失败的项并回填。敌人仍在 List 中, 一次通道
+        瞬态抖动不应被当成"敌人消失"; 重读也失败才按本帧缺失 (真实消失)
+        处理。通道彻底故障时异常上抛, 由 poll_fast 回退慢速 poll()。"""
+        failed = [i for i, data in enumerate(results) if not data]
+        if failed:
+            retry = self._chan.batch_read([reqs[i] for i in failed])
+            for i, data in zip(failed, retry):
+                if data:
+                    results[i] = data
+        return results
 
     def _refresh_runtime_chan(self, eps, infos):
         """批量刷新状态机、损伤条、异常状态/免疫计数和护盾。
@@ -3887,6 +3904,9 @@ class EnemyReader:
         if read_list:
             d = res[slot['list']]
             if not d:
+                # 通道瞬态失败: 同帧补读一次再判 stale, 避免整帧数据链假失效
+                d = self._chan.batch_read([(self.list_addr, 0x20)])[0]
+            if not d:
                 snap['msg'] = 'List 读取失败'
                 return self._on_stale(snap)
             items = _u64(d, gs.ListInternal.ITEMS)
@@ -3916,6 +3936,7 @@ class EnemyReader:
             scheduler_ptrs = []
             unit_ptrs = [] if unit_valid else list(self._uf_ptrs)
             array_data = self._chan.batch_read(array_reqs) if array_reqs else []
+            array_data = self._refill_failed_reads(array_reqs, array_data)
             for (kind, count), arr in zip(array_kinds, array_data):
                 if not arr:
                     if kind == 'scheduler':
@@ -3948,6 +3969,11 @@ class EnemyReader:
             cluster_res = None
         if cluster_res is None:
             cluster_res = res[slot['c0']:slot['c0'] + len(clusters)]
+        # 敌人仍在 List 中但块读取瞬态失败时, 同帧补读一次; 仍读不到才按
+        # 本帧缺失处理, 不把一次通道抖动渲染成"敌人离场又回来"。
+        cluster_res = self._refill_failed_reads(
+            [(c[0], c[-1] + gs.EnemyFields.READ_SIZE - c[0]) for c in clusters],
+            list(cluster_res))
 
         # ---- 解析敌人块 (hp/direction/finish + id/attr 指针 + 坐标) ----
         infos = {}
@@ -4400,8 +4426,18 @@ class EnemyReader:
         if not unique:
             return {}
         size = gs.Il2CppString.CHARS + max_chars * 2
+        results = list(self._detail_batch_read([(p, size) for p in unique]))
+        # 通道瞬态失败同批补读一次: buff 每秒重建时字符串读失败会把键名渲染成 '?'
+        failed = [i for i, data in enumerate(results)
+                  if not data or len(data) < gs.Il2CppString.CHARS]
+        if failed:
+            for i, data in zip(failed,
+                               self._detail_batch_read([(unique[i], size)
+                                                        for i in failed])):
+                if data:
+                    results[i] = data
         out = {}
-        for ptr, data in zip(unique, self._detail_batch_read([(p, size) for p in unique])):
+        for ptr, data in zip(unique, results):
             if not data or len(data) < gs.Il2CppString.CHARS:
                 continue
             count = _i32(data, gs.Il2CppString.LENGTH)
@@ -4471,6 +4507,57 @@ class EnemyReader:
                 for ptr, data in zip(unique, self._detail_batch_read([(p, size) for p in unique]))
                 if data}
 
+    def _get_char_names(self):
+        """惰性加载 charId -> 中文名 (与 deploy_tracker 共用同一份静态表)。"""
+        if self._char_names is None:
+            self._char_names = {}
+            try:
+                from tools.deploy_tracker.char_names import load_char_names
+                root = os.path.abspath(os.path.join(
+                    os.path.dirname(__file__), '..', '..'))
+                self._char_names = load_char_names(root)
+            except Exception:
+                pass
+        return self._char_names
+
+    def _resolve_buff_source_names(self, addrs):
+        """批量解析 buff 来源实体名称。
+
+        敌人命中 ``_names``；干员/召唤物等其他实体读 Entity.id 字符串后按
+        静态表 (char_*/token_* -> 中文名, enemy_* -> 敌人数据库) 映射，
+        再退化为 id 原文。成功的结果按地址缓存；读不到的不缓存，下一轮重试。
+        """
+        out = {}
+        pending = []
+        for addr in dict.fromkeys(addrs):
+            if not self.mc.is_ptr(addr):
+                continue
+            if addr in self._names:
+                out[addr] = self._names[addr][1]
+            elif self._buff_source_names.get(addr):
+                out[addr] = self._buff_source_names[addr]
+            else:
+                pending.append(addr)
+        if not pending:
+            return out
+        blocks = self._detail_batch_read(
+            [(addr, gs.EntityFields.ID + 8) for addr in pending])
+        id_ptrs = [_u64(blk, gs.EntityFields.ID) if blk else 0
+                   for blk in blocks]
+        strings = self._read_strings(id_ptrs)
+        if self._db is None:
+            self._db = load_enemy_db()
+        char_names = self._get_char_names()
+        for addr, id_ptr in zip(pending, id_ptrs):
+            eid = strings.get(id_ptr, '') if id_ptr else ''
+            if not eid:
+                continue
+            name = char_names.get(eid.split('@', 1)[0]) \
+                or (self._db.get(eid) or {}).get('name') or eid
+            self._buff_source_names[addr] = name
+            out[addr] = name
+        return out
+
     def _read_active_buffs(self, container_ptr):
         """读取敌人 BuffContainer 中当前有效的 Buff。"""
         if not self.mc.is_ptr(container_ptr):
@@ -4535,6 +4622,9 @@ class EnemyReader:
         blackboards = self._read_blackboards(bb_ptrs)
         fp_arrays = self._read_plain_fp_arrays(fp_ptrs)
 
+        src_names = self._resolve_buff_source_names(
+            [_u64(data, gs.BuffFields.M_SOURCE) for _, data in records])
+
         out = []
         for ptr, data in records:
             mask = _u64(data, gs.BuffFields.ATTRIBUTE_MASK)
@@ -4560,9 +4650,7 @@ class EnemyReader:
                     'final_scaler': scale.get(idx, 1.0),
                 })
             source = _u64(data, gs.BuffFields.M_SOURCE)
-            source_name = ''
-            if source in self._names:
-                source_name = self._names[source][1]
+            source_name = src_names.get(source, '')
             key_ptr = _u64(data, gs.BuffFields.KEY)
             override_ptr = _u64(data, gs.BuffFields.OVERRIDE_KEY)
             effect_ptr = _u64(data, gs.BuffFields.EFFECT_KEY)

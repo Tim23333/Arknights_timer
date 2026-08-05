@@ -786,5 +786,232 @@ class EnemyDetailModelTests(unittest.TestCase):
             EnemyReader._union_enemy_ptrs([3, 1, 2], [1, 4, 3]),
             [3, 1, 2, 4])
 
+
+class FastPollRetryTests(unittest.TestCase):
+    """同帧补读: 通道瞬态失败不应被渲染成敌人消失或整帧失效。"""
+
+    EP = 0x7000001000
+    LIST = 0x7000002000
+    ITEMS = 0x7000003000
+
+    @classmethod
+    def _enemy_block(cls, hp=5000.0):
+        block = bytearray(gs.EnemyFields.READ_SIZE)
+        struct.pack_into('<Q', block, gs.EntityFields.M_HP, int(hp * gs.FP_ONE))
+        return bytes(block)
+
+    @classmethod
+    def _list_header(cls, cnt=1):
+        head = bytearray(0x20)
+        struct.pack_into('<Q', head, gs.ListInternal.ITEMS, cls.ITEMS)
+        struct.pack_into('<i', head, gs.ListInternal.SIZE, cnt)
+        struct.pack_into('<i', head, gs.ListInternal.VERSION, 1)
+        return bytes(head)
+
+    def _make_reader(self):
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and 0x1000 <= value < 0x800000000000
+
+        reader = EnemyReader(mc=FakeMem())
+        reader.list_addr = self.LIST
+        reader._names[self.EP] = ('enemy_x', '敌人X', '')
+        reader._attr_snapshot[self.EP] = {gs.AttributeType.MAX_HP: 5000.0}
+        reader._runtime_snapshot[self.EP] = {}
+        reader._f_ptrs = [self.EP]
+        return reader
+
+    def _flaky_channel(self, fail_all_once):
+        block, head, arr = (self._enemy_block(), self._list_header(),
+                            struct.pack('<Q', self.EP))
+        state = {'fail_all_once': fail_all_once, 'calls': 0}
+        ep, list_addr, items_addr = self.EP, self.LIST, self.ITEMS
+
+        class FlakyChannel:
+            mode = 'srv'
+
+            @staticmethod
+            def batch_read(reqs):
+                state['calls'] += 1
+                if state['fail_all_once']:
+                    state['fail_all_once'] = False
+                    return [None] * len(reqs)   # 整批瞬态失败一次
+                out = []
+                for addr, _size in reqs:
+                    if addr == list_addr:
+                        out.append(head)
+                    elif addr == items_addr + gs.Il2CppArray.ITEMS:
+                        out.append(arr)
+                    elif addr <= ep < addr + _size:
+                        out.append(block)
+                    else:
+                        out.append(None)
+                return out
+
+        return FlakyChannel(), state
+
+    def test_transient_failures_are_reread_in_the_same_frame(self):
+        reader = self._make_reader()
+        reader._fast_tick = 4          # 本帧 tick=5, 触发 List 头读取
+        chan, state = self._flaky_channel(fail_all_once=True)
+        reader._chan = chan
+        snap = reader._poll_fast_impl()
+        self.assertTrue(snap['ok'])
+        self.assertEqual(snap['msg'], '')
+        self.assertEqual(len(snap['enemies']), 1)
+        self.assertEqual(snap['enemies'][0].hp, 5000.0)
+        self.assertEqual(reader._stale_cnt, 0)
+        roster_ids = [enemy.roster_id for enemy in snap['enemies']]
+
+        # 下一帧再来一次整批瞬态失败: 同帧补读成功, 身份与位置不变
+        state['fail_all_once'] = True
+        reader._fast_tick = 6          # tick=7 稳态帧, 只读敌人簇
+        snap2 = reader._poll_fast_impl()
+        self.assertTrue(snap2['ok'])
+        self.assertEqual(
+            [enemy.roster_id for enemy in snap2['enemies']], roster_ids)
+        self.assertEqual(snap2['enemies'][0].hp, 5000.0)
+
+    def test_enemy_unreadable_after_retry_is_missing_not_faked(self):
+        class DeadChannel:
+            mode = 'srv'
+
+            @staticmethod
+            def batch_read(reqs):
+                return [None] * len(reqs)
+
+        reader = self._make_reader()
+        reader._fast_tick = 6          # tick=7 稳态帧, 只读敌人簇
+        reader._chan = DeadChannel()
+        snap = reader._poll_fast_impl()
+        # 补读仍失败 = 本帧确实读不到: 帧有效但该敌人不渲染 (不编造数据)
+        self.assertTrue(snap['ok'])
+        self.assertEqual(snap['enemies'], [])
+
+    def test_read_enemy_rereads_transient_block_failure(self):
+        block = self._enemy_block()
+        state = {'fail': True}
+
+        class FlakyMem:
+            @staticmethod
+            def is_ptr(_value):
+                return False
+
+            @staticmethod
+            def read(_addr, _size, timeout=30):
+                if state['fail']:
+                    state['fail'] = False
+                    return None
+                return block
+
+        reader = EnemyReader(mc=FlakyMem())
+        reader._names[self.EP] = ('enemy_x', '敌人X', '')
+        info = reader._read_enemy(self.EP, with_runtime=False)
+        self.assertTrue(info.alive)
+        self.assertEqual(info.hp, 5000.0)
+
+
+class BuffSourceNameTests(unittest.TestCase):
+    """Buff 来源实体名称解析: 敌人走 _names, 干员/召唤物读 Entity.id。"""
+
+    SRC = 0x7000005000
+    IDP = 0x7000006000
+
+    @classmethod
+    def _fake_mem(cls, text='char_4235_thumpy'):
+        id_blk = bytearray(gs.EntityFields.ID + 8)
+        struct.pack_into('<Q', id_blk, gs.EntityFields.ID, cls.IDP)
+        str_blk = bytearray(gs.Il2CppString.CHARS + 512 * 2)
+        encoded = text.encode('utf-16-le')
+        struct.pack_into('<i', str_blk, gs.Il2CppString.LENGTH, len(text))
+        str_blk[gs.Il2CppString.CHARS:gs.Il2CppString.CHARS + len(encoded)] = encoded
+        src, idp = cls.SRC, cls.IDP
+
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and 0x1000 <= value < 0x800000000000
+
+            @staticmethod
+            def read(addr, _size, timeout=30):
+                if addr == src:
+                    return bytes(id_blk)
+                if addr == idp:
+                    return bytes(str_blk)
+                return None
+
+        return FakeMem
+
+    def test_resolves_character_entity_via_char_names(self):
+        class CountingMem(self._fake_mem()):
+            reads = 0
+
+            def read(self_, addr, _size, timeout=30):
+                self_.reads += 1
+                return super().read(addr, _size, timeout)
+
+        mc = CountingMem()
+        reader = EnemyReader(mc=mc)
+        reader._db = {}
+        reader._char_names = {'char_4235_thumpy': '珊比'}
+        names = reader._resolve_buff_source_names([self.SRC])
+        self.assertEqual(names[self.SRC], '珊比')
+        # 第二次命中地址缓存, 不再读内存
+        before = mc.reads
+        self.assertEqual(
+            reader._resolve_buff_source_names([self.SRC])[self.SRC], '珊比')
+        self.assertEqual(mc.reads, before)
+
+    def test_enemy_source_hits_names_without_extra_reads(self):
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value > 0
+
+            @staticmethod
+            def read(_addr, _size, timeout=30):
+                raise AssertionError('敌人来源命中 _names, 不应再读内存')
+
+        reader = EnemyReader(mc=FakeMem())
+        reader._names[self.SRC] = ('enemy_x', '敌人X', '')
+        self.assertEqual(
+            reader._resolve_buff_source_names([self.SRC])[self.SRC], '敌人X')
+
+    def test_unknown_entity_falls_back_to_id_text(self):
+        reader = EnemyReader(mc=self._fake_mem('enemy_9999_unknown')())
+        reader._db = {}
+        reader._char_names = {}
+        names = reader._resolve_buff_source_names([self.SRC])
+        self.assertEqual(names[self.SRC], 'enemy_9999_unknown')
+
+    def test_read_strings_retries_failed_read_once(self):
+        text = 'conveyor_speed'
+        str_blk = bytearray(gs.Il2CppString.CHARS + 512 * 2)
+        encoded = text.encode('utf-16-le')
+        struct.pack_into('<i', str_blk, gs.Il2CppString.LENGTH, len(text))
+        str_blk[gs.Il2CppString.CHARS:gs.Il2CppString.CHARS + len(encoded)] = encoded
+        state = {'fail': True}
+        idp = self.IDP
+
+        class FlakyMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value > 0
+
+            @staticmethod
+            def read(addr, _size, timeout=30):
+                if addr != idp:
+                    return None
+                if state['fail']:
+                    state['fail'] = False
+                    return None
+                return bytes(str_blk)
+
+        reader = EnemyReader(mc=FlakyMem())
+        out = reader._read_strings([self.IDP])
+        self.assertEqual(out[self.IDP], 'conveyor_speed')
+
+
 if __name__ == '__main__':
     unittest.main()

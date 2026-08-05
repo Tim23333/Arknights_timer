@@ -68,8 +68,9 @@ from tools.enemy_health.memcore import (
 )
 from app.enemy_ui import (
     ENEMY_COLUMN_DEFS, ENEMY_COLUMN_INDEX, EnemyColumnDialog, EnemyDetailDialog,
-    EnemyPrecisionDialog, default_precision_values, format_column_value,
-    load_visible_columns, save_visible_columns, visible_enemy_rows,
+    EnemyPrecisionDialog, apply_column_order, default_precision_values,
+    format_column_value, load_column_order, load_visible_columns,
+    save_column_order, save_visible_columns, visible_enemy_rows,
 )
 from app.character_ui import (
     CHARACTER_COLS, CHARACTER_COL_WIDTHS, CHARACTER_COLUMN_DEFS,
@@ -1505,6 +1506,9 @@ class CoachWindow(QMainWindow):
         self._mini_hotkey_timer.start()
         self._enemy_visible_cols = load_visible_columns(
             self._settings, 'enemy_table/visible_columns')
+        self._enemy_col_order = load_column_order(
+            self._settings, 'enemy_table/column_order',
+            [col['key'] for col in ENEMY_COLUMN_DEFS])
         self._character_last_render = 0.0
         self._character_frame_status_ts = 0.0
         self._character_frame_ms_sum = 0.0
@@ -1514,11 +1518,15 @@ class CoachWindow(QMainWindow):
         self._character_skill_lines: dict[int, int] = {}
         self._character_dec = default_character_precision()
         self._character_last: list = []
+        self._character_stats_history: list = []
         self._character_detail_dialog: CharacterDetailDialog | None = None
         self._global_damage_detail_dialog: GlobalDamageDetailDialog | None = None
         self._character_overview_dialog: CharacterOverviewDialog | None = None
         self._character_visible_cols = load_character_columns(
             self._settings, 'character_table/visible_columns')
+        self._character_col_order = load_column_order(
+            self._settings, 'character_table/column_order',
+            [col['key'] for col in CHARACTER_COLUMN_DEFS])
         self._character_widths_fitted = False
         self._frame_txt: str = ''      # ms/帧 显示 (0.5s 节流, 避免高频抖动)
         self._frame_ts: float = 0.0
@@ -1803,6 +1811,7 @@ class CoachWindow(QMainWindow):
         for i, w in enumerate(ENEMY_COL_WIDTHS):
             self.enemy_table.setColumnWidth(i, w)
         self._apply_enemy_column_visibility()
+        self._apply_enemy_column_order()
         l_table.addWidget(self.enemy_table)
         main.addWidget(box_table, 1)
 
@@ -1882,6 +1891,7 @@ class CoachWindow(QMainWindow):
         for idx, width in enumerate(CHARACTER_COL_WIDTHS):
             self.character_table.setColumnWidth(idx, width)
         self._apply_character_column_visibility()
+        self._apply_character_column_order()
         l_character_table.addWidget(self.character_table)
         main.addWidget(box_character_table, 1)
 
@@ -2312,6 +2322,7 @@ class CoachWindow(QMainWindow):
         self._character_rows.clear()
         self._character_bar_colors.clear()
         self._character_skill_lines.clear()
+        self._character_stats_history.clear()
         self.btn_character_scan.setText('扫描干员')
         self.lbl_character_status.setText('ADB 已切换，请重新扫描')
 
@@ -2438,6 +2449,7 @@ class CoachWindow(QMainWindow):
         self._character_rows.clear()
         self._character_bar_colors.clear()
         self._character_skill_lines.clear()
+        self._character_stats_history.clear()
         self._character_frame_ms_sum = 0.0
         self._character_frame_ms_count = 0
         self.btn_enemy_scan.setEnabled(False)
@@ -2839,7 +2851,8 @@ class CoachWindow(QMainWindow):
         now = time.time()
         if snap.get('ok') and now - self._enemy_last_render < ENEMY_RENDER_SEC:
             return
-        self._enemy_last_render = now
+        if snap.get('ok'):
+            self._enemy_last_render = now
         detail_dialog = self._enemy_detail_dialog
         if detail_dialog is not None and 'detail_enemy' in snap:
             detail_enemy = snap.get('detail_enemy')
@@ -2884,12 +2897,22 @@ class CoachWindow(QMainWindow):
                 + self._frame_txt)
         if snap.get('msg'):
             text += f"   ({snap['msg']})"
-        self.lbl_enemy_status.setText(text)
-        self._render_enemy_table(snap['enemies'])
+        if snap.get('ok'):
+            self.lbl_enemy_status.setText(text)
+            self._render_enemy_table(snap['enemies'])
+        else:
+            # 读取失败的帧没有任何真实数据: 不清空表格 (内存中敌人仍在,
+            # 清空既是假信息又会引起闪烁), 只在状态栏报告, 下帧成功即恢复。
+            self.lbl_enemy_status.setText(
+                f"读取: {read_mode}   {snap.get('msg') or '数据链失效'}")
         characters = list(snap.get('characters', ()))
+        history = snap.get('character_stats_history')
+        if history is not None:
+            self._character_stats_history = list(history)
         overview_dialog = self._character_overview_dialog
         if overview_dialog is not None:
-            overview_dialog.update_characters(characters)
+            overview_dialog.update_characters(
+                characters + self._character_stats_history)
         if snap.get('character_ok'):
             char_ms = float(snap.get('character_frame_ms', 0.0) or 0.0)
             if char_ms > 0:
@@ -3018,6 +3041,12 @@ class CoachWindow(QMainWindow):
         for idx, col in enumerate(ENEMY_COLUMN_DEFS):
             self.enemy_table.setColumnHidden(idx, col['key'] not in self._enemy_visible_cols)
 
+    def _apply_enemy_column_order(self) -> None:
+        if not hasattr(self, 'enemy_table'):
+            return
+        apply_column_order(
+            self.enemy_table, self._enemy_col_order, ENEMY_COLUMN_INDEX)
+
     def _fit_enemy_columns(self) -> None:
         """按当前可见内容测宽并填满视口，保护进度条文字等 cellWidget 内容。"""
         if not hasattr(self, 'enemy_table'):
@@ -3137,13 +3166,21 @@ class CoachWindow(QMainWindow):
 
     def _on_enemy_columns(self) -> None:
         dlg = EnemyColumnDialog(
-            self._module_dialog_parent(self.box_enemy), self._enemy_visible_cols)
+            self._module_dialog_parent(self.box_enemy), self._enemy_visible_cols,
+            self._enemy_col_order)
         if dlg.exec() != QDialog.Accepted:
             return
         self._enemy_visible_cols = dlg.values()
+        # 可见列按对话框中的拖动顺序；隐藏列保持原相对顺序附后
+        self._enemy_col_order = dlg.ordered_keys() + [
+            key for key in self._enemy_col_order
+            if key not in self._enemy_visible_cols]
         save_visible_columns(
             self._settings, 'enemy_table/visible_columns', self._enemy_visible_cols)
+        save_column_order(
+            self._settings, 'enemy_table/column_order', self._enemy_col_order)
         self._apply_enemy_column_visibility()
+        self._apply_enemy_column_order()
         self._widths_fitted = False
         self._render_enemy_table(self._enemy_last)
         if not self._enemy_last:
@@ -3423,7 +3460,7 @@ class CoachWindow(QMainWindow):
     def _open_character_overview(self) -> None:
         dialog = CharacterOverviewDialog(
             self._module_dialog_parent(self.box_character),
-            self._character_last)
+            self._character_last + self._character_stats_history)
         self._character_overview_dialog = dialog
         try:
             dialog.exec()
@@ -3447,17 +3484,32 @@ class CoachWindow(QMainWindow):
             self.character_table.setColumnHidden(
                 idx, col['key'] not in self._character_visible_cols)
 
+    def _apply_character_column_order(self) -> None:
+        if not hasattr(self, 'character_table'):
+            return
+        apply_column_order(
+            self.character_table, self._character_col_order,
+            CHARACTER_COLUMN_INDEX)
+
     def _on_character_columns(self) -> None:
         dialog = CharacterColumnDialog(
             self._module_dialog_parent(self.box_character),
-            self._character_visible_cols)
+            self._character_visible_cols, self._character_col_order)
         if dialog.exec() != QDialog.Accepted:
             return
         self._character_visible_cols = dialog.values()
+        # 可见列按对话框中的拖动顺序；隐藏列保持原相对顺序附后
+        self._character_col_order = dialog.ordered_keys() + [
+            key for key in self._character_col_order
+            if key not in self._character_visible_cols]
         save_character_columns(
             self._settings, 'character_table/visible_columns',
             self._character_visible_cols)
+        save_column_order(
+            self._settings, 'character_table/column_order',
+            self._character_col_order)
         self._apply_character_column_visibility()
+        self._apply_character_column_order()
         self._character_widths_fitted = False
         self._render_character_table(self._character_last)
         if not self._character_last:

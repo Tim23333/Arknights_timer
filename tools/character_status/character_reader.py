@@ -209,6 +209,7 @@ class CharacterReader:
         self._damage_layout_tick = 0
         self._damage_entries: dict[str, dict] = {}
         self._damage_snapshots: dict[str, dict] = {}
+        self._damage_history: dict[str, dict] = {}
         self._battle_stats_total_damage = 0.0
         self._observed_enemy_damage_total = 0.0
         self._observed_enemy_hp: dict[tuple[int, int], float] = {}
@@ -224,6 +225,7 @@ class CharacterReader:
 
     def _reset_damage_tracking(self) -> None:
         self._damage_snapshots.clear()
+        self._damage_history.clear()
         self._battle_stats_total_damage = 0.0
         self._observed_enemy_damage_total = 0.0
         self._observed_enemy_hp.clear()
@@ -1287,6 +1289,45 @@ class CharacterReader:
             info.unattributed_tracking_enabled = (
                 self._global_damage_summary.unattributed_tracking_enabled)
 
+        self._record_damage_history(infos, snapshots)
+
+    def _record_damage_history(self, infos: dict[int, CharacterInfo],
+                               snapshots: dict[str, dict]) -> None:
+        """按 charId 记录本局伤害/治疗峰值，干员撤退后总览仍能显示其累计值。
+
+        历史随 _reset_damage_tracking 在新战斗（BattleLogger 重建）时清空。
+        """
+        live_cids = set()
+        for info in infos.values():
+            if not info.cid:
+                continue
+            live_cids.add(info.cid)
+            entry = self._damage_history.setdefault(info.cid, {
+                'name': '', 'is_token': False,
+                'damage_total': 0.0, 'healing_total': 0.0})
+            if info.name:
+                entry['name'] = info.name
+            entry['is_token'] = bool(info.is_token)
+            entry['damage_total'] = max(
+                entry['damage_total'],
+                max(0.0, self._safe_float(info.damage_total)))
+            entry['healing_total'] = max(
+                entry['healing_total'],
+                max(0.0, self._safe_float(info.healing_total)))
+        # 已撤退但游戏仍保留统计条目的干员，继续跟踪其累计值。
+        for cid, snap in snapshots.items():
+            if not cid or cid in live_cids:
+                continue
+            entry = self._damage_history.setdefault(cid, {
+                'name': '', 'is_token': False,
+                'damage_total': 0.0, 'healing_total': 0.0})
+            entry['damage_total'] = max(
+                entry['damage_total'],
+                max(0.0, self._safe_float(snap.get('damage_total', 0.0))))
+            entry['healing_total'] = max(
+                entry['healing_total'],
+                max(0.0, self._safe_float(snap.get('healing_total', 0.0))))
+
     def poll_fast(self, enemies=None, track_unattributed_damage=False) -> dict:
         t0 = time.time()
         snap = {'ok': False, 'characters': [], 'msg': '', 'frame_ms': 0.0}
@@ -1351,6 +1392,20 @@ class CharacterReader:
             if self._global_damage_summary.unattributed_damage_total > 0:
                 characters.append(self._global_damage_summary)
             snap['characters'] = characters
+            # 本局曾上场、当前不在场的干员伤害/治疗峰值，供数据总览合并显示。
+            snap['character_stats_history'] = [
+                CharacterInfo(
+                    addr=0, cid=cid, name=entry['name'] or cid,
+                    is_token=entry['is_token'], alive=False,
+                    damage_total=entry['damage_total'],
+                    healing_total=entry['healing_total'])
+                for cid, entry in sorted(
+                    self._damage_history.items(),
+                    key=lambda item: (
+                        -(item[1]['damage_total']
+                          + item[1]['healing_total']), item[0]))
+                if cid not in {info.cid for info in infos.values()}
+            ]
             snap['global_damage_summary'] = self._global_damage_summary
             snap['ok'] = True
             snap['frame_ms'] = round((time.time() - t0) * 1000, 1)

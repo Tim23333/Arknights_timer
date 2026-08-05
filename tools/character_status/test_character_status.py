@@ -153,6 +153,42 @@ class CharacterReaderTests(unittest.TestCase):
         self.assertAlmostEqual(
             reader._committed_unattributed_damage, 2425.59, places=2)
 
+    def test_damage_history_keeps_retreated_operator_peak(self):
+        reader = CharacterReader.__new__(CharacterReader)
+        reader._damage_history = {}
+        infos = {
+            1: CharacterInfo(1, cid='char_a', name='甲',
+                             damage_total=120.0, healing_total=30.0),
+            2: CharacterInfo(2, cid='char_b', name='乙', is_token=True,
+                             damage_total=50.0),
+        }
+        reader._record_damage_history(infos, {})
+        # 撤退后不在 infos 中，但游戏仍保留统计条目时继续跟踪累计值。
+        reader._record_damage_history({}, {
+            'char_a': {'damage_total': 150.0, 'healing_total': 25.0}})
+        history = reader._damage_history
+        self.assertEqual(history['char_a']['damage_total'], 150.0)
+        self.assertEqual(history['char_a']['healing_total'], 30.0)
+        self.assertEqual(history['char_a']['name'], '甲')
+        self.assertTrue(history['char_b']['is_token'])
+        # 统计读数抖动/变小时历史峰值不回退。
+        reader._record_damage_history({}, {
+            'char_a': {'damage_total': 90.0, 'healing_total': 10.0}})
+        self.assertEqual(history['char_a']['damage_total'], 150.0)
+        self.assertEqual(history['char_a']['healing_total'], 30.0)
+
+    def test_reset_damage_tracking_clears_history(self):
+        reader = CharacterReader.__new__(CharacterReader)
+        reader._damage_history = {'char_a': {'damage_total': 150.0}}
+        reader._damage_snapshots = {'char_a': {}}
+        reader._observed_enemy_hp = {(1, 1): 100.0}
+        reader._seen_enemy_damage_keys = {(1, 1)}
+        reader._pending_observed_damage = deque([[0.0, 10.0]])
+        reader._pending_attributed_damage = deque()
+        reader._reset_damage_tracking()
+        self.assertEqual(reader._damage_history, {})
+        self.assertEqual(reader._damage_snapshots, {})
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -18,7 +18,9 @@ from .enemy_buff_descriptions import (
     buff_chinese_name, describe_active_buff, describe_blackboard,
     describe_global_buff, global_buff_chinese_name,
 )
-from .enemy_ui import _PrecisionSpin, _bb_text, _fill_table, _fmt, _make_table
+from .enemy_ui import (
+    _ColumnOrderList, _PrecisionSpin, _bb_text, _fill_table, _fmt, _make_table,
+)
 
 
 OVERVIEW_COLORS = [
@@ -151,7 +153,8 @@ class CharacterOverviewDialog(QDialog):
         self.setWindowTitle('干员数据总览')
         self.resize(1120, 620)
         root = QVBoxLayout(self)
-        self.status = QLabel('随干员数据实时更新；召唤物/装置不单独计入。')
+        self.status = QLabel(
+            '随干员数据实时更新，已撤退干员保留本局累计；召唤物/装置不单独计入。')
         self.status.setProperty('role', 'muted')
         root.addWidget(self.status)
         charts = QHBoxLayout()
@@ -399,12 +402,15 @@ def format_character_column(key, character, decimals, row=0):
 
 
 class CharacterColumnDialog(QDialog):
-    def __init__(self, parent, visible):
+    def __init__(self, parent, visible, order=None):
         super().__init__(parent)
         self.setWindowTitle('自定义干员列表列')
-        self.resize(650, 520)
+        self.resize(900, 520)
         root = QVBoxLayout(self)
-        root.addWidget(QLabel('勾选主表需要显示的字段；完整数据始终保留在“详情”中。'))
+        root.addWidget(QLabel(
+            '左侧勾选需要显示的字段（完整数据始终保留在“详情”中）；'
+            '右侧为当前显示顺序，拖动条目即可调整，新勾选的列排在末尾。'))
+        body_row = QHBoxLayout()
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         body = QWidget()
@@ -414,10 +420,34 @@ class CharacterColumnDialog(QDialog):
             cb = QCheckBox(col['label'])
             cb.setChecked(col['key'] in visible)
             cb.setToolTip(col['key'])
+            cb.toggled.connect(
+                lambda checked, key=col['key']: self._on_toggled(key, checked))
             grid.addWidget(cb, idx // 3, idx % 3)
             self.checks[col['key']] = cb
         scroll.setWidget(body)
-        root.addWidget(scroll, 1)
+        body_row.addWidget(scroll, 1)
+
+        order_host = QWidget()
+        order_box = QVBoxLayout(order_host)
+        order_box.setContentsMargins(0, 0, 0, 0)
+        order_box.addWidget(QLabel('显示顺序（拖动调整）:'))
+        labels = {col['key']: col['label'] for col in CHARACTER_COLUMN_DEFS}
+        self.order_list = _ColumnOrderList(labels)
+        order_box.addWidget(self.order_list, 1)
+        order_host.setFixedWidth(220)
+        body_row.addWidget(order_host)
+        root.addLayout(body_row, 1)
+
+        # 初始列表 = 存档顺序中当前可见的列；存档未覆盖的可见列补到末尾
+        full_order = (list(order) if order
+                      else [col['key'] for col in CHARACTER_COLUMN_DEFS])
+        for key in full_order:
+            if key in visible:
+                self.order_list.append_key(key)
+        for col in CHARACTER_COLUMN_DEFS:
+            if col['key'] in visible:
+                self.order_list.append_key(col['key'])
+
         presets = QHBoxLayout()
         for label, values in (
                 ('恢复默认', DEFAULT_VISIBLE_COLUMNS),
@@ -433,12 +463,26 @@ class CharacterColumnDialog(QDialog):
         buttons.rejected.connect(self.reject)
         root.addWidget(buttons)
 
+    def _on_toggled(self, key, checked):
+        if checked:
+            self.order_list.append_key(key)
+        else:
+            self.order_list.remove_key(key)
+
     def _set(self, values):
         for key, checkbox in self.checks.items():
             checkbox.setChecked(key in values)
+        # 勾选信号同步会让状态未变的列保留原位；预设统一重置为定义顺序
+        self.order_list.clear()
+        for col in CHARACTER_COLUMN_DEFS:
+            if col['key'] in values:
+                self.order_list.append_key(col['key'])
 
     def values(self):
         return {key for key, checkbox in self.checks.items() if checkbox.isChecked()}
+
+    def ordered_keys(self):
+        return self.order_list.keys()
 
 
 class CharacterPrecisionDialog(QDialog):

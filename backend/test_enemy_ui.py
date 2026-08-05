@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
-from PySide6.QtCore import QSettings, Qt
+from PySide6.QtCore import QSettings, Qt, QModelIndex
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
     QApplication, QProgressBar, QPushButton, QTableWidget, QTableWidgetItem,
@@ -18,9 +18,11 @@ from backend.app.enemy_buff_descriptions import (
     buff_chinese_name, describe_active_buff, describe_blackboard, describe_global_buff,
 )
 from backend.app.enemy_ui import (
-    ENEMY_COLUMN_DEFS, ENEMY_COLUMN_INDEX, EnemyDetailDialog,
-    default_precision_values, format_column_value, precision_column_defs,
-    load_visible_columns, visible_enemy_rows,
+    DEFAULT_VISIBLE_COLUMNS, ENEMY_COLUMN_DEFS, ENEMY_COLUMN_INDEX,
+    EnemyColumnDialog, EnemyDetailDialog, apply_column_order,
+    default_precision_values, format_column_value, load_column_order,
+    precision_column_defs, load_visible_columns, save_column_order,
+    visible_enemy_rows,
 )
 from tools.enemy_health import game_structs as gs
 from tools.enemy_health.enemy_reader import EnemyInfo
@@ -375,6 +377,76 @@ class EnemyUiTests(unittest.TestCase):
             self.assertIn('shield', load_visible_columns(settings, key))
             settings.setValue(key, 'name,hp')  # 模拟用户升级后主动取消护盾列
             self.assertNotIn('shield', load_visible_columns(settings, key))
+
+    def test_column_order_defaults_to_definition_order(self):
+        all_keys = [col['key'] for col in ENEMY_COLUMN_DEFS]
+        with tempfile.TemporaryDirectory() as td:
+            settings = QSettings(str(Path(td) / 's.ini'), QSettings.IniFormat)
+            self.assertEqual(
+                load_column_order(settings, 'enemy_table/column_order', all_keys),
+                all_keys)
+
+    def test_column_order_filters_invalid_and_appends_missing(self):
+        with tempfile.TemporaryDirectory() as td:
+            settings = QSettings(str(Path(td) / 's.ini'), QSettings.IniFormat)
+            settings.setValue('k', 'hp,bogus,row')
+            self.assertEqual(
+                load_column_order(settings, 'k', ['row', 'name', 'hp', 'skill']),
+                ['hp', 'row', 'name', 'skill'])
+
+    def test_column_order_save_load_roundtrip(self):
+        with tempfile.TemporaryDirectory() as td:
+            settings = QSettings(str(Path(td) / 's.ini'), QSettings.IniFormat)
+            all_keys = ['row', 'name', 'hp']
+            save_column_order(settings, 'k', ['hp', 'row', 'name'])
+            self.assertEqual(load_column_order(settings, 'k', all_keys),
+                             ['hp', 'row', 'name'])
+
+    def test_apply_column_order_moves_visual_sections_only(self):
+        table = QTableWidget(1, 4)
+        table.setItem(0, 0, QTableWidgetItem('a'))
+        index = {'c1': 0, 'c2': 1, 'c3': 2, 'c4': 3}
+        apply_column_order(table, ['c3', 'c1', 'c2', 'c4'], index)
+        header = table.horizontalHeader()
+        self.assertEqual(header.visualIndex(2), 0)
+        self.assertEqual(header.visualIndex(0), 1)
+        self.assertEqual(header.visualIndex(1), 2)
+        self.assertEqual(header.visualIndex(3), 3)
+        # 逻辑寻址不受影响：仍按列定义下标取到同一单元格
+        self.assertEqual(table.item(0, 0).text(), 'a')
+        table.deleteLater()
+
+    def test_column_dialog_order_list_syncs_with_checks(self):
+        visible = {'name', 'hp'}
+        order = ['hp'] + [col['key'] for col in ENEMY_COLUMN_DEFS]
+        dlg = EnemyColumnDialog(None, visible, order)
+        self.assertEqual(dlg.ordered_keys(), ['hp', 'name'])
+        dlg.checks['row'].setChecked(True)     # 新勾选的列追加到末尾
+        self.assertEqual(dlg.ordered_keys(), ['hp', 'name', 'row'])
+        dlg.checks['hp'].setChecked(False)     # 取消勾选即从顺序中移除
+        self.assertEqual(dlg.ordered_keys(), ['name', 'row'])
+        self.assertEqual(dlg.values(), {'name', 'row'})
+        dlg.deleteLater()
+
+    def test_column_dialog_order_list_supports_move(self):
+        visible = {'name', 'hp', 'row'}
+        order = [col['key'] for col in ENEMY_COLUMN_DEFS]
+        dlg = EnemyColumnDialog(None, visible, order)
+        self.assertEqual(dlg.ordered_keys(), ['row', 'name', 'hp'])
+        # 等价于 InternalMove 拖放：把 hp (第 2 行) 移到最前
+        model = dlg.order_list.model()
+        self.assertTrue(model.moveRow(QModelIndex(), 2, QModelIndex(), 0))
+        self.assertEqual(dlg.ordered_keys(), ['hp', 'row', 'name'])
+        dlg.deleteLater()
+
+    def test_column_dialog_preset_restores_default_set_in_definition_order(self):
+        dlg = EnemyColumnDialog(None, {'hp'}, ['hp'])
+        dlg._set_checked(DEFAULT_VISIBLE_COLUMNS)
+        expected = [col['key'] for col in ENEMY_COLUMN_DEFS
+                    if col['key'] in DEFAULT_VISIBLE_COLUMNS]
+        self.assertEqual(dlg.ordered_keys(), expected)
+        self.assertEqual(dlg.values(), set(DEFAULT_VISIBLE_COLUMNS))
+        dlg.deleteLater()
 
     def test_custom_shield_buff_has_clear_chinese_description(self):
         buff = {

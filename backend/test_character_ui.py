@@ -1,8 +1,13 @@
+import os
 import unittest
 
+os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+
+from PySide6.QtWidgets import QApplication
+
 from backend.app.character_ui import (
-    CHARACTER_COLUMN_INDEX, build_character_overview,
-    default_character_precision,
+    CHARACTER_COLUMN_DEFS, CHARACTER_COLUMN_INDEX, CharacterColumnDialog,
+    build_character_overview, default_character_precision,
     format_character_column, precision_column_defs,
 )
 from tools.character_status import CharacterInfo
@@ -10,6 +15,22 @@ from tools.enemy_health import game_structs as gs
 
 
 class CharacterUiTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.app = QApplication.instance() or QApplication([])
+
+    def test_column_dialog_order_list_syncs_with_checks(self):
+        visible = {'hp', 'name'}
+        order = ['hp'] + [col['key'] for col in CHARACTER_COLUMN_DEFS]
+        dlg = CharacterColumnDialog(None, visible, order)
+        self.assertEqual(dlg.ordered_keys(), ['hp', 'name'])
+        dlg.checks['sp'].setChecked(True)      # 新勾选的列追加到末尾
+        self.assertEqual(dlg.ordered_keys(), ['hp', 'name', 'sp'])
+        dlg.checks['hp'].setChecked(False)     # 取消勾选即从顺序中移除
+        self.assertEqual(dlg.ordered_keys(), ['name', 'sp'])
+        self.assertEqual(dlg.values(), {'name', 'sp'})
+        dlg.deleteLater()
+
     def test_defaults_include_two_decimal_numeric_columns(self):
         decimals = default_character_precision()
         self.assertEqual(decimals['hp'], 2)
@@ -110,6 +131,21 @@ class CharacterUiTests(unittest.TestCase):
         self.assertEqual(rows[0]['name'], '甲')
         self.assertEqual(rows[0]['damage'], 120.0)
         self.assertEqual(rows[0]['healing'], 30.0)
+
+    def test_overview_includes_retreated_operator_history(self):
+        live = CharacterInfo(
+            1, cid='char_a', name='甲', damage_total=100.0)
+        retreated = CharacterInfo(
+            0, cid='char_b', name='乙', alive=False,
+            damage_total=250.0, healing_total=40.0)
+        history_peak = CharacterInfo(
+            0, cid='char_a', name='甲', alive=False, damage_total=160.0)
+        rows = build_character_overview([live, retreated, history_peak])
+        self.assertEqual(len(rows), 2)
+        by_name = {row['name']: row for row in rows}
+        self.assertEqual(by_name['甲']['damage'], 160.0)
+        self.assertEqual(by_name['乙']['damage'], 250.0)
+        self.assertEqual(by_name['乙']['healing'], 40.0)
 
 
 if __name__ == '__main__':

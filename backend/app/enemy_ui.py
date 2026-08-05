@@ -5,9 +5,10 @@ import time
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QAbstractSpinBox, QCheckBox, QDialog, QDialogButtonBox, QGridLayout,
-    QHBoxLayout, QLabel, QPushButton, QScrollArea, QSpinBox, QTabWidget,
-    QTableWidget, QTableWidgetItem, QToolButton, QVBoxLayout, QWidget,
+    QAbstractItemView, QAbstractSpinBox, QCheckBox, QDialog, QDialogButtonBox,
+    QGridLayout, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QPushButton,
+    QScrollArea, QSpinBox, QTabWidget, QTableWidget, QTableWidgetItem,
+    QToolButton, QVBoxLayout, QWidget,
 )
 
 from tools.enemy_health import game_structs as gs
@@ -165,14 +166,85 @@ def save_visible_columns(settings, key, columns):
     settings.setValue(key, ','.join(ordered))
 
 
+def load_column_order(settings, key, all_keys):
+    """读取列显示顺序，返回包含全部合法 key 的列表：存档顺序优先，
+    存档缺失的列（如版本更新新增的列）按定义顺序附在末尾。"""
+    value = settings.value(key, '')
+    if isinstance(value, str):
+        saved = [part for part in value.split(',') if part]
+    elif isinstance(value, (list, tuple)):
+        saved = list(value)
+    else:
+        saved = []
+    valid = set(all_keys)
+    order = [k for k in saved if k in valid]
+    order.extend(k for k in all_keys if k not in order)
+    return order
+
+
+def save_column_order(settings, key, order):
+    settings.setValue(key, ','.join(order))
+
+
+def apply_column_order(table, order, column_index):
+    """按 key 顺序重排表格的视觉列。仅移动表头 section，逻辑列不变，
+    单元格寻址 (column_index) 与列宽/可见性逻辑均不受影响。"""
+    header = table.horizontalHeader()
+    for visual, key in enumerate(order):
+        logical = column_index.get(key)
+        if logical is None:
+            continue
+        current = header.visualIndex(logical)
+        if 0 <= current != visual:
+            header.moveSection(current, visual)
+
+
+class _ColumnOrderList(QListWidget):
+    """显示列顺序列表：条目可拖动换位 (InternalMove)，与勾选状态双向同步。"""
+
+    def __init__(self, labels):
+        super().__init__()
+        self._labels = labels
+        self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
+        self.setDefaultDropAction(Qt.DropAction.MoveAction)
+        self.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+
+    def append_key(self, key):
+        if self.find_key(key) is not None:
+            return
+        item = QListWidgetItem(self._labels.get(key, key))
+        item.setData(Qt.ItemDataRole.UserRole, key)
+        item.setToolTip(key)
+        self.addItem(item)
+
+    def remove_key(self, key):
+        item = self.find_key(key)
+        if item is not None:
+            self.takeItem(self.row(item))
+
+    def find_key(self, key):
+        for row in range(self.count()):
+            item = self.item(row)
+            if item.data(Qt.ItemDataRole.UserRole) == key:
+                return item
+        return None
+
+    def keys(self):
+        return [self.item(row).data(Qt.ItemDataRole.UserRole)
+                for row in range(self.count())]
+
+
 class EnemyColumnDialog(QDialog):
-    def __init__(self, parent, visible):
+    def __init__(self, parent, visible, order=None):
         super().__init__(parent)
         self.setWindowTitle('自定义敌人列表列')
-        self.resize(620, 520)
+        self.resize(880, 520)
         root = QVBoxLayout(self)
-        root.addWidget(QLabel('勾选主表需要显示的字段；未勾选的数据仍会在“详情”中保留。'))
+        root.addWidget(QLabel(
+            '左侧勾选需要显示的字段（未勾选的数据仍在“详情”中保留）；'
+            '右侧为当前显示顺序，拖动条目即可调整，新勾选的列排在末尾。'))
 
+        body_row = QHBoxLayout()
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         body = QWidget()
@@ -182,11 +254,33 @@ class EnemyColumnDialog(QDialog):
             cb = QCheckBox(col['label'])
             cb.setChecked(col['key'] in visible)
             cb.setToolTip(col['key'])
+            cb.toggled.connect(
+                lambda checked, key=col['key']: self._on_toggled(key, checked))
             grid.addWidget(cb, idx // 3, idx % 3)
             self.checks[col['key']] = cb
         grid.setRowStretch((len(ENEMY_COLUMN_DEFS) + 2) // 3, 1)
         scroll.setWidget(body)
-        root.addWidget(scroll, 1)
+        body_row.addWidget(scroll, 1)
+
+        order_host = QWidget()
+        order_box = QVBoxLayout(order_host)
+        order_box.setContentsMargins(0, 0, 0, 0)
+        order_box.addWidget(QLabel('显示顺序（拖动调整）:'))
+        labels = {col['key']: col['label'] for col in ENEMY_COLUMN_DEFS}
+        self.order_list = _ColumnOrderList(labels)
+        order_box.addWidget(self.order_list, 1)
+        order_host.setFixedWidth(220)
+        body_row.addWidget(order_host)
+        root.addLayout(body_row, 1)
+
+        # 初始列表 = 存档顺序中当前可见的列；存档未覆盖的可见列补到末尾
+        full_order = list(order) if order else [col['key'] for col in ENEMY_COLUMN_DEFS]
+        for key in full_order:
+            if key in visible:
+                self.order_list.append_key(key)
+        for col in ENEMY_COLUMN_DEFS:
+            if col['key'] in visible:
+                self.order_list.append_key(col['key'])
 
         presets = QHBoxLayout()
         btn_default = QPushButton('恢复默认')
@@ -207,12 +301,26 @@ class EnemyColumnDialog(QDialog):
         buttons.rejected.connect(self.reject)
         root.addWidget(buttons)
 
+    def _on_toggled(self, key, checked):
+        if checked:
+            self.order_list.append_key(key)
+        else:
+            self.order_list.remove_key(key)
+
     def _set_checked(self, selected):
         for key, cb in self.checks.items():
             cb.setChecked(key in selected)
+        # 勾选信号同步会让状态未变的列保留原位；预设统一重置为定义顺序
+        self.order_list.clear()
+        for col in ENEMY_COLUMN_DEFS:
+            if col['key'] in selected:
+                self.order_list.append_key(col['key'])
 
     def values(self):
         return {key for key, cb in self.checks.items() if cb.isChecked()}
+
+    def ordered_keys(self):
+        return self.order_list.keys()
 
 
 class _PrecisionSpin(QWidget):
