@@ -7,7 +7,7 @@
 ## 解决方案
 
 现在打包脚本会将寻址工具内嵌到主程序中，只生成一个 exe 文件：
-- `ArknightsTimeline.exe` - 主程序（包含内嵌的寻址工具）
+- `ArknightsTimeline_v<版本>.exe` - 主程序（包含内嵌的寻址工具）
 
 用户只需分发一个 exe 文件即可，点击"打开寻址工具"按钮时，程序会自动从内嵌资源中提取并运行寻址工具。
 
@@ -34,6 +34,18 @@ pip install numpy
 numpy 可以显著加速内存扫描过程。
 
 ## 打包步骤
+
+### 版本号
+
+发布前只需修改 `backend/app/version.py` 中这一行：
+
+```python
+VERSION = "3.4.3"
+```
+
+打包脚本会自动把版本写入默认 EXE 文件名、Windows 文件属性、主页面顶部标题和
+测试版诊断日志顶部。当前默认输出为 `ArknightsTimeline_v3.4.3.exe` 与
+`ArknightsTimeline_v3.4.3_Test.exe`；`--name` 仍可覆盖输出文件名。
 
 ### 方法一：使用打包脚本（推荐）
 
@@ -93,14 +105,26 @@ pyinstaller --noconfirm --clean \
 | `--onefile` | 打包为单个 exe 文件（推荐） |
 | `--onedir` | 打包为目录模式（调试用） |
 | `--windowed` | 不显示控制台窗口 |
-| `--console` | 显示控制台窗口（调试用） |
+| `--console` | 正式版显示控制台窗口（手工调试用；不改变测试版） |
 | `--skip-timer` | 跳过打包寻址工具（仅 build_exe.py） |
+
+### 测试版诊断日志
+
+```bash
+python build_exe.py --test
+```
+
+测试版也使用 `--windowed`，不会弹出黑色 CMD 窗口。程序启动后会自动显示独立的
+“测试版诊断日志”窗口，持续记录扫描、ADB、内存通道、实体名称/ID/属性解析状态和
+未捕获异常。复现问题后点击“一键打包日志”，即可在
+`%LOCALAPPDATA%\ArknightsTimeline\logs` 生成可发送的 ZIP 诊断包。
 
 ## 输出文件
 
 ```
 backend/dist/
-└── ArknightsTimeline.exe   # 主程序（约 80-100 MB，已内嵌寻址工具）
+├── ArknightsTimeline_v3.4.3.exe        # 正式版（版本随 VERSION 变化）
+└── ArknightsTimeline_v3.4.3_Test.exe   # 测试版（独立诊断日志窗口）
 ```
 
 ## 测试打包结果
@@ -118,12 +142,12 @@ python test_packaged_exe.py
 
 ### 给用户分发
 
-1. 只需将 `backend/dist/ArknightsTimeline.exe` 分发给用户
+1. 只需将 `backend/dist/ArknightsTimeline_v<版本>.exe` 分发给用户
 2. 用户可以直接运行，无需其他文件
 
 ### 用户使用说明
 
-1. 双击 `ArknightsTimeline.exe` 启动主程序
+1. 双击 `ArknightsTimeline_v<版本>.exe` 启动主程序
 2. 点击"打开寻址工具"按钮启动内存扫描（定位游戏时间/帧数地址）
 3. 首次点击时，程序会自动提取寻址工具到临时目录
 4. **注意**：寻址工具需要管理员权限才能读取游戏内存
@@ -143,7 +167,7 @@ python test_packaged_exe.py
 **原因**：pymem 需要管理员权限才能读取其他进程的内存
 
 **解决**：
-1. 右键点击 `ArknightsTimeline.exe`，选择"以管理员身份运行"
+1. 右键点击 `ArknightsTimeline_v<版本>.exe`，选择"以管理员身份运行"
 2. 或在程序启动后，当系统提示权限时选择"是"
 
 ### Q: 杀毒软件拦截 exe 文件
@@ -161,7 +185,7 @@ python test_packaged_exe.py
 
 **解决**：
 1. 更新显卡驱动
-2. 尝试使用 `--console` 参数打包，查看错误信息
+2. 使用 `python build_exe.py --test`，在独立诊断日志窗口查看错误信息并打包 ZIP
 3. 检查系统 DPI 设置
 
 ### Q: 点击"打开寻址工具"没有反应
@@ -183,13 +207,14 @@ python build_exe.py --onedir
 
 打包后会在 `backend/dist/ArknightsTimeline/` 目录下生成所有文件，便于调试。
 
-### 显示控制台
+### 正式版显示控制台
 
 ```bash
 python build_exe.py --console
 ```
 
-显示控制台窗口可以看到程序的输出信息和错误日志。
+该参数仅用于正式版的手工调试。排查用户电脑上的问题时优先分发测试版，测试版始终
+保持无控制台窗口，并使用独立诊断日志窗口。
 
 ### 查看 PyInstaller 日志
 
@@ -221,7 +246,7 @@ if getattr(sys, "frozen", False):
 ### 模块依赖关系
 
 ```
-ArknightsTimeline.exe (~85 MB)
+ArknightsTimeline_v<版本>.exe (~85 MB)
 ├── PySide6 (GUI)
 ├── pymem (内存读取: 时间/帧数)
 ├── tools/timer/ak_memory_reader.py

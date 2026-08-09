@@ -342,6 +342,40 @@ def _apply_move(row, proj_moves):
             row["projectileFlyTime"] = mv["flyTime"]
 
 
+def normalize_enemy_database(payload):
+    """兼容本仓库解析器与 OpenArknightsFBS 导出的两种敌人表结构。"""
+    if not isinstance(payload, dict):
+        raise ValueError("enemy_database 根节点必须是对象")
+    rows = payload.get("enemies")
+    if not isinstance(rows, list):
+        return payload
+    result = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        enemy_id = row.get("Key") or row.get("key")
+        levels = row.get("Value") or row.get("value") or []
+        if not enemy_id or not isinstance(levels, list):
+            continue
+        normalized = []
+        for level in levels:
+            if not isinstance(level, dict):
+                continue
+            if isinstance(level.get("data"), dict):
+                normalized.append(level)
+                continue
+            enemy_data = level.get("enemyData")
+            if isinstance(enemy_data, dict):
+                normalized.append({"level": level.get("level"), "data": enemy_data})
+        result[str(enemy_id)] = normalized
+    return result
+
+
+def load_enemy_database(path):
+    with open(path, encoding="utf-8") as stream:
+        return normalize_enemy_database(json.load(stream))
+
+
 # ---------------------------------------------------------------- 主流程
 
 def main():
@@ -377,7 +411,7 @@ def main():
     print(f"  我方实体 {len(char_modes)} 个")
 
     print("[6/6] 合并输出 ...")
-    enemy_db = json.load(open(ENEMY_DB_JSON, encoding="utf-8"))
+    enemy_db = load_enemy_database(ENEMY_DB_JSON)
     enemies = {}
     for eid, levels in enemy_db.items():
         base = levels[0].get("data", {}) if levels else {}

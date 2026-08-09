@@ -15,6 +15,7 @@
     ...
     snap = svc.snapshot(history_len=50, predict_len=12)
     # snap["engines"]    各引擎摘要 (label/cursor/total/rate/status)
+    # snap["by_role"]    imp/trivial 两条引擎的详情，可同时展示两条序列
     # snap["selected"]   选中引擎详情: history(已消耗序列) + predictions(未来序列)
     #                    + cursor(游标, 指向下一个随机数位置) 等
     svc.stop()
@@ -309,7 +310,11 @@ class RngService:
         return False
 
     def snapshot(self, history_len=50, predict_len=12):
-        """一帧完整展示数据: 状态行 + 各引擎摘要 + 选中引擎历史/预测/游标。"""
+        """一帧完整展示数据。
+
+        ``selected`` 保留给现有单引擎界面；``by_role`` 同时提供 ``imp``
+        （战斗随机）和 ``trivial``（表现随机）的历史、预测与游标。
+        """
         with self._lock:
             trackers = list(self._trackers.values())
             sel = self._trackers.get(self._selected_id)
@@ -319,11 +324,32 @@ class RngService:
             s = t.snapshot(0, 0)
             engines.append({k: s[k] for k in
                             ("id", "label", "role", "cursor", "total", "rate", "status")})
+
+        # 静态链正常情况下每个角色恰好一个引擎。启发式扫描可能返回同角色的
+        # 多个候选；这里沿用定位顺序，只为每个角色生成一份昂贵的预测详情。
+        role_trackers = {}
+        for t in trackers:
+            role = t.engine.get("role")
+            if role and role not in role_trackers:
+                role_trackers[role] = t
+
+        details = {}
+
+        def detail_for(tracker):
+            if tracker is None:
+                return None
+            engine_id = tracker.engine["id"]
+            if engine_id not in details:
+                details[engine_id] = tracker.snapshot(history_len, predict_len)
+            return details[engine_id]
+
+        by_role = {role: detail_for(t) for role, t in role_trackers.items()}
         return {
             "process": self.process,
             "via": self.via,
             "status": self.status_msg,
             "engines": engines,
             "selected_id": sel_id,
-            "selected": sel.snapshot(history_len, predict_len) if sel else None,
+            "selected": detail_for(sel),
+            "by_role": by_role,
         }

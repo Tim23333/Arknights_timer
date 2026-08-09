@@ -376,18 +376,18 @@ python build_exe.py --onedir
 # 自定义程序名
 python build_exe.py --name MyArknightsTool
 
-# 显示控制台窗口（调试用）
+# 正式版显示控制台窗口（手动调试用；测试版始终使用独立日志窗口）
 python build_exe.py --console
 
 # 跳过测试版（默认每次都会连打 正式版 + 测试版 两个 exe）
 python build_exe.py --skip-test
 ```
 
-测试版说明：默认与正式版一同产出（`ArknightsTimeline_Test.exe`），
-强制控制台模式并内嵌 `TEST_BUILD` 标记文件；`desktop_app` 检测到后
-（或开发时设环境变量 `AK_TEST_BUILD=1`）将全部内部日志（扫描各阶段/
-adb 诊断/通道异常/线程未捕获异常）实时输出到控制台窗口，用于现场
-排查（如换机扫描失败）。
+测试版说明：默认与正式版一同产出（`ArknightsTimeline_v<版本>_Test.exe`），
+保持无控制台的 windowed 模式并内嵌 `TEST_BUILD` 标记文件；`desktop_app`
+检测到后（或开发时设环境变量 `AK_TEST_BUILD=1`）自动打开独立诊断日志窗口，
+将扫描各阶段、ADB/游戏包版本、端口转发、内存通道和未捕获异常实时显示并同步
+落盘。“一键打包日志”会生成含会话日志、环境诊断、运行状态与偏移版本的 ZIP。
 
 打包流程：步骤 0 若 `tools/enemy_health/memsrv.c` 有更新会用 ziglang 自动重编
 `bin/memsrv`（失败不阻断，运行时回退 sh+dd 慢速模式）；步骤 1 打包
@@ -401,11 +401,11 @@ AKTimerTool.exe；步骤 2 打包主程序并把寻址工具内嵌进去（同�
 
 | 文件 | 说明 |
 |------|------|
-| `ArknightsTimeline.exe` | 主程序（游戏数据显示工具，已内嵌寻址工具） |
+| `ArknightsTimeline_v<版本>.exe` | 主程序（游戏数据显示工具，已内嵌寻址工具） |
 
 ### 分发说明
 
-1. 只需分发 `ArknightsTimeline.exe` 单个文件（寻址工具已内嵌，点击"打开寻址工具"自动提取运行）
+1. 只需分发 `ArknightsTimeline_v<版本>.exe` 单个文件（寻址工具已内嵌，点击"打开寻址工具"自动提取运行）
 2. 寻址工具需要管理员权限才能读取游戏内存
 3. 敌人监控需要 MuMu 模拟器已启动且 adb root 可用（MuMu 默认支持）；首次扫描后地址缓存保存在 exe 同目录的 `enemy_cache.pkl`
 4. 首次运行可能被 Windows 安全提示拦截，选择"仍要运行"即可
@@ -437,7 +437,7 @@ python ak_live_rng.py --backend pymem    # pymem 后端 (读模拟器进程, 需
 python ak_live_rng.py --engine trivial   # 改看表现随机 (默认 imp=关键随机)
 python ak_live_rng.py --no-cache         # 忽略地址缓存, 强制全量扫描
 python ak_live_rng.py --heuristic        # 静态链外追加启发式兜底 (调试, 会捞到无关 Random)
-python test_ak_live_rng.py               # 离线自测 (53 项, 无需模拟器)
+python test_ak_live_rng.py               # 离线自测 (70 项, 无需模拟器)
 ```
 
 **功能/展示分离**：`rng_service.RngService` 是可复用的服务层（连接/定位/轮询/
@@ -446,8 +446,9 @@ python test_ak_live_rng.py               # 离线自测 (53 项, 无需模拟器
 RngService` 即可，注入自己的 reader（实现 read/regions）还能离线嵌入。
 
 **已集成进主程序**（`backend/desktop_app.py`「随机数追踪」区块）：点「扫描随机数」
-后台 attach+locate 后 `svc.select_role('imp')`（只展示关键随机）+ `svc.start()`，
-UI 定时器 150ms 读 `snapshot(18, 预测数)` 渲染预测/消耗双表（预测数界面可调 1-500）。集成要点：
+后台 attach+locate 后 `svc.start()` 同时轮询 `imp` 与 `trivial`；UI 定时器 150ms 读取
+`snapshot(18, 预测数)["by_role"]`，分别渲染战斗随机与表现随机的预测/消耗表
+（两条序列的预测数统一可调 1-500）。集成要点：
 
 - **端口隔离**：RNG 的 adb 通道用 `TcpChannel(mc, port=27272)`（`adb_reader.RNG_TCP_PORT`），
   与敌人监控默认 27271 互不干扰；`TcpChannel(port=...)` 为可参数化端口，

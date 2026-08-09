@@ -422,8 +422,14 @@ def test_service():
     snap = svc.snapshot(5, 5)
     check("snapshot 引擎数", len(snap["engines"]) == 2, str(len(snap["engines"])))
     check("默认选中 imp", snap["selected"] and snap["selected"]["role"] == "imp")
+    for tracker in svc.trackers():
+        tracker.poll()   # 两条引擎都先建立状态基线，随后才能生成未来预测
+    snap = svc.snapshot(5, 5)
+    check("双角色快照", set(snap["by_role"]) == {"imp", "trivial"},
+          str(set(snap["by_role"])))
+    check("双序列同时预测", all(len(snap["by_role"][role]["predictions"]) == 5
+                              for role in ("imp", "trivial")))
     tr = [t for t in svc.trackers() if t.engine["role"] == "imp"][0]
-    tr.poll()   # 建立基线后游标可读
     snap = svc.snapshot(5, 5)
     check("游标字段", snap["selected"]["cursor"] >= 0 and snap["selected"]["cursor2"] >= 0)
     check("select_role 切换", svc.select_role("trivial")
