@@ -30,7 +30,12 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(SCRIPT_DIR)
 sys.path.insert(0, os.path.join(ROOT, "unpack_work", "spine_asset_lib"))
 
-import UnityPy  # noqa: E402
+
+def _unitypy():
+    """UnityPy 只在提取主流程用到；延迟导入让 normalize_enemy_database 等
+    纯数据函数（及其测试）能在无 UnityPy 的环境（如 .venv）中运行。"""
+    import UnityPy
+    return UnityPy
 
 TICK = 30.0  # 游戏逻辑帧率
 
@@ -99,7 +104,7 @@ def scan_skels(packages, want_name=None):
     for pkg in packages:
         for cab in iter_cabs(pkg):
             try:
-                env = UnityPy.load(cab)
+                env = _unitypy().load(cab)
             except Exception:
                 continue
             for obj in env.objects:
@@ -131,7 +136,7 @@ class CabContext:
     """单个 CAB 的 GameObject/MonoBehaviour 索引，支持 PPtr(m_FileID=0) 下钻。"""
 
     def __init__(self, path):
-        self.env = UnityPy.load(path)
+        self.env = _unitypy().load(path)
         self.go_names = {}
         self.monos = {}           # path_id -> typetree dict
         self.go_of_mono = {}      # mono path_id -> GO path_id

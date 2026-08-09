@@ -74,6 +74,8 @@ class DiagnosticLogManager(QObject):
 
     line_added = Signal(str)
 
+    LOG_RETENTION_DAYS = 7   # 启动时清理超过该天数的 session/fault 日志与诊断 ZIP
+
     def __init__(self, log_root: Path | str | None = None) -> None:
         super().__init__()
         self.log_root = Path(log_root) if log_root else default_log_root()
@@ -88,6 +90,25 @@ class DiagnosticLogManager(QObject):
         self._lines = deque(maxlen=10_000)
         self._context_provider = None
         self._closed = False
+        pruned = self._prune_old_logs()
+        if pruned:
+            self.log(f"已清理 {pruned} 个超过 "
+                     f"{self.LOG_RETENTION_DAYS} 天的历史诊断文件")
+
+    def _prune_old_logs(self) -> int:
+        """删除超过保留期的历史诊断文件；当前会话文件按修改时间天然豁免。"""
+        cutoff = time.time() - self.LOG_RETENTION_DAYS * 86400
+        pruned = 0
+        for pattern in ('session_*.log', 'fault_*.log',
+                        'ArknightsTimeline_*_diagnostics_*.zip'):
+            for path in self.log_root.glob(pattern):
+                try:
+                    if path.stat().st_mtime < cutoff:
+                        path.unlink()
+                        pruned += 1
+                except OSError:
+                    pass
+        return pruned
 
     def set_context_provider(self, provider) -> None:
         self._context_provider = provider
