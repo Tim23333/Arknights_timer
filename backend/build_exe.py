@@ -195,6 +195,7 @@ def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args) -
     cmd.extend(["--hidden-import", "tools.enemy_health.memcore"])
     cmd.extend(["--hidden-import", "tools.enemy_health.enemy_db"])
     cmd.extend(["--hidden-import", "tools.enemy_health.game_structs"])
+    cmd.extend(["--hidden-import", "tools.enemy_health.stage_export"])
     cmd.extend(["--hidden-import", "numpy"])
     cmd.extend(["--hidden-import", "pymem"])
     cmd.extend(["--hidden-import", "PySide6"])

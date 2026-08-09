@@ -1001,6 +1001,8 @@ class SchedulerDriverFields:
 
 
 class LevelDataFields:
+    MAP_ID = 0x20                      # string
+    MAP_DATA = 0x38                    # MapData*
     LEVEL_ID = 0x18                    # string
     ROUTES = 0x60                      # RouteData[]
     EXTRA_ROUTES = 0x68                # RouteData[]
@@ -1008,12 +1010,60 @@ class LevelDataFields:
     ENEMY_DB_REFS = 0x78               # EnemyDataDbReference[]
     WAVES = 0x80                       # WaveData[]
     BRANCHES = 0x88                    # ListDict<string, BranchData>
+    PREDEFINES = 0x90                  # PredefinedData*
+    HARD_PREDEFINES = 0x98             # PredefinedData*
+
+
+class MapDataFields:
+    MAP = 0x10                         # short[,]，值为 tiles 下标
+    TILES = 0x18                       # TileData[]
+    BLOCK_EDGES = 0x20                 # MapData.Edge[]
+    TAGS = 0x28                        # string[]
+    EFFECTS = 0x30                     # MapEffectData[]
+    LAYER_RECTS = 0x38                 # string[]
+
+
+class TileDataFields:
+    TILE_KEY = 0x10                    # string
+    HEIGHT_TYPE = 0x18                 # 0=低台, 1=高台
+    BUILDABLE_TYPE = 0x1C
+    PASSABLE_MASK = 0x20
+    PLAYER_SIDE_MASK = 0x24
+    ADVANCED_BUILDABLE_MASK = 0x28
+    BLACKBOARD = 0x30
+    EFFECTS = 0x38
+    READ_SIZE = 0x40
+
+
+class MapEdgeFields:
+    POSITION = 0x10                   # GridPosition(row, col)
+    DIRECTION = 0x18
+    BLOCK_MASK = 0x1C
+    READ_SIZE = 0x20
+
+
+class PredefinedDataFields:
+    CHARACTER_INSTS = 0x10
+    TOKEN_INSTS = 0x18
+    CHARACTER_CARDS = 0x20
+    TOKEN_CARDS = 0x28
+
+
+class PredefinedCharacterFields:
+    CHARACTER_KEY = 0x10              # CharacterInst.Metadata.characterKey
+    HIDDEN = 0x70
+    ALIAS = 0x78
+    POSITION = 0x80                   # GridPosition(row, col)
+    DIRECTION = 0x88
+    READ_SIZE = 0x90
 
 
 class RouteDataFields:
     MOTION_MODE = 0x10
     START_POSITION = 0x14              # GridPosition(row, col)
     END_POSITION = 0x1C
+    SPAWN_RANDOM_RANGE = 0x24          # Vector2
+    SPAWN_OFFSET = 0x2C                # Vector2
     CHECKPOINTS = 0x38                 # CheckpointData[]
     ALLOW_DIAGONAL_MOVE = 0x40
     READ_SIZE = 0x48
@@ -1023,12 +1073,25 @@ class RouteCheckpointFields:
     TYPE = 0x10
     TIME = 0x14
     POSITION = 0x18                    # GridPosition(row, col)
+    REACH_OFFSET = 0x20                # Vector2
+    RANDOMIZE_REACH_OFFSET = 0x28
+    REACH_DISTANCE = 0x2C
     READ_SIZE = 0x30
 
 
 class RouteCheckpointType:
     MOVE = 0
     WAIT_FOR_SECONDS = 1
+    WAIT_FOR_PLAY_TIME = 2
+    WAIT_CURRENT_FRAGMENT_TIME = 3
+    WAIT_CURRENT_WAVE_TIME = 4
+    DISAPPEAR = 5
+    APPEAR_AT_POS = 6
+    ALERT = 7
+    PATROL_MOVE = 8
+    WAIT_BOSSRUSH_WAVE = 9
+    MAP_OFFSET_MOVE = 10
+    INVALID = 11
 
 
 class WaveDataFields:

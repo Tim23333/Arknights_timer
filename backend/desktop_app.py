@@ -1902,6 +1902,13 @@ class CoachWindow(QMainWindow):
         self.btn_enemy_stop.setEnabled(False)
         self.btn_enemy_stop.clicked.connect(self._stop_enemy_poll)
         self._style_muted_button(self.btn_enemy_stop)
+        self.btn_stage_enemy_export = QPushButton("导出关卡/出怪")
+        self.btn_stage_enemy_export.setToolTip(
+            "导出当前地图格子、装置、路线、固定/条件/召唤/动态出怪及已观测生灭帧；"
+            "文件可直接导入排轴前端")
+        self.btn_stage_enemy_export.setEnabled(False)
+        self.btn_stage_enemy_export.clicked.connect(self._on_stage_enemy_export)
+        self._style_muted_button(self.btn_stage_enemy_export)
         self.enemy_progress = QProgressBar()
         self.enemy_progress.setRange(0, 100)
         self.enemy_progress.setValue(0)
@@ -1932,6 +1939,7 @@ class CoachWindow(QMainWindow):
         self.chk_enemy_hide_departed.toggled.connect(self._on_enemy_departed_filter)
         row_btn.addWidget(self.btn_enemy_scan)
         row_btn.addWidget(self.btn_enemy_stop)
+        row_btn.addWidget(self.btn_stage_enemy_export)
         row_btn.addWidget(self.btn_enemy_precision)
         row_btn.addWidget(self.btn_enemy_columns)
         row_btn.addWidget(self.btn_enemy_fit)
@@ -2671,6 +2679,7 @@ class CoachWindow(QMainWindow):
         self._character_frame_ms_sum = 0.0
         self._character_frame_ms_count = 0
         self.btn_enemy_scan.setEnabled(False)
+        self.btn_stage_enemy_export.setEnabled(False)
         self.btn_character_scan.setEnabled(False)
         self.lbl_character_status.setText('等待共享定位完成 ...')
         self.enemy_progress.setValue(0)
@@ -2696,6 +2705,7 @@ class CoachWindow(QMainWindow):
         self.btn_character_scan.setEnabled(True)
         self.btn_enemy_scan.setText('重新扫描')
         if ok:
+            self.btn_stage_enemy_export.setEnabled(True)
             self.enemy_progress.setValue(100)
             self.enemy_progress.setFormat('就绪')
             char_ok = self._character_reader.bootstrap()
@@ -2705,8 +2715,39 @@ class CoachWindow(QMainWindow):
                 else '共享定位完成，正在等待干员容器可读')
             self._start_enemy_poll()
         else:
+            self.btn_stage_enemy_export.setEnabled(False)
             self.enemy_progress.setFormat('定位失败')
             self.lbl_character_status.setText('共享定位失败')
+
+    def _on_stage_enemy_export(self) -> None:
+        """导出关卡地图与完整敌人计划，供 Vue 排轴前端直接导入。"""
+        if not self._enemy_reader.plan_level_id:
+            QMessageBox.information(self, '导出', '尚未扫描到当前关卡，请先点击“开始扫描”')
+            return
+        payload = self._enemy_reader.build_stage_export(self._deploy_stage_info)
+        deploy_events = self._deploy_journal or self._deploy_events
+        if deploy_events:
+            attached = self._attach_deploy_frames(deploy_events, deploy_events)
+            payload['operatorActions'] = self._build_deploy_export_payload(
+                attached)['actions']
+        level_id = self._enemy_reader.plan_level_id.replace('/', '_').replace('\\', '_')
+        default = f"stage_enemy_{level_id}_{time.strftime('%Y%m%d_%H%M%S')}.json"
+        path, _ = QFileDialog.getSaveFileName(
+            self, '导出关卡与出怪信息', default, 'JSON (*.json)')
+        if not path:
+            return
+        try:
+            with open(path, 'w', encoding='utf-8') as stream:
+                json.dump(payload, stream, ensure_ascii=False, indent=2)
+        except (OSError, TypeError, ValueError) as exc:
+            QMessageBox.critical(self, '导出失败', str(exc))
+            return
+        enemy_count = len(payload.get('enemySpawns') or [])
+        map_data = payload.get('map') or {}
+        self.lbl_enemy_status.setText(
+            f"已导出 {map_data.get('rows', 0)}×{map_data.get('cols', 0)} 地图、"
+            f"{enemy_count} 个出怪项 -> {path}")
+        _tlog(f'[关卡] 已导出地图/出怪 {enemy_count} 项 -> {path}')
 
     def _on_character_scan(self) -> None:
         """干员读取复用敌人定位；按钮用于首次定位或强制刷新整条共享链。"""
@@ -3097,7 +3138,7 @@ class CoachWindow(QMainWindow):
         missing_note = f'（{missing_frames} 条帧为空）' if missing_frames else ''
         self.lbl_deploy_status.setText(
             f'已导出 {len(events)} 条{missing_note} -> {path}')
-        self._tlog(f'[部署] 已导出 {len(events)} 条 -> {path}')
+        _tlog(f'[部署] 已导出 {len(events)} 条 -> {path}')
 
     def _on_enemy_snapshot(self, snap: dict) -> None:
         if TEST_BUILD:   # 轮询错误 (数据链失效/重建) 去重后输出控制台
