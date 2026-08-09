@@ -1,4 +1,15 @@
-pymem
-psutil
-PySide6
-websockets
+# ===== 运行时 =====
+PySide6          # 桌面 GUI（backend/desktop_app、tools 各 UI）
+pymem            # Windows 进程内存读取（timer / speed_scanner / enemy_health host 模式）
+psutil           # 进程枚举（timer/process_scan、enemy_health/memcore）
+websockets       # 后端 WS 数据服务（backend/desktop_app）
+
+# ===== 资源解包 =====
+UnityPy          # AB 包解析（ark_parser/extract_effect_frames.py），自动拉取 lz4/brotli/Pillow 等
+
+# ===== 可选加速 =====
+numpy            # 内存扫描预过滤加速（缺失时自动回退纯 Python，不报错）
+
+# ===== 打包/构建（backend/build_exe.py） =====
+pyinstaller      # 打包 exe
+ziglang          # memsrv.c 变更时交叉编译设备侧内存服务（可选，失败不阻断）

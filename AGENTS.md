@@ -50,7 +50,7 @@ python parse_skill_table.py
 ### 提取我方/敌方动作生效帧
 
 ```bash
-python ark_parser/extract_effect_frames.py    # 需系统 Python (UnityPy)
+python ark_parser/extract_effect_frames.py    # 需 UnityPy（已含在 backend/requirements.txt，.venv 可直接跑）
 ```
 
 输出：`data/tables/effect_frames.json` — 每个敌人/干员的普攻与技能：
@@ -354,11 +354,12 @@ BattleLogger；ReplayController 由 BattleController 字段区 klass 名扫描�
 
 ### 环境要求
 
-- Python 3.8+
-- PyInstaller: `pip install pyinstaller`
-- 项目依赖: `pip install -r backend/requirements.txt`
-- 可选依赖（加速内存扫描）: `pip install numpy`
-- 可选依赖（memsrv.c 改动后重新交叉编译设备侧内存服务）: `pip install ziglang`
+- Python 3.8+（项目 venv：`.venv`，Python 3.12）
+- 一条命令装齐（含 PyInstaller / numpy / ziglang / UnityPy）：
+  `pip install -r backend/requirements.txt`
+- 清单分组：运行时（PySide6/pymem/psutil/websockets）、资源解包（UnityPy）、
+  可选加速（numpy，缺失自动回退纯 Python）、打包构建（pyinstaller/ziglang，
+  ziglang 仅 memsrv.c 改动后重编设备侧内存服务用，缺失不阻断打包）
 
 ### 打包命令
 
