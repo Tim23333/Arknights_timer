@@ -3,8 +3,10 @@
 发布新版本时只需要修改下面的 VERSION，然后重新运行 backend/build_exe.py。
 """
 
+import re
+
 # 用户可修改：支持 3.2.4、v3.2.4、3.2.4-beta 等写法。
-VERSION = "3.4.3"
+VERSION = "3.4.4_pre"
 
 
 def _display_label(version: str) -> str:
@@ -18,13 +20,14 @@ VERSION_LABEL = _display_label(VERSION)
 
 
 def windows_version_tuple(version: str = VERSION) -> tuple[int, int, int, int]:
-    """将显示版本转换为 Windows PE 需要的四段数字版本。"""
-    core = str(version).strip().lstrip("vV").split("+", 1)[0].split("-", 1)[0]
-    parts = core.split(".")
-    if not parts or len(parts) > 4 or any(not part.isdigit() for part in parts):
-        raise ValueError(
-            f"VERSION={version!r} 无法转换为 Windows 版本；请以 3.2.4 等数字格式开头")
-    numbers = [int(part) for part in parts]
-    if any(number > 65535 for number in numbers):
-        raise ValueError("Windows 版本的每一段必须位于 0..65535")
+    """宽松生成 Windows PE 四段数字版本，永不限制显示版本写法。
+
+    Windows 的 ``FixedFileInfo`` 只能保存四个 0..65535 的整数；应用自己的
+    VERSION 则允许使用任意非空文本。这里提取文本中第一段点分数字，忽略前后缀，
+    没有数字时回退为 0.0.0.0，超大数字自动截到 Windows 能接受的上限。
+    """
+    match = re.search(r"\d+(?:\.\d+){0,3}", str(version))
+    if match is None:
+        return (0, 0, 0, 0)
+    numbers = [min(int(part), 65535) for part in match.group(0).split(".")]
     return tuple((numbers + [0, 0, 0, 0])[:4])

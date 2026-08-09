@@ -40,12 +40,12 @@ numpy 可以显著加速内存扫描过程。
 发布前只需修改 `backend/app/version.py` 中这一行：
 
 ```python
-VERSION = "3.4.3"
+VERSION = "3.4.4_pre"
 ```
 
 打包脚本会自动把版本写入默认 EXE 文件名、Windows 文件属性、主页面顶部标题和
-测试版诊断日志顶部。当前默认输出为 `ArknightsTimeline_v3.4.3.exe` 与
-`ArknightsTimeline_v3.4.3_Test.exe`；`--name` 仍可覆盖输出文件名。
+测试版诊断日志顶部。当前默认输出为 `ArknightsTimeline_v3.4.4_pre.exe` 与
+`ArknightsTimeline_v3.4.4_pre_Test.exe`；`--name` 仍可覆盖输出文件名。
 
 ### 方法一：使用打包脚本（推荐）
 
@@ -123,8 +123,8 @@ python build_exe.py --test
 
 ```
 backend/dist/
-├── ArknightsTimeline_v3.4.3.exe        # 正式版（版本随 VERSION 变化）
-└── ArknightsTimeline_v3.4.3_Test.exe   # 测试版（独立诊断日志窗口）
+├── ArknightsTimeline_v3.4.4_pre.exe        # 正式版（版本随 VERSION 变化）
+└── ArknightsTimeline_v3.4.4_pre_Test.exe   # 测试版（独立诊断日志窗口）
 ```
 
 ## 测试打包结果
