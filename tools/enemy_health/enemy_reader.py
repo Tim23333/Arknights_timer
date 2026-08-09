@@ -241,7 +241,7 @@ class EnemyInfo:
                  'fragment_index', 'action_index', 'spawn_index', 'route_index',
                  'lifecycle', 'planned', 'spawn_eta', 'spawn_condition',
                  'spawn_kind', 'spawn_source', 'is_summon', 'action_ptr', 'action',
-                 'skills_detail')
+                 'skills_detail', 'current_tile_ptr')
 
     def __init__(self, addr):
         self.addr = addr
@@ -308,6 +308,9 @@ class EnemyInfo:
         self.spawn_source = ''
         self.is_summon = False
         self.action_ptr = 0
+        # m_currentTile 原始指针 (未校验): 非空且是合法指针 = 实体正站在地图
+        # 格子上, 是「已出场」的硬性信号, 优先级高于路线投影估算。
+        self.current_tile_ptr = 0
         # 当前动作链的结构化快照。phase/name 用于主表；其余字段在详情页展示。
         # 地址和时间均来自运行时对象，不根据技能 CD 猜测“正在施放”。
         self.action = {}
@@ -1039,7 +1042,12 @@ class EnemyReader:
 
     def _bind_plan_enemy(self, enemy, record):
         entry_eta = self._remaining_route_entry(enemy, record)
-        before_entry = isinstance(entry_eta, (int, float)) and entry_eta > 0.05
+        # 实体已站在地图格子上 = 已出场。路线投影在路线元数据不匹配时会
+        # 误判「仍在地图外」, 格子指针优先级更高。
+        on_tile = bool(enemy.current_tile_ptr) and self.mc.is_ptr(
+            enemy.current_tile_ptr)
+        before_entry = (isinstance(entry_eta, (int, float))
+                        and entry_eta > 0.05 and not on_tile)
         self._copy_plan_metadata(enemy, record, 'pending' if before_entry else 'active')
         enemy.spawn_eta = entry_eta if before_entry else 0.0
         enemy.spawn_condition = ('实体已生成，正在地图外进入战场'
@@ -1064,6 +1072,36 @@ class EnemyReader:
         enemy.spawn_eta = 0.0
         self._addr_to_roster[enemy.addr] = roster_id
         self._roster_last[roster_id] = enemy
+
+    def _find_claimable_record(self, enemy):
+        """为场上实体认领一个尚未出场的计划项 (首见绑定与动态行重试共用)。
+
+        ActionData 指针能精确区分同种敌人的固定波次与运行时召唤；
+        isSummon 则避免召唤物误认领尚未出场的同名固定波次项。"""
+        record = None
+        if enemy.action_ptr:
+            record = next((item for item in self._all_plan_records()
+                           if item.get('action_ptr') == enemy.action_ptr
+                           and item['info'].lifecycle == 'pending'), None)
+        if record is None and enemy.is_summon:
+            record = next((item for item in self._all_plan_records()
+                           if item['key'] == enemy.eid
+                           and item.get('spawn_kind') in (
+                               'summoned', 'conditional', 'after_death')
+                           and item['info'].lifecycle == 'pending'), None)
+        if record is None and not enemy.is_summon:
+            record = next((item for item in self._all_plan_records()
+                           if item['key'] == enemy.eid
+                           and item['info'].lifecycle == 'pending'), None)
+        if record is None:
+            # 初次附着中途战斗时，spawned_count 已把未观测的前缀标成离场；
+            # 若实例随后才在 List 中可见，允许认领尚未真正观测过的同类项。
+            candidates = [item for item in self._all_plan_records()
+                          if item['key'] == enemy.eid
+                          and item['info'].lifecycle == 'departed'
+                          and not item['seen']]
+            record = candidates[-1] if candidates else None
+        return record
 
     def _merge_enemy_roster(self, live_enemies, spawned_count=0):
         """把当前实例合并进开局计划，返回含未出场/场上/已离场的稳定顺序。"""
@@ -1108,39 +1146,23 @@ class EnemyReader:
                 record = self._plan_by_id.get(roster_id)
                 if record is not None:
                     self._bind_plan_enemy(enemy, record)
-                else:
-                    enemy.roster_id = roster_id
-                    enemy.spawn_order = self._roster_last[roster_id].spawn_order
-                    enemy.lifecycle = 'active'
-                    enemy.planned = False
-                    self._roster_last[roster_id] = enemy
+                    continue
+                # 动态行：首帧 ID/isSummon 瞬读失败会把计划内敌人误落成动态行，
+                # 计划项则永远停在「未出场」。每轮重试认领，保证场上实体
+                # 优先对回计划表。
+                claim = self._find_claimable_record(enemy)
+                if claim is not None:
+                    self._roster_last.pop(roster_id, None)
+                    self._bind_plan_enemy(enemy, claim)
+                    continue
+                enemy.roster_id = roster_id
+                enemy.spawn_order = self._roster_last[roster_id].spawn_order
+                enemy.lifecycle = 'active'
+                enemy.planned = False
+                self._roster_last[roster_id] = enemy
                 continue
 
-            # ActionData 指针能精确区分同种敌人的固定波次与运行时召唤；
-            # isSummon 则避免召唤物误认领尚未出场的同名固定波次项。
-            record = None
-            if enemy.action_ptr:
-                record = next((item for item in self._all_plan_records()
-                               if item.get('action_ptr') == enemy.action_ptr
-                               and item['info'].lifecycle == 'pending'), None)
-            if record is None and enemy.is_summon:
-                record = next((item for item in self._all_plan_records()
-                               if item['key'] == enemy.eid
-                               and item.get('spawn_kind') in (
-                                   'summoned', 'conditional', 'after_death')
-                               and item['info'].lifecycle == 'pending'), None)
-            if record is None and not enemy.is_summon:
-                record = next((item for item in self._all_plan_records()
-                               if item['key'] == enemy.eid
-                               and item['info'].lifecycle == 'pending'), None)
-            if record is None:
-                # 初次附着中途战斗时，spawned_count 已把未观测的前缀标成离场；
-                # 若实例随后才在 List 中可见，允许认领尚未真正观测过的同类项。
-                candidates = [item for item in self._all_plan_records()
-                              if item['key'] == enemy.eid
-                              and item['info'].lifecycle == 'departed'
-                              and not item['seen']]
-                record = candidates[-1] if candidates else None
+            record = self._find_claimable_record(enemy)
             if record is not None:
                 self._bind_plan_enemy(enemy, record)
             else:
@@ -1323,6 +1345,14 @@ class EnemyReader:
             if info.lifecycle != 'pending':
                 continue
             if record.get('addr') and info.alive:
+                on_tile = bool(getattr(info, 'current_tile_ptr', 0)) \
+                    and self.mc.is_ptr(info.current_tile_ptr)
+                if on_tile:
+                    # 实体已在地图格子上: 无论调度计时是否对得上, 直接纠为已出场。
+                    record['spawn_eta'] = 0.0
+                    record['spawn_condition'] = '已出场'
+                    self._copy_plan_metadata(info, record, 'active')
+                    continue
                 entry_eta = self._remaining_route_entry(info, record)
                 if isinstance(entry_eta, (int, float)) and entry_eta > 0.05:
                     record['spawn_eta'] = entry_eta
@@ -2126,18 +2156,20 @@ class EnemyReader:
         return info
 
     def _fill_name(self, ep, blk, info):
-        """填充名称 (只读一次, 之后走缓存)"""
+        """填充名称 (只读一次, 之后走缓存; 空 ID 是瞬读失败, 不缓存,
+        留待下帧重试, 否则实体永远无法按 ID 认领计划项)"""
         if ep not in self._names:
             eid = self.mc.read_ustring(_u64(blk, gs.EntityFields.ID)) or ''
-            runtime_name = ''
-            data_ptr = info.data_ptr or _u64(blk, gs.EnemyFields.DATA)
-            if self.mc.is_ptr(data_ptr):
-                name_ptr = self._read_ptr(data_ptr + gs.LevelEnemyDataFields.NAME)
-                if self.mc.is_ptr(name_ptr):
-                    runtime_name = self.mc.read_ustring(name_ptr) or ''
-            name, code = self._remember_enemy_name(eid, runtime_name)
-            self._names[ep] = (eid, name, code)
-        info.eid, info.name, info.code = self._names[ep]
+            if eid:
+                runtime_name = ''
+                data_ptr = info.data_ptr or _u64(blk, gs.EnemyFields.DATA)
+                if self.mc.is_ptr(data_ptr):
+                    name_ptr = self._read_ptr(data_ptr + gs.LevelEnemyDataFields.NAME)
+                    if self.mc.is_ptr(name_ptr):
+                        runtime_name = self.mc.read_ustring(name_ptr) or ''
+                name, code = self._remember_enemy_name(eid, runtime_name)
+                self._names[ep] = (eid, name, code)
+        info.eid, info.name, info.code = self._names.get(ep, ('', '', ''))
         return info
 
     @staticmethod
@@ -2156,6 +2188,7 @@ class EnemyReader:
         info.id_ptr = _u64(blk, gs.EntityFields.ID)
         info.attr_ptr = _u64(blk, gs.EntityFields.M_ATTRIBUTES)
         info.data_ptr = _u64(blk, gs.EnemyFields.DATA)
+        info.current_tile_ptr = _u64(blk, gs.EnemyFields.M_CURRENT_TILE)
         info.state_ptr = _u64(blk, gs.EntityFields.M_STATE_MACHINE)
         info.ep_ptr = _u64(blk, gs.EntityFields.M_EP_ARRAY)
         info.ep_controller_ptr = _u64(blk, gs.EntityFields.M_EP_CONTROLLER)
@@ -3159,6 +3192,16 @@ class EnemyReader:
                           detail='异常状态由一个或多个 Buff 标志维持')
             if not set_countdown(action.get('status_remaining'), '异常持续剩余', 'buff'):
                 action['remaining_kind'] = 'Buff/异常条件解除'
+        elif (info.abnormal_combos
+                and len(info.abnormal_combos) > gs.AbnormalCombo.SLEEPING
+                and info.abnormal_combos[gs.AbnormalCombo.SLEEPING] > 0):
+            # 睡眠不改状态机状态（敌人停在移动/待机等），单独按 combo 识别；
+            # 剩余时间由维持睡眠的 Buff 决定（夜半/提提等技能均为限时 Buff）。
+            action.update(phase='abnormal_sleep', name=f'{state_name}·睡眠',
+                          detail='睡眠中：无法移动/攻击/施放技能，'
+                                 '由维持睡眠的 Buff 时长决定醒来时刻')
+            if not set_countdown(action.get('status_remaining'), '睡眠剩余', 'buff'):
+                action['remaining_kind'] = 'Buff/异常条件解除'
         elif state_id == gs.EnemyState.MOVE:
             candidates = []
             value = action.get('cd_remaining')
@@ -3804,14 +3847,35 @@ class EnemyReader:
             gs.EnemyState.LEVITATE: (25, None),
             gs.EnemyState.PALSY: (39, None),
         }
-        status_targets = []
+        # 目标按敌人合并：状态类异常（眩晕/冻结/浮空/战栗）走 flag mask，
+        # 睡眠是 AbnormalCombo（不改状态机状态，敌人停在 MOVE/IDLE 等），
+        # 走 combo mask；叠加时合并成一行，倒计时取两类 Buff 的最长剩余。
+        status_rows = {}
         for ep in eps:
             state_id = runtime[ep].get('state_id', gs.EnemyState.DEFAULT)
             bits = abnormal_bits.get(state_id)
             info = infos.get(ep)
             if bits and info is not None:
-                status_targets.append((ep, info.buff_container_ptr, state_id,
-                                       bits[0], bits[1]))
+                status_rows[ep] = [info.buff_container_ptr, state_id,
+                                   bits[0], bits[1]]
+        for ep in eps:
+            combos = runtime[ep].get('abnormal_combos') or ()
+            if (len(combos) <= gs.AbnormalCombo.SLEEPING
+                    or combos[gs.AbnormalCombo.SLEEPING] <= 0):
+                continue
+            info = infos.get(ep)
+            if info is None:
+                continue
+            row = status_rows.get(ep)
+            if row is not None:
+                if row[3] is None:
+                    row[3] = gs.AbnormalCombo.SLEEPING
+            else:
+                status_rows[ep] = [
+                    info.buff_container_ptr,
+                    runtime[ep].get('state_id', gs.EnemyState.DEFAULT),
+                    None, gs.AbnormalCombo.SLEEPING]
+        status_targets = [(ep, *row) for ep, row in status_rows.items()]
         self._refresh_status_timers_chan(status_targets, runtime, self._fast_tick)
 
         for ep in eps:
@@ -4396,15 +4460,19 @@ class EnemyReader:
                     continue
 
         for ep, eid in eids.items():
+            if not eid:
+                # 瞬读失败不缓存空 ID: 一旦缓存, new_eps 不再重试, 实体永远
+                # 无法按 ID 认领计划项 (计划行卡「未出场」, 实体落动态行)。
+                continue
             name, code = self._remember_enemy_name(eid, runtime_names.get(ep, ''))
             self._names[ep] = (eid, name, code)
-        # 通道内未解决的走一次完整慢读兜底
+        # 通道内未解决的走一次完整慢读兜底 (空结果不缓存, 下帧重试)
         for ep in new_eps:
             if ep not in self._names or ep not in self._attr_snapshot:
                 full = self._read_enemy(ep, with_runtime=False)
-                if ep not in self._names:
+                if ep not in self._names and full.eid:
                     self._names[ep] = (full.eid, full.name, full.code)
-                if ep not in self._attr_snapshot:
+                if ep not in self._attr_snapshot and full.attributes:
                     self._attr_snapshot[ep] = dict(full.attributes)
                 if ep not in infos:
                     infos[ep] = full

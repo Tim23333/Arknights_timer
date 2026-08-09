@@ -95,6 +95,7 @@ python run.py
 - 主表始终把当前场上且存活的敌人置顶；未出场敌人随后，阵亡或已离场敌人置底，各组内部仍保持关卡预定/首次发现顺序
 - 每行的**详情**按钮与主表同帧更新 HP/状态/损伤条/技能；原始属性、当前 Buff 和关卡全局 Buff 由独立通道持续刷新
 - Buff/关卡效果同时显示中文名称、自动归纳的效果说明、中文属性公式和 Blackboard 参数解释；内部键与原始参数仍保留用于逆向核对
+- **生效帧**（敌我双方详情页均有该 tab）：展示每个动作（普攻/技能）的动画名、动画事件生效帧（如 `OnAttack 0.9s = 27帧`）、弹道速度与命中帧公式（`命中帧 = 发射帧 + 距离 × 帧/格`；定时型弹道为 `发射帧 + 固定飞行帧`）。数据来自 `data/tables/effect_frames.json`，由 `python ark_parser/extract_effect_frames.py` 从本地解包资产提取（敌人 spine 动画事件 = `data/refs/arts/enm_art_*`，我方 = `data/chararts`，技能/普攻 Ability 参数 = `data/battle/enm_pfb_*` 与 `data/charpack`，弹道速度/固定飞行时间 = `data/battle/prefabs/[uc]projectiles.ab_unpacked`），运行时用 `tools/enemy_health/enemy_db.load_effect_frames()` 加载
 - 状态栏显示每帧读取耗时 (ms/帧); 轮询线程用 timeBeginPeriod(1) 保证亚 16ms 睡眠精度
 
 ### 命令行

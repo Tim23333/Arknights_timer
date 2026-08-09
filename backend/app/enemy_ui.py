@@ -18,6 +18,7 @@ from .enemy_buff_descriptions import (
     buff_chinese_name, describe_active_buff, describe_blackboard, describe_buff_def,
     describe_global_buff, global_buff_chinese_name,
 )
+from .effect_frames_ui import COLUMNS as FRAMES_COLUMNS, enemy_frame_rows
 
 
 def format_skill_cd(skills, sep='; ', prec=1):
@@ -589,10 +590,12 @@ class EnemyDetailDialog(QDialog):
             '中文名称', '内部键', '效果说明', '来源阵营', '作用当前敌人', '目标数',
             '实例信息', '生成 Buff', '参数说明', '原始 Blackboard'])
         self.skills = _make_table(['技能', '优先级', '剩余CD', '总CD', '状态'])
+        self.frames = _make_table(FRAMES_COLUMNS)
         for label, table in (
                 ('概览', self.overview), ('属性', self.attrs), ('损伤条', self.elements),
                 ('状态与免疫', self.statuses), ('当前 Buff', self.buffs),
-                ('关卡效果', self.globals), ('技能', self.skills)):
+                ('关卡效果', self.globals), ('技能', self.skills),
+                ('生效帧', self.frames)):
             self.tabs.addTab(table, label)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Close)
@@ -793,6 +796,14 @@ class EnemyDetailDialog(QDialog):
                            '就绪' if remain <= 0.05 else '冷却中')
                           for key, remain, period in enemy.skills]
         _fill_table(self.skills, skill_rows, resize_columns=resize_columns)
+        if self._first_update:
+            frame_rows = enemy_frame_rows(enemy.eid)
+            if frame_rows:
+                _fill_table(self.frames, frame_rows, resize_columns=True)
+            else:
+                _fill_table(self.frames, [('-', '未提取到该敌人的生效帧数据',
+                                           '-', '-', '-', '-', '-')],
+                            resize_columns=True)
         self._first_update = False
         self.live_status.setText(f'实时更新中 · 最近刷新 {time.strftime("%H:%M:%S")}')
         self.live_status.setStyleSheet('color:#58a66a;')

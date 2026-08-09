@@ -151,6 +151,62 @@ def load_enemy_db(tables_dir=None):
     return _db_cache
 
 
+_frames_cache = None
+_frames_cache_key = None
+
+
+def find_effect_frames_json(tables_dir=None):
+    if tables_dir is None:
+        here = os.path.dirname(os.path.abspath(__file__))
+        tables_dir = os.path.join(here, '..', '..', 'data', 'tables')
+    path = os.path.join(tables_dir, 'effect_frames.json')
+    return path if os.path.isfile(path) else None
+
+
+def load_effect_frames(tables_dir=None):
+    """加载动作生效帧数据 (extract_effect_frames.py 产物, 带缓存); 失败返回 {}。
+
+    返回 {'enemies': {eid: {...}}, 'characters': {cid: {...}}}。
+    动画事件时间 t 单位秒, f 单位帧 (30 tick/s); 弹道 speed 单位 格/秒。
+    """
+    global _frames_cache, _frames_cache_key
+    path = find_effect_frames_json(tables_dir)
+    cache_key = None
+    if path:
+        try:
+            cache_key = (path, os.path.getmtime(path), os.path.getsize(path))
+        except OSError:
+            cache_key = None
+    if _frames_cache is not None and _frames_cache_key == cache_key:
+        return _frames_cache
+    data = {}
+    if path:
+        try:
+            with open(path, 'r', encoding='utf-8') as stream:
+                payload = json.load(stream)
+            if isinstance(payload, dict):
+                data = payload
+        except Exception:
+            data = {}
+    _frames_cache = data
+    _frames_cache_key = cache_key
+    return data
+
+
+def enemy_effect_frames(eid, tables_dir=None):
+    """单个敌人的生效帧数据 (无则 None)。"""
+    if not eid:
+        return None
+    return load_effect_frames(tables_dir).get('enemies', {}).get(eid)
+
+
+def character_effect_frames(cid, tables_dir=None):
+    """单个干员/单位的生效帧数据 (无则 None)。"""
+    if not cid:
+        return None
+    return load_effect_frames(tables_dir).get('characters', {}).get(cid)
+
+
 if __name__ == '__main__':
     db = load_enemy_db()
     print(f"共 {len(db)} 个敌人")

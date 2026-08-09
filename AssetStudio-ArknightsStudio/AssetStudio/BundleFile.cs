@@ -228,18 +228,11 @@ namespace AssetStudio
                 fileList[i] = file;
                 file.path = node.path;
                 file.fileName = Path.GetFileName(node.path);
-                if (node.size >= int.MaxValue)
-                {
-                    /*var memoryMappedFile = MemoryMappedFile.CreateNew(null, entryinfo_size);
-                    file.stream = memoryMappedFile.CreateViewStream();*/
-                    var extractPath = path + "_unpacked" + Path.DirectorySeparatorChar;
-                    Directory.CreateDirectory(extractPath);
-                    file.stream = new FileStream(extractPath + file.fileName, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
-                }
-                else
-                {
-                    file.stream = new MemoryStream((int)node.size);
-                }
+                // Codex patch: always write inner CAB files to <path>_unpacked
+                // so UnityPy can read the decompressed bundles later.
+                var extractPath = path + "_unpacked" + Path.DirectorySeparatorChar;
+                Directory.CreateDirectory(extractPath);
+                file.stream = new FileStream(extractPath + file.fileName, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
                 blocksStream.Position = node.offset;
                 blocksStream.CopyTo(file.stream, node.size);
                 file.stream.Position = 0;

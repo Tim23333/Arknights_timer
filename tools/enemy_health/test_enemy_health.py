@@ -244,6 +244,94 @@ class EnemyDetailModelTests(unittest.TestCase):
         self.assertNotIn('remaining_frames', enemy.action)
         self.assertEqual(enemy.action['remaining_kind'], '动画/能力回调决定')
 
+    def test_sleeping_enemy_shows_sleep_buff_remaining(self):
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        reader = EnemyReader(mc=FakeMem())
+        enemy = EnemyInfo(0x1000)
+        enemy.state_id = gs.EnemyState.MOVE
+        enemy.abnormal_combos = [0] * gs.AbnormalCombo.E_NUM
+        enemy.abnormal_combos[gs.AbnormalCombo.SLEEPING] = 1
+        enemy.action = {'status_remaining': 2.5}
+        reader._finalize_enemy_action(
+            enemy, now=5.0, frame=130, frame_duration=1 / 30)
+        self.assertEqual(enemy.action['phase'], 'abnormal_sleep')
+        self.assertIn('睡眠', enemy.action['name'])
+        self.assertAlmostEqual(enemy.action['remaining'], 2.5)
+        self.assertEqual(enemy.action['remaining_frames'], 75)
+        self.assertEqual(enemy.action['remaining_kind'], '睡眠剩余')
+        self.assertEqual(enemy.action['clock_source'], 'buff')
+
+    def test_sleeping_enemy_without_buff_timer_shows_condition_fallback(self):
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        reader = EnemyReader(mc=FakeMem())
+        enemy = EnemyInfo(0x1000)
+        enemy.state_id = gs.EnemyState.MOVE
+        enemy.abnormal_combos = [0] * gs.AbnormalCombo.E_NUM
+        enemy.abnormal_combos[gs.AbnormalCombo.SLEEPING] = 1
+        enemy.action = {}
+        reader._finalize_enemy_action(
+            enemy, now=5.0, frame=130, frame_duration=1 / 30)
+        self.assertEqual(enemy.action['phase'], 'abnormal_sleep')
+        self.assertNotIn('remaining_frames', enemy.action)
+        self.assertEqual(enemy.action['remaining_kind'], 'Buff/异常条件解除')
+
+    def test_status_timer_matches_sleep_combo_mask(self):
+        # BuffContainer -> DoubleBufferedList -> List -> Buff 链,
+        # 目标用 (flag_bit=None, combo_bit=SLEEPING), 验证按 combo mask
+        # 匹配后把 Buff 剩余时间写入快照。
+        container, dbl, lst, items, buff = (
+            0x10000, 0x20000, 0x30000, 0x40000, 0x50000)
+        blocks = {}
+        head = bytearray(0x30)
+        struct.pack_into('<Q', head, gs.BuffContainerFields.M_BUFFS, dbl)
+        blocks[(container, 0x30)] = bytes(head)
+        head = bytearray(0x28)
+        struct.pack_into('<Q', head,
+                         gs.DoubleBufferedListFields.M_INTERNAL_LIST, lst)
+        blocks[(dbl, 0x28)] = bytes(head)
+        head = bytearray(0x20)
+        struct.pack_into('<Q', head, gs.ListInternal.ITEMS, items)
+        struct.pack_into('<i', head, gs.ListInternal.SIZE, 1)
+        blocks[(lst, 0x20)] = bytes(head)
+        blocks[(items + gs.Il2CppArray.ITEMS, 0x10)] = struct.pack('<Q', buff)
+        base = gs.BuffFields.M_LIFE_TIME
+        size = gs.BuffFields.ABNORMAL_COMBO_MASK + 8 - base
+        record = bytearray(size)
+        struct.pack_into('<q', record, 0, int(5.0 * gs.FP_ONE))
+        struct.pack_into('<q', record, gs.BuffFields.M_REMAINING_TIME - base,
+                         int(2.5 * gs.FP_ONE))
+        record[gs.BuffFields.IS_ACTUALLY_ENABLED - base] = 1
+        record[gs.BuffFields.IS_VALID - base] = 1
+        struct.pack_into('<Q', record, gs.BuffFields.ABNORMAL_COMBO_MASK - base,
+                         1 << gs.AbnormalCombo.SLEEPING)
+        blocks[(buff + base, size)] = bytes(record)
+
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        reader = EnemyReader(mc=FakeMem())
+        reader._detail_batch_read = (
+            lambda reqs: [blocks.get((addr, size)) for addr, size in reqs])
+        snapshots = {}
+        reader._refresh_status_timers_chan(
+            [(0xE000, container, gs.EnemyState.MOVE,
+              None, gs.AbnormalCombo.SLEEPING)],
+            snapshots, 1)
+        action = snapshots[0xE000]['action']
+        self.assertAlmostEqual(action['status_remaining'], 2.5)
+        self.assertEqual(action['status_source_count'], 1)
+        self.assertFalse(action['status_infinite'])
+
     def test_spine_non_loop_track_has_exact_scaled_remaining_time(self):
         remaining = spine_track_remaining(
             0.0, 3.0, 1.5, entry_scale=1.0,
@@ -750,6 +838,65 @@ class EnemyDetailModelTests(unittest.TestCase):
         rows = reader._merge_enemy_roster([enemy], 1)
         self.assertEqual(rows[0].lifecycle, 'active')
 
+    def test_on_tile_enemy_is_active_despite_route_projection_mismatch(self):
+        # 路线元数据与实体实际路线不匹配时, 投影可能永远 < 0.98, 导致
+        # 已在场上的敌人被误判为「地图外进入中」。m_currentTile 非空是
+        # 更硬的已出场信号, 必须优先于投影估算。
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        reader = EnemyReader(mc=FakeMem())
+        reader._route_meta = {
+            0: {'start': (2, 11), 'entry': (2, 9), 'distance': 2.0,
+                'fixed_wait': 0.0, 'diagonal': False}}
+        reader._level_enemy_meta = {'enemy_a': {'move_speed': 0.5}}
+        reader._set_spawn_plan([{'key': 'enemy_a', 'route_index': 0}])
+        enemy = EnemyInfo(0x1000)
+        enemy.eid = 'enemy_a'
+        enemy.alive = True
+        enemy.mspd = 0.5
+        enemy.pos_x, enemy.pos_y = 10.0, 2.0   # 投影距进场点仍约 2 秒
+        enemy.current_tile_ptr = 0x50000       # 但实体已站在地图格子上
+        rows = reader._merge_enemy_roster([enemy], 1)
+        self.assertEqual(rows[0].lifecycle, 'active')
+        self.assertEqual(rows[0].spawn_eta, 0.0)
+        self.assertEqual(rows[0].spawn_condition, '已出场')
+
+    def test_apply_spawn_timing_corrects_on_tile_pending_record(self):
+        # pending 计划项已绑定存活实体且实体在格子上时, 即使调度计时
+        # 对不上, 也要直接纠为已出场而不是继续显示未出场倒计时。
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        reader = EnemyReader(mc=FakeMem())
+        reader._route_meta = {
+            0: {'start': (2, 11), 'entry': (2, 9), 'distance': 2.0,
+                'fixed_wait': 0.0, 'diagonal': False}}
+        reader._level_enemy_meta = {'enemy_a': {'move_speed': 0.5}}
+        reader._set_spawn_plan([{'key': 'enemy_a', 'route_index': 0}])
+        record = reader._spawn_plan[0]
+        enemy = record['info']
+        enemy.addr = 0x1000
+        enemy.alive = True
+        enemy.mspd = 0.5
+        enemy.pos_x, enemy.pos_y = 10.0, 2.0
+        enemy.current_tile_ptr = 0x50000
+        record['addr'] = 0x1000
+        rows = reader._apply_spawn_timing([enemy], None)
+        self.assertEqual(rows[0].lifecycle, 'active')
+        self.assertEqual(rows[0].spawn_eta, 0.0)
+        self.assertEqual(rows[0].spawn_condition, '已出场')
+
+    def test_parse_enemy_block_reads_current_tile_ptr(self):
+        blk = bytearray(gs.EnemyFields.READ_SIZE)
+        struct.pack_into('<Q', blk, gs.EnemyFields.M_CURRENT_TILE, 0x50000)
+        info = EnemyReader._parse_enemy_block(0x1000, bytes(blk))
+        self.assertEqual(info.current_tile_ptr, 0x50000)
+
     def test_obscured_float_v2_byte_swap(self):
         # 现网 Faust moveSpeed=0.5 的 AttributesData 原始字节。
         self.assertAlmostEqual(gs.decrypt_obscured_float(
@@ -780,6 +927,50 @@ class EnemyDetailModelTests(unittest.TestCase):
         enemy.is_summon = True
         rows = reader._merge_enemy_roster([enemy], 0)
         self.assertEqual([row.lifecycle for row in rows], ['pending', 'active'])
+
+    def test_dynamic_row_reclaims_pending_plan_record(self):
+        # 首帧 ID 瞬读失败 -> 计划内敌人被落成动态行, 计划项卡「未出场」;
+        # 后续帧 ID 解析成功后必须能重新认领该计划项。
+        reader = EnemyReader(mc=object())
+        reader._set_spawn_plan([{'key': 'enemy_a'}])
+        enemy = EnemyInfo(0x1000)
+        enemy.eid = ''
+        enemy.alive = True
+        rows = reader._merge_enemy_roster([enemy], 0)
+        self.assertEqual([row.lifecycle for row in rows], ['pending', 'active'])
+        self.assertFalse(rows[1].planned)
+
+        enemy.eid = 'enemy_a'
+        rows = reader._merge_enemy_roster([enemy], 0)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].lifecycle, 'active')
+        self.assertTrue(rows[0].planned)
+        self.assertEqual(rows[0].spawn_order, 1)
+
+    def test_empty_eid_is_not_cached_for_retry(self):
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+            @staticmethod
+            def read(addr, size):
+                return None
+
+        class DeadChannel:
+            @staticmethod
+            def batch_read(reqs):
+                return [None for _ in reqs]
+
+        reader = EnemyReader(mc=FakeMem())
+        reader._chan = DeadChannel()
+        ep = 0x1000
+        info = EnemyInfo(ep)
+        info.id_ptr = 0x2000
+        info.attr_ptr = 0x3000
+        info.data_ptr = 0x4000
+        reader._fill_new_enemies_chan([ep], {ep: info})
+        self.assertNotIn(ep, reader._names)
 
     def test_unit_manager_and_scheduler_sources_are_stably_deduplicated(self):
         self.assertEqual(

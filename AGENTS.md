@@ -47,6 +47,20 @@ python parse_skill_table.py
 
 输出：`skills.json`（1607 个技能）
 
+### 提取我方/敌方动作生效帧
+
+```bash
+python ark_parser/extract_effect_frames.py    # 需系统 Python (UnityPy)
+```
+
+输出：`data/tables/effect_frames.json` — 每个敌人/干员的普攻与技能：
+动画名、Spine 动画事件生效帧（`OnAttack` 等，秒+帧）、弹道速度（或固定飞行时间）。
+数据源：`data/refs/arts/enm_art_*`（敌人 spine）、`data/chararts`（我方 spine）、
+`data/battle/enm_pfb_*`/`data/charpack`（Ability 参数 `_animKey/_preDelay/_projectileKey`）、
+`data/battle/prefabs/[uc]projectiles.ab_unpacked`（弹道移动组件）。
+运行时由 `tools/enemy_health/enemy_db.load_effect_frames()` 加载，在敌我详情页
+「生效帧」tab 展示。
+
 ### 快速查看干员数据
 
 ```bash

@@ -18,6 +18,7 @@ from .enemy_buff_descriptions import (
     buff_chinese_name, describe_active_buff, describe_blackboard,
     describe_global_buff, global_buff_chinese_name,
 )
+from .effect_frames_ui import COLUMNS as FRAMES_COLUMNS, character_frame_rows
 from .enemy_ui import (
     _ColumnOrderList, _PrecisionSpin, _bb_text, _fill_table, _fmt, _make_table,
 )
@@ -599,12 +600,13 @@ class CharacterDetailDialog(QDialog):
         self.elements = _make_table([
             '损伤类型', '已累积', '剩余', '上限', '爆发', '恢复中'])
         self.effects = _make_table(['类别', '名称/类', '地址', '参数/说明'])
+        self.frames = _make_table(FRAMES_COLUMNS)
         for label, table in (
                 ('概览', self.overview), ('属性', self.attrs), ('伤害统计', self.damage),
                 ('主技能', self.skill),
                 ('状态与免疫', self.statuses), ('当前 Buff', self.buffs),
                 ('天赋', self.talents), ('元素损伤', self.elements),
-                ('其他效果', self.effects)):
+                ('其他效果', self.effects), ('生效帧', self.frames)):
             self.tabs.addTab(table, label)
         buttons = QDialogButtonBox(QDialogButtonBox.Close)
         buttons.rejected.connect(self.reject)
@@ -738,6 +740,16 @@ class CharacterDetailDialog(QDialog):
             ('参数', '能力 Blackboard', _bb_text(runtime.get('ability_blackboard', []))),
         ]
         _fill_table(self.skill, skill_rows, resize_columns=resize)
+
+        if self._first_update:
+            frame_rows = (character_frame_rows(character.cid)
+                          or character_frame_rows(character.tmpl_id))
+            if frame_rows:
+                _fill_table(self.frames, frame_rows, resize_columns=True)
+            else:
+                _fill_table(self.frames, [('-', '未提取到该干员的生效帧数据',
+                                           '-', '-', '-', '-', '-')],
+                            resize_columns=True)
 
         status_rows = []
         for idx, internal, name in gs.ABNORMAL_FLAG_DEFS:

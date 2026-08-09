@@ -130,6 +130,9 @@ def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args) -
             cmd.extend(["--add-data", _add_data_arg(f, "data/tables")])
         for f in tables_dir.glob("enemy_names*.json"):
             cmd.extend(["--add-data", _add_data_arg(f, "data/tables")])
+        # 动作生效帧数据 (ark_parser/extract_effect_frames.py 产物)
+        for f in tables_dir.glob("effect_frames.json"):
+            cmd.extend(["--add-data", _add_data_arg(f, "data/tables")])
         # 干员名数据库 (tools/deploy_tracker/char_names 按 data/tables 相对路径重建)
         for f in tables_dir.glob("character_table*.bin"):
             cmd.extend(["--add-data", _add_data_arg(f, "data/tables")])
