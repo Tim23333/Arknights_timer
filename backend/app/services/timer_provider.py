@@ -2,11 +2,11 @@ import os
 import sys
 import bisect
 import math
-from collections import deque
+from array import array
 from datetime import datetime
 from pathlib import Path
 from threading import RLock
-from typing import Any, Deque, Dict, Optional, Tuple
+from typing import Any, Dict, Optional
 
 
 def _bootstrap_import_path() -> None:
@@ -29,9 +29,8 @@ _bootstrap_import_path()
 from tools.timer.ak_memory_reader import AKMemoryReader
 
 
-# 只保存不同的逻辑帧。按 30-120 逻辑帧/秒计算，可覆盖约 34-136 秒；
-# Python 对象总占用约数百 KB，且 deque.maxlen 保证不会随关卡时长增长。
-FRAME_TIMELINE_MAX_SAMPLES = 4096
+# 保存整场战斗内每个不同逻辑帧。两个连续数组每条样本固定 16 字节：
+# 即使按 120 帧/秒持续一小时也约 6.6 MiB；检测到新一局后自动清空。
 FRAME_MATCH_EXACT_EPSILON = 0.000005
 
 
@@ -45,8 +44,8 @@ class TimerDataProvider:
         self.process_name: str = os.getenv("AK_PROCESS_NAME", "MuMuVMMHeadless.exe")
         self.time_address_hex: Optional[str] = os.getenv("AK_TIME_ADDRESS", "").strip() or None
         self.reader: Optional[AKMemoryReader] = None
-        self._frame_timeline: Deque[Tuple[float, int]] = deque(
-            maxlen=FRAME_TIMELINE_MAX_SAMPLES)
+        self._frame_times = array("d")
+        self._frame_counts = array("Q")
         self._game_cache: Dict[str, Any] = {
             "connected": False,
             "configured": False,
@@ -59,7 +58,13 @@ class TimerDataProvider:
 
     def _build_reader(self) -> None:
         self.reader = AKMemoryReader(process_name=self.process_name)
-        self._frame_timeline.clear()
+        self._clear_frame_timeline()
+
+    def _clear_frame_timeline(self) -> None:
+        # array.array 没有 list.clear()；切片删除在所有受支持的 Python
+        # 版本以及 PyInstaller 冻结环境中都可用，并保持原数组对象不变。
+        del self._frame_times[:]
+        del self._frame_counts[:]
 
     def _record_frame_sample(self, game_time: float, frame_count: int) -> None:
         """记录一组原子读取的时间/帧；同帧去重，新一局自动清空旧样本。"""
@@ -71,17 +76,19 @@ class TimerDataProvider:
         if not math.isfinite(game_time) or game_time < 0 or frame_count < 0:
             return
         with self._lock:
-            if self._frame_timeline:
-                last_time, last_frame = self._frame_timeline[-1]
+            if self._frame_times:
+                last_time = self._frame_times[-1]
+                last_frame = self._frame_counts[-1]
                 if frame_count < last_frame or game_time + FRAME_MATCH_EXACT_EPSILON < last_time:
-                    self._frame_timeline.clear()
+                    self._clear_frame_timeline()
                 elif frame_count == last_frame:
                     # fixedPlayTime 与 fixedFrameCnt 同步更新；同帧高频采样没有新信息。
                     return
-            self._frame_timeline.append((game_time, frame_count))
+            self._frame_times.append(game_time)
+            self._frame_counts.append(frame_count)
 
     def get_frame_for_game_time(self, game_time: float) -> Optional[Dict[str, Any]]:
-        """从有界缓存解析指定游戏时间对应的逻辑帧。
+        """从本局完整缓存解析指定游戏时间对应的逻辑帧。
 
         优先返回完全匹配的实测帧；若采样恰好跳过目标帧，则只在相邻实测样本
         之间线性补帧。目标落在缓存范围外时返回 None，等待下一轮采样，不用
@@ -94,13 +101,15 @@ class TimerDataProvider:
         if not math.isfinite(target) or target < 0:
             return None
         with self._lock:
-            samples = list(self._frame_timeline)
-        return self._resolve_frame_from_samples(target, samples)
+            times = self._frame_times[:]
+            frames = self._frame_counts[:]
+        return self._resolve_frame_from_samples(target, times, frames)
 
     def get_frames_for_game_times(self, game_times) -> list:
-        """批量解析事件时间；只复制一次缓存，避免大量代理日志反复复制 deque。"""
+        """批量解析事件时间；只复制一次紧凑数组，避免逐事件重复加锁。"""
         with self._lock:
-            samples = list(self._frame_timeline)
+            times = self._frame_times[:]
+            frames = self._frame_counts[:]
         out = []
         for value in game_times:
             try:
@@ -111,19 +120,19 @@ class TimerDataProvider:
             if not math.isfinite(target) or target < 0:
                 out.append(None)
                 continue
-            out.append(self._resolve_frame_from_samples(target, samples))
+            out.append(self._resolve_frame_from_samples(target, times, frames))
         return out
 
     @staticmethod
-    def _resolve_frame_from_samples(target, samples):
-        if not samples:
+    def _resolve_frame_from_samples(target, times, frames):
+        if not times or len(times) != len(frames):
             return None
 
-        times = [sample[0] for sample in samples]
         idx = bisect.bisect_left(times, target)
-        nearest_indices = [i for i in (idx - 1, idx) if 0 <= i < len(samples)]
+        nearest_indices = [i for i in (idx - 1, idx) if 0 <= i < len(times)]
         nearest = min(nearest_indices, key=lambda i: abs(times[i] - target))
-        sample_time, sample_frame = samples[nearest]
+        sample_time = times[nearest]
+        sample_frame = frames[nearest]
         delta = target - sample_time
         if abs(delta) <= FRAME_MATCH_EXACT_EPSILON:
             return {
@@ -133,9 +142,9 @@ class TimerDataProvider:
                 "timeDelta": round(delta, 6),
             }
 
-        if 0 < idx < len(samples):
-            left_time, left_frame = samples[idx - 1]
-            right_time, right_frame = samples[idx]
+        if 0 < idx < len(times):
+            left_time, left_frame = times[idx - 1], frames[idx - 1]
+            right_time, right_frame = times[idx], frames[idx]
             time_span = right_time - left_time
             frame_span = right_frame - left_frame
             if time_span > 0 and frame_span > 0:
@@ -152,13 +161,15 @@ class TimerDataProvider:
         return None
 
     def get_frame_timeline_stats(self) -> Dict[str, Any]:
-        """供状态/测试查看缓存边界，不暴露可变 deque。"""
+        """供状态/测试查看本局缓存边界，不暴露可变数组。"""
         with self._lock:
             return {
-                "size": len(self._frame_timeline),
-                "maxSize": FRAME_TIMELINE_MAX_SAMPLES,
-                "oldestTime": self._frame_timeline[0][0] if self._frame_timeline else None,
-                "newestTime": self._frame_timeline[-1][0] if self._frame_timeline else None,
+                "size": len(self._frame_times),
+                "maxSize": None,
+                "storageBytes": (len(self._frame_times) * self._frame_times.itemsize
+                                 + len(self._frame_counts) * self._frame_counts.itemsize),
+                "oldestTime": self._frame_times[0] if self._frame_times else None,
+                "newestTime": self._frame_times[-1] if self._frame_times else None,
             }
 
     def _ensure_connected(self) -> bool:
@@ -183,7 +194,7 @@ class TimerDataProvider:
                 self._build_reader()
 
             self.time_address_hex = addr
-            self._frame_timeline.clear()
+            self._clear_frame_timeline()
 
             if not self._ensure_connected():
                 self._game_cache = {

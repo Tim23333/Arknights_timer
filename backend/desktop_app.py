@@ -60,6 +60,8 @@ for _p in (str(_BACKEND_ROOT), str(_REPO_ROOT)):
         sys.path.insert(0, _p)
 
 from app.services.timer_provider import TimerDataProvider
+from app.diagnostic_log import DiagnosticLogManager, DiagnosticLogWindow
+from app.version import VERSION, VERSION_LABEL
 from tools.enemy_health import EnemyReader
 from tools.enemy_health import game_structs as enemy_gs
 from tools.character_status import CharacterReader
@@ -92,17 +94,28 @@ except Exception:   # 模块缺失时禁用随机数区块, 不影响其他功�
     RngService = None
 
 # 测试版检测: build_exe.py --test 打包时内嵌 TEST_BUILD 标记文件
-# (开发调试可设环境变量 AK_TEST_BUILD=1)。测试版带控制台窗口,
-# 全部内部日志实时输出到控制台, 用于现场排查 (如换机扫描失败)。
+# (开发调试可设环境变量 AK_TEST_BUILD=1)。测试版使用独立诊断日志窗口，
+# 同时把全部内部日志落盘；打包仍保持 windowed，不再弹出 CMD 控制台。
 TEST_BUILD = os.environ.get("AK_TEST_BUILD") == "1" or (
     getattr(sys, "frozen", False)
     and (Path(getattr(sys, "_MEIPASS", ".")) / "TEST_BUILD").is_file())
 
+_DIAGNOSTIC_LOGGER: DiagnosticLogManager | None = None
+_EARLY_TEST_LOGS: list[str] = []
+_EARLY_TEST_LOG_LOCK = threading.Lock()
+
 
 def _tlog(*a) -> None:
-    """测试版控制台日志 (正式版为空操作, 开销可忽略)"""
-    if TEST_BUILD:
-        print(f"[{time.strftime('%H:%M:%S')}]", *a, flush=True)
+    """测试版诊断日志入口（线程安全落盘 + 日志窗口；正式版为空操作）。"""
+    if not TEST_BUILD:
+        return
+    message = " ".join(str(part) for part in a)
+    logger = _DIAGNOSTIC_LOGGER
+    if logger is not None:
+        logger.log(message)
+        return
+    with _EARLY_TEST_LOG_LOCK:
+        _EARLY_TEST_LOGS.append(message)
 
 AUTO_REFRESH_MS = 8
 FAST_UI_MS = 8
@@ -996,6 +1009,40 @@ RNG_PREDICT_LEN = 30    # 未来预测默认发数 (界面可改, 1-500)
 RNG_HISTORY_LEN = 18    # 最近消耗展示条数
 RNG_UI_MS = 150         # 快照刷新间隔 (服务自带 5ms 轮询线程, UI 只读快照)
 
+
+def _render_rng_snapshot(info_label: QLabel, pred_table: QTableWidget,
+                         hist_table: QTableWidget, data: dict | None,
+                         missing_text: str) -> None:
+    """将一条 RNG 引擎快照绘制到对应的信息行、预测表和历史表。"""
+    if data is None:
+        info_label.setText(missing_text)
+        pred_table.setRowCount(0)
+        hist_table.setRowCount(0)
+        return
+
+    info_label.setText(
+        f"游标 #{data.get('cursor', 0)}   已消耗 {data.get('total', 0)} 发   "
+        f"{data.get('rate', 0.0):.1f} 发/秒   [{data.get('label', '')}]")
+    predictions = data.get('predictions') or []
+    pred_table.setRowCount(len(predictions))
+    for i, prediction in enumerate(predictions):
+        pred_table.setItem(
+            i, 0, QTableWidgetItem(str(prediction.get('n', i + 1))))
+        pred_table.setItem(
+            i, 1, QTableWidgetItem(f"{prediction.get('frac', 0.0):.4f}"))
+
+    history = data.get('history') or []
+    hist_table.setRowCount(len(history))
+    for i, item in enumerate(history):
+        cells = [
+            QTableWidgetItem(str(item.get('seq', 0))),
+            QTableWidgetItem(f"{item.get('frac', 0.0):.4f}"),
+            QTableWidgetItem(f"0x{item.get('raw', 0) & 0xFFFFFFFF:08X}"),
+        ]
+        for column, cell in enumerate(cells):
+            hist_table.setItem(i, column, cell)
+
+
 DEPLOY_COLS = ['时间', '逻辑帧', '操作', '干员', '朝向', '位置', '附加信息']
 DEPLOY_COL_WIDTHS = [80, 75, 60, 120, 50, 80, 120]
 DEPLOY_POLL_SEC = 0.3   # 操作记录轮询间隔 (memsrv 批量读每次仅数 ms)
@@ -1469,7 +1516,9 @@ class EnemyMiniWindow(QWidget):
 class CoachWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("明日方舟游戏数据显示工具" + (" [测试版]" if TEST_BUILD else ""))
+        self.setWindowTitle(
+            f"明日方舟游戏数据显示工具 {VERSION_LABEL}"
+            + (" [测试版]" if TEST_BUILD else ""))
         self.resize(1180, 760)
         self.setMinimumSize(900, 560)
 
@@ -1482,7 +1531,8 @@ class CoachWindow(QMainWindow):
         self._ws_loop: asyncio.AbstractEventLoop | None = None
 
         # 敌人数据
-        self._enemy_reader = EnemyReader(log=_tlog)   # 测试版日志进控制台, 正式版空操作
+        self._enemy_reader = EnemyReader(
+            log=_tlog, diagnostics=TEST_BUILD)
         # 干员与敌人共用 BattleController、UnitManager、MemCore 和高速 TCP 通道，
         # 不再进行第二次全内存定位。
         self._character_reader = CharacterReader(self._enemy_reader)
@@ -1554,6 +1604,12 @@ class CoachWindow(QMainWindow):
         self._theme_timer.setInterval(1500)
         self._theme_timer.timeout.connect(self._sync_system_theme)
 
+        self._diagnostic_log_window: DiagnosticLogWindow | None = None
+        if TEST_BUILD and _DIAGNOSTIC_LOGGER is not None:
+            _DIAGNOSTIC_LOGGER.set_context_provider(self._diagnostic_context)
+            self._diagnostic_log_window = DiagnosticLogWindow(
+                _DIAGNOSTIC_LOGGER, self)
+
         self._build_ui()
         app = QApplication.instance()
         if app is not None:
@@ -1567,6 +1623,61 @@ class CoachWindow(QMainWindow):
         self._start_ws_server()
         self._start_workers()
         self._start_timers()
+        if self._diagnostic_log_window is not None:
+            QTimer.singleShot(0, self._show_diagnostic_log)
+            threading.Thread(
+                target=_DIAGNOSTIC_LOGGER.append_environment_snapshot,
+                name="DiagnosticSnapshot", daemon=True,
+            ).start()
+
+    def _diagnostic_context(self) -> dict:
+        """为日志包提供当前运行状态；只含排查所需字段，不导出用户数据。"""
+        reader = self._enemy_reader
+        mc = reader.mc
+        channel = getattr(reader, '_chan', None)
+        detail_channel = getattr(reader, '_detail_chan', None)
+        return {
+            'test_build': TEST_BUILD,
+            'app_version': VERSION,
+            'admin': _is_admin(),
+            'runtime_root': str(_RUNTIME_ROOT),
+            'repo_root': str(_REPO_ROOT),
+            'adb_path': mc.adb_path or '',
+            'adb_serial': mc.adb_serial or '',
+            'package': mc.package or '',
+            'pid': mc.pid,
+            'reader': {
+                'battle_controller': hex(reader.bc_addr) if reader.bc_addr else '',
+                'scheduler': hex(reader.sched_addr) if reader.sched_addr else '',
+                'enemy_list': hex(reader.list_addr) if reader.list_addr else '',
+                'unit_manager': hex(reader.unit_manager_addr) if reader.unit_manager_addr else '',
+                'unit_enemies': hex(reader.unit_enemies_addr) if reader.unit_enemies_addr else '',
+                'registered_instances': len(reader.enemy_addrs),
+                'planned_count': reader.planned_count,
+                'resolved_ids': sum(bool(value and value[0])
+                                    for value in reader._names.values()),
+                'resolved_attributes': sum(bool(value)
+                                           for value in reader._attr_snapshot.values()),
+            },
+            'main_channel': {
+                'port': getattr(channel, 'port', None),
+                'mode': getattr(channel, 'mode', None),
+                'server_version': getattr(channel, 'srv_version', None),
+            },
+            'detail_channel': {
+                'port': getattr(detail_channel, 'port', None),
+                'mode': getattr(detail_channel, 'mode', None),
+                'server_version': getattr(detail_channel, 'srv_version', None),
+            },
+        }
+
+    def _show_diagnostic_log(self) -> None:
+        window = self._diagnostic_log_window
+        if window is None:
+            return
+        window.show()
+        window.raise_()
+        window.activateWindow()
 
     def _build_ui(self) -> None:
         root = QWidget(self)
@@ -1592,7 +1703,9 @@ class CoachWindow(QMainWindow):
         main.setSpacing(8)
 
         title_row = QHBoxLayout()
-        self.page_title = QLabel("明日方舟游戏数据显示工具 · 桌面版 Made by Tim(321346659)")
+        self.page_title = QLabel(
+            f"明日方舟游戏数据显示工具 · {VERSION_LABEL} · 桌面版 "
+            "Made by Tim(321346659)")
         self.page_title.setObjectName('PageTitle')
         title_row.addWidget(self.page_title)
         title_row.addStretch(1)
@@ -1601,6 +1714,13 @@ class CoachWindow(QMainWindow):
         self._style_secondary_button(self.btn_select_adb)
         title_row.addWidget(self.btn_select_adb)
         self._update_adb_button()
+        if self._diagnostic_log_window is not None:
+            self.btn_diagnostic_log = QPushButton("诊断日志")
+            self.btn_diagnostic_log.setToolTip(
+                "打开测试版实时日志窗口，并可一键打包排查信息")
+            self.btn_diagnostic_log.clicked.connect(self._show_diagnostic_log)
+            self._style_primary_button(self.btn_diagnostic_log)
+            title_row.addWidget(self.btn_diagnostic_log)
         self.btn_pin_top = QPushButton("窗口置顶")
         self.btn_pin_top.setCheckable(True)
         self.btn_pin_top.setToolTip("开启后窗口始终显示在最前")
@@ -1917,50 +2037,66 @@ class CoachWindow(QMainWindow):
         self.rng_pred_spin.setRange(1, 500)
         self.rng_pred_spin.setValue(RNG_PREDICT_LEN)
         self.rng_pred_spin.setSuffix(" 发")
-        self.rng_pred_spin.setToolTip("未来预测的随机数个数 (1-500)")
+        self.rng_pred_spin.setToolTip("两条序列各自预测的随机数个数 (1-500)")
         row_rng.addWidget(self.rng_pred_spin)
         self.lbl_rng_status = QLabel("未扫描")
         self.lbl_rng_status.setProperty('role', 'muted')
         row_rng.addWidget(self.lbl_rng_status, 1)
         l_rng.addLayout(row_rng)
-        self.lbl_rng_info = QLabel("—")
-        self.lbl_rng_info.setProperty('role', 'primaryText')
-        self.lbl_rng_info.setStyleSheet("font-family:Consolas,monospace;")
-        l_rng.addWidget(self.lbl_rng_info)
-        row_rng_tables = QHBoxLayout()
-        pred_box = QVBoxLayout()
-        lbl_pred = QLabel("未来预测 (下一发在最上)")
-        lbl_pred.setProperty('role', 'muted')
-        pred_box.addWidget(lbl_pred)
-        self.rng_pred_table = QTableWidget(0, 2)
-        self.rng_pred_table.setHorizontalHeaderLabels(['第几发', '值'])
-        self.rng_pred_table.verticalHeader().setVisible(False)
-        self.rng_pred_table.setSelectionMode(QTableWidget.NoSelection)
-        self.rng_pred_table.setEditTriggers(QTableWidget.NoEditTriggers)
-        self.rng_pred_table.setAlternatingRowColors(True)
-        self.rng_pred_table.setColumnWidth(0, 70)
-        self.rng_pred_table.setColumnWidth(1, 110)
-        self.rng_pred_table.setMinimumWidth(200)
-        pred_box.addWidget(self.rng_pred_table)
-        row_rng_tables.addLayout(pred_box)
-        hist_box = QVBoxLayout()
-        lbl_hist = QLabel("最近消耗 (旧→新)")
-        lbl_hist.setProperty('role', 'muted')
-        hist_box.addWidget(lbl_hist)
-        self.rng_hist_table = QTableWidget(0, 3)
-        self.rng_hist_table.setHorizontalHeaderLabels(['序号', '值', '原始值'])
-        self.rng_hist_table.verticalHeader().setVisible(False)
-        self.rng_hist_table.setSelectionMode(QTableWidget.NoSelection)
-        self.rng_hist_table.setEditTriggers(QTableWidget.NoEditTriggers)
-        self.rng_hist_table.setAlternatingRowColors(True)
-        self.rng_hist_table.setColumnWidth(0, 80)
-        self.rng_hist_table.setColumnWidth(1, 110)
-        self.rng_hist_table.setColumnWidth(2, 120)
-        self.rng_hist_table.setMinimumWidth(330)
-        hist_box.addWidget(self.rng_hist_table)
-        row_rng_tables.addLayout(hist_box)
-        row_rng_tables.addStretch(1)
-        l_rng.addLayout(row_rng_tables)
+        def build_rng_role_panel(title: str):
+            panel = QGroupBox(title)
+            panel_layout = QVBoxLayout(panel)
+            info = QLabel("—")
+            info.setProperty('role', 'primaryText')
+            info.setStyleSheet("font-family:Consolas,monospace;")
+            panel_layout.addWidget(info)
+
+            tables = QHBoxLayout()
+            pred_box = QVBoxLayout()
+            lbl_pred = QLabel("未来预测 (下一发在最上)")
+            lbl_pred.setProperty('role', 'muted')
+            pred_box.addWidget(lbl_pred)
+            pred_table = QTableWidget(0, 2)
+            pred_table.setHorizontalHeaderLabels(['第几发', '值'])
+            pred_table.verticalHeader().setVisible(False)
+            pred_table.setSelectionMode(QTableWidget.NoSelection)
+            pred_table.setEditTriggers(QTableWidget.NoEditTriggers)
+            pred_table.setAlternatingRowColors(True)
+            pred_table.setColumnWidth(0, 70)
+            pred_table.setColumnWidth(1, 110)
+            pred_table.setMinimumWidth(200)
+            pred_box.addWidget(pred_table)
+            tables.addLayout(pred_box)
+
+            hist_box = QVBoxLayout()
+            lbl_hist = QLabel("最近消耗 (旧→新)")
+            lbl_hist.setProperty('role', 'muted')
+            hist_box.addWidget(lbl_hist)
+            hist_table = QTableWidget(0, 3)
+            hist_table.setHorizontalHeaderLabels(['序号', '值', '原始值'])
+            hist_table.verticalHeader().setVisible(False)
+            hist_table.setSelectionMode(QTableWidget.NoSelection)
+            hist_table.setEditTriggers(QTableWidget.NoEditTriggers)
+            hist_table.setAlternatingRowColors(True)
+            hist_table.setColumnWidth(0, 80)
+            hist_table.setColumnWidth(1, 110)
+            hist_table.setColumnWidth(2, 120)
+            hist_table.setMinimumWidth(330)
+            hist_box.addWidget(hist_table)
+            tables.addLayout(hist_box)
+            tables.addStretch(1)
+            panel_layout.addLayout(tables)
+            return panel, info, pred_table, hist_table
+
+        (self.rng_imp_panel, self.lbl_rng_info, self.rng_pred_table,
+         self.rng_hist_table) = build_rng_role_panel(
+             "战斗随机（randomImp，影响战局）")
+        l_rng.addWidget(self.rng_imp_panel)
+        (self.rng_trivial_panel, self.lbl_rng_trivial_info,
+         self.rng_trivial_pred_table,
+         self.rng_trivial_hist_table) = build_rng_role_panel(
+             "表现随机（randomTrivial，仅视觉表现）")
+        l_rng.addWidget(self.rng_trivial_panel)
         if RngService is None:
             self.btn_rng_scan.setEnabled(False)
             self.lbl_rng_status.setText("模块缺失 (tools/ak_live_rng)")
@@ -2213,6 +2349,9 @@ class CoachWindow(QMainWindow):
                     asyncio.run_coroutine_threadsafe(ws.close(), self._ws_loop)
                 except Exception:
                     pass
+        if self._diagnostic_log_window is not None:
+            self._diagnostic_log_window.shutdown()
+            self._diagnostic_log_window = None
         return super().closeEvent(event)
 
     def _on_open_timer_tool(self) -> None:
@@ -2291,7 +2430,8 @@ class CoachWindow(QMainWindow):
             self._deploy_reader = None
         self._enemy_reader.close()
         self._enemy_reader = EnemyReader(
-            adb_path=path, adb_serial=serial, log=_tlog)
+            adb_path=path, adb_serial=serial, log=_tlog,
+            diagnostics=TEST_BUILD)
         self._character_reader = CharacterReader(self._enemy_reader)
 
         if self._enemy_detail_dialog is not None:
@@ -2328,6 +2468,10 @@ class CoachWindow(QMainWindow):
 
         self.rng_pred_table.setRowCount(0)
         self.rng_hist_table.setRowCount(0)
+        self.rng_trivial_pred_table.setRowCount(0)
+        self.rng_trivial_hist_table.setRowCount(0)
+        self.lbl_rng_info.setText('—')
+        self.lbl_rng_trivial_info.setText('—')
         self.lbl_rng_status.setText('ADB 已切换，请重新扫描')
 
         self.deploy_table.setRowCount(0)
@@ -2542,10 +2686,13 @@ class CoachWindow(QMainWindow):
             self.btn_rng_stop.setEnabled(False)
             return
         self._rng_svc = svc
-        svc.select_role('imp')   # 只展示关键随机 (战斗判定), 表现随机不在界面出现
         svc.start()
         self._rng_timer.start(RNG_UI_MS)
-        self.lbl_rng_status.setText('监控中')
+        roles = {t.engine.get('role') for t in svc.trackers()}
+        if {'imp', 'trivial'} <= roles:
+            self.lbl_rng_status.setText('监控中（战斗随机 + 表现随机）')
+        else:
+            self.lbl_rng_status.setText('监控中（部分随机引擎未定位）')
         self.btn_rng_stop.setEnabled(True)
 
     def _on_rng_stop(self) -> None:
@@ -2568,26 +2715,19 @@ class CoachWindow(QMainWindow):
             snap = svc.snapshot(RNG_HISTORY_LEN, self.rng_pred_spin.value())
         except Exception:
             return
-        sel = snap.get('selected')
-        if sel is None:
-            self.lbl_rng_info.setText(str(snap.get('status') or '—'))
-            return
-        self.lbl_rng_info.setText(
-            f"游标 #{sel.get('cursor', 0)}   已消耗 {sel.get('total', 0)} 发   "
-            f"{sel.get('rate', 0.0):.1f} 发/秒   [{sel.get('label', '')}]")
-        preds = sel.get('predictions') or []
-        self.rng_pred_table.setRowCount(len(preds))
-        for i, p in enumerate(preds):
-            self.rng_pred_table.setItem(i, 0, QTableWidgetItem(str(p.get('n', i + 1))))
-            self.rng_pred_table.setItem(i, 1, QTableWidgetItem(f"{p.get('frac', 0.0):.4f}"))
-        hist = sel.get('history') or []
-        self.rng_hist_table.setRowCount(len(hist))
-        for i, h in enumerate(hist):
-            items = [QTableWidgetItem(str(h.get('seq', 0))),
-                     QTableWidgetItem(f"{h.get('frac', 0.0):.4f}"),
-                     QTableWidgetItem(f"0x{h.get('raw', 0) & 0xFFFFFFFF:08X}")]
-            for c, it in enumerate(items):
-                self.rng_hist_table.setItem(i, c, it)
+        by_role = snap.get('by_role') or {}
+        # 兼容只提供 selected 的旧版 RngService。
+        selected = snap.get('selected')
+        if not by_role and selected is not None:
+            by_role = {selected.get('role'): selected}
+        status = str(snap.get('status') or '未定位')
+        _render_rng_snapshot(
+            self.lbl_rng_info, self.rng_pred_table, self.rng_hist_table,
+            by_role.get('imp'), f'战斗随机未定位：{status}')
+        _render_rng_snapshot(
+            self.lbl_rng_trivial_info, self.rng_trivial_pred_table,
+            self.rng_trivial_hist_table, by_role.get('trivial'),
+            f'表现随机未定位：{status}')
 
     # ================= 操作记录 (deploy_tracker) =================
 
@@ -2764,7 +2904,7 @@ class CoachWindow(QMainWindow):
         for ev in events:
             action = {
                 'action_type': DEPLOY_OP_CN.get(ev.get('op'), ev.get('opName', '')),
-                'frame': int(ev['frame']),
+                'frame': int(ev['frame']) if ev.get('frame') is not None else None,
                 'oper': ev.get('charName') or ev.get('charId') or '',
                 'pos': self._deploy_pos_label(ev),
             }
@@ -2821,12 +2961,6 @@ class CoachWindow(QMainWindow):
             self._deploy_events = events
         self._update_deploy_frame_cells(events)
         missing_frames = sum(ev.get('frame') is None for ev in events)
-        if missing_frames:
-            QMessageBox.warning(
-                self, '无法导出',
-                f'仍有 {missing_frames} 条操作没有匹配到精确逻辑帧。\n'
-                '请先用寻址工具配置游戏时间/帧地址，并等待对应操作发生后再导出。')
-            return
         payload = self._build_deploy_export_payload(events)
         default = f"deploy_log_{time.strftime('%Y%m%d_%H%M%S')}.json"
         path, _ = QFileDialog.getSaveFileName(self, '导出操作记录', default, 'JSON (*.json)')
@@ -2838,7 +2972,9 @@ class CoachWindow(QMainWindow):
         except OSError as e:
             QMessageBox.critical(self, '导出失败', str(e))
             return
-        self.lbl_deploy_status.setText(f'已导出 {len(events)} 条 -> {path}')
+        missing_note = f'（{missing_frames} 条帧为空）' if missing_frames else ''
+        self.lbl_deploy_status.setText(
+            f'已导出 {len(events)} 条{missing_note} -> {path}')
         self._tlog(f'[部署] 已导出 {len(events)} 条 -> {path}')
 
     def _on_enemy_snapshot(self, snap: dict) -> None:
@@ -3613,7 +3749,8 @@ class CoachWindow(QMainWindow):
                 [
                     f"连接: {'是' if game.get('connected') else '否'}  |  已配置地址: {'是' if game.get('configured') else '否'}",
                     f"最近一次刷新: {lr if lr else '—'}",
-                    f"帧映射缓存: {timeline['size']} / {timeline['maxSize']}",
+                    f"帧映射缓存: {timeline['size']}（整局，"
+                    f"{timeline['storageBytes'] / 1024:.1f} KiB）",
                     f"说明: {game.get('message', '')}",
                 ]
             )
@@ -3628,6 +3765,8 @@ def _is_admin() -> bool:
 
 
 def main() -> None:
+    global _DIAGNOSTIC_LOGGER
+
     # Set Windows AppUserModelID so the taskbar uses our icon instead of the default Python/Windows icon.
     if sys.platform == "win32":
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("ArknightsTimeline")
@@ -3638,25 +3777,48 @@ def main() -> None:
         ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, f'"{script}" {params}', None, 1)
         sys.exit()
 
+    app = QApplication.instance() or QApplication(sys.argv)
+
+    original_stdout, original_stderr = sys.stdout, sys.stderr
     if TEST_BUILD:
-        import faulthandler
         import traceback
-        faulthandler.enable()
+
+        _DIAGNOSTIC_LOGGER = DiagnosticLogManager()
+        with _EARLY_TEST_LOG_LOCK:
+            early_logs = list(_EARLY_TEST_LOGS)
+            _EARLY_TEST_LOGS.clear()
+        for message in early_logs:
+            _DIAGNOSTIC_LOGGER.log(message)
+        sys.stdout = _DIAGNOSTIC_LOGGER.text_stream("stdout")
+        sys.stderr = _DIAGNOSTIC_LOGGER.text_stream("stderr")
+        _DIAGNOSTIC_LOGGER.enable_fault_handler()
+
+        def _format_exception(exc_type, exc_value, exc_traceback) -> str:
+            return ''.join(traceback.format_exception(
+                exc_type, exc_value, exc_traceback)).rstrip()
 
         def _thread_hook(args):
-            print(f"!!! 线程 {args.thread.name if args.thread else '?'} 未捕获异常:", flush=True)
-            traceback.print_exception(args.exc_type, args.exc_value, args.exc_traceback)
+            _tlog(
+                f"!!! 线程 {args.thread.name if args.thread else '?'} 未捕获异常:\n"
+                + _format_exception(args.exc_type, args.exc_value, args.exc_traceback))
+
+        def _main_hook(exc_type, exc_value, exc_traceback):
+            _tlog("!!! 主线程未捕获异常:\n" + _format_exception(
+                exc_type, exc_value, exc_traceback))
+
         threading.excepthook = _thread_hook
-        _tlog("========== 测试版 (控制台实时日志) ==========")
+        sys.excepthook = _main_hook
+        _tlog(f"========== ArknightsTimeline {VERSION_LABEL} "
+              "测试版（独立诊断日志窗口） ==========")
+        _tlog("应用版本:", VERSION_LABEL)
         _tlog("frozen:", getattr(sys, "frozen", False), "| exe:", sys.executable)
         _tlog("工作目录:", os.getcwd(), "| 管理员权限:", _is_admin())
+        _tlog("日志文件:", _DIAGNOSTIC_LOGGER.log_path)
         try:
             from tools.enemy_health.memcore import find_mumu_adb
             _tlog("adb 探测:", find_mumu_adb() or "(未找到)")
         except Exception as e:
             _tlog("adb 探测异常:", e)
-
-    app = QApplication.instance() or QApplication(sys.argv)
 
     # Set application icon (window title bar + taskbar).
     icon_path = _REPO_ROOT / "aaa.ico"
@@ -3665,7 +3827,14 @@ def main() -> None:
 
     win = CoachWindow()
     win.show()
-    app.exec()
+    try:
+        app.exec()
+    finally:
+        if _DIAGNOSTIC_LOGGER is not None:
+            sys.stdout = original_stdout
+            sys.stderr = original_stderr
+            _DIAGNOSTIC_LOGGER.close()
+            _DIAGNOSTIC_LOGGER = None
 
 
 if __name__ == "__main__":

@@ -7,6 +7,8 @@ from pathlib import Path
 import subprocess
 import sys
 
+from app.version import VERSION_LABEL
+
 
 def main():
     dist_dir = Path(__file__).resolve().parent / "dist"
@@ -16,7 +18,7 @@ def main():
     print("=" * 60)
 
     # 检查主程序
-    main_exe = dist_dir / "ArknightsTimeline.exe"
+    main_exe = dist_dir / f"ArknightsTimeline_{VERSION_LABEL}.exe"
 
     print(f"\n[检查] 输出目录: {dist_dir}")
     print(f"[检查] 主程序: {main_exe}")
@@ -64,7 +66,7 @@ def main():
     print("=" * 60)
     print("\n[说明]")
     print("- 寻址工具已内嵌到主程序中")
-    print("- 用户只需分发 ArknightsTimeline.exe 一个文件")
+    print(f"- 用户只需分发 {main_exe.name} 一个文件")
     print('- 点击"打开寻址工具"按钮时，程序会自动提取并运行寻址工具')
     return 0
 

@@ -3,26 +3,29 @@
 一键打包 Arknights 游戏数据显示工具为 Windows EXE。
 
 特性：
-1) 打包主程序：backend/run.py → ArknightsTimeline.exe
+1) 打包主程序：backend/run.py → ArknightsTimeline_<版本>.exe
    （游戏时间/帧显示 + 敌人实时监控, tools/enemy_health）
 2) 打包寻址工具：tools/timer/ak_timer_ui.py → AKTimerTool.exe（内嵌进主程序）
-3) 默认连打测试版：同源 + 控制台实时日志 → ArknightsTimeline_Test.exe
-3) 自动包含 tools/ 目录（含 enemy_health/bin/memsrv 设备侧内存服务）
-4) 自动构建 memsrv（memsrv.c 比 bin/memsrv 新时用 ziglang 交叉编译）
-5) 自动包含敌人名称数据库 data/tables/enemy_handbook_table*.bin
-6) 默认图标：仓库根目录下的 aaa.ico（可命令行覆盖）
+3) 默认连打测试版：同源 + 独立诊断日志窗口 → ArknightsTimeline_<版本>_Test.exe
+4) 自动包含 tools/ 目录（含 enemy_health/bin/memsrv 设备侧内存服务）
+5) 自动构建 memsrv（memsrv.c 比 bin/memsrv 新时用 ziglang 交叉编译）
+6) 自动包含敌人名称数据库 data/tables/enemy_handbook_table*.bin
+7) 默认图标：仓库根目录下的 aaa.ico（可命令行覆盖）
 
 用法：
-  python build_exe.py                # 默认连打正式版 + 测试版 (带控制台日志)
+  python build_exe.py                # 默认连打正式版 + 测试版 (带诊断日志窗口)
   python build_exe.py --icon "<仓库根目录>\\aaa.ico" --name ArknightsTimeline
   python build_exe.py --onedir
   python build_exe.py --skip-timer   # 只打包主程序 (不内嵌寻址工具)
   python build_exe.py --skip-test    # 只打正式版, 跳过测试版
 
-说明：测试版 = 同源代码 + 控制台窗口实时日志 + TEST_BUILD 标记,
-输出 <名称>_Test.exe (默认 ArknightsTimeline_Test.exe), 用于现场排查
+说明：测试版 = 同源代码 + 独立诊断日志窗口 + TEST_BUILD 标记,
+输出 <名称>_Test.exe（默认 ArknightsTimeline_v<版本>_Test.exe），用于现场排查。
+发布前只需修改 backend/app/version.py 中的 VERSION 变量；默认文件名、Windows
+文件属性、程序主页面标题和测试日志顶部都会自动使用该版本号。
 (如换机扫描失败)。desktop_app 检测标记或环境变量 AK_TEST_BUILD=1
-即开启控制台日志。
+即开启线程安全日志落盘、环境诊断和一键日志打包；测试版仍为 windowed，
+不会再弹出 CMD 控制台。
 """
 from __future__ import annotations
 
@@ -32,6 +35,8 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+from app.version import VERSION, VERSION_LABEL, windows_version_tuple
 
 
 def _ensure_memsrv(tools_dir: Path) -> None:
@@ -63,8 +68,42 @@ def _add_data_arg(src: Path, dst: str) -> str:
     return f"{src}{sep}{dst}"
 
 
+def _write_windows_version_file(backend_dir: Path, executable_name: str) -> Path:
+    """生成 PyInstaller 使用的 Windows FileVersion/ProductVersion 资源。"""
+    numeric = windows_version_tuple()
+    numeric_text = ".".join(str(part) for part in numeric)
+    output = backend_dir / "build" / "version_info" / f"{executable_name}.txt"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    strings = {
+        "CompanyName": "Tim23333",
+        "FileDescription": f"ArknightsTimeline {VERSION_LABEL}",
+        "FileVersion": numeric_text,
+        "InternalName": executable_name,
+        "OriginalFilename": f"{executable_name}.exe",
+        "ProductName": "ArknightsTimeline",
+        "ProductVersion": VERSION,
+    }
+    string_rows = ",\n".join(
+        f"StringStruct({key!r}, {value!r})" for key, value in strings.items())
+    output.write_text(
+        "VSVersionInfo(\n"
+        "  ffi=FixedFileInfo(\n"
+        f"    filevers={numeric!r}, prodvers={numeric!r},\n"
+        "    mask=0x3f, flags=0x0, OS=0x40004, fileType=0x1, subtype=0x0, date=(0, 0)),\n"
+        "  kids=[\n"
+        "    StringFileInfo([StringTable('040904B0', [\n"
+        f"      {string_rows}\n"
+        "    ])]),\n"
+        "    VarFileInfo([VarStruct('Translation', [1033, 1200])])\n"
+        "  ]\n"
+        ")\n",
+        encoding="utf-8",
+    )
+    return output
+
+
 def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args) -> int:
-    """打包主程序 ArknightsTimeline.exe（内嵌寻址工具）"""
+    """打包带版本号的主程序（内嵌寻址工具）。"""
     entry = backend_dir / "run.py"
     tools_dir = repo_root / "tools"
     data_dir = backend_dir / "data"
@@ -80,6 +119,8 @@ def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args) -
     if not embed_timer:
         print("[WARN] 未找到寻址工具, 主程序将不包含内嵌 AKTimerTool.exe")
 
+    version_file = _write_windows_version_file(backend_dir, args.name)
+
     cmd = [
         sys.executable,
         "-m",
@@ -90,6 +131,8 @@ def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args) -
         args.name,
         "--icon",
         str(icon_path),
+        "--version-file",
+        str(version_file),
         "--paths",
         str(repo_root),
         "--distpath",
@@ -114,7 +157,7 @@ def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args) -
     if icon_path.is_file():
         cmd.extend(["--add-data", _add_data_arg(icon_path, ".")])
     if getattr(args, "test", False):
-        # 测试版标记文件: desktop_app 检测到 _MEIPASS/TEST_BUILD 即开启控制台日志
+        # 测试版标记文件: desktop_app 检测后开启独立诊断日志窗口与落盘
         marker = backend_dir / "build" / "TEST_BUILD"
         marker.parent.mkdir(parents=True, exist_ok=True)
         marker.write_text("test build\n", encoding="utf-8")
@@ -231,7 +274,9 @@ def _build_timer_tool(backend_dir: Path, repo_root: Path, icon_path: Path, args)
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build backend desktop EXE with PyInstaller.")
-    parser.add_argument("--name", default="ArknightsTimeline", help="输出程序名（默认 ArknightsTimeline）")
+    parser.add_argument(
+        "--name",
+        help=f"输出程序名（默认 ArknightsTimeline_{VERSION_LABEL}）")
     parser.add_argument(
         "--icon",
         default=str(Path(__file__).resolve().parent.parent / "aaa.ico"),
@@ -245,10 +290,14 @@ def main() -> int:
     parser.add_argument("--test", action="store_true",
                         help="(已废弃, 默认即会同时打包测试版) 仅保留兼容, 效果等同默认行为")
     args = parser.parse_args()
+    if not args.name:
+        args.name = f"ArknightsTimeline_{VERSION_LABEL}"
 
     backend_dir = Path(__file__).resolve().parent
     repo_root = backend_dir.parent
     workspace_root = repo_root.parent
+
+    print(f"[INFO] 当前应用版本: {VERSION_LABEL}（修改 backend/app/version.py）")
 
     icon_path = Path(args.icon).expanduser().resolve()
     if not icon_path.is_file():
@@ -295,14 +344,14 @@ def main() -> int:
     if ret != 0:
         return ret
 
-    # 步骤 3: 测试版 (控制台实时日志), 名称加 _Test 后缀, 内嵌 TEST_BUILD 标记
+    # 步骤 3: 测试版 (独立诊断日志窗口), 名称加 _Test 后缀, 内嵌标记
     if not args.skip_test:
         print("\n" + "=" * 60)
-        print("[步骤 3/3] 打包测试版（控制台实时日志）...")
+        print("[步骤 3/3] 打包测试版（独立诊断日志窗口）...")
         print("=" * 60)
         test_args = argparse.Namespace(**vars(args))
         test_args.test = True        # _build_main_app 据此内嵌 TEST_BUILD 标记
-        test_args.console = True     # 测试版必须带控制台窗口
+        test_args.console = False    # 测试版使用 GUI 日志窗口，不弹 CMD
         test_args.name = args.name if args.name.endswith("_Test") else f"{args.name}_Test"
         ret = _build_main_app(backend_dir, repo_root, icon_path, test_args)
         if ret != 0:

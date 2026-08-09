@@ -972,6 +972,34 @@ class EnemyDetailModelTests(unittest.TestCase):
         reader._fill_new_enemies_chan([ep], {ep: info})
         self.assertNotIn(ep, reader._names)
 
+    def test_identity_diagnostics_reports_invalid_name_and_attribute_pointers(self):
+        ep = 0x123450
+
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+            @staticmethod
+            def read_klass_name(_addr):
+                return 'BattleEnemy'
+
+        messages = []
+        reader = EnemyReader(mc=FakeMem(), log=messages.append, diagnostics=True)
+        info = EnemyInfo(ep)
+        info.hp = 42.0
+        info.id_ptr = 0
+        info.attr_ptr = 0
+        info.data_ptr = 0
+
+        reader._log_identity_diagnostics([ep], {ep: info})
+
+        joined = '\n'.join(messages)
+        self.assertIn('缺 ID 1', joined)
+        self.assertIn('缺属性 1', joined)
+        self.assertIn('class=BattleEnemy', joined)
+        self.assertIn('id_ptr=0(invalid)', joined)
+
     def test_unit_manager_and_scheduler_sources_are_stably_deduplicated(self):
         self.assertEqual(
             EnemyReader._union_enemy_ptrs([3, 1, 2], [1, 4, 3]),

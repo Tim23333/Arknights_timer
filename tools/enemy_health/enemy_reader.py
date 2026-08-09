@@ -376,13 +376,16 @@ class EnemyInfo:
 class EnemyReader:
     def __init__(self, adb_path=None, package='com.hypergryph.arknights',
                  cache_file=CACHE_FILE, with_bc=True, log=print, workers=8, mc=None,
-                 adb_serial=None):
+                 adb_serial=None, diagnostics=False):
         self.mc = mc if mc is not None else MemCore(
             adb_path, package, adb_serial=adb_serial)
         self.cache_file = cache_file
         self.with_bc = with_bc
         self.log = log
         self.workers = workers          # 扫描并发 adb 流数
+        self.diagnostics = bool(diagnostics)
+        self._identity_diag_signature = None
+        self._identity_diag_ts = 0.0
         self.progress = None            # 可选回调 progress(pct:int, desc:str)
         # 发现的地址
         self.enemy_addrs = []
@@ -4063,6 +4066,7 @@ class EnemyReader:
         new_eps = [ep for ep in ptrs if ep not in self._names or ep not in self._attr_snapshot]
         if new_eps:
             self._fill_new_enemies_chan(new_eps, infos)
+        self._log_identity_diagnostics(ptrs, infos)
         # bootstrap 可能已经预填名称/属性缓存，因此不能只依赖 new_eps。对规则中声明的
         # 敌人至少探测一次；若 Buff 比实体稍晚挂载，则约每 50 tick 低频重试。
         custom_probe_eps = []
@@ -4476,6 +4480,50 @@ class EnemyReader:
                     self._attr_snapshot[ep] = dict(full.attributes)
                 if ep not in infos:
                     infos[ep] = full
+
+    def _log_identity_diagnostics(self, ptrs, infos):
+        """测试版低频输出实体身份解析健康度；失败时附三条原始指针摘要。"""
+        if not self.diagnostics:
+            return
+        missing_ids = [ep for ep in ptrs
+                       if not self._names.get(ep, ('', '', ''))[0]]
+        missing_attrs = [ep for ep in ptrs if not self._attr_snapshot.get(ep)]
+        signature = (len(ptrs), len(missing_ids), len(missing_attrs))
+        now = time.time()
+        if (signature == self._identity_diag_signature
+                and now - self._identity_diag_ts < 5.0):
+            return
+        self._identity_diag_signature = signature
+        self._identity_diag_ts = now
+        channel = self._chan
+        backend = (f"{getattr(channel, 'mode', None) or '未连接'}"
+                   f"/v{getattr(channel, 'srv_version', 0)}")
+        if not missing_ids and not missing_attrs:
+            self.log(
+                f"[诊断] 实体解析健康：总数 {len(ptrs)}，ID {len(ptrs)}，"
+                f"属性 {len(ptrs)}，通道 {backend}")
+            return
+        self.log(
+            f"[诊断] 实体解析不完整：总数 {len(ptrs)}，"
+            f"缺 ID {len(missing_ids)}，缺属性 {len(missing_attrs)}，通道 {backend}")
+        samples = list(dict.fromkeys(missing_ids + missing_attrs))[:3]
+        for ep in samples:
+            info = infos.get(ep)
+            try:
+                klass = self.mc.read_klass_name(ep) or '?'
+            except Exception as exc:
+                klass = f"读取失败:{type(exc).__name__}"
+            if info is None:
+                self.log(f"[诊断]   {hex(ep)} class={klass} 主对象块未读取")
+                continue
+            self.log(
+                f"[诊断]   {hex(ep)} class={klass} hp={info.hp:.3f} "
+                f"id_ptr={hex(info.id_ptr) if info.id_ptr else '0'}"
+                f"({'ok' if self.mc.is_ptr(info.id_ptr) else 'invalid'}) "
+                f"attr_ptr={hex(info.attr_ptr) if info.attr_ptr else '0'}"
+                f"({'ok' if self.mc.is_ptr(info.attr_ptr) else 'invalid'}) "
+                f"data_ptr={hex(info.data_ptr) if info.data_ptr else '0'}"
+                f"({'ok' if self.mc.is_ptr(info.data_ptr) else 'invalid'})")
 
     def _detail_batch_read(self, reqs):
         """批量读取；详情线程走独立端口，绝不占住高频轮询通道。"""
