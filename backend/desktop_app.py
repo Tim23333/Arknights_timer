@@ -2088,15 +2088,18 @@ class CoachWindow(QMainWindow):
             panel_layout.addLayout(tables)
             return panel, info, pred_table, hist_table
 
+        rng_panels = QHBoxLayout()
+        rng_panels.setSpacing(8)
         (self.rng_imp_panel, self.lbl_rng_info, self.rng_pred_table,
          self.rng_hist_table) = build_rng_role_panel(
              "战斗随机（randomImp，影响战局）")
-        l_rng.addWidget(self.rng_imp_panel)
+        rng_panels.addWidget(self.rng_imp_panel, 1)
         (self.rng_trivial_panel, self.lbl_rng_trivial_info,
          self.rng_trivial_pred_table,
          self.rng_trivial_hist_table) = build_rng_role_panel(
              "表现随机（randomTrivial，仅视觉表现）")
-        l_rng.addWidget(self.rng_trivial_panel)
+        rng_panels.addWidget(self.rng_trivial_panel, 1)
+        l_rng.addLayout(rng_panels)
         if RngService is None:
             self.btn_rng_scan.setEnabled(False)
             self.lbl_rng_status.setText("模块缺失 (tools/ak_live_rng)")
