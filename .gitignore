@@ -35,15 +35,24 @@ backend/data/timer_hook.json
 backend/data/timeline_cache/*.json
 !backend/data/timeline_cache/default.json
 
-# 游戏数据（太大不提交）
-data/
-Ark_data/
+# 游戏解包数据（太大不提交；目录结构与解包方法见 data/README.md）
+data/*
+!data/README.md
+
+# Ark_data 逆向产物中的超大/可再生成文件 (GitHub 单文件 100MB 限制;
+# 由 Il2CppDumper 对游戏客户端重新生成, 见 data/README.md)
+Ark_data/script.json
+Ark_data/il2cpp.h
+Ark_data/Il2CppDumper*.exe
+Ark_data/DummyDll/
+
 
 # 敌人扫描地址缓存 (每次扫描生成, 机器相关)
 tools/enemy_health/enemy_cache.pkl
 
-# ark_parser 解包工具与派生数据 (本地工具, 数据可由脚本重新生成)
-ark_parser/
+# ark_parser 提取的派生数据 (体积大, 可由脚本重新生成)
+ark_parser/character/data/
+ark_parser/enemy/data/
 
 # 战斗模拟器 (尚未完工)
 Ark_emulator/
