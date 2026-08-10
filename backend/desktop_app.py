@@ -1007,7 +1007,53 @@ class EnemyPollWorker(QThread):
 
 RNG_PREDICT_LEN = 30    # 未来预测默认发数 (界面可改, 1-500)
 RNG_HISTORY_LEN = 18    # 最近消耗展示条数
+RNG_EXPORT_HISTORY_LEN = 600  # tracker 当前保留的完整历史上限
 RNG_UI_MS = 150         # 快照刷新间隔 (服务自带 5ms 轮询线程, UI 只读快照)
+
+RNG_ROLE_NAMES = {
+    'imp': '战斗随机',
+    'trivial': '表现随机',
+}
+RNG_ROLE_FILENAMES = {
+    'imp': 'combat',
+    'trivial': 'visual',
+}
+
+
+def _build_rng_export_payload(role: str, data: dict,
+                              export_time: str | None = None) -> dict:
+    """生成单条 RNG 序列的可移植 JSON；原始整数值不对外展示或导出。"""
+    history = []
+    for item in data.get('history') or []:
+        entry = {
+            'seq': item.get('seq'),
+            'value': item.get('frac'),
+        }
+        if item.get('ts') is not None:
+            entry['timestamp'] = item.get('ts')
+        history.append(entry)
+    predictions = [
+        {
+            'n': item.get('n'),
+            'value': item.get('frac'),
+        }
+        for item in data.get('predictions') or []
+    ]
+    return {
+        'formatVersion': 1,
+        'appVersion': VERSION,
+        'exportTime': export_time or time.strftime('%Y-%m-%dT%H:%M:%S%z'),
+        'role': role,
+        'roleName': RNG_ROLE_NAMES.get(role, role),
+        'engine': {
+            key: data.get(key)
+            for key in (
+                'id', 'label', 'kind', 'status', 'cursor', 'cursor2',
+                'total', 'rate', 'activity')
+        },
+        'history': history,
+        'predictions': predictions,
+    }
 
 
 def _render_rng_snapshot(info_label: QLabel, pred_table: QTableWidget,
@@ -1037,7 +1083,6 @@ def _render_rng_snapshot(info_label: QLabel, pred_table: QTableWidget,
         cells = [
             QTableWidgetItem(str(item.get('seq', 0))),
             QTableWidgetItem(f"{item.get('frac', 0.0):.4f}"),
-            QTableWidgetItem(f"0x{item.get('raw', 0) & 0xFFFFFFFF:08X}"),
         ]
         for column, cell in enumerate(cells):
             hist_table.setItem(i, column, cell)
@@ -1857,6 +1902,13 @@ class CoachWindow(QMainWindow):
         self.btn_enemy_stop.setEnabled(False)
         self.btn_enemy_stop.clicked.connect(self._stop_enemy_poll)
         self._style_muted_button(self.btn_enemy_stop)
+        self.btn_stage_enemy_export = QPushButton("导出关卡/出怪")
+        self.btn_stage_enemy_export.setToolTip(
+            "导出当前地图格子、装置、路线、固定/条件/召唤/动态出怪及已观测生灭帧；"
+            "文件可直接导入排轴前端")
+        self.btn_stage_enemy_export.setEnabled(False)
+        self.btn_stage_enemy_export.clicked.connect(self._on_stage_enemy_export)
+        self._style_muted_button(self.btn_stage_enemy_export)
         self.enemy_progress = QProgressBar()
         self.enemy_progress.setRange(0, 100)
         self.enemy_progress.setValue(0)
@@ -1887,6 +1939,7 @@ class CoachWindow(QMainWindow):
         self.chk_enemy_hide_departed.toggled.connect(self._on_enemy_departed_filter)
         row_btn.addWidget(self.btn_enemy_scan)
         row_btn.addWidget(self.btn_enemy_stop)
+        row_btn.addWidget(self.btn_stage_enemy_export)
         row_btn.addWidget(self.btn_enemy_precision)
         row_btn.addWidget(self.btn_enemy_columns)
         row_btn.addWidget(self.btn_enemy_fit)
@@ -2043,15 +2096,34 @@ class CoachWindow(QMainWindow):
         self.lbl_rng_status.setProperty('role', 'muted')
         row_rng.addWidget(self.lbl_rng_status, 1)
         l_rng.addLayout(row_rng)
-        def build_rng_role_panel(title: str):
+        def build_rng_role_panel(title: str, role: str):
             panel = QGroupBox(title)
+            panel.setMinimumWidth(0)
+            panel.setSizePolicy(
+                QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Expanding)
             panel_layout = QVBoxLayout(panel)
             info = QLabel("—")
             info.setProperty('role', 'primaryText')
             info.setStyleSheet("font-family:Consolas,monospace;")
-            panel_layout.addWidget(info)
+            info.setWordWrap(True)
+            info.setMinimumWidth(0)
+            info.setSizePolicy(
+                QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+            info_row = QHBoxLayout()
+            info_row.addWidget(info, 1)
+            export_button = QPushButton("导出 JSON")
+            export_button.setEnabled(False)
+            export_button.setToolTip(
+                f"单独导出{RNG_ROLE_NAMES[role]}的已消耗记录和未来预测")
+            export_button.clicked.connect(
+                lambda _checked=False, rng_role=role:
+                    self._on_rng_export(rng_role))
+            self._style_muted_button(export_button)
+            info_row.addWidget(export_button, 0, Qt.AlignTop)
+            panel_layout.addLayout(info_row)
 
             tables = QHBoxLayout()
+            tables.setSpacing(6)
             pred_box = QVBoxLayout()
             lbl_pred = QLabel("未来预测 (下一发在最上)")
             lbl_pred.setProperty('role', 'muted')
@@ -2062,42 +2134,49 @@ class CoachWindow(QMainWindow):
             pred_table.setSelectionMode(QTableWidget.NoSelection)
             pred_table.setEditTriggers(QTableWidget.NoEditTriggers)
             pred_table.setAlternatingRowColors(True)
-            pred_table.setColumnWidth(0, 70)
-            pred_table.setColumnWidth(1, 110)
-            pred_table.setMinimumWidth(200)
+            pred_table.horizontalHeader().setSectionResizeMode(
+                0, QHeaderView.ResizeToContents)
+            pred_table.horizontalHeader().setSectionResizeMode(
+                1, QHeaderView.Stretch)
+            pred_table.setMinimumWidth(120)
+            pred_table.setSizePolicy(
+                QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Expanding)
             pred_box.addWidget(pred_table)
-            tables.addLayout(pred_box)
+            tables.addLayout(pred_box, 1)
 
             hist_box = QVBoxLayout()
             lbl_hist = QLabel("最近消耗 (旧→新)")
             lbl_hist.setProperty('role', 'muted')
             hist_box.addWidget(lbl_hist)
-            hist_table = QTableWidget(0, 3)
-            hist_table.setHorizontalHeaderLabels(['序号', '值', '原始值'])
+            hist_table = QTableWidget(0, 2)
+            hist_table.setHorizontalHeaderLabels(['序号', '值'])
             hist_table.verticalHeader().setVisible(False)
             hist_table.setSelectionMode(QTableWidget.NoSelection)
             hist_table.setEditTriggers(QTableWidget.NoEditTriggers)
             hist_table.setAlternatingRowColors(True)
-            hist_table.setColumnWidth(0, 80)
-            hist_table.setColumnWidth(1, 110)
-            hist_table.setColumnWidth(2, 120)
-            hist_table.setMinimumWidth(330)
+            hist_table.horizontalHeader().setSectionResizeMode(
+                0, QHeaderView.ResizeToContents)
+            hist_table.horizontalHeader().setSectionResizeMode(
+                1, QHeaderView.Stretch)
+            hist_table.setMinimumWidth(120)
+            hist_table.setSizePolicy(
+                QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Expanding)
             hist_box.addWidget(hist_table)
-            tables.addLayout(hist_box)
-            tables.addStretch(1)
+            tables.addLayout(hist_box, 1)
             panel_layout.addLayout(tables)
-            return panel, info, pred_table, hist_table
+            return panel, info, pred_table, hist_table, export_button
 
         rng_panels = QHBoxLayout()
         rng_panels.setSpacing(8)
         (self.rng_imp_panel, self.lbl_rng_info, self.rng_pred_table,
-         self.rng_hist_table) = build_rng_role_panel(
-             "战斗随机（randomImp，影响战局）")
+         self.rng_hist_table, self.btn_rng_imp_export) = build_rng_role_panel(
+             "战斗随机（randomImp，影响战局）", 'imp')
         rng_panels.addWidget(self.rng_imp_panel, 1)
         (self.rng_trivial_panel, self.lbl_rng_trivial_info,
          self.rng_trivial_pred_table,
-         self.rng_trivial_hist_table) = build_rng_role_panel(
-             "表现随机（randomTrivial，仅视觉表现）")
+         self.rng_trivial_hist_table,
+         self.btn_rng_trivial_export) = build_rng_role_panel(
+             "表现随机（randomTrivial，仅视觉表现）", 'trivial')
         rng_panels.addWidget(self.rng_trivial_panel, 1)
         l_rng.addLayout(rng_panels)
         if RngService is None:
@@ -2600,6 +2679,7 @@ class CoachWindow(QMainWindow):
         self._character_frame_ms_sum = 0.0
         self._character_frame_ms_count = 0
         self.btn_enemy_scan.setEnabled(False)
+        self.btn_stage_enemy_export.setEnabled(False)
         self.btn_character_scan.setEnabled(False)
         self.lbl_character_status.setText('等待共享定位完成 ...')
         self.enemy_progress.setValue(0)
@@ -2625,6 +2705,7 @@ class CoachWindow(QMainWindow):
         self.btn_character_scan.setEnabled(True)
         self.btn_enemy_scan.setText('重新扫描')
         if ok:
+            self.btn_stage_enemy_export.setEnabled(True)
             self.enemy_progress.setValue(100)
             self.enemy_progress.setFormat('就绪')
             char_ok = self._character_reader.bootstrap()
@@ -2634,8 +2715,39 @@ class CoachWindow(QMainWindow):
                 else '共享定位完成，正在等待干员容器可读')
             self._start_enemy_poll()
         else:
+            self.btn_stage_enemy_export.setEnabled(False)
             self.enemy_progress.setFormat('定位失败')
             self.lbl_character_status.setText('共享定位失败')
+
+    def _on_stage_enemy_export(self) -> None:
+        """导出关卡地图与完整敌人计划，供 Vue 排轴前端直接导入。"""
+        if not self._enemy_reader.plan_level_id:
+            QMessageBox.information(self, '导出', '尚未扫描到当前关卡，请先点击“开始扫描”')
+            return
+        payload = self._enemy_reader.build_stage_export(self._deploy_stage_info)
+        deploy_events = self._deploy_journal or self._deploy_events
+        if deploy_events:
+            attached = self._attach_deploy_frames(deploy_events, deploy_events)
+            payload['operatorActions'] = self._build_deploy_export_payload(
+                attached)['actions']
+        level_id = self._enemy_reader.plan_level_id.replace('/', '_').replace('\\', '_')
+        default = f"stage_enemy_{level_id}_{time.strftime('%Y%m%d_%H%M%S')}.json"
+        path, _ = QFileDialog.getSaveFileName(
+            self, '导出关卡与出怪信息', default, 'JSON (*.json)')
+        if not path:
+            return
+        try:
+            with open(path, 'w', encoding='utf-8') as stream:
+                json.dump(payload, stream, ensure_ascii=False, indent=2)
+        except (OSError, TypeError, ValueError) as exc:
+            QMessageBox.critical(self, '导出失败', str(exc))
+            return
+        enemy_count = len(payload.get('enemySpawns') or [])
+        map_data = payload.get('map') or {}
+        self.lbl_enemy_status.setText(
+            f"已导出 {map_data.get('rows', 0)}×{map_data.get('cols', 0)} 地图、"
+            f"{enemy_count} 个出怪项 -> {path}")
+        _tlog(f'[关卡] 已导出地图/出怪 {enemy_count} 项 -> {path}')
 
     def _on_character_scan(self) -> None:
         """干员读取复用敌人定位；按钮用于首次定位或强制刷新整条共享链。"""
@@ -2708,6 +2820,8 @@ class CoachWindow(QMainWindow):
             self._rng_svc = None
         self.btn_rng_stop.setEnabled(False)
         self.btn_rng_scan.setEnabled(RngService is not None)
+        self.btn_rng_imp_export.setEnabled(False)
+        self.btn_rng_trivial_export.setEnabled(False)
         self.lbl_rng_status.setText('已停止')
 
     def _on_rng_tick(self) -> None:
@@ -2731,6 +2845,52 @@ class CoachWindow(QMainWindow):
             self.lbl_rng_trivial_info, self.rng_trivial_pred_table,
             self.rng_trivial_hist_table, by_role.get('trivial'),
             f'表现随机未定位：{status}')
+        self.btn_rng_imp_export.setEnabled(by_role.get('imp') is not None)
+        self.btn_rng_trivial_export.setEnabled(
+            by_role.get('trivial') is not None)
+
+    def _on_rng_export(self, role: str) -> None:
+        role_name = RNG_ROLE_NAMES.get(role, role)
+        svc = self._rng_svc
+        if svc is None:
+            QMessageBox.information(
+                self, '导出随机数', f'{role_name}尚未开始监控')
+            return
+        try:
+            snap = svc.snapshot(
+                RNG_EXPORT_HISTORY_LEN, self.rng_pred_spin.value())
+        except Exception as exc:
+            QMessageBox.critical(self, '导出随机数失败', str(exc))
+            return
+        by_role = snap.get('by_role') or {}
+        selected = snap.get('selected')
+        if not by_role and selected is not None:
+            by_role = {selected.get('role'): selected}
+        data = by_role.get(role)
+        if data is None:
+            QMessageBox.information(
+                self, '导出随机数', f'{role_name}尚未定位，当前无数据可导出')
+            return
+
+        payload = _build_rng_export_payload(role, data)
+        stem = RNG_ROLE_FILENAMES.get(role, role)
+        default = f"rng_{stem}_{time.strftime('%Y%m%d_%H%M%S')}.json"
+        path, _ = QFileDialog.getSaveFileName(
+            self, f'导出{role_name}', default, 'JSON (*.json)')
+        if not path:
+            return
+        try:
+            with open(path, 'w', encoding='utf-8') as file:
+                json.dump(payload, file, ensure_ascii=False, indent=2)
+        except OSError as exc:
+            QMessageBox.critical(self, '导出随机数失败', str(exc))
+            return
+        self.lbl_rng_status.setText(
+            f"已导出{role_name}：{len(payload['history'])} 条历史，"
+            f"{len(payload['predictions'])} 条预测 -> {path}")
+        _tlog(
+            f"[RNG] 已导出 {role_name}: history={len(payload['history'])}, "
+            f"predictions={len(payload['predictions'])} -> {path}")
 
     # ================= 操作记录 (deploy_tracker) =================
 
@@ -2978,7 +3138,7 @@ class CoachWindow(QMainWindow):
         missing_note = f'（{missing_frames} 条帧为空）' if missing_frames else ''
         self.lbl_deploy_status.setText(
             f'已导出 {len(events)} 条{missing_note} -> {path}')
-        self._tlog(f'[部署] 已导出 {len(events)} 条 -> {path}')
+        _tlog(f'[部署] 已导出 {len(events)} 条 -> {path}')
 
     def _on_enemy_snapshot(self, snap: dict) -> None:
         if TEST_BUILD:   # 轮询错误 (数据链失效/重建) 去重后输出控制台

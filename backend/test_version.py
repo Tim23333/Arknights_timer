@@ -17,9 +17,21 @@ class VersionTests(unittest.TestCase):
     def test_prerelease_suffix_does_not_break_windows_version(self):
         self.assertEqual(windows_version_tuple("v3.2.4-beta.1"), (3, 2, 4, 0))
 
-    def test_invalid_version_has_actionable_error(self):
-        with self.assertRaisesRegex(ValueError, "数字格式"):
-            windows_version_tuple("release")
+    def test_underscore_suffix_does_not_break_windows_version(self):
+        self.assertEqual(windows_version_tuple("3.4.4_pre"), (3, 4, 4, 0))
+
+    def test_version_numbers_can_appear_after_a_text_prefix(self):
+        self.assertEqual(
+            windows_version_tuple("release_candidate_3.4.4_pre"),
+            (3, 4, 4, 0))
+
+    def test_text_only_version_falls_back_without_error(self):
+        self.assertEqual(windows_version_tuple("release"), (0, 0, 0, 0))
+
+    def test_oversized_parts_are_clamped_without_error(self):
+        self.assertEqual(
+            windows_version_tuple("999999.2.3.4"),
+            (65535, 2, 3, 4))
 
 
 if __name__ == '__main__':

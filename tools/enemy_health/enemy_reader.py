@@ -241,7 +241,8 @@ class EnemyInfo:
                  'fragment_index', 'action_index', 'spawn_index', 'route_index',
                  'lifecycle', 'planned', 'spawn_eta', 'spawn_condition',
                  'spawn_kind', 'spawn_source', 'is_summon', 'action_ptr', 'action',
-                 'skills_detail', 'current_tile_ptr')
+                 'skills_detail', 'current_tile_ptr', 'spawn_frame', 'end_frame',
+                 'end_reason')
 
     def __init__(self, addr):
         self.addr = addr
@@ -308,6 +309,9 @@ class EnemyInfo:
         self.spawn_source = ''
         self.is_summon = False
         self.action_ptr = 0
+        self.spawn_frame = None
+        self.end_frame = None
+        self.end_reason = ''
         # m_currentTile 原始指针 (未校验): 非空且是合法指针 = 实体正站在地图
         # 格子上, 是「已出场」的硬性信号, 优先级高于路线投影估算。
         self.current_tile_ptr = 0
@@ -469,6 +473,8 @@ class EnemyReader:
         self._fixed_frame_snap = None
         self._frame_duration_snap = 1.0 / 30.0
         self._route_meta = {}           # routeIndex -> 起点/首个进场路线点
+        self._routes_export = []        # 完整路线（供排轴前端绘图）
+        self._level_map_data = {}       # 当前关卡地图（纯 JSON 数据）
         self._level_enemy_meta = {}     # enemy key -> 静态移速/delayToBorn
 
     @property
@@ -478,6 +484,11 @@ class EnemyReader:
     @property
     def plan_level_id(self):
         return self._plan_level_id
+
+    def build_stage_export(self, stage_info=None):
+        """返回可直接写入 JSON、并由排轴前端导入的当前关卡快照。"""
+        from .stage_export import build_stage_export
+        return build_stage_export(self, stage_info)
 
     # ================= 连接 =================
 
@@ -587,9 +598,27 @@ class EnemyReader:
                         _u64(action, gs.SpawnActionFields.HIDDEN_GROUP)),
                     'random_spawn_group': self._read_ustring_fast(
                         _u64(action, gs.SpawnActionFields.RANDOM_SPAWN_GROUP)),
+                    'random_spawn_pack': self._read_ustring_fast(
+                        _u64(action, gs.SpawnActionFields.RANDOM_SPAWN_PACK)),
+                    'random_type': _i32(action, gs.SpawnActionFields.RANDOM_TYPE),
+                    'refresh_type': _i32(action, gs.SpawnActionFields.REFRESH_TYPE),
+                    'weight': _i32(action, gs.SpawnActionFields.WEIGHT),
+                    'dont_block_wave': bool(
+                        action[gs.SpawnActionFields.DONT_BLOCK_WAVE]),
                     'not_count_in_total': bool(
                         action[gs.SpawnActionFields.NOT_COUNT_IN_TOTAL]),
                 })
+                if record['random_spawn_group'] or record['random_spawn_pack']:
+                    record['spawn_kind'] = 'conditional'
+                    record['spawn_source'] = (
+                        record['random_spawn_group'] or record['random_spawn_pack'])
+                    record['spawn_condition'] = (
+                        f"等待随机出怪组「{record['spawn_source']}」确定")
+                elif record['hidden_group']:
+                    record['spawn_kind'] = 'conditional'
+                    record['spawn_source'] = record['hidden_group']
+                    record['spawn_condition'] = (
+                        f"等待隐藏组「{record['hidden_group']}」启用")
                 records.append(record)
         records.sort(key=lambda item: (
             item['time_offset'], item['action_index'], item['spawn_index']))
@@ -655,6 +684,9 @@ class EnemyReader:
         record.setdefault('spawn_condition', '等待关卡调度')
         record.setdefault('spawn_kind', 'scheduled')
         record.setdefault('spawn_source', '')
+        record.setdefault('spawn_frame', None)
+        record.setdefault('end_frame', None)
+        record.setdefault('end_reason', '')
         enemy = EnemyInfo(0)
         enemy.roster_id = roster_id
         enemy.spawn_order = order
@@ -748,49 +780,238 @@ class EnemyReader:
                 loaded += 1
         return loaded
 
-    def _load_route_meta(self, level_data):
-        """读取路线起点及首个 MOVE 点，用玩家真正看到敌人进入地图的口径估时。"""
-        self._route_meta = {}
-        routes = self._read_object_array(
-            self._read_ptr(level_data + gs.LevelDataFields.ROUTES), 4096)
-        blocks = self._detail_batch_read([
-            (route, gs.RouteDataFields.READ_SIZE) for route in routes])
-        for route_index, block in enumerate(blocks):
+    @staticmethod
+    def _finite_float(data, offset, default=0.0):
+        value = struct.unpack_from('<f', data, offset)[0]
+        return float(value) if math.isfinite(value) else default
+
+    def _load_predefined_devices(self, level_data):
+        """读取预置角色/装置位置；tokenInsts 在关卡数据中通常就是预置装置。"""
+        devices = []
+        definitions = (
+            ('normal', gs.LevelDataFields.PREDEFINES),
+            ('hard', gs.LevelDataFields.HARD_PREDEFINES),
+        )
+        arrays = (
+            ('character', gs.PredefinedDataFields.CHARACTER_INSTS),
+            ('token', gs.PredefinedDataFields.TOKEN_INSTS),
+        )
+        for difficulty, level_offset in definitions:
+            predefined = self._read_ptr(level_data + level_offset)
+            if not self.mc.is_ptr(predefined):
+                continue
+            for kind, array_offset in arrays:
+                items = self._read_object_array(
+                    self._read_ptr(predefined + array_offset), 4096)
+                blocks = self._detail_batch_read([
+                    (item, gs.PredefinedCharacterFields.READ_SIZE) for item in items])
+                string_ptrs = []
+                for block in blocks:
+                    if block:
+                        string_ptrs.extend((
+                            _u64(block, gs.PredefinedCharacterFields.CHARACTER_KEY),
+                            _u64(block, gs.PredefinedCharacterFields.ALIAS),
+                        ))
+                strings = self._read_strings(
+                    [ptr for ptr in string_ptrs if self.mc.is_ptr(ptr)], max_chars=256)
+                for block in blocks:
+                    if not block:
+                        continue
+                    row = _i32(block, gs.PredefinedCharacterFields.POSITION)
+                    col = _i32(block, gs.PredefinedCharacterFields.POSITION + 4)
+                    key_ptr = _u64(block, gs.PredefinedCharacterFields.CHARACTER_KEY)
+                    alias_ptr = _u64(block, gs.PredefinedCharacterFields.ALIAS)
+                    devices.append({
+                        'kind': kind,
+                        'difficulty': difficulty,
+                        'key': strings.get(key_ptr, ''),
+                        'alias': strings.get(alias_ptr, ''),
+                        'row': row,
+                        'col': col,
+                        'direction': _i32(
+                            block, gs.PredefinedCharacterFields.DIRECTION),
+                        'hidden': bool(block[gs.PredefinedCharacterFields.HIDDEN]),
+                    })
+        return devices
+
+    def _load_level_map(self, level_data):
+        """读取 MapData.short[,] 与 TileData[]，只保留稳定的可视化字段。"""
+        map_id = self._read_ustring_fast(
+            self._read_ptr(level_data + gs.LevelDataFields.MAP_ID))
+        map_data = self._read_ptr(level_data + gs.LevelDataFields.MAP_DATA)
+        self._level_map_data = {'mapId': map_id or '', 'rows': 0, 'cols': 0,
+                                'tiles': [], 'blockEdges': [], 'devices': [],
+                                'tags': []}
+        if not self.mc.is_ptr(map_data):
+            return False
+
+        map_array = self._read_ptr(map_data + gs.MapDataFields.MAP)
+        tile_array = self._read_ptr(map_data + gs.MapDataFields.TILES)
+        header = self._detail_batch_read([(map_array, gs.Il2CppArray.ITEMS)])[0] \
+            if self.mc.is_ptr(map_array) else None
+        total = int(_u64(header, gs.Il2CppArray.MAX_LENGTH)) if header else 0
+        bounds = _u64(header, gs.Il2CppArray.BOUNDS) if header else 0
+        rows = cols = 0
+        if self.mc.is_ptr(bounds):
+            bound_data = self._detail_batch_read([(bounds, 0x20)])[0]
+            if bound_data:
+                rows = int(_u64(bound_data, 0x00))
+                cols = int(_u64(bound_data, 0x10))
+        if not (0 < rows <= 128 and 0 < cols <= 128 and rows * cols == total):
+            rows = cols = 0
+
+        tile_ptrs = self._read_object_array(tile_array, 16384)
+        tile_blocks = self._detail_batch_read([
+            (ptr, gs.TileDataFields.READ_SIZE) for ptr in tile_ptrs])
+        key_ptrs = [_u64(block, gs.TileDataFields.TILE_KEY)
+                    for block in tile_blocks if block]
+        strings = self._read_strings(
+            [ptr for ptr in key_ptrs if self.mc.is_ptr(ptr)], max_chars=256)
+        definitions = []
+        for block in tile_blocks:
             if not block:
+                definitions.append({})
                 continue
-            start = (_i32(block, gs.RouteDataFields.START_POSITION),
-                     _i32(block, gs.RouteDataFields.START_POSITION + 4))
-            checkpoints = self._read_object_array(
-                _u64(block, gs.RouteDataFields.CHECKPOINTS), 4096)
-            cp_blocks = self._detail_batch_read([
-                (cp, gs.RouteCheckpointFields.READ_SIZE) for cp in checkpoints])
-            entry = None
-            fixed_wait = 0.0
-            for cp in cp_blocks:
-                if not cp:
+            definitions.append({
+                'tileKey': strings.get(_u64(block, gs.TileDataFields.TILE_KEY), ''),
+                'heightType': _i32(block, gs.TileDataFields.HEIGHT_TYPE),
+                'buildableType': _i32(block, gs.TileDataFields.BUILDABLE_TYPE),
+                'passableMask': _i32(block, gs.TileDataFields.PASSABLE_MASK),
+                'playerSideMask': _i32(block, gs.TileDataFields.PLAYER_SIDE_MASK),
+                'advancedBuildableMask': _i32(
+                    block, gs.TileDataFields.ADVANCED_BUILDABLE_MASK),
+            })
+
+        if total and total <= 16384:
+            cell_data = self._detail_batch_read([(
+                map_array + gs.Il2CppArray.ITEMS, total * 2)])[0]
+        else:
+            cell_data = None
+        indices = [struct.unpack_from('<h', cell_data, index * 2)[0]
+                   for index in range(total)] if cell_data else []
+        if not rows or not cols:
+            # 旧运行时若 bounds 不可读，TileData 通常仍是一格一项；保留一行
+            # 数据而不是导出损坏尺寸，前端会明确显示“地图尺寸不可用”。
+            rows, cols = (1, len(indices)) if indices else (0, 0)
+        tiles = []
+        for index, tile_index in enumerate(indices):
+            tile = dict(definitions[tile_index]) \
+                if 0 <= tile_index < len(definitions) else {}
+            tile.update(row=index // max(1, cols), col=index % max(1, cols),
+                        tileIndex=tile_index)
+            tiles.append(tile)
+
+        edge_ptrs = self._read_object_array(
+            self._read_ptr(map_data + gs.MapDataFields.BLOCK_EDGES), 16384)
+        edge_blocks = self._detail_batch_read([
+            (ptr, gs.MapEdgeFields.READ_SIZE) for ptr in edge_ptrs])
+        edges = [{
+            'row': _i32(block, gs.MapEdgeFields.POSITION),
+            'col': _i32(block, gs.MapEdgeFields.POSITION + 4),
+            'direction': _i32(block, gs.MapEdgeFields.DIRECTION),
+            'blockMask': _i32(block, gs.MapEdgeFields.BLOCK_MASK),
+        } for block in edge_blocks if block]
+
+        tag_ptrs = self._read_object_array(
+            self._read_ptr(map_data + gs.MapDataFields.TAGS), 4096)
+        tag_strings = self._read_strings(tag_ptrs, max_chars=256)
+        self._level_map_data.update({
+            'rows': rows, 'cols': cols, 'tiles': tiles,
+            'blockEdges': edges,
+            'devices': self._load_predefined_devices(level_data),
+            'tags': [tag_strings.get(ptr, '') for ptr in tag_ptrs
+                     if tag_strings.get(ptr, '')],
+        })
+        return bool(tiles)
+
+    def _load_route_meta(self, level_data):
+        """读取完整路线，并保留用于估算可见进场时间的首段摘要。"""
+        self._route_meta = {}
+        self._routes_export = []
+        checkpoint_names = {
+            value: name for name, value in vars(gs.RouteCheckpointType).items()
+            if name.isupper() and isinstance(value, int)
+        }
+        for is_extra, level_offset in (
+                (False, gs.LevelDataFields.ROUTES),
+                (True, gs.LevelDataFields.EXTRA_ROUTES)):
+            routes = self._read_object_array(
+                self._read_ptr(level_data + level_offset), 4096)
+            blocks = self._detail_batch_read([
+                (route, gs.RouteDataFields.READ_SIZE) for route in routes])
+            for route_index, block in enumerate(blocks):
+                if not block:
                     continue
-                cp_type = _i32(cp, gs.RouteCheckpointFields.TYPE)
-                if cp_type == gs.RouteCheckpointType.MOVE:
-                    entry = (_i32(cp, gs.RouteCheckpointFields.POSITION),
-                             _i32(cp, gs.RouteCheckpointFields.POSITION + 4))
-                    break
-                if cp_type == gs.RouteCheckpointType.WAIT_FOR_SECONDS:
-                    wait = struct.unpack_from('<f', cp, gs.RouteCheckpointFields.TIME)[0]
-                    if math.isfinite(wait) and 0 < wait <= 3600:
-                        fixed_wait += wait
-            if entry is None:
-                continue
-            row_delta = entry[0] - start[0]
-            col_delta = entry[1] - start[1]
-            diagonal = bool(block[gs.RouteDataFields.ALLOW_DIAGONAL_MOVE])
-            distance = (math.hypot(row_delta, col_delta) if diagonal
-                        else abs(row_delta) + abs(col_delta))
-            if distance <= 0.01:
-                continue
-            self._route_meta[route_index] = {
-                'start': start, 'entry': entry, 'distance': distance,
-                'fixed_wait': fixed_wait, 'diagonal': diagonal,
-            }
+                start = (_i32(block, gs.RouteDataFields.START_POSITION),
+                         _i32(block, gs.RouteDataFields.START_POSITION + 4))
+                end = (_i32(block, gs.RouteDataFields.END_POSITION),
+                       _i32(block, gs.RouteDataFields.END_POSITION + 4))
+                checkpoints = self._read_object_array(
+                    _u64(block, gs.RouteDataFields.CHECKPOINTS), 4096)
+                cp_blocks = self._detail_batch_read([
+                    (cp, gs.RouteCheckpointFields.READ_SIZE) for cp in checkpoints])
+                entry = None
+                fixed_wait = 0.0
+                exported_checkpoints = []
+                for cp in cp_blocks:
+                    if not cp:
+                        continue
+                    cp_type = _i32(cp, gs.RouteCheckpointFields.TYPE)
+                    position = (
+                        _i32(cp, gs.RouteCheckpointFields.POSITION),
+                        _i32(cp, gs.RouteCheckpointFields.POSITION + 4))
+                    wait = self._finite_float(cp, gs.RouteCheckpointFields.TIME)
+                    exported_checkpoints.append({
+                        'type': cp_type,
+                        'typeName': checkpoint_names.get(cp_type, f'UNKNOWN_{cp_type}'),
+                        'time': wait,
+                        'position': {'row': position[0], 'col': position[1]},
+                        'reachOffset': {
+                            'x': self._finite_float(cp, gs.RouteCheckpointFields.REACH_OFFSET),
+                            'y': self._finite_float(cp, gs.RouteCheckpointFields.REACH_OFFSET + 4),
+                        },
+                        'randomizeReachOffset': bool(
+                            cp[gs.RouteCheckpointFields.RANDOMIZE_REACH_OFFSET]),
+                        'reachDistance': self._finite_float(
+                            cp, gs.RouteCheckpointFields.REACH_DISTANCE),
+                    })
+                    if entry is None and cp_type == gs.RouteCheckpointType.MOVE:
+                        entry = position
+                    elif entry is None and cp_type == gs.RouteCheckpointType.WAIT_FOR_SECONDS:
+                        if 0 < wait <= 3600:
+                            fixed_wait += wait
+                motion_mode = _i32(block, gs.RouteDataFields.MOTION_MODE)
+                diagonal = bool(block[gs.RouteDataFields.ALLOW_DIAGONAL_MOVE])
+                self._routes_export.append({
+                    'index': route_index,
+                    'isExtra': is_extra,
+                    'motionMode': motion_mode,
+                    'motionModeName': {0: 'WALK', 1: 'FLY'}.get(
+                        motion_mode, f'UNKNOWN_{motion_mode}'),
+                    'start': {'row': start[0], 'col': start[1]},
+                    'end': {'row': end[0], 'col': end[1]},
+                    'spawnRandomRange': {
+                        'x': self._finite_float(block, gs.RouteDataFields.SPAWN_RANDOM_RANGE),
+                        'y': self._finite_float(block, gs.RouteDataFields.SPAWN_RANDOM_RANGE + 4),
+                    },
+                    'spawnOffset': {
+                        'x': self._finite_float(block, gs.RouteDataFields.SPAWN_OFFSET),
+                        'y': self._finite_float(block, gs.RouteDataFields.SPAWN_OFFSET + 4),
+                    },
+                    'allowDiagonalMove': diagonal,
+                    'checkpoints': exported_checkpoints,
+                })
+                if is_extra or entry is None:
+                    continue
+                row_delta = entry[0] - start[0]
+                col_delta = entry[1] - start[1]
+                distance = (math.hypot(row_delta, col_delta) if diagonal
+                            else abs(row_delta) + abs(col_delta))
+                if distance > 0.01:
+                    self._route_meta[route_index] = {
+                        'start': start, 'entry': entry, 'distance': distance,
+                        'fixed_wait': fixed_wait, 'diagonal': diagonal,
+                    }
 
     def _load_scheduler_enemy_meta(self):
         """补读 prefab 的 delayToBorn；该值不在 LevelData.EnemyData 中。"""
@@ -926,44 +1147,68 @@ class EnemyReader:
     def _load_spawn_plan(self):
         """解析固定 waves、条件 branches 和仅由事件/召唤使用的敌人类型。"""
         if not self.bc_addr:
+            self._level_map_data = {}
+            self._routes_export = []
             self._set_spawn_plan([])
             return False
         level_data = self._read_ptr(self.bc_addr + gs.BattleControllerFields.LEVEL_DATA)
         if (not self.mc.is_ptr(level_data)
                 or self.mc.read_klass_name(level_data) != 'LevelData'):
+            self._level_map_data = {}
+            self._routes_export = []
             self._set_spawn_plan([])
             return False
         level_id = self._read_ustring_fast(
             self._read_ptr(level_data + gs.LevelDataFields.LEVEL_ID))
         runtime_name_count = self._load_level_enemy_names(level_data)
+        self._load_level_map(level_data)
         self._load_route_meta(level_data)
         self._load_scheduler_enemy_meta()
         waves_ptr = self._read_ptr(level_data + gs.LevelDataFields.WAVES)
         wave_ptrs = self._read_object_array(waves_ptr, 1024)
         records = []
+        nominal_wave_time = 0.0
         for wave_index, wave_ptr in enumerate(wave_ptrs):
             wave = self._detail_batch_read([(wave_ptr, 0x30)])[0]
             if not wave:
                 continue
+            wave_pre_delay = struct.unpack_from(
+                '<f', wave, gs.WaveDataFields.PRE_DELAY)[0]
+            wave_post_delay = struct.unpack_from(
+                '<f', wave, gs.WaveDataFields.POST_DELAY)[0]
+            if not math.isfinite(wave_pre_delay):
+                wave_pre_delay = 0.0
+            if not math.isfinite(wave_post_delay):
+                wave_post_delay = 0.0
+            wave_start = nominal_wave_time + max(0.0, wave_pre_delay)
+            wave_end = wave_start
             fragments_ptr = _u64(wave, gs.WaveDataFields.FRAGMENTS)
             fragment_ptrs = self._read_object_array(fragments_ptr, 4096)
             for fragment_index, fragment_ptr in enumerate(fragment_ptrs):
                 fragment = self._detail_batch_read([(fragment_ptr, 0x20)])[0]
                 if not fragment:
                     continue
+                fragment_delay = struct.unpack_from(
+                    '<f', fragment, gs.FragmentDataFields.PRE_DELAY)[0]
+                if not math.isfinite(fragment_delay):
+                    fragment_delay = 0.0
                 actions_ptr = _u64(fragment, gs.FragmentDataFields.ACTIONS)
                 action_ptrs = self._read_object_array(actions_ptr, 8192)
-                records.extend(self._expand_spawn_actions(action_ptrs, {
+                fragment_records = self._expand_spawn_actions(action_ptrs, {
                     'wave_index': wave_index,
                     'fragment_index': fragment_index,
                     'spawn_kind': 'scheduled',
                     'spawn_condition': (
                         f'等待第 {wave_index + 1} 波第 {fragment_index + 1} 段进入调度'),
-                    'wave_pre_delay': struct.unpack_from(
-                        '<f', wave, gs.WaveDataFields.PRE_DELAY)[0],
+                    'wave_pre_delay': wave_pre_delay,
                     'wave_max_wait': struct.unpack_from(
                         '<f', wave, gs.WaveDataFields.MAX_WAIT_NEXT)[0],
-                }))
+                }, max(0.0, fragment_delay))
+                for record in fragment_records:
+                    record['nominal_spawn_time'] = wave_start + record['time_offset']
+                    wave_end = max(wave_end, record['nominal_spawn_time'])
+                records.extend(fragment_records)
+            nominal_wave_time = wave_end + max(0.0, wave_post_delay)
         fixed_count = len(records)
 
         # branches 由敌人技能、死亡事件或关卡脚本触发；触发时间取决于战局，
@@ -1041,6 +1286,9 @@ class EnemyReader:
         enemy.spawn_condition = record.get('spawn_condition', '')
         enemy.spawn_kind = record.get('spawn_kind', 'scheduled')
         enemy.spawn_source = record.get('spawn_source', '')
+        enemy.spawn_frame = record.get('spawn_frame')
+        enemy.end_frame = record.get('end_frame')
+        enemy.end_reason = record.get('end_reason', '')
         return enemy
 
     def _bind_plan_enemy(self, enemy, record):
@@ -1057,6 +1305,10 @@ class EnemyReader:
                                  if before_entry else '已出场')
         record['spawn_eta'] = enemy.spawn_eta
         record['spawn_condition'] = enemy.spawn_condition
+        if (not before_entry and record.get('spawn_frame') is None
+                and self._fixed_frame_snap is not None):
+            record['spawn_frame'] = int(self._fixed_frame_snap)
+            enemy.spawn_frame = record['spawn_frame']
         record['seen'] = True
         record['addr'] = enemy.addr
         record['info'] = enemy
@@ -1073,6 +1325,8 @@ class EnemyReader:
         enemy.spawn_kind = 'summoned'
         enemy.spawn_condition = '运行时召唤或关卡条件触发'
         enemy.spawn_eta = 0.0
+        enemy.spawn_frame = (int(self._fixed_frame_snap)
+                             if self._fixed_frame_snap is not None else None)
         self._addr_to_roster[enemy.addr] = roster_id
         self._roster_last[roster_id] = enemy
 
@@ -1110,6 +1364,7 @@ class EnemyReader:
         """把当前实例合并进开局计划，返回含未出场/场上/已离场的稳定顺序。"""
         # UnitManager 在死亡动画/回收前仍短暂保留对象；HP 归零或 finishReason
         # 非零即应进入“已离场”，不能继续算作场上敌人。
+        departing = {enemy.addr: enemy for enemy in live_enemies if not enemy.alive}
         live_enemies = [enemy for enemy in live_enemies if enemy.alive]
         live_addrs = {enemy.addr for enemy in live_enemies}
 
@@ -1133,14 +1388,21 @@ class EnemyReader:
             if addr in live_addrs:
                 continue
             roster_id = self._addr_to_roster.pop(addr)
-            old = self._roster_last.get(roster_id)
+            old = departing.get(addr) or self._roster_last.get(roster_id)
             if old is not None:
                 old.lifecycle = 'departed'
                 old.alive = False
+                old.end_frame = (int(self._fixed_frame_snap)
+                                 if self._fixed_frame_snap is not None else None)
+                old.end_reason = ('death' if old.hp <= 0 else
+                                  f'finish_{old.finish}' if old.finish else 'departed')
+                self._roster_last[roster_id] = old
             record = self._plan_by_id.get(roster_id)
             if record is not None:
                 record['addr'] = 0
                 if old is not None:
+                    record['end_frame'] = old.end_frame
+                    record['end_reason'] = old.end_reason
                     record['info'] = old
 
         for enemy in live_enemies:
@@ -1354,6 +1616,9 @@ class EnemyReader:
                     # 实体已在地图格子上: 无论调度计时是否对得上, 直接纠为已出场。
                     record['spawn_eta'] = 0.0
                     record['spawn_condition'] = '已出场'
+                    if (record.get('spawn_frame') is None
+                            and self._fixed_frame_snap is not None):
+                        record['spawn_frame'] = int(self._fixed_frame_snap)
                     self._copy_plan_metadata(info, record, 'active')
                     continue
                 entry_eta = self._remaining_route_entry(info, record)
