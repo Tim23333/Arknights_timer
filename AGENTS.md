@@ -2,23 +2,30 @@
 
 ## 使用方法
 
-### 提取单个干员完整数据（深度解析）
+### 批量提取我方全部数据（干员/技能/装置/装备/模组）
 
 ```bash
-cd ark_parser
-python deep_parse.py <char_id>
+cd ark_parser/character
+python extract_character_data.py
 ```
 
-示例：
+输出（`ark_parser/character/data/`）：
+- `characters.json` — character_table 全条目（1368 条，含干员/token/trap）
+- `skills.json` — 技能完整数据（1803 个，含 skchr_/sktok_）
+- `devices.json` — token/trap/装置分类
+- `battle_equip.json` / `uniequip.json` — 战斗装备 / 模组
+
+### 批量提取敌方数据
+
 ```bash
-python deep_parse.py char_1045_svash2    # 凛御银灰
-python deep_parse.py char_002_amiya      # 阿米娅
-python deep_parse.py char_263_skadi      # 斯卡蒂
+cd ark_parser/enemy
+python extract_enemy_data.py
 ```
 
-输出文件会自动创建在 `ark_parser/<char_id>/` 文件夹下，包含：
-- `<char_id>_deep.json` — 完整嵌套数据
-- `README.md` — 干员摘要（天赋/技能/潜能）
+输出（`ark_parser/enemy/data/`）：`enemy_database.json`、`enemy_handbook.json`、
+`stage_enemy_usage.json` 等。游戏更新后配套运行
+`python -m tools.enemy_health.update_from_unpack --assets <热更解包目录>`
+重建内存偏移（generated_offsets.json）与敌人名称库（enemy_names.json）。
 
 **数值显示规则：** 所有从 blackboard 提取的数值必须转换为标准十进制显示，不要显示原始的 IEEE 754 浮点二进制整数（如 `1065353216` → `1.0`）。转换函数：
 ```python
@@ -28,24 +35,6 @@ def i2f(val):
         return round(struct.unpack('<f', struct.pack('<I', val))[0], 4)
     return val
 ```
-
-### 批量提取所有干员基础数据
-
-```bash
-cd ark_parser
-python parse_characters.py
-```
-
-输出：`characters.json`（436 个干员）
-
-### 批量提取所有技能数据
-
-```bash
-cd ark_parser
-python parse_skill_table.py
-```
-
-输出：`skills.json`（1607 个技能）
 
 ### 提取我方/敌方动作生效帧
 
@@ -65,10 +54,10 @@ python ark_parser/extract_effect_frames.py    # 需 UnityPy（已含在 backend/
 
 ```bash
 # 查看干员基础信息
-python -c "import json; d=json.load(open('characters.json')); print(json.dumps(d.get('char_1045_svash2',{}), indent=2, ensure_ascii=False))"
+python -c "import json; d=json.load(open('ark_parser/character/data/characters.json',encoding='utf-8')); print(json.dumps(d.get('char_1045_svash2',{}), indent=2, ensure_ascii=False))"
 
-# 查看技能描述
-python -c "import json; d=json.load(open('skills.json')); [print(k,v.get('f3',[{}])[0].get('f0',''),v.get('f3',[{}])[0].get('f2','')[:80]) for k,v in d.items() if 'svash2' in k]"
+# 查看技能描述（skills.json: skillId -> {levels: [{name, description, blackboard, ...}]})
+python -c "import json; d=json.load(open('ark_parser/character/data/skills.json',encoding='utf-8')); [print(k, v['levels'][0].get('name',''), v['levels'][0].get('description','')[:80]) for k,v in d.items() if 'svash2' in k]"
 ```
 
 ### 查看干员技能详细文本
@@ -97,13 +86,32 @@ python -c "import json; d=json.load(open('skills.json')); [print(k,v.get('f3',[{
 
 ### 自动提取流程
 
-1. 使用 AssetStudio-Arknights 解包 AB 文件到 `data/anon/` 目录
-2. 运行提取脚本：
+游戏数据分两层：**基础包**（`StreamingAssets/AB/Windows/anon/`，随大版本安装/重装更新）
+和**热更包**（`Arknights_Data/PersistentData/Bundles/anon/`，每次热更新下载，覆盖同名表）。
+提取时必须 base+hot 合并，hot 覆盖 base。
+
+1. 用 ArknightsStudioCLI 以 **exportRaw** 模式解出剥离版 TextAsset（base 与 hot 各跑一遍）：
+```bash
+CLI="AssetStudio-ArknightsStudio/AssetStudioCLI/bin/Release/net8.0/ArknightsStudioCLI.exe"
+"$CLI" "<游戏>\Arknights_Data\StreamingAssets\AB\Windows\anon"        -t textAsset -m exportRaw -g none -o <base_out>
+"$CLI" "<游戏>\Arknights_Data\PersistentData\Bundles\anon"            -t textAsset -m exportRaw -g none -o <hot_out>
+```
+2. 把两批 `.dat` 表文件按 `data/anon/<名字>.bin_unpacked/CAB-*` 布局摆放
+   （目录名排序后者优先：base 用 `base_*`，热更用 `zz_hot_*`），然后运行：
 ```bash
 python extract_tables.py
 ```
 
-脚本会自动扫描 `data/anon/` 中的 CAB 文件，识别并提取所有数据表到 `data/tables/`。
+脚本扫描 `data/anon/*.bin_unpacked/CAB-*`（按目录名排序，**后扫到的覆盖先扫到的**，
+保证热更表生效），识别表名并提取到 `data/tables/`。
+
+> **格式陷阱：** AssetStudio GUI「Extract folder」产出的 `CAB-*` 是 Unity
+> SerializedFile（全零头），**不能**直接被 `FB` 解析器读取；只有 exportRaw
+> 剥离版（`[u32 名字长度][表名][128B 签名头][FlatBuffers]`）可以。2026-08 起
+> data/anon 只放剥离版伪解包目录。
+
+当前基线（2026-08-11）：base = 2026-07-22 安装版 + hot = 2026-08-11 热更，
+快照在 `unpack_work/all_tables_20260801_base/` 与 `unpack_work/hot_20260811/raw/`。
 
 ### 提取的数据表
 
@@ -122,10 +130,18 @@ python extract_tables.py
 | roguelike_topic_table | 肉鸽主题数据 |
 | sandbox_perm_table | 沙盒权限数据 |
 | building_data | 基建数据 |
+| enemy_handbook_table | 敌人图鉴 |
+| enemy_database | 敌人战斗数据 |
+| item_table / gacha_table / medal_table | 物品/抽卡/蚀刻章 |
+| story_table / zone_table | 剧情/区域 |
+| shop_client_table / climb_tower_table | 商店/爬塔 |
+| arkvent_table / battle_misc_table | 活动副本/战斗杂项 |
+| display_meta_table / extra_battlelog_table / hotupdate_meta_table | 展示元数据/额外战报/热更元数据 |
 
 ### 原始 AB 文件位置
 
-游戏目录：`E:\Hypergryph Launcher\games\Arknights Game\Arknights_Data\StreamingAssets\AB\Windows\anon\`
+基础包：`E:\Hypergryph Launcher\games\Arknights Game\Arknights_Data\StreamingAssets\AB\Windows\anon\`
+热更包：`E:\Hypergryph Launcher\games\Arknights Game\Arknights_Data\PersistentData\Bundles\anon\`
 
 > **注意：** AB 包文件名的 hash 后缀会随游戏版本更新变化，`extract_tables.py` 通过表名前缀匹配，无需手动更新文件名。
 
@@ -231,27 +247,25 @@ Offset ~2.3M:    字符串表（中文文本、描述）
 
 ```
 ark_parser/
-├── parse_characters.py          # 批量提取干员基础数据（436个）
-├── parse_skill_table.py         # 批量提取技能数据（1607个）
-├── deep_parse.py                # 单个干员深度解析（含天赋/技能/潜能）
-├── characters.json              # 所有干员基础数据
-├── skills.json                  # 所有技能完整数据
-└── char_1045_svash2/            # 凛御银灰数据文件夹
-    ├── README.md                # 干员摘要（天赋/技能/潜能）
-    ├── char_1045_svash2_deep.json   # 完整嵌套数据
-    ├── svash2_final.json        # 基础字段数据
-    ├── svash2_skills.json       # 技能数据
-    ├── svash2_strings.txt       # 所有中文文本
-    └── svash2_skills_strings.txt # 技能详细文本
+├── character/                   # 我方数据解析（extract_character_data.py）
+│   └── data/                    #   characters/skills/devices/battle_equip/uniequip.json
+├── enemy/                       # 敌方数据解析（extract_enemy_data.py）
+│   └── data/                    #   enemy_database/enemy_handbook/stage_enemy_usage.json 等
+├── char_names.json              # 干员ID→中文名缓存（按 character_table mtime 自动重建）
+└── extract_effect_frames.py     # 敌我动作生效帧提取
 
-extract_tables.py                # 自动从 data/anon/ 提取数据表到 data/tables/
+extract_tables.py                # 从 data/anon/（base+hot 伪解包目录）提取数据表到 data/tables/
+
+data/anon/
+├── base_20260801.bin_unpacked/      # 基础包剥离版表文件（CAB-base_*）
+└── zz_hot_20260811.bin_unpacked/    # 热更包剥离版表文件（CAB-hot_*，同名覆盖 base）
 
 data/tables/
-├── character_tabled88efb.bin    # 干员表二进制
+├── character_table9fc534.bin    # 干员表二进制
 ├── skill_tableafb859.bin        # 技能表二进制
 ├── stage_table*.bin             # 关卡数据
 ├── activity_table*.bin          # 活动数据
-└── ... (共13个数据表)
+└── ... (共26个数据表)
 ```
 
 ---

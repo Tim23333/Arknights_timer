@@ -33,6 +33,19 @@ TABLE_PREFIXES = [
     "building_data",
     "enemy_handbook_table",
     "enemy_database",
+    # 热更包中出现的补充表（PersistentData/Bundles/anon 解包）
+    "item_table",
+    "gacha_table",
+    "medal_table",
+    "story_table",
+    "zone_table",
+    "shop_client_table",
+    "climb_tower_table",
+    "arkvent_table",
+    "battle_misc_table",
+    "display_meta_table",
+    "extra_battlelog_table",
+    "hotupdate_meta_table",
 ]
 
 # Compiled pattern: match any table prefix followed by hex hash
@@ -67,10 +80,11 @@ def main():
     print(f"Scanning {ANON_DIR} for data tables...\n")
 
     found = {}
-    min_size = 512 * 1024  # 512KB
+    min_size = 4 * 1024  # 4KB（热更小表如 hotupdate_meta 只有几 KB）
 
-    # Scan all unpacked AB directories
-    for bin_dir in ANON_DIR.glob("*.bin_unpacked"):
+    # 按目录名排序扫描，后扫到的覆盖先扫到的：
+    # 命名约定 base_* < zz_hot_*，保证热更表覆盖基础包同名表。
+    for bin_dir in sorted(ANON_DIR.glob("*.bin_unpacked")):
         for cab_file in bin_dir.glob("CAB-*"):
             if not cab_file.is_file():
                 continue
@@ -78,7 +92,7 @@ def main():
                 continue
 
             table_id = scan_cab_file(cab_file)
-            if table_id and table_id not in found:
+            if table_id:
                 found[table_id] = cab_file
 
     # Copy found tables
