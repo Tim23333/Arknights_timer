@@ -1,0 +1,192 @@
+﻿<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>Ark_emulator - custom level editor</title>
+<style>
+body{font-family:'Segoe UI',system-ui;background:#1a1d26;color:#e8eaf0;margin:0}
+#top{display:flex;gap:8px;padding:8px 14px;background:#22263a;align-items:center;flex-wrap:wrap}
+input,select,textarea,button{background:#2b3050;color:#e8eaf0;border:1px solid #3a4070;border-radius:6px;padding:5px 9px}
+button{cursor:pointer}button:hover{background:#3a4070}
+#main{display:flex;height:calc(100vh - 52px)}
+#mapwrap{flex:1;overflow:auto;padding:10px}
+table{border-collapse:collapse}
+td{width:38px;height:38px;border:1px solid #33395e;text-align:center;font-size:9px;cursor:pointer;position:relative}
+td.floor{background:#2a2f47}td.wall{background:#464b63}td.hole{background:#0e1626}
+td.end{background:#4a3a2a}td.start{background:#2a4a2a}td.deploy{background:#1a3a5a}
+td.placed{outline:2px solid #e05050}
+.pal{display:inline-block;width:52px;height:26px;margin:2px;border-radius:4px;cursor:pointer;text-align:center;font-size:10px;line-height:26px;border:1px solid transparent}
+.pal.on{border-color:#ffd040}
+.marker{position:absolute;inset:1px;border-radius:4px;background:#b03030cc;color:#fff;font-size:8px;display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:hidden}
+#side{width:380px;background:#20243a;padding:10px;overflow-y:auto;font-size:12px}
+textarea{width:100%;font-family:monospace;font-size:11px;background:#161827}
+#log{height:100px;overflow-y:auto;background:#161827;padding:5px;border-radius:6px;font-family:monospace;font-size:11px;white-space:pre-wrap}
+#placedList div{display:flex;gap:6px;align-items:center;margin:2px 0}
+#placedList button{padding:2px 6px}
+</style>
+</head>
+<body>
+<div id="top">
+  <b>Custom level editor</b>
+  <label>rows <input id="rows" type="number" value="6" min="3" max="20"></label>
+  <label>cols <input id="cols" type="number" value="10" min="4" max="30"></label>
+  <button onclick="newGrid()">new grid</button>
+  <span style="flex:1"></span>
+  <button onclick="saveLevel(false)">save</button>
+  <button onclick="saveLevel(true)">save &amp; run</button>
+  <button onclick="location.href='/'">back to battle</button>
+</div>
+<div id="main">
+  <div id="mapwrap">
+    <div id="palette"></div>
+    <div style="margin-top:6px">
+      enemy search <input id="eneSearch" placeholder="gopro / 源石虫 / ut" oninput="loadEnemies()">
+      <select id="eneSel"></select>
+      start(s) <input id="eneStart" type="number" value="2.0" step="0.5" style="width:64px">
+      <button onclick="togglePlace()" id="placeBtn">place mode: off</button>
+      <button onclick="clearPlaced()">clear placed</button>
+    </div>
+    <div id="map" style="margin-top:8px"></div>
+  </div>
+  <div id="side">
+    <b>placed enemies</b>
+    <div id="placedList"></div>
+    <b>enemies JSON</b> (grouped waves; visual placements merge on save)
+    <textarea id="enemies" rows="5">[{"key":"enemy_1000_gopro","count":5,"interval":2.0,"start":2.0}]</textarea>
+    <b>level name</b><br>
+    <input id="name" value="custom" style="width:100%">
+    <b>routes</b> (route brush adds waypoints)<br>
+    <textarea id="routesJson" rows="4">[]</textarea>
+    <div>
+      <button onclick="newRoute()">new route</button>
+      <button onclick="undoWaypoint()">undo</button>
+      <button onclick="syncRoutesJson()">update from JSON</button>
+    </div>
+    <b>options</b>
+    <textarea id="options" rows="3">{"maxLifePoint":3,"initialCost":10,"costIncreaseTime":1.0,"maxCost":99}</textarea>
+    <div id="log"></div>
+  </div>
+</div>
+<script>
+let grid=[], pal='floor', rows=6, cols=10;
+let routes=[[{row:3,col:0},{row:3,col:9}]];   // list of waypoint arrays
+let curRoute=0;
+let placed=[];           // {key,row,col,start,routeIndex}
+let placeMode=false;
+let eneSel='enemy_1000_gopro';
+const PALETTE=[['floor','#2a2f47'],['wall','#464b63'],['hole','#0e1626'],
+               ['start','#2a4a2a'],['end','#4a3a2a'],['deploy','#1a3a5a'],
+               ['route','#9fc080'],['enemy','#b03030']];
+function paintPalette(){const p=document.getElementById('palette');p.innerHTML='';
+  for(const [k,c] of PALETTE){const d=document.createElement('div');d.className='pal';
+    d.style.background=c;d.textContent=k;d.id='pal_'+k;
+    d.onclick=()=>{pal=k;placeMode=false;syncPal();};p.appendChild(d);}
+  syncPal();}
+function syncPal(){for(const [k] of PALETTE){const el=document.getElementById('pal_'+k);
+  el.classList.toggle('on',pal===k && !(k==='enemy'&&!placeMode));
+  if(k==='enemy'&&placeMode)el.classList.add('on');}
+  document.getElementById('placeBtn').textContent='place mode: '+(placeMode?'on':'off');}
+function togglePlace(){placeMode=!placeMode;syncPal();}
+function newGrid(){rows=+document.getElementById('rows').value||6;
+  cols=+document.getElementById('cols').value||10;
+  grid=[];for(let r=0;r<rows;r++){grid.push([]);for(let c=0;c<cols;c++)
+    grid[r].push(c===cols-1?'end':'floor');}
+  grid[Math.floor(rows/2)][0]='start';
+  draw();}
+function draw(){const t=document.createElement('table');
+  for(let r=0;r<rows;r++){const tr=document.createElement('tr');
+    for(let c=0;c<cols;c++){const td=document.createElement('td');
+      td.className=grid[r][c];
+      let label=grid[r][c]==='route'?'R':grid[r][c][0].toUpperCase();
+      for(let ri=0;ri<routes.length;ri++){const wp=routes[ri];
+        for(let wi=0;wi<wp.length;wi++){
+          if(wp[wi].row===r&&wp[wi].col===c){label='R'+(ri+1)+'#'+wi;}}
+      }
+      td.textContent=label;
+      for(const p of placed){if(p.row===r&&p.col===c){
+        td.classList.add('placed');
+        const mk=document.createElement('div');mk.className='marker';
+        mk.textContent=p.key.replace(/^enemy_\\d+_/,'').slice(0,8);
+        mk.title=p.key+' t='+p.start;td.appendChild(mk);}}
+      td.onclick=()=>{
+        if(pal==='route'){routes[curRoute].push({row:r,col:c});draw();return;}
+        if(pal==='enemy'||placeMode){addPlaced(r,c);return;}
+        grid[r][c]=pal;draw();};tr.appendChild(td);}
+    t.appendChild(tr);}
+  document.getElementById('map').innerHTML='';document.getElementById('map').appendChild(t);}
+function addPlaced(r,c){
+  const st=parseFloat(document.getElementById('eneStart').value);
+  placed.push({key:eneSel||'enemy_1000_gopro',row:r,col:c,
+               start:isNaN(st)?2.0:st,routeIndex:0});
+  draw();updatePlacedList();}
+function removePlaced(i){placed.splice(i,1);draw();updatePlacedList();}
+function clearPlaced(){placed=[];draw();updatePlacedList();}
+function updatePlacedList(){const b=document.getElementById('placedList');
+  b.innerHTML='';placed.forEach((p,i)=>{
+    const d=document.createElement('div');
+    const bt=document.createElement('button');bt.textContent='x';
+    bt.onclick=()=>removePlaced(i);
+    const sp=document.createElement('span');
+    sp.textContent=p.key+' @('+p.row+','+p.col+') t='+p.start+' route='+p.routeIndex;
+    d.appendChild(bt);d.appendChild(sp);b.appendChild(d);});}
+async function loadEnemies(){
+  const q=document.getElementById('eneSearch').value;
+  const r=await fetch('/enemies?q='+encodeURIComponent(q));
+  const d=await r.json();const sel=document.getElementById('eneSel');
+  sel.innerHTML='';
+  for(const h of (d.hits||[])){const o=document.createElement('option');
+    o.value=h.key;o.text=h.key+' '+h.name;sel.appendChild(o);}
+  if(sel.options.length)eneSel=sel.value;}
+document.getElementById('eneSel').addEventListener('change',e=>{eneSel=e.target.value;});
+function newRoute(){routes.push([]);curRoute=routes.length-1;syncRoutesJson();draw();}
+function undoWaypoint(){const wp=routes[curRoute];if(wp&&wp.length)wp.pop();syncRoutesJson();draw();}
+function syncRoutesJson(){document.getElementById('routesJson').value=JSON.stringify(routes);}
+function parseRoutes(){
+  try{routes=JSON.parse(document.getElementById('routesJson').value||'[]');}
+  catch(e){log('routes JSON error: '+e);return false;}
+  if(!routes.length)routes=[[]];curRoute=routes.length-1;return true;}
+function buildLevel(){
+  const name=document.getElementById('name').value||'custom';
+  const rr=Math.floor(rows/2);
+  const opts=JSON.parse(document.getElementById('options').value||'{}');
+  const enemies=JSON.parse(document.getElementById('enemies').value||'[]');
+  parseRoutes();
+  const tiles=[];for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+    const k=grid[r][c];let tileKey='tile_floor',buildable=1,pass=1,height=1;
+    if(k==='wall'){tileKey='tile_forbidden';buildable=0;pass=0;height=2;}
+    if(k==='hole'){tileKey='tile_hole';buildable=0;pass=1;height=1;}
+    if(k==='end'){tileKey='tile_end';buildable=0;pass=1;height=1;}
+    if(k==='start'){tileKey='tile_road';buildable=0;pass=1;height=1;}
+    tiles.push({tileKey,buildableType:buildable,passableMask:pass,heightType:height});}
+  const wave=[];let seq=0;
+  for(const e of enemies){let t=+e.start||2.0;
+    for(let j=0;j<(+e.count||1);j++){wave.push({t:t+j*(+e.interval||2.0),
+      key:e.key,routeIndex:e.routeIndex||0,actionType:'SPAWN',seq:seq++});}}
+  for(const p of placed){wave.push({t:+p.start||2.0,key:p.key,
+      routeIndex:p.routeIndex||0,actionType:'SPAWN',seq:seq++,
+      row:p.row,col:p.col});}
+  const rtList=routes.map(wp=>{
+    if(!wp.length)wp=[{row:rr,col:0},{row:rr,col:cols-1}];
+    const start=wp[0], end=wp[wp.length-1];
+    const cps=wp.slice(1).map(pos=>({type:{name:'MOVE'},position:pos}));
+    return {startPosition:{row:start.row,col:start.col},
+            endPosition:{row:end.row,col:end.col},
+            checkpoints:cps};});
+  return {name,map:{rows,cols,tiles},
+    routes:rtList,
+    waveTimeline:wave.sort((a,b)=>a.t-b.t),options:opts,enemyDbRefs:[]};
+}
+async function saveLevel(run){
+  let lv;try{lv=buildLevel();}catch(e){log('build error: '+e);return;}
+  const r=await fetch('/custom-level',{method:'POST',
+    headers:{'Content-Type':'application/json'},body:JSON.stringify({level:lv,run:!!run})});
+  const d=await r.json();log('saved '+d.name+(run?' -> running':''));
+  if(run)location.href='/';
+}
+function log(m){const b=document.getElementById('log');
+  b.textContent+=m+'\n';b.scrollTop=b.scrollHeight;}
+paintPalette();newGrid();loadEnemies();
+log('ready - paint tiles, pick enemy + place mode, click map to place; save & run');
+</script>
+</body>
+</html>
