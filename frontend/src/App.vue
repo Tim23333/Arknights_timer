@@ -12,6 +12,7 @@ import {
   buildOperatorLifecycles,
   emptyGroups,
   enemyJourney,
+  flipGroupsPos,
   groupsFromActions,
   groupsFromLegacyRows,
   normalizeStagePackage,
@@ -221,8 +222,12 @@ function normalizeOperatorPlan(plan) {
   return result;
 }
 
+// 旧导出/旧工作区的我方坐标是底部基准 (gridRow 0=底部)，导入时用
+// strategy.js 的 flipGroupsPos 翻转到顶部基准显示；rows<=0 时不翻。
+
 function buildOperatorPayload() {
   return {
+    positionsTopBased: true,
     settings: {
       map_code: stagePackage.value.stage.code || stagePackage.value.stage.levelId || "",
       map_name: stagePackage.value.stage.name || "",
@@ -261,7 +266,10 @@ function triggerImport() {
 
 function applyImportedPayload(payload) {
   if (Array.isArray(payload?.actions)) {
-    operatorGroups.value = groupsFromActions(payload.actions);
+    // 后端部署追踪导出 (settings/actions) 坐标为底部基准；前端再导出的带
+    // positionsTopBased 标记，不翻。无地图时无行数可翻，跳过。
+    const flipRows = payload.positionsTopBased ? 0 : (Number(stagePackage.value.map?.rows) || 0);
+    operatorGroups.value = flipGroupsPos(groupsFromActions(payload.actions), flipRows);
     const settings = payload.settings || payload;
     stagePackage.value.stage.code = settings.map_code || stagePackage.value.stage.code;
     stagePackage.value.stage.name = settings.map_name || stagePackage.value.stage.name;
@@ -269,7 +277,8 @@ function applyImportedPayload(payload) {
     return;
   }
   if (payload?.meta && Array.isArray(payload.rows)) {
-    operatorGroups.value = groupsFromLegacyRows(payload.rows);
+    const flipRows = payload.positionsTopBased ? 0 : (Number(stagePackage.value.map?.rows) || 0);
+    operatorGroups.value = flipGroupsPos(groupsFromLegacyRows(payload.rows), flipRows);
     statusText.value = "已迁移旧版排轴 JSON 到部署/技能/撤退三类时间轴";
     return;
   }
@@ -279,7 +288,10 @@ function applyImportedPayload(payload) {
     resetPlay();
     selectedEnemyIds.value = new Set();
     if (payload.operatorPlan && typeof payload.operatorPlan === "object") {
-      operatorGroups.value = normalizeOperatorPlan(payload.operatorPlan);
+      // 旧工作区无 positionsTopBased 标记: 路线/地图已被 normalize 翻转,
+      // operatorPlan 里的坐标也要同步翻转, 否则干员部署上下颠倒
+      const flipRows = payload.positionsTopBased ? 0 : (Number(normalized.map?.rows) || 0);
+      operatorGroups.value = flipGroupsPos(normalizeOperatorPlan(payload.operatorPlan), flipRows);
     } else if (Array.isArray(payload.operatorActions)) {
       // 用 normalized 的 operatorActions：其中的 (列,行) 坐标已随包翻转到顶部基准。
       operatorGroups.value = groupsFromActions(normalized.operatorActions);
@@ -392,10 +404,14 @@ function restoreWorkspace() {
   if (!raw) return;
   try {
     const payload = JSON.parse(raw);
-    stagePackage.value = normalizeStagePackage(payload);
+    const normalized = normalizeStagePackage(payload);
+    stagePackage.value = normalized;
+    // 与 applyImportedPayload 一致：旧工作区(无 positionsTopBased 标记)的
+    // operatorPlan 坐标需随包翻转；operatorActions 直接用 normalized 的(已翻转)
+    const flipRows = payload.positionsTopBased ? 0 : (Number(normalized.map?.rows) || 0);
     operatorGroups.value = payload.operatorPlan && typeof payload.operatorPlan === "object"
-      ? normalizeOperatorPlan(payload.operatorPlan)
-      : groupsFromActions(payload.operatorActions || []);
+      ? flipGroupsPos(normalizeOperatorPlan(payload.operatorPlan), flipRows)
+      : groupsFromActions(normalized.operatorActions || []);
     const zoom = Number(payload.timeline?.pxPerSecond);
     if (Number.isFinite(zoom)) pxPerSecond.value = Math.min(36, Math.max(4, zoom));
     statusText.value = "已恢复上次未导出的本地排轴";

@@ -349,6 +349,39 @@ export function parseGridPos(pos) {
   return null;
 }
 
+// ---- 旧部署坐标翻转（底部基准行 → 顶部基准行）----
+// 旧导出/旧工作区里的部署坐标行号是底部基准的（与游戏 tile gridPosition 一致）；
+// 新导出均为顶部基准（positionsTopBased: true）。导入旧数据时用行数翻转一次。
+// (列,行) 与 F9 字母行两种格式都处理；rows<=0 时不翻。
+export function flipActionPosText(pos, rows) {
+  const rowCount = Math.floor(Number(rows) || 0);
+  const text = String(pos || "").trim();
+  if (!text || !(rowCount > 0)) return text;
+  let match = text.match(/^\(?\s*(\d+)\s*[,，]\s*(\d+)\s*\)?$/);
+  if (match) return `(${match[1]},${rowCount - 1 - Number(match[2])})`;
+  match = text.match(/^([A-Za-z])\s*(\d+)$/);
+  if (match) {
+    const flipped = rowCount - 1 - (match[1].toUpperCase().charCodeAt(0) - 65);
+    if (flipped >= 0 && flipped < 26) return `${String.fromCharCode(65 + flipped)}${match[2]}`;
+  }
+  return text;
+}
+
+/** 翻转 operatorGroups（{ 分类: [{ actions: [{ pos }] }] }）里所有部署坐标，返回原对象。 */
+export function flipGroupsPos(groups, rows) {
+  const rowCount = Math.floor(Number(rows) || 0);
+  if (!(rowCount > 0) || !groups) return groups;
+  for (const rowsOfCategory of Object.values(groups)) {
+    if (!Array.isArray(rowsOfCategory)) continue;
+    for (const row of rowsOfCategory) {
+      for (const action of Array.isArray(row?.actions) ? row.actions : []) {
+        action.pos = flipActionPosText(action.pos, rowCount);
+      }
+    }
+  }
+  return groups;
+}
+
 const MOVE_TYPES = new Set(["MOVE", "PATROL_MOVE"]);
 const TELEPORT_TYPES = new Set(["APPEAR_AT_POS", "MAP_OFFSET_MOVE"]);
 
