@@ -382,6 +382,9 @@ python build_exe.py --console
 
 # 跳过测试版（默认每次都会连打 正式版 + 测试版 两个 exe）
 python build_exe.py --skip-test
+
+# 跳过前端构建（沿用 backend/app/static 现有产物）
+python build_exe.py --skip-frontend
 ```
 
 测试版说明：默认与正式版一同产出（`ArknightsTimeline_v<版本>_Test.exe`），
@@ -391,10 +394,24 @@ python build_exe.py --skip-test
 落盘。“一键打包日志”会生成含会话日志、环境诊断、运行状态与偏移版本的 ZIP。
 
 打包流程：步骤 0 若 `tools/enemy_health/memsrv.c` 有更新会用 ziglang 自动重编
-`bin/memsrv`（失败不阻断，运行时回退 sh+dd 慢速模式）；步骤 1 打包
-AKTimerTool.exe；步骤 2 打包主程序并把寻址工具内嵌进去（同时自动打包
-`tools/` 目录含 `enemy_health/bin/memsrv`、敌人名称数据库
-`enemy_handbook_table*.bin`）。
+`bin/memsrv`（失败不阻断，运行时回退 sh+dd 慢速模式）；步骤 0.5 构建前端
+排轴工具页面（`frontend/` 下 `npm run build` → `backend/app/static`，
+未装 npm 或构建失败不阻断，沿用已提交产物，`--skip-frontend` 可跳过），
+随后把 static 复制为快照 `build/_static_snapshot`，正式版/测试版统一从快照
+打包（避免打包中途 vite build 清空重写带 hash 的 assets 导致 PyInstaller
+Analysis 与 PKG 之间文件消失而 FileNotFoundError）；步骤 1 打包
+AKTimerTool.exe；步骤 2 打包主程序并把寻址工具内嵌进去（同时自动
+打包 `tools/` 目录含 `enemy_health/bin/memsrv`、敌人名称数据库
+`enemy_handbook_table*.bin`，以及前端页面快照）。
+版本管控：后端版本唯一入口 `backend/app/version.py` 的 `VERSION`（exe 文件名、
+窗口标题、PE 资源均由它生成）；前端版本唯一入口 `frontend/package.json` 的
+`version` 字段（页面标题与页头版本号由 vite 构建时注入，build_exe 步骤 0.5
+与打包完成时打印）。发版时两处各自递增。
+启动时清理 `build/`、`dist/` 失败（通常是已打包 exe 还在运行被占用）会
+直接报错退出，不再静默带病打包。
+主程序标题栏右侧「排轴工具」按钮点击后懒启动 127.0.0.1 随机端口的静态
+HTTP 服务（`ThreadingHTTPServer` 服务 `backend/app/static`，frozen 下读
+`_MEIPASS/backend/app/static`）并用系统浏览器打开页面。
 
 ### 输出文件
 

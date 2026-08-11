@@ -149,7 +149,7 @@ class DeployDisplayApp:
     def _populate_table(self, events):
         self.tree.delete(*self.tree.get_children())
         for e in events:
-            position = f"({e['gridRow']}, {e['gridCol']})"
+            position = f"({e['gridCol']}, {e['gridRow']})"  # (列,行)
             tag = e["opName"].lower() if e["opName"] in ("SPAWN", "WITHDRAW", "SKILL", "CHEAT") else ""
             self.tree.insert(
                 "", "end",

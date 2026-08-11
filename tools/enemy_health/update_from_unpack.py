@@ -193,7 +193,8 @@ FIELD_MAP = {
     'SpawnActionFields': ('', 'LevelData.WaveData.FragmentData.ActionData', {
         'ACTION_TYPE': 'actionType', 'MANAGED_BY_SCHEDULER': 'managedByScheduler',
         'KEY': 'key', 'COUNT': 'count', 'PRE_DELAY': 'preDelay',
-        'INTERVAL': 'interval', 'ROUTE_INDEX': 'routeIndex',
+        'INTERVAL': 'interval', 'USE_EXTRA_ROUTE': 'useExtraRoute',
+        'ROUTE_INDEX': 'routeIndex',
         'HIDDEN_GROUP': 'hiddenGroup', 'RANDOM_SPAWN_GROUP': 'randomSpawnGroupKey',
         'RANDOM_SPAWN_PACK': 'randomSpawnGroupPackKey', 'RANDOM_TYPE': 'randomType',
         'REFRESH_TYPE': 'refreshType', 'WEIGHT': 'weight',

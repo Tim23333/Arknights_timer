@@ -664,7 +664,7 @@ class EnemyDetailDialog(QDialog):
                 if getattr(enemy, 'special_shield_mask', 0) & bit) or '-'),
             ('位置', f'({enemy.pos_x}, {enemy.pos_y})'),
             ('阻挡位置', f'({enemy.blk_x}, {enemy.blk_y})'),
-            ('出生格', f'({enemy.spawn_row}, {enemy.spawn_col})'),
+            ('出生格', f'({enemy.spawn_col}, {enemy.spawn_row})'),  # (列, 行)，与实时位置一致
             ('方向枚举', enemy.direction),
             ('元素爆发恢复', '是' if enemy.ep_break_recovery else '否'),
             ('状态抗性', enemy.status_resistance),

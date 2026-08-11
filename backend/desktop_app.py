@@ -1574,6 +1574,8 @@ class CoachWindow(QMainWindow):
         self._ws_port: int = 0
         self._ws_clients: set = set()
         self._ws_loop: asyncio.AbstractEventLoop | None = None
+        self._timeline_httpd = None
+        self._timeline_port: int = 0
 
         # 敌人数据
         self._enemy_reader = EnemyReader(
@@ -1777,6 +1779,11 @@ class CoachWindow(QMainWindow):
         btn_ws_info.clicked.connect(self._show_ws_info)
         self._style_secondary_button(btn_ws_info)
         title_row.addWidget(btn_ws_info)
+        btn_timeline = QPushButton("排轴工具")
+        btn_timeline.setToolTip("在内嵌网页中打开排轴工具（地图/出怪时间轴/操作回放）")
+        btn_timeline.clicked.connect(self._on_open_timeline_tool)
+        self._style_secondary_button(btn_timeline)
+        title_row.addWidget(btn_timeline)
         main.addLayout(title_row)
         sub = QLabel("寻址工具读取游戏时间/逻辑帧；进入关卡后点「开始扫描」实时展示敌人数据。")
         sub.setProperty('role', 'muted')
@@ -2384,6 +2391,57 @@ class CoachWindow(QMainWindow):
 
         threading.Thread(target=_run, name="ak-ws-server", daemon=True).start()
 
+    @staticmethod
+    def _timeline_static_dir() -> Path | None:
+        if getattr(sys, "frozen", False):
+            meipass = getattr(sys, "_MEIPASS", None)
+            if meipass:
+                candidate = Path(meipass) / "backend" / "app" / "static"
+                if (candidate / "index.html").is_file():
+                    return candidate
+            candidate = Path(sys.executable).resolve().parent / "backend" / "app" / "static"
+            if (candidate / "index.html").is_file():
+                return candidate
+        else:
+            candidate = Path(__file__).resolve().parent / "app" / "static"
+            if (candidate / "index.html").is_file():
+                return candidate
+        return None
+
+    def _on_open_timeline_tool(self) -> None:
+        import webbrowser
+        from functools import partial
+        from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+
+        if self._timeline_httpd is None:
+            static_dir = self._timeline_static_dir()
+            if static_dir is None:
+                _tlog("[排轴工具] 未找到内嵌前端页面 (backend/app/static/index.html)")
+                return
+
+            class _Handler(SimpleHTTPRequestHandler):
+                extensions_map = {
+                    **SimpleHTTPRequestHandler.extensions_map,
+                    ".js": "application/javascript",
+                    ".css": "text/css",
+                    ".json": "application/json",
+                    ".svg": "image/svg+xml",
+                    ".woff2": "font/woff2",
+                }
+
+                def log_message(self, *args):  # 静默访问日志
+                    pass
+
+            handler = partial(_Handler, directory=str(static_dir))
+            self._timeline_httpd = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+            self._timeline_httpd.daemon_threads = True
+            self._timeline_port = self._timeline_httpd.server_address[1]
+            threading.Thread(
+                target=self._timeline_httpd.serve_forever,
+                name="ak-timeline-http", daemon=True).start()
+            _tlog(f"[排轴工具] 静态服务 http://127.0.0.1:{self._timeline_port}/ ({static_dir})")
+        webbrowser.open(f"http://127.0.0.1:{self._timeline_port}/")
+
     def _start_workers(self) -> None:
         threading.Thread(target=self._memory_worker, name="ak-memory-worker", daemon=True).start()
 
@@ -2434,6 +2492,13 @@ class CoachWindow(QMainWindow):
         if self._diagnostic_log_window is not None:
             self._diagnostic_log_window.shutdown()
             self._diagnostic_log_window = None
+        if self._timeline_httpd is not None:
+            try:
+                self._timeline_httpd.shutdown()
+                self._timeline_httpd.server_close()
+            except Exception:
+                pass
+            self._timeline_httpd = None
         return super().closeEvent(event)
 
     def _on_open_timer_tool(self) -> None:
@@ -3052,7 +3117,17 @@ class CoachWindow(QMainWindow):
 
     @staticmethod
     def _deploy_pos_label(ev: dict) -> str:
-        """左手 JSON 坐标：gridRow 0=A，gridCol 0=1，例如 (5,8) -> F9。"""
+        """主坐标：(列,行)，与敌我信息坐标显示一致，例如 gridRow=5,gridCol=8 -> (8,5)。"""
+        try:
+            row = int(ev.get('gridRow'))
+            col = int(ev.get('gridCol'))
+        except (TypeError, ValueError):
+            return ''
+        return f'({col},{row})'
+
+    @staticmethod
+    def _deploy_pos_label_legacy(ev: dict) -> str:
+        """兼容旧记谱：gridRow 0=A，gridCol 0=1，例如 (5,8) -> F9。"""
         try:
             row = int(ev.get('gridRow'))
             col = int(ev.get('gridCol'))
@@ -3070,6 +3145,7 @@ class CoachWindow(QMainWindow):
                 'frame': int(ev['frame']) if ev.get('frame') is not None else None,
                 'oper': ev.get('charName') or ev.get('charId') or '',
                 'pos': self._deploy_pos_label(ev),
+                'pos_legacy': self._deploy_pos_label_legacy(ev),
             }
             if ev.get('op') == 0 and ev.get('direction') in DEPLOY_DIR_CN:
                 direction = DEPLOY_DIR_CN[ev['direction']]
@@ -3108,7 +3184,7 @@ class CoachWindow(QMainWindow):
             tbl.setItem(row, 4, QTableWidgetItem(
                 DEPLOY_DIR_CN.get(ev.get('direction'), str(ev.get('direction', '')))))
             tbl.setItem(row, 5, QTableWidgetItem(
-                f"({ev.get('gridRow', 0)},{ev.get('gridCol', 0)})"))
+                f"({ev.get('gridCol', 0)},{ev.get('gridRow', 0)})"))  # (列,行)
             tbl.setItem(row, 6, QTableWidgetItem(ev.get('extraInfo') or ''))
         tbl.scrollToBottom()
 

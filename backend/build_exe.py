@@ -30,6 +30,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import shutil
 import subprocess
@@ -68,6 +69,62 @@ def _add_data_arg(src: Path, dst: str) -> str:
     return f"{src}{sep}{dst}"
 
 
+def _frontend_version(repo_root: Path) -> str:
+    """前端版本的唯一配置入口是 frontend/package.json 的 version 字段
+    (页面标题与页头展示的版本号也由它注入)。"""
+    try:
+        return json.loads((repo_root / "frontend" / "package.json")
+                          .read_text(encoding="utf-8"))["version"]
+    except (OSError, KeyError, ValueError):
+        return "未知"
+
+
+def _ensure_frontend_static(repo_root: Path) -> None:
+    """打包前构建前端 (frontend/ -> backend/app/static, 内嵌为排轴工具页面)。
+    未装 node/npm 或构建失败不阻断打包, 沿用仓库里已提交的旧构建产物。"""
+    frontend_dir = repo_root / "frontend"
+    static_dir = repo_root / "backend" / "app" / "static"
+    if not (frontend_dir / "package.json").is_file():
+        print("[WARN] 未找到 frontend/package.json, 跳过前端构建, 沿用现有 static")
+        return
+    print(f"[INFO] 前端版本: v{_frontend_version(repo_root)} (frontend/package.json)")
+    npm = shutil.which("npm") or shutil.which("npm.cmd")
+    if npm is None:
+        print("[WARN] 未找到 npm, 跳过前端构建, 沿用现有 static "
+              "(装 Node.js 后可在 frontend/ 手动 npm run build)")
+        return
+    if not (frontend_dir / "node_modules").is_dir():
+        print("[INFO] 安装前端依赖 (npm install)...")
+        if subprocess.run([npm, "install"], cwd=frontend_dir).returncode != 0:
+            print("[WARN] npm install 失败, 沿用现有 static")
+            return
+    print("[INFO] 构建前端 (npm run build -> backend/app/static)...")
+    proc = subprocess.run([npm, "run", "build"], cwd=frontend_dir)
+    if proc.returncode != 0 or not (static_dir / "index.html").is_file():
+        print("[WARN] 前端构建失败, 打包继续并沿用现有 static")
+    else:
+        print(f"[OK] 前端构建完成: {static_dir}")
+
+
+def _snapshot_frontend_static(backend_dir: Path) -> Path:
+    """把 backend/app/static 复制为打包快照 (build/_static_snapshot)。
+    PyInstaller Analysis 扫描与 PKG 写盘之间若 static 被 vite build 改写
+    (assets 文件名带 hash, 旧文件被清空), 会以 FileNotFoundError 中断;
+    打包统一引用快照目录后正式版/测试版看到的文件集冻结一致。"""
+    src = backend_dir / "app" / "static"
+    snapshot = backend_dir / "build" / "_static_snapshot"
+    if not (src / "index.html").is_file():
+        return src  # 没有可打包的前端, 原样返回 (后续 is_dir 判断会跳过)
+    shutil.rmtree(snapshot, ignore_errors=True)
+    try:
+        shutil.copytree(src, snapshot)
+        print(f"[INFO] 前端 static 快照: {snapshot}")
+        return snapshot
+    except OSError as exc:
+        print(f"[WARN] static 快照失败 ({exc}), 改为直接引用源目录")
+        return src
+
+
 def _write_windows_version_file(backend_dir: Path, executable_name: str) -> Path:
     """生成 PyInstaller 使用的 Windows FileVersion/ProductVersion 资源。"""
     numeric = windows_version_tuple()
@@ -102,12 +159,16 @@ def _write_windows_version_file(backend_dir: Path, executable_name: str) -> Path
     return output
 
 
-def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args) -> int:
-    """打包带版本号的主程序（内嵌寻址工具）。"""
+def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args,
+                    static_dir: Path | None = None) -> int:
+    """打包带版本号的主程序（内嵌寻址工具）。
+    static_dir 传快照目录 (build/_static_snapshot)，避免打包中途前端重新构建
+    改写 static/assets 导致 Analysis 扫到的文件在 PKG 阶段消失。"""
     entry = backend_dir / "run.py"
     tools_dir = repo_root / "tools"
     data_dir = backend_dir / "data"
-    static_dir = backend_dir / "app" / "static"
+    if static_dir is None:
+        static_dir = backend_dir / "app" / "static"
     tables_dir = repo_root / "data" / "tables"
     timer_exe = backend_dir / "dist" / "AKTimerTool.exe"
 
@@ -287,6 +348,8 @@ def main() -> int:
     parser.add_argument("--no-clean", action="store_true", help="不清理 build/dist 临时目录")
     parser.add_argument("--console", action="store_true", help="显示控制台窗口（默认无控制台）")
     parser.add_argument("--skip-timer", action="store_true", help="跳过寻址工具打包（主程序将不含内嵌寻址工具）")
+    parser.add_argument("--skip-frontend", action="store_true",
+                        help="跳过前端构建（沿用 backend/app/static 现有产物）")
     parser.add_argument("--skip-test", action="store_true", help="跳过测试版打包（默认与正式版一起产出）")
     parser.add_argument("--test", action="store_true",
                         help="(已废弃, 默认即会同时打包测试版) 仅保留兼容, 效果等同默认行为")
@@ -310,17 +373,33 @@ def main() -> int:
         print(f"[ERROR] 未找到 tools 目录: {tools_dir}")
         return 1
 
-    # 可选清理旧目录
+    # 可选清理旧目录 (失败多因 exe 正在运行/被占用, 直接报错而不是静默带病打包)
     if not args.no_clean:
         for d in (backend_dir / "build", backend_dir / "dist"):
-            if d.exists():
-                shutil.rmtree(d, ignore_errors=True)
+            if not d.exists():
+                continue
+            try:
+                shutil.rmtree(d)
+            except OSError as exc:
+                print(f"[ERROR] 无法清理 {d}: {exc}")
+                print("        请关闭正在运行的已打包 exe 及占用该目录的程序后重试")
+                return 1
 
     # 步骤 0: 构建 memsrv 设备侧内存服务 (源码更新时)
     print("\n" + "=" * 60)
     print("[步骤 0] 检查 memsrv 设备侧内存服务...")
     print("=" * 60)
     _ensure_memsrv(tools_dir)
+
+    # 步骤 0.5: 构建前端 (排轴工具页面, 打包进 backend/app/static)
+    if args.skip_frontend:
+        print("\n[INFO] --skip-frontend: 跳过前端构建, 沿用现有 static")
+    else:
+        print("\n" + "=" * 60)
+        print("[步骤 0.5] 构建前端（排轴工具页面）...")
+        print("=" * 60)
+        _ensure_frontend_static(repo_root)
+    static_snapshot = _snapshot_frontend_static(backend_dir)
 
     # 步骤 1: 先打包寻址工具为临时 exe
     timer_exe = backend_dir / "dist" / "AKTimerTool.exe"
@@ -341,7 +420,7 @@ def main() -> int:
     print("\n" + "=" * 60)
     print("[步骤 2/3] 打包主程序（内嵌寻址工具）...")
     print("=" * 60)
-    ret = _build_main_app(backend_dir, repo_root, icon_path, args)
+    ret = _build_main_app(backend_dir, repo_root, icon_path, args, static_snapshot)
     if ret != 0:
         return ret
 
@@ -354,7 +433,7 @@ def main() -> int:
         test_args.test = True        # _build_main_app 据此内嵌 TEST_BUILD 标记
         test_args.console = False    # 测试版使用 GUI 日志窗口，不弹 CMD
         test_args.name = args.name if args.name.endswith("_Test") else f"{args.name}_Test"
-        ret = _build_main_app(backend_dir, repo_root, icon_path, test_args)
+        ret = _build_main_app(backend_dir, repo_root, icon_path, test_args, static_snapshot)
         if ret != 0:
             return ret
 
@@ -365,6 +444,7 @@ def main() -> int:
 
     print("\n" + "=" * 60)
     print("[OK] 打包完成！")
+    print(f"[INFO] 后端版本: {VERSION_LABEL} | 前端版本: v{_frontend_version(repo_root)}")
     print(f"[INFO] 输出目录: {backend_dir / 'dist'}")
     print(f"[INFO] 文件列表:")
     dist_dir = backend_dir / "dist"

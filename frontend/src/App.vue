@@ -1,13 +1,17 @@
 <script setup>
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { version as FRONTEND_VERSION } from "../package.json";
 import StageMap from "./components/StageMap.vue";
 import EnemyTimeline from "./components/EnemyTimeline.vue";
 import OperatorTimeline from "./components/OperatorTimeline.vue";
+import EnemyRoster from "./components/EnemyRoster.vue";
 import {
   ACTION_TYPES,
   FPS,
   actionsFromGroups,
+  buildOperatorLifecycles,
   emptyGroups,
+  enemyJourney,
   groupsFromActions,
   groupsFromLegacyRows,
   normalizeStagePackage,
@@ -36,10 +40,128 @@ const selectedAction = computed(() => {
   return action ? { category: refValue.category, row, action } : null;
 });
 
+// ===== 播放引擎 =====
+const playFrame = ref(0);
+const playing = ref(false);
+const playRate = ref(1);
+let rafId = null;
+let lastTickTime = 0;
+
+const routeByIndex = computed(() => {
+  const map = new Map();
+  for (const route of stagePackage.value.routes || []) {
+    const key = Number(route.index);
+    // 旧版导出文件 extra 路线与主路线 index 重复（0/1/2 两轮）：
+    // 重复时优先保留主路线，避免敌人走错路。
+    const prev = map.get(key);
+    if (!prev || (prev.isExtra && !route.isExtra)) map.set(key, route);
+  }
+  return map;
+});
+
+const journeys = computed(() => {
+  const map = new Map();
+  for (const enemy of stagePackage.value.enemySpawns || []) {
+    const journey = enemyJourney(enemy, routeByIndex.value.get(Number(enemy.routeIndex)), FPS, stagePackage.value.map);
+    if (journey) map.set(String(enemy.id), journey);
+  }
+  return map;
+});
+
+const lifecycles = computed(() => buildOperatorLifecycles(operatorGroups.value));
+
+// ===== 敌方列表多选过滤（空选择 = 显示全部）=====
+const selectedEnemyIds = ref(new Set());
+
+const filteredEnemies = computed(() => {
+  if (!selectedEnemyIds.value.size) return stagePackage.value.enemySpawns || [];
+  return (stagePackage.value.enemySpawns || []).filter(
+    (enemy) => selectedEnemyIds.value.has(String(enemy.id)));
+});
+
+const visibleRouteIndexes = computed(() => {
+  // 默认不画任何路线；只显示在敌方列表中选中敌人的路线。
+  if (!selectedEnemyIds.value.size) return new Set();
+  return new Set(filteredEnemies.value.map((enemy) => Number(enemy.routeIndex)));
+});
+
+function toggleEnemySelection(id) {
+  const key = String(id);
+  const next = new Set(selectedEnemyIds.value);
+  if (next.has(key)) {
+    next.delete(key);
+    if (selectedEnemyId.value === key) selectedEnemyId.value = "";
+  } else {
+    next.add(key);
+    selectedEnemyId.value = key;
+  }
+  selectedEnemyIds.value = next;
+}
+
+function selectAllEnemies() {
+  selectedEnemyIds.value = new Set(
+    (stagePackage.value.enemySpawns || []).map((enemy) => String(enemy.id)));
+}
+
+function clearEnemySelection() {
+  selectedEnemyIds.value = new Set();
+}
+
+function onSeek(frame) {
+  playFrame.value = Math.max(0, Math.min(durationFrames.value, Math.round(frame) || 0));
+}
+
+function stopPlaybackLoop() {
+  if (rafId !== null) cancelAnimationFrame(rafId);
+  rafId = null;
+}
+
+function playbackTick(timestamp) {
+  if (!playing.value) { rafId = null; return; }
+  if (lastTickTime) {
+    const dt = Math.min(0.25, (timestamp - lastTickTime) / 1000);
+    playFrame.value = Math.min(durationFrames.value, playFrame.value + dt * FPS * playRate.value);
+    if (playFrame.value >= durationFrames.value) {
+      playing.value = false;
+      rafId = null;
+      return;
+    }
+  }
+  lastTickTime = timestamp;
+  rafId = requestAnimationFrame(playbackTick);
+}
+
+function togglePlay() {
+  playing.value = !playing.value;
+  if (playing.value) {
+    if (playFrame.value >= durationFrames.value) playFrame.value = 0;
+    lastTickTime = 0;
+    rafId = requestAnimationFrame(playbackTick);
+  } else {
+    stopPlaybackLoop();
+  }
+}
+
+function resetPlay() {
+  playing.value = false;
+  stopPlaybackLoop();
+  playFrame.value = 0;
+}
+
+function onScrub(event) {
+  playFrame.value = Math.max(0, Number(event.target.value) || 0);
+  if (playing.value) togglePlay();
+}
+
+onBeforeUnmount(stopPlaybackLoop);
+
 const durationFrames = computed(() => {
   let maximum = FPS * 120;
   for (const enemy of stagePackage.value.enemySpawns || []) {
-    for (const value of [enemy.startFrame, enemy.endFrame]) {
+    // endFrame 缺失（未击杀/未观测到进蓝门）时用 journey 估算的到达蓝门帧兜底，
+    // 否则像 5-10 浮士德这种晚出场 + 长行程的敌人会在播放入口前就被截断
+    const journey = journeys.value.get(String(enemy.id));
+    for (const value of [enemy.startFrame, enemy.endFrame, journey?.effectiveEnd]) {
       const number = Number(value);
       if (Number.isFinite(number) && number >= 0) maximum = Math.max(maximum, number + FPS * 10);
     }
@@ -154,10 +276,13 @@ function applyImportedPayload(payload) {
   if (payload?.map || payload?.mapData || payload?.enemySpawns || payload?.waves) {
     const normalized = normalizeStagePackage(payload);
     stagePackage.value = normalized;
+    resetPlay();
+    selectedEnemyIds.value = new Set();
     if (payload.operatorPlan && typeof payload.operatorPlan === "object") {
       operatorGroups.value = normalizeOperatorPlan(payload.operatorPlan);
     } else if (Array.isArray(payload.operatorActions)) {
-      operatorGroups.value = groupsFromActions(payload.operatorActions);
+      // 用 normalized 的 operatorActions：其中的 (列,行) 坐标已随包翻转到顶部基准。
+      operatorGroups.value = groupsFromActions(normalized.operatorActions);
     }
     const zoom = Number(payload.timeline?.pxPerSecond);
     if (Number.isFinite(zoom)) pxPerSecond.value = Math.min(36, Math.max(4, zoom));
@@ -182,24 +307,44 @@ async function importJson(event) {
   }
 }
 
-function addOperatorRow(category) {
-  const rows = operatorGroups.value[category];
-  rows.push({ id: uid(), oper: `干员${rows.length + 1}`, actions: [] });
+const OPERATOR_CATEGORIES = ["deploy", "skill", "withdraw"];
+
+function addOperator() {
+  const names = new Set();
+  for (const category of OPERATOR_CATEGORIES) {
+    for (const row of operatorGroups.value[category]) names.add(row.oper);
+  }
+  let index = names.size + 1;
+  while (names.has(`干员${index}`)) index += 1;
+  operatorGroups.value.deploy.push({ id: uid(), oper: `干员${index}`, actions: [] });
 }
 
-function removeOperatorRow(category, rowId) {
-  operatorGroups.value[category] = operatorGroups.value[category].filter((row) => row.id !== rowId);
-  if (selectedActionRef.value?.rowId === rowId) selectedActionRef.value = null;
+function removeOperator(oper) {
+  for (const category of OPERATOR_CATEGORIES) {
+    operatorGroups.value[category] = operatorGroups.value[category].filter((row) => row.oper !== oper);
+  }
+  const selected = selectedActionRef.value;
+  if (selected && !OPERATOR_CATEGORIES.some(
+    (category) => operatorGroups.value[category].some((row) => row.id === selected.rowId))) {
+    selectedActionRef.value = null;
+  }
 }
 
-function renameOperatorRow(category, rowId, name) {
-  const row = operatorGroups.value[category].find((item) => item.id === rowId);
-  if (row) row.oper = String(name || "未知干员");
+function renameOperator(oldOper, newName) {
+  const name = String(newName || "").trim() || "未知干员";
+  for (const category of OPERATOR_CATEGORIES) {
+    for (const row of operatorGroups.value[category]) {
+      if (row.oper === oldOper) row.oper = name;
+    }
+  }
 }
 
-function addOperatorAction(category, rowId, frame) {
-  const row = operatorGroups.value[category].find((item) => item.id === rowId);
-  if (!row) return;
+function addOperatorAction(category, oper, frame) {
+  let row = operatorGroups.value[category].find((item) => item.oper === oper);
+  if (!row) {
+    row = { id: uid(), oper, actions: [] };
+    operatorGroups.value[category].push(row);
+  }
   const action = { id: uid(), frame, pos: "", direction: "", note: "" };
   row.actions.push(action);
   row.actions.sort((a, b) => {
@@ -207,7 +352,7 @@ function addOperatorAction(category, rowId, frame) {
     if (b.frame === null) return -1;
     return a.frame - b.frame;
   });
-  selectedActionRef.value = { category, rowId, actionId: action.id };
+  selectedActionRef.value = { category, rowId: row.id, actionId: action.id };
   statusText.value = `已添加${ACTION_TYPES[category]}：${row.oper} F${frame}`;
 }
 
@@ -260,7 +405,10 @@ function restoreWorkspace() {
 }
 
 watch([stagePackage, operatorGroups, pxPerSecond], schedulePersist, { deep: true });
-onMounted(restoreWorkspace);
+onMounted(() => {
+  document.title = `明日方舟地图与排轴工具 v${FRONTEND_VERSION}`;
+  restoreWorkspace();
+});
 </script>
 
 <template>
@@ -268,7 +416,7 @@ onMounted(restoreWorkspace);
     <header class="app-header">
       <div>
         <p class="eyebrow">ARKNIGHTS STRATEGY WORKSPACE</p>
-        <h1>明日方舟地图与排轴工具</h1>
+        <h1>明日方舟地图与排轴工具 <span class="app-ver">v{{ FRONTEND_VERSION }}</span></h1>
         <p>地图、敌人生命周期与我方操作使用同一帧坐标，方便攻略作者安排部署和技能时机。</p>
       </div>
       <div class="header-actions">
@@ -296,15 +444,61 @@ onMounted(restoreWorkspace);
 
     <div class="status-bar">{{ statusText }}</div>
 
-    <StageMap :map="stagePackage.map" :routes="stagePackage.routes" />
+    <div class="playback-bar">
+      <button class="primary" type="button" @click="togglePlay">{{ playing ? "⏸ 暂停" : "▶ 播放" }}</button>
+      <button type="button" @click="resetPlay">复位</button>
+      <select v-model.number="playRate" title="播放速度">
+        <option :value="0.5">0.5×</option>
+        <option :value="1">1×</option>
+        <option :value="2">2×</option>
+        <option :value="4">4×</option>
+      </select>
+      <input
+        class="play-slider"
+        type="range"
+        min="0"
+        :max="durationFrames"
+        :value="Math.round(playFrame)"
+        @input="onScrub"
+      />
+      <strong class="play-readout">F{{ Math.round(playFrame) }} · {{ (playFrame / FPS).toFixed(1) }}s</strong>
+    </div>
+
+    <div class="map-row">
+      <StageMap
+        :map="stagePackage.map"
+        :routes="stagePackage.routes"
+        :enemies="filteredEnemies"
+        :journeys="journeys"
+        :lifecycles="lifecycles"
+        :visible-route-indexes="visibleRouteIndexes"
+        :selected-ids="selectedEnemyIds"
+        :play-frame="playFrame"
+        :fps="FPS"
+      />
+      <EnemyRoster
+        :enemies="stagePackage.enemySpawns"
+        :journeys="journeys"
+        :play-frame="playFrame"
+        :fps="FPS"
+        :selected-ids="selectedEnemyIds"
+        @toggle="toggleEnemySelection"
+        @select-all="selectAllEnemies"
+        @clear-selection="clearEnemySelection"
+      />
+    </div>
 
     <EnemyTimeline
-      :enemies="stagePackage.enemySpawns"
+      :enemies="filteredEnemies"
+      :journeys="journeys"
       :fps="FPS"
       :px-per-second="pxPerSecond"
       :duration-frames="durationFrames"
       :selected-id="selectedEnemyId"
+      :play-frame="playFrame"
+      :playing="playing"
       @select="selectedEnemyId = String($event)"
+      @seek="onSeek"
     />
 
     <section v-if="selectedEnemy" class="editor-card enemy-editor">
@@ -325,11 +519,14 @@ onMounted(restoreWorkspace);
       :px-per-second="pxPerSecond"
       :duration-frames="durationFrames"
       :selected-action-id="selectedAction?.action.id || ''"
-      @add-row="addOperatorRow"
-      @remove-row="removeOperatorRow"
-      @rename-row="renameOperatorRow"
+      :play-frame="playFrame"
+      :playing="playing"
+      @add-oper="addOperator"
+      @remove-oper="removeOperator"
+      @rename-oper="renameOperator"
       @add-action="addOperatorAction"
       @select-action="selectOperatorAction"
+      @seek="onSeek"
     />
 
     <section v-if="selectedAction" class="editor-card action-editor">
@@ -350,7 +547,7 @@ onMounted(restoreWorkspace);
     </section>
 
     <footer>
-      <span>双击我方时间轴添加动作；点击敌人块或动作块编辑精确帧。</span>
+      <span>双击我方时间轴在该时刻添加技能，行首「部/技/撤」按钮按播放头位置添加；点击敌人块或动作块编辑精确帧。</span>
       <span>“仅导出我方操作”严格输出现有 <code>settings/actions</code> 格式。</span>
     </footer>
   </main>
@@ -364,6 +561,7 @@ onMounted(restoreWorkspace);
 .app-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding: 6px 2px 16px; border-bottom: 1px solid #313a49; }
 .eyebrow { margin: 0 0 4px; color: #66c2ff; font: 700 10px Consolas, monospace; letter-spacing: .18em; }
 .app-header h1 { margin: 0; font-size: 27px; letter-spacing: .02em; }
+.app-header .app-ver { font-size: 13px; font-weight: 500; color: #7fc7ff; vertical-align: middle; margin-left: 6px; letter-spacing: 0; }
 .app-header p:last-child { margin: 7px 0 0; color: #9ca8ba; font-size: 13px; }
 .header-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 button { border: 1px solid #445166; border-radius: 7px; padding: 7px 11px; background: #293344; color: #f2f6fd; cursor: pointer; }
@@ -382,6 +580,13 @@ button.danger { background: #8d3340; border-color: #bc4e5e; }
 .metric span { color: #8f9bad; font-size: 9px; white-space: nowrap; }
 .metric strong { font-size: 18px; }
 .status-bar { padding: 7px 10px; border-left: 3px solid #66c2ff; background: #15202c; color: #b9c7d9; font-size: 12px; border-radius: 0 6px 6px 0; }
+.playback-bar { display: flex; align-items: center; gap: 10px; border: 1px solid #313a49; border-radius: 10px; background: #171b22; padding: 9px 12px; }
+.playback-bar select { background: #0b0e13; color: #f5f8fd; border: 1px solid #39465a; border-radius: 5px; padding: 5px 6px; }
+.play-slider { flex: 1 1 auto; accent-color: #ff5252; }
+.play-readout { color: #cfe7ff; font: 13px Consolas, monospace; flex: 0 0 auto; min-width: 130px; text-align: right; }
+.map-row { display: flex; gap: 14px; align-items: stretch; }
+.map-row > .map-panel { flex: 1 1 auto; min-width: 0; }
+@media (max-width: 1100px) { .map-row { flex-direction: column; } .map-row > aside { width: 100%; flex-basis: auto; } }
 .editor-card { position: sticky; bottom: 10px; z-index: 20; align-self: stretch; display: grid; grid-template-columns: minmax(210px, 1.2fr) repeat(3, minmax(140px, .7fr)) minmax(240px, 1.4fr) auto; gap: 9px; align-items: end; padding: 11px; background: #222a36f2; border: 1px solid #52627a; border-radius: 10px; box-shadow: 0 10px 28px #000b; backdrop-filter: blur(8px); }
 .editor-card label { display: flex; flex-direction: column; gap: 4px; color: #a9b5c5; font-size: 10px; }
 .editor-title { display: flex; justify-content: space-between; align-items: center; gap: 9px; }

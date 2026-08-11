@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 SCHEMA_NAME = "arknights-stage-strategy"
 SCHEMA_VERSION = 1
-TIMELINE_FPS = 60
+TIMELINE_FPS = 30
 
 _BASE_TILE_KEYS = {
     "tile_empty", "tile_floor", "tile_road", "tile_forbidden", "tile_wall",
@@ -107,6 +107,8 @@ def serialize_spawn_record(record: dict, fps: int = TIMELINE_FPS) -> dict:
         "action": int(record.get("action_index", -1)),
         "spawnIndex": int(record.get("spawn_index", -1)),
         "routeIndex": int(record.get("route_index", -1)),
+        "moveSpeed": _number(record.get("move_speed_static")),
+        "bornDelay": _number(record.get("delay_to_born")),
         "startTime": start_time,
         "startFrame": start_frame,
         "actualStartFrame": int(actual_start_frame) if actual_start_frame is not None else None,
@@ -143,6 +145,9 @@ def build_stage_export(reader, stage_info: dict | None = None) -> dict:
             "condition": info.spawn_condition or "", "wave": -1,
             "fragment": -1, "action": -1, "spawnIndex": -1,
             "routeIndex": int(info.route_index if info.route_index is not None else -1),
+            "moveSpeed": _number(getattr(info, "mspd", None)),
+            "bornDelay": _number(getattr(info, "delay_to_born", None))
+                or _number((getattr(reader, "_level_enemy_meta", None) or {}).get(info.eid, {}).get("delay_to_born")),
             "startTime": None,
             "startFrame": start_frame, "actualStartFrame": start_frame,
             "endFrame": getattr(info, "end_frame", None),

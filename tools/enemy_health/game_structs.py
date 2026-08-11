@@ -1122,6 +1122,7 @@ class SpawnActionFields:
     COUNT = 0x20                       # int32
     PRE_DELAY = 0x24                   # float
     INTERVAL = 0x28                    # float
+    USE_EXTRA_ROUTE = 0x2C             # bool；true 时 ROUTE_INDEX 引用 extraRoutes 数组
     ROUTE_INDEX = 0x30                 # int32
     HIDDEN_GROUP = 0x38                # string
     RANDOM_SPAWN_GROUP = 0x40          # string

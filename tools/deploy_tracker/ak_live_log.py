@@ -33,7 +33,7 @@ def fmt_event(ev):
     arrow = _DIR_ARROW.get(ev["direction"], "?")
     op = _OP_CN.get(ev["op"], ev["opName"])
     name = ev["charName"] or ev["charId"]
-    pos = f"({ev['gridRow']},{ev['gridCol']})"
+    pos = f"({ev['gridCol']},{ev['gridRow']})"  # (列,行)
     extra = f" extra={ev['extraInfo']}" if ev.get("extraInfo") else ""
     return f"[{ev['timestamp']:8.3f}s] {op:<4} {name:<12} {arrow} {pos}{extra}"
 

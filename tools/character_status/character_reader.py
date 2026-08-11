@@ -142,9 +142,10 @@ class CharacterInfo:
 
     @property
     def position_text(self) -> str:
+        # 显示约定与敌方一致：(列, 行) = (x, y)，横坐标在前
         if self.grid_row is None or self.grid_col is None:
             return '-'
-        return f'({self.grid_row},{self.grid_col})'
+        return f'({self.grid_col},{self.grid_row})'
 
     @property
     def state_name(self) -> str:

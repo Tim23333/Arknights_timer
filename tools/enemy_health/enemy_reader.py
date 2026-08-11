@@ -474,6 +474,7 @@ class EnemyReader:
         self._frame_duration_snap = 1.0 / 30.0
         self._route_meta = {}           # routeIndex -> 起点/首个进场路线点
         self._routes_export = []        # 完整路线（供排轴前端绘图）
+        self._main_route_count = 0      # 主路线数组原始长度（extra 路线顺延编号）
         self._level_map_data = {}       # 当前关卡地图（纯 JSON 数据）
         self._level_enemy_meta = {}     # enemy key -> 静态移速/delayToBorn
 
@@ -521,6 +522,31 @@ class EnemyReader:
             return []
         return [ptr for ptr in (_u64(body, idx * 8) for idx in range(count))
                 if self.mc.is_ptr(ptr)]
+
+    def _read_object_array_slots(self, array_ptr, max_count=4096):
+        """同 _read_object_array，但返回 (slot, ptr) 列表与数组原始长度。
+
+        空槽被过滤时不压实下标——调用方若要用下标对齐游戏内数组
+        （如 spawn 的 route_index），必须用原始槽位号。
+        """
+        if not self.mc.is_ptr(array_ptr):
+            return [], 0
+        head = self._detail_batch_read([(array_ptr, gs.Il2CppArray.ITEMS)])[0]
+        if not head:
+            return [], 0
+        count = _i32(head, gs.Il2CppArray.MAX_LENGTH)
+        if not (0 <= count <= max_count):
+            return [], 0
+        if count == 0:
+            return [], 0
+        body = self._detail_batch_read(
+            [(array_ptr + gs.Il2CppArray.ITEMS, count * 8)])[0]
+        if not body:
+            return [], 0
+        slots = [(idx, ptr) for idx, ptr in
+                 enumerate(_u64(body, i * 8) for i in range(count))
+                 if self.mc.is_ptr(ptr)]
+        return slots, count
 
     def _read_ustring_fast(self, ptr, max_chars=256):
         if not self.mc.is_ptr(ptr):
@@ -583,6 +609,9 @@ class EnemyReader:
                 '<f', action, gs.SpawnActionFields.PRE_DELAY)[0]
             interval = struct.unpack_from(
                 '<f', action, gs.SpawnActionFields.INTERVAL)[0]
+            route_index = self._global_route_index(
+                _i32(action, gs.SpawnActionFields.ROUTE_INDEX),
+                bool(action[gs.SpawnActionFields.USE_EXTRA_ROUTE]))
             for spawn_index in range(count):
                 record = dict(base_meta)
                 record.update({
@@ -590,7 +619,7 @@ class EnemyReader:
                     'action_ptr': action_ptr,
                     'action_index': action_index,
                     'spawn_index': spawn_index,
-                    'route_index': _i32(action, gs.SpawnActionFields.ROUTE_INDEX),
+                    'route_index': route_index,
                     'time_offset': (float(base_delay) + pre_delay
                                     + max(0.0, interval) * spawn_index),
                     'managed': bool(action[gs.SpawnActionFields.MANAGED_BY_SCHEDULER]),
@@ -897,6 +926,8 @@ class EnemyReader:
         for index, tile_index in enumerate(indices):
             tile = dict(definitions[tile_index]) \
                 if 0 <= tile_index < len(definitions) else {}
+            # 内存 short[,] 首行 = 画面顶部（与官方 JSON map 一致，实机显示验证）。
+            # 注意 GridPosition/路线坐标相反（row 0 = 画面底部），由前端导入时翻转。
             tile.update(row=index // max(1, cols), col=index % max(1, cols),
                         tileIndex=tile_index)
             tiles.append(tile)
@@ -924,24 +955,46 @@ class EnemyReader:
         })
         return bool(tiles)
 
+    def _global_route_index(self, route_index, use_extra):
+        """把 (useExtraRoute, routeIndex) 换算成导出用的全局路线编号。
+
+        游戏内 spawn 的 routeIndex 在主路线数组与 extraRoutes 数组内各自从 0
+        计数（ActionData.useExtraRoute 区分）；导出时 extra 路线统一接在主路线
+        数组长度之后，保证全局唯一、与 _routes_export 的 index 一一对应。
+        """
+        if route_index < 0:
+            return route_index
+        if use_extra:
+            return self._main_route_count + route_index
+        return route_index
+
     def _load_route_meta(self, level_data):
         """读取完整路线，并保留用于估算可见进场时间的首段摘要。"""
         self._route_meta = {}
         self._routes_export = []
+        self._main_route_count = 0
         checkpoint_names = {
             value: name for name, value in vars(gs.RouteCheckpointType).items()
             if name.isupper() and isinstance(value, int)
         }
+        main_route_count = 0
         for is_extra, level_offset in (
                 (False, gs.LevelDataFields.ROUTES),
                 (True, gs.LevelDataFields.EXTRA_ROUTES)):
-            routes = self._read_object_array(
+            slots, array_count = self._read_object_array_slots(
                 self._read_ptr(level_data + level_offset), 4096)
+            if not is_extra:
+                main_route_count = array_count
+                self._main_route_count = array_count
             blocks = self._detail_batch_read([
-                (route, gs.RouteDataFields.READ_SIZE) for route in routes])
-            for route_index, block in enumerate(blocks):
+                (ptr, gs.RouteDataFields.READ_SIZE) for _, ptr in slots])
+            for (slot, _route_ptr), block in zip(slots, blocks):
                 if not block:
                     continue
+                # index 必须与游戏内数组槽位一致（spawn 的 route_index 直接引用
+                # 槽位；空槽被过滤后 enumerate 位置会错位，17-17 实测 route 29
+                # 为空导致后续路线全部错一位）。extra 路线接在主路线数组之后编号。
+                route_index = slot if not is_extra else main_route_count + slot
                 start = (_i32(block, gs.RouteDataFields.START_POSITION),
                          _i32(block, gs.RouteDataFields.START_POSITION + 4))
                 end = (_i32(block, gs.RouteDataFields.END_POSITION),
@@ -1001,7 +1054,7 @@ class EnemyReader:
                     'allowDiagonalMove': diagonal,
                     'checkpoints': exported_checkpoints,
                 })
-                if is_extra or entry is None:
+                if entry is None:
                     continue
                 row_delta = entry[0] - start[0]
                 col_delta = entry[1] - start[1]
@@ -1467,7 +1520,9 @@ class EnemyReader:
                 'key_ptr': key_ptr,
                 'count': _i32(data, gs.SpawnActionFields.COUNT),
                 'managed': bool(data[gs.SpawnActionFields.MANAGED_BY_SCHEDULER]),
-                'route_index': _i32(data, gs.SpawnActionFields.ROUTE_INDEX),
+                'route_index': self._global_route_index(
+                    _i32(data, gs.SpawnActionFields.ROUTE_INDEX),
+                    bool(data[gs.SpawnActionFields.USE_EXTRA_ROUTE])),
                 'hidden_group_ptr': _u64(data, gs.SpawnActionFields.HIDDEN_GROUP),
                 'random_group_ptr': _u64(data, gs.SpawnActionFields.RANDOM_SPAWN_GROUP),
             }
