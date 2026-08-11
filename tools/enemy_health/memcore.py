@@ -308,6 +308,44 @@ class TcpChannel:
         self.srv_version = 0              # 1=读取, 2=读取+扫描
         self._memsrv_restarted = False    # 本次 _push_memsrv 是否重推并杀了旧服务
         self._lock = threading.Lock()   # 同一时间只允许一个 batch_read
+        self._stats_lock = threading.Lock()
+        self._frame_stats = self._new_frame_stats()
+
+    @staticmethod
+    def _new_frame_stats() -> dict:
+        return {
+            'batches': 0,
+            'requests': 0,
+            'requested_bytes': 0,
+            'returned_bytes': 0,
+            'io_ms': 0.0,
+            'max_batch_ms': 0.0,
+        }
+
+    def reset_frame_stats(self) -> None:
+        """开始一个逻辑采样帧的 I/O 统计。
+
+        高频主通道只有 EnemyPollWorker 使用；详情页使用独立端口，因此这里
+        不会把详情读取混进主帧指标。
+        """
+        with self._stats_lock:
+            self._frame_stats = self._new_frame_stats()
+
+    def frame_stats(self) -> dict:
+        with self._stats_lock:
+            return dict(self._frame_stats)
+
+    def _record_batch_stats(self, requests, results, elapsed_ms: float) -> None:
+        requested = sum(max(0, int(size)) for _addr, size in requests)
+        returned = sum(len(data) for data in (results or ()) if data)
+        with self._stats_lock:
+            stats = self._frame_stats
+            stats['batches'] += 1
+            stats['requests'] += len(requests)
+            stats['requested_bytes'] += requested
+            stats['returned_bytes'] += returned
+            stats['io_ms'] += elapsed_ms
+            stats['max_batch_ms'] = max(stats['max_batch_ms'], elapsed_ms)
 
     # ---------- 服务部署 ----------
 
@@ -510,16 +548,22 @@ class TcpChannel:
 
     def batch_read(self, requests: List[Tuple[int, int]]) -> List[Optional[bytes]]:
         """批量读取 [(addr, size), ...]; 返回与请求等长的数据列表 (短读/失败为 None)"""
+        started = time.perf_counter()
+        results = None
         with self._lock:
             if not self.sock:
                 self.open()
             try:
                 if self.mode == 'srv':
-                    return self._batch_srv(requests)
-                return self._batch_sh(requests)
+                    results = self._batch_srv(requests)
+                else:
+                    results = self._batch_sh(requests)
             except Exception:
                 self.close()
                 raise
+        self._record_batch_stats(
+            requests, results, (time.perf_counter() - started) * 1000.0)
+        return results
 
     def _batch_srv(self, requests: List[Tuple[int, int]]) -> List[Optional[bytes]]:
         hdr = struct.pack('<Q', len(requests)) + b''.join(

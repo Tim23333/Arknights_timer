@@ -189,6 +189,214 @@ class CharacterReaderTests(unittest.TestCase):
         self.assertEqual(reader._damage_history, {})
         self.assertEqual(reader._damage_snapshots, {})
 
+    def test_every_runtime_group_is_refreshed_on_every_poll(self):
+        reader = self._action_reader()
+        addr = 0x1000
+        main = bytes(gs.CharacterFields.READ_SIZE)
+        calls = {name: 0 for name in (
+            'container', 'attributes', 'runtime', 'blocking',
+            'damage', 'skills', 'buffs')}
+
+        def container():
+            calls['container'] += 1
+            return [addr]
+
+        reader._read_container = container
+        reader._batch = lambda reqs: [main for _req in reqs]
+        reader._fill_new_identities = lambda infos: None
+        reader._finalize_character_action = lambda info: info.action
+        for method, key in (
+                ('_refresh_attributes', 'attributes'),
+                ('_refresh_runtime', 'runtime'),
+                ('_refresh_positions_and_blocking', 'blocking'),
+                ('_refresh_skills', 'skills'),
+                ('_refresh_buff_counts', 'buffs')):
+            setattr(reader, method,
+                    lambda infos, key=key: calls.__setitem__(key, calls[key] + 1))
+
+        def damage(infos, enemies=None, track_unattributed_damage=False):
+            calls['damage'] += 1
+
+        reader._refresh_damage_stats = damage
+        self.assertTrue(reader.poll_fast()['ok'])
+        self.assertTrue(reader.poll_fast()['ok'])
+        self.assertTrue(all(value == 2 for value in calls.values()), calls)
+        self.assertEqual(
+            (reader.LIST_EVERY, reader.SKILL_EVERY,
+             reader.BUFF_COUNT_EVERY, reader.DAMAGE_LAYOUT_EVERY),
+            (1, 1, 1, 1))
+
+    def test_stable_blocking_chain_uses_one_batch_without_skipping_layers(self):
+        reader = self._action_reader()
+        addr, manager, blocked_list = 0x1000, 0x2000, 0x3000
+        info = CharacterInfo(addr, blocked_manager_ptr=manager)
+        manager_data = bytearray(0x20)
+        struct.pack_into('<i', manager_data,
+                         gs.BlockedEnemyManagerFields.TOTAL_VOLUME, 2)
+        struct.pack_into('<Q', manager_data,
+                         gs.BlockedEnemyManagerFields.BLOCKED_ENEMIES,
+                         blocked_list)
+        list_data = bytearray(0x20)
+        struct.pack_into('<i', list_data, gs.ListInternal.SIZE, 1)
+        reader._blocked_layouts[addr] = {
+            'manager': manager, 'list': blocked_list}
+        memory = {manager: bytes(manager_data), blocked_list: bytes(list_data)}
+        batches = []
+
+        def batch(reqs):
+            if reqs:
+                batches.append(list(reqs))
+            return [memory.get(ptr, b'') for ptr, _size in reqs]
+
+        reader._batch = batch
+        reader._refresh_positions_and_blocking({addr: info})
+        self.assertEqual(len(batches), 1)
+        self.assertEqual({ptr for ptr, _size in batches[0]},
+                         {manager, blocked_list})
+        self.assertEqual((info.blocked_count, info.blocked_total_volume), (1, 2))
+
+    def test_stable_buff_chain_uses_one_batch_without_skipping_layers(self):
+        reader = self._action_reader()
+        addr, container, double, buff_list = 0x1000, 0x2000, 0x3000, 0x4000
+        info = CharacterInfo(addr, buff_container_ptr=container)
+        container_data = bytearray(0x30)
+        struct.pack_into('<Q', container_data, gs.BuffContainerFields.M_BUFFS,
+                         double)
+        double_data = bytearray(0x28)
+        struct.pack_into('<Q', double_data,
+                         gs.DoubleBufferedListFields.M_INTERNAL_LIST, buff_list)
+        list_data = bytearray(0x20)
+        struct.pack_into('<i', list_data, gs.ListInternal.SIZE, 7)
+        reader._buff_layouts[addr] = {
+            'container': container, 'double': double, 'list': buff_list}
+        memory = {
+            container: bytes(container_data), double: bytes(double_data),
+            buff_list: bytes(list_data),
+        }
+        batches = []
+
+        def batch(reqs):
+            if reqs:
+                batches.append(list(reqs))
+            return [memory.get(ptr, b'') for ptr, _size in reqs]
+
+        reader._batch = batch
+        reader._refresh_buff_counts({addr: info})
+        self.assertEqual(len(batches), 1)
+        self.assertEqual({ptr for ptr, _size in batches[0]},
+                         {container, double, buff_list})
+        self.assertEqual(info.buff_count, 7)
+
+    def test_stable_skill_chain_uses_one_batch_without_skipping_layers(self):
+        reader = self._action_reader()
+        addr, skill, ability, timer = 0x1000, 0x2000, 0x3000, 0x4000
+        info = CharacterInfo(addr, skill_ptr=skill)
+        skill_data = bytearray(gs.BasicSkillFields.READ_SIZE)
+        struct.pack_into('<Q', skill_data, gs.BasicSkillFields.ABILITY, ability)
+        ability_data = bytearray(gs.AbilityFields.READ_SIZE)
+        struct.pack_into('<Q', ability_data, gs.AbilityFields.COOLDOWN_TIMER, timer)
+        timer_data = bytes(0x20)
+        reader._skill_runtime_layouts[addr] = {
+            'skill': skill, 'ability': ability, 'timer': timer}
+        memory = {
+            skill: bytes(skill_data), ability: bytes(ability_data),
+            timer: timer_data,
+        }
+        batches = []
+
+        def batch(reqs):
+            if reqs:
+                batches.append(list(reqs))
+            return [memory.get(ptr, b'') for ptr, _size in reqs]
+
+        reader._batch = batch
+        reader._refresh_skills({addr: info})
+        self.assertEqual(len(batches), 1)
+        self.assertEqual({ptr for ptr, _size in batches[0]},
+                         {skill, ability, timer})
+        self.assertEqual(info.skill['runtime']['ability_addr'], ability)
+
+    def test_stable_damage_layout_and_values_share_one_batch(self):
+        reader = self._action_reader()
+        bc, logger, stats = 0x1000, 0x2000, 0x3000
+        outer_list, outer_items = 0x4000, 0x5000
+        key, entry_addr = 0x6000, 0x7000
+        list_ptrs = {'elements': 0x8000, 'breaks': 0x9000, 'types': 0xA000}
+        item_ptrs = {'elements': 0xB000, 'breaks': 0xC000, 'types': 0xD000}
+        counts = {'elements': 5, 'breaks': 5, 'types': 6}
+        reader.core.bc_addr = bc
+        reader._damage_logger_addr = logger
+        reader._damage_stats_addr = stats
+        reader._damage_list_addr = outer_list
+        reader._damage_list_signature = (outer_items, 1)
+        reader._damage_pairs_signature = ((key, entry_addr),)
+        reader._damage_entries = {
+            'char_test': {
+                'addr': entry_addr, 'key_ptr': key,
+                'lists': {
+                    kind: {
+                        'list': list_ptrs[kind],
+                        'data': item_ptrs[kind] + gs.Il2CppArray.ITEMS,
+                        'count': counts[kind],
+                    }
+                    for kind in list_ptrs
+                },
+            },
+        }
+        reader._tick = 1
+
+        logger_slot = struct.pack('<Q', logger)
+        logger_block = bytearray(gs.BattleLoggerFields.READ_SIZE)
+        struct.pack_into('<Q', logger_block, gs.BattleLoggerFields.STATS, stats)
+        stats_block = bytearray(gs.BattleStatsFields.READ_SIZE)
+        struct.pack_into('<Q', stats_block,
+                         gs.BattleStatsFields.CHAR_ADVANCED_STATS, outer_list)
+        struct.pack_into('<f', stats_block, gs.BattleStatsFields.TOTAL_DAMAGE, 10.0)
+        outer_head = bytearray(0x20)
+        struct.pack_into('<Q', outer_head, gs.ListInternal.ITEMS, outer_items)
+        struct.pack_into('<i', outer_head, gs.ListInternal.SIZE, 1)
+        entry_block = bytearray(gs.CharAdvancedStatsFields.READ_SIZE)
+        struct.pack_into('<f', entry_block,
+                         gs.CharAdvancedStatsFields.OUTPUT_DAMAGE_TOTAL, -10.0)
+        for kind, offset in (
+                ('elements', gs.CharAdvancedStatsFields.OUTPUT_ELEMENT_DAMAGE_TOTAL),
+                ('breaks', gs.CharAdvancedStatsFields.OUTPUT_EP_BREAK_COUNT),
+                ('types', gs.CharAdvancedStatsFields.OUTPUT_DAMAGE_BY_TYPE_TOTAL)):
+            struct.pack_into('<Q', entry_block, offset, list_ptrs[kind])
+
+        memory = {
+            bc + gs.BattleControllerFields.M_LOGGER: logger_slot,
+            logger: bytes(logger_block), stats: bytes(stats_block),
+            outer_list: bytes(outer_head),
+            outer_items + gs.Il2CppArray.ITEMS: struct.pack('<QQ', key, entry_addr),
+            entry_addr: bytes(entry_block),
+        }
+        for kind in list_ptrs:
+            head = bytearray(0x20)
+            struct.pack_into('<Q', head, gs.ListInternal.ITEMS, item_ptrs[kind])
+            struct.pack_into('<i', head, gs.ListInternal.SIZE, counts[kind])
+            memory[list_ptrs[kind]] = bytes(head)
+        memory[item_ptrs['elements'] + gs.Il2CppArray.ITEMS] = struct.pack(
+            '<5f', 0, 0, 0, 0, 0)
+        memory[item_ptrs['breaks'] + gs.Il2CppArray.ITEMS] = struct.pack(
+            '<5i', 0, 0, 0, 0, 0)
+        memory[item_ptrs['types'] + gs.Il2CppArray.ITEMS] = struct.pack(
+            '<6f', 0, 10, 0, 0, 0, 0)
+        batches = []
+
+        def batch(reqs):
+            if reqs:
+                batches.append(list(reqs))
+            return [memory.get(ptr, b'')[:size] for ptr, size in reqs]
+
+        reader._batch = batch
+        reader._refresh_damage_layout()
+        info = CharacterInfo(0xE000, cid='char_test')
+        reader._refresh_damage_stats({info.addr: info})
+        self.assertEqual(len(batches), 1)
+        self.assertAlmostEqual(info.damage_total, 10.0)
+        self.assertAlmostEqual(reader._battle_stats_total_damage, 10.0)
+
 
 if __name__ == '__main__':
     unittest.main()

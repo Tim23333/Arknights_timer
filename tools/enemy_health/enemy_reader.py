@@ -430,8 +430,11 @@ class EnemyReader:
         self._attr_ptrs = {}          # enemy addr -> Attributes* (属性轮换读取用)
         self._chan_fail = 0           # 通道连续异常计数 (日志节流)
         self._chan_dead_ts = 0.0      # 通道上次失败时间 (冷却期内直接走慢速)
+        self._last_slow_poll_ts = 0.0
+        self._last_slow_snapshot = None
         self._skill_lp = {}           # enemy addr -> m_skills List* (主块内提取)
         self._skill_ap = {}           # enemy addr -> m_allSkills EnemySkill[]*
+        self._skill_source_layout = {} # (enemy, active/all) -> ptr/items/count
         self._skill_ptrs = {}         # enemy addr -> 最近一次成功解析的 EnemySkill 地址
         self._active_skill_ptrs = {}  # enemy addr -> m_skills 中当前启用且已排序的技能
         self._skill_names = {}        # skill addr -> prefabKey (技能静态名缓存)
@@ -1192,6 +1195,7 @@ class EnemyReader:
         self._fixed_frame_snap = None
         self._frame_duration_snap = 1.0 / 30.0
         self._status_timer_cache.clear()
+        self._skill_source_layout.clear()
         self._animation_name_cache.clear()
         for order, source in enumerate(records, 1):
             record = self._make_plan_record(source, order, -order)
@@ -2672,7 +2676,7 @@ class EnemyReader:
                 continue
         return out
 
-    def _read_trigger_states_chan(self, ptrs):
+    def _read_trigger_states_chan(self, ptrs, prefetched=None):
         """读取 TargetTrigger 的原始运行时判定状态。
 
         这里只复现能从对象字段无副作用读取的部分。不能调用游戏的 ``Search``，
@@ -2685,9 +2689,17 @@ class EnemyReader:
         missing = [ptr for ptr in ptrs if ptr not in self._trigger_type_cache]
         if missing:
             self._trigger_type_cache.update(self._read_object_class_names_chan(missing))
+        prefetched = prefetched or {}
+        blocks = [prefetched.get(ptr) for ptr in ptrs]
+        missing = [(idx, ptr) for idx, (ptr, data) in enumerate(
+            zip(ptrs, blocks)) if not data]
+        if missing:
+            fetched = self._detail_batch_read([
+                (ptr, gs.TargetTriggerFields.READ_SIZE)
+                for _idx, ptr in missing])
+            for (idx, _ptr), data in zip(missing, fetched):
+                blocks[idx] = data
         out = {}
-        blocks = self._detail_batch_read([
-            (ptr, gs.TargetTriggerFields.READ_SIZE) for ptr in ptrs])
         for ptr, data in zip(ptrs, blocks):
             trigger_type = self._trigger_type_cache.get(ptr, '')
             item = {
@@ -2924,16 +2936,23 @@ class EnemyReader:
         if not valid:
             return
 
-        # 同一批核对 Skeleton->state、state->tracks、tracks->items，并读倍率。
+        # 同一批核对 Skeleton->state、state->tracks、tracks->items，读取当前
+        # track 指针，并投机读取上一帧 track。稳态由原来的三次往返压成一次；
+        # 只有动画切换导致 track 指针变化时才补读新对象。
         verify_reqs, verify_keys = [], []
         for owner, (skeleton, layout) in valid.items():
             verify_reqs.extend((
                 (skeleton + gs.SkeletonAnimationFields.STATE, 0x40),
                 (layout['state'] + gs.SpineAnimationStateFields.TRACKS, 0x58),
                 (layout['tracks'], 0x20),
+                (layout['items'] + gs.Il2CppArray.ITEMS, 8),
             ))
             verify_keys.extend(((owner, 'skeleton'), (owner, 'state'),
-                                (owner, 'tracks')))
+                                (owner, 'tracks'), (owner, 'track_ptr')))
+            cached_track = layout.get('track', 0)
+            if self.mc.is_ptr(cached_track):
+                verify_reqs.append((cached_track, gs.SpineTrackEntryFields.READ_SIZE))
+                verify_keys.append((owner, 'cached_track'))
         verified = {owner: {} for owner in valid}
         for (owner, kind), data in zip(
                 verify_keys, self._detail_batch_read(verify_reqs)):
@@ -2956,30 +2975,44 @@ class EnemyReader:
                     - gs.SpineAnimationStateFields.TRACKS)[0]
                 if tracks == layout['tracks'] and math.isfinite(scale):
                     verified[owner]['state_scale'] = scale
-            else:
+            elif kind == 'tracks':
                 items = _u64(data, gs.SpineExposedListFields.ITEMS)
                 count = _i32(data, gs.SpineExposedListFields.COUNT)
                 if items == layout['items'] and 0 < count <= 16:
                     verified[owner]['items_ok'] = True
+            elif kind == 'track_ptr':
+                track = _u64(data, 0)
+                if self.mc.is_ptr(track):
+                    verified[owner]['track'] = track
+            else:
+                verified[owner]['cached_track_data'] = data
 
         track_owners = [owner for owner, row in verified.items()
                         if row.get('items_ok')
-                        and 'skeleton_scale' in row and 'state_scale' in row]
-        track_ptrs = {}
+                        and 'skeleton_scale' in row and 'state_scale' in row
+                        and self.mc.is_ptr(row.get('track', 0))]
+        track_ptrs = {owner: verified[owner]['track'] for owner in track_owners}
+        track_data = {}
+        missing_track_owners = []
+        for owner, track in track_ptrs.items():
+            layout = valid[owner][1]
+            cached = layout.get('track', 0)
+            data = verified[owner].get('cached_track_data')
+            layout['track'] = track
+            if track == cached and data:
+                track_data[owner] = data
+            else:
+                missing_track_owners.append(owner)
         for owner, data in zip(
-                track_owners, self._detail_batch_read([
-                    (valid[owner][1]['items'] + gs.Il2CppArray.ITEMS, 8)
-                    for owner in track_owners])):
-            track = _u64(data, 0) if data else 0
-            if self.mc.is_ptr(track):
-                track_ptrs[owner] = track
+                missing_track_owners, self._detail_batch_read([
+                    (track_ptrs[owner], gs.SpineTrackEntryFields.READ_SIZE)
+                    for owner in missing_track_owners])):
+            if data:
+                track_data[owner] = data
 
         parsed = {}
         next_ptrs = {}
-        for owner, data in zip(
-                track_ptrs, self._detail_batch_read([
-                    (track, gs.SpineTrackEntryFields.READ_SIZE)
-                    for track in track_ptrs.values()])):
+        for owner, data in track_data.items():
             if not data:
                 continue
             start = struct.unpack_from(
@@ -3059,55 +3092,134 @@ class EnemyReader:
                     'signature': signature, 'buffs': [], 'last_probe': -10000,
                 }
 
-        probes = [row for row in targets
-                  if (not self._status_timer_cache[row[0]]['buffs']
-                      and tick - self._status_timer_cache[row[0]]['last_probe'] >= 10)]
-        if probes:
-            for addr, *_rest in probes:
-                self._status_timer_cache[addr]['last_probe'] = tick
-            dbls = {}
-            for row, data in zip(probes, self._detail_batch_read([
-                    (row[1], 0x30) for row in probes])):
-                ptr = _u64(data, gs.BuffContainerFields.M_BUFFS) if data else 0
-                if self.mc.is_ptr(ptr):
-                    dbls[row[0]] = ptr
-            lists = {}
-            for addr, data in zip(dbls, self._detail_batch_read([
-                    (ptr, 0x28) for ptr in dbls.values()])):
-                ptr = _u64(data, gs.DoubleBufferedListFields.M_INTERNAL_LIST) \
-                    if data else 0
-                if self.mc.is_ptr(ptr):
-                    lists[addr] = ptr
-            heads = {}
-            for addr, data in zip(lists, self._detail_batch_read([
-                    (ptr, 0x20) for ptr in lists.values()])):
-                if not data:
-                    continue
-                items = _u64(data, gs.ListInternal.ITEMS)
-                count = _i32(data, gs.ListInternal.SIZE)
-                if 0 < count <= 512 and self.mc.is_ptr(items):
-                    heads[addr] = (items, count)
-            for (addr, (_items, count)), data in zip(
-                    heads.items(), self._detail_batch_read([
-                        (items + gs.Il2CppArray.ITEMS, count * 0x10)
-                        for items, count in heads.values()])):
-                ptrs = []
-                if data:
-                    ptrs = [_u64(data, idx * 0x10) for idx in range(count)
-                            if idx * 0x10 + 8 <= len(data)]
-                    ptrs = [ptr for ptr in ptrs if self.mc.is_ptr(ptr)]
-                self._status_timer_cache[addr]['buffs'] = ptrs
+        # 完整 60Hz 模式下容器结构也逐帧确认。稳定指针链将 container、
+        # double buffer、List 头、items 和 Buff 动态块合并进一个 batch；任一
+        # 指针变化时当帧补读后续层，不降低采样频率。
+        probes = list(targets)
+        reqs, tags = [], []
+        buff_read_size = (gs.BuffFields.ABNORMAL_COMBO_MASK + 8
+                          - gs.BuffFields.M_LIFE_TIME)
+        for addr, container, *_rest in probes:
+            cache = self._status_timer_cache[addr]
+            cache['last_probe'] = tick
+            reqs.append((container, 0x30))
+            tags.append((addr, 'container'))
+            if cache.get('signature', (None,))[0] != container:
+                continue
+            double = cache.get('double', 0)
+            list_ptr = cache.get('list', 0)
+            items = cache.get('items', 0)
+            count = cache.get('count', 0)
+            if self.mc.is_ptr(double):
+                reqs.append((double, 0x28))
+                tags.append((addr, 'double'))
+            if self.mc.is_ptr(list_ptr):
+                reqs.append((list_ptr, 0x20))
+                tags.append((addr, 'list'))
+            if self.mc.is_ptr(items) and 0 < count <= 512:
+                reqs.append((items + gs.Il2CppArray.ITEMS, count * 0x10))
+                tags.append((addr, 'body'))
+            for buff in cache.get('buffs', ()):
+                if self.mc.is_ptr(buff):
+                    reqs.append((buff + gs.BuffFields.M_LIFE_TIME,
+                                 buff_read_size))
+                    tags.append((addr, 'buff', buff))
+        values = dict(zip(tags, self._detail_batch_read(reqs)))
 
-        rows, reqs = [], []
+        doubles, need = {}, []
+        for addr, container, *_rest in probes:
+            data = values.get((addr, 'container'))
+            double = _u64(data, gs.BuffContainerFields.M_BUFFS) if data else 0
+            if not self.mc.is_ptr(double):
+                if data:
+                    self._status_timer_cache[addr].update(
+                        double=0, list=0, items=0, count=0, buffs=[])
+                continue
+            doubles[addr] = double
+            cache = self._status_timer_cache[addr]
+            if cache.get('double') != double or not values.get((addr, 'double')):
+                need.append((addr, double))
+        double_data = {addr: values.get((addr, 'double')) for addr in doubles}
+        for (addr, _ptr), data in zip(
+                need, self._detail_batch_read([(ptr, 0x28) for _addr, ptr in need])):
+            double_data[addr] = data
+
+        lists, need = {}, []
+        for addr, double in doubles.items():
+            data = double_data.get(addr)
+            list_ptr = (_u64(data, gs.DoubleBufferedListFields.M_INTERNAL_LIST)
+                        if data else 0)
+            if not self.mc.is_ptr(list_ptr):
+                if data:
+                    self._status_timer_cache[addr].update(
+                        double=double, list=0, items=0, count=0, buffs=[])
+                continue
+            lists[addr] = list_ptr
+            cache = self._status_timer_cache[addr]
+            if cache.get('list') != list_ptr or not values.get((addr, 'list')):
+                need.append((addr, list_ptr))
+        list_data = {addr: values.get((addr, 'list')) for addr in lists}
+        for (addr, _ptr), data in zip(
+                need, self._detail_batch_read([(ptr, 0x20) for _addr, ptr in need])):
+            list_data[addr] = data
+
+        heads, need = {}, []
+        for addr, list_ptr in lists.items():
+            data = list_data.get(addr)
+            items = _u64(data, gs.ListInternal.ITEMS) if data else 0
+            count = _i32(data, gs.ListInternal.SIZE) if data else -1
+            if not (0 <= count <= 512 and (not count or self.mc.is_ptr(items))):
+                if data:
+                    self._status_timer_cache[addr].update(
+                        double=doubles[addr], list=list_ptr,
+                        items=0, count=0, buffs=[])
+                continue
+            heads[addr] = (items, count)
+            cache = self._status_timer_cache[addr]
+            if count and ((cache.get('items'), cache.get('count')) != (items, count)
+                          or not values.get((addr, 'body'))):
+                need.append((addr, items, count))
+        body_data = {addr: values.get((addr, 'body')) for addr in heads}
+        for (addr, _items, _count), data in zip(
+                need, self._detail_batch_read([
+                    (items + gs.Il2CppArray.ITEMS, count * 0x10)
+                    for _addr, items, count in need])):
+            body_data[addr] = data
+
+        for addr, (items, count) in heads.items():
+            data = body_data.get(addr) if count else b''
+            buffs = []
+            if not count:
+                buffs = []
+            elif data:
+                buffs = [_u64(data, idx * 0x10) for idx in range(count)
+                         if idx * 0x10 + 8 <= len(data)]
+                buffs = [ptr for ptr in buffs if self.mc.is_ptr(ptr)]
+            else:
+                buffs = list(self._status_timer_cache[addr].get('buffs', ()))
+            cache = self._status_timer_cache[addr]
+            cache.update(
+                double=doubles[addr], list=lists[addr], items=items,
+                count=count, buffs=buffs)
+
+        rows, missing_reqs, block_values = [], [], {}
         for addr, _container, state_id, flag_bit, combo_bit in targets:
             for buff in self._status_timer_cache[addr]['buffs']:
-                rows.append((addr, state_id, flag_bit, combo_bit, buff))
-                reqs.append((buff + gs.BuffFields.M_LIFE_TIME,
-                             gs.BuffFields.ABNORMAL_COMBO_MASK + 8
-                             - gs.BuffFields.M_LIFE_TIME))
+                row = (addr, state_id, flag_bit, combo_bit, buff)
+                rows.append(row)
+                data = values.get((addr, 'buff', buff))
+                if data:
+                    block_values[(addr, buff)] = data
+                else:
+                    missing_reqs.append((addr, buff))
+        for (addr, buff), data in zip(
+                missing_reqs, self._detail_batch_read([
+                    (buff + gs.BuffFields.M_LIFE_TIME, buff_read_size)
+                    for _addr, buff in missing_reqs])):
+            block_values[(addr, buff)] = data
         matches = {addr: [] for addr in active}
-        for (addr, _state, flag_bit, combo_bit, _buff), data in zip(
-                rows, self._detail_batch_read(reqs) if reqs else []):
+        for addr, _state, flag_bit, combo_bit, buff in rows:
+            data = block_values.get((addr, buff))
             if not data:
                 continue
             base = gs.BuffFields.M_LIFE_TIME
@@ -3818,19 +3930,34 @@ class EnemyReader:
             self._detail_chan = None
 
     CHAN_RETRY_SEC = 5.0   # 通道失败后的重建冷却 (open 含 adb 部署, 每帧重试太贵)
+    SLOW_FALLBACK_SEC = 0.5  # ADB 兜底无法保证 60Hz，最多每 0.5 秒真实读取一次
 
     def poll_fast(self):
-        """准实时轮询 (稳态 ~15-25ms/帧): 常驻 TCP 通道 (设备侧 nc -L sh +
-        adb forward, raw 二进制)。稳态每帧仅 1 次敌人簇 dd; List 头每 4
-        帧/属性轮换每 3 帧/BC 每 10 帧搭车同批。通道异常 -> 回退慢速 poll()。"""
+        """完整 60Hz 轮询：每帧读取容器、属性、状态、技能、动画与 BC。
+
+        memsrv 模式按对象精确批量读取；通道异常时明确降级为低频 ADB 兜底，
+        不把兜底结果标记为严格 60Hz。
+        """
         if self._chan is None:
             if time.time() - self._chan_dead_ts < self.CHAN_RETRY_SEC:
-                return self.poll()   # 冷却期内直接慢速, 避免每帧昂贵重连
+                now = time.monotonic()
+                if (self._last_slow_snapshot is not None
+                        and now - self._last_slow_poll_ts < self.SLOW_FALLBACK_SEC):
+                    snap = dict(self._last_slow_snapshot)
+                    snap['msg'] = '高速通道冷却中；慢速兜底不保证 60Hz'
+                    snap['strict_60hz'] = False
+                    return snap
+                snap = self.poll()
+                self._last_slow_poll_ts = now
+                self._last_slow_snapshot = snap
+                snap['strict_60hz'] = False
+                return snap
             self._chan = TcpChannel(self.mc)
         try:
             snap = self._poll_fast_impl()
             snap['read_mode'] = 'fast'
             snap['read_backend'] = self._chan.mode or 'tcp'
+            snap['strict_60hz'] = self._chan.mode == 'srv'
             self._chan_fail = 0
             return snap
         except Exception as e:
@@ -3839,7 +3966,11 @@ class EnemyReader:
                 self.log(f'[轮询] 通道异常 ({type(e).__name__}: {e}), 本帧回退慢速读')
             self.close()
             self._chan_dead_ts = time.time()
-            return self.poll()
+            snap = self.poll()
+            self._last_slow_poll_ts = time.monotonic()
+            self._last_slow_snapshot = snap
+            snap['strict_60hz'] = False
+            return snap
 
     @staticmethod
     def _cluster_ptrs(ptrs, gap=0x10000):
@@ -3854,6 +3985,12 @@ class EnemyReader:
             else:
                 clusters.append([p])
         return clusters
+
+    def _poll_clusters(self, ptrs):
+        """memsrv 精确读取每个对象；只有 shell/dd 兜底保留旧式聚簇。"""
+        if getattr(self._chan, 'mode', None) == 'srv':
+            return [[ptr] for ptr in ptrs]
+        return self._cluster_ptrs(ptrs)
 
     def _refill_failed_reads(self, reqs, results):
         """同帧重读 results 中失败的项并回填。敌人仍在 List 中, 一次通道
@@ -4217,12 +4354,14 @@ class EnemyReader:
             if info is not None:
                 self._copy_runtime(info, runtime[ep])
 
-    LIST_EVERY = 4    # List 头每 4 tick 读一次 (检测刷怪/退场; 其余帧沿用上一帧指针)
-    ATTR_EVERY = 3    # 每 3 tick 轮换刷新 1 个敌人的属性 (摊平尖峰)
-    BC_EVERY = 2      # BC 块 (状态/倍速/时间) 每 2 tick 读一次，供出场倒计时
-    SKILL_EVERY = 5   # 每 5 tick 通道内批量刷新全部敌人技能 CD
-    STATUS_EVERY = 2  # 状态/损伤条每 2 tick 批量刷新 (约 20-32ms)
-    SPAWN_QUEUE_EVERY = 4  # 当前 ActionItem 队列约每 4 tick 校验一次
+    # 完整实时模式：所有敌方运行时数据每个采样帧都读取。常量保留给诊断
+    # 输出和测试识别，但不再以取模方式跳帧。
+    LIST_EVERY = 1
+    ATTR_EVERY = 1
+    BC_EVERY = 1
+    SKILL_EVERY = 1
+    STATUS_EVERY = 1
+    SPAWN_QUEUE_EVERY = 1
 
     def _poll_fast_impl(self):
         t0 = time.time()
@@ -4236,7 +4375,7 @@ class EnemyReader:
         self._fast_tick += 1
         tick = self._fast_tick
         prev_ptrs = self._f_ptrs
-        read_list = (tick % self.LIST_EVERY == 1) or not prev_ptrs
+        read_list = True
 
         # ---- 组装本帧唯一一批请求 (稳态 = 1 簇 dd; 辅助读取降频搭车) ----
         reqs, slot = [], {}
@@ -4246,21 +4385,22 @@ class EnemyReader:
             if self.unit_enemies_addr:
                 slot['unit_enemies'] = len(reqs)
                 reqs.append((self.unit_enemies_addr, 0x28))
-        clusters = self._cluster_ptrs(prev_ptrs)
+        clusters = self._poll_clusters(prev_ptrs)
         slot['c0'] = len(reqs)
         reqs += [(c[0], c[-1] + gs.EnemyFields.READ_SIZE - c[0]) for c in clusters]
-        if prev_ptrs and tick % self.ATTR_EVERY == 0:
-            aep = prev_ptrs[(tick // self.ATTR_EVERY) % len(prev_ptrs)]
+        slot['attrs'] = []
+        slot['attr_heads'] = []
+        for aep in prev_ptrs:
             cdp = self._attr_cache.get(aep, 0)
             if cdp:
-                slot['attr'] = (len(reqs), aep)
+                slot['attrs'].append((len(reqs), aep))
                 reqs.append((cdp, 0x20 + gs.AttributeType.E_NUM * gs.OBSCURED_FP_SIZE))
             else:
                 ap = self._attr_ptrs.get(aep, 0)
                 if ap:
-                    slot['attrp'] = (len(reqs), aep)
+                    slot['attr_heads'].append((len(reqs), aep))
                     reqs.append((ap, 0x60))
-        if self.bc_addr and tick % self.BC_EVERY == 0:
+        if self.bc_addr:
             slot['bc'] = len(reqs)
             reqs.append((self.bc_addr + 0x200, 0xC0))
             if self._bc_static_fields:
@@ -4343,7 +4483,7 @@ class EnemyReader:
             self._uf_items, self._uf_cnt, self._uf_ptrs = \
                 unit_items, unit_cnt, unit_ptrs
             if ptrs != prev_ptrs:
-                clusters = self._cluster_ptrs(ptrs)
+                clusters = self._poll_clusters(ptrs)
                 cluster_res = self._chan.batch_read(
                     [(c[0], c[-1] + gs.EnemyFields.READ_SIZE - c[0])
                      for c in clusters]) if clusters else []
@@ -4403,13 +4543,12 @@ class EnemyReader:
             self._discover_custom_shields(custom_probe_eps, infos)
 
         # ---- 状态机 / 异常状态 / 免疫 / 五种损伤条 ----
-        runtime_missing = any(ep not in self._runtime_snapshot for ep in ptrs)
-        if ptrs and (runtime_missing or tick % self.STATUS_EVERY == 0):
-            self._refresh_runtime_chan(ptrs, infos)
+        readable_ptrs = [ep for ep in ptrs if ep in infos]
+        if readable_ptrs:
+            self._refresh_runtime_chan(readable_ptrs, infos)
 
-        # ---- 属性轮换刷新 (每 ATTR_EVERY 帧 1 个敌人) ----
-        if 'attr' in slot:
-            i, aep = slot['attr']
+        # ---- 全部敌人属性每个采样帧刷新 ----
+        for i, aep in slot.get('attrs', ()):
             cd = res[i]
             if cd and 0 < _i32(cd, gs.Il2CppArray.MAX_LENGTH) <= 64:
                 tmp = EnemyInfo(aep)
@@ -4417,15 +4556,14 @@ class EnemyReader:
                 self._attr_snapshot[aep] = dict(tmp.attributes)
             else:
                 self._attr_cache.pop(aep, None)   # 数组已失效, 下轮重建
-        elif 'attrp' in slot:
-            i, aep = slot['attrp']
+        for i, aep in slot.get('attr_heads', ()):
             d = res[i]
             cdp = _u64(d, gs.AttributesFields.M_CACHED_DATA) if d else 0
             if cdp and self.mc.is_ptr(cdp):
                 self._attr_cache[aep] = cdp
 
-        # ---- 技能 CD 批量刷新 (每 SKILL_EVERY 帧一轮) ----
-        if ptrs and tick % self.SKILL_EVERY == 0:
+        # ---- 技能、触发器和 CD 每个采样帧刷新 ----
+        if ptrs:
             self._refresh_skills_chan(ptrs)
 
         live = set(ptrs)
@@ -4483,8 +4621,7 @@ class EnemyReader:
         scheduler_data = res[slot['scheduler']] if 'scheduler' in slot else None
         spawned_count = (_i32(scheduler_data, gs.SchedulerFields.M_SPAWNED_ENEMIES_CNT)
                          if scheduler_data else 0)
-        if (scheduler_data and (tick % self.SPAWN_QUEUE_EVERY == 1
-                                or not self._action_queue_entries)):
+        if scheduler_data:
             self._refresh_action_queue_chan(scheduler_data)
         rows = self._merge_enemy_roster(enemies, spawned_count)
         snap['enemies'] = self._apply_spawn_timing(
@@ -4496,6 +4633,60 @@ class EnemyReader:
         snap['frame_ms'] = round((time.time() - t0) * 1000, 1)
         self._stale_cnt = 0
         return snap
+
+    def read_frame_guard_fast(self) -> dict:
+        """在敌我完整读取结束后复核战斗帧与暂停状态。
+
+        返回值用于检测一份快照是否跨越了暂停边界。该读取走同一个 memsrv
+        批次，不启动新的 ADB 子进程。
+        """
+        if self._chan is None:
+            return {
+                'frame': self._fixed_frame_snap,
+                'time_scale': self._bc_snap[2] if self._bc_snap else None,
+                'play_time': self._bc_snap[3] if self._bc_snap else None,
+            }
+        reqs, keys = [], []
+        if self._bc_static_fields:
+            reqs.append((
+                self._bc_static_fields
+                + gs.BattleControllerStaticFields.FIXED_FRAME_COUNT,
+                gs.BattleControllerStaticFields.DELTA_PLAY_TIME_FP
+                - gs.BattleControllerStaticFields.FIXED_FRAME_COUNT + 8))
+            keys.append('clock')
+        if self.bc_addr:
+            reqs.append((self.bc_addr + 0x200, 0xC0))
+            keys.append('bc')
+        if not reqs:
+            return {'frame': self._fixed_frame_snap, 'time_scale': None,
+                    'play_time': None}
+        values = dict(zip(keys, self._chan.batch_read(reqs)))
+        frame = self._fixed_frame_snap
+        if values.get('clock'):
+            new_frame, now, frame_duration = self._decode_battle_clock_snapshot(
+                values['clock'])
+            if new_frame is not None:
+                frame = self._fixed_frame_snap = new_frame
+            if now is not None:
+                self._scheduler_time_snap = now
+            if frame_duration is not None:
+                self._frame_duration_snap = frame_duration
+        time_scale = play_time = None
+        bc_data = values.get('bc')
+        if bc_data:
+            state = _i32(
+                bc_data, gs.BattleControllerFields.M_STATE - 0x200)
+            speed = _i32(
+                bc_data, gs.BattleControllerFields.M_SPEED_LEVEL - 0x200)
+            time_scale = struct.unpack_from(
+                '<f', bc_data,
+                gs.BattleControllerFields.M_TIME_SCALE - 0x200)[0]
+            play_time = struct.unpack_from(
+                '<f', bc_data,
+                gs.BattleControllerFields.M_REAL_PLAY_TIME - 0x200)[0]
+            self._bc_snap = (state, speed, time_scale, play_time)
+        return {'frame': frame, 'time_scale': time_scale,
+                'play_time': play_time}
 
     def _refresh_skills_chan(self, ptrs):
         """通道内批量刷新全部敌人技能 CD。
@@ -4511,21 +4702,48 @@ class EnemyReader:
         if not eps:
             return
 
-        sources, head_reqs = [], []
+        sources = []
+        frame_reqs, frame_tags = [], []
         for ep in eps:
             lp = self._skill_lp.get(ep, 0)
             ap = self._skill_ap.get(ep, 0)
             if self.mc.is_ptr(lp):
                 sources.append((ep, 'active', lp))
-                head_reqs.append((lp, 0x20))
             if self.mc.is_ptr(ap):
                 sources.append((ep, 'all', ap))
-                head_reqs.append((ap, 0x20))
+        for ep, kind, ptr in sources:
+            frame_reqs.append((ptr, 0x20))
+            frame_tags.append(('head', ep, kind))
+            layout = self._skill_source_layout.get((ep, kind), {})
+            if layout.get('ptr') == ptr and layout.get('count', 0):
+                frame_reqs.append((
+                    layout['items'] + gs.Il2CppArray.ITEMS,
+                    layout['count'] * 8))
+                frame_tags.append(('body', ep, kind))
+        # 上帧已验证的技能、Trigger 和计时器地址也并入同一批。当前技能块
+        # 仍会重新给出真实指针；不一致时下面立即补读新地址。
+        cached_skills = list(dict.fromkeys(
+            skill for ep in eps for skill in self._skill_ptrs.get(ep, ())
+            if self.mc.is_ptr(skill)))
+        for skill in cached_skills:
+            frame_reqs.append((skill, gs.EnemySkillFields.READ_SIZE))
+            frame_tags.append(('skill', skill))
+            meta = self._skill_runtime_meta.get(skill, {})
+            trigger = meta.get('trigger_addr', 0)
+            timer = meta.get('timer_addr', 0)
+            if self.mc.is_ptr(trigger):
+                frame_reqs.append((trigger, gs.TargetTriggerFields.READ_SIZE))
+                frame_tags.append(('trigger', trigger))
+            if self.mc.is_ptr(timer):
+                frame_reqs.append((timer, 0x20))
+                frame_tags.append(('timer', skill, timer))
+        frame_values = dict(zip(
+            frame_tags, self._chan.batch_read(frame_reqs) if frame_reqs else []))
 
         decoded_sources = {ep: set() for ep in eps}
-        body_reqs, body_keys = [], []
-        for (ep, kind, ptr), d in zip(
-                sources, self._chan.batch_read(head_reqs) if head_reqs else []):
+        body_reqs, body_keys, source_layouts = [], [], {}
+        for ep, kind, ptr in sources:
+            d = frame_values.get(('head', ep, kind))
             if not d:
                 continue
             if kind == 'all':
@@ -4536,16 +4754,32 @@ class EnemyReader:
                 n = _i32(d, gs.ListInternal.SIZE)
             if not (0 <= n <= 32) or (n and not self.mc.is_ptr(items)):
                 continue
+            source_layouts[(ep, kind)] = {
+                'ptr': ptr, 'items': items, 'count': n}
             if n == 0:
                 decoded_sources[ep].add(kind)
             else:
-                body_reqs.append((items + gs.Il2CppArray.ITEMS, n * 8))
-                body_keys.append((ep, kind, n))
+                cached = self._skill_source_layout.get((ep, kind), {})
+                data = frame_values.get(('body', ep, kind))
+                if (cached.get('ptr') == ptr
+                        and (cached.get('items'), cached.get('count')) == (items, n)
+                        and data):
+                    frame_values[('current_body', ep, kind)] = data
+                else:
+                    body_reqs.append((items + gs.Il2CppArray.ITEMS, n * 8))
+                    body_keys.append((ep, kind, n))
+        for (ep, kind, _n), data in zip(
+                body_keys, self._chan.batch_read(body_reqs) if body_reqs else []):
+            frame_values[('current_body', ep, kind)] = data
+        self._skill_source_layout.update(source_layouts)
 
         sks_of = {ep: [] for ep in eps}
         active_of = {ep: [] for ep in eps}
-        for (ep, kind, n), d in zip(
-                body_keys, self._chan.batch_read(body_reqs) if body_reqs else []):
+        for (ep, kind), layout in source_layouts.items():
+            n = layout['count']
+            if not n:
+                continue
+            d = frame_values.get(('current_body', ep, kind))
             if not d:
                 continue
             decoded_sources[ep].add(kind)
@@ -4580,10 +4814,19 @@ class EnemyReader:
                 skill_keys.append((ep, skill))
         timers, datas = {}, {}
         if skill_reqs:
-            for (ep, s), d in zip(skill_keys, self._chan.batch_read(skill_reqs)):
+            skill_data = [frame_values.get(('skill', skill))
+                          for _ep, skill in skill_keys]
+            missing = [(idx, req) for idx, (req, data) in enumerate(
+                zip(skill_reqs, skill_data)) if not data]
+            if missing:
+                fetched = self._chan.batch_read([req for _idx, req in missing])
+                for (idx, _req), data in zip(missing, fetched):
+                    skill_data[idx] = data
+            for (ep, s), d in zip(skill_keys, skill_data):
                 if not d:
                     continue
                 trigger_addr = _u64(d, gs.EnemySkillFields.TRIGGER)
+                timer_addr = _u64(d, gs.EnemySkillFields.M_COOLDOWN_TIMER)
                 self._skill_runtime_meta[s] = {
                     'family_mask': _i32(d, gs.EnemySkillFields.FAMILY_MASK),
                     'cast_like_attack': bool(d[gs.EnemySkillFields.CAST_LIKE_ATTACK]),
@@ -4593,6 +4836,7 @@ class EnemyReader:
                     'max_triggers': _i32(d, gs.EnemySkillFields.MAX_TRIGGER_TIME),
                     'trigger_count': _i32(d, gs.EnemySkillFields.M_TRIGGER_CNT),
                     'trigger_addr': trigger_addr,
+                    'timer_addr': timer_addr,
                     'has_trigger': self.mc.is_ptr(trigger_addr),
                     'sp_cost_runtime': _i32(d, gs.EnemySkillFields.M_SP_COST),
                     'ability_addr': (_u64(d, gs.EnemySkillFields.ABILITY)
@@ -4600,22 +4844,35 @@ class EnemyReader:
                     'parent_mode_addr': _u64(d, gs.EnemySkillFields.PARENT_MODE),
                     'is_enabled': s in self._active_skill_ptrs.get(ep, ()),
                 }
-                t = _u64(d, gs.EnemySkillFields.M_COOLDOWN_TIMER)
                 dp = _u64(d, gs.EnemySkillFields.DATA)
-                if self.mc.is_ptr(t):
-                    timers[s] = t
+                if self.mc.is_ptr(timer_addr):
+                    timers[s] = timer_addr
                 if (self.mc.is_ptr(dp) and (s not in self._skill_names
                                             or s not in self._skill_static_meta)):
                     datas[s] = dp
-        trigger_states = self._read_trigger_states_chan([
-            meta.get('trigger_addr', 0)
-            for meta in self._skill_runtime_meta.values()])
+        trigger_states = self._read_trigger_states_chan(
+            [meta.get('trigger_addr', 0)
+             for meta in self._skill_runtime_meta.values()],
+            prefetched={
+                trigger: frame_values.get(('trigger', trigger))
+                for trigger in {
+                    meta.get('trigger_addr', 0)
+                    for meta in self._skill_runtime_meta.values()}
+                if self.mc.is_ptr(trigger)})
         for meta in self._skill_runtime_meta.values():
             meta.update(trigger_states.get(meta.get('trigger_addr', 0), {}))
         remain_of = {}
         if timers:
             sks = list(timers)
-            for s, d in zip(sks, self._chan.batch_read([(timers[s], 0x20) for s in sks])):
+            timer_data = [frame_values.get(('timer', s, timers[s])) for s in sks]
+            missing = [(idx, s) for idx, (s, data) in enumerate(
+                zip(sks, timer_data)) if not data]
+            if missing:
+                fetched = self._chan.batch_read([
+                    (timers[s], 0x20) for _idx, s in missing])
+                for (idx, _s), data in zip(missing, fetched):
+                    timer_data[idx] = data
+            for s, d in zip(sks, timer_data):
                 if not d:
                     continue
                 period = gs.fp_to_float(_u64(d, gs.PeriodicTimerFields.M_PERIOD_TIME))
@@ -4673,6 +4930,14 @@ class EnemyReader:
         for s in list(self._skill_static_meta):
             if s not in live_sks:
                 self._skill_static_meta.pop(s, None)
+        live_sources = {
+            (ep, kind) for ep in eps for kind, ptr in (
+                ('active', self._skill_lp.get(ep, 0)),
+                ('all', self._skill_ap.get(ep, 0)))
+            if self.mc.is_ptr(ptr)}
+        for key in list(self._skill_source_layout):
+            if key not in live_sources:
+                self._skill_source_layout.pop(key, None)
         live_triggers = {
             meta.get('trigger_addr') for meta in self._skill_runtime_meta.values()
             if self.mc.is_ptr(meta.get('trigger_addr', 0))}

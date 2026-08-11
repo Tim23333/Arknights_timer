@@ -121,10 +121,9 @@ AUTO_REFRESH_MS = 8
 FAST_UI_MS = 8
 SLOW_UI_MS = 150
 WS_PUSH_MS = 8
-ENEMY_POLL_SEC = 0.01      # 敌人轮询间隔 (memsrv 通道单帧 <1ms, 2倍速 60fps=16.7ms)
-ENEMY_RENDER_SEC = 0.016   # 表格渲染节流 (60fps)
-ENEMY_DETAIL_FULL_SEC = 0.05  # Buff/关卡效果独立通道约 20Hz；动态数据随主表每帧刷新
-CHARACTER_DETAIL_FULL_SEC = 0.05
+ENEMY_POLL_SEC = 1.0 / 60.0    # 完整敌我运行时数据固定 60Hz
+ENEMY_DETAIL_FULL_SEC = 1.0 / 60.0
+CHARACTER_DETAIL_FULL_SEC = 1.0 / 60.0
 
 ENEMY_COLS = [col['label'] for col in ENEMY_COLUMN_DEFS]
 ENEMY_COL_WIDTHS = [col['width'] for col in ENEMY_COLUMN_DEFS]
@@ -811,6 +810,36 @@ class EnemyPollWorker(QThread):
         self._character_detail_loading = False
         self._character_detail_error = ''
         self.track_unattributed_damage = False
+        self._snapshot_lock = threading.Lock()
+        self._latest_snapshot = None
+        self._snapshot_signal_pending = False
+        self._dropped_ui_snapshots = 0
+        self._sample_window_started = time.perf_counter()
+        self._sample_window_count = 0
+        self._sample_hz = 0.0
+        self._deadline_misses = 0
+
+    def take_latest_snapshot(self):
+        """GUI 只取最新帧；忙碌期间产生的旧帧不会在 Qt 队列中堆积。"""
+        with self._snapshot_lock:
+            snap = self._latest_snapshot
+            self._latest_snapshot = None
+            self._snapshot_signal_pending = False
+            return snap
+
+    def _publish_snapshot(self, snap: dict) -> None:
+        should_emit = False
+        with self._snapshot_lock:
+            if self._snapshot_signal_pending:
+                self._dropped_ui_snapshots += 1
+            else:
+                self._snapshot_signal_pending = True
+                should_emit = True
+            snap['dropped_ui_snapshots'] = self._dropped_ui_snapshots
+            self._latest_snapshot = snap
+        if should_emit:
+            # 信号参数仅用于唤醒 GUI；槽函数会从双缓冲区取最新快照。
+            self.snapshot.emit(snap)
 
     def set_track_unattributed_damage(self, enabled: bool) -> None:
         self.track_unattributed_damage = bool(enabled)
@@ -966,40 +995,118 @@ class EnemyPollWorker(QThread):
         if error:
             snap['character_detail_error'] = error
 
+    def _collect_complete_snapshot(self) -> dict:
+        try:
+            snap = self.reader.poll_fast()
+        except Exception as e:
+            snap = {'ok': False, 'state': -1, 'speed_level': -1,
+                    'time_scale': 0.0, 'play_time': 0.0, 'enemies': [],
+                    'msg': f'轮询出错: {e}', 'strict_60hz': False}
+        frame_start = snap.get('fixed_frame')
+        if self.character_reader is not None:
+            try:
+                char_snap = self.character_reader.poll_fast(
+                    snap.get('enemies'), self.track_unattributed_damage)
+            except Exception as e:
+                char_snap = {
+                    'ok': False, 'characters': [],
+                    'msg': f'干员轮询出错: {e}', 'frame_ms': 0.0,
+                }
+            snap['character_ok'] = bool(char_snap.get('ok'))
+            snap['characters'] = list(char_snap.get('characters', ()))
+            snap['global_damage_summary'] = char_snap.get(
+                'global_damage_summary')
+            snap['character_msg'] = char_snap.get('msg', '')
+            snap['character_frame_ms'] = char_snap.get('frame_ms', 0.0)
+
+        guard = {}
+        try:
+            guard = self.reader.read_frame_guard_fast()
+        except Exception as exc:
+            snap['frame_guard_error'] = f'{type(exc).__name__}: {exc}'
+        frame_end = guard.get('frame', frame_start)
+        post_scale = guard.get('time_scale')
+        if isinstance(post_scale, (int, float)):
+            snap['time_scale'] = post_scale
+        if isinstance(guard.get('play_time'), (int, float)):
+            snap['play_time'] = guard['play_time']
+        paused = isinstance(snap.get('time_scale'), (int, float)) \
+            and abs(float(snap['time_scale'])) < 1e-7
+        snap['frame_start'] = frame_start
+        snap['frame_end'] = frame_end
+        snap['frame_consistent'] = (
+            frame_start is not None and frame_start == frame_end)
+        snap['paused_snapshot'] = paused
+        snap['pause_consistent'] = (
+            not paused or bool(snap['frame_consistent']))
+        self._append_detail(snap)
+        self._append_character_detail(snap)
+        return snap
+
     def run(self) -> None:
         # Windows 默认睡眠粒度 15.6ms, 提到 1ms 才能睡出 <16ms 的轮询间隔
         winmm = getattr(ctypes.windll, 'winmm', None) if sys.platform == 'win32' else None
         if winmm:
             winmm.timeBeginPeriod(1)
         try:
+            next_deadline = time.perf_counter()
+            self._sample_window_started = next_deadline
+            self._sample_window_count = 0
             while not self.isInterruptionRequested():
-                t0 = time.time()
-                try:
-                    snap = self.reader.poll_fast()
-                except Exception as e:
-                    snap = {'ok': False, 'state': -1, 'speed_level': -1, 'time_scale': 0.0,
-                            'play_time': 0.0, 'enemies': [], 'msg': f'轮询出错: {e}'}
-                if self.character_reader is not None:
-                    try:
-                        char_snap = self.character_reader.poll_fast(
-                            snap.get('enemies'), self.track_unattributed_damage)
-                    except Exception as e:
-                        char_snap = {
-                            'ok': False, 'characters': [],
-                            'msg': f'干员轮询出错: {e}', 'frame_ms': 0.0,
-                        }
-                    snap['character_ok'] = bool(char_snap.get('ok'))
-                    snap['characters'] = list(char_snap.get('characters', ()))
-                    snap['global_damage_summary'] = char_snap.get(
-                        'global_damage_summary')
-                    snap['character_msg'] = char_snap.get('msg', '')
-                    snap['character_frame_ms'] = char_snap.get('frame_ms', 0.0)
-                self._append_detail(snap)
-                self._append_character_detail(snap)
-                self.snapshot.emit(snap)
-                dt = time.time() - t0
-                wait = max(0.001, self.interval - dt)
-                self.msleep(int(wait * 1000))
+                t0 = time.perf_counter()
+                channel = getattr(self.reader, '_chan', None)
+                if channel is not None and hasattr(channel, 'reset_frame_stats'):
+                    channel.reset_frame_stats()
+
+                snap = self._collect_complete_snapshot()
+                # 暂停边界可能刚好落在本轮中间；最多立即重读三次。仍跨帧时
+                # 不发布这份混合快照，GUI 保留上一份完整数据并等待下一轮。
+                pause_retries = 0
+                while (snap.get('paused_snapshot')
+                       and not snap.get('frame_consistent')
+                       and pause_retries < 3
+                       and not self.isInterruptionRequested()):
+                    pause_retries += 1
+                    snap = self._collect_complete_snapshot()
+                snap['pause_retries'] = pause_retries
+                suppress_paused_snapshot = bool(
+                    snap.get('paused_snapshot')
+                    and not snap.get('frame_consistent'))
+
+                finished = time.perf_counter()
+                loop_ms = (finished - t0) * 1000.0
+                self._sample_window_count += 1
+                elapsed = finished - self._sample_window_started
+                if elapsed >= 1.0:
+                    self._sample_hz = self._sample_window_count / elapsed
+                    self._sample_window_started = finished
+                    self._sample_window_count = 0
+
+                channel = getattr(self.reader, '_chan', None)
+                io_metrics = (channel.frame_stats()
+                              if channel is not None
+                              and hasattr(channel, 'frame_stats') else {})
+                snap['loop_ms'] = round(loop_ms, 2)
+                snap['sample_hz'] = round(self._sample_hz, 2)
+                snap['deadline_misses'] = self._deadline_misses
+                snap['io_metrics'] = io_metrics
+                snap['full_60hz'] = bool(
+                    snap.get('strict_60hz')
+                    and self._sample_hz >= 59.0
+                    and snap.get('pause_consistent', True)
+                    and (self.character_reader is None
+                         or snap.get('character_ok')))
+                if not suppress_paused_snapshot:
+                    self._publish_snapshot(snap)
+
+                next_deadline += self.interval
+                remaining = next_deadline - time.perf_counter()
+                if remaining > 0:
+                    self.msleep(max(1, int(remaining * 1000)))
+                else:
+                    self._deadline_misses += 1
+                    # 不补发已经错过的历史帧；从当前时刻重新建立 60Hz 截止线。
+                    next_deadline = time.perf_counter()
         finally:
             if winmm:
                 winmm.timeEndPeriod(1)
@@ -2824,7 +2931,7 @@ class CoachWindow(QMainWindow):
             self._enemy_reader, self._character_reader)
         self._enemy_poll.set_track_unattributed_damage(
             self.chk_unattributed_damage.isChecked())
-        self._enemy_poll.snapshot.connect(self._on_enemy_snapshot)
+        self._enemy_poll.snapshot.connect(self._on_enemy_snapshot_ready)
         self._enemy_poll.start()
         self.btn_enemy_stop.setEnabled(True)
         self.btn_character_stop.setEnabled(True)
@@ -2839,6 +2946,15 @@ class CoachWindow(QMainWindow):
         self.btn_enemy_stop.setEnabled(False)
         if hasattr(self, 'btn_character_stop'):
             self.btn_character_stop.setEnabled(False)
+
+    def _on_enemy_snapshot_ready(self, _wake_snapshot: dict) -> None:
+        """消费工作线程双缓冲区中的最新完整帧，而不是信号携带的旧帧。"""
+        poll = self._enemy_poll
+        if poll is None:
+            return
+        snap = poll.take_latest_snapshot()
+        if snap is not None:
+            self._on_enemy_snapshot(snap)
 
     # ================= 随机数追踪 (ak_live_rng) =================
 
@@ -3222,10 +3338,9 @@ class CoachWindow(QMainWindow):
             if msg and msg != getattr(self, '_last_snap_msg', None):
                 self._last_snap_msg = msg
                 _tlog("轮询:", msg)
-        # 主表与详情页使用同一次 60fps 渲染节流，避免两处显示不同步。
+        # 工作线程本身固定 60Hz 且信号只保留最新快照；这里不再做第二层
+        # 时间阈值节流，否则 16.7ms 附近的轻微抖动会误跳成约 30Hz。
         now = time.time()
-        if snap.get('ok') and now - self._enemy_last_render < ENEMY_RENDER_SEC:
-            return
         if snap.get('ok'):
             self._enemy_last_render = now
         detail_dialog = self._enemy_detail_dialog
@@ -3258,7 +3373,23 @@ class CoachWindow(QMainWindow):
         t = int(snap['play_time'])
         if now - self._frame_ts >= 0.5:   # ms/帧 0.5s 节流, 避免高频刷新抖动
             self._frame_ts = now
-            self._frame_txt = f"   {snap['frame_ms']:.0f}ms/帧" if snap.get('frame_ms') else ''
+            io = snap.get('io_metrics') or {}
+            hz = float(snap.get('sample_hz', 0.0) or 0.0)
+            hz_text = f'{hz:.1f}Hz' if hz else ''
+            loop_text = (f"{float(snap.get('loop_ms', 0.0)):.1f}ms/完整帧"
+                         if snap.get('loop_ms') is not None else '')
+            io_text = (f"{io.get('batches', 0)}批/{io.get('requests', 0)}读 "
+                       f"I/O {float(io.get('io_ms', 0.0)):.1f}ms")
+            dropped = int(snap.get('dropped_ui_snapshots', 0) or 0)
+            drop_text = f' UI丢旧帧{dropped}' if dropped else ''
+            consistency = (' 暂停帧一致' if snap.get('paused_snapshot')
+                           and snap.get('pause_consistent') else '')
+            guarantee = ('60Hz校准中' if not hz else
+                         ('完整60Hz' if snap.get('full_60hz')
+                          else '未达完整60Hz'))
+            self._frame_txt = (
+                f'   {guarantee} {hz_text} {loop_text} {io_text}'
+                f'{drop_text}{consistency}')
         on_field = snap.get('on_field_count', sum(
             getattr(enemy, 'lifecycle', 'active') == 'active'
             for enemy in snap['enemies']))
@@ -3328,6 +3459,7 @@ class CoachWindow(QMainWindow):
             for row in range(tbl.rowCount())
             if tbl.item(row, ENEMY_COLUMN_INDEX['row']) is not None
         ]
+        structural_update = current_order != desired_order
         # 已有未出场敌人变为存活、或动态召唤加入时，真正重排物理行。
         # 只在顺序变化的那一帧重建，稳定状态下仍保持逐单元格增量刷新。
         if current_order and current_order != desired_order:
@@ -3339,7 +3471,8 @@ class CoachWindow(QMainWindow):
             self._skill_lines.clear()
         # 增量刷新：按本局 roster_id 锚定行；固定敌人保持关卡预定顺序，
         # 动态召唤/分支敌人首次出现时追加。过滤切换时才重建一次。
-        tbl.setUpdatesEnabled(False)
+        if structural_update:
+            tbl.setUpdatesEnabled(False)
         try:
             seen = set()
             for e in enemies:
@@ -3371,7 +3504,8 @@ class CoachWindow(QMainWindow):
                 self._enemy_rows = {tbl.item(r, 0).data(Qt.UserRole): r
                                     for r in range(tbl.rowCount())}
         finally:
-            tbl.setUpdatesEnabled(True)
+            if structural_update:
+                tbl.setUpdatesEnabled(True)
         if fit_after_render:
             self._widths_fitted = True
             self._fit_enemy_columns()
@@ -3637,12 +3771,17 @@ class CoachWindow(QMainWindow):
             if it is None:
                 return
             text = str(text)
-            it.setText(text)
-            it.setToolTip(text)
-            if grey:
-                it.setForeground(QColor('#888888'))
-            else:
-                it.setData(Qt.ForegroundRole, None)
+            if it.text() != text:
+                it.setText(text)
+            if it.toolTip() != text:
+                it.setToolTip(text)
+            grey_role = int(Qt.UserRole) + 20
+            if bool(it.data(grey_role)) != bool(grey):
+                it.setData(grey_role, bool(grey))
+                if grey:
+                    it.setForeground(QColor('#888888'))
+                else:
+                    it.setData(Qt.ForegroundRole, None)
 
         for col in ENEMY_COLUMN_DEFS:
             key = col['key']
@@ -3659,15 +3798,20 @@ class CoachWindow(QMainWindow):
         bar = tbl.cellWidget(row, hp_col)
         lifecycle = getattr(e, 'lifecycle', 'active')
         mx = max(1, int(e.max_hp))
-        bar.setMaximum(mx)
-        bar.setValue(max(0, int(e.hp)) if lifecycle != 'pending' else 0)
+        value = max(0, int(e.hp)) if lifecycle != 'pending' else 0
+        if bar.maximum() != mx:
+            bar.setMaximum(mx)
+        if bar.value() != value:
+            bar.setValue(value)
         if lifecycle == 'pending':
-            bar.setFormat('未出场')
+            bar_text = '未出场'
         elif lifecycle == 'departed':
-            bar.setFormat(f'{e.hp:.{d["hp"]}f}/{e.max_hp:.{d["hp"]}f}')
+            bar_text = f'{e.hp:.{d["hp"]}f}/{e.max_hp:.{d["hp"]}f}'
         else:
             # 颜色和填充比例已经表达百分比；紧凑文本优先完整显示精确生命值。
-            bar.setFormat(f'{e.hp:.{d["hp"]}f}/{e.max_hp:.{d["hp"]}f}')
+            bar_text = f'{e.hp:.{d["hp"]}f}/{e.max_hp:.{d["hp"]}f}'
+        if bar.format() != bar_text:
+            bar.setFormat(bar_text)
         ratio = e.hp / e.max_hp if e.max_hp > 0 else 0
         color = '#5cb85c' if ratio > 0.5 else ('#f0ad4e' if ratio > 0.2 else '#d9534f')
         if lifecycle != 'active' or not e.alive:
@@ -3678,10 +3822,13 @@ class CoachWindow(QMainWindow):
 
         detail = tbl.cellWidget(row, ENEMY_COLUMN_INDEX['detail'])
         if detail is not None:
-            detail.setEnabled(lifecycle != 'pending')
-            detail.setToolTip(
-                '未出场，暂无运行时详情' if lifecycle == 'pending'
-                else '显示该敌人的完整属性、状态、损伤条、Buff 与关卡效果')
+            enabled = lifecycle != 'pending'
+            tooltip = ('未出场，暂无运行时详情' if lifecycle == 'pending'
+                       else '显示该敌人的完整属性、状态、损伤条、Buff 与关卡效果')
+            if detail.isEnabled() != enabled:
+                detail.setEnabled(enabled)
+            if detail.toolTip() != tooltip:
+                detail.setToolTip(tooltip)
 
         cd_text = format_column_value('skill', e, d, row)
         n_lines = cd_text.count('\n')          # 行数变化才重排行高 (重排会触发布局)
@@ -3708,13 +3855,15 @@ class CoachWindow(QMainWindow):
             for row in range(tbl.rowCount())
             if tbl.item(row, CHARACTER_COLUMN_INDEX['row']) is not None
         ]
+        structural_update = current != desired
         if current != desired:
             tbl.setRowCount(0)
             self._character_rows.clear()
             self._character_bar_colors.clear()
             self._character_skill_lines.clear()
         fit_after = bool(characters and not self._character_widths_fitted)
-        tbl.setUpdatesEnabled(False)
+        if structural_update:
+            tbl.setUpdatesEnabled(False)
         try:
             for row, character in enumerate(characters):
                 if row >= tbl.rowCount():
@@ -3725,7 +3874,8 @@ class CoachWindow(QMainWindow):
             while tbl.rowCount() > len(characters):
                 tbl.removeRow(tbl.rowCount() - 1)
         finally:
-            tbl.setUpdatesEnabled(True)
+            if structural_update:
+                tbl.setUpdatesEnabled(True)
         if fit_after:
             self._fit_character_columns()
 
@@ -3771,28 +3921,35 @@ class CoachWindow(QMainWindow):
             if item is None:
                 continue
             text = str(format_character_column(key, character, decimals, row))
-            item.setText(text)
-            item.setToolTip(text)
+            if item.text() != text:
+                item.setText(text)
+            if item.toolTip() != text:
+                item.setToolTip(text)
 
         hp_bar = tbl.cellWidget(row, CHARACTER_COLUMN_INDEX['hp'])
         sp_bar = tbl.cellWidget(row, CHARACTER_COLUMN_INDEX['sp'])
         if getattr(character, 'is_global_damage_summary', False):
-            hp_bar.setRange(0, 1)
-            hp_bar.setValue(0)
-            hp_bar.setFormat('-')
-            hp_bar.setStyleSheet(
-                'QProgressBar::chunk { background-color: #777777; }')
-            sp_bar.setRange(0, 1)
-            sp_bar.setValue(0)
-            sp_bar.setFormat('-')
-            sp_bar.setStyleSheet(
-                'QProgressBar::chunk { background-color: #777777; }')
+            for bar in (hp_bar, sp_bar):
+                if bar.minimum() != 0 or bar.maximum() != 1:
+                    bar.setRange(0, 1)
+                if bar.value() != 0:
+                    bar.setValue(0)
+                if bar.format() != '-':
+                    bar.setFormat('-')
+                if bar.property('ark_bar_color') != '#777777':
+                    bar.setProperty('ark_bar_color', '#777777')
+                    bar.setStyleSheet(
+                        'QProgressBar::chunk { background-color: #777777; }')
             return
         hp_max = max(1, int(character.max_hp))
-        hp_bar.setMaximum(hp_max)
-        hp_bar.setValue(max(0, min(hp_max, int(character.hp))))
-        hp_bar.setFormat(
-            f'{character.hp:.{decimals["hp"]}f}/{character.max_hp:.{decimals["hp"]}f}')
+        hp_value = max(0, min(hp_max, int(character.hp)))
+        hp_text = f'{character.hp:.{decimals["hp"]}f}/{character.max_hp:.{decimals["hp"]}f}'
+        if hp_bar.maximum() != hp_max:
+            hp_bar.setMaximum(hp_max)
+        if hp_bar.value() != hp_value:
+            hp_bar.setValue(hp_value)
+        if hp_bar.format() != hp_text:
+            hp_bar.setFormat(hp_text)
         hp_ratio = character.hp / character.max_hp if character.max_hp > 0 else 0
         color = '#5cb85c' if hp_ratio > 0.5 else ('#f0ad4e' if hp_ratio > 0.2 else '#d9534f')
         if not character.alive:
@@ -3803,12 +3960,18 @@ class CoachWindow(QMainWindow):
                 f'QProgressBar::chunk {{ background-color: {color}; }}')
 
         sp_max = max(1, int(character.max_sp))
-        sp_bar.setMaximum(sp_max)
-        sp_bar.setValue(max(0, min(sp_max, int(character.sp))))
-        sp_bar.setFormat(
-            f'{character.sp:.{decimals["sp"]}f}/{character.max_sp}')
-        sp_bar.setStyleSheet(
-            'QProgressBar::chunk { background-color: #4ca3dd; }')
+        sp_value = max(0, min(sp_max, int(character.sp)))
+        sp_text = f'{character.sp:.{decimals["sp"]}f}/{character.max_sp}'
+        if sp_bar.maximum() != sp_max:
+            sp_bar.setMaximum(sp_max)
+        if sp_bar.value() != sp_value:
+            sp_bar.setValue(sp_value)
+        if sp_bar.format() != sp_text:
+            sp_bar.setFormat(sp_text)
+        if sp_bar.property('ark_bar_color') != '#4ca3dd':
+            sp_bar.setProperty('ark_bar_color', '#4ca3dd')
+            sp_bar.setStyleSheet(
+                'QProgressBar::chunk { background-color: #4ca3dd; }')
 
         skill_text = format_character_column(
             'skill', character, decimals, row)

@@ -12,7 +12,7 @@ from tools.enemy_health.enemy_reader import (
 )
 from tools.enemy_health.update_from_unpack import extract_preunpacked, parse_dump
 from tools.enemy_health.memcore import (
-    MemCore, find_running_emulator_adbs, query_adb_devices,
+    MemCore, TcpChannel, find_running_emulator_adbs, query_adb_devices,
 )
 
 
@@ -101,6 +101,108 @@ class EnemyDetailModelTests(unittest.TestCase):
         reader._skill_cd[ep] = [('StableSkill', 8.0, 30.0)]
         reader._refresh_skills_chan([ep])
         self.assertEqual(reader._skill_cd[ep], [('StableSkill', 8.0, 30.0)])
+
+    def test_stable_enemy_skill_chain_reads_all_layers_in_one_batch(self):
+        (ep, active, all_skills, skill, _key), blocks = self._skill_memory(
+            active_count=1, all_count=1)
+        active_items = 0x4000
+        timer = 0x6000
+
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        calls = []
+
+        class FakeChannel:
+            mode = 'srv'
+
+            @staticmethod
+            def batch_read(reqs):
+                if reqs:
+                    calls.append(list(reqs))
+                return [blocks.get((addr, size)) for addr, size in reqs]
+
+        reader = EnemyReader(mc=FakeMem())
+        reader._chan = FakeChannel()
+        reader._skill_lp[ep] = active
+        reader._skill_ap[ep] = all_skills
+        reader._skill_source_layout[(ep, 'active')] = {
+            'ptr': active, 'items': active_items, 'count': 1}
+        reader._skill_source_layout[(ep, 'all')] = {
+            'ptr': all_skills, 'items': all_skills, 'count': 1}
+        reader._skill_ptrs[ep] = [skill]
+        reader._active_skill_ptrs[ep] = [skill]
+        reader._skill_names[skill] = 'StableSkill'
+        reader._skill_static_meta[skill] = {'priority': 0, 'sp_cost': 0}
+        reader._skill_runtime_meta[skill] = {
+            'trigger_addr': 0, 'timer_addr': timer}
+        reader._refresh_skills_chan([ep])
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(
+            reader._skill_cd[ep], [('StableSkill', 12.5, 30.0)])
+
+    def test_stable_abnormal_buff_chain_reads_all_layers_in_one_batch(self):
+        addr, container, double = 0x1000, 0x2000, 0x3000
+        list_ptr, items, buff = 0x4000, 0x5000, 0x6000
+        state = gs.EnemyState.STUN
+
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        container_data = bytearray(0x30)
+        struct.pack_into('<Q', container_data, gs.BuffContainerFields.M_BUFFS,
+                         double)
+        double_data = bytearray(0x28)
+        struct.pack_into('<Q', double_data,
+                         gs.DoubleBufferedListFields.M_INTERNAL_LIST, list_ptr)
+        head = bytearray(0x20)
+        struct.pack_into('<Q', head, gs.ListInternal.ITEMS, items)
+        struct.pack_into('<i', head, gs.ListInternal.SIZE, 1)
+        body = struct.pack('<QQ', buff, 0)
+        base = gs.BuffFields.M_LIFE_TIME
+        size = gs.BuffFields.ABNORMAL_COMBO_MASK + 8 - base
+        buff_data = bytearray(size)
+        struct.pack_into('<Q', buff_data, 0, int(5 * gs.FP_ONE))
+        struct.pack_into('<Q', buff_data,
+                         gs.BuffFields.M_REMAINING_TIME - base,
+                         int(2 * gs.FP_ONE))
+        buff_data[gs.BuffFields.IS_ACTUALLY_ENABLED - base] = 1
+        buff_data[gs.BuffFields.IS_VALID - base] = 1
+        struct.pack_into('<Q', buff_data,
+                         gs.BuffFields.ABNORMAL_FLAG_MASK - base, 1)
+        memory = {
+            (container, 0x30): bytes(container_data),
+            (double, 0x28): bytes(double_data),
+            (list_ptr, 0x20): bytes(head),
+            (items + gs.Il2CppArray.ITEMS, 0x10): body,
+            (buff + base, size): bytes(buff_data),
+        }
+        calls = []
+
+        class FakeChannel:
+            @staticmethod
+            def batch_read(reqs):
+                if reqs:
+                    calls.append(list(reqs))
+                return [memory.get(req) for req in reqs]
+
+        reader = EnemyReader(mc=FakeMem())
+        reader._chan = FakeChannel()
+        reader._status_timer_cache[addr] = {
+            'signature': (container, state, 0, None),
+            'last_probe': 0, 'double': double, 'list': list_ptr,
+            'items': items, 'count': 1, 'buffs': [buff],
+        }
+        snapshots = {addr: {'action': {}}}
+        reader._refresh_status_timers_chan(
+            [(addr, container, state, 0, None)], snapshots, 1)
+        self.assertEqual(len(calls), 1)
+        self.assertAlmostEqual(
+            snapshots[addr]['action']['status_remaining'], 2.0)
 
     def test_adb_commands_are_bound_to_selected_device(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1041,6 +1143,13 @@ class FastPollRetryTests(unittest.TestCase):
         reader._f_ptrs = [self.EP]
         return reader
 
+    def test_all_enemy_runtime_groups_are_configured_for_every_frame(self):
+        self.assertEqual(
+            (EnemyReader.LIST_EVERY, EnemyReader.ATTR_EVERY,
+             EnemyReader.BC_EVERY, EnemyReader.SKILL_EVERY,
+             EnemyReader.STATUS_EVERY, EnemyReader.SPAWN_QUEUE_EVERY),
+            (1, 1, 1, 1, 1, 1))
+
     def _flaky_channel(self, fail_all_once):
         block, head, arr = (self._enemy_block(), self._list_header(),
                             struct.pack('<Q', self.EP))
@@ -1093,12 +1202,21 @@ class FastPollRetryTests(unittest.TestCase):
         self.assertEqual(snap2['enemies'][0].hp, 5000.0)
 
     def test_enemy_unreadable_after_retry_is_missing_not_faked(self):
+        head = self._list_header()
+        arr = struct.pack('<Q', self.EP)
+        list_addr, items_addr = self.LIST, self.ITEMS
+
         class DeadChannel:
             mode = 'srv'
 
             @staticmethod
             def batch_read(reqs):
-                return [None] * len(reqs)
+                return [
+                    head if addr == list_addr else
+                    arr if addr == items_addr + gs.Il2CppArray.ITEMS else
+                    None
+                    for addr, _size in reqs
+                ]
 
         reader = self._make_reader()
         reader._fast_tick = 6          # tick=7 稳态帧, 只读敌人簇
@@ -1129,6 +1247,24 @@ class FastPollRetryTests(unittest.TestCase):
         info = reader._read_enemy(self.EP, with_runtime=False)
         self.assertTrue(info.alive)
         self.assertEqual(info.hp, 5000.0)
+
+
+class TcpChannelFrameStatsTests(unittest.TestCase):
+    def test_frame_stats_accumulate_batches_and_reset(self):
+        channel = TcpChannel(object())
+        channel.sock = object()
+        channel.mode = 'srv'
+        channel._batch_srv = lambda reqs: [bytes(size) for _addr, size in reqs]
+        channel.batch_read([(0x1000, 8), (0x2000, 12)])
+        channel.batch_read([(0x3000, 4)])
+        stats = channel.frame_stats()
+        self.assertEqual(stats['batches'], 2)
+        self.assertEqual(stats['requests'], 3)
+        self.assertEqual(stats['requested_bytes'], 24)
+        self.assertEqual(stats['returned_bytes'], 24)
+        self.assertGreaterEqual(stats['io_ms'], 0.0)
+        channel.reset_frame_stats()
+        self.assertEqual(channel.frame_stats()['batches'], 0)
 
 
 class BuffSourceNameTests(unittest.TestCase):

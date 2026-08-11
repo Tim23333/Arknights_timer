@@ -27,7 +27,7 @@ from backend.app.enemy_ui import (
 from tools.enemy_health import game_structs as gs
 from tools.enemy_health.enemy_reader import EnemyInfo
 from backend.desktop_app import (
-    AdbSelectionDialog, CoachWindow, _enemy_mini_stylesheet,
+    AdbSelectionDialog, CoachWindow, EnemyPollWorker, _enemy_mini_stylesheet,
     _format_enemy_read_mode, _system_prefers_dark, _theme_stylesheet,
     probe_adb_executable,
 )
@@ -60,6 +60,38 @@ class EnemyUiTests(unittest.TestCase):
         self.assertEqual(
             _format_enemy_read_mode({'read_mode': 'slow', 'read_backend': 'adb'}),
             '慢速兜底（ADB）')
+
+    def test_poll_worker_marks_paused_snapshot_only_when_frame_is_consistent(self):
+        class Reader:
+            def __init__(self, end_frame):
+                self.end_frame = end_frame
+
+            @staticmethod
+            def poll_fast():
+                return {
+                    'ok': True, 'strict_60hz': True, 'fixed_frame': 123,
+                    'time_scale': 0.0, 'play_time': 10.0, 'enemies': [],
+                }
+
+            def read_frame_guard_fast(self):
+                return {'frame': self.end_frame, 'time_scale': 0.0,
+                        'play_time': 10.0}
+
+        consistent = EnemyPollWorker(Reader(123))._collect_complete_snapshot()
+        crossed = EnemyPollWorker(Reader(124))._collect_complete_snapshot()
+        self.assertTrue(consistent['paused_snapshot'])
+        self.assertTrue(consistent['pause_consistent'])
+        self.assertFalse(crossed['frame_consistent'])
+        self.assertFalse(crossed['pause_consistent'])
+
+    def test_poll_worker_coalesces_ui_wakeups_to_latest_snapshot(self):
+        worker = EnemyPollWorker(object())
+        worker._publish_snapshot({'sequence': 1})
+        worker._publish_snapshot({'sequence': 2})
+        latest = worker.take_latest_snapshot()
+        self.assertEqual(latest['sequence'], 2)
+        self.assertEqual(latest['dropped_ui_snapshots'], 1)
+        self.assertIsNone(worker.take_latest_snapshot())
 
     def test_enemy_column_fit_fills_viewport_and_protects_hp_text(self):
         table = QTableWidget(1, len(ENEMY_COLUMN_DEFS))

@@ -91,6 +91,7 @@ class CharacterInfo:
     shield_controller_ptr: int = 0
     buff_container_ptr: int = 0
     root_tile_ptr: int = 0
+    blocked_manager_ptr: int = 0
     skill_ptr: int = 0
     skill_data_ptr: int = 0
     data_ptr: int = 0
@@ -181,10 +182,11 @@ class CharacterInfo:
 class CharacterReader:
     """依附 EnemyReader 的轻量服务；不拥有、也不关闭共享 MemCore。"""
 
-    LIST_EVERY = 4
-    SKILL_EVERY = 3
-    BUFF_COUNT_EVERY = 10
-    DAMAGE_LAYOUT_EVERY = 60
+    # 完整实时模式：所有我方运行时数据与容器结构每个采样帧都读取。
+    LIST_EVERY = 1
+    SKILL_EVERY = 1
+    BUFF_COUNT_EVERY = 1
+    DAMAGE_LAYOUT_EVERY = 1
 
     def __init__(self, core: EnemyReader):
         self.core = core
@@ -201,12 +203,19 @@ class CharacterReader:
         self._runtime_ptrs: dict[int, dict] = {}
         self._runtime_snapshots: dict[int, dict] = {}
         self._positions: dict[int, tuple[int, int, int]] = {}
+        self._blocked_layouts: dict[int, dict] = {}
         self._skill_static: dict[int, dict] = {}
         self._skill_runtime: dict[int, dict] = {}
+        self._skill_runtime_layouts: dict[int, dict] = {}
         self._buff_counts: dict[int, int] = {}
+        self._buff_layouts: dict[int, dict] = {}
         self._klass_cache: dict[int, str] = {}
+        self._damage_logger_addr = 0
         self._damage_stats_addr = 0
         self._damage_list_addr = 0
+        self._damage_list_signature = (0, 0)
+        self._damage_pairs_signature: tuple[tuple[int, int], ...] = ()
+        self._damage_frame_prefetch: list[tuple[int, bytes]] = []
         self._damage_layout_tick = 0
         self._damage_entries: dict[str, dict] = {}
         self._damage_snapshots: dict[str, dict] = {}
@@ -326,6 +335,8 @@ class CharacterReader:
             'override_combat_addr': _u64(block, gs.UnitFields.OVERRIDE_COMBAT),
         }
         info.root_tile_ptr = _u64(block, gs.CharacterFields.ROOT_TILE)
+        info.blocked_manager_ptr = _u64(
+            block, gs.CharacterFields.BLOCKED_ENEMY_MANAGER)
         info.skill_ptr = _u64(block, gs.CharacterFields.SKILL)
         info.skill_data_ptr = _u64(block, gs.CharacterFields.SKILL_DATA)
         info.data_ptr = _u64(block, gs.CharacterFields.DATA)
@@ -618,29 +629,67 @@ class CharacterReader:
                     info.root_tile_ptr,
                     _i32(data, gs.TileGraphicFields.GRID_ROW),
                     _i32(data, gs.TileGraphicFields.GRID_COL))
-        # manager 指针在主对象块中解析后不单独保存；从固定字段批量取一次即可。
-        manager_slots = self._batch([
-            (info.addr + gs.CharacterFields.BLOCKED_ENEMY_MANAGER, 8)
-            for info in infos.values()])
-        manager_ptrs = {
-            info.addr: _u64(data, 0) for info, data in zip(infos.values(), manager_slots)
-            if data and self.mc.is_ptr(_u64(data, 0))
-        }
-        blocked_lists = {}
-        for addr, data in zip(
-                manager_ptrs, self._batch([(ptr, 0x20) for ptr in manager_ptrs.values()])):
+        # Character 主块本身已经包含 manager 指针。稳定帧把 manager 块和上帧
+        # 验证过的 List 头放在同一个 batch 中；若指针当帧发生变化，再补读新头。
+        # 因而每一层容器仍然逐帧读取，但通常只需要一次 TCP 往返。
+        reqs, tags = [], []
+        targets = []
+        for info in infos.values():
+            manager = info.blocked_manager_ptr
+            if not self.mc.is_ptr(manager):
+                info.blocked_count = 0
+                info.blocked_total_volume = 0
+                self._blocked_layouts.pop(info.addr, None)
+                continue
+            targets.append(info)
+            reqs.append((manager, 0x20))
+            tags.append((info.addr, 'manager'))
+            cached = self._blocked_layouts.get(info.addr, {})
+            blocked_list = cached.get('list', 0)
+            if (cached.get('manager') == manager
+                    and self.mc.is_ptr(blocked_list)):
+                reqs.append((blocked_list, 0x20))
+                tags.append((info.addr, 'list'))
+        values = dict(zip(tags, self._batch(reqs)))
+
+        changed_lists = []
+        current_lists = {}
+        for info in targets:
+            manager = info.blocked_manager_ptr
+            data = values.get((info.addr, 'manager'))
             if not data:
                 continue
-            infos[addr].blocked_total_volume = _i32(
+            info.blocked_total_volume = _i32(
                 data, gs.BlockedEnemyManagerFields.TOTAL_VOLUME)
-            lp = _u64(data, gs.BlockedEnemyManagerFields.BLOCKED_ENEMIES)
-            if self.mc.is_ptr(lp):
-                blocked_lists[addr] = lp
-        for addr, data in zip(
-                blocked_lists, self._batch([(ptr, 0x20) for ptr in blocked_lists.values()])):
-            if data:
-                count = _i32(data, gs.ListInternal.SIZE)
+            blocked_list = _u64(
+                data, gs.BlockedEnemyManagerFields.BLOCKED_ENEMIES)
+            if not self.mc.is_ptr(blocked_list):
+                info.blocked_count = 0
+                self._blocked_layouts[info.addr] = {
+                    'manager': manager, 'list': 0}
+                continue
+            current_lists[info.addr] = blocked_list
+            cached = self._blocked_layouts.get(info.addr, {})
+            if (cached.get('manager') == manager
+                    and cached.get('list') == blocked_list):
+                head = values.get((info.addr, 'list'))
+                if head:
+                    count = _i32(head, gs.ListInternal.SIZE)
+                    info.blocked_count = count if 0 <= count <= 128 else 0
+            else:
+                changed_lists.append((info.addr, blocked_list))
+
+        for (addr, blocked_list), head in zip(
+                changed_lists,
+                self._batch([(ptr, 0x20) for _addr, ptr in changed_lists])):
+            if head:
+                count = _i32(head, gs.ListInternal.SIZE)
                 infos[addr].blocked_count = count if 0 <= count <= 128 else 0
+        for addr, blocked_list in current_lists.items():
+            self._blocked_layouts[addr] = {
+                'manager': infos[addr].blocked_manager_ptr,
+                'list': blocked_list,
+            }
         for addr, info in infos.items():
             position = self._positions.get(addr)
             if position:
@@ -692,11 +741,29 @@ class CharacterReader:
             if data:
                 self._skill_static[ptr] = self._parse_skill_static(ptr, data)
         targets = [info for info in infos.values() if self.mc.is_ptr(info.skill_ptr)]
-        skill_blocks = self._batch([
-            (info.skill_ptr, gs.BasicSkillFields.READ_SIZE) for info in targets])
+        # BasicSkill -> Ability -> PeriodicTimer 三层均逐帧读取。稳定帧利用
+        # 上一帧已验证的地址把三层合入同一个 batch；指针变化则当帧补读。
+        reqs, tags = [], []
+        for info in targets:
+            reqs.append((info.skill_ptr, gs.BasicSkillFields.READ_SIZE))
+            tags.append((info.addr, 'skill'))
+            cached = self._skill_runtime_layouts.get(info.addr, {})
+            if cached.get('skill') != info.skill_ptr:
+                continue
+            ability = cached.get('ability', 0)
+            timer = cached.get('timer', 0)
+            if self.mc.is_ptr(ability):
+                reqs.append((ability, gs.AbilityFields.READ_SIZE))
+                tags.append((info.addr, 'ability'))
+            if self.mc.is_ptr(timer):
+                reqs.append((timer, 0x20))
+                tags.append((info.addr, 'timer'))
+        values = dict(zip(tags, self._batch(reqs)))
+
         abilities = {}
         runtime = {}
-        for info, data in zip(targets, skill_blocks):
+        for info in targets:
+            data = values.get((info.addr, 'skill'))
             if not data:
                 continue
             ability = _u64(data, gs.BasicSkillFields.ABILITY)
@@ -715,15 +782,32 @@ class CharacterReader:
             }
             if self.mc.is_ptr(ability):
                 abilities[info.addr] = ability
+
+        ability_data = {}
+        need_abilities = []
+        for info in targets:
+            ability = abilities.get(info.addr, 0)
+            cached = self._skill_runtime_layouts.get(info.addr, {})
+            if (cached.get('skill') == info.skill_ptr
+                    and cached.get('ability') == ability
+                    and values.get((info.addr, 'ability'))):
+                ability_data[info.addr] = values[(info.addr, 'ability')]
+            elif self.mc.is_ptr(ability):
+                need_abilities.append((info.addr, ability))
+        for (addr, _ability), data in zip(
+                need_abilities,
+                self._batch([(ptr, gs.AbilityFields.READ_SIZE)
+                             for _addr, ptr in need_abilities])):
+            ability_data[addr] = data
+
         timers = {}
-        for addr, data in zip(
-                abilities, self._batch([(p, gs.AbilityFields.READ_SIZE)
-                                        for p in abilities.values()])):
+        for addr, ability in abilities.items():
+            data = ability_data.get(addr)
             if not data:
                 continue
             cur = runtime[addr]
             cur.update({
-                'ability_class': self._klass_cache.get(abilities[addr], ''),
+                'ability_class': self._klass_cache.get(ability, ''),
                 'casting': bool(data[gs.AbilityFields.IS_CASTING]),
                 'cast_start_frame': _u32(data, gs.AbilityFields.CAST_START_FRAME),
                 'attached': bool(data[gs.AbilityFields.IS_ATTACHED]),
@@ -733,13 +817,38 @@ class CharacterReader:
             timer = _u64(data, gs.AbilityFields.COOLDOWN_TIMER)
             if self.mc.is_ptr(timer):
                 timers[addr] = timer
-        for addr, data in zip(
-                timers, self._batch([(p, 0x20) for p in timers.values()])):
+
+        timer_data = {}
+        need_timers = []
+        for info in targets:
+            timer = timers.get(info.addr, 0)
+            cached = self._skill_runtime_layouts.get(info.addr, {})
+            if (cached.get('skill') == info.skill_ptr
+                    and cached.get('ability') == abilities.get(info.addr, 0)
+                    and cached.get('timer') == timer
+                    and values.get((info.addr, 'timer'))):
+                timer_data[info.addr] = values[(info.addr, 'timer')]
+            elif self.mc.is_ptr(timer):
+                need_timers.append((info.addr, timer))
+        for (addr, _timer), data in zip(
+                need_timers,
+                self._batch([(ptr, 0x20) for _addr, ptr in need_timers])):
+            timer_data[addr] = data
+
+        for addr, timer in timers.items():
+            data = timer_data.get(addr)
             if data:
                 runtime[addr]['cooldown_period'] = gs.fp_to_float(
                     _u64(data, gs.PeriodicTimerFields.M_PERIOD_TIME))
                 runtime[addr]['cooldown_remaining'] = gs.fp_to_float(
                     _u64(data, gs.PeriodicTimerFields.M_REMAINING_TIME))
+        for info in targets:
+            if info.addr in runtime:
+                self._skill_runtime_layouts[info.addr] = {
+                    'skill': info.skill_ptr,
+                    'ability': abilities.get(info.addr, 0),
+                    'timer': timers.get(info.addr, 0),
+                }
         self._skill_runtime.update(runtime)
         for addr, info in infos.items():
             static = dict(self._skill_static.get(info.skill_data_ptr, {}))
@@ -947,43 +1056,124 @@ class CharacterReader:
         return action
 
     def _refresh_buff_counts(self, infos: dict[int, CharacterInfo]) -> None:
-        targets = [info for info in infos.values()
-                   if self.mc.is_ptr(info.buff_container_ptr)]
-        dbls = {}
-        for info, data in zip(
-                targets, self._batch([(x.buff_container_ptr, 0x30) for x in targets])):
-            ptr = _u64(data, gs.BuffContainerFields.M_BUFFS) if data else 0
-            if self.mc.is_ptr(ptr):
-                dbls[info.addr] = ptr
+        # 三层指针都要逐帧验证。稳定地址下把 container、double buffer 和
+        # List 头合并到一个 batch；任一指针变化时在当前帧补齐后续层。
+        targets = []
+        reqs, tags = [], []
+        for info in infos.values():
+            container = info.buff_container_ptr
+            if not self.mc.is_ptr(container):
+                self._buff_counts[info.addr] = 0
+                self._buff_layouts.pop(info.addr, None)
+                continue
+            targets.append(info)
+            reqs.append((container, 0x30))
+            tags.append((info.addr, 'container'))
+            cached = self._buff_layouts.get(info.addr, {})
+            if cached.get('container') != container:
+                continue
+            double = cached.get('double', 0)
+            buff_list = cached.get('list', 0)
+            if self.mc.is_ptr(double):
+                reqs.append((double, 0x28))
+                tags.append((info.addr, 'double'))
+            if self.mc.is_ptr(buff_list):
+                reqs.append((buff_list, 0x20))
+                tags.append((info.addr, 'list'))
+        values = dict(zip(tags, self._batch(reqs)))
+
+        doubles = {}
+        need_doubles = []
+        for info in targets:
+            data = values.get((info.addr, 'container'))
+            double = _u64(data, gs.BuffContainerFields.M_BUFFS) if data else 0
+            if not self.mc.is_ptr(double):
+                self._buff_counts[info.addr] = 0
+                self._buff_layouts[info.addr] = {
+                    'container': info.buff_container_ptr,
+                    'double': 0, 'list': 0}
+                continue
+            doubles[info.addr] = double
+            cached = self._buff_layouts.get(info.addr, {})
+            if (cached.get('container') != info.buff_container_ptr
+                    or cached.get('double') != double
+                    or not values.get((info.addr, 'double'))):
+                need_doubles.append((info.addr, double))
+
+        double_data = {
+            addr: values.get((addr, 'double')) for addr in doubles}
+        for (addr, _double), data in zip(
+                need_doubles,
+                self._batch([(ptr, 0x28) for _addr, ptr in need_doubles])):
+            double_data[addr] = data
+
         lists = {}
-        for addr, data in zip(dbls, self._batch([(p, 0x28) for p in dbls.values()])):
-            ptr = _u64(data, gs.DoubleBufferedListFields.M_INTERNAL_LIST) if data else 0
-            if self.mc.is_ptr(ptr):
-                lists[addr] = ptr
-        for addr, data in zip(lists, self._batch([(p, 0x20) for p in lists.values()])):
-            if data:
-                count = _i32(data, gs.ListInternal.SIZE)
-                if 0 <= count <= 512:
-                    self._buff_counts[addr] = count
+        need_lists = []
+        for info in targets:
+            double = doubles.get(info.addr, 0)
+            data = double_data.get(info.addr)
+            buff_list = (_u64(data, gs.DoubleBufferedListFields.M_INTERNAL_LIST)
+                         if data else 0)
+            if not self.mc.is_ptr(buff_list):
+                self._buff_counts[info.addr] = 0
+                self._buff_layouts[info.addr] = {
+                    'container': info.buff_container_ptr,
+                    'double': double, 'list': 0}
+                continue
+            lists[info.addr] = buff_list
+            cached = self._buff_layouts.get(info.addr, {})
+            if (cached.get('container') == info.buff_container_ptr
+                    and cached.get('double') == double
+                    and cached.get('list') == buff_list
+                    and values.get((info.addr, 'list'))):
+                head = values[(info.addr, 'list')]
+                count = _i32(head, gs.ListInternal.SIZE)
+                self._buff_counts[info.addr] = (
+                    count if 0 <= count <= 512 else 0)
+            else:
+                need_lists.append((info.addr, buff_list))
+
+        for (addr, _buff_list), head in zip(
+                need_lists,
+                self._batch([(ptr, 0x20) for _addr, ptr in need_lists])):
+            if head:
+                count = _i32(head, gs.ListInternal.SIZE)
+                self._buff_counts[addr] = count if 0 <= count <= 512 else 0
+            else:
+                self._buff_counts[addr] = 0
+        for addr, buff_list in lists.items():
+            self._buff_layouts[addr] = {
+                'container': infos[addr].buff_container_ptr,
+                'double': doubles[addr], 'list': buff_list,
+            }
         for addr, info in infos.items():
             info.buff_count = self._buff_counts.get(addr, 0)
 
-    def _refresh_damage_layout(self) -> None:
-        """解析 BattleLogger 的按 charId 累计统计表；结构低频刷新，数值每帧读。"""
+    def _rebuild_damage_layout(self) -> None:
+        """沿完整指针链重建 BattleLogger 统计布局。"""
+        self._damage_frame_prefetch = []
         if not self.mc.is_ptr(self.core.bc_addr):
             return
         (logger_slot,) = self._batch([(
             self.core.bc_addr + gs.BattleControllerFields.M_LOGGER, 8)])
         logger = _u64(logger_slot, 0) if logger_slot else 0
         if not self.mc.is_ptr(logger):
+            self._damage_logger_addr = 0
             self._damage_stats_addr = 0
+            self._damage_list_addr = 0
+            self._damage_list_signature = (0, 0)
+            self._damage_pairs_signature = ()
             self._damage_entries.clear()
             self._reset_damage_tracking()
             return
+        self._damage_logger_addr = logger
         (logger_block,) = self._batch([(logger, gs.BattleLoggerFields.READ_SIZE)])
         stats = _u64(logger_block, gs.BattleLoggerFields.STATS) if logger_block else 0
         if not self.mc.is_ptr(stats):
             self._damage_stats_addr = 0
+            self._damage_list_addr = 0
+            self._damage_list_signature = (0, 0)
+            self._damage_pairs_signature = ()
             self._damage_entries.clear()
             self._reset_damage_tracking()
             return
@@ -992,6 +1182,9 @@ class CharacterReader:
                       if stats_block else 0)
         if not self.mc.is_ptr(stats_list):
             self._damage_stats_addr = 0
+            self._damage_list_addr = 0
+            self._damage_list_signature = (0, 0)
+            self._damage_pairs_signature = ()
             self._damage_entries.clear()
             self._reset_damage_tracking()
             return
@@ -1008,7 +1201,9 @@ class CharacterReader:
         count = _i32(head, gs.ListInternal.SIZE)
         if not (0 <= count <= 256) or (count and not self.mc.is_ptr(items)):
             return
+        self._damage_list_signature = (items, count)
         if not count:
+            self._damage_pairs_signature = ()
             self._damage_entries.clear()
             self._damage_layout_tick = self._tick
             return
@@ -1017,23 +1212,24 @@ class CharacterReader:
         (body,) = self._batch([(items + gs.Il2CppArray.ITEMS, count * 0x10)])
         if not body:
             return
-        pairs = [(_u64(body, idx * 0x10), _u64(body, idx * 0x10 + 8))
-                 for idx in range(count)]
-        pairs = [(key, value) for key, value in pairs
+        raw_pairs = [(_u64(body, idx * 0x10), _u64(body, idx * 0x10 + 8))
+                     for idx in range(count)]
+        self._damage_pairs_signature = tuple(raw_pairs)
+        pairs = [(key, value) for key, value in raw_pairs
                  if self.mc.is_ptr(key) and self.mc.is_ptr(value)]
         strings = self.core._read_strings([key for key, _value in pairs])
-        named = [(strings.get(key, ''), value) for key, value in pairs]
-        named = [(cid, value) for cid, value in named if cid]
+        named = [(strings.get(key, ''), key, value) for key, value in pairs]
+        named = [(cid, key, value) for cid, key, value in named if cid]
         blocks = self._batch([
             (value, gs.CharAdvancedStatsFields.READ_SIZE)
-            for _cid, value in named])
+            for _cid, _key, value in named])
 
         entries = {}
         list_owners, list_reqs = [], []
-        for (cid, value), data in zip(named, blocks):
+        for (cid, key, value), data in zip(named, blocks):
             if not data:
                 continue
-            record = {'addr': value, 'lists': {}}
+            record = {'addr': value, 'key_ptr': key, 'lists': {}}
             entries[cid] = record
             for kind, offset in (
                     ('elements', gs.CharAdvancedStatsFields.OUTPUT_ELEMENT_DAMAGE_TOTAL),
@@ -1055,6 +1251,143 @@ class CharacterReader:
                 }
         self._damage_entries = entries
         self._damage_layout_tick = self._tick
+
+    def _refresh_damage_layout(self) -> None:
+        """逐帧验证完整统计结构，并在稳定帧用一次 batch 同步全部值。
+
+        地址缓存只用于提前组织同一批请求；logger、stats、外层列表、键值
+        数组、每个统计对象和三个内层列表头仍会在当前采样帧重新读取。
+        """
+        self._damage_frame_prefetch = []
+        items, count = self._damage_list_signature
+        if not (self.mc.is_ptr(self.core.bc_addr)
+                and self.mc.is_ptr(self._damage_logger_addr)
+                and self.mc.is_ptr(self._damage_stats_addr)
+                and self.mc.is_ptr(self._damage_list_addr)
+                and 0 <= count <= 256
+                and (not count or self.mc.is_ptr(items))
+                and (not count or bool(self._damage_entries))):
+            self._rebuild_damage_layout()
+            return
+
+        reqs, tags = [], []
+
+        def add(tag, addr, size):
+            reqs.append((addr, size))
+            tags.append(tag)
+
+        add(('root', 'logger_slot'),
+            self.core.bc_addr + gs.BattleControllerFields.M_LOGGER, 8)
+        add(('root', 'logger'), self._damage_logger_addr,
+            gs.BattleLoggerFields.READ_SIZE)
+        add(('root', 'stats'), self._damage_stats_addr,
+            gs.BattleStatsFields.READ_SIZE)
+        add(('root', 'list'), self._damage_list_addr, 0x20)
+        if count:
+            add(('root', 'body'), items + gs.Il2CppArray.ITEMS,
+                count * 0x10)
+        for cid, entry in self._damage_entries.items():
+            add(('entry', cid), entry['addr'],
+                gs.CharAdvancedStatsFields.READ_SIZE)
+            for kind, layout in entry.get('lists', {}).items():
+                add(('head', cid, kind), layout['list'], 0x20)
+                if layout.get('count', 0):
+                    add(('values', cid, kind), layout['data'],
+                        layout['count'] * 4)
+
+        data_list = self._batch(reqs)
+        values = dict(zip(tags, data_list))
+        self._damage_frame_prefetch = [
+            (addr, data) for (addr, _size), data in zip(reqs, data_list) if data]
+
+        logger_slot = values.get(('root', 'logger_slot'))
+        logger_block = values.get(('root', 'logger'))
+        stats_block = values.get(('root', 'stats'))
+        list_head = values.get(('root', 'list'))
+        body = values.get(('root', 'body')) if count else b''
+        logger = _u64(logger_slot, 0) if logger_slot else 0
+        stats = (_u64(logger_block, gs.BattleLoggerFields.STATS)
+                 if logger_block else 0)
+        stats_list = (_u64(stats_block, gs.BattleStatsFields.CHAR_ADVANCED_STATS)
+                      if stats_block else 0)
+        new_items = _u64(list_head, gs.ListInternal.ITEMS) if list_head else 0
+        new_count = _i32(list_head, gs.ListInternal.SIZE) if list_head else -1
+        raw_pairs = tuple(
+            (_u64(body, idx * 0x10), _u64(body, idx * 0x10 + 8))
+            for idx in range(count)) if body or not count else ()
+        if (logger != self._damage_logger_addr
+                or stats != self._damage_stats_addr
+                or stats_list != self._damage_list_addr
+                or (new_items, new_count) != self._damage_list_signature
+                or raw_pairs != self._damage_pairs_signature):
+            self._rebuild_damage_layout()
+            return
+
+        # 键值数组未变时 charId 无需重新读字符串；统计对象和内层 List 头
+        # 则继续使用本帧数据。内层指针变化只补读新 List 头。
+        new_entries = {}
+        changed_heads = []
+        for cid, old_entry in self._damage_entries.items():
+            block = values.get(('entry', cid))
+            if not block:
+                new_entries[cid] = old_entry
+                continue
+            entry = {
+                'addr': old_entry['addr'],
+                'key_ptr': old_entry.get('key_ptr', 0),
+                'lists': {},
+            }
+            for kind, offset in (
+                    ('elements', gs.CharAdvancedStatsFields.OUTPUT_ELEMENT_DAMAGE_TOTAL),
+                    ('breaks', gs.CharAdvancedStatsFields.OUTPUT_EP_BREAK_COUNT),
+                    ('types', gs.CharAdvancedStatsFields.OUTPUT_DAMAGE_BY_TYPE_TOTAL)):
+                list_ptr = _u64(block, offset)
+                if not self.mc.is_ptr(list_ptr):
+                    continue
+                old_layout = old_entry.get('lists', {}).get(kind, {})
+                if old_layout.get('list') == list_ptr:
+                    head = values.get(('head', cid, kind))
+                    if head:
+                        inner_items = _u64(head, gs.ListInternal.ITEMS)
+                        inner_count = _i32(head, gs.ListInternal.SIZE)
+                        if (0 <= inner_count <= 32
+                                and (not inner_count
+                                     or self.mc.is_ptr(inner_items))):
+                            entry['lists'][kind] = {
+                                'list': list_ptr,
+                                'data': inner_items + gs.Il2CppArray.ITEMS,
+                                'count': inner_count,
+                            }
+                    elif old_layout:
+                        entry['lists'][kind] = old_layout
+                else:
+                    changed_heads.append((cid, kind, list_ptr))
+            new_entries[cid] = entry
+
+        changed_data = self._batch([
+            (list_ptr, 0x20) for _cid, _kind, list_ptr in changed_heads])
+        for (cid, kind, list_ptr), head in zip(changed_heads, changed_data):
+            if not head or cid not in new_entries:
+                continue
+            inner_items = _u64(head, gs.ListInternal.ITEMS)
+            inner_count = _i32(head, gs.ListInternal.SIZE)
+            if (0 <= inner_count <= 32
+                    and (not inner_count or self.mc.is_ptr(inner_items))):
+                new_entries[cid]['lists'][kind] = {
+                    'list': list_ptr,
+                    'data': inner_items + gs.Il2CppArray.ITEMS,
+                    'count': inner_count,
+                }
+        self._damage_entries = new_entries
+        self._damage_layout_tick = self._tick
+
+    def _prefetched_damage_read(self, addr: int, size: int) -> bytes | None:
+        """返回本帧布局批读中已覆盖的切片，避免相同地址再次往返。"""
+        for base, data in self._damage_frame_prefetch:
+            offset = addr - base
+            if 0 <= offset and offset + size <= len(data):
+                return data[offset:offset + size]
+        return None
 
     @staticmethod
     def _safe_float(value: float) -> float:
@@ -1217,7 +1550,15 @@ class CharacterReader:
         snapshots = {cid: dict(self._damage_snapshots.get(cid, {}))
                      for cid in self._damage_entries}
         battle_stats_total = self._battle_stats_total_damage
-        for (cid, kind), data in zip(tags, self._batch(reqs)):
+        frame_data = [self._prefetched_damage_read(addr, size)
+                      for addr, size in reqs]
+        missing = [(idx, req) for idx, (req, data) in enumerate(
+            zip(reqs, frame_data)) if data is None]
+        if missing:
+            fetched = self._batch([req for _idx, req in missing])
+            for (idx, _req), data in zip(missing, fetched):
+                frame_data[idx] = data
+        for (cid, kind), data in zip(tags, frame_data):
             if not data:
                 continue
             if kind == 'global_total':
@@ -1334,14 +1675,10 @@ class CharacterReader:
         snap = {'ok': False, 'characters': [], 'msg': '', 'frame_ms': 0.0}
         try:
             self._tick += 1
-            if (self._tick % self.LIST_EVERY == 1
-                    or not self.character_addrs):
-                ptrs = self._read_container()
-                if ptrs is None:
-                    snap['msg'] = '干员容器读取失败'
-                    return snap
-            else:
-                ptrs = list(self.character_addrs)
+            ptrs = self._read_container()
+            if ptrs is None:
+                snap['msg'] = '干员容器读取失败'
+                return snap
             blocks = self._batch([
                 (ptr, gs.CharacterFields.READ_SIZE) for ptr in ptrs])
             infos = {ptr: self._parse_main(ptr, data)
@@ -1356,27 +1693,8 @@ class CharacterReader:
             self._refresh_positions_and_blocking(infos)
             self._refresh_damage_stats(
                 infos, enemies, track_unattributed_damage)
-            if self._tick % self.SKILL_EVERY == 1 or any(
-                    addr not in self._skill_runtime for addr in infos):
-                self._refresh_skills(infos)
-            else:
-                for addr, info in infos.items():
-                    static = dict(self._skill_static.get(info.skill_data_ptr, {}))
-                    runtime = dict(self._skill_runtime.get(addr, {}))
-                    static['runtime'] = runtime
-                    static['current_sp'] = info.sp
-                    static['max_sp'] = info.max_sp
-                    sp_cost = static.get('sp', {}).get('cost', info.max_sp)
-                    static['ready'] = bool(
-                        sp_cost > 0 and info.sp >= sp_cost
-                        and not runtime.get('wait_for_end'))
-                    info.skill = static
-            if self._tick % self.BUFF_COUNT_EVERY == 1 or any(
-                    addr not in self._buff_counts for addr in infos):
-                self._refresh_buff_counts(infos)
-            else:
-                for addr, info in infos.items():
-                    info.buff_count = self._buff_counts.get(addr, 0)
+            self._refresh_skills(infos)
+            self._refresh_buff_counts(infos)
 
             for info in infos.values():
                 self._finalize_character_action(info)
@@ -1384,7 +1702,9 @@ class CharacterReader:
             live = set(infos)
             for cache in (self._identities, self._attr_cached, self._attr_snapshots,
                           self._runtime_ptrs, self._runtime_snapshots, self._positions,
-                          self._skill_runtime, self._buff_counts):
+                          self._blocked_layouts, self._skill_runtime,
+                          self._skill_runtime_layouts, self._buff_counts,
+                          self._buff_layouts):
                 for addr in list(cache):
                     if addr not in live:
                         cache.pop(addr, None)
