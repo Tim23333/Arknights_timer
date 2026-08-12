@@ -42,12 +42,11 @@ from app.version import VERSION, VERSION_LABEL, windows_version_tuple
 
 def _ensure_memsrv(tools_dir: Path) -> None:
     """memsrv.c 更新或 bin/memsrv 缺失时, 用 ziglang 交叉编译 aarch64 静态二进制。
-    构建失败不阻断打包 (TCP 通道会自动回退 sh+dd 模式, 只是慢)。"""
+    memsrv v4 是唯一内存读取后端，因此构建失败必须终止打包。"""
     src = tools_dir / "enemy_health" / "memsrv.c"
     out = tools_dir / "enemy_health" / "bin" / "memsrv"
     if not src.is_file():
-        print("[WARN] 未找到 memsrv.c, 跳过 memsrv 构建")
-        return
+        raise RuntimeError('未找到 memsrv.c，无法构建唯一受支持的 memsrv v4 后端')
     if out.is_file() and out.stat().st_mtime >= src.stat().st_mtime:
         print(f"[INFO] memsrv 已是最新: {out}")
         return
@@ -57,8 +56,9 @@ def _ensure_memsrv(tools_dir: Path) -> None:
            "-static", "-O2", "-o", str(out), str(src)]
     proc = subprocess.run(cmd)
     if proc.returncode != 0 or not out.is_file():
-        print("[WARN] memsrv 构建失败 (pip install ziglang 可修复); "
-              "打包继续, 运行时将回退 sh+dd 慢速模式")
+        raise RuntimeError(
+            'memsrv v4 构建失败（可通过 pip install ziglang 修复）；'
+            '未生成唯一受支持的内存读取后端，已终止打包')
     else:
         print(f"[OK] memsrv 构建完成: {out} ({out.stat().st_size} bytes)")
 

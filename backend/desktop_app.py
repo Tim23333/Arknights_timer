@@ -60,6 +60,7 @@ for _p in (str(_BACKEND_ROOT), str(_REPO_ROOT)):
         sys.path.insert(0, _p)
 
 from app.services.timer_provider import TimerDataProvider
+from app.battle_session_cache import BattleSessionCache
 from app.diagnostic_log import DiagnosticLogManager, DiagnosticLogWindow
 from app.version import VERSION, VERSION_LABEL
 from tools.enemy_health import EnemyReader
@@ -575,17 +576,12 @@ def _format_game_time(value: object) -> str:
 
 
 def _format_enemy_read_mode(snapshot: dict) -> str:
-    """把扫描器发布的通道状态转成稳定、可读的界面文案。"""
+    """memsrv v4 是唯一可显示的内存读取后端。"""
     mode = snapshot.get('read_mode', '')
     backend = snapshot.get('read_backend', '')
-    if mode == 'fast':
-        if backend == 'srv':
-            return '高速通道（memsrv）'
-        if backend == 'sh':
-            return 'TCP 兼容通道（shell）'
-        return '高速通道（TCP）'
-    if mode == 'slow':
-        return '慢速兜底（ADB）'
+    if mode == 'fast' and backend == 'srv' \
+            and int(snapshot.get('memsrv_version', 0) or 0) == 4:
+        return '设备快照（memsrv v4）'
     return '检测中'
 
 
@@ -814,6 +810,7 @@ class EnemyPollWorker(QThread):
         self._latest_snapshot = None
         self._snapshot_signal_pending = False
         self._dropped_ui_snapshots = 0
+        self._last_complete_snapshot = None
         self._sample_window_started = time.perf_counter()
         self._sample_window_count = 0
         self._sample_hz = 0.0
@@ -827,9 +824,20 @@ class EnemyPollWorker(QThread):
             self._snapshot_signal_pending = False
             return snap
 
+    def take_last_complete_snapshot(self):
+        """返回采样线程见过的最后一份 PLAYING 完整帧。"""
+        with self._snapshot_lock:
+            return self._last_complete_snapshot
+
     def _publish_snapshot(self, snap: dict) -> None:
         should_emit = False
         with self._snapshot_lock:
+            if (snap.get('ok')
+                    and snap.get('state') in (
+                        enemy_gs.BattleState.INITED,
+                        enemy_gs.BattleState.PLAYING)
+                    and snap.get('frame_consistent', True)):
+                self._last_complete_snapshot = snap
             if self._snapshot_signal_pending:
                 self._dropped_ui_snapshots += 1
             else:
@@ -996,6 +1004,20 @@ class EnemyPollWorker(QThread):
             snap['character_detail_error'] = error
 
     def _collect_complete_snapshot(self) -> dict:
+        channel = getattr(self.reader, '_chan', None)
+        if channel is not None and hasattr(channel, 'configure_frame_guard'):
+            guard_addr = 0
+            if getattr(self.reader, '_bc_static_fields', 0):
+                guard_addr = (
+                    self.reader._bc_static_fields
+                    + enemy_gs.BattleControllerStaticFields.FIXED_FRAME_COUNT)
+            channel.configure_frame_guard(guard_addr, 4, 3)
+        if channel is not None and hasattr(channel, 'begin_frame_prefetch'):
+            try:
+                channel.begin_frame_prefetch()
+            except Exception:
+                # 与普通 batch_read 一致，由 poll_fast 报告 memsrv v4 错误。
+                pass
         try:
             snap = self.reader.poll_fast()
         except Exception as e:
@@ -1003,6 +1025,8 @@ class EnemyPollWorker(QThread):
                     'time_scale': 0.0, 'play_time': 0.0, 'enemies': [],
                     'msg': f'轮询出错: {e}', 'strict_60hz': False}
         frame_start = snap.get('fixed_frame')
+        if self.isInterruptionRequested():
+            return snap
         if self.character_reader is not None:
             try:
                 char_snap = self.character_reader.poll_fast(
@@ -1019,33 +1043,62 @@ class EnemyPollWorker(QThread):
             snap['character_msg'] = char_snap.get('msg', '')
             snap['character_frame_ms'] = char_snap.get('frame_ms', 0.0)
 
-        guard = {}
-        try:
-            guard = self.reader.read_frame_guard_fast()
-        except Exception as exc:
-            snap['frame_guard_error'] = f'{type(exc).__name__}: {exc}'
-        frame_end = guard.get('frame', frame_start)
-        post_scale = guard.get('time_scale')
-        if isinstance(post_scale, (int, float)):
-            snap['time_scale'] = post_scale
-        if isinstance(guard.get('play_time'), (int, float)):
-            snap['play_time'] = guard['play_time']
+        if self.isInterruptionRequested():
+            return snap
+        # v4 在设备内围绕整份常驻读取计划检查逻辑帧并原地重试，不再为帧尾
+        # 守卫额外进行一次主机↔模拟器往返。
+        guard = (channel.device_frame_guard()
+                 if channel is not None
+                 and hasattr(channel, 'device_frame_guard') else {})
+        if not guard.get('attempts'):
+            # 首帧尚未上传设备计划；只在这一次保留主机端守卫。稳定帧以及
+            # 拓扑变更后的重试均由设备内守卫覆盖。
+            try:
+                host_guard = self.reader.read_frame_guard_fast()
+                guard = {
+                    'attempts': 1,
+                    'start': frame_start,
+                    'end': host_guard.get('frame', frame_start),
+                    'complete': (frame_start is not None and frame_start
+                                 == host_guard.get('frame', frame_start)),
+                }
+                if isinstance(host_guard.get('time_scale'), (int, float)):
+                    snap['time_scale'] = host_guard['time_scale']
+                if isinstance(host_guard.get('play_time'), (int, float)):
+                    snap['play_time'] = host_guard['play_time']
+            except Exception as exc:
+                snap['frame_guard_error'] = f'{type(exc).__name__}: {exc}'
+        frame_end = guard.get('end', frame_start)
         paused = isinstance(snap.get('time_scale'), (int, float)) \
             and abs(float(snap['time_scale'])) < 1e-7
         snap['frame_start'] = frame_start
         snap['frame_end'] = frame_end
-        snap['frame_consistent'] = (
-            frame_start is not None and frame_start == frame_end)
+        snap['device_frame_attempts'] = int(guard.get('attempts', 0) or 0)
+        snap['frame_consistent'] = bool(
+            guard.get('complete', frame_start is not None
+                      and frame_start == frame_end))
         snap['paused_snapshot'] = paused
         snap['pause_consistent'] = (
             not paused or bool(snap['frame_consistent']))
-        self._append_detail(snap)
-        self._append_character_detail(snap)
+        if not self.isInterruptionRequested():
+            self._append_detail(snap)
+            self._append_character_detail(snap)
+        # 首帧进入 poll_fast 时通道可能刚刚创建，重新取一次以提交首帧计划。
+        channel = getattr(self.reader, '_chan', channel)
+        if channel is not None and hasattr(channel, 'end_frame_prefetch'):
+            channel.end_frame_prefetch()
         return snap
 
     def run(self) -> None:
         # Windows 默认睡眠粒度 15.6ms, 提到 1ms 才能睡出 <16ms 的轮询间隔
         winmm = getattr(ctypes.windll, 'winmm', None) if sys.platform == 'win32' else None
+        # Qt 主线程一次批量更新表格时可能连续持有默认约 5ms 的 GIL；把切换
+        # 粒度缩到 1ms，让采样线程能在同一逻辑帧内及时完成解析。此项只改变
+        # Python 线程调度，不降低采样/显示频率，也不复用上一帧数据。
+        old_switch_interval = sys.getswitchinterval()
+        switch_interval_changed = old_switch_interval > 0.0015
+        if switch_interval_changed:
+            sys.setswitchinterval(0.001)
         if winmm:
             winmm.timeBeginPeriod(1)
         try:
@@ -1059,19 +1112,22 @@ class EnemyPollWorker(QThread):
                     channel.reset_frame_stats()
 
                 snap = self._collect_complete_snapshot()
-                # 暂停边界可能刚好落在本轮中间；最多立即重读三次。仍跨帧时
-                # 不发布这份混合快照，GUI 保留上一份完整数据并等待下一轮。
-                pause_retries = 0
-                while (snap.get('paused_snapshot')
-                       and not snap.get('frame_consistent')
-                       and pause_retries < 3
+                if self.isInterruptionRequested():
+                    break
+                # 无论暂停还是运行中，起止逻辑帧不一致都说明本轮读取跨帧。
+                # 最多立即重读三次；仍跨帧时不发布，GUI 保留上一份完整帧。
+                # v4 在设备侧执行常驻计划并校验逻辑帧，通常一次即可完成。
+                frame_retries = 0
+                while (not snap.get('frame_consistent')
+                       and frame_retries < 3
                        and not self.isInterruptionRequested()):
-                    pause_retries += 1
+                    frame_retries += 1
                     snap = self._collect_complete_snapshot()
-                snap['pause_retries'] = pause_retries
-                suppress_paused_snapshot = bool(
-                    snap.get('paused_snapshot')
-                    and not snap.get('frame_consistent'))
+                snap['frame_retries'] = frame_retries
+                snap['pause_retries'] = frame_retries if snap.get(
+                    'paused_snapshot') else 0
+                suppress_inconsistent_snapshot = not bool(
+                    snap.get('frame_consistent'))
 
                 finished = time.perf_counter()
                 loop_ms = (finished - t0) * 1000.0
@@ -1096,7 +1152,7 @@ class EnemyPollWorker(QThread):
                     and snap.get('pause_consistent', True)
                     and (self.character_reader is None
                          or snap.get('character_ok')))
-                if not suppress_paused_snapshot:
+                if not suppress_inconsistent_snapshot:
                     self._publish_snapshot(snap)
 
                 next_deadline += self.interval
@@ -1110,6 +1166,9 @@ class EnemyPollWorker(QThread):
         finally:
             if winmm:
                 winmm.timeEndPeriod(1)
+            if (switch_interval_changed
+                    and abs(sys.getswitchinterval() - 0.001) < 0.0001):
+                sys.setswitchinterval(old_switch_interval)
 
 
 RNG_PREDICT_LEN = 30    # 未来预测默认发数 (界面可改, 1-500)
@@ -1698,6 +1757,12 @@ class CoachWindow(QMainWindow):
         self._enemy_row_spawn_wait: dict = {} # roster_id -> 上次倒计时文本（仅变化时更新）
         self._bar_colors: dict = {}    # roster_id -> 当前血条颜色
         self._skill_lines: dict = {}   # roster_id -> 技能格行数（变化才调整行高）
+        # Qt 单元格 getter/setter 都会进入 C++，60Hz 下即使文本未变化也会
+        # 持有 GIL 并挤占扫描线程。缓存已提交的显示值，仅把真正变化的格子
+        # 交给 Qt；底层 EnemyInfo 仍然逐帧读取、逐帧生成完整快照。
+        self._enemy_cell_state: dict = {}
+        self._enemy_bar_state: dict = {}
+        self._enemy_detail_state: dict = {}
         self._enemy_dec: dict = default_precision_values()
         self._enemy_last: list = []    # 最近一帧敌人 (改小数位时立即重绘用)
         self._enemy_detail_dialog: EnemyDetailDialog | None = None
@@ -1720,6 +1785,8 @@ class CoachWindow(QMainWindow):
         self._character_rows: dict[int, int] = {}
         self._character_bar_colors: dict[int, str] = {}
         self._character_skill_lines: dict[int, int] = {}
+        self._character_cell_state: dict = {}
+        self._character_bar_state: dict = {}
         self._character_dec = default_character_precision()
         self._character_last: list = []
         self._character_stats_history: list = []
@@ -1741,6 +1808,10 @@ class CoachWindow(QMainWindow):
         self._rng_worker: RngScanWorker | None = None
         self._rng_timer = QTimer(self)
         self._rng_timer.timeout.connect(self._on_rng_tick)
+
+        # 单局有界最终快照：只保存一份敌我完整状态、操作列表、关卡计划和
+        # 两条 RNG 历史；关卡结束/地址失效后各导出入口继续读取这里。
+        self._battle_cache = BattleSessionCache(VERSION)
 
         # 操作记录 (deploy_tracker): 定位后轮询 BattleLogger.m_logs
         self._deploy_reader: DeployTrackerReader | None = None
@@ -1868,6 +1939,14 @@ class CoachWindow(QMainWindow):
         self._style_secondary_button(self.btn_select_adb)
         title_row.addWidget(self.btn_select_adb)
         self._update_adb_button()
+        self.btn_battle_cache_export = QPushButton("导出本局缓存")
+        self.btn_battle_cache_export.setToolTip(
+            "导出本局最后一份完整快照：关卡/出怪、操作记录、敌我局内数据与随机数；"
+            "关卡结束或地址失效后仍可使用")
+        self.btn_battle_cache_export.setEnabled(False)
+        self.btn_battle_cache_export.clicked.connect(self._on_battle_cache_export)
+        self._style_secondary_button(self.btn_battle_cache_export)
+        title_row.addWidget(self.btn_battle_cache_export)
         if self._diagnostic_log_window is not None:
             self.btn_diagnostic_log = QPushButton("诊断日志")
             self.btn_diagnostic_log.setToolTip(
@@ -2089,6 +2168,8 @@ class CoachWindow(QMainWindow):
         self.enemy_table.setSelectionMode(QTableWidget.NoSelection)
         self.enemy_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.enemy_table.setAlternatingRowColors(True)
+        self.enemy_table.setWordWrap(True)
+        self.enemy_table.verticalHeader().setDefaultSectionSize(50)
         self.enemy_table.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         hdr = self.enemy_table.horizontalHeader()
@@ -2569,6 +2650,8 @@ class CoachWindow(QMainWindow):
             self._stop_event.wait(AUTO_REFRESH_MS / 1000)
 
     def closeEvent(self, event) -> None:  # type: ignore[override]
+        self._cache_current_deploy(final_reason='application_closed')
+        self._cache_rng_from_service()
         self._stop_event.set()
         self._mini_hotkey_timer.stop()
         if self._enemy_mini is not None:
@@ -2577,7 +2660,10 @@ class CoachWindow(QMainWindow):
             self._enemy_mini = None
         for section in getattr(self, '_collapsible_sections', {}).values():
             section.dock_content()
-        self._stop_enemy_poll()
+        if not self._stop_enemy_poll(blocking=True):
+            event.ignore()
+            QTimer.singleShot(250, self.close)
+            return
         self._enemy_reader.close()
         self._stop_deploy_poll()
         if self._deploy_reader is not None:
@@ -2676,7 +2762,13 @@ class CoachWindow(QMainWindow):
 
     def _activate_adb_path(self, path: str, serial: str = '') -> None:
         """停止旧连接并让敌人、RNG、操作记录统一改用新 ADB。"""
-        self._stop_enemy_poll()
+        self._cache_current_deploy(final_reason='adb_switched')
+        self._cache_rng_from_service()
+        if not self._stop_enemy_poll():
+            QMessageBox.information(
+                self, '正在停止监控',
+                '上一轮敌人内存读取尚未完全退出，请稍后再次选择 ADB。')
+            return
         self._on_rng_stop()
         self._stop_deploy_poll()
         if self._deploy_reader is not None:
@@ -2707,6 +2799,9 @@ class CoachWindow(QMainWindow):
         self._enemy_row_spawn_wait.clear()
         self._bar_colors.clear()
         self._skill_lines.clear()
+        self._enemy_cell_state.clear()
+        self._enemy_bar_state.clear()
+        self._enemy_detail_state.clear()
         self.enemy_progress.setValue(0)
         self.enemy_progress.setFormat('等待扫描')
         self.btn_enemy_scan.setText('开始扫描')
@@ -2716,6 +2811,8 @@ class CoachWindow(QMainWindow):
         self._character_rows.clear()
         self._character_bar_colors.clear()
         self._character_skill_lines.clear()
+        self._character_cell_state.clear()
+        self._character_bar_state.clear()
         self._character_stats_history.clear()
         self.btn_character_scan.setText('扫描干员')
         self.lbl_character_status.setText('ADB 已切换，请重新扫描')
@@ -2735,8 +2832,9 @@ class CoachWindow(QMainWindow):
         self._deploy_stage = ''
         self._deploy_stage_info = {}
         self._deploy_seen = 0
-        self.btn_deploy_export.setEnabled(False)
+        self.btn_deploy_export.setEnabled(self._battle_cache.has_deploy())
         self.lbl_deploy_status.setText('ADB 已切换，请重新扫描')
+        self._sync_battle_cache_controls()
         self._update_adb_button()
 
     def _select_adb(self, show_success: bool = True) -> bool:
@@ -2835,18 +2933,25 @@ class CoachWindow(QMainWindow):
         if not self._ensure_adb():
             self.lbl_enemy_status.setText('状态: 未选择 adb.exe, 取消扫描')
             return
-        self._stop_enemy_poll()
+        if not self._stop_enemy_poll():
+            self.lbl_enemy_status.setText('上一轮敌人读取仍在停止，请稍后重试')
+            return
         self.enemy_table.setRowCount(0)   # 换关卡重扫: 清掉旧敌人行
         self._enemy_rows.clear()
         self._enemy_row_lifecycle.clear()
         self._enemy_row_spawn_wait.clear()
         self._bar_colors.clear()
         self._skill_lines.clear()
+        self._enemy_cell_state.clear()
+        self._enemy_bar_state.clear()
+        self._enemy_detail_state.clear()
         self.character_table.setRowCount(0)
         self._character_last.clear()
         self._character_rows.clear()
         self._character_bar_colors.clear()
         self._character_skill_lines.clear()
+        self._character_cell_state.clear()
+        self._character_bar_state.clear()
         self._character_stats_history.clear()
         self._character_frame_ms_sum = 0.0
         self._character_frame_ms_count = 0
@@ -2885,6 +2990,8 @@ class CoachWindow(QMainWindow):
             self.lbl_character_status.setText(
                 '共享定位完成，准备读取场上干员' if char_ok
                 else '共享定位完成，正在等待干员容器可读')
+            if not self._battle_cache.is_finalized():
+                self._cache_stage_export()
             self._start_enemy_poll()
         else:
             self.btn_stage_enemy_export.setEnabled(False)
@@ -2893,16 +3000,47 @@ class CoachWindow(QMainWindow):
 
     def _on_stage_enemy_export(self) -> None:
         """导出关卡地图与完整敌人计划，供 Vue 排轴前端直接导入。"""
-        if not self._enemy_reader.plan_level_id:
+        payload = {}
+        using_cache = False
+        if self._enemy_reader.plan_level_id:
+            try:
+                payload = self._enemy_reader.build_stage_export(
+                    self._deploy_stage_info)
+                if self._battle_cache.is_finalized():
+                    cached_payload = self._battle_cache.stage_export()
+                    live_id = str((payload.get('stage') or {}).get('levelId') or '')
+                    cached_id = str(
+                        (cached_payload.get('stage') or {}).get('levelId') or '')
+                    if cached_payload and live_id == cached_id:
+                        payload = cached_payload
+                        using_cache = True
+                    else:
+                        self._battle_cache.observe_stage(
+                            self._deploy_stage_info, payload)
+                else:
+                    self._battle_cache.observe_stage(
+                        self._deploy_stage_info, payload)
+            except Exception as exc:
+                _tlog(f'[关卡] 实时导出失败，改用本局缓存: {exc}')
+        if not payload:
+            payload = self._battle_cache.stage_export()
+            using_cache = bool(payload)
+        if not payload:
             QMessageBox.information(self, '导出', '尚未扫描到当前关卡，请先点击“开始扫描”')
             return
-        payload = self._enemy_reader.build_stage_export(self._deploy_stage_info)
-        deploy_events = self._deploy_journal or self._deploy_events
+        deploy_state = self._battle_cache.deploy_state()
+        deploy_events = (self._deploy_journal or self._deploy_events
+                         or deploy_state.get('journalEvents')
+                         or deploy_state.get('liveEvents') or [])
         if deploy_events:
             attached = self._attach_deploy_frames(deploy_events, deploy_events)
+            stage_info = (self._deploy_stage_info
+                          or deploy_state.get('stage') or {})
             payload['operatorActions'] = self._build_deploy_export_payload(
-                attached)['actions']
-        level_id = self._enemy_reader.plan_level_id.replace('/', '_').replace('\\', '_')
+                attached, stage_info)['actions']
+        stage = payload.get('stage') or {}
+        level_id = str(stage.get('levelId') or stage.get('stageId') or 'unknown')
+        level_id = level_id.replace('/', '_').replace('\\', '_')
         default = f"stage_enemy_{level_id}_{time.strftime('%Y%m%d_%H%M%S')}.json"
         path, _ = QFileDialog.getSaveFileName(
             self, '导出关卡与出怪信息', default, 'JSON (*.json)')
@@ -2918,15 +3056,31 @@ class CoachWindow(QMainWindow):
         map_data = payload.get('map') or {}
         self.lbl_enemy_status.setText(
             f"已导出 {map_data.get('rows', 0)}×{map_data.get('cols', 0)} 地图、"
-            f"{enemy_count} 个出怪项 -> {path}")
+            f"{enemy_count} 个出怪项{'（来自本局最终缓存）' if using_cache else ''} -> {path}")
         _tlog(f'[关卡] 已导出地图/出怪 {enemy_count} 项 -> {path}')
+
+    def _cache_stage_export(self) -> None:
+        """在地址仍有效时把纯 JSON 关卡计划放入单局缓存。"""
+        if not self._enemy_reader.plan_level_id:
+            return
+        try:
+            payload = self._enemy_reader.build_stage_export(
+                self._deploy_stage_info)
+        except Exception as exc:
+            _tlog(f'[本局缓存] 关卡计划快照失败: {exc}')
+            return
+        self._battle_cache.observe_stage(self._deploy_stage_info, payload)
+        self._sync_battle_cache_controls()
 
     def _on_character_scan(self) -> None:
         """干员读取复用敌人定位；按钮用于首次定位或强制刷新整条共享链。"""
         self._on_enemy_scan()
 
     def _start_enemy_poll(self) -> None:
-        self._stop_enemy_poll()
+        if not self._stop_enemy_poll():
+            self.lbl_enemy_status.setText('上一轮敌人读取仍在停止，未启动新的监控')
+            return
+        self._enemy_reader.resume_polling()
         self._enemy_poll = EnemyPollWorker(
             self._enemy_reader, self._character_reader)
         self._enemy_poll.set_track_unattributed_damage(
@@ -2938,14 +3092,44 @@ class CoachWindow(QMainWindow):
         self.lbl_enemy_status.setText('实时监控中 ...')
         self.lbl_character_status.setText('实时监控中 ...')
 
-    def _stop_enemy_poll(self) -> None:
-        if self._enemy_poll:
-            self._enemy_poll.requestInterruption()
-            self._enemy_poll.wait(3000)
+    def _stop_enemy_poll(self, blocking: bool = False) -> bool:
+        worker = self._enemy_poll
+        if worker:
+            final_snap = worker.take_last_complete_snapshot()
+            if final_snap is not None:
+                self._battle_cache.observe_runtime(
+                    final_snap, self._deploy_stage_info)
+            worker.requestInterruption()
+            # 主通道 socket.close() 能立即打断大多数正在等待的 memsrv 读取；
+            # 若线程已进入 ADB 慢速命令则保留引用，绝不让新线程并发复用 reader。
+            self._enemy_reader.request_poll_stop()
+            wait_ms = 35000 if blocking else 6000
+            if not worker.wait(wait_ms):
+                self.lbl_enemy_status.setText('正在等待上一轮敌人读取停止 ...')
+                self.btn_enemy_scan.setEnabled(False)
+                QTimer.singleShot(250, self._finish_enemy_poll_stop)
+                return False
+            worker.deleteLater()
             self._enemy_poll = None
         self.btn_enemy_stop.setEnabled(False)
         if hasattr(self, 'btn_character_stop'):
             self.btn_character_stop.setEnabled(False)
+        return True
+
+    def _finish_enemy_poll_stop(self) -> None:
+        worker = self._enemy_poll
+        if worker is not None and worker.isRunning():
+            QTimer.singleShot(250, self._finish_enemy_poll_stop)
+            return
+        if worker is not None:
+            worker.wait()
+            worker.deleteLater()
+        self._enemy_poll = None
+        self.btn_enemy_scan.setEnabled(True)
+        self.btn_enemy_stop.setEnabled(False)
+        if hasattr(self, 'btn_character_stop'):
+            self.btn_character_stop.setEnabled(False)
+        self.lbl_enemy_status.setText('监控已停止')
 
     def _on_enemy_snapshot_ready(self, _wake_snapshot: dict) -> None:
         """消费工作线程双缓冲区中的最新完整帧，而不是信号携带的旧帧。"""
@@ -2955,6 +3139,54 @@ class CoachWindow(QMainWindow):
         snap = poll.take_latest_snapshot()
         if snap is not None:
             self._on_enemy_snapshot(snap)
+
+    def _sync_battle_cache_controls(self) -> None:
+        cache = self._battle_cache
+        self.btn_battle_cache_export.setEnabled(cache.has_data())
+        if cache.has_stage_export():
+            self.btn_stage_enemy_export.setEnabled(True)
+        if cache.has_deploy():
+            self.btn_deploy_export.setEnabled(True)
+        if cache.has_rng('imp'):
+            self.btn_rng_imp_export.setEnabled(True)
+        if cache.has_rng('trivial'):
+            self.btn_rng_trivial_export.setEnabled(True)
+
+    def _on_battle_cache_export(self) -> None:
+        """导出单局最后完整敌我帧及各辅助模块的有界缓存。"""
+        self._cache_current_deploy()
+        self._cache_rng_from_service()
+        if not self._battle_cache.has_data():
+            QMessageBox.information(self, '导出本局缓存', '当前还没有可导出的本局数据')
+            return
+        payload = self._battle_cache.bundle()
+        stage = payload.get('stage') or {}
+        stage_label = str(stage.get('code') or stage.get('stageId')
+                          or stage.get('levelId') or 'battle')
+        safe_label = ''.join(
+            ch if ch not in '<>:"/\\|?*' else '_' for ch in stage_label)
+        default = (
+            f"battle_cache_{safe_label}_{time.strftime('%Y%m%d_%H%M%S')}.json")
+        path, _ = QFileDialog.getSaveFileName(
+            self, '导出本局最终缓存', default, 'JSON (*.json)')
+        if not path:
+            return
+        try:
+            with open(path, 'w', encoding='utf-8') as stream:
+                json.dump(payload, stream, ensure_ascii=False, indent=2)
+        except (OSError, TypeError, ValueError) as exc:
+            QMessageBox.critical(self, '导出本局缓存失败', str(exc))
+            return
+        runtime = payload.get('runtime') or {}
+        enemy_count = len(runtime.get('enemies') or [])
+        character_count = len(runtime.get('characters') or [])
+        operation_count = len(
+            (payload.get('operations') or {}).get('journalEvents')
+            or (payload.get('operations') or {}).get('liveEvents') or [])
+        self.statusBar().showMessage(
+            f'本局最终缓存已导出：敌方 {enemy_count}、我方 {character_count}、'
+            f'操作 {operation_count} 条 -> {path}', 15000)
+        _tlog(f'[本局缓存] 已导出 -> {path}')
 
     # ================= 随机数追踪 (ak_live_rng) =================
 
@@ -2994,6 +3226,7 @@ class CoachWindow(QMainWindow):
     def _on_rng_stop(self) -> None:
         self._rng_timer.stop()
         if self._rng_svc is not None:
+            self._cache_rng_from_service(self._rng_svc)
             try:
                 self._rng_svc.stop()
             except Exception:
@@ -3001,8 +3234,9 @@ class CoachWindow(QMainWindow):
             self._rng_svc = None
         self.btn_rng_stop.setEnabled(False)
         self.btn_rng_scan.setEnabled(RngService is not None)
-        self.btn_rng_imp_export.setEnabled(False)
-        self.btn_rng_trivial_export.setEnabled(False)
+        self.btn_rng_imp_export.setEnabled(self._battle_cache.has_rng('imp'))
+        self.btn_rng_trivial_export.setEnabled(
+            self._battle_cache.has_rng('trivial'))
         self.lbl_rng_status.setText('已停止')
 
     def _on_rng_tick(self) -> None:
@@ -3018,6 +3252,8 @@ class CoachWindow(QMainWindow):
         selected = snap.get('selected')
         if not by_role and selected is not None:
             by_role = {selected.get('role'): selected}
+        self._battle_cache.observe_rng(by_role)
+        self._sync_battle_cache_controls()
         status = str(snap.get('status') or '未定位')
         _render_rng_snapshot(
             self.lbl_rng_info, self.rng_pred_table, self.rng_hist_table,
@@ -3026,28 +3262,48 @@ class CoachWindow(QMainWindow):
             self.lbl_rng_trivial_info, self.rng_trivial_pred_table,
             self.rng_trivial_hist_table, by_role.get('trivial'),
             f'表现随机未定位：{status}')
-        self.btn_rng_imp_export.setEnabled(by_role.get('imp') is not None)
+        self.btn_rng_imp_export.setEnabled(
+            by_role.get('imp') is not None or self._battle_cache.has_rng('imp'))
         self.btn_rng_trivial_export.setEnabled(
-            by_role.get('trivial') is not None)
+            by_role.get('trivial') is not None
+            or self._battle_cache.has_rng('trivial'))
 
-    def _on_rng_export(self, role: str) -> None:
-        role_name = RNG_ROLE_NAMES.get(role, role)
-        svc = self._rng_svc
+    def _cache_rng_from_service(self, svc=None) -> None:
+        svc = svc or self._rng_svc
         if svc is None:
-            QMessageBox.information(
-                self, '导出随机数', f'{role_name}尚未开始监控')
             return
         try:
-            snap = svc.snapshot(
-                RNG_EXPORT_HISTORY_LEN, self.rng_pred_spin.value())
+            snap = svc.snapshot(RNG_EXPORT_HISTORY_LEN, self.rng_pred_spin.value())
         except Exception as exc:
-            QMessageBox.critical(self, '导出随机数失败', str(exc))
+            _tlog(f'[本局缓存] RNG 最终快照失败，沿用上一份: {exc}')
             return
         by_role = snap.get('by_role') or {}
         selected = snap.get('selected')
         if not by_role and selected is not None:
             by_role = {selected.get('role'): selected}
-        data = by_role.get(role)
+        self._battle_cache.observe_rng(by_role)
+        self._sync_battle_cache_controls()
+
+    def _on_rng_export(self, role: str) -> None:
+        role_name = RNG_ROLE_NAMES.get(role, role)
+        svc = self._rng_svc
+        data = None
+        using_cache = False
+        if svc is not None:
+            try:
+                snap = svc.snapshot(
+                    RNG_EXPORT_HISTORY_LEN, self.rng_pred_spin.value())
+                by_role = snap.get('by_role') or {}
+                selected = snap.get('selected')
+                if not by_role and selected is not None:
+                    by_role = {selected.get('role'): selected}
+                self._battle_cache.observe_rng(by_role)
+                data = by_role.get(role)
+            except Exception as exc:
+                _tlog(f'[RNG] 实时导出失败，改用本局缓存: {exc}')
+        if data is None:
+            data = self._battle_cache.rng_role(role)
+            using_cache = data is not None
         if data is None:
             QMessageBox.information(
                 self, '导出随机数', f'{role_name}尚未定位，当前无数据可导出')
@@ -3068,7 +3324,8 @@ class CoachWindow(QMainWindow):
             return
         self.lbl_rng_status.setText(
             f"已导出{role_name}：{len(payload['history'])} 条历史，"
-            f"{len(payload['predictions'])} 条预测 -> {path}")
+            f"{len(payload['predictions'])} 条预测"
+            f"{'（来自本局最终缓存）' if using_cache else ''} -> {path}")
         _tlog(
             f"[RNG] 已导出 {role_name}: history={len(payload['history'])}, "
             f"predictions={len(payload['predictions'])} -> {path}")
@@ -3079,6 +3336,7 @@ class CoachWindow(QMainWindow):
         if not self._ensure_adb():
             self.lbl_deploy_status.setText('未选择 adb.exe, 取消扫描')
             return
+        self._cache_current_deploy()
         self._on_deploy_stop()
         self.deploy_table.setRowCount(0)
         self._deploy_events = []
@@ -3115,6 +3373,8 @@ class CoachWindow(QMainWindow):
         label = self._deploy_stage_label() or self._deploy_stage_info.get('levelId') or '未知关卡'
         self.lbl_deploy_status.setText(f'已识别关卡 {label}；阶段 2/2：正在定位操作记录 ...')
         self.btn_deploy_export.setEnabled(bool(self._deploy_stage_info))
+        self._battle_cache.observe_stage(self._deploy_stage_info)
+        self._sync_battle_cache_controls()
 
     def _on_deploy_scan_done(self, reader, msg: str) -> None:
         self.btn_deploy_scan.setEnabled(True)
@@ -3131,6 +3391,7 @@ class CoachWindow(QMainWindow):
             self._deploy_stage = st.get('stageId') or ''
         except Exception:
             pass
+        self._cache_current_deploy(st.get('battle') if 'st' in locals() else None)
         if self._deploy_journal:
             # 代理作战: 序列为静态完整记录, 无需轮询
             self._append_deploy_rows(self._deploy_journal)
@@ -3159,6 +3420,7 @@ class CoachWindow(QMainWindow):
         self.btn_deploy_stop.setEnabled(False)
 
     def _on_deploy_stop(self) -> None:
+        self._cache_current_deploy()
         self._stop_deploy_poll()
         self.btn_deploy_scan.setEnabled(True)
         if self._deploy_reader is not None:
@@ -3166,8 +3428,10 @@ class CoachWindow(QMainWindow):
 
     def _on_deploy_snapshot(self, events: list, battle: dict, chain_ok: bool) -> None:
         if not chain_ok:
+            self._cache_current_deploy(final_reason='address_invalid')
             self._stop_deploy_poll()
-            self.lbl_deploy_status.setText('地址链失效 (关卡已结束?), 请重新扫描')
+            self.lbl_deploy_status.setText(
+                '地址链失效 (关卡已结束?)，已保留本局最终缓存，可继续导出')
             return
         if battle:
             stage = f"   {self._deploy_stage_label()}" if self._deploy_stage_label() else ''
@@ -3182,6 +3446,7 @@ class CoachWindow(QMainWindow):
             previous = self._deploy_events
         events = self._attach_deploy_frames(events, previous)
         self._deploy_events = events
+        self._cache_current_deploy(battle)
         self._update_deploy_frame_cells(events)
         new = events[self._deploy_seen:]
         if new:
@@ -3253,7 +3518,18 @@ class CoachWindow(QMainWindow):
             return ''
         return f'{chr(ord("A") + row)}{col + 1}'
 
-    def _build_deploy_export_payload(self, events: list) -> dict:
+    def _cache_current_deploy(self, battle: dict | None = None,
+                              final_reason: str = '') -> None:
+        self._battle_cache.observe_deploy(
+            self._deploy_events, battle, self._deploy_stage_info,
+            self._deploy_journal, self._deploy_squad)
+        if final_reason:
+            self._battle_cache.finalize(final_reason)
+        self._sync_battle_cache_controls()
+
+    def _build_deploy_export_payload(self, events: list,
+                                     stage_info: dict | None = None) -> dict:
+        stage_info = stage_info or self._deploy_stage_info
         actions = []
         for ev in events:
             action = {
@@ -3270,8 +3546,8 @@ class CoachWindow(QMainWindow):
             actions.append(action)
         return {
             'settings': {
-                'map_code': self._deploy_stage_info.get('code', ''),
-                'map_name': self._deploy_stage_info.get('name', ''),
+                'map_code': stage_info.get('code', ''),
+                'map_name': stage_info.get('name', ''),
             },
             'actions': actions,
         }
@@ -3305,8 +3581,14 @@ class CoachWindow(QMainWindow):
         tbl.scrollToBottom()
 
     def _on_deploy_export(self) -> None:
-        events = self._deploy_journal or self._deploy_events
-        if not events and not self._deploy_stage_info:
+        self._cache_current_deploy()
+        cached = self._battle_cache.deploy_state()
+        events = (self._deploy_journal or self._deploy_events
+                  or cached.get('journalEvents') or cached.get('liveEvents') or [])
+        stage_info = self._deploy_stage_info or cached.get('stage') or {}
+        using_cache = not bool(self._deploy_journal or self._deploy_events
+                               or self._deploy_stage_info)
+        if not events and not stage_info:
             QMessageBox.information(self, '导出', '当前没有可导出的关卡或操作记录')
             return
         events = self._attach_deploy_frames(events, events)
@@ -3316,7 +3598,7 @@ class CoachWindow(QMainWindow):
             self._deploy_events = events
         self._update_deploy_frame_cells(events)
         missing_frames = sum(ev.get('frame') is None for ev in events)
-        payload = self._build_deploy_export_payload(events)
+        payload = self._build_deploy_export_payload(events, stage_info)
         default = f"deploy_log_{time.strftime('%Y%m%d_%H%M%S')}.json"
         path, _ = QFileDialog.getSaveFileName(self, '导出操作记录', default, 'JSON (*.json)')
         if not path:
@@ -3329,7 +3611,8 @@ class CoachWindow(QMainWindow):
             return
         missing_note = f'（{missing_frames} 条帧为空）' if missing_frames else ''
         self.lbl_deploy_status.setText(
-            f'已导出 {len(events)} 条{missing_note} -> {path}')
+            f"已导出 {len(events)} 条{missing_note}"
+            f"{'（来自本局最终缓存）' if using_cache else ''} -> {path}")
         _tlog(f'[部署] 已导出 {len(events)} 条 -> {path}')
 
     def _on_enemy_snapshot(self, snap: dict) -> None:
@@ -3341,6 +3624,23 @@ class CoachWindow(QMainWindow):
         # 工作线程本身固定 60Hz 且信号只保留最新快照；这里不再做第二层
         # 时间阈值节流，否则 16.7ms 附近的轻微抖动会误跳成约 30Hz。
         now = time.time()
+        self._battle_cache.observe_runtime(snap, self._deploy_stage_info)
+        if (snap.get('ok')
+                and snap.get('state') == enemy_gs.BattleState.PLAYING
+                and not self._battle_cache.has_stage_export()):
+            self._cache_stage_export()
+        if snap.get('state') == enemy_gs.BattleState.FINISHED:
+            # FINISHED 帧仍可能已经清空场上容器；缓存层只冻结此前最后一份
+            # PLAYING 完整帧，并保留这个结束状态作为会话元信息。
+            self._cache_current_deploy(
+                {'state': enemy_gs.BattleState.FINISHED,
+                 'stateName': '已结束',
+                 'playTime': snap.get('play_time', 0.0),
+                 'speedLevel': snap.get('speed_level', -1)})
+            self._cache_rng_from_service()
+        elif not snap.get('ok') and self._battle_cache.has_data():
+            self._battle_cache.finalize('address_invalid')
+        self._sync_battle_cache_controls()
         if snap.get('ok'):
             self._enemy_last_render = now
         detail_dialog = self._enemy_detail_dialog
@@ -3454,11 +3754,8 @@ class CoachWindow(QMainWindow):
         tbl = self.enemy_table
         fit_after_render = bool(enemies and not self._widths_fitted)
         desired_order = [getattr(e, 'roster_id', 0) or e.addr for e in enemies]
-        current_order = [
-            tbl.item(row, ENEMY_COLUMN_INDEX['row']).data(Qt.UserRole)
-            for row in range(tbl.rowCount())
-            if tbl.item(row, ENEMY_COLUMN_INDEX['row']) is not None
-        ]
+        current_order = [key for key, _row in sorted(
+            self._enemy_rows.items(), key=lambda pair: pair[1])]
         structural_update = current_order != desired_order
         # 已有未出场敌人变为存活、或动态召唤加入时，真正重排物理行。
         # 只在顺序变化的那一帧重建，稳定状态下仍保持逐单元格增量刷新。
@@ -3469,6 +3766,9 @@ class CoachWindow(QMainWindow):
             self._enemy_row_spawn_wait.clear()
             self._bar_colors.clear()
             self._skill_lines.clear()
+            self._enemy_cell_state.clear()
+            self._enemy_bar_state.clear()
+            self._enemy_detail_state.clear()
         # 增量刷新：按本局 roster_id 锚定行；固定敌人保持关卡预定顺序，
         # 动态召唤/分支敌人首次出现时追加。过滤切换时才重建一次。
         if structural_update:
@@ -3497,6 +3797,11 @@ class CoachWindow(QMainWindow):
             for a in sorted(gone, key=lambda a: -self._enemy_rows[a]):
                 tbl.removeRow(self._enemy_rows.pop(a))
                 self._bar_colors.pop(a, None)
+                self._enemy_bar_state.pop(a, None)
+                self._enemy_detail_state.pop(a, None)
+                for state_key in [key for key in self._enemy_cell_state
+                                  if key[0] == a]:
+                    self._enemy_cell_state.pop(state_key, None)
                 self._skill_lines.pop(a, None)
                 self._enemy_row_lifecycle.pop(a, None)
                 self._enemy_row_spawn_wait.pop(a, None)
@@ -3521,6 +3826,9 @@ class CoachWindow(QMainWindow):
         self._enemy_row_spawn_wait.clear()
         self._bar_colors.clear()
         self._skill_lines.clear()
+        self._enemy_cell_state.clear()
+        self._enemy_bar_state.clear()
+        self._enemy_detail_state.clear()
         self._render_enemy_table(self._enemy_last)
 
     def _update_enemy_spawn_wait(self, row: int, enemy, row_key: int) -> None:
@@ -3528,6 +3836,7 @@ class CoachWindow(QMainWindow):
         if self._enemy_row_spawn_wait.get(row_key) == text:
             return
         self._enemy_row_spawn_wait[row_key] = text
+        self._enemy_cell_state[(row_key, 'spawn_wait')] = (text, True)
         item = self.enemy_table.item(row, ENEMY_COLUMN_INDEX['spawn_wait'])
         if item is not None:
             item.setText(text)
@@ -3540,6 +3849,8 @@ class CoachWindow(QMainWindow):
         if dlg.exec() == QDialog.Accepted:
             self._enemy_dec.update(dlg.values())
             self._widths_fitted = False
+            self._enemy_cell_state.clear()
+            self._enemy_bar_state.clear()
             self._render_enemy_table(self._enemy_last)   # 立即按新精度重绘
             if not self._enemy_last:
                 self._fit_enemy_columns()
@@ -3691,6 +4002,7 @@ class CoachWindow(QMainWindow):
         self._apply_enemy_column_visibility()
         self._apply_enemy_column_order()
         self._widths_fitted = False
+        self._enemy_cell_state.clear()
         self._render_enemy_table(self._enemy_last)
         if not self._enemy_last:
             self._fit_enemy_columns()
@@ -3739,6 +4051,7 @@ class CoachWindow(QMainWindow):
 
     def _make_enemy_row(self, row: int, roster_id: int) -> None:
         tbl = self.enemy_table
+        tbl.setRowHeight(row, 50)
         hp_col = ENEMY_COLUMN_INDEX['hp']
         detail_col = ENEMY_COLUMN_INDEX['detail']
         for c in range(len(ENEMY_COLS)):
@@ -3764,33 +4077,40 @@ class CoachWindow(QMainWindow):
     def _update_enemy_row(self, row: int, e) -> None:
         tbl = self.enemy_table
         d = self._enemy_dec
+        row_key = getattr(e, 'roster_id', 0) or e.addr
 
         def setc(key, text, grey=False):
+            text = str(text)
+            state_key = (row_key, key)
+            state = (text, bool(grey))
+            previous = self._enemy_cell_state.get(state_key)
+            if previous == state:
+                return
+            self._enemy_cell_state[state_key] = state
             c = ENEMY_COLUMN_INDEX[key]
             it = tbl.item(row, c)
             if it is None:
                 return
-            text = str(text)
-            if it.text() != text:
-                it.setText(text)
-            if it.toolTip() != text:
-                it.setToolTip(text)
-            grey_role = int(Qt.UserRole) + 20
-            if bool(it.data(grey_role)) != bool(grey):
+            it.setText(text)
+            it.setToolTip(text)
+            if previous is None or previous[1] != bool(grey):
+                grey_role = int(Qt.UserRole) + 20
                 it.setData(grey_role, bool(grey))
                 if grey:
                     it.setForeground(QColor('#888888'))
                 else:
                     it.setData(Qt.ForegroundRole, None)
 
+        # 隐藏列不参与当前绘制；列设置变化时会立即用 _enemy_last 重绘一次，
+        # 因此无需在每个 60Hz 帧为不可见列重复格式化字符串。
+        visible_keys = self._enemy_visible_cols
         for col in ENEMY_COLUMN_DEFS:
             key = col['key']
-            if key in ('hp', 'detail'):
+            if key in ('hp', 'detail') or key not in visible_keys:
                 continue
             setc(key, format_column_value(key, e, d, row),
                  grey=(getattr(e, 'lifecycle', 'active') != 'active'
                        or (key == 'life_status' and not e.alive)))
-        row_key = getattr(e, 'roster_id', 0) or e.addr
         self._enemy_row_spawn_wait[row_key] = format_column_value(
             'spawn_wait', e, d, row)
 
@@ -3799,10 +4119,6 @@ class CoachWindow(QMainWindow):
         lifecycle = getattr(e, 'lifecycle', 'active')
         mx = max(1, int(e.max_hp))
         value = max(0, int(e.hp)) if lifecycle != 'pending' else 0
-        if bar.maximum() != mx:
-            bar.setMaximum(mx)
-        if bar.value() != value:
-            bar.setValue(value)
         if lifecycle == 'pending':
             bar_text = '未出场'
         elif lifecycle == 'departed':
@@ -3810,12 +4126,16 @@ class CoachWindow(QMainWindow):
         else:
             # 颜色和填充比例已经表达百分比；紧凑文本优先完整显示精确生命值。
             bar_text = f'{e.hp:.{d["hp"]}f}/{e.max_hp:.{d["hp"]}f}'
-        if bar.format() != bar_text:
-            bar.setFormat(bar_text)
         ratio = e.hp / e.max_hp if e.max_hp > 0 else 0
         color = '#5cb85c' if ratio > 0.5 else ('#f0ad4e' if ratio > 0.2 else '#d9534f')
         if lifecycle != 'active' or not e.alive:
             color = '#888888'
+        bar_state = (mx, value, bar_text, color)
+        if self._enemy_bar_state.get(row_key) != bar_state:
+            self._enemy_bar_state[row_key] = bar_state
+            bar.setMaximum(mx)
+            bar.setValue(value)
+            bar.setFormat(bar_text)
         if self._bar_colors.get(row_key) != color:   # 颜色变化才重设样式 (触发重排版)
             self._bar_colors[row_key] = color
             bar.setStyleSheet(f'QProgressBar::chunk {{ background-color: {color}; }}')
@@ -3825,16 +4145,19 @@ class CoachWindow(QMainWindow):
             enabled = lifecycle != 'pending'
             tooltip = ('未出场，暂无运行时详情' if lifecycle == 'pending'
                        else '显示该敌人的完整属性、状态、损伤条、Buff 与关卡效果')
-            if detail.isEnabled() != enabled:
+            detail_state = (enabled, tooltip)
+            if self._enemy_detail_state.get(row_key) != detail_state:
+                self._enemy_detail_state[row_key] = detail_state
                 detail.setEnabled(enabled)
-            if detail.toolTip() != tooltip:
                 detail.setToolTip(tooltip)
 
-        cd_text = format_column_value('skill', e, d, row)
-        n_lines = cd_text.count('\n')          # 行数变化才重排行高 (重排会触发布局)
-        if self._skill_lines.get(row_key) != n_lines:
-            self._skill_lines[row_key] = n_lines
-            tbl.resizeRowToContents(row)
+        if 'skill' in visible_keys:
+            cd_text = self._enemy_cell_state.get(
+                (row_key, 'skill'), ('', False))[0]
+            n_lines = cd_text.count('\n')      # 行数变化才重排行高 (重排会触发布局)
+            if self._skill_lines.get(row_key) != n_lines:
+                self._skill_lines[row_key] = n_lines
+                tbl.resizeRowToContents(row)
 
     # ================= 场上干员数据 =================
 
@@ -3850,17 +4173,16 @@ class CoachWindow(QMainWindow):
         characters = self._filtered_characters(characters)
         tbl = self.character_table
         desired = [character.addr for character in characters]
-        current = [
-            tbl.item(row, CHARACTER_COLUMN_INDEX['row']).data(Qt.UserRole)
-            for row in range(tbl.rowCount())
-            if tbl.item(row, CHARACTER_COLUMN_INDEX['row']) is not None
-        ]
+        current = [key for key, _row in sorted(
+            self._character_rows.items(), key=lambda pair: pair[1])]
         structural_update = current != desired
         if current != desired:
             tbl.setRowCount(0)
             self._character_rows.clear()
             self._character_bar_colors.clear()
             self._character_skill_lines.clear()
+            self._character_cell_state.clear()
+            self._character_bar_state.clear()
         fit_after = bool(characters and not self._character_widths_fitted)
         if structural_update:
             tbl.setUpdatesEnabled(False)
@@ -3912,31 +4234,34 @@ class CoachWindow(QMainWindow):
     def _update_character_row(self, row: int, character) -> None:
         tbl = self.character_table
         decimals = self._character_dec
+        row_key = character.addr
 
+        visible_keys = self._character_visible_cols
         for col in CHARACTER_COLUMN_DEFS:
             key = col['key']
-            if key in ('hp', 'sp', 'detail'):
+            if key in ('hp', 'sp', 'detail') or key not in visible_keys:
                 continue
+            text = str(format_character_column(key, character, decimals, row))
+            state_key = (row_key, key)
+            if self._character_cell_state.get(state_key) == text:
+                continue
+            self._character_cell_state[state_key] = text
             item = tbl.item(row, CHARACTER_COLUMN_INDEX[key])
             if item is None:
                 continue
-            text = str(format_character_column(key, character, decimals, row))
-            if item.text() != text:
-                item.setText(text)
-            if item.toolTip() != text:
-                item.setToolTip(text)
+            item.setText(text)
+            item.setToolTip(text)
 
         hp_bar = tbl.cellWidget(row, CHARACTER_COLUMN_INDEX['hp'])
         sp_bar = tbl.cellWidget(row, CHARACTER_COLUMN_INDEX['sp'])
         if getattr(character, 'is_global_damage_summary', False):
-            for bar in (hp_bar, sp_bar):
-                if bar.minimum() != 0 or bar.maximum() != 1:
+            summary_state = ('summary',)
+            if self._character_bar_state.get(row_key) != summary_state:
+                self._character_bar_state[row_key] = summary_state
+                for bar in (hp_bar, sp_bar):
                     bar.setRange(0, 1)
-                if bar.value() != 0:
                     bar.setValue(0)
-                if bar.format() != '-':
                     bar.setFormat('-')
-                if bar.property('ark_bar_color') != '#777777':
                     bar.setProperty('ark_bar_color', '#777777')
                     bar.setStyleSheet(
                         'QProgressBar::chunk { background-color: #777777; }')
@@ -3944,12 +4269,6 @@ class CoachWindow(QMainWindow):
         hp_max = max(1, int(character.max_hp))
         hp_value = max(0, min(hp_max, int(character.hp)))
         hp_text = f'{character.hp:.{decimals["hp"]}f}/{character.max_hp:.{decimals["hp"]}f}'
-        if hp_bar.maximum() != hp_max:
-            hp_bar.setMaximum(hp_max)
-        if hp_bar.value() != hp_value:
-            hp_bar.setValue(hp_value)
-        if hp_bar.format() != hp_text:
-            hp_bar.setFormat(hp_text)
         hp_ratio = character.hp / character.max_hp if character.max_hp > 0 else 0
         color = '#5cb85c' if hp_ratio > 0.5 else ('#f0ad4e' if hp_ratio > 0.2 else '#d9534f')
         if not character.alive:
@@ -3962,29 +4281,36 @@ class CoachWindow(QMainWindow):
         sp_max = max(1, int(character.max_sp))
         sp_value = max(0, min(sp_max, int(character.sp)))
         sp_text = f'{character.sp:.{decimals["sp"]}f}/{character.max_sp}'
-        if sp_bar.maximum() != sp_max:
+        bar_state = (hp_max, hp_value, hp_text, color,
+                     sp_max, sp_value, sp_text)
+        if self._character_bar_state.get(row_key) != bar_state:
+            self._character_bar_state[row_key] = bar_state
+            hp_bar.setMaximum(hp_max)
+            hp_bar.setValue(hp_value)
+            hp_bar.setFormat(hp_text)
             sp_bar.setMaximum(sp_max)
-        if sp_bar.value() != sp_value:
             sp_bar.setValue(sp_value)
-        if sp_bar.format() != sp_text:
             sp_bar.setFormat(sp_text)
-        if sp_bar.property('ark_bar_color') != '#4ca3dd':
-            sp_bar.setProperty('ark_bar_color', '#4ca3dd')
-            sp_bar.setStyleSheet(
-                'QProgressBar::chunk { background-color: #4ca3dd; }')
+            if sp_bar.property('ark_bar_color') != '#4ca3dd':
+                sp_bar.setProperty('ark_bar_color', '#4ca3dd')
+                sp_bar.setStyleSheet(
+                    'QProgressBar::chunk { background-color: #4ca3dd; }')
 
-        skill_text = format_character_column(
-            'skill', character, decimals, row)
-        lines = skill_text.count('\n')
-        if self._character_skill_lines.get(character.addr) != lines:
-            self._character_skill_lines[character.addr] = lines
-            tbl.resizeRowToContents(row)
+        if 'skill' in visible_keys:
+            skill_text = self._character_cell_state.get(
+                (row_key, 'skill'), '')
+            lines = skill_text.count('\n')
+            if self._character_skill_lines.get(character.addr) != lines:
+                self._character_skill_lines[character.addr] = lines
+                tbl.resizeRowToContents(row)
 
     def _on_character_filter(self, _checked: bool) -> None:
         self.character_table.setRowCount(0)
         self._character_rows.clear()
         self._character_bar_colors.clear()
         self._character_skill_lines.clear()
+        self._character_cell_state.clear()
+        self._character_bar_state.clear()
         self._render_character_table(self._character_last)
 
     def _on_unattributed_damage_tracking(self, checked: bool) -> None:
@@ -4013,6 +4339,8 @@ class CoachWindow(QMainWindow):
         if dialog.exec() == QDialog.Accepted:
             self._character_dec.update(dialog.values())
             self._character_widths_fitted = False
+            self._character_cell_state.clear()
+            self._character_bar_state.clear()
             self._render_character_table(self._character_last)
 
     def _apply_character_column_visibility(self) -> None:
@@ -4049,6 +4377,7 @@ class CoachWindow(QMainWindow):
         self._apply_character_column_visibility()
         self._apply_character_column_order()
         self._character_widths_fitted = False
+        self._character_cell_state.clear()
         self._render_character_table(self._character_last)
         if not self._character_last:
             self._fit_character_columns()

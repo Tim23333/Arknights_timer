@@ -293,22 +293,24 @@
 
 ## 11. 波次与敌人生成【确（本地数据）+ 2026-08-06 修正】
 
-- **波次顺序衔接（已修正）**：wave i 在 wave i-1 的最后一个事件时间 +
-  wave i-1.postDelay + wave i.preDelay 之后开始。旧 bundle 的 additive
-  模型把所有波次的 preDelay 都相对战斗开始累加（多波次关卡全部挤到 t≈0），
-  已废弃；模拟器现在优先用原始关卡 waves 按本模型重建时间轴。
-- **波内 fragment 为并发流（【推断】）**：每个 fragment 的 preDelay 相对
-  波开始，action 在 `fragment_start + action.preDelay + i*interval` 生成
-  count 个敌人（i=0..count-1），routeIndex 指定路线。dump.cs Scheduler
-  字段（m_waveStartTime/m_fragmentStartTime/actionStartTime 快照 +
-  m_actionQueue + m_inWavePostDelay + WaitForPredelay/WaitForPostDelay/
-  ExecuteActionQueue 协程）支持该模型；若对拍现网发现 fragment 改为
-  顺序执行，只需改 build_wave_timeline 的 fragment 计时基准。
+- **运行时波次加载（已修正）**：wave i 的所有 fragment 动作队列排空后，调度器
+  进入本波清场等待；只有 `managedByScheduler=true` 且 `dontBlockWave=false` 的
+  敌人全部死亡/进蓝门/被 `ReleaseEnemyFromCurrentWave` 释放，才执行 postDelay，
+  再加载 wave i+1 并等待其 preDelay。`maxTimeWaitingForNextWave>0` 时清场等待
+  受该秒数上限约束；-1 表示无上限。静态 `build_wave_timeline` 只提供“不计清场
+  等待”的最早时间预览，实际战斗使用 `RuntimeWaveScheduler` 动态推进。
+- **波内 fragment 顺序执行（已校准）**：`Scheduler._DealWave` 逐个 yield
+  `_DealFragment`；后者先等待 fragment.preDelay，再构造动作队列并 yield
+  `ExecuteActionQueue`，动作队列排空后才返回并开始下一个 fragment。action 在
+  `fragment_start + action.preDelay + i*interval` 生成 count 个敌人
+  （i=0..count-1），routeIndex 指定路线。此前将全部 fragment.preDelay 错当成
+  相对波开始，导致 main_05-10 第 5 个 fragment 的浮士德在 t=11 提前生成；
+  按当前 GameAssembly.dll 原生调度器校准后为 t=114。
 - **同帧生成顺序（"不存在同时出现"）**：同一 tick 内按
   `(t, wave, fragment, action, seq)` 确定性顺序逐个创建（seq 为 count 内
   序号）；spawn 事件在 waves 阶段最先处理，早于敌人/干员行动。
-- `maxTimeWaitingForNextWave` 语义未确认（全量数据均为 -1，暂按"无上限"
-  处理）；waveEnd 取该波所有事件（含 STORY/OPERA 等）的最大时间。
+- `blockFragment` 阻塞的是异步 action executor 的完成回调，不是等待生成的敌人死亡；
+  当前模拟器动作 executor 均同步完成，所以动作队列排空即可进入下一 fragment。
 - enemyDbRefs{id, level, useDb} 决定实际敌人数值（enemy_database 按等级覆盖）；
   敌人死亡/进蓝门扣生命值（lifePointReduce；蓝门=1）。
 
@@ -485,16 +487,16 @@
   叠到 t≈0（wave preDelay 相加模型），而实际游戏波次必须顺序衔接。
   例 main_08-17：旧模型 wave1 5~29s、wave2 11~39s（重叠）；正确模型
   wave1 53~77s、wave2 97~125s、wave3 128~153s。
-- `ark_emulator/waves.py`：新增 `build_wave_timeline(raw_waves)`（波次顺序
-  衔接、波内 fragment 并发、同帧 (wave,fragment,action,seq) 排序）；
+- `ark_emulator/waves.py`：新增 `build_wave_timeline(raw_waves)`（波次与
+  fragment 顺序衔接、同帧 (wave,fragment,action,seq) 排序）；
   `WaveScheduler` 对输入时间轴做同一确定性排序。
 - `battle.py`：有原始 waves 时优先重建时间轴，无则回退 bundle 时间轴
   （自定义关卡不受影响）。
 - `ark_parser/enemy/build_sim_bundle.py`：同步修正生成器（供未来重新生成
   bundle；当前已入库的 108MB bundle 仍是旧模型，模拟器已不依赖它）。
 - 测试 `tests/test_wave_timing.py`：单波手算时间、多波顺序不重叠、同帧
-  顺序确定性、模拟器端到端（wave1 首敌在 53s 而非 8s 生成）。
-- 遗留：`maxTimeWaitingForNextWave` 精确语义；fragment 并发的现网对拍验证。
+  顺序确定性、模拟器端到端，以及 main_05-10 浮士德 t=114 回归断言。
+- 遗留：`maxTimeWaitingForNextWave` 精确语义。
 
 ## 2026-08-06 费用回复计时器精确化【已实现（dump.cs + 本地数据）】
 

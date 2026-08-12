@@ -674,6 +674,10 @@ class OperatorSkillRun:
     def to_dict(self):
         return {"skillId": self.skill_id, "name": self.name,
                 "equippedIndex": getattr(self, "controller_index", None),
+                "equipped": getattr(
+                    getattr(self.op, "skill_controller", None),
+                    "equipped_index", None) ==
+                    getattr(self, "controller_index", None),
                 "spType": self.sp_type, "spCost": self.sp_cost,
                 "maxSp": round(self.max_sp, 3),
                 "maxChargeTime": self.max_charge_time,

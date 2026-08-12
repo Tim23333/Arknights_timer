@@ -95,14 +95,16 @@ class Simulator:
         return self.snapshot()
 
     # ---- player actions ----
-    def deploy(self, char_id, row, col, direction=1, auto_summon=False):
+    def deploy(self, char_id, row, col, direction=1, auto_summon=False,
+               skill_index=None):
         """Deploy an operator; returns (ok, inst_id or reason).
 
         auto_summon=True also places the operator's bound summon (e.g.
         Kal'tsit's Mon3tr) on the first free neighbouring tile.
         """
         return self.battle.deploy(char_id, row, col, direction,
-                                  auto_summon=auto_summon)
+                                  auto_summon=auto_summon,
+                                  skill_index=skill_index)
 
     def deploy_summon(self, char_id, row, col, direction=1, owner=None,
                       skill_index=None):

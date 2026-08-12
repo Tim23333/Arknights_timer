@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """Wave timing tests (MECHANICS section 11).
 
-Covers: chained-wave model (waves sequential, fragments concurrent within a
-wave), deterministic intra-tick spawn order, hand-computed single-wave
-timing, and emulator end-to-end timing.
+Covers: chained-wave model (waves and fragments sequential), deterministic
+intra-tick spawn order, hand-computed single-wave timing, and emulator
+end-to-end timing.
 """
 import os
 import sys
@@ -11,7 +11,8 @@ import json
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from ark_emulator.waves import build_wave_timeline, WaveScheduler
+from ark_emulator.waves import (build_wave_timeline, WaveScheduler,
+                                RuntimeWaveScheduler)
 from ark_emulator import Simulator
 from ark_emulator.consts import TIME_ROUGH_LOGIC_RATE
 from ark_emulator.events import EventType
@@ -32,18 +33,32 @@ def test_single_wave_expected_times():
     spawns = [e for e in tl if e.get("actionType") == "SPAWN"]
     assert len(tl) == 36 and len(spawns) == 33
     assert spawns[0]["t"] == 3.0                       # first gopro_2
-    assert spawns[-1]["t"] == 61.0                     # last wteeth (17+20+24)
-    # fragment 2 is wave-relative (pre=17): act0 slime at 20, wteeth at 32
+    assert spawns[-1]["t"] == 137.0                    # last wteeth
+    # Fragment 1 drains at t=76; fragment 2 then waits preDelay=17 and its
+    # first spawn action waits another 3 seconds.
     frag2 = {e["action"]: e for e in tl
              if e.get("wave") == 0 and e.get("fragment") == 2
              and e.get("actionType") == "SPAWN" and e.get("seq") == 0}
-    assert frag2[0]["t"] == 20.0
-    assert frag2[1]["t"] == 32.0
-    assert frag2[4]["t"] == 37.0
-    # mocock spawns (frag1 act5 / frag2 act5) at 49 and 44
+    assert frag2[0]["t"] == 96.0
+    assert frag2[1]["t"] == 108.0
+    assert frag2[4]["t"] == 113.0
+    # mocock spawns (frag1 act5 / frag2 act5) at 76 and 120
     mocock = [e for e in tl if e.get("key") == "enemy_1028_mocock"
               and e.get("actionType") == "SPAWN"]
-    assert [e["t"] for e in mocock] == [44.0, 49.0]
+    assert [e["t"] for e in mocock] == [76.0, 120.0]
+
+
+def test_main_05_10_faust_waits_for_preceding_fragments():
+    """Faust belongs to fragment 4 and must not be spawned at battle start."""
+    tl = build_wave_timeline(_raw_waves("level_main_05-10"))
+    faust = [e for e in tl
+             if e.get("key") == "enemy_1508_faust"
+             and e.get("actionType") == "SPAWN"]
+    assert len(faust) == 1
+    assert faust[0]["fragment"] == 4
+    assert faust[0]["fragmentStart"] == 111.0
+    assert faust[0]["t"] == 114.0             # + action preDelay 3
+    assert all(e["t"] >= 114.0 for e in faust)
 
 
 def test_multi_wave_sequential():
@@ -60,12 +75,14 @@ def test_multi_wave_sequential():
         last = max(e["t"] for e in evs)
         assert first >= prev_last, (wi, first, prev_last)
         prev_last = max(prev_last, last)
-    # exact chained anchors: wave1 starts 5s after wave0's last spawn
+    # Exact chained anchors: wave 0's final non-SPAWN action is at 190;
+    # wave 1 starts after its 5-second preDelay.
     w0 = [e for e in tl if e.get("wave") == 0 and e.get("actionType") == "SPAWN"]
     w1 = [e for e in tl if e.get("wave") == 1 and e.get("actionType") == "SPAWN"]
-    assert max(e["t"] for e in w0) == 48.0
-    assert min(e["t"] for e in w1) == 53.0
-    assert min(e["t"] for e in w1) - max(e["t"] for e in w0) == 5.0
+    assert max(e["t"] for e in w0) == 188.0
+    assert min(e["t"] for e in w1) == 195.0
+    assert max(e["t"] for e in by_wave[0]) == 190.0
+    assert min(e["t"] for e in by_wave[1]) == 195.0
 
 
 def test_same_tick_order_deterministic():
@@ -86,13 +103,13 @@ def test_same_tick_order_deterministic():
 
 
 def test_emulator_wave_chain_integration():
-    """End-to-end: the simulator spawns wave1 only after wave0 finished."""
+    """End-to-end: wave 1 waits until wave 0's blockers have left."""
     sim = Simulator(level_id="level_main_08-17")
     b = sim.battle
     b.life_point = 1000.0
     spawn_events = []
     last_seq = 0
-    while b.tick < 60 * 30 and not b.finished:
+    while b.tick < 195 * 30 and not b.finished:
         b.tick_once()
         for ev in b.events.snapshot_events(since_seq=last_seq):
             if ev["type"] == EventType.ENEMY_SPAWN:
@@ -101,14 +118,82 @@ def test_emulator_wave_chain_integration():
             last_seq = b.events.log[-1].seq
     # wave0 first enemy at t=0 (recorded tick is +1 after tick_once)
     assert spawn_events[0][0] in (0, 1), spawn_events[0]
-    w0_last = max(t for t, k in spawn_events if k != "enemy_1108_uterer")
-    # wave-1 uterer group spawns at tick 1590 (t=53.0), not earlier; the
-    # same key also appears in wave 0 so filter to after wave 0 ended
-    late = [t for t, k in spawn_events
-            if k == "enemy_1108_uterer" and t >= 1500]
-    assert late, "no wave-1 enemies spawned"
-    assert min(late) >= 1589, min(late)
-    assert w0_last <= 48 * 30 + 1, w0_last
+    # The old flattened scheduler started wave 1 at 195s even though the
+    # first-wave boss was still alive. Runtime loading must stop here.
+    st = b.waves.status()
+    assert st["phase"] == "waiting_wave_clear", st
+    assert st["currentWave"] == 1 and st["waitingEnemies"] >= 1, st
+    assert not [t for t, _ in spawn_events if t >= 190 * 30]
+
+    # Once the blocking enemy leaves, wave 1 is loaded, waits its 5-second
+    # preDelay, then executes its own fragment queue.
+    cleared_at = b.tick / TIME_ROUGH_LOGIC_RATE
+    for e in b.enemies:
+        if getattr(e, "_wave_index", None) == 0:
+            e.dead = True
+    while b.tick < (cleared_at + 6) * 30 and not b.finished:
+        b.tick_once()
+    st = b.waves.status()
+    assert st["currentWave"] == 2, st
+    assert st["waveLoadedAt"] >= cleared_at, st
+
+
+def test_main_05_10_runtime_loads_faust_fragment_after_previous_queue():
+    """Faust is queued only after fragment 3 drains and fragment 4 waits."""
+    sim = Simulator(level_id="level_main_05-10")
+    b = sim.battle
+    b.life_point = 1000.0
+    while b.tick < 103 * 30:
+        b.tick_once()
+    assert b.waves.status()["currentFragment"] == 4
+    assert not any(e.enemy_key == "enemy_1508_faust" for e in b.enemies)
+
+    b.tick_once()  # execute the t=103 tail and begin fragment-4 preDelay
+    st = b.waves.status()
+    assert st["phase"] == "fragment_pre_delay", st
+    assert st["currentFragment"] == 5, st
+    assert st["nextTransitionAt"] == 111.0, st
+
+    while b.tick < 114 * 30:
+        b.tick_once()
+    assert not any(e.enemy_key == "enemy_1508_faust" for e in b.enemies)
+    b.tick_once()
+    faust = [e for e in b.enemies if e.enemy_key == "enemy_1508_faust"]
+    assert len(faust) == 1
+    assert faust[0]._fragment_start_time == 111.0
+
+
+class _BlockingEnemy:
+    dead = False
+    _managed_by_scheduler = True
+    _wave_index = 0
+    _fragment_index = 0
+    _dont_block_wave = False
+    _block_fragment = False
+    _released_from_wave = False
+    _track_next_wave = False
+
+
+def test_runtime_wave_positive_max_wait_forces_next_wave():
+    """A positive max wait releases the next wave even with a blocker."""
+    waves = [
+        {"preDelay": 0, "postDelay": 0,
+         "maxTimeWaitingForNextWave": 2.0,
+         "fragments": [{"preDelay": 0, "actions": []}]},
+        {"preDelay": 1.0, "postDelay": 0,
+         "maxTimeWaitingForNextWave": -1.0,
+         "fragments": [{"preDelay": 0, "actions": []}]},
+    ]
+    battle = _FakeBattle(1)
+    battle.enemies = [_BlockingEnemy()]
+    sched = RuntimeWaveScheduler(waves, battle, rng=battle.rng)
+    sched.update()
+    assert sched.status()["phase"] == "waiting_wave_clear"
+    battle.tick = 60
+    sched.update()
+    st = sched.status()
+    assert st["currentWave"] == 2 and st["phase"] == "wave_pre_delay", st
+    assert st["waveLoadedAt"] == 2.0 and st["waveStartedAt"] == 3.0, st
 
 
 def test_hidden_group_preserved_in_timeline():
@@ -136,7 +221,7 @@ def test_hidden_group_difficulty_gating():
         skipped = []
         spawned = {"enemy_1182_flasrt_2": 0, "enemy_1183_mlasrt_2": 0}
         last_seq = 0
-        while b.tick < 800 and not b.finished:
+        while b.tick < 200 * 30 and not b.finished:
             b.tick_once()
             for ev in b.events.snapshot_events(since_seq=last_seq):
                 if ev["type"] == "hidden_group_action_skipped":
@@ -404,7 +489,7 @@ def test_random_group_end_to_end_spawn():
         b.life_point = 10000.0
         spawned = []
         last_seq = 0
-        while b.tick < 30 * 60 and not b.finished:
+        while b.tick < 220 * 30 and not b.finished:
             b.tick_once()
             for ev in b.events.snapshot_events(since_seq=last_seq):
                 if ev["type"] == EventType.ENEMY_SPAWN:

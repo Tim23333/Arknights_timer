@@ -320,7 +320,7 @@ RNG 27272 共存隔离）；干员中文名走 `char_names.load_char_names`，�
 
 ### 内存通道（adb 方案）
 
-复用 `tools/enemy_health/memcore.py` 的 `MemCore`（adb + memsrv/`dd` 读 Android
+复用 `tools/enemy_health/memcore.py` 的 `MemCore`（ADB 控制面 + memsrv v4 读 Android
 进程 `/proc/<pid>/mem`）。游戏指针是 Android guest 虚拟地址，宿主机 pymem 直接读
 模拟器进程无法解引用（旧方案不可行的根因），必须在设备侧读取。**不需要 Windows
 管理员权限**，需要 MuMu 模拟器 adb root 可用。
@@ -372,8 +372,8 @@ BattleLogger；ReplayController 由 BattleController 字段区 klass 名扫描�
 - 一条命令装齐（含 PyInstaller / numpy / ziglang / UnityPy）：
   `pip install -r backend/requirements.txt`
 - 清单分组：运行时（PySide6/pymem/psutil/websockets）、资源解包（UnityPy）、
-  可选加速（numpy，缺失自动回退纯 Python）、打包构建（pyinstaller/ziglang，
-  ziglang 仅 memsrv.c 改动后重编设备侧内存服务用，缺失不阻断打包）
+可选加速（numpy，缺失自动回退纯 Python）、打包构建（pyinstaller/ziglang；
+ziglang 用于在 memsrv.c 改动后重编唯一支持的设备侧 v4 服务，缺失会终止打包）
 
 ### 打包命令
 
@@ -408,7 +408,7 @@ python build_exe.py --skip-frontend
 落盘。“一键打包日志”会生成含会话日志、环境诊断、运行状态与偏移版本的 ZIP。
 
 打包流程：步骤 0 若 `tools/enemy_health/memsrv.c` 有更新会用 ziglang 自动重编
-`bin/memsrv`（失败不阻断，运行时回退 sh+dd 慢速模式）；步骤 0.5 构建前端
+`bin/memsrv`；v4 是唯一内存后端，编译失败会终止打包。步骤 0.5 构建前端
 排轴工具页面（`frontend/` 下 `npm run build` → `backend/app/static`，
 未装 npm 或构建失败不阻断，沿用已提交产物，`--skip-frontend` 可跳过），
 随后把 static 复制为快照 `build/_static_snapshot`，正式版/测试版统一从快照
@@ -531,7 +531,7 @@ RngService` 即可，注入自己的 reader（实现 read/regions）还能离线
 
 读取后端与性能（MuMu 实测）：
 
-- adb 后端复用 `tools/enemy_health` 的 `MemCore` + 设备侧 **memsrv v2**
+- adb 后端复用 `tools/enemy_health` 的 `MemCore` + 设备侧 **memsrv v4**
   （`memsrv.c` 新增模式扫描命令：u64 地址对齐哈希快路径，4MB 滑动窗口 + 64B 重叠；
   客户端 `TcpChannel.scan()`，按二进制大小判断版本自动重推）。
   设备侧扫描吞吐 ~300-600 MB/s：1.9GB gc 分区 ~2s，3.7GB 全 rw ~12s；
@@ -543,7 +543,7 @@ RngService` 即可，注入自己的 reader（实现 read/regions）还能离线
 - 扫描命中后的批量校验（数组 klass 指针预筛 + 内容读回）必须走 `read_many`
   批量读（单次 TCP 往返）；逐命中单读是毫秒级往返，几千候选会拖到几分钟。
 - memsrv 单次扫描上限 MAX_NEEDLES=256（超出直接断连）：针数过多时客户端
-  按 256 分批合并结果；旧版服务无扫描命令时自动回退逐块 python 扫描。
+  按 256 分批合并结果。v4 是唯一 ADB 内存后端，协议或通道失败直接报错。
 
 文件：`rng_engines.py`（算法复刻）、`memscan.py`（静态链 + 启发式定位）、
 `tracker.py`（轮询/恢复/预测）、`adb_reader.py`（adb 后端封装）、

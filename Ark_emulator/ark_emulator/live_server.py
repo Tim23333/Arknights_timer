@@ -19,6 +19,7 @@ Clients:
 
 import json
 import queue
+import socket
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -26,18 +27,37 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from .api import Simulator
 
 
+class _ExclusiveThreadingHTTPServer(ThreadingHTTPServer):
+    """Do not silently share a listening port with a stale web console.
+
+    Windows may otherwise let two ``HTTPServer`` processes bind the same
+    localhost port, leaving the browser connected to whichever process bound
+    first.  That made freshly changed map/route code appear to have no effect.
+    """
+
+    allow_reuse_address = False
+
+    def server_bind(self):
+        if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            self.socket.setsockopt(socket.SOL_SOCKET,
+                                   socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
+
 class LiveServer:
     """Advances a Simulator in a background thread and broadcasts state."""
 
-    def __init__(self, sim, port=8794, speed=1.0, tick_interval=0.01,
+    def __init__(self, sim, port=8794, speed=1.0, tick_interval=1.0 / 30.0,
                  level=None, squad=None, custom_enemies=None):
         self.sim = sim
         self.port = port
         self.speed = speed
         self.tick_interval = tick_interval
-        self._level = level
-        self._squad = squad
-        self._custom = custom_enemies
+        self._level = level or getattr(sim, "level_id", None)
+        self._squad = list(squad if squad is not None else
+                           (getattr(sim, "squad", None) or []))
+        self._custom = list(custom_enemies if custom_enemies is not None else
+                           (getattr(sim, "custom_enemies", None) or []))
         self._queue = queue.Queue()
         self._snapshot = None
         self._subscribers = set()
@@ -64,6 +84,97 @@ class LiveServer:
         out.sort(key=lambda x: (not x["key"].startswith(q), x["key"]))
         return out
 
+    def _operator_search(self, q=""):
+        """Search deployable operators for the web squad/deployment UI."""
+        try:
+            characters = self.sim.store.characters
+        except Exception:
+            characters = {}
+        q = (q or "").strip().lower()
+        out = []
+        for char_id, data in characters.items():
+            if not char_id.startswith("char_") or not isinstance(data, dict):
+                continue
+            position = data.get("position")
+            if position not in (1, 2):
+                continue
+            name = data.get("name") or char_id
+            appellation = data.get("appellation") or ""
+            haystack = "%s %s %s" % (char_id, name, appellation)
+            if q and q not in haystack.lower():
+                continue
+            phases = data.get("phases") or []
+            max_phase = max(0, len(phases) - 1)
+            max_level = 1
+            if phases:
+                max_level = int((phases[max_phase] or {}).get("maxLevel") or 1)
+            cost = 0
+            try:
+                frames = (phases[max_phase] or {}).get(
+                    "attributesKeyFrames") or []
+                cost = int((((frames[-1] or {}).get("data") or {}).get(
+                    "cost")) or 0)
+            except (IndexError, TypeError, ValueError):
+                cost = 0
+            skills = []
+            for item in data.get("skills") or []:
+                skill_id = (item or {}).get("skillId")
+                if not skill_id:
+                    continue
+                skill = self.sim.store.character_skills.get(skill_id) or {}
+                levels = skill.get("levels") or []
+                skills.append({
+                    "skillId": skill_id,
+                    "name": ((levels[-1] or {}).get("name") if levels else
+                             None) or skill_id,
+                })
+            out.append({
+                "charId": char_id, "name": name,
+                "appellation": appellation,
+                "rarity": int(data.get("rarity") or 0) + 1,
+                "position": position,
+                "subProfession": data.get("subProfessionId"),
+                "maxPhase": max_phase, "maxLevel": max_level,
+                "cost": cost, "skills": skills,
+            })
+        out.sort(key=lambda x: (
+            not (x["charId"].lower().startswith(q) or
+                 str(x["name"]).lower().startswith(q)),
+            -x["rarity"], x["charId"]))
+        return out[:120] if q else out
+
+    def update_squad(self, squad):
+        """Update the live deck without resetting the current battle.
+
+        Existing deployed units keep their instantiated attributes; future
+        deployments use the new phase/level/skill configuration immediately.
+        """
+        cleaned = []
+        seen = set()
+        for item in squad or []:
+            if not isinstance(item, dict):
+                continue
+            char_id = item.get("charId")
+            if not char_id or char_id in seen:
+                continue
+            seen.add(char_id)
+            cleaned.append(dict(item))
+        self._squad = cleaned
+        self.sim.squad = self._squad
+        if getattr(self.sim, "_battle", None) is not None:
+            self.sim.battle.squad = self._squad
+        return self._squad
+
+    def _level_meta(self):
+        level_id = getattr(self.sim, "level_id", None)
+        stages = self.sim.store.bundle.get("stages") or {}
+        for stage_id, info in stages.items():
+            if isinstance(info, dict) and info.get("levelId") == level_id:
+                return {"stageId": stage_id, "levelId": level_id,
+                        "name": info.get("name") or stage_id}
+        return {"stageId": level_id, "levelId": level_id,
+                "name": "自定义关卡" if level_id == "custom" else level_id}
+
     def reload(self, level_id):
         """Recreate the simulator for a new level (keeps server running)."""
         try:
@@ -74,8 +185,12 @@ class LiveServer:
             # do not stall on lazy BattleController construction
             _ = sim.battle
             self.sim = sim
+            self._level = level_id
+            self._last_seq = 0
+            return True, None
         except Exception as e:
             print(f"[live_server] reload failed: {e}")
+            return False, str(e)
 
     def reload_custom(self, level_dict):
         """Run a custom level definition (keeps server running)."""
@@ -87,16 +202,22 @@ class LiveServer:
             _ = sim.battle
             self.sim = sim
             self._level = "custom"
+            self._last_seq = 0
+            return True, None
         except Exception as e:
             print(f"[live_server] custom reload failed: {e}")
+            return False, str(e)
 
     # ---- lifecycle ----
     def start(self):
+        # Bind first.  If another console owns the port, fail immediately
+        # without leaving an invisible simulator thread behind.
+        handler = self._make_handler()
+        self._httpd = _ExclusiveThreadingHTTPServer(
+            ("127.0.0.1", self.port), handler)
         self._running = True
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._thread.start()
-        handler = self._make_handler()
-        self._httpd = ThreadingHTTPServer(("127.0.0.1", self.port), handler)
         threading.Thread(target=self._httpd.serve_forever, daemon=True).start()
 
     def stop(self):
@@ -119,7 +240,12 @@ class LiveServer:
             try:
                 if not self.sim.battle.paused and not self.sim.battle.finished:
                     self.sim.battle.tick_once()
-                snap = self.sim.snapshot()
+                # SSE batches carry incremental events.  Without since_seq the
+                # complete event history would be serialized every frame.
+                snap = self.sim.snapshot(since_seq=self._last_seq)
+                events = snap.get("events") or []
+                if events:
+                    self._last_seq = max(e.get("seq", 0) for e in events)
                 batch = {
                     "tick": self.sim.tick,
                     "t": round(self.sim.tick / 30.0, 4),
@@ -150,16 +276,19 @@ class LiveServer:
                 body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
                 self.send_response(status)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Cache-Control", "no-store")
                 self.send_header("Content-Length", str(len(body)))
                 self.end_headers()
                 self.wfile.write(body)
 
             def do_GET(self):
-                if self.path == "/" or self.path.startswith("/index"):
+                request_path = self.path.split("?", 1)[0]
+                if request_path == "/" or request_path.startswith("/index"):
                     from .web_ui import page_html
                     body = page_html().encode("utf-8")
                     self.send_response(200)
                     self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header("Cache-Control", "no-store")
                     self.send_header("Content-Length", str(len(body)))
                     self.end_headers()
                     self.wfile.write(body)
@@ -168,8 +297,11 @@ class LiveServer:
                     q = parse_qs(urlparse(self.path).query)
                     lid = (q.get("level") or [None])[0]
                     if lid:
-                        srv.reload(lid)
-                    self._send_json({"ok": True, "level": lid})
+                        ok, error = srv.reload(lid)
+                    else:
+                        ok, error = False, "missing level"
+                    self._send_json({"ok": ok, "level": lid,
+                                     "error": error}, 200 if ok else 400)
                 elif self.path.startswith("/snapshot"):
                     self._send_json(srv.sim.snapshot())
                 elif self.path.startswith("/events"):
@@ -203,21 +335,29 @@ class LiveServer:
                         srv._subscribers.discard(q)
                 elif self.path.startswith("/levels"):
                     from .config import list_levels, search_levels
-                    if "q=" in self.path:
-                        kw = self.path.split("q=")[1].split("&")[0]
-                        self._send_json({"hits": search_levels(kw)})
+                    from urllib.parse import parse_qs, urlparse
+                    params = parse_qs(urlparse(self.path).query)
+                    if "q" in params:
+                        kw = (params.get("q") or [""])[0]
+                        self._send_json({"hits": search_levels(kw)[:200]})
                     else:
                         self._send_json({"levels": list_levels()})
                 elif self.path.startswith("/enemies"):
-                    q = ""
-                    if "q=" in self.path:
-                        q = self.path.split("q=")[1].split("&")[0]
+                    from urllib.parse import parse_qs, urlparse
+                    q = (parse_qs(urlparse(self.path).query).get("q")
+                         or [""])[0]
                     self._send_json({"hits": srv._enemy_search(q)})
+                elif self.path.startswith("/operators"):
+                    from urllib.parse import parse_qs, urlparse
+                    q = (parse_qs(urlparse(self.path).query).get("q")
+                         or [""])[0]
+                    self._send_json({"hits": srv._operator_search(q)})
                 elif self.path == "/editor":
                     from .web_ui import editor_html
                     body = editor_html().encode("utf-8")
                     self.send_response(200)
                     self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header("Cache-Control", "no-store")
                     self.send_header("Content-Length", str(len(body)))
                     self.end_headers()
                     self.wfile.write(body)
@@ -237,6 +377,9 @@ class LiveServer:
                         "paused": srv.sim.battle.paused,
                         "finished": srv.sim.battle.finished,
                         "lifePoint": srv.sim.battle.life_point,
+                        "speed": srv.speed,
+                        "level": srv._level_meta(),
+                        "squad": srv._squad,
                     })
                 else:
                     self._send_json({"error": "not found"}, 404)
@@ -254,7 +397,7 @@ class LiveServer:
                                      "path": path})
                 elif self.path == "/config":
                     if "squad" in body:
-                        srv._squad = body.get("squad") or []
+                        srv.update_squad(body.get("squad") or [])
                     if "custom_enemies" in body:
                         srv._custom = body.get("custom_enemies") or []
                     # apply to current sim if it supports squad refresh
@@ -268,12 +411,16 @@ class LiveServer:
                         print(f"[live_server] config apply failed: {e}")
                     self._send_json({"ok": True, "squad": srv._squad,
                                      "custom_enemies": srv._custom})
+                elif self.path == "/squad":
+                    squad = srv.update_squad(body.get("squad") or [])
+                    self._send_json({"ok": True, "squad": squad})
                 elif self.path == "/action":
                     act = body.get("action")
                     if act == "deploy":
                         ok, res = srv.sim.deploy(
                             body.get("charId"), body.get("row", 0),
-                            body.get("col", 0), body.get("direction", 1))
+                            body.get("col", 0), body.get("direction", 1),
+                            skill_index=body.get("skillIndex"))
                         self._send_json({"ok": ok, "result": res})
                     elif act == "withdraw":
                         ok, res = srv.sim.withdraw(body.get("instId"))
@@ -301,6 +448,26 @@ class LiveServer:
                     elif act == "resume":
                         srv.sim.resume()
                         self._send_json({"ok": True})
+                    elif act == "speed":
+                        try:
+                            srv.speed = max(0.1, min(8.0, float(
+                                body.get("speed", 1.0) or 1.0)))
+                        except (TypeError, ValueError):
+                            self._send_json({"ok": False,
+                                             "result": "invalid_speed"}, 400)
+                            return
+                        self._send_json({"ok": True, "speed": srv.speed})
+                    elif act == "restart":
+                        was_paused = srv.sim.battle.paused
+                        if getattr(srv.sim, "custom_level", None) is not None:
+                            ok, error = srv.reload_custom(srv.sim.custom_level)
+                        else:
+                            ok, error = srv.reload(getattr(
+                                srv.sim, "level_id", None) or srv._level)
+                        if ok and was_paused:
+                            srv.sim.pause()
+                        self._send_json({"ok": ok, "error": error},
+                                        200 if ok else 400)
                     elif act == "step":
                         n = int(body.get("n", 1) or 1)
                         snap = srv.sim.step(n)

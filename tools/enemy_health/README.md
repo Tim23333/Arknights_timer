@@ -19,26 +19,13 @@ MuMu 模拟器 (Android)
 同样可用。地址链缓存到 `enemy_cache.pkl`。旧的内容特征全堆扫描仍保留为版本漂移
 兜底；它会将第一遍扫描落盘为临时快照，后续阶段在本地重放。
 
-> **大块读取注意（2026-07-22 修复）**：`dd` 大块读取必须头/尾 4KB 页对齐、
-> 中部整 4MB 块——若把起点/终点 4MB 对齐到区域外的未映射洞，`dd` 直接 EIO
-> 导致整块 32MB 丢失（确定性，非偶发）。此前扫描时灵时不灵，根因就是关键
-> 对象所在区域起点前恰好有/没有洞。扫描结束若丢块会打印警告。
-
-轮询分两档：
-- **完整 60Hz `poll_fast()`**（后端主程序默认）：常驻 TCP 通道（`adb forward tcp:27271`）；
+内存读取只有一个后端：
+- **memsrv v4 `poll_fast()`**（后端主程序默认）：常驻 TCP 通道（`adb forward tcp:27271`）；
   详情重型数据使用独立 `27274` 通道，不阻塞主轮询。
-  通道有两种模式，自动探测：
-  - **memsrv 模式（默认，实测中位 ~0.7ms/帧）**：`memsrv.c` 交叉编译出的 aarch64 静态
-    小程序（`bin/memsrv`），由 `nc -L` 以 socket 为 stdin/stdout 启动，
-    打开 `/proc/<pid>/mem` 一次后每次读取仅一个 pread 系统调用。协议为
-    小端二进制（横幅 `AKMSRV1\n`；请求 `u64 N + N×{addr,size}`；响应
-    `i64 n + data`，n<0 为 -errno）。
-    **v2（横幅 `AKMSRV2\n`）** 在读取协议不变的基础上新增设备侧模式扫描命令
-    （`u64 SCAN_MAGIC + {addr,size,k} + k×{len,needle}` → `k×{count, addrs}`，
-    k≤256，单针命中上限 65536），供 `tools/ak_live_rng` 全盘定位使用；
-    客户端按二进制大小判断版本变更并自动重推重启服务，v1/旧 sh 服务自动降级。
-  - **sh 兜底模式（~45ms/请求）**：`nc -L sh`，每请求 fork 一次 dd。
-    memsrv 缺失或握手失败时自动使用；若 memsrv 可部署会自动升级。
+  `memsrv.c` 交叉编译为 aarch64 静态程序（`bin/memsrv`），由 `nc -L` 以
+  socket 为 stdin/stdout 启动并只接受 `AKMSRV4` 握手。v4 提供合并读取、
+  常驻依赖计划、设备内帧一致性重试与模式扫描。旧协议、shell/dd 和 ADB 内存读取均不支持；
+  二进制缺失、版本不符或通道失败会直接报错并停止发布快照。
   后端按 `1/60s` 固定截止线采样。敌方与我方容器、全部实体主块、属性、状态、
   技能/Trigger/CD、Buff 状态、阻挡、伤害统计、Scheduler 队列及战斗时钟均在
   每个采样帧读取。上一帧地址只用于把多层指针链提前组织进同一个 batch；每层
@@ -46,10 +33,8 @@ MuMu 模拟器 (Android)
   完整敌我读取后再次读取固定逻辑帧；若暂停边界跨帧则立即重读，连续三次仍不
   一致的混合快照不会发布到界面。GUI 信号只保留最新完整快照，避免旧帧排队。
   状态栏显示实际采样 Hz、完整帧耗时、batch/读取数、I/O 耗时和暂停帧一致性。
-  只有 memsrv 高速通道会标记为“完整60Hz”；sh/ADB 兜底会明确显示未达标。
+  只有 memsrv v4 会标记为“完整60Hz”。
   新刷敌人的 ID 字符串等不可变身份数据仍只在首次解析，失败会在后续帧重试。
-- **慢速 `poll()`**：每次约 1-2 秒，逐对象 `adb exec-out`，作为兜底路径。
-
 ### memsrv 构建（已提供预编译 `bin/memsrv`，仅修改 memsrv.c 后需要）
 
 ```bash
@@ -144,7 +129,7 @@ enemy_health/
 ├── main.py              # CLI 扫描诊断入口
 ├── memcore.py           # ADB 内存读取底层 (maps/dd/字符串/klass/TcpChannel)
 ├── memsrv.c             # 设备侧常驻内存服务源码 (zig cc 交叉编译为 bin/memsrv)
-├── enemy_reader.py      # 敌人定位(并行bootstrap) + 轮询(poll_fast/poll)
+├── enemy_reader.py      # 敌人定位（并行 bootstrap）+ memsrv v4 轮询（poll_fast）
 ├── enemy_db.py          # enemy_handbook_table 解析 (ID->中文名/编号/描述)
 ├── game_structs.py      # IL2CPP 结构偏移定义 (全部实测验证)
 └── README.md            # 本文件
@@ -205,10 +190,15 @@ backend/app/enemy_buff_descriptions.py # Buff/GlobalBuff 中文说明
 下一动作只在游戏真正写入 `CombatWrapper.m_pickedAbility`（或 Spine 已排队下一段
 动画）时标记为“确定”。`AttackWrapper` 没有独立 next 槽；游戏尚未决定时，界面会
 按反汇编得到的原始规则计算：MoveState 先检查阻挡（COMBAT），否则进入 ATTACK
-目标搜索；`Wrapper._PickAbility` 在检查 family/可用性之前锁定 `m_skills` 的最高
-priority 组，然后逐项检查启用、CD、触发次数、父 UnitMode、沉默、SP、family 与
-TargetTrigger。该组全部失败才回退普通攻击/基础战斗能力；同优先级有多个通过项时，
-客户端会使用战斗 RNG 随机择一，不是取列表首项，也不是取 CD 最短项。
+目标搜索；`Wrapper._PickAbility` 按 priority 从高到低逐组检查启用、CD、触发次数、
+父 UnitMode、沉默、SP、family 与 TargetTrigger。某组全部失败会继续检查下一组；
+所有组都失败才回退普通攻击/基础战斗能力。同优先级有多个通过项时，客户端会使用
+战斗 RNG 随机择一，不是取列表首项，也不是取 CD 最短项。
+
+敌人表“下一动作预测”固定显示两行：`Boss规则` 复现上述敌人自身规则但不加入当前
+技能 CD，用来展示其代码配置的首选下一发；`含CD` 在相同规则上加入实时技能 CD、
+次数、SP、沉默、父模式及触发状态，用来展示当前真正可执行的候选。游戏已写入
+`m_pickedAbility` 或排队动画时，两行都显示该权威结果。
 
 读取器不会直接调用游戏的 `TargetTrigger.Search`，因为该函数可能刷新目标、消费随机
 数或触发关卡分支。`AlwaysTrigger`、`NeverTrigger`、Selector 已缓存有效目标以及

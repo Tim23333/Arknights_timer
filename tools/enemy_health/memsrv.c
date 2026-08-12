@@ -4,9 +4,19 @@
 // 打开 /proc/<pid>/mem 一次, 之后每次读取仅一个 pread 系统调用。
 //
 // 协议 (全部小端):
-//   启动: 写出 8 字节横幅 "AKMSRV2\n" (v2: 支持扫描命令)
-//   读取: u64 N (1..4096), 随后 N 组 { u64 addr, u64 size }
-//         响应: 每组 { i64 n, u8 data[n] };  n<0 表示 -errno, n<size 为短读
+//   启动: 写出 8 字节横幅 "AKMSRV4\n"
+//   合并读取: u64 == PACKED_READ_MAGIC, u64 N, 随后 N 组 { u64 addr, u64 size }
+//         响应: { u64 N, i64 lengths[N], u8 data[sum(max(length, 0))] }
+//         整批响应只做一次 write，避免每个小读取分别写长度和数据。
+//   读取事务: u64 == TXN_READ_MAGIC, u64 N, 随后 N 组 TxnReq
+//         TxnReq = { u32 kind, u32 ref, i64 value, i64 offset, u64 size }
+//         kind=0: addr=(u64)value；kind=1: addr=u64(result[ref]+offset)+value。
+//         各操作在设备侧按顺序执行，响应格式同合并读取。
+//   上传常驻计划: u64 == PLAN_UPLOAD_MAGIC, { u64 N, u64 guard_addr,
+//         u32 guard_size, u32 max_attempts }, 随后 N 组 TxnReq；响应 u64 N。
+//   执行常驻计划: u64 == PLAN_EXEC_MAGIC；设备内部以 guard 起止值检查完整帧，
+//         跨帧时原地重读，响应 { u64 attempts, u64 guard_start, u64 guard_end }
+//         后紧跟合并读取响应。稳定帧不再上传数百项事务描述。
 //   扫描: u64 == SCAN_MAGIC, 随后 { u64 addr, u64 size, u32 k },
 //         随后 k 组 { u32 len, u8 needle[len] } (len ≤ 64)
 //         响应: k 组 { i64 count, count × u64 hit_addr }
@@ -31,6 +41,30 @@
 #define MAX_HITS 65536              // 单针最多命中数
 #define OVERLAP (MAX_NEEDLE_LEN)    // 扫描分块重叠, 覆盖跨界命中
 #define SCAN_MAGIC 0xFFFFFFFFFFFFFFFFULL
+#define PACKED_READ_MAGIC 0xFFFFFFFFFFFFFFFEULL
+#define TXN_READ_MAGIC 0xFFFFFFFFFFFFFFFDULL
+#define PLAN_UPLOAD_MAGIC 0xFFFFFFFFFFFFFFFCULL
+#define PLAN_EXEC_MAGIC 0xFFFFFFFFFFFFFFFBULL
+#define MAX_BATCH_BYTES (64 * 1024 * 1024)
+
+typedef struct {
+    uint64_t addr;
+    uint64_t size;
+} ReadReq;
+
+typedef struct {
+    uint32_t kind;
+    uint32_t ref;
+    int64_t value;
+    int64_t offset;
+    uint64_t size;
+} TxnReq;
+
+static TxnReq *saved_plan = NULL;
+static uint64_t saved_plan_count = 0;
+static uint64_t saved_guard_addr = 0;
+static uint32_t saved_guard_size = 0;
+static uint32_t saved_max_attempts = 1;
 
 static int read_exact(int fd, void *buf, size_t n) {
     char *p = (char *)buf;
@@ -57,6 +91,102 @@ static int write_exact(int fd, const void *buf, size_t n) {
         p += r; n -= (size_t)r;
     }
     return 0;
+}
+
+/*
+ * 执行合并读取并一次写出完整响应。result_offsets/result_lengths 同时保留
+ * 每个结果在响应缓冲区中的位置，供后续事务操作引用前序读取出的指针。
+ */
+static int build_packed_response(int fd, const ReadReq *reqs, uint64_t n,
+                                 int allow_refs, const TxnReq *txn,
+                                 uint8_t **response_out, size_t *response_size_out) {
+    if (n == 0 || n > MAX_REQ) return -1;
+
+    uint64_t declared = 0;
+    for (uint64_t i = 0; i < n; i++) {
+        uint64_t size = allow_refs ? txn[i].size : reqs[i].size;
+        if (size == 0 || size > MAX_SIZE) continue;
+        if (declared > MAX_BATCH_BYTES - size) return -1;
+        declared += size;
+    }
+    size_t header_size = sizeof(uint64_t) + (size_t)n * sizeof(int64_t);
+    if (header_size > SIZE_MAX - (size_t)declared) return -1;
+    uint8_t *response = (uint8_t *)malloc(header_size + (size_t)declared);
+    uint64_t *result_offsets = (uint64_t *)calloc((size_t)n, sizeof(uint64_t));
+    if (!response || !result_offsets) {
+        free(response);
+        free(result_offsets);
+        return -1;
+    }
+    int64_t *lengths = (int64_t *)(response + sizeof(uint64_t));
+    memcpy(response, &n, sizeof(n));
+    uint64_t payload_used = 0;
+
+    for (uint64_t i = 0; i < n; i++) {
+        uint64_t addr = 0;
+        uint64_t size = allow_refs ? txn[i].size : reqs[i].size;
+        int invalid = (size == 0 || size > MAX_SIZE);
+        if (!invalid && !allow_refs) {
+            addr = reqs[i].addr;
+        } else if (!invalid && txn[i].kind == 0) {
+            addr = (uint64_t)txn[i].value;
+        } else if (!invalid && txn[i].kind == 1) {
+            uint32_t ref = txn[i].ref;
+            int64_t off = txn[i].offset;
+            if (ref >= i || lengths[ref] <= 0 || off < 0
+                    || (uint64_t)off + sizeof(uint64_t) > (uint64_t)lengths[ref]) {
+                invalid = 1;
+            } else {
+                uint64_t base = 0;
+                memcpy(&base, response + result_offsets[ref] + (size_t)off,
+                       sizeof(base));
+                addr = base + (uint64_t)txn[i].value;
+            }
+        } else if (!invalid) {
+            invalid = 1;
+        }
+
+        result_offsets[i] = (uint64_t)header_size + payload_used;
+        if (invalid) {
+            lengths[i] = -EINVAL;
+            continue;
+        }
+        ssize_t r;
+        do {
+            r = pread(fd, response + header_size + payload_used,
+                      (size_t)size, (off_t)addr);
+        } while (r < 0 && errno == EINTR);
+        lengths[i] = r < 0 ? -(int64_t)errno : (int64_t)r;
+        if (r > 0) payload_used += (uint64_t)r;
+    }
+
+    free(result_offsets);
+    *response_out = response;
+    *response_size_out = header_size + (size_t)payload_used;
+    return 0;
+}
+
+static int do_packed_reads(int fd, const ReadReq *reqs, uint64_t n,
+                           int allow_refs, const TxnReq *txn) {
+    uint8_t *response = NULL;
+    size_t response_size = 0;
+    if (build_packed_response(fd, reqs, n, allow_refs, txn,
+                              &response, &response_size) < 0)
+        return -1;
+    int rc = write_exact(1, response, response_size);
+    free(response);
+    return rc;
+}
+
+static uint64_t read_guard_value(int fd, uint64_t addr, uint32_t size) {
+    uint64_t value = UINT64_MAX;
+    if (!addr || (size != 4 && size != 8)) return value;
+    value = 0;
+    ssize_t r;
+    do {
+        r = pread(fd, &value, size, (off_t)addr);
+    } while (r < 0 && errno == EINTR);
+    return r == (ssize_t)size ? value : UINT64_MAX;
 }
 
 // ---------------- 扫描 ----------------
@@ -171,9 +301,8 @@ int main(int argc, char **argv) {
     int fd = open(path, O_RDONLY);
     if (fd < 0) return 3;
 
-    if (write_exact(1, "AKMSRV2\n", 8) < 0) return 4;
+    if (write_exact(1, "AKMSRV4\n", 8) < 0) return 4;
 
-    static uint8_t buf[MAX_SIZE];
     for (;;) {
         uint64_t n = 0;
         if (read_exact(0, &n, 8) < 0) return 0;   // EOF: 客户端断开
@@ -207,24 +336,99 @@ int main(int argc, char **argv) {
             continue;
         }
 
-        // ---- 读取命令 ----
-        if (n > MAX_REQ) return 5;
-        for (uint64_t i = 0; i < n; i++) {
-            uint64_t req[2];
-            if (read_exact(0, req, 16) < 0) return 0;
-            uint64_t addr = req[0], size = req[1];
-            int64_t got;
-            if (size == 0 || size > MAX_SIZE) {
-                got = -EINVAL;
-            } else {
-                ssize_t r;
-                do {
-                    r = pread(fd, buf, size, (off_t)addr);
-                } while (r < 0 && errno == EINTR);
-                got = r < 0 ? -(int64_t)errno : (int64_t)r;
+        if (n == PACKED_READ_MAGIC) {
+            uint64_t count = 0;
+            if (read_exact(0, &count, sizeof(count)) < 0) return 0;
+            if (count == 0 || count > MAX_REQ) return 11;
+            ReadReq *reqs = (ReadReq *)malloc((size_t)count * sizeof(ReadReq));
+            if (!reqs) return 12;
+            if (read_exact(0, reqs, (size_t)count * sizeof(ReadReq)) < 0) {
+                free(reqs);
+                return 0;
             }
-            if (write_exact(1, &got, 8) < 0) return 6;
-            if (got > 0 && write_exact(1, buf, (size_t)got) < 0) return 6;
+            int rc = do_packed_reads(fd, reqs, count, 0, NULL);
+            free(reqs);
+            if (rc < 0) return 13;
+            continue;
         }
+
+        if (n == TXN_READ_MAGIC) {
+            uint64_t count = 0;
+            if (read_exact(0, &count, sizeof(count)) < 0) return 0;
+            if (count == 0 || count > MAX_REQ) return 14;
+            TxnReq *txn = (TxnReq *)malloc((size_t)count * sizeof(TxnReq));
+            if (!txn) return 15;
+            if (read_exact(0, txn, (size_t)count * sizeof(TxnReq)) < 0) {
+                free(txn);
+                return 0;
+            }
+            int rc = do_packed_reads(fd, NULL, count, 1, txn);
+            free(txn);
+            if (rc < 0) return 16;
+            continue;
+        }
+
+        if (n == PLAN_UPLOAD_MAGIC) {
+            uint64_t header[2];
+            uint32_t options[2];
+            if (read_exact(0, header, sizeof(header)) < 0) return 0;
+            if (read_exact(0, options, sizeof(options)) < 0) return 0;
+            uint64_t count = header[0];
+            if (count == 0 || count > MAX_REQ) return 18;
+            if (options[0] != 0 && options[0] != 4 && options[0] != 8) return 19;
+            TxnReq *plan = malloc((size_t)count * sizeof(TxnReq));
+            if (!plan) return 20;
+            if (read_exact(0, plan, (size_t)count * sizeof(TxnReq)) < 0) {
+                free(plan);
+                return 0;
+            }
+            free(saved_plan);
+            saved_plan = plan;
+            saved_plan_count = count;
+            saved_guard_addr = header[1];
+            saved_guard_size = options[0];
+            saved_max_attempts = options[1];
+            if (saved_max_attempts < 1) saved_max_attempts = 1;
+            if (saved_max_attempts > 8) saved_max_attempts = 8;
+            if (write_exact(1, &saved_plan_count, sizeof(saved_plan_count)) < 0)
+                return 21;
+            continue;
+        }
+
+        if (n == PLAN_EXEC_MAGIC) {
+            if (!saved_plan || saved_plan_count == 0) return 22;
+            uint8_t *response = NULL;
+            size_t response_size = 0;
+            uint64_t attempts = 0;
+            uint64_t guard_start = UINT64_MAX, guard_end = UINT64_MAX;
+            for (uint32_t attempt = 0; attempt < saved_max_attempts; attempt++) {
+                free(response);
+                response = NULL;
+                response_size = 0;
+                guard_start = read_guard_value(
+                    fd, saved_guard_addr, saved_guard_size);
+                if (build_packed_response(fd, NULL, saved_plan_count, 1,
+                                          saved_plan, &response,
+                                          &response_size) < 0) {
+                    free(response);
+                    return 23;
+                }
+                guard_end = read_guard_value(fd, saved_guard_addr, saved_guard_size);
+                attempts = (uint64_t)attempt + 1;
+                if (!saved_guard_addr || (guard_start != UINT64_MAX
+                        && guard_start == guard_end)) break;
+            }
+            uint64_t meta[3] = { attempts, guard_start, guard_end };
+            if (write_exact(1, meta, sizeof(meta)) < 0
+                    || write_exact(1, response, response_size) < 0) {
+                free(response);
+                return 24;
+            }
+            free(response);
+            continue;
+        }
+
+        // 不兼容旧协议的普通读取命令，也不把未知命令解释为请求数量。
+        return 25;
     }
 }

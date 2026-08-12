@@ -72,6 +72,9 @@ class RngService:
         self._on_status = on_status or (lambda m: None)
         self._lock = threading.Lock()
         self._trackers = {}                 # engine_id -> EngineTracker
+        # locate() 会替换 tracker；先把每条角色的最近 600 次真实消耗合并到这里，
+        # 防止关卡结束/新一局重扫时最后历史随旧 tracker 一起丢失。
+        self._last_by_role = {}
         self._selected_id = None
         self._stop = threading.Event()
         self._rescan = threading.Event()
@@ -128,6 +131,7 @@ class RngService:
     def locate(self):
         """定位引擎并重建 tracker 组 (缓存优先, 成功写缓存)。"""
         self._status("扫描定位 RNG 引擎 ...")
+        self._preserve_trackers()
         if self.backend == "adb" and self.reader is not None:
             try:
                 self.reader.ensure_alive(status=self._status)
@@ -169,6 +173,18 @@ class RngService:
                      (self.via, self._selected_id, sel.engine["label"]))
         return True
 
+    def _preserve_trackers(self):
+        with self._lock:
+            trackers = list(self._trackers.values())
+        for tracker in trackers:
+            role = tracker.engine.get("role")
+            if not role:
+                continue
+            data = tracker.snapshot(600, 0)
+            old = self._last_by_role.get(role)
+            if old is None or data.get("total", 0) >= old.get("total", 0):
+                self._last_by_role[role] = data
+
     def _try_cache(self):
         """读取 ak_rng_cache.pkl 并逐引擎校验; 全部失效返回 []。"""
         try:
@@ -209,6 +225,7 @@ class RngService:
         self._thread.start()
 
     def stop(self):
+        self._preserve_trackers()
         self._stop.set()
         with self._rescan_lock:
             self._rescan_generation += 1
@@ -319,6 +336,7 @@ class RngService:
             trackers = list(self._trackers.values())
             sel = self._trackers.get(self._selected_id)
             sel_id = self._selected_id
+            preserved = dict(self._last_by_role)
         engines = []
         for t in trackers:
             s = t.snapshot(0, 0)
@@ -343,7 +361,23 @@ class RngService:
                 details[engine_id] = tracker.snapshot(history_len, predict_len)
             return details[engine_id]
 
-        by_role = {role: detail_for(t) for role, t in role_trackers.items()}
+        by_role = {}
+        for role, tracker in role_trackers.items():
+            current = detail_for(tracker)
+            cached = preserved.get(role)
+            if cached and current and cached.get("id") == current.get("id"):
+                merged = {
+                    item.get("seq"): item for item in cached.get("history", ())
+                    if item.get("seq") is not None
+                }
+                for item in current.get("history", ()):
+                    if item.get("seq") is not None:
+                        merged[item["seq"]] = item
+                current = dict(current)
+                current["history"] = [
+                    merged[key] for key in sorted(merged)[-history_len:]
+                ] if history_len else []
+            by_role[role] = current
         return {
             "process": self.process,
             "via": self.via,

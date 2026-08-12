@@ -187,8 +187,25 @@ setInterval(tick,300);tick();
 </html>"""
 
 
+_PAGE_HTML = None
+
+
 def page_html():
-    return PAGE
+    """Serve the standalone real-time battlefield console.
+
+    Keeping the page outside this Python module makes the UI maintainable
+    without changing the dependency-free LiveServer architecture.
+    """
+    global _PAGE_HTML
+    if _PAGE_HTML is None:
+        p = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                         "web_battle_page.html")
+        try:
+            with io.open(p, encoding="utf-8-sig") as f:
+                _PAGE_HTML = f.read()
+        except Exception:
+            _PAGE_HTML = PAGE
+    return _PAGE_HTML
 
 
 EDITOR_PAGE = """<!DOCTYPE html>

@@ -24,6 +24,7 @@ from backend.desktop_app import (
     RNG_HISTORY_LEN,
     _build_rng_export_payload,
 )
+from backend.app.battle_session_cache import BattleSessionCache
 
 
 def _role_snapshot(role, cursor, total, value, raw):
@@ -51,6 +52,9 @@ class _FakeRngService:
             'selected': self.by_role.get('imp'),
         }
 
+    def stop(self):
+        pass
+
 
 class RngUiTests(unittest.TestCase):
     @classmethod
@@ -71,6 +75,11 @@ class RngUiTests(unittest.TestCase):
             rng_trivial_hist_table=QTableWidget(0, 2),
             btn_rng_imp_export=QPushButton(),
             btn_rng_trivial_export=QPushButton(),
+            _battle_cache=BattleSessionCache(),
+            btn_battle_cache_export=QPushButton(),
+            btn_stage_enemy_export=QPushButton(),
+            btn_deploy_export=QPushButton(),
+            _sync_battle_cache_controls=lambda: None,
             lbl_rng_status=QLabel(),
             _tlog=lambda *_args: None,
         )
@@ -173,6 +182,22 @@ class RngUiTests(unittest.TestCase):
             self.assertEqual(visual['role'], 'trivial')
             self.assertEqual(combat['history'][0]['value'], 0.125)
             self.assertEqual(visual['history'][0]['value'], 0.875)
+
+    def test_cached_rng_can_export_after_service_is_gone(self):
+        holder = self._holder(None)
+        holder._battle_cache.observe_rng({
+            'imp': _role_snapshot('imp', 4, 12, 0.125, 0x1234),
+        })
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / 'cached.json'
+            with patch.object(
+                    QFileDialog, 'getSaveFileName',
+                    return_value=(str(path), 'JSON (*.json)')):
+                CoachWindow._on_rng_export(holder, 'imp')
+            payload = json.loads(path.read_text(encoding='utf-8'))
+        self.assertEqual(payload['role'], 'imp')
+        self.assertEqual(payload['history'][0]['value'], 0.125)
+        self.assertIn('本局最终缓存', holder.lbl_rng_status.text())
 
 
 if __name__ == '__main__':

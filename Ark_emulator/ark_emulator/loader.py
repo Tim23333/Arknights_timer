@@ -932,7 +932,13 @@ def _deep_merge(base, delta):
 
 def merged_map(store, level_id):
     """Merge sim bundle map (rows/cols/cells) with raw level tiles to return
-    {rows, cols, cells, tiles}."""
+    {rows, cols, cells, tiles}.
+
+    ``mapData.tiles`` is a tile-definition array in the game's bottom-based
+    grid order.  The compact sim bundle's ``cells`` array is the authoritative
+    top-based, row-major lookup used by the renderer.  Returning the raw tile
+    array directly used to mirror every official map vertically.
+    """
     sim = store.sim_level(level_id)
     raw = store.raw_level(level_id)
     m = sim.get("map") or {}
@@ -940,22 +946,39 @@ def merged_map(store, level_id):
         # metadata-only levels (script tables, placeholder entries) carry no
         # playable map; expose an empty grid so loading does not crash.
         m = {"rows": 0, "cols": 0, "cells": []}
-    tiles = raw.get("mapData", {}).get("tiles")
+    rows = int(m.get("rows") or 0)
+    cols = int(m.get("cols") or 0)
+    cells = m.get("cells") or []
     out = {
-        "rows": m.get("rows"),
-        "cols": m.get("cols"),
-        "cells": m.get("cells"),
-        "tiles": tiles,
+        "rows": rows,
+        "cols": cols,
+        "cells": cells,
+        "tiles": raw.get("mapData", {}).get("tiles") or [],
     }
     return out
 
 
 def merged_routes(store, level_id):
-    """Merge sim routes (positions/flags) with raw checkpoints list."""
+    """Merge routes and normalize game GridPosition rows for the web grid.
+
+    Game ``GridPosition`` uses row 0 at the bottom, while ``GameMap`` and the
+    browser use row 0 at the top.  Positions are converted exactly once here;
+    all public deploy/action coordinates are consequently top-based.
+    """
     sim = store.sim_level(level_id)
     raw = store.raw_level(level_id)
     sim_routes = sim.get("routes") or []
     raw_routes = raw.get("routes") or []
+    rows = int((sim.get("map") or {}).get("rows") or 0)
+
+    def top_based(pos):
+        if not isinstance(pos, dict):
+            return pos
+        point = json.loads(json.dumps(pos))
+        if rows > 0 and point.get("row") is not None:
+            point["row"] = rows - 1 - int(point["row"])
+        return point
+
     out = []
     for i, r in enumerate(sim_routes):
         if not isinstance(r, dict):
@@ -967,8 +990,18 @@ def merged_routes(store, level_id):
             continue
         entry = json.loads(json.dumps(r))
         if i < len(raw_routes) and isinstance(raw_routes[i], dict):
-            entry["checkpoints"] = raw_routes[i].get("checkpoints") or []
+            # DataStore caches parsed levels.  Deep-copy before coordinate
+            # normalization so repeated Simulator instances never flip the
+            # cached source data back and forth.
+            entry["checkpoints"] = json.loads(json.dumps(
+                raw_routes[i].get("checkpoints") or []))
         else:
             entry["checkpoints"] = []
+        entry["startPosition"] = top_based(entry.get("startPosition"))
+        entry["endPosition"] = top_based(entry.get("endPosition"))
+        for checkpoint in entry["checkpoints"]:
+            if isinstance(checkpoint, dict):
+                checkpoint["position"] = top_based(
+                    checkpoint.get("position"))
         out.append(entry)
     return out

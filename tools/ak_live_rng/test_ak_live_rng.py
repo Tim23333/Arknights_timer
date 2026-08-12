@@ -55,7 +55,7 @@ class FakeMem:
 
 
 class FakeScanMem(FakeMem):
-    """模拟设备侧 memsrv v2: scan_regions 直接在缓冲区里搜 (并记录调用次数)。"""
+    """模拟设备侧 memsrv v4: scan_regions 直接在缓冲区里搜 (并记录调用次数)。"""
 
     def __init__(self, size=0x100000):
         super().__init__(size)
@@ -343,27 +343,17 @@ def test_device_scan_path():
     check("scan_regions 被调用", smem.scan_calls > 0, str(smem.scan_calls))
 
     engines_ref, _ = memscan.locate_engines(mem, status=lambda m: None)
-    check("静态链: 设备侧与回退结果一致",
+    check("静态链: 设备侧与本地读取器结果一致",
           sorted(e["obj"] for e in engines) == sorted(e["obj"] for e in engines_ref))
 
     smem2 = FakeScanMem()
     smem2.buf = mem.buf
     eng_dev = memscan.probe_engines(smem2, status=lambda m: None)
     eng_ref = memscan.probe_engines(mem, status=lambda m: None)
-    check("启发式: 设备侧与回退结果一致",
+    check("启发式: 设备侧与本地读取器结果一致",
           sorted(e["obj"] for e in eng_dev) == sorted(e["obj"] for e in eng_ref),
           "%d vs %d" % (len(eng_dev), len(eng_ref)))
     check("启发式: scan_regions 被调用", smem2.scan_calls > 0)
-
-    # scan_regions 返回 None 时 (旧版 memsrv) 自动回退 python 扫描
-    class V1Mem(FakeScanMem):
-        def scan_regions(self, regions, needles):
-            return None
-    v1 = V1Mem()
-    v1.buf = mem.buf
-    engines_v1, via_v1 = memscan.locate_engines(v1, status=lambda m: None)
-    check("v1 回退 python 路径", via_v1 == "static-chain" and len(engines_v1) == 2)
-
 
 # ---------------- 7. 地址缓存校验 ----------------
 

@@ -22,7 +22,7 @@ from .damage import DamageResult, calculate_damage, roll_damage
 from .entities import Enemy, Operator, Token
 from .events import EventBus, EventType
 from .loader import DataStore, merged_map, merged_routes
-from .map import GameMap, TileData
+from .map import GameMap, TileData, materialize_tiles
 from .rng import SystemRandomClone
 from .waves import WaveScheduler
 
@@ -106,7 +106,8 @@ class BattleController:
         else:
             mm = merged_map(self.store, level_id)
             self.map = GameMap(mm["rows"], mm["cols"],
-                               [TileData(i, t) for i, t in enumerate(mm["tiles"] or [])])
+                               materialize_tiles(mm["rows"], mm["cols"],
+                                                 mm["tiles"], mm["cells"]))
             self.routes = merged_routes(self.store, level_id)
 
         # options
@@ -173,13 +174,15 @@ class BattleController:
         # collapses multi-wave levels onto t=0
         raw_waves = self.raw.get("waves")
         if raw_waves:
-            from .waves import build_wave_timeline
-            # random spawn groups are resolved here with the battle key RNG
-            # (one weighted pick per (wave, fragment, groupKey))
-            timeline = build_wave_timeline(raw_waves, rng=self.rng)
+            from .waves import RuntimeWaveScheduler
+            # Parsed official levels use the native-style runtime loader:
+            # fragment queues are loaded sequentially and later waves wait
+            # for the preceding wave's managed enemies to clear.
+            self.waves = RuntimeWaveScheduler(
+                raw_waves, self, rng=self.rng)
         else:
             timeline = self.sim.get("waveTimeline") or []
-        self.waves = WaveScheduler(timeline, self)
+            self.waves = WaveScheduler(timeline, self)
         # level branches (Nodes.MoveNextLevelBranch / PickRandomBranchPhase):
         # per-branch phase cursor + active phase schedulers (BranchRuntime)
         self._branch_cursors = {}
@@ -1585,6 +1588,20 @@ class BattleController:
         enemy = Enemy(key, Attributes(attrs), route_index=route_index,
                       row=sp_row, col=sp_col,
                       level=level, route=route, game_map=self.map)
+        enemy.battle = self
+        enemy._spawn_event = dict(source_ev or {})
+        enemy._wave_start_time = float(
+            (source_ev or {}).get("waveStart", 0.0) or 0.0)
+        enemy._fragment_start_time = float(
+            (source_ev or {}).get("fragmentStart", 0.0) or 0.0)
+        enemy._wave_index = (source_ev or {}).get("wave")
+        enemy._fragment_index = (source_ev or {}).get("fragment")
+        enemy._managed_by_scheduler = (source_ev or {}).get(
+            "managedByScheduler") is not False
+        enemy._dont_block_wave = bool((source_ev or {}).get(
+            "dontBlockWave", False))
+        enemy._block_fragment = bool((source_ev or {}).get(
+            "blockFragment", False))
         enemy.init_route(self.map)
         enemy.is_flying = bool((overrides or {}).get("is_flying")) or \
             self.store.is_flying_enemy(key)
@@ -1641,6 +1658,7 @@ class BattleController:
         enemy = Enemy(key, Attributes(attrs), route_index=route_index,
                       row=row, col=col, route=self.routes[route_index],
                       game_map=self.map)
+        enemy.battle = self
         enemy.init_route(self.map)
         enemy.pos_x, enemy.pos_y = float(col), float(row)
         enemy.on_spawn(self.tick)
@@ -1817,12 +1835,21 @@ class BattleController:
                                    source=enemy, target=enemy)
 
     # ================= operator actions =================
-    def deploy(self, char_id, row, col, direction=1, auto_summon=False):
+    def deploy(self, char_id, row, col, direction=1, auto_summon=False,
+               skill_index=None):
         if len(self.operators) >= self.character_limit:
             return False, "character_limit"
         data = self._char_base(char_id)
         if data is None:
             return False, "no_character_data"
+        sk_data = self._char_skills(char_id)
+        if skill_index is not None:
+            try:
+                skill_index = int(skill_index)
+            except (TypeError, ValueError):
+                return False, "invalid_skill"
+            if skill_index < 0 or skill_index >= len(sk_data):
+                return False, "invalid_skill"
         # melee (position 1) needs ground (buildableType & 1); ranged
         # (position 2) needs highland (buildableType & 2).
         pos = int(data.get("position") or 1)
@@ -1842,11 +1869,16 @@ class BattleController:
         until = self._redeploy_until.get(char_id, 0)
         if self.tick < until:
             return False, "on_cooldown"
-        attrs = self._squad_attrs(char_id, data)
-        entry = self._squad_entry(char_id)
+        # A web deployment may choose a skill for this placement without
+        # rewriting the persistent squad.  All other squad fields still come
+        # from the configured entry.
+        entry = dict(self._squad_entry(char_id))
+        if skill_index is not None:
+            entry["skillIndex"] = skill_index
         phase = int(entry.get("phase", 2) if entry.get("phase") is not None else 2)
         level = int(entry.get("level", 1) or 1)
         potential = int(entry.get("potential", 0) or 0)
+        attrs = self._char_attrs(data, phase, level)
         for k, v in self._potential_bonus(data, potential).items():
             attrs[k] = (attrs.get(k) or 0) + v
         # module (\u6a21\u7ec4) attribute bonuses: squad entry may carry
@@ -1989,7 +2021,6 @@ class BattleController:
                 op.hp = _eff_mhp
         except Exception:
             pass
-        sk_data = self._char_skills(char_id)
         if sk_data:
             from .operator_skills import OperatorSkillController
             levels = entry.get("skillLevels") or []
@@ -2011,6 +2042,7 @@ class BattleController:
         self.emit(self.tick, EventType.DEPLOY,
                   {"charId": char_id, "instId": op.inst_id,
                    "row": row, "col": col, "direction": direction,
+                   "skillIndex": entry.get("skillIndex"),
                    "cost": attrs.get("cost", 0)})
         return True, op.inst_id
 
@@ -4819,6 +4851,7 @@ class BattleController:
                 "finished": self.waves.finished,
                 "nextSpawnAt": self.waves.next_spawn_at(),
                 "randomGroups": getattr(self.waves, "random_groups", []),
+                **self.waves.status(),
             },
             "hiddenGroups": {
                 k: sorted(v) for k, v in (

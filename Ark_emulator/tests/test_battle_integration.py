@@ -91,9 +91,9 @@ def test_blocked_enemy_attacks_blocker():
     sim.run_ticks(15)
     b = sim.battle
     b.battle_cost_add(200)
-    # opA sits on the enemy's next flow step (3,5); opB is off-path (4,4)
+    # opA sits on the enemy's next flow step (3,5); opB is off-path highland
     b.deploy("char_149_scave", 3, 5)
-    b.deploy("char_149_scave", 4, 4)
+    b.deploy("char_002_amiya", 4, 4)
     opA, opB = b.operators
     b.spawn_enemy("enemy_1000_gopro_2", 0)
     enemy = b.enemies[0]
@@ -145,7 +145,7 @@ def test_blocker_only_on_path():
     sim.run_ticks(15)
     b = sim.battle
     b.battle_cost_add(200)
-    b.deploy("char_149_scave", 4, 4)      # off the route
+    b.deploy("char_002_amiya", 4, 4)      # off the route (highland)
     op = b.operators[0]
     b.spawn_enemy("enemy_1000_gopro_2", 0)
     enemy = b.enemies[0]
@@ -165,7 +165,7 @@ def test_battle_stats_tracking():
     b.max_cost = 9999.0
     b.battle_cost_add(500)
     b.deploy("char_149_scave", 3, 4)
-    b.deploy("char_002_amiya", 2, 4)    # highland
+    b.deploy("char_002_amiya", 2, 3)    # highland
     for _ in range(30 * 40):
         b.tick_once()
         for op in list(b.operators):
@@ -233,7 +233,9 @@ def test_victory_with_operators_deployed():
                      ("char_102_texas", 5), ("char_172_svrash", 6)):
         b.deploy(cid, 3, col, direction=3)
     guard = 0
-    while not b.finished and guard < 30 * 120:
+    # Sequential fragments put the final main_01-01 spawn at t=137, so the
+    # battle necessarily runs longer than the old 120-second test ceiling.
+    while not b.finished and guard < 30 * 180:
         b.tick_once()
         guard += 1
     assert b.result == "victory", (b.result, b.tick)

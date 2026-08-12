@@ -49,6 +49,11 @@ class TileData:
         mask = self._passable_override
         if mask is None:
             mask = self.passable_mask
+        # Route gates/teleports are traversable endpoints even though the
+        # exported tile definition can carry passableMask=0.
+        if self.tile_key in ("tile_start", "tile_end", "tile_telin",
+                             "tile_telout"):
+            return True
         if mask is None:
             return True
         return bool(mask & (MotionMask.WALK_ONLY if motion_mode == 0
@@ -108,6 +113,30 @@ class TileData:
         }
 
 
+def materialize_tiles(rows, cols, raw_tiles, cells=None):
+    """Create top-based row-major ``TileData`` objects.
+
+    Official maps expose a bottom-based tile-definition list plus a spatial
+    ``cells`` lookup.  Custom levels normally provide an already-spatial tile
+    list and omit ``cells``.
+    """
+    source = list(raw_tiles or [])
+    lookup = list(cells or [])
+    expected = int(rows or 0) * int(cols or 0)
+    if len(lookup) == expected and source:
+        ordered = []
+        for cell in lookup:
+            try:
+                tile_idx = int(cell)
+            except (TypeError, ValueError):
+                tile_idx = -1
+            ordered.append(source[tile_idx]
+                           if 0 <= tile_idx < len(source) else {})
+    else:
+        ordered = source
+    return [TileData(i, tile) for i, tile in enumerate(ordered)]
+
+
 class GameMap:
     """Grid map with tile lookup and flow-field pathfinding cache.
 
@@ -154,6 +183,10 @@ class GameMap:
             if ni < 0:
                 continue
             t = self.tiles[ni]
+            # Reverse search expands *from* the target.  Official start/end
+            # gates often have passableMask=0 but are valid route endpoints;
+            # let the field leave those source nodes while still preventing
+            # ordinary paths from entering forbidden terrain.
             if not t.passable(motion_mode) or t.is_forbidden:
                 continue
             if dr and dc:
@@ -187,6 +220,9 @@ class GameMap:
             cur = q.popleft()
             inq[cur] = False
             dcur = dist[cur]
+            # ``neighbors`` validates the candidate (the tile that will walk
+            # toward ``cur``).  This is intentionally the reverse edge of the
+            # forward route and allows non-passable gate tiles as targets.
             for ni, cost, _diag in self.neighbors(cur, motion_mode, allow_diagonal):
                 nd = dcur + cost
                 if nd < dist[ni] - 1e-9:
@@ -199,8 +235,12 @@ class GameMap:
         self._dist_map[key] = dist
         return nxt, dist
 
-    def build_route_field(self, route):
-        """Flow field for a route; targets its end tile (fallback: any end)."""
+    def build_route_field(self, route, target_position=None):
+        """Flow field for a route segment.
+
+        ``target_position`` selects a MOVE/PATROL checkpoint.  Omitting it
+        keeps the original final-exit behaviour.
+        """
         _mm = route.get("motionMode") or {}
         if isinstance(_mm, dict):
             motion = _mm.get("value")
@@ -210,8 +250,9 @@ class GameMap:
             motion = None
         motion = 0 if motion in (None, 2) else motion  # E_NUM=2 -> walk default
         allow_diag = bool(route.get("allowDiagonalMove", True))
-        end = route.get("endPosition") or {}
-        end_idx = self.idx(end.get("row", 0), end.get("col", 0))
+        end = target_position or route.get("endPosition") or {}
+        end_idx = self.idx(round(float(end.get("row", 0) or 0)),
+                           round(float(end.get("col", 0) or 0)))
         if end_idx < 0 or self.tiles[end_idx].is_forbidden:
             end_idx = self.end_tiles[0] if self.end_tiles else None
         if end_idx is None:

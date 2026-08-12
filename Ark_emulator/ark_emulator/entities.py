@@ -257,10 +257,12 @@ class Enemy(Unit):
         self._cursor = 0
         self._checkpoint_idx = 0
         self._wait_remaining = 0.0
+        self._waiting_checkpoint_idx = None
         self._patrol = None            # {a, b, target, remaining, total}
         self._next_map = None
         self._dist_map = None
         self._motion_mode = 0
+        self._route_target = None
         self._born_ticks = 0
         self._born_delay = 0.5          # seconds; serialised _delayToBorn
         self.spawn_direction = None
@@ -289,12 +291,50 @@ class Enemy(Unit):
     # ---- lifecycle ----
     def init_route(self, game_map):
         self.game_map = game_map
+        self._refresh_route_field()
+
+    @staticmethod
+    def _checkpoint_type(checkpoint):
+        value = (checkpoint or {}).get("type")
+        if isinstance(value, dict):
+            value = value.get("value", 0)
+        try:
+            return int(value or 0)
+        except (TypeError, ValueError):
+            return 0
+
+    def _checkpoint_target(self, checkpoint):
+        pos = (checkpoint or {}).get("position") or {}
+        offset = (checkpoint or {}).get("reachOffset") or {}
+        return {
+            "row": float(pos.get("row", self.row) or 0) +
+                   float(offset.get("y", 0) or 0),
+            "col": float(pos.get("col", self.col) or 0) +
+                   float(offset.get("x", 0) or 0),
+        }
+
+    def _next_move_checkpoint(self):
+        cps = (self.route or {}).get("checkpoints") or []
+        if self._checkpoint_idx >= len(cps):
+            return None
+        checkpoint = cps[self._checkpoint_idx]
+        return checkpoint if self._checkpoint_type(checkpoint) in (0, 8, 10) \
+            else None
+
+    def _refresh_route_field(self):
+        if self.game_map is None:
+            return
+        checkpoint = self._next_move_checkpoint()
+        self._route_target = (self._checkpoint_target(checkpoint)
+                              if checkpoint is not None
+                              else (self.route.get("endPosition") or {}))
         self._next_map, self._dist_map, self._motion_mode = \
-            game_map.build_route_field(self.route)
+            self.game_map.build_route_field(self.route, self._route_target)
 
     def _target_idx(self):
-        end = self.route.get("endPosition") or {}
-        return self.game_map.idx(end.get("row", 0), end.get("col", 0)) \
+        target = self._route_target or self.route.get("endPosition") or {}
+        return self.game_map.idx(round(target.get("row", 0)),
+                                 round(target.get("col", 0))) \
             if self.game_map else -1
 
     def dist_to_final(self):
@@ -330,8 +370,14 @@ class Enemy(Unit):
     def update_movement(self, dt):
         """Advance along route using flow field. dt = 1/30.
         Returns True if enemy reached the end this tick."""
-        if self.state != EnemyState.MOVE:
+        if self.state not in (EnemyState.MOVE, EnemyState.DISAPPEAR):
             return False
+        # A disappeared enemy still advances its WAIT/APPEAR cursor, but it
+        # cannot walk, block or fight while hidden.
+        disappeared = self.state == EnemyState.DISAPPEAR
+        if disappeared:
+            return self._update_checkpoints(dt, speed=0.0,
+                                            disappeared=True)
         if self.blocked_by is not None:
             return False
         if self.blocked_wait:
@@ -349,10 +395,14 @@ class Enemy(Unit):
         if _ms_min > 0 and speed < _ms_min:
             speed = _ms_min
         if self._ignore_all_but_move_cp:
-            # ignore WAIT/PATROL/DISAPPEAR checkpoints: jump straight to
-            # the flow-field advance (MOVE-type behaviour)
-            self._checkpoint_idx = len(
-                (self.route or {}).get("checkpoints") or [])
+            cps = (self.route or {}).get("checkpoints") or []
+            changed = False
+            while self._checkpoint_idx < len(cps) and \
+                    self._checkpoint_type(cps[self._checkpoint_idx]) != 0:
+                self._checkpoint_idx += 1
+                changed = True
+            if changed:
+                self._refresh_route_field()
         if self.flag(33):                    # FEARED: flee toward spawn
             return self._update_flee(dt, speed)
         if self.flag(41):                    # ATTRACTED: move to source
@@ -375,64 +425,27 @@ class Enemy(Unit):
             if self._trace_toward(tx, ty, dt, speed):
                 self._trace_pos = None
             return False
-        # checkpoint handling (types from extract_level_data.CHECKPOINT_TYPE)
-        cps = self.route.get("checkpoints") or []
-        if self._checkpoint_idx < len(cps):
-            cp = cps[self._checkpoint_idx]
-            ctype = (cp.get("type") or {})
-            if isinstance(ctype, dict):
-                ctype = ctype.get("value", 0)
-            if ctype == 1 or ctype == 3:  # WAIT_FOR_SECONDS /
-                                           # WAIT_CURRENT_FRAGMENT_TIME
-                if self._skip_wait_checkpoint:
-                    self._checkpoint_idx += 1
-                    return False
-                t = cp.get("time") or 0.0
-                if self._wait_remaining <= 0:
-                    self._wait_remaining = t
-                self._wait_remaining -= dt
-                if self._wait_remaining > 0:
-                    return False
-                self._checkpoint_idx += 1
-            elif ctype == 4:  # WAIT_CURRENT_WAVE_TIME (absolute sim time)
-                if self._skip_wait_checkpoint:
-                    self._checkpoint_idx += 1
-                    return False
-                t = float(cp.get("time") or 0.0)
-                if self.battle_time() < t:
-                    return False
-                self._checkpoint_idx += 1
-            elif ctype == 8:  # PATROL_MOVE: walk + patrol back and forth
-                if self._patrol is None:
-                    prev = self._prev_checkpoint_position(cps,
-                                                         self._checkpoint_idx)
-                    a = (self.row, self.col)
-                    b = ((cp.get("position") or {}).get("row", self.row),
-                         (cp.get("position") or {}).get("col", self.col))
-                    total = float(cp.get("time") or 6.0)  # default 6s patrol
-                    self._patrol = {"a": a, "b": b, "target": b,
-                                    "remaining": total, "total": total}
-                return self._update_patrol(dt, speed)
-            elif ctype in (5, 6):  # DISAPPEAR / APPEAR_AT_POS
-                if ctype == 5:
-                    self.state = EnemyState.DISAPPEAR
-                    return False
-                pos = cp.get("position") or {}
-                self.row = pos.get("row", self.row)
-                self.col = pos.get("col", self.col)
-                self.pos_x = float(self.col)
-                self.pos_y = float(self.row)
-                self._checkpoint_idx += 1
-            else:  # MOVE(0) / ALERT(7) / others: advance
-                self._checkpoint_idx += 1
+        if self._update_checkpoints(dt, speed):
+            return False
         if self._next_map is None:
             return False
         idx = self.game_map.idx(self.row, self.col)
         if idx < 0:
             return False
         target = self._target_idx()
-        if idx == target and self.game_map.tiles[idx].is_end:
+        cps = self.route.get("checkpoints") or []
+        if idx == target and self._checkpoint_idx >= len(cps) and \
+                self.game_map.tiles[idx].is_end:
             return True
+        # Flow fields navigate to a tile.  A checkpoint may additionally
+        # carry a sub-tile reachOffset (for example x=-0.5); once inside the
+        # target tile finish that short exact movement instead of stalling on
+        # ``next_map[idx] == idx`` forever.
+        checkpoint = self._next_move_checkpoint()
+        if idx == target and checkpoint is not None:
+            point = self._checkpoint_target(checkpoint)
+            self._update_toward(point["col"], point["row"], dt, speed)
+            return False
         nxt = self._next_map[idx]
         if nxt < 0 or nxt == idx:
             return False
@@ -449,7 +462,8 @@ class Enemy(Unit):
         if dist <= step or dist < 1e-6:
             self.pos_x, self.pos_y = tx, ty
             self.row, self.col = tr, tc
-            if nxt == target and self.game_map.tiles[nxt].is_end:
+            if nxt == target and self._checkpoint_idx >= len(cps) and \
+                    self.game_map.tiles[nxt].is_end:
                 return True
         else:
             self.pos_x += dx / dist * step
@@ -458,6 +472,105 @@ class Enemy(Unit):
         if self.spawned_tick % UPDATE_POS_TICK == 0:
             self._sync_tile()
         return False
+
+    def _update_checkpoints(self, dt, speed, disappeared=False):
+        """Advance the route cursor.
+
+        Returns True when movement for this tick has been consumed (waiting,
+        teleporting, patrolling, or reaching a MOVE point).  MOVE checkpoints
+        are actual segment targets and are never skipped.
+        """
+        cps = self.route.get("checkpoints") or []
+        if self._checkpoint_idx >= len(cps):
+            return disappeared
+        cp = cps[self._checkpoint_idx]
+        ctype = self._checkpoint_type(cp)
+
+        if ctype in (0, 10):  # MOVE / MAP_OFFSET_MOVE
+            if disappeared:
+                return True
+            target = self._checkpoint_target(cp)
+            reach = max(0.03, float(cp.get("reachDistance") or 0.0))
+            dx = float(target["col"]) - self.pos_x
+            dy = float(target["row"]) - self.pos_y
+            if (dx * dx + dy * dy) ** 0.5 <= reach:
+                self.pos_x = float(target["col"])
+                self.pos_y = float(target["row"])
+                self._sync_tile()
+                self._checkpoint_idx += 1
+                self._refresh_route_field()
+                return True
+            # ``_next_map`` already targets this checkpoint; walking happens
+            # in the common flow-field block below.
+            return False
+
+        if ctype == 8:  # PATROL_MOVE
+            if disappeared:
+                return True
+            if self._patrol is None:
+                prev = self._prev_checkpoint_position(
+                    cps, self._checkpoint_idx)
+                target = self._checkpoint_target(cp)
+                a = prev if prev is not None else (self.row, self.col)
+                b = (target["row"], target["col"])
+                total = float(cp.get("time") or 6.0)
+                self._patrol = {"a": a, "b": b, "target": b,
+                                "remaining": total, "total": total}
+            self._update_patrol(dt, speed)
+            return True
+
+        if ctype in (1, 2, 3, 4, 9):
+            if self._skip_wait_checkpoint:
+                self._finish_checkpoint()
+                return True
+            wait_until = float(cp.get("time") or 0.0)
+            now = self.battle_time()
+            if ctype == 1:  # relative duration
+                if self._waiting_checkpoint_idx != self._checkpoint_idx:
+                    self._waiting_checkpoint_idx = self._checkpoint_idx
+                    self._wait_remaining = wait_until
+                self._wait_remaining -= dt
+                if self._wait_remaining > 1e-9:
+                    return True
+            elif ctype == 2:  # global play time
+                if now < wait_until:
+                    return True
+            elif ctype == 3:  # current fragment elapsed time
+                start = float(getattr(self, "_fragment_start_time", 0.0)
+                              or 0.0)
+                if now - start < wait_until:
+                    return True
+            elif ctype == 4:  # current wave elapsed time
+                start = float(getattr(self, "_wave_start_time", 0.0) or 0.0)
+                if now - start < wait_until:
+                    return True
+            else:  # WAIT_BOSSRUSH_WAVE; no boss-rush scheduler yet
+                return True
+            self._finish_checkpoint()
+            return True
+
+        if ctype == 5:  # DISAPPEAR; continue ticking until APPEAR_AT_POS
+            self.state = EnemyState.DISAPPEAR
+            self._finish_checkpoint()
+            return True
+        if ctype == 6:  # APPEAR_AT_POS
+            target = self._checkpoint_target(cp)
+            self.pos_x = float(target["col"])
+            self.pos_y = float(target["row"])
+            self._sync_tile()
+            self.state = EnemyState.MOVE
+            self._finish_checkpoint()
+            return True
+
+        # ALERT and unknown cursor nodes are instantaneous.
+        self._finish_checkpoint()
+        return True
+
+    def _finish_checkpoint(self):
+        self._checkpoint_idx += 1
+        self._wait_remaining = 0.0
+        self._waiting_checkpoint_idx = None
+        self._refresh_route_field()
 
     def _update_flee(self, dt, speed):
         """FEARED: run toward the route start (away from the front line)."""
@@ -468,13 +581,19 @@ class Enemy(Unit):
 
     def battle_time(self):
         """Simulation time in seconds (for absolute-time checkpoints)."""
+        battle = getattr(self, "battle", None)
+        if battle is not None:
+            return float(getattr(battle, "tick", 0) or 0) / 30.0
         return self.spawned_tick / 30.0
 
     def _prev_checkpoint_position(self, cps, idx):
         for i in range(idx - 1, -1, -1):
+            if self._checkpoint_type(cps[i]) not in (0, 6, 8, 10):
+                continue
             pos = cps[i].get("position") or {}
             if pos:
-                return (pos.get("row", 0), pos.get("col", 0))
+                return (float(pos.get("row", 0)),
+                        float(pos.get("col", 0)))
         return (self.row, self.col)
 
     def _update_patrol(self, dt, speed):
@@ -499,7 +618,7 @@ class Enemy(Unit):
                 self._sync_tile()
         if p["remaining"] <= 0:
             self._patrol = None
-            self._checkpoint_idx += 1
+            self._finish_checkpoint()
             return False
         return False
 
@@ -625,6 +744,14 @@ class Enemy(Unit):
             "state": STATE_NAMES.get(self.state, str(self.state)),
             "stateId": self.state,
             "routeIndex": self.route_index,
+            "checkpointIndex": self._checkpoint_idx,
+            "checkpointCount": len((self.route or {}).get(
+                "checkpoints") or []),
+            "routeTarget": ({
+                "row": round(float(self._route_target.get("row", 0)), 4),
+                "col": round(float(self._route_target.get("col", 0)), 4),
+            } if isinstance(self._route_target, dict) else None),
+            "waitRemaining": round(float(self._wait_remaining or 0.0), 3),
             "blockedBy": self.blocked_by.inst_id if self.blocked_by else None,
             "moveSpeed": round(self.attributes.get("moveSpeed") * self.move_speed, 4),
             "attackTimer": round(self.attack_timer, 4),
@@ -727,6 +854,8 @@ class Operator(Unit):
                              getattr(self, "_funnel_drones", [])],
             "skills": self.skill_controller.skill_states()
             if self.skill_controller else [],
+            "equippedSkillIndex": self.skill_controller.equipped_index
+            if self.skill_controller else None,
             "alias": getattr(self, "alias", None),
             "reborn": bool(getattr(self, "_reborn_state", False)),
             "visionLost": bool(getattr(self, "_vision_lost", False)),

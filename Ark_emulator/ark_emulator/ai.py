@@ -3,6 +3,15 @@
 from .consts import DamageType, EnemyState, resolve_attack_range
 
 
+# These enemies use their normal attack cycle to heal hostiles instead of
+# attacking operators.  Their database rangeRadius is consequently a healing
+# target radius; treating it as an offensive radius makes it look like a
+# full-map attack (Mephisto has rangeRadius=20).
+_NORMAL_HEAL_TARGET_LIMITS = {
+    "enemy_1507_mephi": 3,
+}
+
+
 def update_enemy_ai(enemy, battle, dt=1.0 / 30.0):
     """Per-tick enemy behaviour driver (called by BattleController).
 
@@ -21,8 +30,10 @@ def update_enemy_ai(enemy, battle, dt=1.0 / 30.0):
     if enemy.state == EnemyState.BORN:
         enemy.update_born(dt)
         return
-    if enemy.state in (EnemyState.DEAD, EnemyState.REACH_EXIT,
-                       EnemyState.DISAPPEAR):
+    if enemy.state in (EnemyState.DEAD, EnemyState.REACH_EXIT):
+        return
+    if enemy.state == EnemyState.DISAPPEAR:
+        enemy.update_movement(dt)
         return
     # controlled states (stun/frozen/...): no movement/attack/skill
     if not enemy.controllable_state() or enemy.flag(43):   # DOZE sleeps
@@ -33,9 +44,15 @@ def update_enemy_ai(enemy, battle, dt=1.0 / 30.0):
     # pending attack windup: damage lands at the animation hit frame
     if enemy._pending_attack is not None:
         pa = enemy._pending_attack
-        t = pa.get("target")
-        if (t is None or getattr(t, "dead", False) or
-                enemy.flag(11) or enemy.flag(31)):
+        if pa.get("heal"):
+            targets = [t for t in pa.get("targets", [])
+                       if t is not None and not getattr(t, "dead", False)]
+            pa["targets"] = targets
+            invalid = not targets
+        else:
+            t = pa.get("target")
+            invalid = t is None or getattr(t, "dead", False)
+        if invalid or enemy.flag(11) or enemy.flag(31):
             enemy._pending_attack = None
         else:
             pa["remaining"] -= 1
@@ -84,6 +101,11 @@ def _start_normal_attack(enemy, battle, interval):
     """Begin a normal attack: lock a target and start the windup. Damage
     (or the projectile launch) lands at the spine OnAttack hit frame,
     i.e. ``hit_frame_ratio * interval`` after the attack starts."""
+    healer_target_limit = _normal_heal_target_limit(enemy)
+    if healer_target_limit:
+        _start_normal_heal(enemy, battle, interval, healer_target_limit)
+        return
+
     radius = resolve_attack_range(enemy.attributes.get("rangeRadius"))
     try:
         battle._dispatch_buff_events(enemy, "ON_BEFORE_ATTACK",
@@ -126,9 +148,68 @@ def _start_normal_attack(enemy, battle, interval):
     }
 
 
+def _normal_heal_target_limit(enemy):
+    key = str(getattr(enemy, "enemy_key", "") or "").split("#", 1)[0]
+    return _NORMAL_HEAL_TARGET_LIMITS.get(key, 0)
+
+
+def _start_normal_heal(enemy, battle, interval, target_limit):
+    """Begin an enemy healer's normal action.
+
+    Targets are locked at animation start, matching normal attack targeting.
+    Only wounded allied enemies are valid; Mephisto cannot turn his global
+    healing radius into an operator attack radius.
+    """
+    radius = resolve_attack_range(enemy.attributes.get("rangeRadius"))
+    candidates = [
+        target for target in battle.get_enemies()
+        if target is not enemy
+        and not getattr(target, "dead", False)
+        and float(getattr(target, "hp", 0.0))
+        < float(getattr(target, "max_hp", 0.0)) - 1e-9
+        and _dist2(enemy, target) <= radius
+    ]
+    if not candidates:
+        return
+    # Native healers prioritise the lowest HP ratio.  Stable distance/instance
+    # keys keep selection deterministic when ratios are equal.
+    candidates.sort(key=lambda target: (
+        float(target.hp) / max(1.0, float(target.max_hp)),
+        _dist2(enemy, target),
+        int(getattr(target, "inst_id", 0)),
+    ))
+    targets = candidates[:max(1, int(target_limit))]
+    try:
+        battle._dispatch_buff_events(enemy, "ON_BEFORE_ATTACK", source=enemy)
+    except Exception:
+        pass
+    battle.on_enemy_ability_spell_on(enemy)
+    ratio = float(enemy.hit_frame_ratio or 0.5)
+    frames = max(1, int(round(interval * ratio * 30.0)))
+    enemy._pending_attack = {
+        "targets": targets,
+        "remaining": frames,
+        "heal": True,
+    }
+
+
 def _resolve_pending_attack(enemy, battle, pa):
     """Hit frame reached: melee deals damage now, ranged launches the
     projectile (which then flies to the target)."""
+    if pa.get("heal"):
+        amount = max(0.0, float(enemy.attributes.get("atk") or 0.0))
+        targets = [target for target in pa.get("targets", [])
+                   if target is not None and not getattr(target, "dead", False)]
+        for target in targets:
+            battle.apply_heal(target, amount, source=enemy)
+        battle.emit(battle.tick, "attack", {
+            "unit": enemy.inst_id,
+            "targets": [target.inst_id for target in targets],
+            "type": "enemy_heal_hit",
+            "amount": round(amount, 3),
+        })
+        return
+
     target = pa.get("target")
     if target is None or getattr(target, "dead", False):
         return

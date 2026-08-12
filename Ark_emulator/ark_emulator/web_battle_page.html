@@ -1,0 +1,1164 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111317">
+  <title>罗德岛战术演算终端</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0d10;
+      --panel: #12151a;
+      --panel-2: #181c22;
+      --panel-3: #20252d;
+      --line: #2b313a;
+      --line-soft: #222831;
+      --text: #f3f5f7;
+      --muted: #9099a5;
+      --muted-2: #66707c;
+      --accent: #ffd800;
+      --cyan: #26d6ef;
+      --danger: #ff5d57;
+      --ok: #74d99f;
+      --cell: 64px;
+      --radius: 8px;
+      font-family: "Segoe UI", "Microsoft YaHei UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-width: 1040px;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--text);
+      background:
+        linear-gradient(135deg, rgba(38,214,239,.035), transparent 34%),
+        repeating-linear-gradient(0deg, transparent 0 23px, rgba(255,255,255,.012) 24px),
+        var(--bg);
+    }
+    button, input, select, textarea { font: inherit; }
+    button { color: inherit; }
+    button:focus-visible, input:focus-visible, select:focus-visible,
+    textarea:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+    .app { height: 100vh; display: grid; grid-template-rows: 58px 1fr; }
+    .topbar {
+      display: flex; align-items: center; gap: 18px; padding: 0 18px;
+      border-bottom: 1px solid #343b45; background: rgba(17,19,23,.96);
+      box-shadow: 0 8px 28px rgba(0,0,0,.28); z-index: 30;
+    }
+    .brand { display: flex; align-items: center; gap: 11px; min-width: 255px; }
+    .brand-mark {
+      width: 30px; height: 30px; display: grid; place-items: center;
+      border: 2px solid var(--text); transform: rotate(45deg); position: relative;
+    }
+    .brand-mark::after { content: "A"; transform: rotate(-45deg); font-weight: 900; font-size: 13px; }
+    .brand strong { display: block; font-size: 14px; letter-spacing: .14em; }
+    .brand span { display: block; color: var(--muted); font-size: 10px; letter-spacing: .08em; margin-top: 1px; }
+    .stage-title { min-width: 0; flex: 1; padding-left: 17px; border-left: 1px solid var(--line); }
+    .stage-title b { font-size: 16px; }
+    .stage-title small { margin-left: 10px; color: var(--muted); }
+    .connect { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; }
+    .connect-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 12px currentColor; }
+    .connect.online .connect-dot { background: var(--ok); }
+    .top-action {
+      height: 32px; padding: 0 13px; border: 1px solid var(--line); border-radius: 5px;
+      background: var(--panel-2); cursor: pointer; font-size: 12px;
+    }
+    .top-action:hover { border-color: #5d6875; background: var(--panel-3); }
+
+    .workspace { display: grid; grid-template-columns: 292px minmax(500px, 1fr) 350px; min-height: 0; }
+    .rail, .inspector { min-height: 0; background: rgba(18,21,26,.97); }
+    .rail { border-right: 1px solid var(--line); display: grid; grid-template-rows: auto minmax(0, 1fr) auto minmax(0, 1.1fr); }
+    .inspector { border-left: 1px solid var(--line); display: grid; grid-template-rows: auto minmax(0, 1fr) 250px; }
+    .section-head {
+      min-height: 42px; display: flex; align-items: center; justify-content: space-between;
+      padding: 0 14px; border-bottom: 1px solid var(--line-soft); color: #d8dde3;
+      font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+    }
+    .section-head em { font-style: normal; color: var(--muted-2); letter-spacing: 0; font-weight: 500; }
+    .search-row { display: flex; gap: 7px; padding: 10px 12px; background: #101318; border-bottom: 1px solid var(--line-soft); }
+    .search-row input {
+      width: 100%; min-width: 0; padding: 8px 10px; border: 1px solid var(--line);
+      border-radius: 5px; color: var(--text); background: #0c0f13;
+    }
+    .search-row button, .mini-btn {
+      flex: 0 0 auto; border: 1px solid var(--line); border-radius: 5px;
+      background: var(--panel-3); cursor: pointer; padding: 7px 10px; font-size: 12px;
+    }
+    .search-row button:hover, .mini-btn:hover { border-color: var(--cyan); }
+    .result-list { overflow-y: auto; scrollbar-color: #39414c transparent; }
+    .result-card {
+      width: 100%; display: block; text-align: left; padding: 10px 13px;
+      border: 0; border-bottom: 1px solid var(--line-soft); background: transparent; cursor: pointer;
+    }
+    .result-card:hover { background: #1a1f26; }
+    .result-card.active { background: linear-gradient(90deg, rgba(255,216,0,.14), transparent); box-shadow: inset 3px 0 var(--accent); }
+    .result-card b { display: block; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .result-card:not(.operator-card) > span { display: flex; justify-content: space-between; margin-top: 4px; color: var(--muted); font-size: 10px; }
+    .operator-card { display: grid; grid-template-columns: 37px 1fr auto; align-items: center; gap: 9px; }
+    .op-badge {
+      width: 37px; height: 37px; display: grid; place-items: center; background: #282e36;
+      border: 1px solid #414a56; font-weight: 900; font-size: 12px; color: var(--cyan);
+      clip-path: polygon(50% 0, 100% 23%, 100% 77%, 50% 100%, 0 77%, 0 23%);
+    }
+    .operator-card .op-badge { display: grid; }
+    .operator-card .meta { display: block; min-width: 0; }
+    .operator-card .meta b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .operator-card .meta small { color: var(--muted); font-size: 10px; }
+    .operator-card .cost { color: var(--accent); font-weight: 800; font-size: 12px; }
+    .load-box { padding: 10px 12px; border-top: 1px solid var(--line); background: #101318; }
+    .primary {
+      width: 100%; min-height: 36px; border: 0; border-radius: 4px; cursor: pointer;
+      background: var(--accent); color: #111; font-weight: 900; letter-spacing: .06em;
+    }
+    .primary:hover { filter: brightness(1.08); }
+    .primary:disabled { cursor: not-allowed; filter: grayscale(1); opacity: .45; }
+
+    .battle-area { min-width: 0; min-height: 0; display: grid; grid-template-rows: 72px minmax(0, 1fr) 118px; }
+    .hud {
+      display: grid; grid-template-columns: repeat(5, minmax(95px, 1fr)); gap: 1px;
+      border-bottom: 1px solid var(--line); background: var(--line);
+    }
+    .hud-card { padding: 12px 14px 8px; background: #13171c; position: relative; overflow: hidden; }
+    .hud-card::after { content: ""; position: absolute; left: 0; bottom: 0; width: 38%; height: 2px; background: var(--cyan); }
+    .hud-card.life::after { background: var(--danger); }
+    .hud-card.cost::after { background: var(--accent); }
+    .hud-card span { display: block; color: var(--muted); font-size: 10px; letter-spacing: .1em; }
+    .hud-card b { display: block; margin-top: 5px; font: 700 22px/1 "Bahnschrift", "Segoe UI"; }
+    .hud-card b small { color: var(--muted); font-size: 11px; font-weight: 500; }
+    .battle-viewport {
+      min-height: 0; overflow: auto; display: grid; place-items: center; padding: 32px;
+      background:
+        radial-gradient(circle at center, rgba(47,58,70,.45), rgba(7,9,12,.3) 48%, rgba(0,0,0,.65)),
+        repeating-linear-gradient(45deg, rgba(255,255,255,.012) 0 1px, transparent 1px 12px);
+    }
+    .map-shell { position: relative; filter: drop-shadow(0 22px 30px rgba(0,0,0,.55)); user-select: none; }
+    .map-grid { display: grid; position: relative; gap: 2px; padding: 8px; background: #080a0d; border: 1px solid #38414c; }
+    .tile {
+      width: var(--cell); height: var(--cell); border: 0; position: relative; padding: 0;
+      color: rgba(255,255,255,.8); cursor: crosshair; background: #31363d;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06), inset 0 -8px 0 rgba(0,0,0,.12);
+    }
+    .tile:hover { box-shadow: inset 0 0 0 2px var(--accent), inset 0 -8px 0 rgba(0,0,0,.12); z-index: 2; }
+    .tile.selected { box-shadow: inset 0 0 0 2px var(--cyan), 0 0 16px rgba(38,214,239,.3); z-index: 2; }
+    .tile.drop-valid { box-shadow: inset 0 0 0 3px var(--ok), 0 0 20px rgba(116,217,159,.45); z-index: 9; }
+    .tile.drop-invalid { box-shadow: inset 0 0 0 3px var(--danger); z-index: 9; }
+    .tile.pending-target { box-shadow: inset 0 0 0 3px var(--accent), 0 0 24px rgba(255,216,0,.5); z-index: 9; }
+    .tile.road { background: #3b4148; }
+    .tile.high { background: #555d67; box-shadow: inset 0 5px 0 #717b87, inset 0 -8px 0 #3f464f; }
+    .tile.forbidden { background: #171a1e; cursor: default; }
+    .tile.hole { background: radial-gradient(circle, #030405 10%, #11161b 62%, #313842 64%); }
+    .tile.start { background: linear-gradient(135deg, #512225, #9f3438); }
+    .tile.end { background: linear-gradient(135deg, #15405c, #1979aa); }
+    .tile.special { background: linear-gradient(135deg, #3b4148, #654b75); }
+    .tile::before { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 900; font-size: 11px; opacity: .72; }
+    .tile.start::before { content: "ENTRY"; }
+    .tile.end::before { content: "EXIT"; }
+    .tile.high::before { content: "HIGH"; color: rgba(255,255,255,.35); font-size: 9px; }
+    .tile.route::after { content: ""; position: absolute; inset: 44% 8%; border-top: 2px dashed rgba(255,216,0,.35); }
+    .unit-layer, .projectile-layer { position: absolute; inset: 8px; pointer-events: none; z-index: 5; }
+    .unit {
+      position: absolute; width: 43px; height: 43px; margin: -21.5px 0 0 -21.5px;
+      pointer-events: auto; border: 0; border-radius: 8px; color: white; cursor: pointer;
+      transition: left .12s linear, top .12s linear, transform .12s;
+      filter: drop-shadow(0 5px 5px rgba(0,0,0,.55)); z-index: 3;
+    }
+    .unit:hover, .unit.selected { transform: scale(1.12); z-index: 8; }
+    .unit.operator { background: linear-gradient(145deg, #208ca6, #144e65); box-shadow: inset 0 0 0 2px #5ce6ff; }
+    .unit.deploy-preview { opacity: .72; border: 2px dashed var(--accent); background: rgba(24,129,153,.82); animation: deploy-pulse 1s ease-in-out infinite alternate; }
+    .unit.enemy { background: linear-gradient(145deg, #a23b3b, #4e191d); box-shadow: inset 0 0 0 2px #ff7975; border-radius: 50%; }
+    .unit.token { background: linear-gradient(145deg, #58a067, #285637); box-shadow: inset 0 0 0 2px #9ae8a6; }
+    .unit .abbr { display: block; font-weight: 900; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 3px; }
+    .unit .dir { position: absolute; right: -5px; top: -8px; color: var(--accent); font-size: 14px; text-shadow: 0 1px 2px #000; }
+    .unit .hp-track { position: absolute; left: -2px; right: -2px; bottom: -7px; height: 4px; background: #080a0d; }
+    .unit .hp-fill { display: block; height: 100%; background: var(--ok); }
+    .unit.enemy .hp-fill { background: var(--danger); }
+    .unit .sp-track { position: absolute; left: -2px; right: -2px; bottom: -12px; height: 3px; background: #080a0d; }
+    .unit .sp-fill { display: block; height: 100%; background: var(--accent); }
+    .projectile { position: absolute; width: 8px; height: 8px; margin: -4px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px 4px rgba(255,216,0,.35); }
+    .empty-map { padding: 60px; color: var(--muted); text-align: center; }
+    @keyframes deploy-pulse { to { opacity: 1; transform: scale(1.08); } }
+    .deploy-confirm {
+      position: absolute; left: 50%; top: 50%; z-index: 30; width: min(370px, calc(100% - 24px));
+      transform: translate(-50%, -50%); padding: 15px; border: 1px solid #647180;
+      border-top: 3px solid var(--accent); border-radius: 7px; background: rgba(14,17,21,.97);
+      box-shadow: 0 20px 60px rgba(0,0,0,.8); user-select: none;
+    }
+    .deploy-confirm-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .deploy-confirm-head b { display: block; font-size: 16px; }
+    .deploy-confirm-head small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; }
+    .deploy-confirm-head strong { color: var(--accent); font-size: 13px; white-space: nowrap; }
+    .deploy-choice-title { margin: 13px 0 7px; color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .12em; }
+    .deploy-skills { display: grid; gap: 6px; }
+    .deploy-skill { display: grid; grid-template-columns: 31px 1fr; gap: 8px; align-items: center; min-height: 38px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel-2); text-align: left; cursor: pointer; }
+    .deploy-skill span { display: grid; place-items: center; width: 27px; height: 27px; color: var(--cyan); border: 1px solid #40505c; font-weight: 900; }
+    .deploy-skill b { overflow: hidden; font-size: 11px; white-space: nowrap; text-overflow: ellipsis; }
+    .deploy-skill.active { border-color: var(--accent); background: rgba(255,216,0,.11); }
+    .deploy-direction { display: grid; grid-template-columns: repeat(3, 38px); grid-template-rows: repeat(3, 34px); justify-content: center; gap: 3px; }
+    .deploy-direction button { border: 1px solid var(--line); border-radius: 4px; background: var(--panel-2); cursor: pointer; font-size: 18px; }
+    .deploy-direction button.active { color: #111; border-color: var(--accent); background: var(--accent); }
+    .deploy-direction [data-pending-dir="0"] { grid-column: 2; grid-row: 1; }
+    .deploy-direction [data-pending-dir="3"] { grid-column: 1; grid-row: 2; }
+    .deploy-direction [data-pending-dir="1"] { grid-column: 3; grid-row: 2; }
+    .deploy-direction [data-pending-dir="2"] { grid-column: 2; grid-row: 3; }
+    .deploy-direction::after { content: "朝向"; grid-column: 2; grid-row: 2; display: grid; place-items: center; color: var(--muted-2); font-size: 9px; }
+    .deploy-error { margin-top: 9px; padding: 7px 9px; border-left: 2px solid var(--danger); color: #ffaaa6; background: rgba(255,93,87,.08); font-size: 11px; }
+    .deploy-actions { display: grid; grid-template-columns: 1fr 1.6fr; gap: 7px; margin-top: 13px; }
+    .deploy-actions button { min-height: 36px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel-3); cursor: pointer; }
+    .deploy-actions .confirm { border: 0; color: #111; background: var(--accent); font-weight: 900; }
+    .deploy-actions .confirm:disabled { opacity: .5; cursor: wait; }
+
+    .deck { display: flex; align-items: stretch; gap: 8px; overflow-x: auto; padding: 11px 13px; border-top: 1px solid var(--line); background: #101318; }
+    .deck-card {
+      flex: 0 0 136px; display: grid; grid-template-columns: 38px 1fr; gap: 8px; align-items: center;
+      border: 1px solid var(--line); border-radius: 5px; padding: 8px; background: #191e25; cursor: pointer; text-align: left;
+    }
+    .deck-card:hover, .deck-card.active { border-color: var(--accent); background: #242923; }
+    .deck-card.cooldown { opacity: .48; }
+    .deck-card[data-deployable="true"] { cursor: grab; touch-action: none; }
+    .deck-card[data-deployable="true"]:active { cursor: grabbing; }
+    .deck-card.dragging { opacity: .35; border-color: var(--cyan); }
+    .deck-drag-ghost { position: fixed; z-index: 100; width: 136px; pointer-events: none; opacity: .86; border-color: var(--cyan); transform: translate(-50%, -50%) scale(1.04); box-shadow: 0 16px 38px rgba(0,0,0,.75); }
+    .deck-card strong { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+    .deck-card small { color: var(--muted); font-size: 9px; }
+    .deck-card .deck-state { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr auto; gap: 4px; color: var(--muted); font-size: 9px; }
+    .deck-card .deck-bars { grid-column: 1 / -1; display: grid; gap: 3px; }
+    .deck-card .deck-bars i { display:block; height:3px; background:#080a0d; overflow:hidden; }
+    .deck-card .deck-bars i::after { content:""; display:block; height:100%; width:var(--value); background:var(--ok); }
+    .deck-card .deck-bars i.sp::after { background:var(--accent); }
+    .deck-empty { color: var(--muted); padding: 18px 8px; font-size: 12px; }
+
+    .control-strip { padding: 12px 14px; border-bottom: 1px solid var(--line); background: #101318; }
+    .control-row { display: flex; gap: 7px; align-items: center; }
+    .control-row + .control-row { margin-top: 9px; }
+    .control-btn {
+      min-height: 33px; flex: 1; border: 1px solid var(--line); background: var(--panel-2);
+      border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700;
+    }
+    .control-btn:hover { border-color: var(--cyan); }
+    .control-btn.active { background: var(--accent); color: #111; border-color: var(--accent); }
+    .speed { display: flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+    .speed button { width: 39px; height: 29px; border: 0; border-right: 1px solid var(--line); background: var(--panel-2); cursor: pointer; font-size: 10px; }
+    .speed button:last-child { border-right: 0; }
+    .speed button.active { background: var(--cyan); color: #071014; font-weight: 800; }
+    .direction { display: flex; gap: 4px; margin-left: auto; }
+    .direction button { width: 29px; height: 29px; border: 1px solid var(--line); background: var(--panel-2); border-radius: 4px; cursor: pointer; }
+    .direction button.active { color: #111; background: var(--accent); border-color: var(--accent); }
+    .inspect-body { min-height: 0; overflow-y: auto; padding: 14px; }
+    .overview-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .overview-title h2 { margin: 0; font-size: 18px; }
+    .overview-title p { margin: 5px 0 0; color: var(--muted); font-size: 11px; }
+    .tag { display: inline-block; padding: 3px 7px; border: 1px solid #3b4550; color: var(--muted); border-radius: 99px; font-size: 9px; }
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 14px; }
+    .stat-box { padding: 9px 10px; background: var(--panel-2); border-left: 2px solid #3d4651; }
+    .stat-box span { color: var(--muted); font-size: 9px; }
+    .stat-box b { display: block; margin-top: 3px; font-size: 14px; }
+    .progress { height: 5px; margin-top: 6px; background: #080a0d; overflow: hidden; }
+    .progress i { display: block; height: 100%; background: var(--ok); }
+    .subhead { margin: 18px 0 8px; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .12em; }
+    .skill-card, .buff-row {
+      margin-top: 7px; padding: 9px 10px; border: 1px solid var(--line-soft); background: #15191f;
+    }
+    .skill-card.equipped { border-color: #756811; box-shadow: inset 3px 0 var(--accent); }
+    .skill-card .skill-top { display: flex; justify-content: space-between; gap: 8px; }
+    .skill-card b { font-size: 12px; }
+    .skill-card small { color: var(--muted); font-size: 9px; }
+    .skill-card button { width: 100%; margin-top: 8px; min-height: 29px; border: 0; border-radius: 3px; background: var(--accent); color: #111; font-weight: 800; cursor: pointer; }
+    .skill-card button:disabled { background: #343a42; color: #7b848e; cursor: not-allowed; }
+    .danger-btn { width: 100%; min-height: 33px; margin-top: 12px; border: 1px solid #6a3538; background: #321b1e; color: #ff9793; border-radius: 4px; cursor: pointer; }
+    .events { min-height: 0; border-top: 1px solid var(--line); background: #0d1014; display: grid; grid-template-rows: 40px 1fr; }
+    .events-head { display: flex; align-items: center; justify-content: space-between; padding: 0 13px; border-bottom: 1px solid var(--line-soft); font-size: 11px; font-weight: 800; letter-spacing: .1em; }
+    .events-head button { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 10px; }
+    .event-list { overflow-y: auto; font-family: Consolas, monospace; font-size: 10px; }
+    .event { display: grid; grid-template-columns: 47px 94px 1fr; gap: 7px; padding: 6px 10px; border-bottom: 1px solid #191e24; }
+    .event time { color: var(--muted-2); }
+    .event b { color: var(--cyan); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .event.damage b { color: var(--danger); }
+    .event.skill b { color: var(--accent); }
+    .event span { color: #9ca5af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .toast-stack { position: fixed; right: 366px; top: 70px; z-index: 100; display: grid; gap: 7px; }
+    .toast { min-width: 250px; max-width: 360px; padding: 10px 12px; border-left: 3px solid var(--cyan); background: #20262e; box-shadow: 0 8px 25px rgba(0,0,0,.5); font-size: 12px; animation: toast-in .18s ease-out; }
+    .toast.error { border-color: var(--danger); }
+    @keyframes toast-in { from { opacity: 0; transform: translateX(18px); } }
+    .result-overlay { position:absolute; inset:8px; z-index:20; display:grid; place-items:center; pointer-events:none; background:rgba(5,7,10,.66); backdrop-filter:blur(2px); }
+    .result-overlay div { padding:20px 30px; border:1px solid #59636f; background:rgba(18,21,26,.96); text-align:center; box-shadow:0 18px 60px #000; }
+    .result-overlay b { display:block; font-size:30px; letter-spacing:.15em; color:var(--accent); }
+    .result-overlay.defeat b { color:var(--danger); }
+    .result-overlay span { display:block; margin-top:8px; color:var(--muted); font-size:12px; }
+    dialog { width: min(1040px, 90vw); max-height: 86vh; padding: 0; border: 1px solid #46515e; border-radius: 8px; color: var(--text); background: #13171c; box-shadow: 0 24px 80px #000; }
+    dialog::backdrop { background: rgba(0,0,0,.72); backdrop-filter: blur(3px); }
+    .dialog-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 17px; border-bottom: 1px solid var(--line); }
+    .dialog-head h2 { margin: 0; font-size: 16px; }
+    .dialog-head button { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 20px; }
+    .dialog-body { max-height: 68vh; overflow: auto; padding: 16px 17px; }
+    .config-grid { display: grid; grid-template-columns: minmax(510px, 1.45fr) minmax(280px, .8fr); gap: 15px; align-items: start; }
+    .config-pane { min-width: 0; }
+    .config-pane-head { min-height: 30px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .config-pane-head .subhead { margin: 0; }
+    .config-pane-head em { color: var(--muted); font-style: normal; font-size: 10px; }
+    .squad-row { display: grid; grid-template-columns: 1fr 92px 92px 92px auto; gap: 8px; align-items: end; padding: 10px; border: 1px solid var(--line); background: var(--panel-2); margin-bottom: 8px; }
+    .config-search { display: flex; gap: 7px; margin-top: 8px; }
+    .config-search input { min-width: 0; flex: 1; padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; color: var(--text); background: #0c0f13; }
+    .config-search button { flex: 0 0 auto; padding: 0 13px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel-3); cursor: pointer; }
+    .config-operator-results { max-height: 390px; margin-top: 8px; overflow-y: auto; border: 1px solid var(--line); background: #0d1014; scrollbar-color: #39414c transparent; }
+    .config-op-row { display: grid; grid-template-columns: 38px minmax(0,1fr) auto; gap: 9px; align-items: center; min-height: 57px; padding: 8px 9px; border-bottom: 1px solid var(--line-soft); }
+    .config-op-row:last-child { border-bottom: 0; }
+    .config-op-row .op-meta { min-width: 0; }
+    .config-op-row .op-meta b { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12px; }
+    .config-op-row .op-meta small { display: block; margin-top: 3px; overflow: hidden; color: var(--muted); white-space: nowrap; text-overflow: ellipsis; font-size: 9px; }
+    .config-add-btn { min-width: 58px; min-height: 30px; border: 1px solid var(--cyan); border-radius: 4px; color: var(--cyan); background: rgba(38,214,239,.07); cursor: pointer; font-size: 11px; font-weight: 800; }
+    .config-add-btn:hover { color: #071014; background: var(--cyan); }
+    .config-add-btn:disabled { border-color: var(--line); color: var(--muted-2); background: #1b2026; cursor: default; }
+    .config-search-empty { padding: 35px 12px; color: var(--muted); text-align: center; font-size: 11px; }
+    .field label { display: block; color: var(--muted); font-size: 9px; margin-bottom: 4px; }
+    .field input, .field select, .field textarea { width: 100%; border: 1px solid var(--line); border-radius: 4px; background: #0c0f13; color: var(--text); padding: 7px; }
+    .field textarea { min-height: 100px; resize: vertical; font-family: Consolas, monospace; font-size: 11px; }
+    .remove-btn { width: 30px; height: 31px; border: 1px solid #65383a; border-radius: 4px; background: #301a1d; color: var(--danger); cursor: pointer; }
+    .dialog-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 17px; border-top: 1px solid var(--line); }
+    .dialog-foot button { min-width: 110px; min-height: 34px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel-3); cursor: pointer; }
+    .dialog-foot .save { border: 0; background: var(--accent); color: #111; font-weight: 800; }
+
+    @media (max-width: 1250px) {
+      .workspace { grid-template-columns: 250px minmax(480px, 1fr) 315px; }
+      .brand { min-width: 215px; }
+      .hud-card { padding-left: 9px; padding-right: 9px; }
+      .toast-stack { right: 330px; }
+    }
+    @media (max-width: 980px) {
+      .config-grid { grid-template-columns: 1fr; }
+      .config-operator-results { max-height: 280px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"></div>
+        <div><strong>ARK EMULATOR</strong><span>罗德岛战术演算终端</span></div>
+      </div>
+      <div class="stage-title"><b id="topStage">正在接入战场…</b><small id="topLevel">—</small></div>
+      <div class="connect" id="connection"><i class="connect-dot"></i><span>连接中</span></div>
+      <button class="top-action" id="restartBtn">重新演算</button>
+      <button class="top-action" id="configBtn">编队配置</button>
+      <button class="top-action" onclick="location.href='/editor'">关卡编辑器</button>
+    </header>
+
+    <main class="workspace">
+      <aside class="rail">
+        <div>
+          <div class="section-head"><span>关卡选择</span><em>STAGE</em></div>
+          <form class="search-row" id="levelSearchForm">
+            <input id="levelSearch" value="1-1" placeholder="关卡编号、名称或 level id" autocomplete="off">
+            <button type="submit">检索</button>
+          </form>
+        </div>
+        <div class="result-list" id="levelResults"><div class="empty-map">正在加载关卡目录…</div></div>
+        <div>
+          <div class="load-box"><button class="primary" id="loadLevelBtn" disabled>载入所选关卡</button></div>
+          <div class="section-head"><span>部署干员</span><em id="operatorCount">ROSTER</em></div>
+          <form class="search-row" id="operatorSearchForm">
+            <input id="operatorSearch" placeholder="搜索干员中文名或 ID" autocomplete="off">
+            <button type="submit">检索</button>
+          </form>
+        </div>
+        <div class="result-list" id="operatorResults"><div class="empty-map">正在读取干员数据…</div></div>
+      </aside>
+
+      <section class="battle-area">
+        <div class="hud">
+          <div class="hud-card"><span>演算时间 / TIME</span><b id="hudTime">0.0<small>s</small></b></div>
+          <div class="hud-card life"><span>防卫点 / LIFE</span><b id="hudLife">—</b></div>
+          <div class="hud-card cost"><span>部署费用 / DP</span><b id="hudCost">—</b></div>
+          <div class="hud-card"><span>击破进度 / KILLS</span><b id="hudKills">0</b></div>
+          <div class="hud-card"><span>波次 / WAVES</span><b id="hudWaves">—</b></div>
+        </div>
+        <div class="battle-viewport" id="battleViewport">
+          <div class="empty-map">等待第一份战场快照</div>
+        </div>
+        <div class="deck" id="deck"><div class="deck-empty">在左侧选择干员，或打开“编队配置”建立作战编队。</div></div>
+      </section>
+
+      <aside class="inspector">
+        <div class="control-strip">
+          <div class="control-row">
+            <button class="control-btn" id="pauseBtn">暂停</button>
+            <button class="control-btn" id="stepBtn">单步 1 帧</button>
+            <button class="control-btn" id="stepSecondBtn">推进 1 秒</button>
+          </div>
+          <div class="control-row">
+            <span style="color:var(--muted);font-size:10px">速度</span>
+            <div class="speed" id="speedButtons">
+              <button data-speed="0.5">×0.5</button><button data-speed="1" class="active">×1</button>
+              <button data-speed="2">×2</button><button data-speed="4">×4</button>
+            </div>
+            <div class="direction" id="directionButtons" title="部署朝向">
+              <button data-dir="0">↑</button><button data-dir="1" class="active">→</button>
+              <button data-dir="2">↓</button><button data-dir="3">←</button>
+            </div>
+          </div>
+        </div>
+        <div class="inspect-body" id="inspectBody"></div>
+        <div class="events">
+          <div class="events-head"><span>实时事件流</span><button id="clearEventsBtn">清空</button></div>
+          <div class="event-list" id="eventList"></div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <div class="toast-stack" id="toasts"></div>
+
+  <dialog id="configDialog">
+    <div class="dialog-head"><h2>作战编队与高级配置</h2><button id="closeConfigBtn" aria-label="关闭">×</button></div>
+    <div class="dialog-body">
+      <div class="config-grid">
+        <section class="config-pane">
+          <div class="config-pane-head"><div class="subhead">当前编队</div><em id="configSquadCount">0 / 12</em></div>
+          <div id="squadEditor"></div>
+        </section>
+        <section class="config-pane">
+          <div class="config-pane-head"><div class="subhead">搜索并加入干员</div><em id="configOperatorCount">—</em></div>
+          <form class="config-search" id="configOperatorSearchForm">
+            <input id="configOperatorSearch" placeholder="输入中文名或干员 ID" autocomplete="off">
+            <button type="submit">搜索</button>
+          </form>
+          <div class="config-operator-results" id="configOperatorResults"><div class="config-search-empty">输入名称搜索干员</div></div>
+        </section>
+      </div>
+      <div class="subhead">自定义敌人 JSON（可选）</div>
+      <div class="field"><textarea id="customEnemyJson" spellcheck="false" placeholder='[{"key":"enemy_1000_gopro","count":3,"startTime":2}]'></textarea></div>
+      <p style="color:var(--muted);font-size:10px;line-height:1.6">应用配置会从头重新载入当前关卡。编队中的精英阶段、等级和潜能将参与属性计算。</p>
+    </div>
+    <div class="dialog-foot"><button id="cancelConfigBtn">取消</button><button class="save" id="saveConfigBtn">应用并重新演算</button></div>
+  </dialog>
+
+  <script>
+    const app = {
+      snapshot: null,
+      status: null,
+      selectedLevel: null,
+      selectedOperator: null,
+      selectedUnit: null,
+      selectedCell: null,
+      direction: 1,
+      operatorHits: [],
+      configOperatorHits: [],
+      configSearchQuery: '',
+      configSearchToken: 0,
+      operatorCatalog: new Map(),
+      squad: [],
+      customEnemies: [],
+      events: [],
+      eventSeq: 0,
+      stream: null,
+      connected: false,
+      draggingOperator: null,
+      pendingDeployment: null,
+      lastResult: null,
+    };
+
+    const $ = id => document.getElementById(id);
+    const esc = value => String(value ?? '').replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+    const clamp = (n, a, b) => Math.max(a, Math.min(b, Number(n) || 0));
+    const pct = (n, d) => d ? clamp(n / d * 100, 0, 100) : 0;
+    const fmt = n => Number(n || 0).toLocaleString('zh-CN', {maximumFractionDigits: 1});
+    const abbr = id => String(id || '?').split('_').pop().replace(/[^a-zA-Z0-9]/g, '').slice(0, 5).toUpperCase();
+    const dirArrow = d => ['↑','→','↓','←'][Number(d) || 0];
+    const errorText = {
+      character_limit:'部署数量已达上限', no_character_data:'缺少干员数据', not_buildable:'该地块不可部署',
+      occupied:'该地块已被占用', forbidden_location:'该位置被关卡规则禁用', excluded:'该干员被关卡排除',
+      on_cooldown:'干员正在再部署冷却', insufficient_cost:'部署费用不足', not_enough_cost:'部署费用不足', not_found:'目标不存在',
+      not_ready:'技能尚未就绪', already_active:'技能正在持续', invalid_skill:'技能不可用'
+    };
+
+    async function request(url, options) {
+      const response = await fetch(url, options);
+      let data = {};
+      try { data = await response.json(); } catch (_) {}
+      if (!response.ok) throw new Error(data.error || data.result || `HTTP ${response.status}`);
+      return data;
+    }
+    async function post(path, body) {
+      return request(path, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    }
+    function toast(message, error=false) {
+      const node = document.createElement('div');
+      node.className = `toast${error ? ' error' : ''}`;
+      node.textContent = message;
+      $('toasts').appendChild(node);
+      setTimeout(() => node.remove(), 3200);
+    }
+    function setConnection(online) {
+      app.connected = online;
+      $('connection').classList.toggle('online', online);
+      $('connection').querySelector('span').textContent = online ? '实时同步' : '正在重连';
+    }
+
+    async function loadStatus() {
+      app.status = await request('/status');
+      app.squad = (app.status.squad || []).map(x => ({...x}));
+      const lv = app.status.level || {};
+      $('topStage').textContent = lv.stageId || '未知关卡';
+      $('topLevel').textContent = lv.name || lv.levelId || '';
+      updateControls();
+    }
+    async function searchLevels(query) {
+      const data = await request('/levels?q=' + encodeURIComponent(query || ''));
+      renderLevelResults(data.hits || []);
+    }
+    function renderLevelResults(hits) {
+      $('levelResults').innerHTML = hits.length ? hits.map((hit, i) => `
+        <button class="result-card ${app.selectedLevel?.levelId === hit.levelId ? 'active' : ''}" data-level-index="${i}">
+          <b>${esc(hit.stageId)} · ${esc(hit.name || '未命名关卡')}</b>
+          <span><i>${esc(hit.levelId)}</i><i>载入 ›</i></span>
+        </button>`).join('') : '<div class="empty-map">没有匹配的关卡</div>';
+      $('levelResults').querySelectorAll('[data-level-index]').forEach((node, i) => node.onclick = () => {
+        app.selectedLevel = hits[i]; renderLevelResults(hits); $('loadLevelBtn').disabled = false;
+      });
+    }
+    async function loadSelectedLevel() {
+      if (!app.selectedLevel) return;
+      $('loadLevelBtn').disabled = true;
+      try {
+        const data = await request('/new?level=' + encodeURIComponent(app.selectedLevel.levelId));
+        app.selectedUnit = null; app.selectedCell = null; app.events = []; app.eventSeq = 0;
+        await loadStatus(); await refreshSnapshot();
+        toast(`已载入 ${app.selectedLevel.stageId}`);
+      } catch (e) { toast(`载入失败：${e.message}`, true); }
+      finally { $('loadLevelBtn').disabled = false; }
+    }
+
+    async function searchOperators(query='') {
+      const data = await request('/operators?q=' + encodeURIComponent(query));
+      app.operatorHits = data.hits || [];
+      for (const operator of app.operatorHits) app.operatorCatalog.set(operator.charId, operator);
+      $('operatorCount').textContent = `${app.operatorHits.length} RESULTS`;
+      renderOperatorResults();
+    }
+    function renderOperatorResults() {
+      $('operatorResults').innerHTML = app.operatorHits.length ? app.operatorHits.map((op, i) => `
+        <button class="result-card operator-card ${app.selectedOperator?.charId === op.charId ? 'active' : ''}" data-operator-index="${i}" title="选择后可加入底部编队">
+          <span class="op-badge">${esc(abbr(op.charId).slice(0,2))}</span>
+          <span class="meta"><b>${esc(op.name)}</b><small>${'★'.repeat(op.rarity)} · ${esc(op.subProfession || '未知分支')}</small></span>
+          <span class="cost">${op.cost} DP</span>
+        </button>`).join('') : '<div class="empty-map">没有匹配的可部署干员</div>';
+      $('operatorResults').querySelectorAll('[data-operator-index]').forEach((node, i) => node.onclick = () => {
+        app.selectedOperator = app.operatorHits[i]; app.selectedUnit = null;
+        renderOperatorResults(); renderDeck(); renderInspector();
+        toast(`已选择 ${app.selectedOperator.name}；加入编队后可从底部拖到地图部署`);
+      });
+    }
+
+    function connectStream() {
+      if (app.stream) app.stream.close();
+      const stream = new EventSource('/stream');
+      app.stream = stream;
+      stream.onopen = () => setConnection(true);
+      stream.onerror = () => setConnection(false);
+      stream.onmessage = event => {
+        try {
+          const packet = JSON.parse(event.data);
+          if (packet.snapshot) acceptSnapshot(packet.snapshot);
+        } catch (_) {}
+      };
+    }
+    async function refreshSnapshot() {
+      try { acceptSnapshot(await request('/snapshot')); setConnection(true); }
+      catch (_) { setConnection(false); }
+    }
+    function acceptSnapshot(snapshot) {
+      app.snapshot = snapshot;
+      appendEvents(snapshot.events || []);
+      if (snapshot.finished && snapshot.result !== app.lastResult) {
+        app.lastResult = snapshot.result;
+        toast(snapshot.result === 'victory' ? '作战胜利' : '作战失败：防卫点已归零', snapshot.result !== 'victory');
+      } else if (!snapshot.finished) app.lastResult = null;
+      renderAll();
+    }
+    function renderAll() {
+      if (!app.snapshot) return;
+      renderHud();
+      // Replacing either endpoint of an active HTML5 drag makes Chromium
+      // cancel its drop event. Keep the live data flowing, but leave these
+      // two DOM trees intact until dragend.
+      if (!app.draggingOperator && !app.pendingDeployment) renderMap();
+      if (!app.draggingOperator) renderDeck();
+      renderInspector(); updateControls();
+    }
+    function wavePhaseName(phase) {
+      return ({
+        wave_pre_delay: '波次准备', fragment_pre_delay: '片段准备',
+        actions: '出场中', waiting_fragment_clear: '等待片段动作',
+        waiting_wave_clear: '等待本波清场', wave_post_delay: '波次收尾',
+        finished: '完成'
+      })[phase] || phase || '';
+    }
+    function renderHud() {
+      const s = app.snapshot, stats = s.stats || {}, waves = s.waves || {};
+      $('hudTime').innerHTML = `${Number(s.t || 0).toFixed(1)}<small>s</small>`;
+      $('hudLife').textContent = s.lifePoint;
+      $('hudCost').textContent = `${fmt(s.cost)} / ${fmt(s.maxCost)}`;
+      $('hudKills').textContent = `${stats.kills || 0}`;
+      if (waves.finished) $('hudWaves').textContent = '完成';
+      else if (waves.mode === 'runtime') {
+        const wf = `${waves.currentWave ?? '-'} / ${waves.totalWaves ?? '-'}`;
+        const ff = waves.currentFragment ? ` · 片段 ${waves.currentFragment}/${waves.totalFragments}` : '';
+        const waiting = waves.waitingEnemies ? ` · 等待 ${waves.waitingEnemies}` : '';
+        $('hudWaves').textContent = `${wf}${ff} · ${wavePhaseName(waves.phase)}${waiting}`;
+      } else $('hudWaves').textContent = `${waves.remaining ?? 0} 待调度`;
+    }
+    function tileClass(tile) {
+      const key = String(tile?.tileKey || '').toLowerCase();
+      if (key.includes('start')) return 'start';
+      if (key.includes('end')) return 'end';
+      if (key.includes('hole')) return 'hole';
+      if (key.includes('forbidden')) return 'forbidden';
+      if (key.includes('wall') || Number(tile?.buildableType) === 2) return 'high';
+      if (/(volcano|toxic|heal|grass|yinyang|deepsea|ice|mire|reed|gem)/.test(key)) return 'special';
+      return 'road';
+    }
+    function routeCells(s) {
+      const cells = new Set();
+      for (const route of (s.routes || [])) {
+        const add = p => { if (p && Number.isFinite(Number(p.row))) cells.add(`${p.row},${p.col}`); };
+        add(route.startPosition); add(route.endPosition);
+        for (const cp of (route.checkpoints || [])) add(cp.position);
+      }
+      return cells;
+    }
+    function currentSelectedUnit() {
+      if (!app.selectedUnit || !app.snapshot) return null;
+      const all = [...(app.snapshot.deployed || []), ...(app.snapshot.tokens || []), ...(app.snapshot.enemies || [])];
+      return all.find(u => u.instId === app.selectedUnit.instId) || null;
+    }
+    function renderMap() {
+      const s = app.snapshot, map = s.map;
+      if (!map || !map.rows || !map.cols) { $('battleViewport').innerHTML = '<div class="empty-map">该条目没有可玩地图</div>'; return; }
+      const cell = clamp(Math.floor(Math.min(70, 760 / map.cols, 570 / map.rows)), 36, 70);
+      document.documentElement.style.setProperty('--cell', `${cell}px`);
+      const routes = routeCells(s);
+      const tiles = (map.tiles || []).map((tile, i) => {
+        const r = Math.floor(i / map.cols), c = i % map.cols;
+        const selected = app.selectedCell && app.selectedCell[0] === r && app.selectedCell[1] === c;
+        const pending = app.pendingDeployment && app.pendingDeployment.row === r && app.pendingDeployment.col === c;
+        return `<button class="tile ${tileClass(tile)} ${routes.has(`${r},${c}`) ? 'route' : ''} ${selected ? 'selected' : ''} ${pending ? 'pending-target' : ''}"
+          data-row="${r}" data-col="${c}" title="(${r}, ${c}) ${esc(tile.tileKey)}"></button>`;
+      }).join('');
+      const selected = currentSelectedUnit();
+      const unitHtml = [];
+      const unitNode = (u, type, label, direction='') => {
+        const x = (Number(u.pos?.x ?? u.col) + .5) * (cell + 2) - 1;
+        const y = (Number(u.pos?.y ?? u.row) + .5) * (cell + 2) - 1;
+        const hp = pct(u.hp, u.maxHp), sp = pct(u.sp, u.spMax);
+        return `<button class="unit ${type} ${selected?.instId === u.instId ? 'selected' : ''}" data-unit="${u.instId}" data-unit-type="${type}"
+          style="left:${x}px;top:${y}px" title="${esc(label)} HP ${fmt(u.hp)}/${fmt(u.maxHp)}">
+          <span class="abbr">${esc(type === 'enemy' ? abbr(u.key) : label.slice(0,4))}</span>${direction ? `<span class="dir">${direction}</span>` : ''}
+          <span class="hp-track"><i class="hp-fill" style="width:${hp}%"></i></span>
+          ${u.spMax ? `<span class="sp-track"><i class="sp-fill" style="width:${sp}%"></i></span>` : ''}
+        </button>`;
+      };
+      for (const u of s.enemies || []) unitHtml.push(unitNode(u, 'enemy', u.key || 'ENEMY'));
+      for (const u of s.deployed || []) unitHtml.push(unitNode(u, 'operator', operatorName(u.charId), dirArrow(u.direction)));
+      for (const u of s.tokens || []) unitHtml.push(unitNode(u, 'token', u.tokenId || u.charId || 'TOKEN'));
+      const pending = app.pendingDeployment;
+      if (pending) {
+        unitHtml.push(unitNode({row:pending.row, col:pending.col, hp:1, maxHp:1, instId:'pending'}, 'operator deploy-preview', pending.operator.name || operatorName(pending.operator.charId), dirArrow(pending.direction)));
+      }
+      const projectiles = (s.projectiles || []).map(p => {
+        const x = (Number(p.pos?.x || 0) + .5) * (cell + 2) - 1;
+        const y = (Number(p.pos?.y || 0) + .5) * (cell + 2) - 1;
+        return `<i class="projectile" style="left:${x}px;top:${y}px" title="${esc(p.key)}"></i>`;
+      }).join('');
+      const deployPanel = pending ? deploymentPanelHtml(pending) : '';
+      $('battleViewport').innerHTML = `<div class="map-shell">
+        <div class="map-grid" style="grid-template-columns:repeat(${map.cols},var(--cell))">${tiles}</div>
+        <div class="unit-layer">${unitHtml.join('')}</div><div class="projectile-layer">${projectiles}</div>
+        ${deployPanel}
+        ${s.finished ? `<div class="result-overlay ${s.result === 'victory' ? '' : 'defeat'}"><div><b>${s.result === 'victory' ? 'VICTORY' : 'DEFEAT'}</b><span>${s.result === 'victory' ? '作战演算完成' : `防卫点归零 · 演算停止在 ${Number(s.t || 0).toFixed(1)} 秒`}</span></div></div>` : ''}
+      </div>`;
+      $('battleViewport').querySelectorAll('.tile').forEach(node => {
+        node.onclick = () => onTileClick(Number(node.dataset.row), Number(node.dataset.col));
+        node.ondragover = event => {
+          if (!app.draggingOperator) return;
+          event.preventDefault();
+          node.classList.toggle('drop-valid', canDeployOn(app.draggingOperator, Number(node.dataset.row), Number(node.dataset.col)));
+          node.classList.toggle('drop-invalid', !canDeployOn(app.draggingOperator, Number(node.dataset.row), Number(node.dataset.col)));
+        };
+        node.ondragleave = () => node.classList.remove('drop-valid', 'drop-invalid');
+        node.ondrop = event => {
+          event.preventDefault(); node.classList.remove('drop-valid', 'drop-invalid');
+          const operator = app.draggingOperator; app.draggingOperator = null;
+          if (operator) beginDeployment(operator, Number(node.dataset.row), Number(node.dataset.col));
+        };
+      });
+      $('battleViewport').querySelectorAll('[data-unit]').forEach(node => node.onclick = e => {
+        e.stopPropagation(); app.selectedUnit = {instId:Number(node.dataset.unit), type:node.dataset.unitType}; app.selectedOperator = null;
+        renderOperatorResults(); renderDeck(); renderInspector(); renderMap();
+      });
+      $('battleViewport').querySelectorAll('[data-pending-dir]').forEach(node => node.onclick = () => {
+        if (!app.pendingDeployment) return;
+        app.pendingDeployment.direction = Number(node.dataset.pendingDir);
+        app.direction = app.pendingDeployment.direction;
+        renderMap();
+      });
+      $('battleViewport').querySelectorAll('[data-pending-skill]').forEach(node => node.onclick = () => {
+        if (!app.pendingDeployment) return;
+        app.pendingDeployment.skillIndex = Number(node.dataset.pendingSkill);
+        app.pendingDeployment.error = '';
+        renderMap();
+      });
+      if ($('cancelDeploymentBtn')) $('cancelDeploymentBtn').onclick = cancelDeployment;
+      if ($('confirmDeploymentBtn')) $('confirmDeploymentBtn').onclick = confirmDeployment;
+    }
+
+    function deploymentPanelHtml(pending) {
+      const skills = pending.operator.skills || [];
+      const skillChoices = skills.length ? skills.map((skill, i) => `
+        <button class="deploy-skill ${pending.skillIndex === i ? 'active' : ''}" data-pending-skill="${i}">
+          <span>S${i + 1}</span><b>${esc(skill.name || skill.skillId || `技能 ${i + 1}`)}</b>
+        </button>`).join('') : '<div class="tag">该干员没有可选择的主动技能</div>';
+      return `<div class="deploy-confirm" role="dialog" aria-label="确认部署">
+        <div class="deploy-confirm-head"><div><b>${esc(pending.operator.name || operatorName(pending.operator.charId))}</b><small>部署至 (${pending.row}, ${pending.col}) · 选择技能与朝向后确认</small></div><strong>${fmt(pending.operator.cost)} DP</strong></div>
+        <div class="deploy-choice-title">携带技能 / SKILL</div><div class="deploy-skills">${skillChoices}</div>
+        <div class="deploy-choice-title">部署朝向 / DIRECTION</div>
+        <div class="deploy-direction">
+          ${[0,1,2,3].map(d => `<button data-pending-dir="${d}" class="${pending.direction === d ? 'active' : ''}" title="朝${['上','右','下','左'][d]}">${dirArrow(d)}</button>`).join('')}
+        </div>
+        ${pending.error ? `<div class="deploy-error">${esc(pending.error)}</div>` : ''}
+        <div class="deploy-actions"><button id="cancelDeploymentBtn">取消</button><button class="confirm" id="confirmDeploymentBtn" ${pending.submitting ? 'disabled' : ''}>${pending.submitting ? '正在部署…' : '确认部署'}</button></div>
+      </div>`;
+    }
+
+    function operatorName(charId) {
+      const hit = app.operatorCatalog.get(charId);
+      const member = app.squad.find(x => x.charId === charId);
+      return hit?.name || member?.name || abbr(charId);
+    }
+    async function onTileClick(row, col) {
+      app.selectedCell = [row, col];
+      if (!app.selectedOperator) { renderMap(); toast(`已选择地块 (${row}, ${col})`); return; }
+      beginDeployment(app.selectedOperator, row, col);
+    }
+    function canDeployOn(operator, row, col) {
+      const map = app.snapshot?.map;
+      const tile = map?.tiles?.[row * map.cols + col];
+      const mask = Number(operator?.position) === 2 ? 2 : 1;
+      const occupied = (app.snapshot?.deployed || []).some(unit => unit.row === row && unit.col === col);
+      return Boolean(tile && (Number(tile.buildableType || 0) & mask) && !occupied);
+    }
+    function beginDeployment(operator, row, col) {
+      app.draggingOperator = null;
+      app.selectedCell = [row, col];
+      if (!canDeployOn(operator, row, col)) {
+        toast('该地块不能部署这名干员，或已经被占用', true);
+        renderAll();
+        return;
+      }
+      const skills = operator.skills || [];
+      let skillIndex = Number(operator.skillIndex ?? 0);
+      if (!Number.isInteger(skillIndex) || skillIndex < 0 || skillIndex >= skills.length) skillIndex = 0;
+      app.pendingDeployment = {operator:{...operator}, row, col, direction:Number(operator.direction ?? app.direction), skillIndex, error:'', submitting:false};
+      app.selectedOperator = operator; app.selectedUnit = null;
+      renderMap(); renderDeck(); renderInspector(); updateControls();
+    }
+    function cancelDeployment() {
+      app.pendingDeployment = null;
+      renderAll();
+    }
+    async function confirmDeployment() {
+      const pending = app.pendingDeployment;
+      if (!pending || pending.submitting) return;
+      pending.submitting = true; pending.error = ''; renderMap();
+      try {
+        const skills = pending.operator.skills || [];
+        const result = await post('/action', {action:'deploy', charId:pending.operator.charId,
+          row:pending.row, col:pending.col, direction:pending.direction,
+          skillIndex:skills.length ? pending.skillIndex : null});
+        if (!result.ok) throw new Error(errorText[result.result] || result.result);
+        toast(`${pending.operator.name || operatorName(pending.operator.charId)} 已部署至 (${pending.row}, ${pending.col})，朝向 ${dirArrow(pending.direction)}${skills.length ? `，携带 S${pending.skillIndex + 1}` : ''}`);
+        app.selectedUnit = {instId:Number(result.result), type:'operator'}; app.selectedOperator = null;
+        const member = app.squad.find(x => x.charId === pending.operator.charId);
+        if (member) { member.skillIndex = pending.skillIndex; member.direction = pending.direction; }
+        app.pendingDeployment = null;
+        await refreshSnapshot(); renderOperatorResults();
+      } catch (e) {
+        if (app.pendingDeployment) {
+          app.pendingDeployment.submitting = false;
+          app.pendingDeployment.error = `部署失败：${errorText[e.message] || e.message}`;
+          renderMap();
+        }
+        toast(`部署失败：${errorText[e.message] || e.message}`, true);
+      }
+    }
+    function renderDeck() {
+      const deployed = new Map((app.snapshot?.deployed || []).map(x => [x.charId, x]));
+      const cooldowns = new Map((app.snapshot?.redeploys || []).map(x => [x.charId, x.redeployIn]));
+      const roster = app.squad;
+      $('deck').innerHTML = roster.length ? roster.map((member, i) => {
+        const info = app.operatorCatalog.get(member.charId) || member;
+        const unit = deployed.get(member.charId), cd = cooldowns.get(member.charId) || 0;
+        const dp = Number(info.cost ?? unit?.cost ?? 0), affordable = Number(app.snapshot?.cost || 0) >= dp;
+        const available = !unit && !cd && affordable && !app.snapshot?.finished;
+        const status = unit ? (unit.activeSkill ? '技能中' : `${unit.state || '场上'} · 阻挡 ${unit.blockedEnemies?.length || 0}`) : cd ? `再部署 ${Number(cd).toFixed(1)}s` : affordable ? '就绪 · 拖到地图部署' : `费用不足 · 需要 ${dp} DP`;
+        return `<button class="deck-card ${app.selectedOperator?.charId === member.charId ? 'active' : ''} ${cd ? 'cooldown' : ''}" data-deck="${i}" data-deployable="${available}">
+          <span class="op-badge">${esc(abbr(member.charId).slice(0,2))}</span>
+          <span><strong>${esc(info.name || abbr(member.charId))}</strong><small>${status}</small></span>
+          <span class="deck-state"><span>${unit ? `HP ${fmt(unit.hp)}/${fmt(unit.maxHp)}` : `E${member.phase ?? info.maxPhase ?? 2} · Lv.${member.level ?? info.maxLevel ?? 1}`}</span><b>${dp} DP</b></span>
+          ${unit ? `<span class="deck-bars"><i style="--value:${pct(unit.hp,unit.maxHp)}%"></i><i class="sp" style="--value:${pct(unit.sp,unit.spMax)}%"></i></span>` : ''}
+        </button>`;
+      }).join('') : '<div class="deck-empty">从左侧选择干员，在详情中点“加入作战编队”；然后从这里拖到地图格部署。</div>';
+    }
+
+    // Pointer events are delegated to the persistent deck container.  The
+    // cards themselves are live-rendered, so binding only to a card would
+    // create a small but real race with every incoming SSE snapshot.
+    let deckPointerDrag = null;
+    let suppressDeckClickUntil = 0;
+    const clearDropMarks = () => document.querySelectorAll('.tile').forEach(
+      tile => tile.classList.remove('drop-valid','drop-invalid'));
+    const tileAtPointer = event => document.elementFromPoint(
+      event.clientX, event.clientY)?.closest?.('.tile');
+    const operatorForDeckNode = node => {
+      const member = app.squad[Number(node.dataset.deck)];
+      if (!member) return null;
+      const info = app.operatorCatalog.get(member.charId) || member;
+      return {...info, ...member, charId:member.charId,
+        name:info.name || abbr(member.charId)};
+    };
+    function deckDropTileAt(event) {
+      let node = document.elementFromPoint(event.clientX, event.clientY);
+      let tile = node?.closest?.('.tile');
+      if (tile) return tile;
+      // The map can be horizontally scrolled.  Treat a release inside the
+      // visible map-shell bounds as a grid coordinate even if a unit layer
+      // or scrollbar sits above the tile at that exact pixel.
+      const shell = $('battleViewport').querySelector('.map-shell');
+      const grid = shell?.querySelector('.map-grid');
+      const map = app.snapshot?.map;
+      if (!shell || !grid || !map) return null;
+      const rect = grid.getBoundingClientRect();
+      if (event.clientX < rect.left + 8 || event.clientY < rect.top + 8 ||
+          event.clientX >= rect.right - 8 || event.clientY >= rect.bottom - 8) return null;
+      const cell = parseFloat(getComputedStyle(document.documentElement)
+        .getPropertyValue('--cell')) || 64;
+      const col = Math.floor((event.clientX - rect.left - 8) / (cell + 2));
+      const row = Math.floor((event.clientY - rect.top - 8) / (cell + 2));
+      return grid.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+    }
+    function finishDeckPointerDrag(event) {
+      if (!deckPointerDrag || event.pointerId !== deckPointerDrag.pointerId) return;
+      let tile = deckDropTileAt(event);
+      const operator = app.draggingOperator;
+      const moved = deckPointerDrag.moved;
+      if (!tile && moved && deckPointerDrag.hoverRow != null) {
+        tile = $('battleViewport').querySelector(
+          `[data-row="${deckPointerDrag.hoverRow}"][data-col="${deckPointerDrag.hoverCol}"]`);
+      }
+      try { deckPointerDrag.node.releasePointerCapture(event.pointerId); } catch (_) {}
+      deckPointerDrag.node.classList.remove('dragging');
+      deckPointerDrag.ghost?.remove();
+      deckPointerDrag = null; app.draggingOperator = null; clearDropMarks();
+      if (moved) suppressDeckClickUntil = performance.now() + 250;
+      if (moved && tile && operator) {
+        beginDeployment(operator, Number(tile.dataset.row), Number(tile.dataset.col));
+      } else {
+        setTimeout(renderAll, 0);
+      }
+    }
+    $('deck').onpointerdown = event => {
+      const node = event.target.closest?.('[data-deck]');
+      if (!node || node.dataset.deployable !== 'true' || event.button !== 0) return;
+      const operator = operatorForDeckNode(node);
+      if (!operator) return;
+      app.draggingOperator = operator;
+      const ghost = node.cloneNode(true);
+      ghost.classList.add('deck-drag-ghost'); ghost.removeAttribute('data-deck');
+      ghost.style.left = `${event.clientX}px`; ghost.style.top = `${event.clientY}px`;
+      document.body.appendChild(ghost);
+      deckPointerDrag = {pointerId:event.pointerId, x:event.clientX,
+        y:event.clientY, moved:false, node, ghost};
+      try { node.setPointerCapture(event.pointerId); } catch (_) {}
+      node.classList.add('dragging');
+    };
+    document.addEventListener('pointermove', event => {
+      if (!deckPointerDrag || event.pointerId !== deckPointerDrag.pointerId) return;
+      if (Math.hypot(event.clientX - deckPointerDrag.x,
+          event.clientY - deckPointerDrag.y) >= 6) deckPointerDrag.moved = true;
+      if (!deckPointerDrag.moved) return;
+      event.preventDefault();
+      deckPointerDrag.ghost.style.left = `${event.clientX}px`;
+      deckPointerDrag.ghost.style.top = `${event.clientY}px`;
+      clearDropMarks();
+      const tile = deckDropTileAt(event);
+      if (!tile) return;
+      deckPointerDrag.hoverRow = Number(tile.dataset.row);
+      deckPointerDrag.hoverCol = Number(tile.dataset.col);
+      const valid = canDeployOn(app.draggingOperator,
+        Number(tile.dataset.row), Number(tile.dataset.col));
+      tile.classList.add(valid ? 'drop-valid' : 'drop-invalid');
+    }, {passive:false});
+    document.addEventListener('pointerup', finishDeckPointerDrag);
+    document.addEventListener('pointercancel', finishDeckPointerDrag);
+    $('deck').onclick = event => {
+      if (performance.now() < suppressDeckClickUntil) return;
+      const node = event.target.closest?.('[data-deck]');
+      if (!node) return;
+      const operator = operatorForDeckNode(node);
+      if (!operator) return;
+      const unit = (app.snapshot?.deployed || []).find(
+        item => item.charId === operator.charId);
+      if (unit) {
+        app.selectedUnit = {instId:unit.instId, type:'operator'};
+        app.selectedOperator = null;
+      } else {
+        app.selectedOperator = operator; app.selectedUnit = null;
+      }
+      renderDeck(); renderOperatorResults(); renderInspector(); renderMap();
+    };
+
+    function renderInspector() {
+      const s = app.snapshot;
+      if (!s) { $('inspectBody').innerHTML = '<div class="empty-map">等待战斗数据</div>'; return; }
+      const unit = currentSelectedUnit();
+      if (unit) { renderUnitInspector(unit); return; }
+      if (app.selectedOperator) {
+        const op = app.selectedOperator;
+        const inSquad = app.squad.some(member => member.charId === op.charId);
+        $('inspectBody').innerHTML = `<div class="overview-title"><div><h2>${esc(op.name)}</h2><p>${esc(op.charId)}</p></div><span class="tag">待部署</span></div>
+          <div class="stat-grid"><div class="stat-box"><span>部署费用</span><b>${op.cost ?? '—'} DP</b></div><div class="stat-box"><span>部署位置</span><b>${op.position === 2 ? '高台' : '地面'}</b></div></div>
+          <div class="subhead">部署指令</div><p style="color:var(--muted);font-size:12px;line-height:1.7">当前朝向为 <b style="color:var(--accent)">${dirArrow(app.direction)}</b>。${inSquad ? '从底部卡片拖到可部署格；也可继续点击地图部署。' : '先加入底部编队，再将卡片拖到地图格。'}</p>
+          <button class="mini-btn" style="width:100%" id="addCurrentToSquad" ${inSquad ? 'disabled' : ''}>${inSquad ? '已在作战编队中' : '加入作战编队'}</button>`;
+        $('addCurrentToSquad').onclick = () => addSelectedToSquadLive();
+        return;
+      }
+      const stats = s.stats || {}, waves = s.waves || {};
+      const totalSeen = Number(stats.kills || 0) + Number(waves.remaining || 0) + (s.enemies || []).length;
+      const killPct = totalSeen ? pct(stats.kills, totalSeen) : (waves.finished ? 100 : 0);
+      $('inspectBody').innerHTML = `<div class="overview-title"><div><h2>战场总览</h2><p>选择单位可查看属性、技能与状态</p></div><span class="tag">${s.finished ? esc(s.result || '结束') : s.paused ? '已暂停' : '演算中'}</span></div>
+        <div class="stat-grid">
+          <div class="stat-box"><span>场上敌人</span><b>${(s.enemies || []).length}</b></div>
+          <div class="stat-box"><span>我方单位</span><b>${(s.deployed || []).length + (s.tokens || []).length}</b></div>
+          <div class="stat-box"><span>造成伤害</span><b>${fmt(stats.playerDamageDealt)}</b></div>
+          <div class="stat-box"><span>承受伤害</span><b>${fmt(stats.playerDamageTaken)}</b></div>
+        </div>
+        <div class="subhead">击破进度</div><div class="stat-box"><span>${stats.kills || 0} 已击破 · ${stats.leaks || 0} 漏怪</span><div class="progress"><i style="width:${killPct}%"></i></div></div>
+        <div class="subhead">波次调度</div><div class="stat-box"><span>${waves.mode === 'runtime' ? `第 ${waves.currentWave ?? '-'} / ${waves.totalWaves ?? '-'} 波 · 片段 ${waves.currentFragment ?? '-'} / ${waves.totalFragments ?? '-'} · ${esc(wavePhaseName(waves.phase))}${waves.waitingEnemies ? ` · 等待 ${waves.waitingEnemies} 个阻塞敌人` : ''}` : `${waves.remaining ?? 0} 个动作待调度`}</span></div>
+        <div class="subhead">场景系统</div><div>${[
+          s.prts && Object.keys(s.prts).length ? 'PRTS' : '', s.act35 && Object.keys(s.act35).length ? '宝石' : '',
+          s.act31 && Object.keys(s.act31).length ? '污染区' : '', (s.envSystems || []).length ? '环境系统' : ''
+        ].filter(Boolean).map(x => `<span class="tag" style="margin:0 5px 5px 0">${x}</span>`).join('') || '<span class="tag">标准作战环境</span>'}</div>`;
+    }
+    function renderUnitInspector(u) {
+      const isEnemy = app.selectedUnit?.type === 'enemy';
+      const isOperator = app.selectedUnit?.type === 'operator';
+      const name = isEnemy ? (u.key || '敌方单位') : isOperator ? operatorName(u.charId) : (u.tokenId || u.charId || '召唤物');
+      const skills = u.skills || [];
+      $('inspectBody').innerHTML = `<div class="overview-title"><div><h2>${esc(name)}</h2><p>#${u.instId} · (${u.row}, ${u.col}) · ${esc(u.state || u.subProfession || '')}</p></div><span class="tag">${isEnemy ? 'ENEMY' : 'ALLY'}</span></div>
+        <div class="stat-grid">
+          <div class="stat-box"><span>生命值</span><b>${fmt(u.hp)} / ${fmt(u.maxHp)}</b><div class="progress"><i style="width:${pct(u.hp,u.maxHp)}%"></i></div></div>
+          <div class="stat-box"><span>技力</span><b>${fmt(u.sp)} / ${fmt(u.spMax)}</b><div class="progress"><i style="width:${pct(u.sp,u.spMax)}%;background:var(--accent)"></i></div></div>
+          <div class="stat-box"><span>攻击 / 防御</span><b>${fmt(u.atk)} / ${fmt(u.def)}</b></div>
+          <div class="stat-box"><span>法抗 / 攻速</span><b>${fmt(u.mres)} / ${fmt(u.attackSpeed)}</b></div>
+        </div>
+        ${skills.length ? `<div class="subhead">技能</div>${skills.map((sk, i) => {
+          const equipped = u.equippedSkillIndex == null || Boolean(sk.equipped);
+          const deployOnly = Number(sk.spType) === 0 || Number(sk.spType) === 8;
+          const ready = !isEnemy && equipped && !deployOnly && !u.activeSkill && Number(u.sp) >= Number(sk.spCost || 0) && Number(sk.cooldownRemaining || 0) <= 0;
+          const actionText = !equipped ? '未携带' : deployOnly ? (Number(sk.spType) === 8 ? '部署时触发' : '被动技能') : u.activeSkill ? '技能进行中' : ready ? '释放技能' : '尚未就绪';
+          return `<div class="skill-card ${equipped && u.equippedSkillIndex != null ? 'equipped' : ''}"><div class="skill-top"><b>S${i + 1} · ${esc(sk.name || sk.skillId)}</b><small>${equipped && u.equippedSkillIndex != null ? '已携带 · ' : ''}${fmt(u.sp)} / ${fmt(sk.spCost)} SP</small></div>
+            <div class="progress"><i style="width:${pct(u.sp, sk.spCost)}%;background:var(--accent)"></i></div>
+            ${isOperator ? `<button data-skill="${i}" ${ready ? '' : 'disabled'}>${actionText}</button>` : ''}</div>`;
+        }).join('')}` : ''}
+        ${(u.buffs || []).length ? `<div class="subhead">BUFF / 状态</div>${(u.buffs || []).slice(0,20).map(b => `<div class="buff-row"><b>${esc(b.key || b.template_key || 'buff')}</b><span style="float:right;color:var(--muted)">${b.remaining == null ? '' : Number(b.remaining).toFixed(1)+'s'}</span></div>`).join('')}` : ''}
+        ${isOperator || app.selectedUnit?.type === 'token' ? '<button class="danger-btn" id="withdrawUnitBtn">撤退该单位</button>' : ''}`;
+      $('inspectBody').querySelectorAll('[data-skill]').forEach(node => node.onclick = () => useSkill(u.instId, Number(node.dataset.skill)));
+      if ($('withdrawUnitBtn')) $('withdrawUnitBtn').onclick = () => withdrawUnit(u.instId);
+    }
+    async function useSkill(instId, skillIndex) {
+      try {
+        const result = await post('/action', {action:'skill', instId, skillIndex});
+        if (!result.ok) throw new Error(errorText[result.result] || result.result);
+        toast('技能已释放'); await refreshSnapshot();
+      } catch (e) { toast(`技能释放失败：${e.message}`, true); }
+    }
+    async function withdrawUnit(instId) {
+      try {
+        const result = await post('/action', {action:'withdraw', instId});
+        if (!result.ok) throw new Error(errorText[result.result] || result.result);
+        app.selectedUnit = null; toast('单位已撤退'); await refreshSnapshot();
+      } catch (e) { toast(`撤退失败：${e.message}`, true); }
+    }
+
+    function appendEvents(events) {
+      let changed = false;
+      for (const ev of events) {
+        if (Number(ev.seq) <= app.eventSeq) continue;
+        app.eventSeq = Math.max(app.eventSeq, Number(ev.seq)); app.events.unshift(ev); changed = true;
+      }
+      if (!changed) return;
+      app.events = app.events.slice(0, 240); renderEvents();
+    }
+    function renderEvents() {
+      $('eventList').innerHTML = app.events.map(ev => {
+        const kind = String(ev.type || '');
+        const cls = kind.includes('damage') || kind.includes('dead') ? 'damage' : kind.includes('skill') ? 'skill' : '';
+        return `<div class="event ${cls}"><time>${Number(ev.t || 0).toFixed(2)}</time><b>${esc(kind)}</b><span title="${esc(JSON.stringify(ev.data || {}))}">${esc(JSON.stringify(ev.data || {}))}</span></div>`;
+      }).join('') || '<div class="empty-map" style="padding:35px 10px">暂无战斗事件</div>';
+    }
+    function updateControls() {
+      const paused = Boolean(app.snapshot?.paused ?? app.status?.paused);
+      $('pauseBtn').textContent = paused ? '继续' : '暂停';
+      $('pauseBtn').classList.toggle('active', paused);
+      const speed = Number(app.status?.speed || 1);
+      $('speedButtons').querySelectorAll('[data-speed]').forEach(b => b.classList.toggle('active', Number(b.dataset.speed) === speed));
+    }
+    async function control(action, extra={}) {
+      try {
+        const result = await post('/action', {action, ...extra});
+        if (result.snapshot) acceptSnapshot(result.snapshot); else await refreshSnapshot();
+        return result;
+      } catch (e) { toast(`操作失败：${e.message}`, true); }
+    }
+
+    function openConfig() {
+      renderSquadEditor();
+      $('customEnemyJson').value = JSON.stringify(app.customEnemies || [], null, 2);
+      $('configDialog').showModal();
+      $('configOperatorSearch').value = '';
+      searchConfigOperators('').catch(e => toast(`干员搜索失败：${e.message}`, true));
+      setTimeout(() => $('configOperatorSearch').focus(), 0);
+    }
+    function renderSquadEditor() {
+      $('configSquadCount').textContent = `${app.squad.length} 人`;
+      $('squadEditor').innerHTML = app.squad.length ? app.squad.map((m, i) => {
+        const info = app.operatorCatalog.get(m.charId) || m;
+        return `<div class="squad-row" data-squad-row="${i}">
+          <div><b>${esc(info.name || abbr(m.charId))}</b><div style="color:var(--muted);font-size:9px;margin-top:4px">${esc(m.charId)}</div></div>
+          <div class="field"><label>精英阶段</label><select data-field="phase"><option value="0">E0</option><option value="1">E1</option><option value="2">E2</option></select></div>
+          <div class="field"><label>等级</label><input data-field="level" type="number" min="1" max="90" value="${m.level || info.maxLevel || 1}"></div>
+          <div class="field"><label>潜能</label><input data-field="potential" type="number" min="0" max="5" value="${m.potential || 0}"></div>
+          <button class="remove-btn" data-remove="${i}" aria-label="移除">×</button>
+        </div>`;
+      }).join('') : '<div class="empty-map" style="padding:25px 10px">编队为空，请从右侧搜索并加入干员。</div>';
+      $('squadEditor').querySelectorAll('[data-squad-row]').forEach((row, i) => {
+        row.querySelector('[data-field="phase"]').value = String(app.squad[i].phase ?? 2);
+      });
+      $('squadEditor').querySelectorAll('[data-remove]').forEach(node => node.onclick = () => {
+        syncSquadEditor();
+        app.squad.splice(Number(node.dataset.remove), 1);
+        renderSquadEditor(); renderConfigOperatorResults();
+      });
+    }
+    function syncSquadEditor() {
+      $('squadEditor').querySelectorAll('[data-squad-row]').forEach((row, i) => {
+        app.squad[i].phase = Number(row.querySelector('[data-field="phase"]').value);
+        app.squad[i].level = Number(row.querySelector('[data-field="level"]').value);
+        app.squad[i].potential = Number(row.querySelector('[data-field="potential"]').value);
+      });
+    }
+    async function searchConfigOperators(query='') {
+      const token = ++app.configSearchToken;
+      app.configSearchQuery = query.trim();
+      if (!app.configSearchQuery) {
+        app.configOperatorHits = [];
+        $('configOperatorCount').textContent = 'SEARCH';
+        $('configOperatorResults').innerHTML = '<div class="config-search-empty">输入干员中文名或 ID 开始搜索</div>';
+        return;
+      }
+      $('configOperatorResults').innerHTML = '<div class="config-search-empty">正在搜索干员…</div>';
+      const data = await request('/operators?q=' + encodeURIComponent(app.configSearchQuery));
+      if (token !== app.configSearchToken) return;
+      app.configOperatorHits = data.hits || [];
+      for (const operator of app.configOperatorHits) {
+        app.operatorCatalog.set(operator.charId, operator);
+      }
+      renderConfigOperatorResults();
+    }
+    function renderConfigOperatorResults() {
+      const hits = app.configOperatorHits || [];
+      $('configOperatorCount').textContent = `${hits.length} RESULTS`;
+      $('configOperatorResults').innerHTML = hits.length ? hits.map((op, i) => {
+        const added = app.squad.some(member => member.charId === op.charId);
+        return `<div class="config-op-row" data-config-operator="${i}">
+          <span class="op-badge">${esc(abbr(op.charId).slice(0,2))}</span>
+          <span class="op-meta"><b>${esc(op.name || op.charId)}</b><small>${esc(op.charId)} · ${'★'.repeat(op.rarity || 0)} · ${esc(op.subProfession || '未知分支')}</small></span>
+          <button class="config-add-btn" data-config-add="${i}" ${added ? 'disabled' : ''}>${added ? '已加入' : '＋ 加入'}</button>
+        </div>`;
+      }).join('') : '<div class="config-search-empty">没有找到匹配的干员</div>';
+      $('configOperatorResults').querySelectorAll('[data-config-add]').forEach(node => {
+        node.onclick = () => addConfigOperator(Number(node.dataset.configAdd));
+      });
+    }
+    function addConfigOperator(index) {
+      const operator = app.configOperatorHits[index];
+      if (!operator) return;
+      syncSquadEditor();
+      if (!app.squad.some(x => x.charId === operator.charId)) {
+        app.squad.push({charId:operator.charId, name:operator.name,
+          phase:operator.maxPhase ?? 2, level:operator.maxLevel ?? 1,
+          potential:0, skillIndex:0});
+        app.operatorCatalog.set(operator.charId, operator);
+        toast(`${operator.name || operator.charId} 已加入当前编队`);
+      }
+      renderSquadEditor(); renderConfigOperatorResults(); renderDeck();
+    }
+    async function addSelectedToSquadLive() {
+      if (!app.selectedOperator) return;
+      if (!app.squad.some(x => x.charId === app.selectedOperator.charId)) {
+        app.squad.push({charId:app.selectedOperator.charId, name:app.selectedOperator.name, phase:app.selectedOperator.maxPhase ?? 2, level:app.selectedOperator.maxLevel ?? 1, potential:0});
+      }
+      try {
+        const data = await post('/squad', {squad:app.squad.map(({name, ...x}) => x)});
+        app.squad = (data.squad || []).map(x => ({...x}));
+        app.operatorCatalog.set(app.selectedOperator.charId, app.selectedOperator);
+        renderDeck(); renderInspector(); toast(`${app.selectedOperator.name} 已加入底部编队`);
+      } catch (e) { toast(`加入编队失败：${e.message}`, true); }
+    }
+    async function saveConfig() {
+      syncSquadEditor();
+      let custom;
+      try { custom = JSON.parse($('customEnemyJson').value || '[]'); }
+      catch (e) { toast(`自定义敌人 JSON 错误：${e.message}`, true); return; }
+      try {
+        const payload = {squad:app.squad.map(({name, ...x}) => x), custom_enemies:custom};
+        const data = await post('/config', payload);
+        app.squad = (data.squad || []).map(x => ({...x})); app.customEnemies = data.custom_enemies || [];
+        app.selectedUnit = null; app.events = []; app.eventSeq = 0; $('configDialog').close();
+        await loadStatus(); await refreshSnapshot(); toast('编队配置已应用，关卡重新开始');
+      } catch (e) { toast(`配置失败：${e.message}`, true); }
+    }
+
+    $('levelSearchForm').onsubmit = e => { e.preventDefault(); searchLevels($('levelSearch').value).catch(err => toast(err.message,true)); };
+    $('operatorSearchForm').onsubmit = e => { e.preventDefault(); searchOperators($('operatorSearch').value).catch(err => toast(err.message,true)); };
+    $('configOperatorSearchForm').onsubmit = e => { e.preventDefault(); searchConfigOperators($('configOperatorSearch').value).catch(err => toast(err.message,true)); };
+    let configSearchTimer = null;
+    $('configOperatorSearch').oninput = () => {
+      clearTimeout(configSearchTimer);
+      configSearchTimer = setTimeout(() => searchConfigOperators(
+        $('configOperatorSearch').value).catch(err => toast(err.message, true)), 220);
+    };
+    $('loadLevelBtn').onclick = loadSelectedLevel;
+    $('pauseBtn').onclick = () => control(app.snapshot?.paused ? 'resume' : 'pause');
+    $('stepBtn').onclick = () => control('step', {n:1});
+    $('stepSecondBtn').onclick = () => control('step', {n:30});
+    $('restartBtn').onclick = async () => { const result = await control('restart'); if (result) { app.events=[]; app.eventSeq=0; toast('已重新开始演算'); } };
+    $('speedButtons').querySelectorAll('[data-speed]').forEach(node => node.onclick = async () => { const data = await control('speed',{speed:Number(node.dataset.speed)}); if (data) { app.status = {...(app.status||{}), speed:data.speed}; updateControls(); } });
+    $('directionButtons').querySelectorAll('[data-dir]').forEach(node => node.onclick = () => { app.direction=Number(node.dataset.dir); $('directionButtons').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b===node)); renderInspector(); });
+    $('clearEventsBtn').onclick = () => { app.events=[]; renderEvents(); };
+    $('configBtn').onclick = openConfig; $('closeConfigBtn').onclick = () => $('configDialog').close();
+    $('cancelConfigBtn').onclick = () => $('configDialog').close(); $('saveConfigBtn').onclick = saveConfig;
+
+    async function boot() {
+      try {
+        await Promise.all([loadStatus(), searchLevels('1-1'), searchOperators('')]);
+        await refreshSnapshot(); connectStream(); renderEvents();
+        setInterval(refreshSnapshot, 2500);
+      } catch (e) { toast(`初始化失败：${e.message}`, true); setConnection(false); setTimeout(boot, 2500); }
+    }
+    boot();
+  </script>
+</body>
+</html>

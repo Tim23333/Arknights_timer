@@ -1,14 +1,14 @@
 """
-ADB 内存读取底层 (明日方舟 @ MuMu 模拟器)
+memsrv v4 内存读取底层 (明日方舟 @ MuMu 模拟器)
 
-- 通过 adb exec-out dd 读取 Android 进程 /proc/<pid>/mem
-- 大块读取: 头/尾 4MB 不对齐部分走 4KB 页对齐, 中部走 4MB 块
-  (dd 起点/终点落在区域外未映射洞会 EIO 整块丢失, 必须避开)
+- ADB 仅用于设备发现/root/PID/maps、端口转发和部署 memsrv
+- 所有游戏内存读取与扫描只允许 memsrv v4，不保留旧协议、shell/dd 或
+  adb exec-out dd 兼容路径
 - /proc/<pid>/maps 解析与指针有效性校验
 - Il2CppString / C 字符串读取
 - TcpChannel: 设备侧常驻 TCP 通道 (adb forward)。优先使用自编译的
   memsrv 服务 (memsrv.c, 打开 /proc/<pid>/mem 一次后每次读取仅一个
-  pread64, 单批 ~2-5ms); 不可用时回退 nc -L sh + dd 模式 (~45ms/请求)
+  pread64 与设备侧事务，单批约 2-5ms)
 """
 
 import subprocess
@@ -40,7 +40,7 @@ KNOWN_GAME_PACKAGES = (
 # 7555 为旧版 MuMu6 残留端口
 KNOWN_MUMU_SERIALS = tuple(
     [f'127.0.0.1:{16384 + 32 * i}' for i in range(7)] + ['127.0.0.1:7555'])
-BS = 4 * 1024 * 1024  # dd 块大小
+BS = 4 * 1024 * 1024  # memsrv 单次读取上限
 
 
 def _config_file() -> str:
@@ -279,37 +279,52 @@ def find_running_emulator_adbs(processes=None):
 
 
 class TcpChannel:
-    """设备侧常驻读取服务 (adb forward TCP 长连接)。
+    """设备侧 memsrv v4 常驻快照服务（adb forward TCP 长连接）。
 
-    两种模式 (open() 自动探测):
-    - 'srv': 自编译 memsrv (tools/enemy_health/memsrv.c -> bin/memsrv,
-      aarch64 静态)。nc -L 以其为服务程序, 启动即打开 /proc/<pid>/mem,
-      之后每请求仅一个 pread64。协议: 8 字节横幅 "AKMSRV1\\n"; 请求
-      u64 N + N*{u64 addr, u64 size}; 响应 i64 n + n 字节 (n<0 为 -errno,
-      n<size 为短读)。单批 ~2-5ms, 准实时首选。
-    - 'sh':  nc -L sh + 每请求 fork dd (~33-45ms/请求), 作为兜底。
-      协议: 每请求 "M<i>" 行 + 页对齐 dd 原始数据 + "E<i>" 行, 末尾 "END"。
-
-    任何读取异常都会关闭 socket 并抛出, 由调用方回退慢速 read()。"""
+    只接受 ``AKMSRV4`` 握手。二进制缺失、版本不符或读取异常都会关闭
+    socket 并抛错；调用方不得回退到旧协议、shell/dd 或 adb exec-out dd。"""
 
     PORT = 27271   # 默认端口; 多通道共存时 (如敌人监控 27271 + RNG 27272) 用 port 参数隔离
     SRV_DIR = '/data/local/tmp'
-    BANNER_V1 = b"AKMSRV1\n"   # 仅读取
-    BANNER_V2 = b"AKMSRV2\n"   # 读取 + 设备侧扫描 (memsrv.c v2)
-    BANNER = BANNER_V1          # 兼容旧引用
+    BANNER_V4 = b"AKMSRV4\n"   # 常驻事务计划 + 设备侧完整帧校验
     SCAN_MAGIC = 0xFFFFFFFFFFFFFFFF
+    PACKED_READ_MAGIC = 0xFFFFFFFFFFFFFFFE
+    TXN_READ_MAGIC = 0xFFFFFFFFFFFFFFFD
+    PLAN_UPLOAD_MAGIC = 0xFFFFFFFFFFFFFFFC
+    PLAN_EXEC_MAGIC = 0xFFFFFFFFFFFFFFFB
 
     def __init__(self, mc: 'MemCore', read_timeout: float = 5.0, port: int = None):
         self.mc = mc
         self.read_timeout = read_timeout
         self.port = port or self.PORT
         self.sock: Optional[socket.socket] = None
-        self.mode: Optional[str] = None   # 'srv' | 'sh'
-        self.srv_version = 0              # 1=读取, 2=读取+扫描
+        self.mode: Optional[str] = None   # 仅 'srv'
+        self.srv_version = 0              # 仅 4
         self._memsrv_restarted = False    # 本次 _push_memsrv 是否重推并杀了旧服务
         self._lock = threading.Lock()   # 同一时间只允许一个 batch_read
         self._stats_lock = threading.Lock()
         self._frame_stats = self._new_frame_stats()
+        # v4 把依赖读取计划常驻在设备端。稳定帧只发送 EXEC，不再上传事务描述，
+        # 也不在 Windows 端逐结果重扫指针。链路变化产生的未命中仍在当帧实读，
+        # 下一帧进入一次拓扑捕获，随后上传新的计划。
+        self._prefetch_plan: List[Tuple[int, int]] = []
+        self._prefetch_ops = []
+        self._prefetch_sizes = []
+        self._prefetch_values = {}
+        self._frame_plan: List[Tuple[int, int]] = []
+        self._frame_plan_seen = set()
+        self._frame_ops = []
+        self._frame_op_indices = {}
+        self._frame_pointer_sources = {}
+        self._frame_pointer_values = []
+        self._prefetch_active = False
+        self._capture_topology = True
+        self._capture_next_frame = False
+        self._plan_uploaded = False
+        self._guard_addr = 0
+        self._guard_size = 0
+        self._guard_attempts = 3
+        self._device_guard = {}
 
     @staticmethod
     def _new_frame_stats() -> dict:
@@ -383,12 +398,12 @@ class TcpChannel:
             return False
 
     def _start_service(self):
-        """启动设备侧 nc -L 服务 (memsrv 优先, 否则 sh; setsid 防 adb 会话退出时被杀)"""
-        if self._push_memsrv():
-            self.mc.shell(f"setsid nc -L -p {self.port} "
-                          f"{self.SRV_DIR}/memsrv.sh </dev/null >/dev/null 2>&1 &")
-        else:
-            self.mc.shell(f"setsid nc -L -p {self.port} sh </dev/null >/dev/null 2>&1 &")
+        """启动设备侧 memsrv v4；部署失败即报错，不启动 shell 服务。"""
+        if not self._push_memsrv():
+            raise RuntimeError(
+                'memsrv v4 二进制缺失或部署失败；已禁用所有兼容读取路径')
+        self.mc.shell(f"setsid nc -L -p {self.port} "
+                      f"{self.SRV_DIR}/memsrv.sh </dev/null >/dev/null 2>&1 &")
         time.sleep(0.5)
 
     def _kill_own_nc(self):
@@ -404,11 +419,8 @@ class TcpChannel:
         每次连接都先查版本: 二进制变更时 _push_memsrv 会杀旧服务, 此处负责重启。"""
         self.mc.adb("forward", f"tcp:{self.port}", f"tcp:{self.port}")
         if not self._push_memsrv():
-            # 无本地二进制: 只能依赖现有服务或 sh 兜底
-            if self._server_up():
-                return
-            self._start_service()
-            return
+            raise RuntimeError(
+                'memsrv v4 二进制缺失或部署失败；无法读取游戏内存')
         if self._memsrv_restarted:
             time.sleep(0.3)           # 等旧 nc 退出
             self._start_service()
@@ -434,68 +446,39 @@ class TcpChannel:
             pass
         time.sleep(0.3)
         self._start_service()
-        self._connect_once()   # 再失败自然抛出, 由调用方回退慢速 read()
+        self._connect_once()   # 再失败直接上抛，不存在兼容读取路径
 
     def _connect_once(self):
         self.sock = socket.create_connection(("127.0.0.1", self.port), timeout=10)
         self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-        # 模式探测: memsrv 会主动发 8 字节横幅; sh 不会主动发任何字节
+        # memsrv v4 主动发送固定 8 字节横幅。
         self.sock.settimeout(1.0)
         try:
             b = self._read_exact(8)
         except (socket.timeout, OSError):
             b = b''
         self.sock.settimeout(self.read_timeout)
-        if b == self.BANNER_V2:
+        if b == self.BANNER_V4:
             self.mode = 'srv'
-            self.srv_version = 2
+            self.srv_version = 4
             return
-        if b == self.BANNER_V1:
-            self.mode = 'srv'
-            self.srv_version = 1
-            return
-        # sh 模式 (或 memsrv 启动失败): 尝试 sh 同步
-        self.mode = None
-        self.sock.sendall(b"echo AKCHAN_READY\n")
-        for _ in range(20):
-            if self._read_line() == b"AKCHAN_READY":
-                self.mode = 'sh'
-                break
-        if self.mode is None:
-            self.close()
-            raise IOError("TCP 通道同步失败")
-        # sh 模式且 memsrv 可部署 -> 升级: 杀掉 sh 版 nc, 换 memsrv 版 (每进程只试一次)
-        if not getattr(self.mc, '_memsrv_upgrade_tried', False) and self._push_memsrv():
-            self.mc._memsrv_upgrade_tried = True
-            self.close()
-            self._kill_own_nc()
-            time.sleep(0.3)
-            self.mc.shell(f"setsid nc -L -p {self.port} "
-                          f"{self.SRV_DIR}/memsrv.sh </dev/null >/dev/null 2>&1 &")
-            time.sleep(0.5)
-            self.sock = socket.create_connection(("127.0.0.1", self.port), timeout=10)
-            self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-            self.sock.settimeout(self.read_timeout)
-            b = self._read_exact(8)
-            if b not in (self.BANNER_V1, self.BANNER_V2):
-                self.close()
-                raise IOError("memsrv 升级后握手失败")
-            self.mode = 'srv'
-            self.srv_version = 2 if b == self.BANNER_V2 else 1
+        self.close()
+        label = b.decode('ascii', errors='replace').strip() or '无握手'
+        raise IOError(f'仅支持 memsrv v4，设备返回: {label}')
 
-    # ---------- 设备侧扫描 (srv v2) ----------
+    # ---------- 设备侧扫描 (memsrv v4) ----------
 
-    def scan(self, addr: int, size: int, needles: List[bytes]) -> Optional[dict]:
+    def scan(self, addr: int, size: int, needles: List[bytes]) -> dict:
         """设备侧模式扫描: 在 [addr, addr+size) 内搜索全部 needle,
-        返回 {needle: [命中绝对地址...]}; 仅 srv v2 可用, 否则返回 None。
+        返回 {needle: [命中绝对地址...]}；只允许 memsrv v4。
         命中地址数单针上限 65536 (memsrv MAX_HITS)。"""
-        if self.mode != 'srv' or self.srv_version < 2:
-            return None
+        if self.mode != 'srv' or self.srv_version != 4:
+            raise RuntimeError('设备侧扫描要求 memsrv v4')
         with self._lock:
             if not self.sock:
                 self.open()
-            if self.srv_version < 2:
-                return None
+            if self.srv_version != 4:
+                raise RuntimeError('设备侧扫描要求 memsrv v4')
             try:
                 hdr = struct.pack('<Q', self.SCAN_MAGIC)
                 hdr += struct.pack('<QQI', addr, size, len(needles))
@@ -518,7 +501,14 @@ class TcpChannel:
                 raise
 
     def close(self):
+        self.clear_frame_prefetch()
         if self.sock:
+            # 另一个线程可能正阻塞在 recv()；先 shutdown 才能在 Windows 上
+            # 可靠唤醒它，单纯 close() 不保证立即中断跨线程的阻塞读取。
+            try:
+                self.sock.shutdown(socket.SHUT_RDWR)
+            except (AttributeError, OSError):
+                pass
             try:
                 self.sock.close()
             except Exception:
@@ -534,30 +524,191 @@ class TcpChannel:
             buf += c
         return bytes(buf)
 
-    def _read_line(self) -> bytes:
-        buf = bytearray()
-        while True:
-            c = self.sock.recv(1)
-            if not c:
-                raise IOError("TCP 通道 EOF")
-            buf += c
-            if c == b"\n":
-                return bytes(buf).rstrip(b"\r\n")
-
     # ---------- 批量读取 ----------
 
-    def batch_read(self, requests: List[Tuple[int, int]]) -> List[Optional[bytes]]:
+    def begin_frame_prefetch(self) -> bool:
+        """执行设备端常驻计划并取得当前完整帧的原始数据。
+
+        这里只复用地址拓扑；返回数据均由设备在本次调用中重新读取，绝不沿用
+        上一帧值。稳定拓扑不再在 Windows 端重建依赖图。
+        """
+        self._prefetch_values = {}
+        self._frame_plan = []
+        self._frame_plan_seen = set()
+        self._frame_ops = []
+        self._frame_op_indices = {}
+        self._frame_pointer_sources = {}
+        self._frame_pointer_values = []
+        self._prefetch_active = False
+        self._device_guard = {}
+        self._capture_topology = bool(
+            self._capture_next_frame or not self._plan_uploaded)
+        self._capture_next_frame = False
+        operations = list(self._prefetch_ops)
+        if self.mode != 'srv' or self.srv_version != 4 \
+                or not self._plan_uploaded or not operations:
+            return False
+        values, guard = self.execute_frame_plan(operations)
+        self._device_guard = guard
+        resolved = []
+        for index, (op, data) in enumerate(zip(operations, values)):
+            request = None
+            if op[0] == 'direct':
+                request = (int(op[1]), int(op[2]))
+            elif op[0] == 'deref':
+                _kind, ref, pointer_offset, addend, size = op
+                source = values[int(ref)] if 0 <= int(ref) < index else None
+                if source and 0 <= int(pointer_offset) <= len(source) - 8:
+                    base = struct.unpack_from('<Q', source, int(pointer_offset))[0]
+                    request = (base + int(addend), int(size))
+            resolved.append(request)
+            if request is not None and data is not None:
+                self._prefetch_values[request] = data
+        self._prefetch_active = True
+        return True
+
+    def end_frame_prefetch(self) -> None:
+        """提交本帧实际访问的地址计划，供下一帧重新读取。"""
+        if self._capture_topology and self._frame_plan:
+            self._prefetch_plan = list(self._frame_plan)
+            self._prefetch_ops = list(self._frame_ops)
+            self.upload_frame_plan(self._prefetch_ops)
+            self._plan_uploaded = True
+            self._capture_topology = False
+            self._capture_next_frame = False
+        self._prefetch_values = {}
+        self._frame_plan = []
+        self._frame_plan_seen = set()
+        self._frame_ops = []
+        self._frame_op_indices = {}
+        self._frame_pointer_sources = {}
+        self._frame_pointer_values = []
+        self._prefetch_active = False
+
+    def clear_frame_prefetch(self) -> None:
+        self._prefetch_plan = []
+        self._prefetch_ops = []
+        self._prefetch_sizes = []
+        self._prefetch_values = {}
+        self._frame_plan = []
+        self._frame_plan_seen = set()
+        self._frame_ops = []
+        self._frame_op_indices = {}
+        self._frame_pointer_sources = {}
+        self._frame_pointer_values = []
+        self._prefetch_active = False
+        self._capture_topology = True
+        self._capture_next_frame = False
+        self._plan_uploaded = False
+        self._device_guard = {}
+
+    def configure_frame_guard(self, addr: int, size: int = 4,
+                              attempts: int = 3) -> None:
+        """设置设备内完整帧保护字段；变化后下一帧重新上传常驻计划。"""
+        config = (int(addr or 0), int(size or 0), max(1, min(8, int(attempts))))
+        current = (self._guard_addr, self._guard_size, self._guard_attempts)
+        if config == current:
+            return
+        self._guard_addr, self._guard_size, self._guard_attempts = config
+        self._plan_uploaded = False
+        self._capture_topology = True
+
+    def device_frame_guard(self) -> dict:
+        """返回最近一次设备端计划执行的起止帧与内部重试次数。"""
+        return dict(self._device_guard)
+
+    def _remember_frame_request(self, request) -> int:
+        if not self._capture_topology:
+            return -1
+        known = self._frame_op_indices.get(request)
+        if known is not None:
+            return known
+        addr, size = request
+        op = ('direct', addr, size)
+        # 找离目标地址最近的、本帧前序结果内真实指针。只允许正向小偏移，
+        # 覆盖 Object+field/Array+items；误判只会造成预取未命中并同帧实读。
+        values = self._frame_pointer_values
+        lo = bisect.bisect_left(values, max(0, addr - 0x1000))
+        hi = bisect.bisect_right(values, addr)
+        if hi > lo:
+            pointer = values[hi - 1]
+            source_index, pointer_offset = self._frame_pointer_sources[pointer]
+            op = ('deref', source_index, pointer_offset,
+                  addr - pointer, size)
+        index = len(self._frame_ops)
+        self._frame_op_indices[request] = index
+        self._frame_ops.append(op)
+        self._frame_plan_seen.add(request)
+        self._frame_plan.append(request)
+        return index
+
+    def _remember_frame_result(self, request, data) -> None:
+        if not self._capture_topology:
+            return
+        index = self._frame_op_indices.get(request)
+        if index is None or not data:
+            return
+        is_ptr = getattr(self.mc, 'is_ptr', None)
+        if not callable(is_ptr):
+            return
+        # IL2CPP 64 位对象/数组中的引用字段均按 8 字节对齐。
+        for offset in range(0, len(data) - 7, 8):
+            pointer = struct.unpack_from('<Q', data, offset)[0]
+            if pointer in self._frame_pointer_sources or not is_ptr(pointer):
+                continue
+            self._frame_pointer_sources[pointer] = (index, offset)
+            bisect.insort(self._frame_pointer_values, pointer)
+
+    def batch_read(self, requests: List[Tuple[int, int]], *,
+                   force_live: bool = False,
+                   remember: bool = True) -> List[Optional[bytes]]:
         """批量读取 [(addr, size), ...]; 返回与请求等长的数据列表 (短读/失败为 None)"""
+        normalized = [(int(addr), int(size)) for addr, size in requests]
+        if remember and self._capture_topology:
+            for request in normalized:
+                self._remember_frame_request(request)
+        if self._prefetch_active and not force_live:
+            out: List[Optional[bytes]] = [None] * len(normalized)
+            missing, missing_indices = [], []
+            for index, request in enumerate(normalized):
+                data = self._prefetch_values.get(request)
+                if data is None:
+                    missing_indices.append(index)
+                    missing.append(request)
+                else:
+                    out[index] = data
+            if not missing:
+                if remember:
+                    for request, data in zip(normalized, out):
+                        self._remember_frame_result(request, data)
+                return out
+            fetched = self._batch_read_live(missing)
+            # 当前设备计划未覆盖新地址；本帧立即实读保证数据最新，下一帧完整
+            # 捕获一次拓扑并上传新计划。绝不以旧结果代替当前值。
+            self._capture_next_frame = True
+            self._device_guard['complete'] = False
+            for index, data in zip(missing_indices, fetched):
+                out[index] = data
+            if remember and self._capture_topology:
+                for request, data in zip(normalized, out):
+                    self._remember_frame_result(request, data)
+            return out
+        out = self._batch_read_live(normalized)
+        if remember and self._capture_topology:
+            for request, data in zip(normalized, out):
+                self._remember_frame_result(request, data)
+        return out
+
+    def _batch_read_live(self, requests) -> List[Optional[bytes]]:
         started = time.perf_counter()
         results = None
         with self._lock:
             if not self.sock:
                 self.open()
             try:
-                if self.mode == 'srv':
-                    results = self._batch_srv(requests)
-                else:
-                    results = self._batch_sh(requests)
+                if self.mode != 'srv' or self.srv_version != 4:
+                    raise RuntimeError('实时读取要求 memsrv v4')
+                results = self._batch_srv(requests)
             except Exception:
                 self.close()
                 raise
@@ -565,44 +716,153 @@ class TcpChannel:
             requests, results, (time.perf_counter() - started) * 1000.0)
         return results
 
-    def _batch_srv(self, requests: List[Tuple[int, int]]) -> List[Optional[bytes]]:
-        hdr = struct.pack('<Q', len(requests)) + b''.join(
-            struct.pack('<QQ', a, s) for a, s in requests)
-        self.sock.sendall(hdr)
+    def _read_packed_response(self, requests) -> List[Optional[bytes]]:
+        (count,) = struct.unpack('<Q', self._read_exact(8))
+        if count != len(requests):
+            raise IOError(f"memsrv 合并响应数量错误: {count} != {len(requests)}")
+        raw_lengths = self._read_exact(count * 8)
+        lengths = struct.unpack('<%dq' % count, raw_lengths)
+        payload_size = sum(length for length in lengths if length > 0)
+        payload = self._read_exact(payload_size)
         out: List[Optional[bytes]] = []
-        for addr, size in requests:
-            (got,) = struct.unpack('<q', self._read_exact(8))
+        offset = 0
+        for request, got in zip(requests, lengths):
+            size = int(request[-1])
             if got <= 0:
-                out.append(None)   # got<0 为 -errno; got==0 为空读
+                out.append(None)
                 continue
-            data = self._read_exact(got)
+            data = payload[offset:offset + got]
+            offset += got
             out.append(data if got >= size else None)
         return out
 
-    def _batch_sh(self, requests: List[Tuple[int, int]]) -> List[Optional[bytes]]:
-        pid = self.mc.pid
-        parts = []
-        metas = []   # (addr, size, aligned_off, aligned_len)
-        for i, (addr, size) in enumerate(requests):
-            a0 = addr & ~0xFFF
-            a1 = (addr + size + 0xFFF) & ~0xFFF
-            cnt = (a1 - a0) // 4096
-            parts.append(f"printf 'M{i}\\n'; dd if=/proc/{pid}/mem bs=4096 "
-                         f"skip={a0 // 4096} count={cnt} 2>/dev/null; printf 'E{i}\\n'")
-            metas.append((addr, size, addr - a0, cnt * 4096))
-        parts.append("printf 'END\\n'")
-        self.sock.sendall(("; ".join(parts) + "\n").encode())
-        out: List[Optional[bytes]] = []
-        for i, (addr, size, off, alen) in enumerate(metas):
-            if self._read_line() != f"M{i}".encode():
-                raise IOError(f"TCP 通道乱序: 期望 M{i}")
-            raw = self._read_exact(alen)
-            if self._read_line() != f"E{i}".encode():
-                raise IOError(f"TCP 通道乱序: 期望 E{i} (dd 短读?)")
-            out.append(raw[off:off + size] if len(raw) >= off + size else None)
-        if self._read_line() != b"END":
-            raise IOError("TCP 通道乱序: 末尾无 END")
-        return out
+    def _batch_srv(self, requests: List[Tuple[int, int]]) -> List[Optional[bytes]]:
+        if self.srv_version != 4:
+            raise RuntimeError('批量读取要求 memsrv v4')
+        hdr = struct.pack('<QQ', self.PACKED_READ_MAGIC, len(requests))
+        hdr += b''.join(struct.pack('<QQ', a, s) for a, s in requests)
+        self.sock.sendall(hdr)
+        return self._read_packed_response(requests)
+
+    def transaction_read(self, operations) -> List[Optional[bytes]]:
+        """在设备端顺序执行一组直接/依赖读取，仅 memsrv v4 可用。
+
+        operation 支持：
+          ('direct', addr, size)
+          ('deref', result_index, pointer_offset, addend, size)
+        deref 会从前序结果的 pointer_offset 处读取 u64 指针，加 addend 后读取。
+        整个事务在同一次主机-模拟器往返内完成；不复用任何上一帧数值。
+        """
+        if self.mode != 'srv' or self.srv_version != 4:
+            raise RuntimeError('设备侧读取事务要求 memsrv v4')
+        if not operations:
+            return []
+        encoded, sizes = self._encode_operations(operations)
+        started = time.perf_counter()
+        results = None
+        with self._lock:
+            if not self.sock:
+                self.open()
+            if self.mode != 'srv' or self.srv_version != 4:
+                raise RuntimeError('设备侧读取事务要求 memsrv v4')
+            try:
+                payload = struct.pack('<QQ', self.TXN_READ_MAGIC,
+                                      len(operations)) + b''.join(encoded)
+                self.sock.sendall(payload)
+                results = self._read_packed_response(
+                    [(0, size) for size in sizes])
+            except Exception:
+                self.close()
+                raise
+        direct_requests = [(0, size) for size in sizes]
+        self._record_batch_stats(
+            direct_requests, results,
+            (time.perf_counter() - started) * 1000.0)
+        return results
+
+    @staticmethod
+    def _encode_operations(operations):
+        """编码设备侧依赖读取操作，返回 (二进制记录, 结果尺寸)。"""
+        encoded = []
+        sizes = []
+        for index, op in enumerate(operations):
+            if not op:
+                raise ValueError('空事务操作')
+            if op[0] == 'direct':
+                _kind, addr, size = op
+                encoded.append(struct.pack('<IIqqQ', 0, 0, int(addr), 0,
+                                           int(size)))
+                sizes.append(int(size))
+            elif op[0] == 'deref':
+                _kind, ref, pointer_offset, addend, size = op
+                if not (0 <= int(ref) < index):
+                    raise ValueError('deref 必须引用前序事务结果')
+                encoded.append(struct.pack('<IIqqQ', 1, int(ref), int(addend),
+                                           int(pointer_offset), int(size)))
+                sizes.append(int(size))
+            else:
+                raise ValueError(f'未知事务操作: {op[0]}')
+        return encoded, sizes
+
+    def upload_frame_plan(self, operations) -> None:
+        """把稳定帧的依赖读取拓扑上传到设备并常驻。"""
+        if not operations:
+            raise ValueError('设备帧计划不能为空')
+        encoded, sizes = self._encode_operations(operations)
+        with self._lock:
+            if not self.sock:
+                self.open()
+            if self.mode != 'srv' or self.srv_version != 4:
+                raise RuntimeError('常驻帧计划要求 memsrv v4')
+            try:
+                payload = struct.pack(
+                    '<QQQII', self.PLAN_UPLOAD_MAGIC, len(operations),
+                    self._guard_addr, self._guard_size, self._guard_attempts)
+                self.sock.sendall(payload + b''.join(encoded))
+                (accepted,) = struct.unpack('<Q', self._read_exact(8))
+                if accepted != len(operations):
+                    raise IOError(
+                        f'memsrv 帧计划数量错误: {accepted} != {len(operations)}')
+                self._prefetch_sizes = list(sizes)
+            except Exception:
+                self.close()
+                raise
+
+    def execute_frame_plan(self, operations):
+        """执行设备端常驻计划，设备内部重试到起止逻辑帧一致。"""
+        sizes = self._prefetch_sizes
+        if len(sizes) != len(operations):
+            raise RuntimeError('设备帧计划尺寸缓存与操作数量不一致')
+        started = time.perf_counter()
+        results = None
+        with self._lock:
+            if not self.sock:
+                self.open()
+            if self.mode != 'srv' or self.srv_version != 4:
+                raise RuntimeError('常驻帧计划要求 memsrv v4')
+            try:
+                self.sock.sendall(struct.pack('<Q', self.PLAN_EXEC_MAGIC))
+                attempts, guard_start, guard_end = struct.unpack(
+                    '<QQQ', self._read_exact(24))
+                results = self._read_packed_response(
+                    [(0, size) for size in sizes])
+            except Exception:
+                self.close()
+                raise
+        direct_requests = [(0, size) for size in sizes]
+        self._record_batch_stats(
+            direct_requests, results,
+            (time.perf_counter() - started) * 1000.0)
+        invalid = 0xFFFFFFFFFFFFFFFF
+        guarded = bool(self._guard_addr and self._guard_size in (4, 8))
+        guard = {
+            'attempts': int(attempts),
+            'start': None if guard_start == invalid else int(guard_start),
+            'end': None if guard_end == invalid else int(guard_end),
+            'complete': (not guarded or (
+                guard_start != invalid and guard_start == guard_end)),
+        }
+        return results, guard
 
     __del__ = close
 
@@ -624,6 +884,7 @@ class MemCore:
         self.regions: List[Tuple[int, int, str, str]] = []
         self._rw_starts: List[int] = []
         self._rw_ends: List[int] = []
+        self._chan: Optional[TcpChannel] = None
 
     def _require_adb(self) -> str:
         """返回可用的 adb 路径, 找不到时重新探测一次再报错"""
@@ -757,65 +1018,47 @@ class MemCore:
             raise RuntimeError(
                 f'已找到游戏进程 {self.package} (PID {pid})，但无法读取 /proc/{pid}/maps。'
                 '请确认 MuMu Root 权限已经开启并在开启后重启过模拟器。')
-        # maps 可读不等于 /proc/<pid>/mem 可读；在正式全盘扫描前给出明确诊断。
+        # maps 可读不等于 /proc/<pid>/mem 可读；只用 memsrv v4 做诊断。
         readable = False
+        channel = self.channel()
         for start, end, perms, _name in self.regions[:32]:
             if 'r' not in perms or end - start < 0x1000:
                 continue
-            if self.read(start, 1, timeout=8) is not None:
+            if channel.batch_read([(start, 1)], remember=False)[0] is not None:
                 readable = True
                 break
         if not readable:
             raise RuntimeError(
-                f'ADB 和游戏进程均已找到，但 /proc/{pid}/mem 无法读取。'
+                f'ADB 和游戏进程均已找到，但 memsrv v4 无法读取 /proc/{pid}/mem。'
                 'MAA 截图正常不代表具备进程内存权限；请开启 MuMu Root 权限并重启模拟器。')
         return self.pid
 
     # ---------- 内存读取 ----------
 
-    def read(self, addr: int, size: int, timeout=30) -> Optional[bytes]:
-        """读取 addr 处 size 字节 (小块走 4KB 页对齐, 大块头尾 4KB + 中部 4MB)"""
-        if size <= 0x10000:
-            a0 = addr & ~0xFFF
-            a1 = (addr + size + 0xFFF) & ~0xFFF
-            data = self.adb("exec-out",
-                            f"dd if=/proc/{self.pid}/mem bs=4096 skip={a0 // 4096} count={(a1 - a0) // 4096} 2>/dev/null",
-                            timeout=timeout)
-            off = addr - a0
-            if len(data) < off + size:
-                return None
-            return data[off:off + size]
-        # 大块: dd 起点/终点若落在区域外的未映射洞会 EIO 整块丢失 (确定性!),
-        # 因此头/尾 4MB 不对齐部分走 4KB 页对齐, 中部整 4MB 块保证全在区域内
-        body0 = (addr + BS - 1) & ~(BS - 1)      # 第一个 4MB 边界
-        body1 = (addr + size) & ~(BS - 1)        # 末端向下 4MB 边界
-        if body0 >= body1:
-            return self._read_pages(addr, size, timeout)
-        out = bytearray()
-        if addr < body0:
-            d = self._read_pages(addr, body0 - addr, timeout)
-            if d is None:
-                return None
-            out += d
-        data = self.adb("exec-out",
-                        f"dd if=/proc/{self.pid}/mem bs={BS} skip={body0 // BS} count={(body1 - body0) // BS} 2>/dev/null",
-                        timeout=timeout)
-        if len(data) < body1 - body0:
-            return None
-        out += data[:body1 - body0]
-        if body1 < addr + size:
-            d = self._read_pages(body1, addr + size - body1, timeout)
-            if d is None:
-                return None
-            out += d
-        return bytes(out)
+    def channel(self) -> TcpChannel:
+        """返回该 MemCore 唯一的 memsrv v4 通道。"""
+        if self._chan is None:
+            self._chan = TcpChannel(self)
+        if not self._chan.sock:
+            self._chan.open()
+        if self._chan.srv_version != 4:
+            raise RuntimeError('仅支持 memsrv v4')
+        return self._chan
 
-    def _read_pages(self, addr: int, size: int, timeout=30) -> Optional[bytes]:
-        """4KB 页对齐精确读取 (addr/size 须 4KB 对齐, 调用方保证在映射区域内)"""
-        data = self.adb("exec-out",
-                        f"dd if=/proc/{self.pid}/mem bs=4096 skip={addr // 4096} count={size // 4096} 2>/dev/null",
-                        timeout=timeout)
-        return data if len(data) >= size else None
+    def read(self, addr: int, size: int, timeout=30) -> Optional[bytes]:
+        """只通过 memsrv v4 读取；大块自动拆成服务端允许的 4MB 请求。"""
+        if size <= 0:
+            return b''
+        requests = []
+        offset = 0
+        while offset < size:
+            part = min(BS, size - offset)
+            requests.append((addr + offset, part))
+            offset += part
+        values = self.channel().batch_read(requests, remember=False)
+        if any(data is None for data in values):
+            return None
+        return b''.join(values)
 
     def read_ptr(self, addr: int) -> Optional[int]:
         d = self.read(addr, 8)

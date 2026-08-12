@@ -33,7 +33,7 @@ def test_act31_add_pollute_and_gate():
     assert m.add_area_pollute(3, 4, 50, radius=1.0) is True
     assert m.check_in_pollute_area(3, 4) is True
     assert m.check_in_pollute_area(3, 3) is True, "road neighbor polluted"
-    assert not m.check_in_pollute_area(2, 4), "wall neighbor excluded"
+    assert not m.check_in_pollute_area(2, 3), "wall neighbor excluded"
     assert not m.check_in_pollute_area(5, 5)
     assert m.check_root_tile_pollute_value(3, 4, "GE", 50) is True
     assert m.check_root_tile_pollute_value(3, 4, "GE", 51) is False

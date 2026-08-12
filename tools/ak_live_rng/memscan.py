@@ -19,9 +19,9 @@
 
 读取协议: reader 需实现 read(addr, size) + regions(scope);
   若额外实现 scan_regions(regions, needles) -> {needle: [addr...]} (adb 后端
-  的设备侧 memsrv v2, 见 tools/enemy_health/memsrv.c), 三遍扫描全部下沉到
+  的设备侧 memsrv v4, 见 tools/enemy_health/memsrv.c), 三遍扫描全部下沉到
   设备执行 (3.7GB rw 全扫 ~12s, 对比 adb forward 直读 ~4min);
-  未实现时 (pymem / FakeMem / memsrv v1) 自动回退逐块 python 扫描。
+  PymemReader / FakeMem 等非 ADB 读取器未实现该接口时使用本地 Python 扫描。
 
 实测落点 (MuMu + 官服包): 类名/命名空间 C 字符串与 Il2CppClass 均位于
   大号匿名 rw 映射 (libil2cpp.so 只读段里没有, 全局 metadata magic
@@ -135,10 +135,11 @@ def read_klass(reader, obj_addr):
 # ---------------- 设备侧 / python 扫描统一入口 ----------------
 
 def _scan_needles(reader, scope, needles, status=lambda m: None, label="扫描"):
-    """优先走 reader.scan_regions (adb 设备侧 memsrv v2); 不可用返回 None。
+    """若读取器实现 scan_regions，则使用设备侧 memsrv v4 扫描。
 
     返回 {needle: [命中地址...]}。命中不做对齐过滤, 由调用方按需筛选
-    (memsrv 对全 8 字节针只回报对齐命中, 与客户端校验一致)。"""
+    (memsrv 对全 8 字节针只回报对齐命中, 与客户端校验一致)。ADB 读取器
+    的协议/通道错误必须上抛；None 仅表示注入的非 ADB 读取器不支持设备扫描。"""
     fn = getattr(reader, "scan_regions", None)
     if fn is None:
         return None
@@ -147,9 +148,6 @@ def _scan_needles(reader, scope, needles, status=lambda m: None, label="扫描")
     t0 = time.time()
     res = fn(regions, needles)
     if res is None:
-        err = getattr(reader, "last_scan_error", None)
-        if err:
-            status("  %s: 设备侧扫描异常, 回退逐块扫描 (%s)" % (label, err))
         return None
     status("  %s: 设备侧扫描 %.0f MB 用时 %.1fs" %
            (label, total / 1048576, time.time() - t0))
@@ -157,7 +155,7 @@ def _scan_needles(reader, scope, needles, status=lambda m: None, label="扫描")
 
 
 def _find_all(data, needle, align8):
-    """python 兜底: data 内全部命中偏移 (align8 时只保留 8 对齐)。"""
+    """非 ADB 读取器本地扫描: data 内全部命中偏移。"""
     out = []
     pos = 0
     while True:
@@ -215,7 +213,7 @@ def find_arrays(reader, length, validator, status=lambda m: None, scope="gc",
         return _validate_array_cands(reader, cands, length, validator)
 
     cands = []
-    regions = reader.regions(scope)          # python 回退 (pymem / FakeMem)
+    regions = reader.regions(scope)          # 非 ADB 路径 (pymem / FakeMem)
     for i, (base, size) in enumerate(regions):
         data = reader.read(base, size)
         if not data:

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Buff 来源实体 + blackboard 键诊断探针 (只读, 慢速 adb dd, 不占用 memsrv 通道)
+"""Buff 来源实体 + blackboard 键诊断探针（只读，使用 memsrv v4）
 
 用法: python tools/enemy_health/probe_buff_source.py [秒数] [adb serial]
 在关卡内运行, 周期性读取所有敌人 buff:
@@ -116,7 +116,7 @@ def main():
     if not reader.bootstrap():
         reader.log('[探针] 定位失败, 请确认已进入关卡')
         return
-    snap = reader.poll()
+    snap = reader.poll_fast()
     if not snap.get('ok'):
         reader.log(f"[探针] 首帧失败: {snap.get('msg')}")
         return
@@ -127,7 +127,7 @@ def main():
     t0 = time.time()
     first = True
     while time.time() - t0 < seconds:
-        snap = reader.poll()
+        snap = reader.poll_fast()
         if not snap.get('ok'):
             time.sleep(0.4)
             continue

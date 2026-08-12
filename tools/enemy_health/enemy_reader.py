@@ -237,6 +237,7 @@ class EnemyInfo:
                  'ep_remaining', 'ep_break_recovery', 'buff_container_ptr',
                  'attributes', 'raw_attributes', 'abnormal_flags', 'abnormal_immunes',
                  'abnormal_antis', 'abnormal_combos', 'abnormal_combo_immunes',
+                 'status_timers',
                  'buffs', 'global_buffs', 'roster_id', 'spawn_order', 'wave_index',
                  'fragment_index', 'action_index', 'spawn_index', 'route_index',
                  'lifecycle', 'planned', 'spawn_eta', 'spawn_condition',
@@ -292,6 +293,9 @@ class EnemyInfo:
         self.abnormal_antis = [0] * gs.AbnormalFlag.E_NUM
         self.abnormal_combos = [0] * gs.AbnormalCombo.E_NUM
         self.abnormal_combo_immunes = [0] * gs.AbnormalCombo.E_NUM
+        # "flag:<index>" / "combo:<index>" ->
+        # {remaining: float|None, infinite: bool, source_count: int}
+        self.status_timers = {}
         self.buffs = []
         self.global_buffs = []
         self.roster_id = addr
@@ -347,8 +351,34 @@ class EnemyInfo:
         return names
 
     def status_text(self):
-        names = self.active_status_names()
-        return '、'.join(names) if names else '正常'
+        def decorate(name, timer):
+            if timer.get('infinite'):
+                return name + '（无限）'
+            if isinstance(timer.get('remaining'), (int, float)):
+                return name + f"（{max(0.0, timer['remaining']):.2f}s）"
+            return name
+
+        entries = []
+        for kind, values, names in (
+                ('flag', self.abnormal_flags, gs.ABNORMAL_FLAG_CN_NAMES),
+                ('combo', self.abnormal_combos, gs.ABNORMAL_COMBO_CN_NAMES)):
+            for index, count in enumerate(values):
+                if count <= 0:
+                    continue
+                entries.append(decorate(
+                    names.get(index, str(index)),
+                    self.status_timers.get(f'{kind}:{index}') or {}))
+        state_status = {
+            gs.EnemyState.STUN: ('眩晕', 'flag:0'),
+            gs.EnemyState.FROZEN: ('冻结', 'flag:16'),
+            gs.EnemyState.LEVITATE: ('浮空', 'flag:25'),
+            gs.EnemyState.PALSY: ('麻痹', 'flag:39'),
+            gs.EnemyState.UNBALANCE: ('失衡', ''),
+        }.get(self.state_id)
+        if state_status and not any(text.startswith(state_status[0]) for text in entries):
+            entries.append(decorate(
+                state_status[0], self.status_timers.get(state_status[1]) or {}))
+        return '、'.join(entries) if entries else '正常'
 
     @property
     def action_text(self):
@@ -386,7 +416,7 @@ class EnemyReader:
         self.cache_file = cache_file
         self.with_bc = with_bc
         self.log = log
-        self.workers = workers          # 扫描并发 adb 流数
+        self.workers = workers          # 完整快照解析并发数（读取统一走 memsrv v4）
         self.diagnostics = bool(diagnostics)
         self._identity_diag_signature = None
         self._identity_diag_ts = 0.0
@@ -429,9 +459,7 @@ class EnemyReader:
         self._scheduler_time_snap = None  # BattleController.s_fixedPlayTime
         self._attr_ptrs = {}          # enemy addr -> Attributes* (属性轮换读取用)
         self._chan_fail = 0           # 通道连续异常计数 (日志节流)
-        self._chan_dead_ts = 0.0      # 通道上次失败时间 (冷却期内直接走慢速)
-        self._last_slow_poll_ts = 0.0
-        self._last_slow_snapshot = None
+        self._poll_stop = threading.Event()  # GUI 停止时中断 memsrv v4 读取
         self._skill_lp = {}           # enemy addr -> m_skills List* (主块内提取)
         self._skill_ap = {}           # enemy addr -> m_allSkills EnemySkill[]*
         self._skill_source_layout = {} # (enemy, active/all) -> ptr/items/count
@@ -497,6 +525,7 @@ class EnemyReader:
     # ================= 连接 =================
 
     def connect(self):
+        self._poll_stop.clear()
         pid = self.mc.connect()
         self.log(f"[连接] 游戏 PID = {pid}")
         return pid
@@ -1760,7 +1789,7 @@ class EnemyReader:
                 try:
                     d = self.mc.read(a, b - a, timeout=30)
                 except Exception:
-                    d = None   # dd 偶发卡死/超时: 跳过该块, 不让整遍扫描崩
+                    d = None   # 该内存块读取失败：跳过该块，不让整遍定位崩溃
                 if d is None:
                     with lock:
                         miss[0] += b - a
@@ -2115,8 +2144,7 @@ class EnemyReader:
             from tools.deploy_tracker.ak_deploy_reader import DeployTrackerReader
 
             if self._chan is None:
-                self._chan = TcpChannel(self.mc)
-                self._chan.open()
+                self._chan = self.mc.channel()
             locator = DeployTrackerReader(self.mc)
             locator._channel = self._chan
             locator.set_status_callback(self.log)
@@ -2308,8 +2336,19 @@ class EnemyReader:
 
     # ================= 轮询 =================
 
+    def _track_attr_object(self, ep, attr_ptr):
+        """记录实体当前 Attributes；对象换代时立即丢弃上一阶段的派生缓存。"""
+        previous = self._attr_ptrs.get(ep, 0)
+        if previous != attr_ptr:
+            self._attr_cache.pop(ep, None)
+            self._attr_snapshot.pop(ep, None)
+        self._attr_ptrs[ep] = attr_ptr
+        return previous != attr_ptr
+
     def _fill_attrs(self, ep, blk, info):
         """填充属性 (cachedData 数组地址有缓存, 失效时走完整链重解析)"""
+        attrp = _u64(blk, gs.EntityFields.M_ATTRIBUTES)
+        self._track_attr_object(ep, attrp)
         cd = None
         cdp = self._attr_cache.get(ep, 0)
         if cdp:
@@ -2318,7 +2357,6 @@ class EnemyReader:
                 self._attr_cache.pop(ep, None)
                 cd = None
         if cd is None:
-            attrp = _u64(blk, gs.EntityFields.M_ATTRIBUTES)
             ab = self.mc.read(attrp, 0x60) if self.mc.is_ptr(attrp) else None
             cdp2 = _u64(ab, gs.AttributesFields.M_CACHED_DATA) if ab else 0
             if cdp2 and self.mc.is_ptr(cdp2):
@@ -2552,7 +2590,9 @@ class EnemyReader:
                     blk, gs.EnemyFields.COMBAT_WRAPPER),
                 'blocker_addr': _u64(blk, gs.EnemyFields.M_BLOCKER),
             }
-        info.alive = info.hp > 0 and info.finish == 0
+        # HP=0 本身不能证明实体已经离场：多阶段 Boss 会先清空 HP，再进入
+        # REBORN。状态机批次稍后给出权威终止态；读不到状态时宁可保留一帧。
+        info.alive = info.finish == 0
         return info
 
     @staticmethod
@@ -2586,6 +2626,11 @@ class EnemyReader:
         if not runtime:
             return
         info.state_id = runtime.get('state_id', info.state_id)
+        # 多阶段 Boss 在 REBORN/BORN 中会把 HP 暂时清零，但实例仍由
+        # UnitManager 持有且尚未 finish。不能把这一小段误记为已离场。
+        info.alive = (info.finish == 0 and info.state_id not in (
+            gs.EnemyState.TERMINAL, gs.EnemyState.DEAD,
+            gs.EnemyState.REACH_EXIT))
         info.action = dict(runtime.get('action', info.action))
         info.shield = runtime.get('shield', info.shield)
         info.special_shield = runtime.get('special_shield', info.special_shield)
@@ -2601,6 +2646,10 @@ class EnemyReader:
         info.abnormal_combos = list(runtime.get('abnormal_combos', info.abnormal_combos))
         info.abnormal_combo_immunes = list(
             runtime.get('abnormal_combo_immunes', info.abnormal_combo_immunes))
+        info.status_timers = {
+            str(key): dict(value) for key, value in
+            (runtime.get('status_timers') or {}).items()
+        }
 
     def _resolve_animation_states_chan(self, actions):
         """从 Spine/Mesh 两种 CurrentAniState 候选中解析当前动画键。"""
@@ -3078,19 +3127,37 @@ class EnemyReader:
 
         只在进入异常态或缓存失效时遍历 BuffContainer；稳定期间直接读取已缓存
         Buff 的计时器和 mask，避免每个高速轮询都重新展开整条容器链。
-        ``targets`` 元素为 ``(addr, container, state, flag_bit, combo_bit)``。
+        ``targets`` 元素为 ``(addr, container, state, flag_bits, combo_bits)``，
+        后两项包含实体当前全部生效状态，而非只挑状态机对应的少数异常。
         """
-        targets = [row for row in targets if self.mc.is_ptr(row[1])]
+        def bits(value):
+            if value is None:
+                return ()
+            if isinstance(value, int):
+                return (value,)
+            return tuple(value)
+
+        targets = [(addr, container, state_id, bits(flag_bits), bits(combo_bits))
+                   for addr, container, state_id, flag_bits, combo_bits in targets
+                   if self.mc.is_ptr(container)]
         if not targets:
             return
         active = {addr for addr, *_rest in targets}
-        for addr, container, state_id, flag_bit, combo_bit in targets:
+        target_states = {addr: state_id for addr, _container, state_id, *_rest in targets}
+        for addr, container, state_id, flag_bits, combo_bits in targets:
             cached = self._status_timer_cache.get(addr)
-            signature = (container, state_id, flag_bit, combo_bit)
-            if not cached or cached.get('signature') != signature:
+            signature = (container, state_id, tuple(flag_bits), tuple(combo_bits))
+            cached_signature = cached.get('signature') if cached else None
+            if cached_signature and len(cached_signature) == 4:
+                cached_signature = (
+                    cached_signature[0], cached_signature[1],
+                    bits(cached_signature[2]), bits(cached_signature[3]))
+            if not cached or cached_signature != signature:
                 self._status_timer_cache[addr] = {
                     'signature': signature, 'buffs': [], 'last_probe': -10000,
                 }
+            else:
+                cached['signature'] = signature
 
         # 完整 60Hz 模式下容器结构也逐帧确认。稳定指针链将 container、
         # double buffer、List 头、items 和 Buff 动态块合并进一个 batch；任一
@@ -3203,9 +3270,9 @@ class EnemyReader:
                 count=count, buffs=buffs)
 
         rows, missing_reqs, block_values = [], [], {}
-        for addr, _container, state_id, flag_bit, combo_bit in targets:
+        for addr, _container, state_id, flag_bits, combo_bits in targets:
             for buff in self._status_timer_cache[addr]['buffs']:
-                row = (addr, state_id, flag_bit, combo_bit, buff)
+                row = (addr, state_id, flag_bits, combo_bits, buff)
                 rows.append(row)
                 data = values.get((addr, 'buff', buff))
                 if data:
@@ -3217,8 +3284,8 @@ class EnemyReader:
                     (buff + gs.BuffFields.M_LIFE_TIME, buff_read_size)
                     for _addr, buff in missing_reqs])):
             block_values[(addr, buff)] = data
-        matches = {addr: [] for addr in active}
-        for addr, _state, flag_bit, combo_bit, buff in rows:
+        matches = {addr: {} for addr in active}
+        for addr, _state, flag_bits, combo_bits, buff in rows:
             data = block_values.get((addr, buff))
             if not data:
                 continue
@@ -3230,25 +3297,55 @@ class EnemyReader:
                 continue
             flag_mask = _u64(data, gs.BuffFields.ABNORMAL_FLAG_MASK - base)
             combo_mask = _u64(data, gs.BuffFields.ABNORMAL_COMBO_MASK - base)
-            if ((flag_bit is not None and flag_mask & (1 << flag_bit))
-                    or (combo_bit is not None and combo_mask & (1 << combo_bit))):
-                life = gs.fp_to_float(_u64(data, 0))
-                remaining = gs.fp_to_float(_u64(
-                    data, gs.BuffFields.M_REMAINING_TIME - base))
-                matches[addr].append((life, remaining))
+            life = gs.fp_to_float(_u64(data, 0))
+            remaining = gs.fp_to_float(_u64(
+                data, gs.BuffFields.M_REMAINING_TIME - base))
+            for bit in flag_bits:
+                if flag_mask & (1 << bit):
+                    matches[addr].setdefault(f'flag:{bit}', []).append(
+                        (life, remaining))
+            for bit in combo_bits:
+                if combo_mask & (1 << bit):
+                    matches[addr].setdefault(f'combo:{bit}', []).append(
+                        (life, remaining))
 
-        for addr, values in matches.items():
+        state_primary = {
+            gs.EnemyState.STUN: 'flag:0',
+            gs.EnemyState.FROZEN: 'flag:16',
+            gs.EnemyState.LEVITATE: 'flag:25',
+            gs.EnemyState.PALSY: 'flag:39',
+        }
+        for addr, by_status in matches.items():
             action = snapshots.setdefault(addr, {}).setdefault('action', {})
-            if values:
+            timers = {}
+            for key, values in by_status.items():
                 finite = [max(0.0, remaining) for life, remaining in values
                           if life >= 0 and remaining >= 0]
-                action['status_source_count'] = len(values)
                 if len(finite) == len(values):
-                    action['status_remaining'] = max(finite, default=0.0)
-                    action['status_infinite'] = False
+                    timers[key] = {
+                        'remaining': max(finite, default=0.0),
+                        'infinite': False,
+                        'source_count': len(values),
+                    }
                 else:
+                    timers[key] = {
+                        'remaining': None,
+                        'infinite': True,
+                        'source_count': len(values),
+                    }
+            snapshots[addr]['status_timers'] = timers
+            primary = state_primary.get(
+                snapshots[addr].get('state_id', target_states.get(addr)))
+            if primary is None and 'combo:0' in timers:
+                primary = 'combo:0'
+            selected = timers.get(primary) if primary else None
+            if selected:
+                action['status_source_count'] = selected['source_count']
+                action['status_infinite'] = selected['infinite']
+                if selected['remaining'] is None:
                     action.pop('status_remaining', None)
-                    action['status_infinite'] = True
+                else:
+                    action['status_remaining'] = selected['remaining']
             else:
                 action.pop('status_remaining', None)
                 action.pop('status_source_count', None)
@@ -3262,19 +3359,34 @@ class EnemyReader:
         """展示游戏已写入的下一动作，或按客户端原始规则计算当前结果。
 
         AttackWrapper 没有 next 槽；CombatWrapper 的 picked 槽只在切状态前短暂
-        存在。未写入时复现 MoveState 分流和 Wrapper._PickAbility：只检查
-        ``m_skills`` 的最高 priority 组，逐项执行启用/CD/次数/父模式/SP、family
-        与 TargetTrigger 条件；同优先级多个通过项由游戏随机择一。无法无副作用
-        复现的 Lua、关卡分支或目标重新搜索会明确标为“条件未完全解析”。
+        存在。未写入时复现 MoveState 分流和 Wrapper._PickAbility：按 priority
+        从高到低逐组检查 ``m_skills``，每组逐项执行启用/CD/次数/父模式/SP、
+        family 与 TargetTrigger 条件；当前组没有可用项时继续下一组，同优先级
+        多个通过项由游戏随机择一。无法无副作用复现的 Lua、关卡分支或目标
+        重新搜索会明确标为“条件未完全解析”。
         """
         for key in ('next_action', 'next_action_detail', 'next_action_confidence',
-                    'next_action_lane', 'next_action_candidates'):
+                    'next_action_lane', 'next_action_candidates',
+                    'next_action_rule', 'next_action_rule_detail',
+                    'next_action_rule_confidence',
+                    'next_action_rule_candidates'):
             action.pop(key, None)
+
+        def publish_same(label, detail, confidence):
+            """游戏已确定或当前无预测空间时，两行展示同一权威结果。"""
+            action.update(
+                next_action=label,
+                next_action_detail=detail,
+                next_action_confidence=confidence,
+                next_action_rule=label,
+                next_action_rule_detail=detail,
+                next_action_rule_confidence=confidence,
+            )
+
         state_id = info.state_id
         if state_id in (gs.EnemyState.TERMINAL, gs.EnemyState.DEAD,
                         gs.EnemyState.REACH_EXIT):
-            action.update(next_action='无', next_action_detail='实体已结束',
-                          next_action_confidence='confirmed')
+            publish_same('无', '实体已结束', 'confirmed')
             return
 
         picked_skill = action.get('combat_skill_addr', 0)
@@ -3291,20 +3403,19 @@ class EnemyReader:
                 label = '基础战斗能力'
             else:
                 label = '已选中的战斗能力'
-            action.update(
-                next_action=label,
-                next_action_detail=(
-                    '游戏 CombatWrapper.m_combatAbilityPicked=1，且 '
-                    'm_pickedAbility 已写入；切换前仍可能被异常状态中断'),
-                next_action_confidence='confirmed')
+            publish_same(
+                label,
+                '游戏 CombatWrapper.m_combatAbilityPicked=1，且 '
+                'm_pickedAbility 已写入；切换前仍可能被异常状态中断',
+                'confirmed')
             return
 
         queued_animation = action.get('animation_next_track_name', '')
         if queued_animation:
-            action.update(
-                next_action=f'已排队动画：{queued_animation}',
-                next_action_detail='Spine TrackEntry.next 已存在；这是游戏已排队的下一段动画',
-                next_action_confidence='confirmed')
+            publish_same(
+                f'已排队动画：{queued_animation}',
+                'Spine TrackEntry.next 已存在；这是游戏已排队的下一段动画',
+                'confirmed')
             return
 
         if state_id in (gs.EnemyState.MOVE, gs.EnemyState.ATTACK,
@@ -3321,6 +3432,18 @@ class EnemyReader:
                 action.update(next_action=label,
                               next_action_detail=detail,
                               next_action_confidence=confidence)
+
+            def publish_original_rule(label, detail, confidence):
+                """发布不加入实时 CD 的 Boss/敌人自身规则首选。"""
+                if snapshot_after_current:
+                    detail = (
+                        '当前动作尚未结束；以下是用当前内存快照执行原始规则的结果，'
+                        '结束回调时目标/状态若变化，游戏会重新计算。' + detail)
+                    if confidence == 'rule_calculated':
+                        confidence = 'rule_snapshot'
+                action.update(next_action_rule=label,
+                              next_action_rule_detail=detail,
+                              next_action_rule_confidence=confidence)
 
             blocked = self.mc.is_ptr(action.get('blocker_addr', 0))
             lane = 'combat' if blocked else 'attack'
@@ -3340,15 +3463,18 @@ class EnemyReader:
                            if blocked else
                            '未被阻挡，MoveState 只会在 SearchTarget 找到目标后进入 ATTACK')
 
-            # _PickAbility 在检查 family/可用性之前就锁定 m_skills 的最高优先级；
-            # 该组全部失败后直接走基础能力，不会改选较低优先级技能。
+            # 现版 GameAssembly 的 _PickAbility 反汇编显示：选中优先级初始为
+            # INT_MIN，技能通过 family/CD/次数/触发条件后才写入；写入后遇到
+            # 不同 priority 才结束遍历。因此某个高优先级组全部失败时必须继续
+            # 下一组，不能直接回退基础攻击。
             active_rows = [row for row in (info.skills_detail or ())
                            if row.get('is_enabled') is not False]
-            top = []
-            if active_rows:
-                top_priority = max(row.get('priority', 0) for row in active_rows)
-                top = [row for row in active_rows
-                       if row.get('priority', 0) == top_priority]
+            priority_groups = {}
+            for row in active_rows:
+                priority = row.get('priority', 0)
+                if not isinstance(priority, (int, float)):
+                    priority = 0
+                priority_groups.setdefault(priority, []).append(row)
 
             def sp_trigger_result(row):
                 if row.get('trigger_type') != 'SpTrigger':
@@ -3373,15 +3499,16 @@ class EnemyReader:
                 value = comparisons[compare]
                 return value, f'SpTrigger 原始比较：SP {current:g} 对 {expected:g} -> {value}'
 
-            def evaluate(row):
+            def evaluate(row, include_cooldown=True):
                 failures, unresolved = [], []
                 if not (row.get('family_mask', 0) & family):
                     failures.append(f'family 不属于 {lane_cn}')
-                remaining = row.get('remaining')
-                if not isinstance(remaining, (int, float)):
-                    unresolved.append('CD 未读取')
-                elif remaining > 0.05:
-                    failures.append(f'CD {remaining:.2f}秒')
+                if include_cooldown:
+                    remaining = row.get('remaining')
+                    if not isinstance(remaining, (int, float)):
+                        unresolved.append('CD 未读取')
+                    elif remaining > 0.05:
+                        failures.append(f'CD {remaining:.2f}秒')
                 maximum = row.get('max_triggers', 0)
                 count = row.get('trigger_count', 0)
                 if maximum > 0 and count >= maximum:
@@ -3420,30 +3547,115 @@ class EnemyReader:
                     return None, unresolved
                 return True, ['全部原始判据通过']
 
-            passed, uncertain, rejected = [], [], []
-            for row in top:
-                result, reasons = evaluate(row)
-                entry = (row, reasons)
-                if result is True:
-                    passed.append(entry)
-                elif result is None:
-                    uncertain.append(entry)
-                else:
-                    rejected.append(entry)
+            priorities = sorted(priority_groups, reverse=True)
+
+            def select_candidates(include_cooldown):
+                passed, uncertain, rejected = [], [], []
+                selected_priority = None
+                for priority in priorities:
+                    group_passed, group_uncertain, group_rejected = [], [], []
+                    for row in priority_groups[priority]:
+                        result, reasons = evaluate(row, include_cooldown)
+                        entry = (row, reasons)
+                        if result is True:
+                            group_passed.append(entry)
+                        elif result is None:
+                            group_uncertain.append(entry)
+                        else:
+                            group_rejected.append(entry)
+                    rejected.extend(group_rejected)
+                    if group_passed or group_uncertain:
+                        selected_priority = priority
+                        passed = group_passed
+                        uncertain = group_uncertain
+                        break
+                return passed, uncertain, rejected, selected_priority
 
             def describe(entries):
                 return '；'.join(
                     f"{row.get('name') or '?'}：{'，'.join(reasons)}"
                     for row, reasons in entries)
 
+            def selection_basis(selected_priority, rejected, title):
+                basis = f'{title}：{target_text}'
+                if selected_priority is not None:
+                    basis += (f'；priority={selected_priority} 是从高到低首个仍有'
+                              '可用或待判候选的组')
+                elif active_rows:
+                    basis += '；所有优先级组均未通过'
+                if rejected:
+                    basis += '；未通过：' + describe(rejected)
+                return basis
+
+            # 第一行：只执行敌人自身配置的优先级、family、次数、SP 和触发规则，
+            # 明确不加入当前 CD。它回答“按这个 Boss 的代码，下一发优先想做什么”。
+            raw_passed, raw_uncertain, raw_rejected, raw_priority = (
+                select_candidates(False))
+            raw_possible = raw_passed + raw_uncertain
+            action['next_action_rule_candidates'] = [
+                row.get('name') or '?' for row, _ in raw_possible]
+            raw_basis = selection_basis(
+                raw_priority, raw_rejected,
+                '按客户端 _PickAbility 原始规则计算（未加入当前 CD）')
+            if raw_uncertain:
+                raw_names = ' / '.join(
+                    row.get('name') or '?' for row, _ in raw_possible)
+                if raw_passed:
+                    raw_label = f'规则候选：{raw_names}'
+                else:
+                    has_lower = any(priority < raw_priority
+                                    for priority in priorities)
+                    otherwise = ('继续检查较低优先级技能'
+                                 if has_lower else fallback)
+                    raw_label = f'条件待判：{raw_names}；否则{otherwise}'
+                publish_original_rule(
+                    raw_label,
+                    raw_basis + '；尚未无副作用解析：' + describe(raw_uncertain)
+                    + '。该行不使用技能 CD，只表达敌人自身规则首选',
+                    'rule_partial')
+            elif raw_passed:
+                raw_names = [row.get('name') or '?' for row, _ in raw_passed]
+                if len(raw_names) == 1:
+                    raw_label = f'技能：{raw_names[0]}'
+                    raw_confidence = 'rule_calculated'
+                    raw_suffix = '；原始规则当前只有一个技能候选（未加入 CD）'
+                else:
+                    raw_label = '随机择一：' + ' / '.join(raw_names)
+                    raw_confidence = 'rule_candidates'
+                    raw_suffix = '；同优先级多个原始候选，由战斗 RNG 随机择一（未加入 CD）'
+                publish_original_rule(
+                    raw_label, raw_basis + raw_suffix, raw_confidence)
+            else:
+                if blocked:
+                    raw_target_ready = True
+                    raw_target_reason = '当前 blocker 有效'
+                else:
+                    raw_target_ready = action.get('attack_trigger_ready')
+                    raw_target_reason = (action.get('attack_trigger_reason')
+                                         or '普攻 TargetTrigger 未读取')
+                if raw_target_ready is True:
+                    publish_original_rule(
+                        fallback, raw_basis + f'；{raw_target_reason}，原始规则回退基础能力',
+                        'rule_calculated')
+                elif raw_target_ready is False:
+                    publish_original_rule(
+                        '当前无可执行动作', raw_basis + f'；{raw_target_reason}',
+                        'rule_calculated')
+                else:
+                    publish_original_rule(
+                        f'规则候选：{fallback}',
+                        raw_basis + f'；{raw_target_reason}', 'rule_partial')
+
+            # 第二行：在完全相同的原始规则上加入实时技能 CD，得到当前实际候选。
+            passed, uncertain, rejected, selected_priority = (
+                select_candidates(True))
+
             all_possible = passed + uncertain
             action['next_action_candidates'] = [
                 row.get('name') or '?' for row, _ in all_possible]
-            basis = f'按客户端 _PickAbility 原始顺序计算：{target_text}'
-            if top:
-                basis += f'；只检查最高 priority={top[0].get("priority", 0)} 组'
-            if rejected:
-                basis += '；未通过：' + describe(rejected)
+            basis = selection_basis(
+                selected_priority, rejected,
+                '按客户端 _PickAbility 原始规则并加入实时 CD 计算')
 
             if uncertain:
                 possible_names = ' / '.join(
@@ -3451,7 +3663,11 @@ class EnemyReader:
                 if passed:
                     label = f'规则候选：{possible_names}'
                 else:
-                    label = f'条件待判：{possible_names}；否则{fallback}'
+                    has_lower = any(priority < selected_priority
+                                    for priority in priorities)
+                    otherwise = ('继续检查较低优先级技能'
+                                 if has_lower else fallback)
+                    label = f'条件待判：{possible_names}；否则{otherwise}'
                 publish_rule(
                     label,
                     basis + '；尚未无副作用解析：' + describe(uncertain)
@@ -3477,7 +3693,7 @@ class EnemyReader:
             if base_ready is False:
                 publish_rule(
                     f'等待{fallback}冷却（{base_cd:.2f}秒）',
-                    basis + f'；最高优先级技能组全部未通过，{fallback}当前也未就绪',
+                    basis + f'；全部技能组均未通过，{fallback}当前也未就绪',
                     'rule_calculated')
                 return
             if blocked:
@@ -3496,14 +3712,13 @@ class EnemyReader:
             else:
                 publish_rule(
                     f'规则候选：{fallback}',
-                    basis + f'；最高优先级技能组全部未通过；{target_reason}'
+                    basis + f'；全部技能组均未通过；{target_reason}'
                     + ('；基础能力就绪状态未读取' if base_ready is None else ''),
                     'rule_partial')
             return
 
         detail = '当前没有已写入的 picked Ability 或排队动画，下一动作尚未由游戏决定'
-        action.update(next_action='等待游戏判定', next_action_detail=detail,
-                      next_action_confidence='unselected')
+        publish_same('等待游戏判定', detail, 'unselected')
 
     def _finalize_enemy_action(self, info, now=None, frame=None,
                                frame_duration=None):
@@ -3514,7 +3729,10 @@ class EnemyReader:
                 'remaining_kind', 'elapsed_frames', 'skill_name',
                 'ready_skills', 'clock_source', 'next_action',
                 'next_action_detail', 'next_action_confidence',
-                'next_action_lane', 'next_action_candidates'):
+                'next_action_lane', 'next_action_candidates',
+                'next_action_rule', 'next_action_rule_detail',
+                'next_action_rule_confidence',
+                'next_action_rule_candidates'):
             action.pop(key, None)
         now = now if isinstance(now, (int, float)) and math.isfinite(now) else None
         frame = frame if isinstance(frame, int) and frame >= 0 else None
@@ -3677,142 +3895,10 @@ class EnemyReader:
             runtime['action'] = dict(action)
         return action
 
-    def _fill_runtime_slow(self, info):
-        """无 TCP 通道时的完整状态读取兜底。"""
-        state = self.mc.read(info.state_ptr + gs.StateMachineFields.CURRENT_STATE_ID, 0x10) \
-            if self.mc.is_ptr(info.state_ptr) else None
-        ep = self.mc.read(
-            info.ep_ptr, gs.Il2CppArray.ITEMS + gs.ElementType.E_NUM * 8) \
-            if self.mc.is_ptr(info.ep_ptr) else None
-        shield_ptr = info.shield_controller_ptr
-        shield = self.mc.read(shield_ptr + gs.ShieldUIControllerFields.M_SHIELD_TO_SHOW, 8) \
-            if self.mc.is_ptr(shield_ptr) else None
-        epc = self.mc.read(info.ep_controller_ptr + gs.EPControllerFields.M_IS_IN_BREAK_RECOVERY, 1) \
-            if self.mc.is_ptr(info.ep_controller_ptr) else None
-        attr = self.mc.read(info.attr_ptr, 0x40) if self.mc.is_ptr(info.attr_ptr) else None
-        ptrs = {}
-        if attr:
-            ptrs = {
-                'flags': _u64(attr, gs.AttributesFields.M_ABNORMAL_FLAGS_COUNTER),
-                'immunes': _u64(attr, gs.AttributesFields.M_ABNORMAL_IMMUNE_COUNTER),
-                'antis': _u64(attr, gs.AttributesFields.M_ABNORMAL_ANTI_COUNTER),
-            }
-            combo_mgr = _u64(attr, gs.AttributesFields.M_ABNORMAL_COMBO_MGR)
-            combo = self.mc.read(combo_mgr, 0x20) if self.mc.is_ptr(combo_mgr) else None
-            if combo:
-                ptrs['combos'] = _u64(combo, gs.AbnormalComboManagerFields.M_ABNORMAL_COMBO_COUNTER)
-                ptrs['combo_immunes'] = _u64(
-                    combo, gs.AbnormalComboManagerFields.M_ABNORMAL_COMBO_IMMUNE_COUNTER)
-        arrays = {}
-        sizes = {
-            'flags': gs.AbnormalFlag.E_NUM, 'immunes': gs.AbnormalFlag.E_NUM,
-            'antis': gs.AbnormalFlag.E_NUM, 'combos': gs.AbnormalCombo.E_NUM,
-            'combo_immunes': gs.AbnormalCombo.E_NUM,
-        }
-        for key, count in sizes.items():
-            p = ptrs.get(key, 0)
-            arrays[key] = self._decode_short_array(
-                self.mc.read(p, gs.Il2CppArray.ITEMS + count * 2)
-                if self.mc.is_ptr(p) else None, count)
-        action = dict(info.action or {})
-        state_id = _i32(state, 0) if state else gs.EnemyState.DEFAULT
-        state_node = _u64(state, 8) if state and len(state) >= 0x10 else 0
-        action['state_node_addr'] = state_node
-        mode = self.mc.read(action.get('current_mode_addr', 0),
-                            gs.UnitModeFields.READ_SIZE) \
-            if self.mc.is_ptr(action.get('current_mode_addr', 0)) else None
-        if mode:
-            action['mode_combat_addr'] = _u64(mode, gs.UnitModeFields.COMBAT)
-            action['mode_attack_addr'] = _u64(mode, gs.UnitModeFields.ATTACK)
-            attack_trigger = _u64(mode, gs.UnitModeFields.ATTACK_TRIGGER)
-            action['mode_attack_trigger_addr'] = attack_trigger
-            trigger_state = self._read_trigger_states_chan(
-                [attack_trigger]).get(attack_trigger, {})
-            action['attack_trigger_type'] = trigger_state.get('trigger_type', '')
-            action['attack_trigger_ready'] = trigger_state.get('trigger_ready')
-            action['attack_trigger_reason'] = trigger_state.get(
-                'trigger_reason', '')
-            action['attack_trigger_target_addr'] = trigger_state.get(
-                'trigger_target_addr', 0)
-        if state_id == gs.EnemyState.ATTACK:
-            ability = action.get('attack_ability_addr', 0)
-        elif state_id == gs.EnemyState.COMBAT:
-            ability = action.get('combat_ability_addr', 0)
-        else:
-            ability = 0
-        action['ability_addr'] = ability
-        ability_data = self.mc.read(ability, gs.AbilityFields.READ_SIZE) \
-            if self.mc.is_ptr(ability) else None
-        if ability_data:
-            action['casting'] = bool(ability_data[gs.AbilityFields.IS_CASTING])
-            action['cast_start_frame'] = _u32(
-                ability_data, gs.AbilityFields.CAST_START_FRAME)
-            action['attached'] = bool(ability_data[gs.AbilityFields.IS_ATTACHED])
-            action['finish_reason'] = _i32(
-                ability_data, gs.AbilityFields.FINISH_REASON)
-        state_time = self.mc.read(state_node + gs.StateNodeFields.ACTION_TIME, 8) \
-            if self.mc.is_ptr(state_node) else None
-        if state_time:
-            action['state_time'] = gs.fp_to_float(_u64(state_time, 0))
-        for role in ('attack', 'combat'):
-            base = (action.get(f'override_{role}_addr', 0)
-                    or action.get(f'mode_{role}_addr', 0))
-            data = self.mc.read(base, gs.AbilityFields.READ_SIZE) \
-                if self.mc.is_ptr(base) else None
-            if not data:
-                continue
-            item = {
-                'casting': bool(data[gs.AbilityFields.IS_CASTING]),
-                'cast_start_frame': _u32(data, gs.AbilityFields.CAST_START_FRAME),
-                'attached': bool(data[gs.AbilityFields.IS_ATTACHED]),
-                'finish_reason': _i32(data, gs.AbilityFields.FINISH_REASON),
-            }
-            timer = _u64(data, gs.AbilityFields.COOLDOWN_TIMER)
-            timer_data = self.mc.read(timer, 0x20) if self.mc.is_ptr(timer) else None
-            if timer_data:
-                item['cd_period'] = gs.fp_to_float(_u64(
-                    timer_data, gs.PeriodicTimerFields.M_PERIOD_TIME))
-                item['cd_remaining'] = gs.fp_to_float(_u64(
-                    timer_data, gs.PeriodicTimerFields.M_REMAINING_TIME))
-            action[f'{role}_base'] = item
-        runtime = {
-            'state_id': state_id,
-            'action': action,
-            'shield': gs.fp_to_float(_u64(shield, 0)) if shield else 0.0,
-            'ep_remaining': self._decode_fp_array(ep, gs.ElementType.E_NUM),
-            'ep_break_recovery': bool(epc and epc[0]),
-            'abnormal_flags': arrays['flags'],
-            'abnormal_immunes': arrays['immunes'],
-            'abnormal_antis': arrays['antis'],
-            'abnormal_combos': arrays['combos'],
-            'abnormal_combo_immunes': arrays['combo_immunes'],
-        }
-        self._runtime_snapshot[info.addr] = runtime
-        self._runtime_ptrs[info.addr] = dict(ptrs, state=info.state_ptr, ep=info.ep_ptr,
-                                             epc=info.ep_controller_ptr, shield=shield_ptr)
-        self._copy_runtime(info, runtime)
-
-    def _refresh_ep_runtime_slow(self, info):
-        """TCP 通道回退期间仍刷新损伤数组，避免界面冻结在旧快照。"""
-        if not self.mc.is_ptr(info.ep_ptr):
-            return False
-        data = self.mc.read(
-            info.ep_ptr, gs.Il2CppArray.ITEMS + gs.ElementType.E_NUM * 8)
-        if not data:
-            return False
-        values = self._decode_fp_array(data, gs.ElementType.E_NUM)
-        if not values:
-            return False
-        runtime = dict(self._runtime_snapshot.get(info.addr, {}))
-        runtime['ep_remaining'] = values
-        self._runtime_snapshot[info.addr] = runtime
-        self._copy_runtime(info, runtime)
-        return True
-
     def _read_enemy(self, ep, with_runtime=True):
-        blk = self.mc.read(ep, gs.EnemyFields.READ_SIZE)
+        (blk,) = self._detail_batch_read([(ep, gs.EnemyFields.READ_SIZE)])
         if not blk:
-            blk = self.mc.read(ep, gs.EnemyFields.READ_SIZE)  # 瞬态失败补读一次
+            (blk,) = self._detail_batch_read([(ep, gs.EnemyFields.READ_SIZE)])
         info = self._parse_enemy_block(ep, blk)
         if not blk or len(blk) < max(gs.EntityFields.BUFF_CONTAINER + 8,
                                     gs.EnemyFields.DATA + 8):
@@ -3821,98 +3907,10 @@ class EnemyReader:
         self._fill_attrs(ep, blk, info)
         self._fill_skills(ep, blk, info)
         if with_runtime:
-            self._fill_runtime_slow(info)
+            if self._chan is None:
+                raise RuntimeError('memsrv v4 主通道尚未建立')
+            self._refresh_runtime_chan([ep], {ep: info})
         return info
-
-    def poll(self):
-        """读取一帧快照; 返回 dict"""
-        snap = {'ok': False, 'state': -1, 'speed_level': -1, 'time_scale': 0.0,
-                'play_time': 0.0, 'scheduler_time': None, 'enemies': [], 'msg': '',
-                'fixed_frame': self._fixed_frame_snap,
-                'frame_duration': self._frame_duration_snap,
-                'on_field_count': 0, 'planned_count': self.planned_count,
-                'read_mode': 'slow', 'read_backend': 'adb'}
-        d = self.mc.read(self.list_addr, 0x20)
-        if not d:
-            snap['msg'] = 'List 读取失败'
-            return self._on_stale(snap)
-        items, cnt = _u64(d, gs.ListInternal.ITEMS), _i32(d, gs.ListInternal.SIZE)
-        if not (0 <= cnt <= 300) or (cnt > 0 and not self.mc.is_ptr(items)):
-            snap['msg'] = f'List 数据异常 (cnt={cnt})'
-            return self._on_stale(snap)
-
-        scheduler_ptrs = []
-        if cnt > 0:
-            arr = self.mc.read(items + gs.Il2CppArray.ITEMS, cnt * 8)
-            if not arr:
-                snap['msg'] = 'items 读取失败'
-                return self._on_stale(snap)
-            scheduler_ptrs = [
-                _u64(arr, i * 8) for i in range(cnt)
-                if self.mc.is_ptr(_u64(arr, i * 8))]
-
-        unit_ptrs = self._read_live_enemy_unordered(self.unit_enemies_addr) \
-            if self.unit_enemies_addr else None
-        ptrs = self._union_enemy_ptrs(unit_ptrs, scheduler_ptrs)
-        self.enemy_addrs = ptrs
-        observed_enemies = []
-        for ep in ptrs:
-            if not ep or not self.mc.is_ptr(ep):
-                continue
-            # 回退路径避免为每个敌人逐指针启动十余次 adb 子进程；沿用最近一次
-            # 快速通道的状态快照。损伤数组是用户最关注的连续量，额外做一次
-            # 小块读取确保受击后仍会变化；详情按钮仍按需读取其余完整数据。
-            info = self._read_enemy(ep, with_runtime=False)
-            self._copy_runtime(info, self._runtime_snapshot.get(ep))
-            self._refresh_ep_runtime_slow(info)
-            self._finalize_enemy_action(
-                info, self._scheduler_time_snap, self._fixed_frame_snap,
-                self._frame_duration_snap)
-            observed_enemies.append(info)
-
-        snap['enemies'] = self._merge_enemy_roster(
-            observed_enemies, self._spawned_count())
-        snap['on_field_count'] = sum(enemy.alive for enemy in observed_enemies)
-        snap['planned_count'] = self.planned_count
-
-        if self.bc_addr:
-            b = self.mc.read(self.bc_addr + 0x200, 0xC0)
-            if b:
-                snap['state'] = _i32(b, gs.BattleControllerFields.M_STATE - 0x200)
-                snap['speed_level'] = _i32(b, gs.BattleControllerFields.M_SPEED_LEVEL - 0x200)
-                snap['time_scale'] = struct.unpack_from(
-                    '<f', b, gs.BattleControllerFields.M_TIME_SCALE - 0x200)[0]
-                snap['play_time'] = struct.unpack_from(
-                    '<f', b, gs.BattleControllerFields.M_REAL_PLAY_TIME - 0x200)[0]
-
-        if self._bc_static_fields:
-            raw_clock = self.mc.read(
-                self._bc_static_fields
-                + gs.BattleControllerStaticFields.FIXED_FRAME_COUNT,
-                gs.BattleControllerStaticFields.DELTA_PLAY_TIME_FP
-                - gs.BattleControllerStaticFields.FIXED_FRAME_COUNT + 8)
-            frame, value, frame_duration = self._decode_battle_clock_snapshot(raw_clock)
-            if frame is not None:
-                self._fixed_frame_snap = frame
-            if value is not None:
-                self._scheduler_time_snap = value
-            if frame_duration is not None:
-                self._frame_duration_snap = frame_duration
-            snap['scheduler_time'] = self._scheduler_time_snap
-            snap['fixed_frame'] = self._fixed_frame_snap
-            snap['frame_duration'] = self._frame_duration_snap
-
-        for info in observed_enemies:
-            self._finalize_enemy_action(
-                info, self._scheduler_time_snap, self._fixed_frame_snap,
-                self._frame_duration_snap)
-
-        snap['enemies'] = self._apply_spawn_timing(
-            snap['enemies'], snap['scheduler_time'])
-
-        snap['ok'] = True
-        self._stale_cnt = 0
-        return snap
 
     def close(self):
         """关闭常驻 TCP 通道"""
@@ -3929,52 +3927,43 @@ class EnemyReader:
                 pass
             self._detail_chan = None
 
-    CHAN_RETRY_SEC = 5.0   # 通道失败后的重建冷却 (open 含 adb 部署, 每帧重试太贵)
-    SLOW_FALLBACK_SEC = 0.5  # ADB 兜底无法保证 60Hz，最多每 0.5 秒真实读取一次
+    def request_poll_stop(self):
+        """请求实时轮询尽快停止，并打断正在等待的 TCP 读取。"""
+        self._poll_stop.set()
+        self.close()
+
+    def resume_polling(self):
+        self._poll_stop.clear()
 
     def poll_fast(self):
         """完整 60Hz 轮询：每帧读取容器、属性、状态、技能、动画与 BC。
 
-        memsrv 模式按对象精确批量读取；通道异常时明确降级为低频 ADB 兜底，
-        不把兜底结果标记为严格 60Hz。
+        memsrv v4 是唯一读取后端；通道异常直接上抛并停止发布快照。
         """
+        if self._poll_stop.is_set():
+            raise InterruptedError('敌人轮询已请求停止')
         if self._chan is None:
-            if time.time() - self._chan_dead_ts < self.CHAN_RETRY_SEC:
-                now = time.monotonic()
-                if (self._last_slow_snapshot is not None
-                        and now - self._last_slow_poll_ts < self.SLOW_FALLBACK_SEC):
-                    snap = dict(self._last_slow_snapshot)
-                    snap['msg'] = '高速通道冷却中；慢速兜底不保证 60Hz'
-                    snap['strict_60hz'] = False
-                    return snap
-                snap = self.poll()
-                self._last_slow_poll_ts = now
-                self._last_slow_snapshot = snap
-                snap['strict_60hz'] = False
-                return snap
-            self._chan = TcpChannel(self.mc)
+            self._chan = self.mc.channel()
         try:
             snap = self._poll_fast_impl()
             snap['read_mode'] = 'fast'
-            snap['read_backend'] = self._chan.mode or 'tcp'
-            snap['strict_60hz'] = self._chan.mode == 'srv'
+            snap['read_backend'] = 'srv'
+            snap['memsrv_version'] = getattr(self._chan, 'srv_version', 0)
+            snap['strict_60hz'] = self._chan.srv_version == 4
             self._chan_fail = 0
             return snap
         except Exception as e:
+            if self._poll_stop.is_set():
+                raise InterruptedError('敌人轮询已请求停止') from e
             self._chan_fail += 1
             if self._chan_fail <= 3 or self._chan_fail % 50 == 0:
-                self.log(f'[轮询] 通道异常 ({type(e).__name__}: {e}), 本帧回退慢速读')
+                self.log(f'[轮询] memsrv v4 异常 ({type(e).__name__}: {e})')
             self.close()
-            self._chan_dead_ts = time.time()
-            snap = self.poll()
-            self._last_slow_poll_ts = time.monotonic()
-            self._last_slow_snapshot = snap
-            snap['strict_60hz'] = False
-            return snap
+            raise RuntimeError(f'memsrv v4 读取失败: {e}') from e
 
     @staticmethod
     def _cluster_ptrs(ptrs, gap=0x10000):
-        """敌人指针按地址聚簇 (每簇一次 dd)"""
+        """敌人指针按地址聚簇（历史扫描算法辅助函数）。"""
         if not ptrs:
             return []
         sp = sorted(ptrs)
@@ -3987,15 +3976,13 @@ class EnemyReader:
         return clusters
 
     def _poll_clusters(self, ptrs):
-        """memsrv 精确读取每个对象；只有 shell/dd 兜底保留旧式聚簇。"""
-        if getattr(self._chan, 'mode', None) == 'srv':
-            return [[ptr] for ptr in ptrs]
-        return self._cluster_ptrs(ptrs)
+        """memsrv v4 精确读取每个对象。"""
+        return [[ptr] for ptr in ptrs]
 
     def _refill_failed_reads(self, reqs, results):
         """同帧重读 results 中失败的项并回填。敌人仍在 List 中, 一次通道
         瞬态抖动不应被当成"敌人消失"; 重读也失败才按本帧缺失 (真实消失)
-        处理。通道彻底故障时异常上抛, 由 poll_fast 回退慢速 poll()。"""
+        处理。通道彻底故障时异常上抛并停止本轮发布。"""
         failed = [i for i, data in enumerate(results) if not data]
         if failed:
             retry = self._chan.batch_read([reqs[i] for i in failed])
@@ -4301,41 +4288,39 @@ class EnemyReader:
                 target['cd_remaining'] = gs.fp_to_float(_u64(
                     data, gs.PeriodicTimerFields.M_REMAINING_TIME))
 
-        abnormal_bits = {
-            gs.EnemyState.STUN: (0, None),
-            gs.EnemyState.FROZEN: (16, None),
-            gs.EnemyState.LEVITATE: (25, None),
-            gs.EnemyState.PALSY: (39, None),
+        state_bits = {
+            gs.EnemyState.STUN: 0,
+            gs.EnemyState.FROZEN: 16,
+            gs.EnemyState.LEVITATE: 25,
+            gs.EnemyState.PALSY: 39,
         }
-        # 目标按敌人合并：状态类异常（眩晕/冻结/浮空/战栗）走 flag mask，
-        # 睡眠是 AbnormalCombo（不改状态机状态，敌人停在 MOVE/IDLE 等），
-        # 走 combo mask；叠加时合并成一行，倒计时取两类 Buff 的最长剩余。
-        status_rows = {}
+        # 对全部当前生效 flag/combo 展开 Buff mask；这样寒冷、沉默、恐惧、
+        # 禁锢、束缚等不切换状态机的异常也能取得各自剩余时间。
+        status_targets = []
         for ep in eps:
             state_id = runtime[ep].get('state_id', gs.EnemyState.DEFAULT)
-            bits = abnormal_bits.get(state_id)
-            info = infos.get(ep)
-            if bits and info is not None:
-                status_rows[ep] = [info.buff_container_ptr, state_id,
-                                   bits[0], bits[1]]
-        for ep in eps:
-            combos = runtime[ep].get('abnormal_combos') or ()
-            if (len(combos) <= gs.AbnormalCombo.SLEEPING
-                    or combos[gs.AbnormalCombo.SLEEPING] <= 0):
-                continue
             info = infos.get(ep)
             if info is None:
                 continue
-            row = status_rows.get(ep)
-            if row is not None:
-                if row[3] is None:
-                    row[3] = gs.AbnormalCombo.SLEEPING
-            else:
-                status_rows[ep] = [
-                    info.buff_container_ptr,
-                    runtime[ep].get('state_id', gs.EnemyState.DEFAULT),
-                    None, gs.AbnormalCombo.SLEEPING]
-        status_targets = [(ep, *row) for ep, row in status_rows.items()]
+            flags = runtime[ep].get('abnormal_flags') or ()
+            combos = runtime[ep].get('abnormal_combos') or ()
+            runtime[ep]['status_timers'] = {}
+            flag_bits = {idx for idx, count in enumerate(flags) if count > 0}
+            combo_bits = {idx for idx, count in enumerate(combos) if count > 0}
+            state_bit = state_bits.get(state_id)
+            if state_bit is not None:
+                flag_bits.add(state_bit)
+            if not flag_bits and not combo_bits:
+                runtime[ep]['status_timers'] = {}
+                action = runtime[ep].setdefault('action', {})
+                action.pop('status_remaining', None)
+                action.pop('status_source_count', None)
+                action.pop('status_infinite', None)
+                self._status_timer_cache.pop(ep, None)
+                continue
+            status_targets.append((
+                ep, info.buff_container_ptr, state_id,
+                tuple(sorted(flag_bits)), tuple(sorted(combo_bits))))
         self._refresh_status_timers_chan(status_targets, runtime, self._fast_tick)
 
         for ep in eps:
@@ -4377,7 +4362,7 @@ class EnemyReader:
         prev_ptrs = self._f_ptrs
         read_list = True
 
-        # ---- 组装本帧唯一一批请求 (稳态 = 1 簇 dd; 辅助读取降频搭车) ----
+        # ---- 组装本帧唯一一批请求（辅助读取降频搭车）----
         reqs, slot = [], {}
         if read_list:
             slot['list'] = len(reqs)
@@ -4393,12 +4378,12 @@ class EnemyReader:
         for aep in prev_ptrs:
             cdp = self._attr_cache.get(aep, 0)
             if cdp:
-                slot['attrs'].append((len(reqs), aep))
+                slot['attrs'].append((len(reqs), aep, cdp))
                 reqs.append((cdp, 0x20 + gs.AttributeType.E_NUM * gs.OBSCURED_FP_SIZE))
             else:
                 ap = self._attr_ptrs.get(aep, 0)
                 if ap:
-                    slot['attr_heads'].append((len(reqs), aep))
+                    slot['attr_heads'].append((len(reqs), aep, ap))
                     reqs.append((ap, 0x60))
         if self.bc_addr:
             slot['bc'] = len(reqs)
@@ -4514,7 +4499,7 @@ class EnemyReader:
                 blk = data[off:off + gs.EnemyFields.READ_SIZE]
                 info = self._parse_enemy_block(ep, blk)
                 infos[ep] = info
-                self._attr_ptrs[ep] = info.attr_ptr
+                self._track_attr_object(ep, info.attr_ptr)
                 skl = _u64(data, off + gs.EnemyFields.M_SKILLS)
                 if self.mc.is_ptr(skl):
                     self._skill_lp[ep] = skl
@@ -4548,7 +4533,9 @@ class EnemyReader:
             self._refresh_runtime_chan(readable_ptrs, infos)
 
         # ---- 全部敌人属性每个采样帧刷新 ----
-        for i, aep in slot.get('attrs', ()):
+        for i, aep, expected_cdp in slot.get('attrs', ()):
+            if self._attr_cache.get(aep) != expected_cdp:
+                continue  # 本帧主对象已切换 Attributes，丢弃旧阶段的在途结果
             cd = res[i]
             if cd and 0 < _i32(cd, gs.Il2CppArray.MAX_LENGTH) <= 64:
                 tmp = EnemyInfo(aep)
@@ -4556,7 +4543,9 @@ class EnemyReader:
                 self._attr_snapshot[aep] = dict(tmp.attributes)
             else:
                 self._attr_cache.pop(aep, None)   # 数组已失效, 下轮重建
-        for i, aep in slot.get('attr_heads', ()):
+        for i, aep, expected_attr in slot.get('attr_heads', ()):
+            if self._attr_ptrs.get(aep) != expected_attr:
+                continue
             d = res[i]
             cdp = _u64(d, gs.AttributesFields.M_CACHED_DATA) if d else 0
             if cdp and self.mc.is_ptr(cdp):
@@ -4660,7 +4649,10 @@ class EnemyReader:
         if not reqs:
             return {'frame': self._fixed_frame_snap, 'time_scale': None,
                     'play_time': None}
-        values = dict(zip(keys, self._chan.batch_read(reqs)))
+        # 帧尾守卫必须独立实读，不能命中本帧预取值；用它证明整份敌我
+        # 快照没有跨越逻辑帧/暂停边界。
+        values = dict(zip(keys, self._chan.batch_read(
+            reqs, force_live=True, remember=False)))
         frame = self._fixed_frame_snap
         if values.get('clock'):
             new_frame, now, frame_duration = self._decode_battle_clock_snapshot(
@@ -5115,12 +5107,14 @@ class EnemyReader:
         if not reqs:
             return []
         if getattr(self._detail_context, 'active', False):
+            if self._poll_stop.is_set():
+                raise InterruptedError('敌人详情读取已请求停止')
             if self._detail_chan is None:
                 self._detail_chan = TcpChannel(self.mc, port=DETAIL_TCP_PORT)
             return self._detail_chan.batch_read(reqs)
         if self._chan is not None:
             return self._chan.batch_read(reqs)
-        return [self.mc.read(addr, size) for addr, size in reqs]
+        raise RuntimeError('memsrv v4 主通道尚未建立')
 
     def _read_strings(self, ptrs, max_chars=256):
         unique = [p for p in dict.fromkeys(ptrs) if self.mc.is_ptr(p)]
@@ -5668,10 +5662,9 @@ class EnemyReader:
             info.attributes = dict(self._attr_snapshot[addr])
 
         if not heavy_only:
-            if self._chan is not None:
-                self._refresh_runtime_chan([addr], {addr: info})
-            else:
-                self._fill_runtime_slow(info)
+            if self._chan is None:
+                raise RuntimeError('memsrv v4 主通道尚未建立')
+            self._refresh_runtime_chan([addr], {addr: info})
             info.skills = list(self._skill_cd.get(addr, []))
             info.skills_detail = list(self._skill_enriched.get(addr, ()))
         info.buffs = self._read_active_buffs(info.buff_container_ptr)

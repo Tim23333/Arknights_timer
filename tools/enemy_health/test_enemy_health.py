@@ -434,6 +434,126 @@ class EnemyDetailModelTests(unittest.TestCase):
         self.assertEqual(action['status_source_count'], 1)
         self.assertFalse(action['status_infinite'])
 
+    def test_zero_hp_reborn_enemy_is_not_marked_departed(self):
+        class FakeMem:
+            @staticmethod
+            def is_ptr(_value):
+                return False
+
+        reader = EnemyReader(mc=FakeMem())
+        enemy = EnemyInfo(0x1000)
+        enemy.hp = 0.0
+        enemy.finish = 0
+        reader._copy_runtime(enemy, {'state_id': gs.EnemyState.REBORN})
+        self.assertTrue(enemy.alive)
+        reader._copy_runtime(enemy, {'state_id': gs.EnemyState.DEAD})
+        self.assertFalse(enemy.alive)
+
+    def test_attribute_object_change_invalidates_previous_stage_cache(self):
+        reader = EnemyReader(mc=object())
+        ep = 0x1000
+        reader._attr_ptrs[ep] = 0x2000
+        reader._attr_cache[ep] = 0x3000
+        reader._attr_snapshot[ep] = {gs.AttributeType.ATK: 100.0}
+        self.assertTrue(reader._track_attr_object(ep, 0x4000))
+        self.assertNotIn(ep, reader._attr_cache)
+        self.assertNotIn(ep, reader._attr_snapshot)
+        self.assertEqual(reader._attr_ptrs[ep], 0x4000)
+
+    def test_all_active_abnormal_flags_receive_independent_timers(self):
+        addr, container, double = 0x1000, 0x2000, 0x3000
+        list_ptr, items, buff = 0x4000, 0x5000, 0x6000
+
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        container_data = bytearray(0x30)
+        struct.pack_into('<Q', container_data, gs.BuffContainerFields.M_BUFFS,
+                         double)
+        double_data = bytearray(0x28)
+        struct.pack_into('<Q', double_data,
+                         gs.DoubleBufferedListFields.M_INTERNAL_LIST, list_ptr)
+        head = bytearray(0x20)
+        struct.pack_into('<Q', head, gs.ListInternal.ITEMS, items)
+        struct.pack_into('<i', head, gs.ListInternal.SIZE, 1)
+        base = gs.BuffFields.M_LIFE_TIME
+        size = gs.BuffFields.ABNORMAL_COMBO_MASK + 8 - base
+        buff_data = bytearray(size)
+        struct.pack_into('<Q', buff_data, 0, int(5 * gs.FP_ONE))
+        struct.pack_into('<Q', buff_data,
+                         gs.BuffFields.M_REMAINING_TIME - base,
+                         int(2.5 * gs.FP_ONE))
+        buff_data[gs.BuffFields.IS_ACTUALLY_ENABLED - base] = 1
+        buff_data[gs.BuffFields.IS_VALID - base] = 1
+        flag_mask = (1 << 12) | (1 << 23)  # 沉默 + 寒冷
+        struct.pack_into('<Q', buff_data,
+                         gs.BuffFields.ABNORMAL_FLAG_MASK - base, flag_mask)
+        memory = {
+            (container, 0x30): bytes(container_data),
+            (double, 0x28): bytes(double_data),
+            (list_ptr, 0x20): bytes(head),
+            (items + gs.Il2CppArray.ITEMS, 0x10): struct.pack('<QQ', buff, 0),
+            (buff + base, size): bytes(buff_data),
+        }
+        reader = EnemyReader(mc=FakeMem())
+        reader._detail_batch_read = (
+            lambda reqs: [memory.get((address, read_size))
+                          for address, read_size in reqs])
+        snapshots = {addr: {'state_id': gs.EnemyState.MOVE, 'action': {}}}
+        reader._refresh_status_timers_chan(
+            [(addr, container, gs.EnemyState.MOVE, (12, 23), ())],
+            snapshots, 1)
+        timers = snapshots[addr]['status_timers']
+        self.assertAlmostEqual(timers['flag:12']['remaining'], 2.5)
+        self.assertAlmostEqual(timers['flag:23']['remaining'], 2.5)
+
+        enemy = EnemyInfo(addr)
+        enemy.abnormal_flags[12] = 1
+        enemy.abnormal_flags[23] = 1
+        reader._copy_runtime(enemy, snapshots[addr])
+        self.assertIn('沉默（2.50s）', enemy.status_text())
+        self.assertIn('寒冷（2.50s）', enemy.status_text())
+
+    def test_poll_stop_closes_channel_and_blocks_new_read(self):
+        class FakeChannel:
+            def __init__(self):
+                self.closed = False
+
+            def close(self):
+                self.closed = True
+
+        reader = EnemyReader(mc=object())
+        channel = FakeChannel()
+        reader._chan = channel
+        reader.request_poll_stop()
+        self.assertTrue(channel.closed)
+        with self.assertRaises(InterruptedError):
+            reader.poll_fast()
+        reader.resume_polling()
+        self.assertFalse(reader._poll_stop.is_set())
+
+    def test_tcp_channel_close_shutdowns_socket_before_close(self):
+        class FakeSocket:
+            def __init__(self):
+                self.shutdown_how = None
+                self.closed = False
+
+            def shutdown(self, how):
+                self.shutdown_how = how
+
+            def close(self):
+                self.closed = True
+
+        channel = TcpChannel(object())
+        sock = FakeSocket()
+        channel.sock = sock
+        channel.close()
+        self.assertEqual(sock.shutdown_how, 2)  # socket.SHUT_RDWR
+        self.assertTrue(sock.closed)
+        self.assertIsNone(channel.sock)
+
     def test_spine_non_loop_track_has_exact_scaled_remaining_time(self):
         remaining = spine_track_remaining(
             0.0, 3.0, 1.5, entry_scale=1.0,
@@ -490,13 +610,12 @@ class EnemyDetailModelTests(unittest.TestCase):
         }
         reader._finalize_enemy_action(
             enemy, now=5.0, frame=130, frame_duration=1 / 30)
-        # 原始 _PickAbility 只检查最高优先级组；其 CD 未就绪后直接兜底，
-        # 不会继续选择低优先级但 CD 更短的技能。
+        # 两个技能都未就绪，逐优先级检查后才回退普通攻击。
         self.assertNotIn('短CD技能', enemy.action['next_action'])
         self.assertNotIn('长CD技能', enemy.action['next_action'])
         self.assertEqual(enemy.action['next_action'], '普通攻击')
         self.assertEqual(enemy.action['next_action_confidence'], 'rule_calculated')
-        self.assertIn('priority=9', enemy.action['next_action_detail'])
+        self.assertIn('所有优先级组均未通过', enemy.action['next_action_detail'])
 
     def test_enemy_attack_lane_candidate_uses_highest_priority(self):
         class FakeMem:
@@ -597,11 +716,10 @@ class EnemyDetailModelTests(unittest.TestCase):
         }
         reader._finalize_enemy_action(
             enemy, now=5.0, frame=130, frame_duration=1 / 30)
-        # 最高优先级先于 family 锁组；priority=99 的 ATTACK 技能在 COMBAT
-        # 流程不通过后，客户端直接兜底，不会继续看 priority=2。
-        self.assertEqual(enemy.action['next_action'], '基础战斗能力')
+        # priority=99 的 ATTACK 技能不属于 COMBAT；规则继续检查 priority=2。
+        self.assertEqual(enemy.action['next_action'], '技能：阻挡技能')
         self.assertNotIn('普攻技能', enemy.action['next_action'])
-        self.assertNotIn('阻挡技能', enemy.action['next_action'])
+        self.assertIn('priority=2', enemy.action['next_action_detail'])
 
     def test_enemy_picked_combat_ability_is_confirmed_next_action(self):
         class FakeMem:
@@ -641,7 +759,7 @@ class EnemyDetailModelTests(unittest.TestCase):
         self.assertNotEqual(enemy.action['next_action_confidence'], 'confirmed')
         self.assertIn('当前动作尚未结束', enemy.action['next_action_detail'])
 
-    def test_current_attack_snapshot_does_not_choose_lower_priority_ready_skill(self):
+    def test_current_attack_snapshot_chooses_lower_priority_ready_skill(self):
         class FakeMem:
             @staticmethod
             def is_ptr(value):
@@ -667,9 +785,46 @@ class EnemyDetailModelTests(unittest.TestCase):
         }
         reader._finalize_enemy_action(
             enemy, now=5.0, frame=130, frame_duration=1 / 30)
-        self.assertEqual(enemy.action['next_action'], '普通攻击')
+        self.assertEqual(enemy.action['next_action'], '技能：低优先就绪技能')
         self.assertEqual(enemy.action['next_action_confidence'], 'rule_snapshot')
-        self.assertNotIn('低优先就绪技能', enemy.action['next_action'])
+        self.assertIn('高优先冷却技能', enemy.action['next_action_detail'])
+        self.assertIn('priority=0', enemy.action['next_action_detail'])
+
+    def test_faust_ready_critical_hit_beats_cooling_summon_ballista(self):
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        reader = EnemyReader(mc=FakeMem())
+        enemy = EnemyInfo(0x1000)
+        enemy.state_id = gs.EnemyState.MOVE
+        enemy.skills_detail = [
+            {'name': 'SummonBallis', 'remaining': 28.37, 'period': 30.0,
+             'priority': 1, 'max_triggers': 0, 'trigger_count': 0,
+             'has_trigger': False, 'family_mask': gs.AbilityFamilyMask.ATTACK},
+            {'name': 'CriticalHit', 'remaining': 0.0, 'period': 30.0,
+             'priority': 0, 'max_triggers': 0, 'trigger_count': 0,
+             'has_trigger': False, 'family_mask': gs.AbilityFamilyMask.ATTACK},
+        ]
+        enemy.action = {
+            'attack_base': {'cd_remaining': 1.67},
+            'attack_trigger_ready': True,
+            'attack_trigger_reason': '已有有效目标',
+            'combat_ability_picked': False,
+        }
+        reader._finalize_enemy_action(
+            enemy, now=5.0, frame=130, frame_duration=1 / 30)
+        self.assertEqual(enemy.action['next_action'], '技能：CriticalHit')
+        self.assertEqual(enemy.action['next_action_confidence'], 'rule_calculated')
+        self.assertEqual(enemy.action['next_action_candidates'], ['CriticalHit'])
+        self.assertEqual(enemy.action['next_action_rule'], '技能：SummonBallis')
+        self.assertEqual(enemy.action['next_action_rule_candidates'], ['SummonBallis'])
+        self.assertIn('SummonBallis：CD 28.37秒',
+                      enemy.action['next_action_detail'])
+        self.assertIn('priority=0', enemy.action['next_action_detail'])
+        self.assertNotIn('CD 28.37秒', enemy.action['next_action_rule_detail'])
+        self.assertIn('priority=1', enemy.action['next_action_rule_detail'])
 
     def test_same_priority_passed_skills_are_rng_candidates(self):
         class FakeMem:
@@ -757,40 +912,12 @@ class EnemyDetailModelTests(unittest.TestCase):
         self.assertEqual(enemy.element_damage(gs.ElementType.SANITY),
                          (675.0, 1325.0, 2000.0))
 
-    def test_slow_fallback_refreshes_element_damage_instead_of_freezing_snapshot(self):
-        ep_ptr = 0x2000
-        data = bytearray(gs.Il2CppArray.ITEMS + gs.ElementType.E_NUM * 8)
-        struct.pack_into('<i', data, gs.Il2CppArray.MAX_LENGTH, gs.ElementType.E_NUM)
-        values = (2000.0, 1325.0, 2000.0, 2000.0, 2000.0, 2000.0)
-        for idx, value in enumerate(values):
-            struct.pack_into(
-                '<Q', data, gs.Il2CppArray.ITEMS + idx * 8,
-                int(value * gs.FP_ONE))
-
-        class FakeMemory:
-            @staticmethod
-            def is_ptr(value):
-                return value == ep_ptr
-
-            @staticmethod
-            def read(addr, _size):
-                return bytes(data) if addr == ep_ptr else None
-
-        reader = EnemyReader(mc=FakeMemory())
-        enemy = EnemyInfo(0x1000)
-        enemy.ep_ptr = ep_ptr
-        reader._runtime_snapshot[enemy.addr] = {
-            'ep_remaining': {idx: 2000.0 for idx in range(gs.ElementType.E_NUM)},
-        }
-        self.assertTrue(reader._refresh_ep_runtime_slow(enemy))
-        self.assertEqual(enemy.element_damage(gs.ElementType.SANITY),
-                         (675.0, 1325.0, 2000.0))
-
     def test_fast_poll_snapshot_reports_live_channel_backend(self):
         reader = EnemyReader(mc=object())
 
         class FakeChannel:
             mode = 'srv'
+            srv_version = 4
 
         reader._chan = FakeChannel()
         reader._poll_fast_impl = lambda: {'ok': True}
@@ -1230,19 +1357,21 @@ class FastPollRetryTests(unittest.TestCase):
         block = self._enemy_block()
         state = {'fail': True}
 
-        class FlakyMem:
+        class FlakyChannel:
+            @staticmethod
+            def batch_read(_reqs):
+                if state['fail']:
+                    state['fail'] = False
+                    return [None]
+                return [block]
+
+        class FakeMem:
             @staticmethod
             def is_ptr(_value):
                 return False
 
-            @staticmethod
-            def read(_addr, _size, timeout=30):
-                if state['fail']:
-                    state['fail'] = False
-                    return None
-                return block
-
-        reader = EnemyReader(mc=FlakyMem())
+        reader = EnemyReader(mc=FakeMem())
+        reader._chan = FlakyChannel()
         reader._names[self.EP] = ('enemy_x', '敌人X', '')
         info = reader._read_enemy(self.EP, with_runtime=False)
         self.assertTrue(info.alive)
@@ -1254,6 +1383,7 @@ class TcpChannelFrameStatsTests(unittest.TestCase):
         channel = TcpChannel(object())
         channel.sock = object()
         channel.mode = 'srv'
+        channel.srv_version = 4
         channel._batch_srv = lambda reqs: [bytes(size) for _addr, size in reqs]
         channel.batch_read([(0x1000, 8), (0x2000, 12)])
         channel.batch_read([(0x3000, 4)])
@@ -1265,6 +1395,91 @@ class TcpChannelFrameStatsTests(unittest.TestCase):
         self.assertGreaterEqual(stats['io_ms'], 0.0)
         channel.reset_frame_stats()
         self.assertEqual(channel.frame_stats()['batches'], 0)
+
+    def test_v4_resident_plan_executes_each_frame_and_rebuilds_after_miss(self):
+        channel = TcpChannel(object())
+        channel.sock = object()
+        channel.mode = 'srv'
+        channel.srv_version = 4
+        calls = []
+        generation = {'value': 0}
+
+        def execute(operations):
+            generation['value'] += 1
+            calls.append(('execute', list(operations)))
+            return ([struct.pack('<Q', generation['value'] * 100 + addr)
+                     for _kind, addr, _size in operations],
+                    {'attempts': 1, 'start': 50, 'end': 50,
+                     'complete': True})
+
+        def live(requests):
+            calls.append(('live', list(requests)))
+            return [struct.pack('<Q', generation['value'] * 1000 + addr)
+                    for addr, _size in requests]
+
+        channel.execute_frame_plan = execute
+        channel.upload_frame_plan = lambda ops: calls.append(
+            ('upload', list(ops)))
+        channel._batch_read_live = live
+        channel._prefetch_plan = [(0x1000, 8), (0x2000, 8)]
+        channel._prefetch_ops = [
+            ('direct', 0x1000, 8), ('direct', 0x2000, 8)]
+        channel._plan_uploaded = True
+        channel._capture_topology = False
+
+        self.assertTrue(channel.begin_frame_prefetch())
+        first = channel.batch_read([(0x1000, 8), (0x3000, 8)])
+        self.assertEqual(struct.unpack('<Q', first[0])[0], 100 + 0x1000)
+        self.assertEqual(struct.unpack('<Q', first[1])[0], 1000 + 0x3000)
+        channel.end_frame_prefetch()
+        self.assertTrue(channel._capture_next_frame)
+
+        self.assertTrue(channel.begin_frame_prefetch())
+        second = channel.batch_read([(0x1000, 8), (0x3000, 8)])
+        channel.end_frame_prefetch()
+        # 新帧重新执行设备计划；拓扑捕获帧结束后只上传一次新计划。
+        self.assertEqual(struct.unpack('<Q', second[0])[0], 200 + 0x1000)
+        self.assertEqual(calls[-1][0], 'upload')
+        self.assertEqual(channel._prefetch_plan,
+                         [(0x1000, 8), (0x3000, 8)])
+
+    def test_force_live_guard_bypasses_prefetch_and_is_not_remembered(self):
+        channel = TcpChannel(object())
+        channel.sock = object()
+        channel.mode = 'srv'
+        channel.srv_version = 4
+        channel._prefetch_active = True
+        channel._prefetch_values = {(0x1000, 8): b'prefetch'}
+        calls = []
+        channel._batch_read_live = lambda reqs: (
+            calls.append(list(reqs)) or [b'live1234'])
+
+        value = channel.batch_read(
+            [(0x1000, 8)], force_live=True, remember=False)
+        self.assertEqual(value, [b'live1234'])
+        self.assertEqual(calls, [[(0x1000, 8)]])
+        self.assertEqual(channel._frame_plan, [])
+
+    def test_v4_frame_plan_tracks_current_pointer_dependencies(self):
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return 0x7000000000 <= value < 0x7100000000
+
+        channel = TcpChannel(FakeMem())
+        root = 0x7000001000
+        child = 0x7000002000
+        root_data = bytearray(0x20)
+        struct.pack_into('<Q', root_data, 0x10, child)
+        channel._batch_read_live = lambda reqs: [
+            bytes(root_data) if addr == root else bytes(size)
+            for addr, size in reqs]
+
+        channel.batch_read([(root, 0x20)])
+        channel.batch_read([(child + 0x48, 0x18)])
+        self.assertEqual(channel._frame_ops[0], ('direct', root, 0x20))
+        self.assertEqual(
+            channel._frame_ops[1], ('deref', 0, 0x10, 0x48, 0x18))
 
 
 class BuffSourceNameTests(unittest.TestCase):
@@ -1296,6 +1511,16 @@ class BuffSourceNameTests(unittest.TestCase):
                     return bytes(str_blk)
                 return None
 
+            def channel(self):
+                owner = self
+
+                class Channel:
+                    @staticmethod
+                    def batch_read(reqs):
+                        return [owner.read(addr, size) for addr, size in reqs]
+
+                return Channel()
+
         return FakeMem
 
     def test_resolves_character_entity_via_char_names(self):
@@ -1308,6 +1533,7 @@ class BuffSourceNameTests(unittest.TestCase):
 
         mc = CountingMem()
         reader = EnemyReader(mc=mc)
+        reader._chan = mc.channel()
         reader._db = {}
         reader._char_names = {'char_4235_thumpy': '珊比'}
         names = reader._resolve_buff_source_names([self.SRC])
@@ -1334,7 +1560,9 @@ class BuffSourceNameTests(unittest.TestCase):
             reader._resolve_buff_source_names([self.SRC])[self.SRC], '敌人X')
 
     def test_unknown_entity_falls_back_to_id_text(self):
-        reader = EnemyReader(mc=self._fake_mem('enemy_9999_unknown')())
+        mc = self._fake_mem('enemy_9999_unknown')()
+        reader = EnemyReader(mc=mc)
+        reader._chan = mc.channel()
         reader._db = {}
         reader._char_names = {}
         names = reader._resolve_buff_source_names([self.SRC])
@@ -1363,7 +1591,19 @@ class BuffSourceNameTests(unittest.TestCase):
                     return None
                 return bytes(str_blk)
 
-        reader = EnemyReader(mc=FlakyMem())
+            def channel(self):
+                owner = self
+
+                class Channel:
+                    @staticmethod
+                    def batch_read(reqs):
+                        return [owner.read(addr, size) for addr, size in reqs]
+
+                return Channel()
+
+        mc = FlakyMem()
+        reader = EnemyReader(mc=mc)
+        reader._chan = mc.channel()
         out = reader._read_strings([self.IDP])
         self.assertEqual(out[self.IDP], 'conveyor_speed')
 

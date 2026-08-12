@@ -69,8 +69,8 @@ def wave_timeline(waves):
     Chained-wave model (matches the emulator, MECHANICS \u00a711):
       - waves are sequential: wave i starts after wave i-1's last event
         plus postDelay and the next wave's preDelay;
-      - fragments inside a wave are concurrent streams (preDelay is
-        relative to the wave start);
+      - fragments are sequential: each starts after the previous fragment's
+        final action, then waits its own preDelay;
       - intra-tick order: (t, wave, fragment, action, seq).
     """
     events = []
@@ -78,14 +78,19 @@ def wave_timeline(waves):
     for wi, w in enumerate(waves or []):
         wave_start = wave_t + (w.get("preDelay") or 0.0)
         wave_end = 0.0
+        fragment_cursor = wave_start
         for fi, fr in enumerate(w.get("fragments") or []):
-            frag_start = wave_start + (fr.get("preDelay") or 0.0)
+            frag_start = fragment_cursor + (fr.get("preDelay") or 0.0)
+            fragment_end = frag_start
             for ai, a in enumerate(fr.get("actions") or []):
                 for ev in action_spawn_times(a, frag_start):
                     ev.update({"wave": wi, "fragment": fi, "action": ai})
                     events.append(ev)
-                    if ev["t"] > wave_end:
-                        wave_end = ev["t"]
+                    if ev["t"] > fragment_end:
+                        fragment_end = ev["t"]
+            fragment_cursor = fragment_end
+            if fragment_end > wave_end:
+                wave_end = fragment_end
         wave_t = wave_end + (w.get("postDelay") or 0.0)
     return sorted(events, key=lambda e: (e["t"], e.get("wave", 0),
                                          e.get("fragment", 0),
@@ -192,8 +197,8 @@ def main():
         "meta": {
             "generatedBy": "build_sim_bundle.py",
             "waveModel": "chained: waves sequential (prev last event + "
-                         "postDelay + preDelay); fragments concurrent "
-                         "(preDelay relative to wave start); spawns at "
+                         "postDelay + preDelay); fragments sequential "
+                         "(previous final action + fragment preDelay); spawns at "
                          "frag_start + action.preDelay + i*interval",
         },
         "levels": levels,

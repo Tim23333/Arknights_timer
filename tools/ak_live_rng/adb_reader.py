@@ -7,8 +7,8 @@
       'metaheap' 非 GC 的 rw 区域 (Il2CppClass 等元数据 malloc 堆)
       'gc'       il2cpp Boehm GC 堆 (匿名大 rw, Random 对象/种子数组所在)
       'rw'       全部 rw (兜底)
-  - 设备侧 memsrv 常驻服务: 单批请求 ~2-5ms (一个 pread64), 轮询游标无压力;
-    不可用时回退 adb exec-out dd (慢速但可靠)
+  - 设备侧 memsrv v4 常驻服务: 单批请求 ~2-5ms (一个 pread64), 轮询游标无压力
+  - memsrv v4 是唯一 ADB 内存后端；握手或通道失败直接报错
   - 无需 Windows 管理员权限
 """
 
@@ -30,8 +30,6 @@ class AdbReader:
     def __init__(self, mc: MemCore):
         self.mc = mc
         self.chan = None
-        self._chan_failed = False
-        self.last_scan_error = None   # scan_regions 最近异常 (诊断用)
 
     # ---------------- 连接 ----------------
 
@@ -47,15 +45,13 @@ class AdbReader:
         return reader
 
     def _open_channel(self, status=print):
-        try:
-            self.chan = TcpChannel(self.mc, port=RNG_TCP_PORT)
-            self.chan.open()
-            self._chan_failed = False
-            status("[adb] TCP 通道建立 (%s 模式)" % self.chan.mode)
-        except Exception as ex:
+        self.chan = TcpChannel(self.mc, port=RNG_TCP_PORT)
+        self.chan.open()
+        if self.chan.srv_version != 4:
+            self.chan.close()
             self.chan = None
-            self._chan_failed = True
-            status("[adb] TCP 通道不可用, 回退 dd 慢速读取 (%s)" % ex)
+            raise RuntimeError("RNG 读取仅支持 memsrv v4")
+        status("[adb] memsrv v4 通道已建立")
 
     def ensure_alive(self, status=print):
         """游戏重启后自愈: pid 变化则重连。"""
@@ -82,13 +78,14 @@ class AdbReader:
     def scan_regions(self, regions, needles):
         """memscan 扫描协议: 在 regions 内搜索全部 needles (bytes, 1..64B)。
 
-        下沉到设备侧 memsrv v2 执行 (内部 4MB 滑动窗口+64B 重叠, 跨块不漏);
-        合并相邻块减少往返与边界漏报。旧版服务/通道异常时返回 None,
-        由 memscan 回退逐块 python 扫描。"""
+        下沉到设备侧 memsrv v4 执行 (内部 4MB 滑动窗口+64B 重叠, 跨块不漏)；
+        合并相邻块减少往返与边界漏报。服务或通道异常直接上抛。"""
         if not needles:
             return {}
-        if self.chan is None or getattr(self.chan, "srv_version", 0) < 2:
-            return None
+        if self.chan is None:
+            self._open_channel()
+        if self.chan.srv_version != 4:
+            raise RuntimeError("RNG 扫描仅支持 memsrv v4")
         merged = []
         for base, size in sorted(regions):
             if (merged and base == merged[-1][0] + merged[-1][1]
@@ -97,87 +94,62 @@ class AdbReader:
             else:
                 merged.append((base, size))
         out = {nd: [] for nd in needles}
-        try:
-            for base, size in merged:
-                # memsrv 单次扫描上限 MAX_NEEDLES=256 (超出直接断连):
-                # 针数过多时分批合并结果
-                for i in range(0, len(needles), 256):
-                    part = list(needles[i:i + 256])
-                    r = self.chan.scan(base, size, part)
-                    if r is None:
-                        return None
-                    for nd in part:
-                        out[nd].extend(r.get(nd) or [])
-        except Exception as ex:
-            self.last_scan_error = "%r" % ex
-            return None
+        for base, size in merged:
+            # memsrv 单次扫描上限 MAX_NEEDLES=256 (超出直接断连):
+            # 针数过多时分批合并结果
+            for i in range(0, len(needles), 256):
+                part = list(needles[i:i + 256])
+                r = self.chan.scan(base, size, part)
+                for nd in part:
+                    out[nd].extend(r.get(nd) or [])
         return out
 
     # ---------------- 读取协议 ----------------
 
     def read(self, addr, size):
         if size <= 0:
-            return None
-        if not self._chan_failed:
-            try:
-                if self.chan is None:
-                    self._open_channel()
-                reqs = []
-                a = addr
-                while a < addr + size:
-                    n = min(addr + size - a, SRV_MAX)
-                    reqs.append((a, n))
-                    a += n
-                parts = self.chan.batch_read(reqs)
-                if all(p is not None for p in parts):
-                    return b"".join(parts)
-                return None
-            except Exception:
-                self._chan_failed = True
-                if self.chan:
-                    self.chan.close()
-                    self.chan = None
-        try:
-            return self.mc.read(addr, size)
-        except Exception:
-            return None
+            return b""
+        if self.chan is None:
+            self._open_channel()
+        reqs = []
+        a = addr
+        while a < addr + size:
+            n = min(addr + size - a, SRV_MAX)
+            reqs.append((a, n))
+            a += n
+        parts = self.chan.batch_read(reqs)
+        if all(p is not None for p in parts):
+            return b"".join(parts)
+        return None
 
     def read_many(self, requests):
         """批量读取 [(addr, size), ...] -> [bytes|None, ...] (单次 TCP 往返)。
 
-        轮询/批量校验的延迟关键路径; 通道不可用时退化为逐个 read。"""
+        轮询/批量校验的延迟关键路径；通道异常直接上抛。"""
         if not requests:
             return []
-        if not self._chan_failed:
-            try:
-                if self.chan is None:
-                    self._open_channel()
-                flat = []
-                spans = []
-                for a, s in requests:
-                    n_parts = 0
-                    while s > 0:
-                        n = min(s, SRV_MAX)
-                        flat.append((a, n))
-                        a += n
-                        s -= n
-                        n_parts += 1
-                    spans.append(n_parts)
-                data = self.chan.batch_read(flat)
-                out = []
-                i = 0
-                for n in spans:
-                    chunk = data[i:i + n]
-                    i += n
-                    out.append(b"".join(chunk)
-                               if all(p is not None for p in chunk) else None)
-                return out
-            except Exception:
-                self._chan_failed = True
-                if self.chan:
-                    self.chan.close()
-                    self.chan = None
-        return [self.read(a, s) for a, s in requests]
+        if self.chan is None:
+            self._open_channel()
+        flat = []
+        spans = []
+        for a, s in requests:
+            n_parts = 0
+            while s > 0:
+                n = min(s, SRV_MAX)
+                flat.append((a, n))
+                a += n
+                s -= n
+                n_parts += 1
+            spans.append(n_parts)
+        data = self.chan.batch_read(flat)
+        out = []
+        i = 0
+        for n in spans:
+            chunk = data[i:i + n]
+            i += n
+            out.append(b"".join(chunk)
+                       if all(p is not None for p in chunk) else None)
+        return out
 
     def regions(self, scope="all"):
         if not self.mc.regions:

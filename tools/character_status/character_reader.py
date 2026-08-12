@@ -265,7 +265,7 @@ class CharacterReader:
 
     def _ensure_channel(self):
         if self.core._chan is None:
-            self.core._chan = TcpChannel(self.mc)
+            self.core._chan = self.mc.channel()
         return self.core._chan
 
     def _batch(self, reqs):

@@ -54,7 +54,7 @@ ENEMY_COLUMN_DEFS = [
     _col('action_state', '行为状态', 72, True),
     _col('action_phase', '动作阶段', 180, True),
     _col('remaining_time', '剩余帧/时间', 170, True),
-    _col('next_action', '下一动作', 190, True),
+    _col('next_action', '下一动作预测', 260, True),
     _col('abnormal_status', '异常状态', 160, True),
     _col('immune_status', '状态免疫', 160, False),
 ]
@@ -430,16 +430,25 @@ def format_column_value(key, enemy, decimals, row=0):
         return countdown_text(getattr(enemy, 'action', {}))
     if key == 'next_action':
         action = getattr(enemy, 'action', {}) or {}
-        value = action.get('next_action') or '-'
-        prefix = {
+        confidence_prefix = {
             'confirmed': '[确定] ', 'unselected': '[未预选] ',
             'inferred': '[推断] ',
             'rule_calculated': '[规则计算] ',
             'rule_snapshot': '[规则快照] ',
             'rule_candidates': '[规则随机] ',
             'rule_partial': '[规则待判] ',
-        }.get(action.get('next_action_confidence'), '')
-        return prefix + value if value != '-' else value
+        }
+
+        def line(label, value_key, confidence_key):
+            value = action.get(value_key) or '-'
+            prefix = confidence_prefix.get(action.get(confidence_key), '')
+            return f'[{label}] {prefix}{value}' if value != '-' else f'[{label}] -'
+
+        return '\n'.join((
+            line('Boss规则', 'next_action_rule',
+                 'next_action_rule_confidence'),
+            line('含CD', 'next_action', 'next_action_confidence'),
+        ))
     if key == 'abnormal_status':
         return enemy.status_text()
     if key == 'immune_status':
@@ -582,7 +591,8 @@ class EnemyDetailDialog(QDialog):
         self.elements = _make_table([
             '损伤类型', '内部名', '已累积', '剩余', '上限',
             '已累积比例', '剩余比例', '爆发'])
-        self.statuses = _make_table(['类别', '状态', '内部名', '生效计数', '免疫计数', '反制计数'])
+        self.statuses = _make_table([
+            '类别', '状态', '内部名', '生效计数', '剩余时间', '免疫计数', '反制计数'])
         self.buffs = _make_table([
             '中文名称', '内部键', '效果说明', '来源', '运行信息', '时间', '层数',
             '属性公式', '状态/免疫', '护盾', '参数说明', '原始 Blackboard'])
@@ -629,8 +639,18 @@ class EnemyDetailDialog(QDialog):
             ('倒计时来源', action.get('clock_source') or '-'),
             ('精确动画计时', '是（当前速度且未被中断）'
              if action.get('animation_exact') else '否/不适用'),
-            ('下一动作', action.get('next_action') or '-'),
-            ('下一动作可信度', {
+            ('下一动作（Boss规则）', action.get('next_action_rule') or '-'),
+            ('Boss规则预测可信度', {
+                'confirmed': '游戏已写入', 'unselected': '游戏尚未预选',
+                'inferred': '按敌人原始代码推断',
+                'rule_calculated': '按敌人原始代码计算（未加入当前CD）',
+                'rule_snapshot': '按敌人原始代码计算当前快照（未加入当前CD）',
+                'rule_candidates': '敌人原始代码得到候选组（战斗 RNG 择一）',
+                'rule_partial': '敌人原始代码仍有 Search/Lua/关卡条件待执行',
+            }.get(action.get('next_action_rule_confidence'), '-')),
+            ('Boss规则预测依据', action.get('next_action_rule_detail') or '-'),
+            ('下一动作（含CD）', action.get('next_action') or '-'),
+            ('含CD预测可信度', {
                 'confirmed': '游戏已写入', 'unselected': '游戏尚未预选',
                 'inferred': '按游戏判据推断（CD/触发次数/优先级）',
                 'rule_calculated': '按客户端原始规则计算（当前判据唯一）',
@@ -638,7 +658,7 @@ class EnemyDetailDialog(QDialog):
                 'rule_candidates': '按客户端原始规则得到候选组（战斗 RNG 择一）',
                 'rule_partial': '按客户端原始规则计算，但仍有 Search/Lua/关卡条件待执行',
             }.get(action.get('next_action_confidence'), '-')),
-            ('下一动作依据', action.get('next_action_detail') or '-'),
+            ('含CD预测依据', action.get('next_action_detail') or '-'),
             ('当前逻辑帧', action.get('current_frame')
              if action.get('current_frame') is not None else '-'),
             ('动作已进行帧数', action.get('elapsed_frames')
@@ -717,11 +737,20 @@ class EnemyDetailDialog(QDialog):
 
         status_rows = []
         for idx, internal, name in gs.ABNORMAL_FLAG_DEFS:
+            timer = enemy.status_timers.get(f'flag:{idx}') or {}
+            remaining = ('无限' if timer.get('infinite') else
+                         f"{timer['remaining']:.2f}s"
+                         if isinstance(timer.get('remaining'), (int, float)) else '-')
             status_rows.append(('状态', name, internal, enemy.abnormal_flags[idx],
-                                enemy.abnormal_immunes[idx], enemy.abnormal_antis[idx]))
+                                remaining, enemy.abnormal_immunes[idx],
+                                enemy.abnormal_antis[idx]))
         for idx, internal, name in gs.ABNORMAL_COMBO_DEFS:
+            timer = enemy.status_timers.get(f'combo:{idx}') or {}
+            remaining = ('无限' if timer.get('infinite') else
+                         f"{timer['remaining']:.2f}s"
+                         if isinstance(timer.get('remaining'), (int, float)) else '-')
             status_rows.append(('组合状态', name, internal, enemy.abnormal_combos[idx],
-                                enemy.abnormal_combo_immunes[idx], '-'))
+                                remaining, enemy.abnormal_combo_immunes[idx], '-'))
         _fill_table(self.statuses, status_rows, resize_columns=resize_columns)
 
         buff_rows = []

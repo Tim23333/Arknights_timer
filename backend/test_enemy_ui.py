@@ -50,16 +50,18 @@ class EnemyUiTests(unittest.TestCase):
         self.assertEqual(values['default'], 2)
         self.assertTrue(all(value == 2 for value in values.values()))
 
-    def test_enemy_read_channel_status_text_distinguishes_fast_and_fallback(self):
+    def test_enemy_read_channel_status_only_accepts_memsrv_v4(self):
         self.assertEqual(
-            _format_enemy_read_mode({'read_mode': 'fast', 'read_backend': 'srv'}),
-            '高速通道（memsrv）')
+            _format_enemy_read_mode({
+                'read_mode': 'fast', 'read_backend': 'srv',
+            'memsrv_version': 4}),
+            '设备快照（memsrv v4）')
         self.assertEqual(
             _format_enemy_read_mode({'read_mode': 'fast', 'read_backend': 'sh'}),
-            'TCP 兼容通道（shell）')
+            '检测中')
         self.assertEqual(
             _format_enemy_read_mode({'read_mode': 'slow', 'read_backend': 'adb'}),
-            '慢速兜底（ADB）')
+            '检测中')
 
     def test_poll_worker_marks_paused_snapshot_only_when_frame_is_consistent(self):
         class Reader:
@@ -92,6 +94,21 @@ class EnemyUiTests(unittest.TestCase):
         self.assertEqual(latest['sequence'], 2)
         self.assertEqual(latest['dropped_ui_snapshots'], 1)
         self.assertIsNone(worker.take_latest_snapshot())
+
+    def test_poll_worker_keeps_last_complete_playing_frame_when_error_overwrites_ui(self):
+        worker = EnemyPollWorker(object())
+        complete = {
+            'ok': True, 'state': gs.BattleState.PLAYING,
+            'fixed_frame': 777, 'frame_consistent': True, 'enemies': [],
+        }
+        worker._publish_snapshot(complete)
+        worker._publish_snapshot({
+            'ok': False, 'state': -1, 'fixed_frame': None,
+            'frame_consistent': True, 'enemies': [],
+        })
+        self.assertFalse(worker.take_latest_snapshot()['ok'])
+        self.assertEqual(
+            worker.take_last_complete_snapshot()['fixed_frame'], 777)
 
     def test_enemy_column_fit_fills_viewport_and_protects_hp_text(self):
         table = QTableWidget(1, len(ENEMY_COLUMN_DEFS))
@@ -394,12 +411,15 @@ class EnemyUiTests(unittest.TestCase):
     def test_next_action_column_marks_prediction_confidence(self):
         enemy = EnemyInfo(1)
         enemy.action = {
+            'next_action_rule': '技能：Boss规则技能',
+            'next_action_rule_confidence': 'rule_calculated',
             'next_action': '技能：测试技能',
             'next_action_confidence': 'confirmed',
         }
         self.assertEqual(
             format_column_value('next_action', enemy, {'default': 2}),
-            '[确定] 技能：测试技能')
+            '[Boss规则] [规则计算] 技能：Boss规则技能\n'
+            '[含CD] [确定] 技能：测试技能')
 
     def test_existing_column_settings_enable_new_shield_column_only_once(self):
         with tempfile.TemporaryDirectory() as td:
