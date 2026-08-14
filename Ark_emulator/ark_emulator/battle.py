@@ -128,7 +128,13 @@ class BattleController:
         self._cost_lock_reason = 0
         self._negative_recovery_multiplier = 0.5
         self.character_limit = int(opt.get("characterLimit", 8))
-        self.move_multiplier = float(opt.get("moveMultiplier", 1.0))
+        # Native levels normally use 0.5: enemy AttributesData.moveSpeed is
+        # expressed before this level-wide conversion to world tiles/second.
+        # Custom/legacy levels may omit the field, so use the native default.
+        _level_move_multiplier = opt.get("moveMultiplier")
+        if _level_move_multiplier is None:
+            _level_move_multiplier = 0.5
+        self.move_multiplier = float(_level_move_multiplier)
         self.max_play_time = float(opt.get("maxPlayTime", -1.0))
 
         # level runes (stage tags / crisis contracts) - parsed once here;
@@ -1609,7 +1615,7 @@ class BattleController:
             enemy.set_flag(3, 10 ** 9)   # BLOCK_FREE: drones cannot block
         enemy.life_point_reduce = data.get("lifePointReduce") or 1
         enemy.level_type = int(data.get("levelType") or 0)
-        enemy.move_speed = float(attrs.get("moveSpeed") or 1.0)
+        enemy.level_move_multiplier = self.move_multiplier
         enemy.block_volume = int(attrs.get("blockCnt") or 1)
         enemy.sp_max = float((data.get("spData") or {}).get("maxSp") or 0)
         enemy.sp = float((data.get("spData") or {}).get("initSp") or 0)
@@ -1659,6 +1665,7 @@ class BattleController:
                       row=row, col=col, route=self.routes[route_index],
                       game_map=self.map)
         enemy.battle = self
+        enemy.level_move_multiplier = self.move_multiplier
         enemy.init_route(self.map)
         enemy.pos_x, enemy.pos_y = float(col), float(row)
         enemy.on_spawn(self.tick)
@@ -4725,15 +4732,22 @@ class BattleController:
                 if e._next_map is not None and e.game_map is not None:
                     idx = e.game_map.idx(e.row, e.col)
                     nxt = e._next_map[idx] if idx >= 0 else -1
-                    nrow, ncol = e.game_map.rc(nxt) if nxt >= 0 else                         (-1, -1)
-                    # blocked only when the blocker's tile is the enemy's
-                    # next movement step (same tile or next flow-field cell)
-                    on_path = (e.row == op.row and e.col == op.col) or                         (nrow == op.row and ncol == op.col)
+                    # A smoothed nextNode can be several tiles away.  The
+                    # blocker is on-path when its tile lies anywhere on the
+                    # current Bresenham segment, not only at its far endpoint.
+                    on_path = e.game_map.next_segment_contains(
+                        idx, nxt, op.row, op.col)
                     if not on_path:
                         continue
                 elif not (e.row == op.row and e.col == op.col):
                     continue
-                if abs(e.row - op.row) <= 1 and abs(e.col - op.col) <= 1:
+                # Use continuous positions here.  Row/col rounding alone can
+                # immediately re-block an enemy that was pushed partly into
+                # the neighbouring tile while its smoothed segment still
+                # crosses the operator's cell.
+                _bdx = float(e.pos_x) - float(op.pos_x)
+                _bdy = float(e.pos_y) - float(op.pos_y)
+                if (_bdx * _bdx + _bdy * _bdy) ** 0.5 <= 1.0 + 1e-9:
                     volume = e.block_volume
                     used = sum(x.block_volume for x in op.blocked_enemies)
                     cap = block_cnt
@@ -4762,9 +4776,13 @@ class BattleController:
             nxt = e._next_map[idx] if idx >= 0 else -1
             if nxt < 0:
                 continue
-            nrow, ncol = e.game_map.rc(nxt)
             for op in blockers:
-                if op.row != nrow or op.col != ncol:
+                if not e.game_map.next_segment_contains(
+                        idx, nxt, op.row, op.col):
+                    continue
+                _qdx = float(e.pos_x) - float(op.pos_x)
+                _qdy = float(e.pos_y) - float(op.pos_y)
+                if (_qdx * _qdx + _qdy * _qdy) ** 0.5 > 1.0 + 1e-9:
                     continue
                 if getattr(op, "_reborn_state", False):
                     continue
@@ -4830,6 +4848,9 @@ class BattleController:
 
     # ================= snapshot =================
     def snapshot(self, since_seq=0):
+        route_paths = [self.map.route_path(route)
+                       if isinstance(route, dict) else []
+                       for route in self.routes]
         return {
             "tick": self.tick,
             "t": round(self.tick / TIME_ROUGH_LOGIC_RATE, 4),
@@ -4951,6 +4972,7 @@ class BattleController:
                 "blackboard": v.get("bb"),
             } for (r, c), v in self._skill_tiles.items()],
             "routes": self.routes,
+            "routePaths": route_paths,
             "globalBuffs": self.global_buffs,
             "globalBlackboard": dict(self._global_bb),
             "sharedBlackboard": dict(self._char_shared_bb),

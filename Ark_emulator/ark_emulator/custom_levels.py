@@ -19,7 +19,8 @@ Schema (JSON):
      "actionType": "SPAWN"}
   ],
   "options": {"maxLifePoint": 3, "initialCost": 10,
-              "costIncreaseTime": 1.0, "maxCost": 99},
+              "costIncreaseTime": 1.0, "moveMultiplier": 0.5,
+              "maxCost": 99},
   "enemyDbRefs": []
 }
 
@@ -76,7 +77,8 @@ def build_level(rows=5, cols=8, route_row=2, enemies=None,
         "waveTimeline": sorted(wave, key=lambda x: x["t"]),
         "options": options or {
             "maxLifePoint": 3, "initialCost": 10,
-            "costIncreaseTime": 1.0, "maxCost": 99,
+            "costIncreaseTime": 1.0, "moveMultiplier": 0.5,
+            "maxCost": 99,
         },
         "enemyDbRefs": [],
     }

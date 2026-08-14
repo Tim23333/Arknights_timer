@@ -1767,6 +1767,13 @@ class CoachWindow(QMainWindow):
         self._enemy_last: list = []    # 最近一帧敌人 (改小数位时立即重绘用)
         self._enemy_detail_dialog: EnemyDetailDialog | None = None
         self._settings = QSettings('ArknightsTools', 'ArknightsTimeline')
+        precise_saved = self._settings.value(
+            'enemy_table/precise_position_enabled', False)
+        self._enemy_precise_position_enabled = (
+            precise_saved is True or str(precise_saved).lower()
+            in ('1', 'true', 'yes'))
+        self._enemy_reader.set_precise_position_enabled(
+            self._enemy_precise_position_enabled)
         self._enemy_mini: EnemyMiniWindow | None = None
         self._mini_hotkey_down = False
         self._mini_hotkey_timer = QTimer(self)
@@ -2130,6 +2137,14 @@ class CoachWindow(QMainWindow):
         self.chk_enemy_hide_departed.setChecked(True)
         self.chk_enemy_hide_departed.setToolTip("默认隐藏死亡、漏怪或其他原因离场的敌人；取消勾选可查看完整记录")
         self.chk_enemy_hide_departed.toggled.connect(self._on_enemy_departed_filter)
+        self.chk_enemy_precise_position = QCheckBox("同步扫描精确坐标")
+        self.chk_enemy_precise_position.setChecked(
+            self._enemy_precise_position_enabled)
+        self.chk_enemy_precise_position.setToolTip(
+            "额外沿 Unity Transform 原生链逐帧读取坐标；不替换原坐标，"
+            "会增加少量内存读取开销，可在监控中随时开关")
+        self.chk_enemy_precise_position.toggled.connect(
+            self._on_enemy_precise_position_toggled)
         row_btn.addWidget(self.btn_enemy_scan)
         row_btn.addWidget(self.btn_enemy_stop)
         row_btn.addWidget(self.btn_stage_enemy_export)
@@ -2138,6 +2153,7 @@ class CoachWindow(QMainWindow):
         row_btn.addWidget(self.btn_enemy_fit)
         row_btn.addWidget(self.btn_enemy_mini)
         row_btn.addWidget(self.chk_enemy_hide_departed)
+        row_btn.addWidget(self.chk_enemy_precise_position)
         row_btn.addWidget(self.enemy_progress, 1)
         self.lbl_enemy_compact_game = QLabel("游戏时间：—\n逻辑帧：—")
         self.lbl_enemy_compact_game.setObjectName('EnemyCompactGameStatus')
@@ -2778,6 +2794,8 @@ class CoachWindow(QMainWindow):
         self._enemy_reader = EnemyReader(
             adb_path=path, adb_serial=serial, log=_tlog,
             diagnostics=TEST_BUILD)
+        self._enemy_reader.set_precise_position_enabled(
+            self.chk_enemy_precise_position.isChecked())
         self._character_reader = CharacterReader(self._enemy_reader)
 
         if self._enemy_detail_dialog is not None:
@@ -3698,7 +3716,18 @@ class CoachWindow(QMainWindow):
         if planned:
             total_text += f" / 预定: {planned}"
         read_mode = _format_enemy_read_mode(snap)
-        text = (f"读取: {read_mode}   状态: {st}   倍速: {spd} (x{snap['time_scale']:g})   "
+        precise_text = '精确坐标:关闭'
+        if self.chk_enemy_precise_position.isChecked():
+            current_enemies = [
+                enemy for enemy in snap['enemies']
+                if getattr(enemy, 'lifecycle', 'active') == 'active'
+            ]
+            precise_count = sum(
+                bool(getattr(enemy, 'precise_pos_valid', False))
+                for enemy in current_enemies)
+            precise_text = f'精确坐标:同步 {precise_count}/{len(current_enemies)}'
+        text = (f"读取: {read_mode}   {precise_text}   状态: {st}   "
+                f"倍速: {spd} (x{snap['time_scale']:g})   "
                 f"战斗时间: {t // 60:02d}:{t % 60:02d}   {total_text}"
                 + self._frame_txt)
         if snap.get('msg'):
@@ -3831,6 +3860,19 @@ class CoachWindow(QMainWindow):
         self._enemy_detail_state.clear()
         self._render_enemy_table(self._enemy_last)
 
+    def _on_enemy_precise_position_toggled(self, checked: bool) -> None:
+        """Toggle the optional Transform chain without restarting the scan."""
+        checked = bool(checked)
+        self._enemy_precise_position_enabled = checked
+        self._settings.setValue(
+            'enemy_table/precise_position_enabled', checked)
+        self._enemy_reader.set_precise_position_enabled(checked)
+        self._enemy_cell_state.clear()
+        if not checked:
+            for enemy in self._enemy_last:
+                enemy.precise_pos_valid = False
+            self._render_enemy_table(self._enemy_last)
+
     def _update_enemy_spawn_wait(self, row: int, enemy, row_key: int) -> None:
         text = format_column_value('spawn_wait', enemy, self._enemy_dec, row)
         if self._enemy_row_spawn_wait.get(row_key) == text:
@@ -3884,11 +3926,12 @@ class CoachWindow(QMainWindow):
         # 剩余空间优先分给这些信息列；内容过宽时除血量外均可压到可读下限。
         expanding_keys = {
             'name', 'code', 'eid', 'abnormal_status', 'immune_status',
-            'skill', 'spawn_wait',
+            'skill', 'spawn_wait', 'precise_pos',
         }
         minimum_by_key = {
             'row': 38, 'name': 64, 'code': 56, 'eid': 105, 'hp': 175,
-            'pos': 92, 'action_state': 66, 'abnormal_status': 82,
+            'pos': 92, 'precise_pos': 105, 'action_state': 66,
+            'abnormal_status': 82,
             'immune_status': 82, 'skill': 72, 'life_status': 66,
             'spawn_wait': 72, 'detail': 62,
             'ep_sanity': 170, 'ep_water': 170, 'ep_fire': 170,
@@ -3896,7 +3939,8 @@ class CoachWindow(QMainWindow):
         }
         maximum_by_key = {
             'row': 46, 'name': 190, 'code': 90, 'eid': 240, 'hp': 245,
-            'pos': 135, 'action_state': 100, 'abnormal_status': 240,
+            'pos': 135, 'precise_pos': 155, 'action_state': 100,
+            'abnormal_status': 240,
             'immune_status': 240, 'skill': 260, 'life_status': 100,
             'spawn_wait': 280, 'detail': 78,
             'ep_sanity': 220, 'ep_water': 220, 'ep_fire': 220,

@@ -1417,14 +1417,17 @@ def test_buff_batch20_nodes():
 
     # AOEHeal: heals allies around the center at atk x scale
     b.tokens.remove(tok)
-    b.deploy("char_473_mberry", 2, 3)   # medic source (side 1)
+    b.deploy("char_473_mberry", 2, 3)   # already deployed medic source
     med = b.operators[0]
     med.attributes.base["atk"] = 200.0
     b.battle_cost_add(200)
-    b.deploy("char_275_breeze", 2, 4)   # another medic, wounded
+    b.deploy("char_275_breeze", 2, 5)   # another high-tile medic, wounded
     ally2 = b.operators[1]
     ally2.hp = ally2.max_hp - 100.0
     hp_a2 = ally2.hp
+    # Keep the target inside the compact synthetic range used by AOEHeal.
+    ally2.pos_x, ally2.pos_y = med.pos_x + 1.0, med.pos_y
+    ally2.row, ally2.col = med.row, med.col + 1
     aoe = {"$type": "Torappu.Battle.Action.Nodes+AOEHeal, Assembly-CSharp",
            "_sourceType": "BUFF_SOURCE", "_targetType": "BUFF_OWNER",
            "_targetOptions": {"targetSide": "ALLY"},
@@ -1500,8 +1503,8 @@ def test_buff_batch22_rewrite_tile_options():
     b = sim.battle
     b.spawn_enemy("enemy_1334_ristar", 0)
     e = b.enemies[0]
-    e.row, e.col = 4, 4
-    t0 = b.map.tile(4, 4)
+    e.row, e.col = 3, 4
+    t0 = b.map.tile(3, 4)
     assert t0 is not None and t0.passable(0), t0.to_dict()
     eng = BuffTemplateEngine(b)
     block = {"$type": "Torappu.Battle.Action.Nodes+RewriteTileOptions, Assembly-CSharp",
@@ -1516,8 +1519,8 @@ def test_buff_batch22_rewrite_tile_options():
     r = eng.run_actions(e, [block], {"owner": e, "source": None,
                                      "target": e, "bb": {}})
     assert r[0]["action"] is True, r
-    assert b.map.tile(4, 4).passable(0) is False
-    assert b.map.tile(4, 4).passable(1) is False
+    assert b.map.tile(3, 4).passable(0) is False
+    assert b.map.tile(3, 4).passable(1) is False
     # moving to a new tile does not restore the old one; restore node does
     restore = dict(block)
     restore["_restoreTileOptions"] = True
@@ -1525,7 +1528,7 @@ def test_buff_batch22_rewrite_tile_options():
     r = eng.run_actions(e, [restore], {"owner": e, "source": None,
                                        "target": e, "bb": {}})
     assert r[0]["action"] is True, r
-    assert b.map.tile(4, 4).passable(0) is True
+    assert b.map.tile(3, 4).passable(0) is True
 
 def test_buff_batch23_bb_nodes():
     """AssignRootTileToBB / AssignGridPositionToBlackboard /
@@ -3292,7 +3295,7 @@ def test_buff_batch42_aoe_options():
     e.row, e.col = 2, 2
     b.battle_cost_add(200)
     b.deploy("char_473_mberry", 2, 3)
-    b.deploy("char_275_breeze", 2, 4)
+    b.deploy("char_275_breeze", 2, 5)
     med = b.operators[0]
     vg = b.operators[1]
     eng = BuffTemplateEngine(b)

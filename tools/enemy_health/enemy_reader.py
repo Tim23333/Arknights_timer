@@ -12,6 +12,7 @@
     条件分支或召唤等未出现在固定 waves 中的动态敌人会在首次出现时追加。
 """
 
+import copy
 import math
 import os
 import sys
@@ -30,6 +31,7 @@ except ImportError:
 from .memcore import MemCore, TcpChannel
 from . import game_structs as gs
 from .enemy_db import load_enemy_db
+from .precise_position import PrecisePositionReader
 
 NEEDLE_ENEMY = 'enemy_'.encode('utf-16-le')   # UTF-16LE "enemy_"
 HP_MIN, HP_MAX = 50, 1_000_000                # HP 签名高32位范围
@@ -230,7 +232,8 @@ class EnemyInfo:
     __slots__ = ('addr', 'eid', 'name', 'code', 'hp', 'max_hp', 'atk', 'def_', 'res',
                  'mspd', 'aspd', 'direction', 'finish', 'alive', 'id_ptr', 'attr_ptr',
                  'data_ptr',
-                 'pos_x', 'pos_y', 'blk_x', 'blk_y', 'spawn_row', 'spawn_col', 'skills',
+                 'pos_x', 'pos_y', 'precise_pos_x', 'precise_pos_y',
+                 'precise_pos_valid', 'blk_x', 'blk_y', 'spawn_row', 'spawn_col', 'skills',
                  'state_ptr', 'state_id', 'ep_ptr', 'ep_controller_ptr',
                  'shield_controller_ptr', 'es', 'shield',
                  'special_shield', 'special_shield_mask', 'special_shield_sources',
@@ -265,6 +268,9 @@ class EnemyInfo:
         self.data_ptr = 0
         self.pos_x = 0.0
         self.pos_y = 0.0
+        self.precise_pos_x = 0.0
+        self.precise_pos_y = 0.0
+        self.precise_pos_valid = False
         self.blk_x = 0.0
         self.blk_y = 0.0
         self.spawn_row = 0
@@ -503,6 +509,8 @@ class EnemyReader:
         self._scheduler_time_snap = None
         self._fixed_frame_snap = None
         self._frame_duration_snap = 1.0 / 30.0
+        self.precise_position_enabled = False
+        self._precise_position_reader = None
         self._route_meta = {}           # routeIndex -> 起点/首个进场路线点
         self._routes_export = []        # 完整路线（供排轴前端绘图）
         self._main_route_count = 0      # 主路线数组原始长度（extra 路线顺延编号）
@@ -521,6 +529,27 @@ class EnemyReader:
         """返回可直接写入 JSON、并由排轴前端导入的当前关卡快照。"""
         from .stage_export import build_stage_export
         return build_stage_export(self, stage_info)
+
+    def set_precise_position_enabled(self, enabled):
+        """Enable the independent Unity Transform coordinate chain."""
+        self.precise_position_enabled = bool(enabled)
+        if not self.precise_position_enabled and self._precise_position_reader:
+            self._precise_position_reader.clear()
+
+    def _refresh_precise_positions(self, ptrs, infos):
+        if not self.precise_position_enabled or not ptrs:
+            return
+        if self._precise_position_reader is None \
+                or self._precise_position_reader.channel is not self._chan:
+            self._precise_position_reader = PrecisePositionReader(self.mc, self._chan)
+        values = self._precise_position_reader.read(ptrs)
+        for enemy_addr, info in infos.items():
+            position = values.get(enemy_addr)
+            if position is None:
+                info.precise_pos_valid = False
+                continue
+            info.precise_pos_x, info.precise_pos_y = position
+            info.precise_pos_valid = True
 
     # ================= 连接 =================
 
@@ -1474,14 +1503,26 @@ class EnemyReader:
             if addr in live_addrs:
                 continue
             roster_id = self._addr_to_roster.pop(addr)
-            old = departing.get(addr) or self._roster_last.get(roster_id)
+            departure = departing.get(addr)
+            # DEAD/REACH_EXIT 状态中实体通常还会在 UnitManager 保留
+            # 一小段时间，但其 Transform、Buff、护盾和技能字段可能已在
+            # 回收流程中被清零。不能用这个“死亡清理帧”覆盖上一帧
+            # 完整存活快照。deepcopy 同时避免修改仍可能由 UI 消费的
+            # 上一个双缓冲快照对象。
+            previous = self._roster_last.get(roster_id)
+            source = previous or departure
+            old = copy.deepcopy(source) if source is not None else None
             if old is not None:
                 old.lifecycle = 'departed'
                 old.alive = False
                 old.end_frame = (int(self._fixed_frame_snap)
                                  if self._fixed_frame_snap is not None else None)
-                old.end_reason = ('death' if old.hp <= 0 else
-                                  f'finish_{old.finish}' if old.finish else 'departed')
+                reason_source = departure or old
+                old.end_reason = (
+                    'death' if (reason_source.hp <= 0
+                                or reason_source.state_id == gs.EnemyState.DEAD) else
+                    f'finish_{reason_source.finish}' if reason_source.finish else
+                    'departed')
                 self._roster_last[roster_id] = old
             record = self._plan_by_id.get(roster_id)
             if record is not None:
@@ -3507,7 +3548,7 @@ class EnemyReader:
                     remaining = row.get('remaining')
                     if not isinstance(remaining, (int, float)):
                         unresolved.append('CD 未读取')
-                    elif remaining > 0.05:
+                    elif remaining > 0.0:
                         failures.append(f'CD {remaining:.2f}秒')
                 maximum = row.get('max_triggers', 0)
                 count = row.get('trigger_count', 0)
@@ -3688,7 +3729,7 @@ class EnemyReader:
                 publish_rule(label, basis + suffix, confidence)
                 return
 
-            base_ready = (base_cd <= 0.05 if isinstance(base_cd, (int, float))
+            base_ready = (base_cd <= 0.0 if isinstance(base_cd, (int, float))
                           else None)
             if base_ready is False:
                 publish_rule(
@@ -3754,7 +3795,7 @@ class EnemyReader:
             action['skill_name'] = skill_name
 
         ready_skills = [name for name, remaining, _period in info.skills
-                        if isinstance(remaining, (int, float)) and remaining <= 0.05]
+                        if isinstance(remaining, (int, float)) and remaining <= 0.0]
         action['ready_skills'] = ready_skills
 
         def set_countdown(seconds, kind, source='runtime'):
@@ -4531,6 +4572,7 @@ class EnemyReader:
         readable_ptrs = [ep for ep in ptrs if ep in infos]
         if readable_ptrs:
             self._refresh_runtime_chan(readable_ptrs, infos)
+            self._refresh_precise_positions(readable_ptrs, infos)
 
         # ---- 全部敌人属性每个采样帧刷新 ----
         for i, aep, expected_cdp in slot.get('attrs', ()):
@@ -4590,6 +4632,9 @@ class EnemyReader:
             for ep in list(cache):
                 if ep not in live:
                     cache.pop(ep, None)
+        if self._precise_position_reader is not None:
+            for ep in set(self._precise_position_reader._value_addrs) - live:
+                self._precise_position_reader.discard(ep)
         # ---- BC 块 ----
         if 'bc' in slot:
             b = res[slot['bc']]

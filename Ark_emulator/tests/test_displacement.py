@@ -130,7 +130,10 @@ def test_displacement_releases_block():
     assert not any(x.inst_id == e.inst_id
                    for x in op.blocked_enemies)
     # re-approach -> re-blocked
-    e.row, e.col = op.row, op.col + 1
+    # Re-enter on the route's upstream side.  Smoothed next nodes may point
+    # several tiles forward, so the old ``op.col + 1`` position is already
+    # downstream of this blocker and must not be blocked from behind.
+    e.row, e.col = op.row, op.col - 1
     e.pos_x, e.pos_y = float(e.col), float(e.row)
     for _ in range(15):
         b.tick_once()

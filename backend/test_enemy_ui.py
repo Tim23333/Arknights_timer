@@ -20,7 +20,7 @@ from backend.app.enemy_buff_descriptions import (
 from backend.app.enemy_ui import (
     DEFAULT_VISIBLE_COLUMNS, ENEMY_COLUMN_DEFS, ENEMY_COLUMN_INDEX,
     EnemyColumnDialog, EnemyDetailDialog, apply_column_order,
-    default_precision_values, format_column_value, load_column_order,
+    default_precision_values, format_column_value, format_skill_cd, load_column_order,
     precision_column_defs, load_visible_columns, save_column_order,
     visible_enemy_rows,
 )
@@ -31,6 +31,24 @@ from backend.desktop_app import (
     _format_enemy_read_mode, _system_prefers_dark, _theme_stylesheet,
     probe_adb_executable,
 )
+
+
+class EnemyFormattingTests(unittest.TestCase):
+    def test_skill_ready_requires_actual_zero(self):
+        self.assertIn('0.04/10.00s', format_skill_cd(
+            [('skill', 0.04, 10.0)], prec=2))
+        self.assertNotIn('/10.00s', format_skill_cd(
+            [('skill', 0.0, 10.0)], prec=2))
+
+    def test_precise_position_never_falls_back_to_old_position(self):
+        enemy = EnemyInfo(0x1000)
+        enemy.pos_x, enemy.pos_y = 1.0, 2.0
+        self.assertEqual(format_column_value(
+            'precise_pos', enemy, {'precise_pos': 2}), '-')
+        enemy.precise_pos_x, enemy.precise_pos_y = 1.125, 2.25
+        enemy.precise_pos_valid = True
+        self.assertEqual(format_column_value(
+            'precise_pos', enemy, {'precise_pos': 2}), '(1.12, 2.25)')
 
 
 class EnemyUiTests(unittest.TestCase):

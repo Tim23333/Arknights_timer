@@ -1,6 +1,12 @@
 """Regression coverage for official map/route coordinate normalization."""
 
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from ark_emulator import Simulator
+from ark_emulator.consts import EnemyState
 
 
 def _stage_510():
@@ -59,3 +65,27 @@ def test_web_deploy_coordinates_are_not_flipped_again():
     assert ok, inst_id
     operator = next(op for op in battle.operators if op.inst_id == inst_id)
     assert (operator.row, operator.col) == (4, 3)
+
+
+def test_1_1_enemy_speed_uses_level_move_multiplier_once():
+    """1-1 gopro_2: 1.9 attribute * 0.5 level factor = 0.95 tile/s.
+
+    The old spawn code copied 1.9 into the entity multiplier as well and
+    therefore moved it at 3.61 tiles/s after path smoothing exposed the bug.
+    """
+    battle = Simulator("level_main_01-01").battle
+    enemy = battle.spawn_enemy("enemy_1000_gopro_2", 1)
+    assert enemy is not None
+    assert battle.move_multiplier == 0.5
+    assert enemy.attributes.get("moveSpeed") == 1.9
+    assert enemy.level_move_multiplier == 0.5
+    assert enemy.move_speed == 1.0
+
+    enemy.state = EnemyState.MOVE
+    start_x, start_y = enemy.pos_x, enemy.pos_y
+    for _ in range(30):
+        enemy.update_movement(1.0 / 30.0)
+
+    assert abs(enemy.pos_x - start_x - 0.95) < 1e-6
+    assert abs(enemy.pos_y - start_y) < 1e-6
+    assert enemy.to_dict()["moveSpeed"] == 0.95

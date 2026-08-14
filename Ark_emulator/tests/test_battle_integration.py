@@ -229,9 +229,12 @@ def test_victory_with_operators_deployed():
     b.battle_cost_add(500)
     # facing left so the ranged operators cover the route cells where the
     # melee front line blocks enemies (range-gated targeting)
-    for cid, col in (("char_149_scave", 3), ("char_002_amiya", 4),
-                     ("char_102_texas", 5), ("char_172_svrash", 6)):
-        b.deploy(cid, 3, col, direction=3)
+    placements = (("char_149_scave", 3, 3),
+                  ("char_002_amiya", 2, 3),
+                  ("char_102_texas", 3, 5),
+                  ("char_172_svrash", 3, 6))
+    for cid, row, col in placements:
+        assert b.deploy(cid, row, col, direction=3)[0]
     guard = 0
     # Sequential fragments put the final main_01-01 spawn at t=137, so the
     # battle necessarily runs longer than the old 120-second test ceiling.

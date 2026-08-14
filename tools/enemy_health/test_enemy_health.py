@@ -10,10 +10,74 @@ from tools.enemy_health import game_structs as gs
 from tools.enemy_health.enemy_reader import (
     EnemyInfo, EnemyReader, spine_track_remaining, summarize_custom_shields,
 )
+from tools.enemy_health.precise_position import PrecisePositionReader
 from tools.enemy_health.update_from_unpack import extract_preunpacked, parse_dump
 from tools.enemy_health.memcore import (
     MemCore, TcpChannel, find_running_emulator_adbs, query_adb_devices,
 )
+
+
+class _PrecisePositionMemCore:
+    @staticmethod
+    def is_ptr(value):
+        return isinstance(value, int) and value >= 0x1000
+
+
+class _PrecisePositionChannel:
+    def __init__(self, memory):
+        self.memory = memory
+
+    def batch_read(self, requests):
+        output = []
+        for address, size in requests:
+            matched = None
+            for base, data in self.memory.items():
+                if base <= address and address + size <= base + len(data):
+                    offset = address - base
+                    matched = data[offset:offset + size]
+                    break
+            output.append(matched)
+        return output
+
+
+class PrecisePositionReaderTests(unittest.TestCase):
+    def test_resolves_unity_transform_local_position(self):
+        enemy = 0x1000
+        component = 0x2000
+        game_object = 0x3000
+        pairs = 0x4000
+        transform = 0x5000
+        hierarchy = 0x6000
+        trs = 0x7000
+        index = 3
+
+        blocks = {address: bytearray(size) for address, size in (
+            (enemy, 0x20), (component, 0x40), (game_object, 0x40),
+            (pairs, 0x10), (transform, 0x48), (hierarchy, 0x28),
+            (trs, 0x200),
+        )}
+        struct.pack_into('<Q', blocks[enemy], 0x10, component)
+        struct.pack_into('<Q', blocks[component], 0x30, game_object)
+        struct.pack_into('<Q', blocks[game_object], 0x30, pairs)
+        struct.pack_into('<Q', blocks[pairs], 0x08, transform)
+        struct.pack_into('<Q', blocks[transform], 0x38, hierarchy)
+        struct.pack_into('<i', blocks[transform], 0x40, index)
+        struct.pack_into('<Q', blocks[hierarchy], 0x18, trs)
+        struct.pack_into('<ff', blocks[trs], index * 0x30, 4.25, 7.5)
+        channel = _PrecisePositionChannel(
+            {address: bytes(data) for address, data in blocks.items()})
+        reader = PrecisePositionReader(_PrecisePositionMemCore(), channel)
+
+        self.assertEqual(reader.read([enemy]), {enemy: (4.25, 7.5)})
+        self.assertEqual(reader._value_addrs[enemy], trs + index * 0x30)
+
+    def test_invalid_transform_is_not_faked_from_old_coordinate(self):
+        enemy = 0x1000
+        channel = _PrecisePositionChannel({enemy: bytes(0x20)})
+        reader = PrecisePositionReader(_PrecisePositionMemCore(), channel)
+
+        self.assertEqual(reader.read([enemy]), {})
+        self.assertNotIn(enemy, reader._value_addrs)
 
 
 class EnemyDetailModelTests(unittest.TestCase):
@@ -1001,6 +1065,54 @@ class EnemyDetailModelTests(unittest.TestCase):
         rows = reader._merge_enemy_roster([second], 2)
         self.assertEqual([row.lifecycle for row in rows],
                          ['departed', 'active', 'pending'])
+
+    def test_departure_freezes_last_complete_live_snapshot(self):
+        reader = EnemyReader(mc=object())
+        reader._set_spawn_plan([{'key': 'enemy_a'}], 'test/level')
+        reader._fixed_frame_snap = 100
+
+        live = EnemyInfo(0x1000)
+        live.eid = 'enemy_a'
+        live.hp = 321.5
+        live.max_hp = 1000.0
+        live.pos_x, live.pos_y = 4.25, 6.5
+        live.precise_pos_x, live.precise_pos_y = 4.375, 6.625
+        live.precise_pos_valid = True
+        live.shield = 88.0
+        live.skills = [('skill_a', 3.0, 10.0)]
+        live.buffs = [{'key': 'buff_a', 'remaining': 2.0}]
+        rows = reader._merge_enemy_roster([live], 1)
+        self.assertEqual(rows[0].lifecycle, 'active')
+
+        # 游戏死亡清理帧已将大部分动态字段清空。
+        dead = EnemyInfo(0x1000)
+        dead.eid = 'enemy_a'
+        dead.hp = 0.0
+        dead.alive = False
+        dead.state_id = gs.EnemyState.DEAD
+        dead.pos_x = dead.pos_y = 0.0
+        dead.precise_pos_valid = False
+        dead.shield = 0.0
+        dead.skills = []
+        dead.buffs = []
+
+        rows = reader._merge_enemy_roster([dead], 1)
+        frozen = rows[0]
+        self.assertEqual(frozen.lifecycle, 'departed')
+        self.assertFalse(frozen.alive)
+        self.assertEqual(frozen.end_frame, 100)
+        self.assertEqual(frozen.end_reason, 'death')
+        self.assertEqual(frozen.hp, 321.5)
+        self.assertEqual((frozen.pos_x, frozen.pos_y), (4.25, 6.5))
+        self.assertTrue(frozen.precise_pos_valid)
+        self.assertEqual(
+            (frozen.precise_pos_x, frozen.precise_pos_y), (4.375, 6.625))
+        self.assertEqual(frozen.shield, 88.0)
+        self.assertEqual(frozen.skills, [('skill_a', 3.0, 10.0)])
+        self.assertEqual(frozen.buffs[0]['key'], 'buff_a')
+        # 离场元数据不应反向修改上一帧活跃快照。
+        self.assertEqual(live.lifecycle, 'active')
+        self.assertTrue(live.alive)
 
     def test_midbattle_attach_uses_spawned_prefix(self):
         reader = EnemyReader(mc=object())

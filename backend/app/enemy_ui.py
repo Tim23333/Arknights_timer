@@ -27,7 +27,7 @@ def format_skill_cd(skills, sep='; ', prec=1):
         return '-'
     parts = []
     for key, remain, period in skills:
-        if remain <= 0.05:
+        if remain <= 0.0:
             parts.append(f'{key} 就绪')
         else:
             parts.append(f'{key} {remain:.{prec}f}/{period:.{prec}f}s')
@@ -51,6 +51,7 @@ ENEMY_COLUMN_DEFS = [
     _col('eid', '敌人ID', 150, True),
     _col('hp', '血量', 185, True, True),
     _col('pos', '坐标', 110, True, True),
+    _col('precise_pos', '精确坐标', 125, True, True),
     _col('action_state', '行为状态', 72, True),
     _col('action_phase', '动作阶段', 180, True),
     _col('remaining_time', '剩余帧/时间', 170, True),
@@ -158,6 +159,12 @@ def load_visible_columns(settings, key):
     migrated = marker is True or str(marker).lower() in ('1', 'true', 'yes')
     if not migrated:
         chosen.add('next_action')
+        settings.setValue(migration_key, True)
+    migration_key = key + '/precise_position_v1'
+    marker = settings.value(migration_key, False)
+    migrated = marker is True or str(marker).lower() in ('1', 'true', 'yes')
+    if not migrated:
+        chosen.add('precise_pos')
         settings.setValue(migration_key, True)
     return chosen
 
@@ -422,6 +429,12 @@ def format_column_value(key, enemy, decimals, row=0):
     if key == 'pos':
         p = decimals.get('pos', precision)
         return f'({enemy.pos_x:.{p}f}, {enemy.pos_y:.{p}f})'
+    if key == 'precise_pos':
+        if not getattr(enemy, 'precise_pos_valid', False):
+            return '-'
+        p = decimals.get('precise_pos', precision)
+        return (f'({enemy.precise_pos_x:.{p}f}, '
+                f'{enemy.precise_pos_y:.{p}f})')
     if key == 'action_state':
         return gs.ENEMY_STATE_NAMES.get(enemy.state_id, f'未知({enemy.state_id})')
     if key == 'action_phase':
@@ -686,6 +699,10 @@ class EnemyDetailDialog(QDialog):
             ('阻挡位置', f'({enemy.blk_x}, {enemy.blk_y})'),
             ('出生格', f'({enemy.spawn_col}, {enemy.spawn_row})'),  # (列, 行)，与实时位置一致
             ('方向枚举', enemy.direction),
+            ('原坐标（m_posInLastFrame）', f'({enemy.pos_x}, {enemy.pos_y})'),
+            ('精确坐标（Unity Transform）',
+             f'({enemy.precise_pos_x}, {enemy.precise_pos_y})'
+             if getattr(enemy, 'precise_pos_valid', False) else '未启用/读取失败'),
             ('元素爆发恢复', '是' if enemy.ep_break_recovery else '否'),
             ('状态抗性', enemy.status_resistance),
             ('元素损伤减免', enemy.attribute(gs.AttributeType.EP_DAMAGE_RESISTANCE)),
@@ -817,12 +834,12 @@ class EnemyDetailDialog(QDialog):
                 (row.get('name', '?'), row.get('priority', '-'),
                  row.get('remaining'), row.get('period'),
                  '就绪' if (row.get('remaining') if isinstance(
-                     row.get('remaining'), (int, float)) else 9) <= 0.05
+                     row.get('remaining'), (int, float)) else 9) <= 0.0
                  else '冷却中')
                 for row in detail_rows]
         else:
             skill_rows = [(key, '-', remain, period,
-                           '就绪' if remain <= 0.05 else '冷却中')
+                           '就绪' if remain <= 0.0 else '冷却中')
                           for key, remain, period in enemy.skills]
         _fill_table(self.skills, skill_rows, resize_columns=resize_columns)
         if self._first_update:

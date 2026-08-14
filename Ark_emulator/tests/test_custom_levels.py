@@ -86,7 +86,9 @@ def test_route_aware_bot_clears_1_1():
     sim = Simulator(level_id="level_main_01-01", squad=squad)
     bot = Bot(sim, squad)
     guard = 0
-    while not sim.battle.finished and guard < 30 * 90:
+    # The official sequential fragment scheduler places the last spawn at
+    # t=137; allow the route-aware bot enough time to clear that final wave.
+    while not sim.battle.finished and guard < 30 * 210:
         bot.tick()
         sim.battle.tick_once()
         guard += 1

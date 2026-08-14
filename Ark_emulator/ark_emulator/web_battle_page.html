@@ -156,7 +156,11 @@
     .tile.start::before { content: "ENTRY"; }
     .tile.end::before { content: "EXIT"; }
     .tile.high::before { content: "HIGH"; color: rgba(255,255,255,.35); font-size: 9px; }
-    .tile.route::after { content: ""; position: absolute; inset: 44% 8%; border-top: 2px dashed rgba(255,216,0,.35); }
+    .tile.route::after { content: ""; position: absolute; inset: 44% 8%; border-top: 2px dashed rgba(255,216,0,.25); }
+    .route-layer { position: absolute; inset: 8px; pointer-events: none; z-index: 4; overflow: visible; }
+    .route-line { fill: none; stroke: rgba(255,216,0,.78); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; filter: drop-shadow(0 0 3px rgba(255,216,0,.45)); }
+    .route-line.alt { stroke: rgba(38,214,239,.62); }
+    .route-node { fill: #ffd800; stroke: #11151a; stroke-width: 1.5; }
     .unit-layer, .projectile-layer { position: absolute; inset: 8px; pointer-events: none; z-index: 5; }
     .unit {
       position: absolute; width: 43px; height: 43px; margin: -21.5px 0 0 -21.5px;
@@ -629,6 +633,24 @@
       }
       return cells;
     }
+    function routeLayer(s, cell) {
+      const width = Math.max(1, Number(s.map?.cols || 0) * (cell + 2) - 2);
+      const height = Math.max(1, Number(s.map?.rows || 0) * (cell + 2) - 2);
+      const paths = s.routePaths || [];
+      const lines = [], seen = new Set();
+      paths.forEach((segments, routeIndex) => (segments || []).forEach(segment => {
+        const points = (segment.points || []).map(p =>
+          `${(Number(p.col) + .5) * (cell + 2) - 1},${(Number(p.row) + .5) * (cell + 2) - 1}`);
+        if (points.length < 2) return;
+        const signature = points.join(' ');
+        if (seen.has(signature)) return;
+        seen.add(signature);
+        lines.push(`<polyline class="route-line ${routeIndex % 2 ? 'alt' : ''}" points="${points.join(' ')}"><title>路线 ${routeIndex + 1} · ${esc(segment.kind)} · 曼哈顿距离 ${fmt(segment.distance)}</title></polyline>`);
+        const last = points[points.length - 1].split(',');
+        lines.push(`<circle class="route-node" cx="${last[0]}" cy="${last[1]}" r="3"></circle>`);
+      }));
+      return `<svg class="route-layer" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" aria-label="平整化敌方路径">${lines.join('')}</svg>`;
+    }
     function currentSelectedUnit() {
       if (!app.selectedUnit || !app.snapshot) return null;
       const all = [...(app.snapshot.deployed || []), ...(app.snapshot.tokens || []), ...(app.snapshot.enemies || [])];
@@ -675,6 +697,7 @@
       const deployPanel = pending ? deploymentPanelHtml(pending) : '';
       $('battleViewport').innerHTML = `<div class="map-shell">
         <div class="map-grid" style="grid-template-columns:repeat(${map.cols},var(--cell))">${tiles}</div>
+        ${routeLayer(s, cell)}
         <div class="unit-layer">${unitHtml.join('')}</div><div class="projectile-layer">${projectiles}</div>
         ${deployPanel}
         ${s.finished ? `<div class="result-overlay ${s.result === 'victory' ? '' : 'defeat'}"><div><b>${s.result === 'victory' ? 'VICTORY' : 'DEFEAT'}</b><span>${s.result === 'victory' ? '作战演算完成' : `防卫点归零 · 演算停止在 ${Number(s.t || 0).toFixed(1)} 秒`}</span></div></div>` : ''}

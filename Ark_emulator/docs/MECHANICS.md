@@ -264,9 +264,19 @@
 
 ## 9. 移动【确】
 
-- 移动速度单位=格/秒（moveSpeed 1.0=1 格/秒）。
+- 实际移动速度单位=格/秒，计算为敌人属性 `moveSpeed` × 技能/实体倍率 ×
+  关卡 `options.moveMultiplier`（常规关卡为 0.5）。例如 1-1 的
+  `gopro_2` 属性速度 1.9，实际为 0.95 格/秒；关卡倍率不能再用敌人属性覆盖，
+  否则会错误地把属性自乘。
 - 路线=检查点列表；BasicCursor 逐检查点推进；到达判定距离 0.05。
-- 每 5 tick 刷新所在格（UPDATE_POS_TICK=5）；寻路用 SPFA 按 motionMode 分桶。
+- 每 5 tick 刷新所在格（UPDATE_POS_TICK=5）。寻路先按 motionMode/目标格缓存
+  四方向 SPFA，距离始终是曼哈顿距离；`allowDiagonalMove` 只控制第二阶段的
+  `nextNode` 平整化。平整化沿原始最短链尽可能向前连接，并用保守 supercover
+  Bresenham 检查不可通行格/障碍物：行差或列差为 1 时检查完整 2×N 区域，
+  短轴换格时同时检查斜角两侧格。不开斜向时则只折叠到下一转弯。
+- 每个 MOVE/PATROL/MAP_OFFSET_MOVE 检查点和终点各自建立路径场；
+  APPEAR_AT_POS 会从出现坐标重新开始，传送过程不计入剩余路线距离。Web 前端的
+  路线层直接绘制这些平整化后的 `nextNode` 折线，与敌人实际移动共用同一结果。
 - 飞行/地面用 MotionMode/MotionMask；通行由 TileData.passableMask 与
   MapData.Edge.blockMask 决定。
 

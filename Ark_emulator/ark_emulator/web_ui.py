@@ -135,12 +135,15 @@ function drawStats(s){const st=s.stats||{},el=document.getElementById('stats');
   '<div class="bar"><span>dmg taken</span><b>'+Math.round(st.playerDamageTaken||0)+'</b></div>'+
   '<div class="bar"><span>deploys</span><b>'+st.deployments+'</b></div>'+
   '<div class="bar"><span>skills</span><b>'+st.skillCasts+'</b></div>';}
-function routeCells(s){const cells=new Set();
+    function routeCells(s){const cells=new Set();
   for(const rt of (s.routes||[])){
     const add=p=>{if(p)cells.add(p.row+','+p.col)};
     add(rt.startPosition);add(rt.endPosition);
     for(const cp of (rt.checkpoints||[]))add(cp.position);}
-  return cells;}
+      return cells;}
+    function routeLayer(s, cell){const w=Math.max(1,s.map.cols*(cell+2)-2),h=Math.max(1,s.map.rows*(cell+2)-2);let lines='';const seen=new Set();
+      for(const segments of (s.routePaths||[]))for(const seg of (segments||[])){const pts=(seg.points||[]).map(p=>((p.col+.5)*(cell+2)-1)+','+((p.row+.5)*(cell+2)-1));const sig=pts.join(' ');if(pts.length>1&&!seen.has(sig)){seen.add(sig);lines+='<polyline points="'+sig+'" fill="none" stroke="#ffd800" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>';}}
+      return '<svg style="position:absolute;inset:8px;pointer-events:none;z-index:4;overflow:visible" viewBox="0 0 '+w+' '+h+'" width="'+w+'" height="'+h+'">'+lines+'</svg>';}
 function drawMap(s){const m=s.map,wrap=document.getElementById('map');
   const rc=routeCells(s);
   let html='<table>';for(let r=0;r<m.rows;r++){html+='<tr>';
@@ -160,7 +163,7 @@ function drawMap(s){const m=s.map,wrap=document.getElementById('map');
       for(const t of s.tokens)if(t.row===r&&t.col===c)
         html+='<div class="unit token" title="'+t.tokenId+' hp='+Math.round(t.hp)+'" onclick="event.stopPropagation();opClick('+t.instId+')">'+t.tokenId.slice(-6)+'</div>';
       html+='</td>';}html+='</tr>';}html+='</table>';
-  wrap.innerHTML=html;}
+    wrap.innerHTML='<div style="position:relative">'+html+routeLayer(s,46)+'</div>';}
 function drawSide(s){let h='';for(const o of s.deployed){h+='<div>'+o.charId+
   ' hp='+Math.round(o.hp)+' sp='+o.sp.toFixed(1)+'/'+o.spMax+
   ' <button onclick="ctl(\'skill\',{instId:'+o.instId+'})">skill</button></div>';}

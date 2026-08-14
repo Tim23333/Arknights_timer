@@ -239,7 +239,16 @@ class Enemy(Unit):
         # set when the next flow-field cell is held by a full blocker
         # (game: extra enemies queue behind instead of passing through)
         self.blocked_wait = False
+        # Movement has two independent multipliers in the game:
+        #
+        #   enemy AttributesData.moveSpeed * LevelData.Options.moveMultiplier
+        #
+        # ``move_speed`` is kept as the entity/skill-side multiplier (skills
+        # such as StartRun overwrite it).  The level-wide multiplier must not
+        # be replaced with the enemy's moveSpeed attribute: doing so squares
+        # the database value (1-1's gopro_2 became 1.9 * 1.9 = 3.61 tiles/s).
         self.move_speed = 1.0
+        self.level_move_multiplier = 1.0
         self.attack_timer = 0.0
         self._pending_attack = None   # windup: damage lands at hit frame
         self.skill_controller = None
@@ -263,6 +272,8 @@ class Enemy(Unit):
         self._dist_map = None
         self._motion_mode = 0
         self._route_target = None
+        self._route_field_target = None
+        self._route_map_revision = -1
         self._born_ticks = 0
         self._born_delay = 0.5          # seconds; serialised _delayToBorn
         self.spawn_direction = None
@@ -328,11 +339,16 @@ class Enemy(Unit):
         self._route_target = (self._checkpoint_target(checkpoint)
                               if checkpoint is not None
                               else (self.route.get("endPosition") or {}))
+        self._route_field_target = (
+            self.game_map.checkpoint_grid_position(checkpoint)
+            if checkpoint is not None else self._route_target)
         self._next_map, self._dist_map, self._motion_mode = \
-            self.game_map.build_route_field(self.route, self._route_target)
+            self.game_map.build_route_field(self.route,
+                                            self._route_field_target)
+        self._route_map_revision = self.game_map.revision
 
     def _target_idx(self):
-        target = self._route_target or self.route.get("endPosition") or {}
+        target = self._route_field_target or self.route.get("endPosition") or {}
         return self.game_map.idx(round(target.get("row", 0)),
                                  round(target.get("col", 0))) \
             if self.game_map else -1
@@ -340,10 +356,8 @@ class Enemy(Unit):
     def dist_to_final(self):
         if not self.game_map:
             return 0.0
-        i = self.game_map.idx(self.row, self.col)
-        if i < 0 or self._dist_map is None:
-            return 0.0
-        d = self._dist_map[i]
+        d = self.game_map.route_distance_to_final(
+            self.route, self._checkpoint_idx, self.row, self.col)
         return d if d != float("inf") else 0.0
 
     # ---- state machine ----
@@ -388,7 +402,8 @@ class Enemy(Unit):
             return False
         if self.flag(13):                    # UNMOVABLE / \u675f\u7f1a: cannot move
             return False
-        speed = self.attributes.get("moveSpeed") * self.move_speed
+        speed = (self.attributes.get("moveSpeed") * self.move_speed
+                 * self.level_move_multiplier)
         if speed <= 0:
             return False
         _ms_min = float(getattr(self, "_move_speed_min", 0.0) or 0.0)
@@ -427,6 +442,11 @@ class Enemy(Unit):
             return False
         if self._update_checkpoints(dt, speed):
             return False
+        # Runtime RewriteTileOptions invalidates the map cache.  Existing
+        # enemies must acquire the rebuilt flow field immediately rather than
+        # keeping a stale list until their next checkpoint.
+        if self._route_map_revision != self.game_map.revision:
+            self._refresh_route_field()
         if self._next_map is None:
             return False
         idx = self.game_map.idx(self.row, self.col)
@@ -469,8 +489,7 @@ class Enemy(Unit):
             self.pos_x += dx / dist * step
             self.pos_y += dy / dist * step
         # refresh current tile every UPDATE_POS_TICK (5)
-        if self.spawned_tick % UPDATE_POS_TICK == 0:
-            self._sync_tile()
+        self._sync_tile_periodic()
         return False
 
     def _update_checkpoints(self, dt, speed, disappeared=False):
@@ -614,8 +633,7 @@ class Enemy(Unit):
         else:
             self.pos_x += dx / dist * step
             self.pos_y += dy / dist * step
-            if self.spawned_tick % UPDATE_POS_TICK == 0:
-                self._sync_tile()
+            self._sync_tile_periodic()
         if p["remaining"] <= 0:
             self._patrol = None
             self._finish_checkpoint()
@@ -637,8 +655,7 @@ class Enemy(Unit):
         else:
             self.pos_x += dx / dist * step
             self.pos_y += dy / dist * step
-        if self.spawned_tick % UPDATE_POS_TICK == 0:
-            self._sync_tile()
+        self._sync_tile_periodic()
         return False
 
     def _trace_toward(self, tx, ty, dt, speed):
@@ -659,8 +676,7 @@ class Enemy(Unit):
         else:
             self.pos_x += dx / dist * step
             self.pos_y += dy / dist * step
-        if self.spawned_tick % UPDATE_POS_TICK == 0:
-            self._sync_tile()
+        self._sync_tile_periodic()
         return False
 
     def _sync_tile(self):
@@ -669,6 +685,18 @@ class Enemy(Unit):
             c = int(round(self.pos_x))
             if self.game_map.idx(r, c) >= 0:
                 self.row, self.col = r, c
+
+    def _sync_tile_periodic(self):
+        """Mirror Enemy.UPDATE_POS_TICK using the current battle tick.
+
+        ``spawned_tick`` is the immutable birth timestamp; using it as a
+        modulo counter made enemies spawned off a multiple of five either
+        update their tile every frame or never update it at all.
+        """
+        tick = getattr(getattr(self, "battle", None), "tick",
+                       self.spawned_tick)
+        if int(tick or 0) % UPDATE_POS_TICK == 0:
+            self._sync_tile()
 
     def _combat_ready_abnormal(self):
         return not any(self.flag(f) for f in (0, 16, 25, 39, 13))
@@ -719,8 +747,7 @@ class Enemy(Unit):
                 self._sync_tile()
                 return True
         self.pos_x, self.pos_y = nx, ny
-        if self.spawned_tick % UPDATE_POS_TICK == 0:
-            self._sync_tile()
+        self._sync_tile_periodic()
         return False
 
     def on_spawn(self, tick):
@@ -753,7 +780,9 @@ class Enemy(Unit):
             } if isinstance(self._route_target, dict) else None),
             "waitRemaining": round(float(self._wait_remaining or 0.0), 3),
             "blockedBy": self.blocked_by.inst_id if self.blocked_by else None,
-            "moveSpeed": round(self.attributes.get("moveSpeed") * self.move_speed, 4),
+            "moveSpeed": round(self.attributes.get("moveSpeed")
+                               * self.move_speed
+                               * self.level_move_multiplier, 4),
             "attackTimer": round(self.attack_timer, 4),
             "massLevel": float(self.attributes.get("massLevel") or 0.0),
             "rangeRadius": (float(self.attributes.get("rangeRadius"))
