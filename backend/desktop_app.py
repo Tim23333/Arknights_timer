@@ -63,8 +63,11 @@ from app.services.timer_provider import TimerDataProvider
 from app.battle_session_cache import BattleSessionCache
 from app.diagnostic_log import DiagnosticLogManager, DiagnosticLogWindow
 from app.version import VERSION, VERSION_LABEL
+from app.custom_options import CustomOptions
+from app.toast import ToastManager, ToastQueueItem, ToastManagerQt
 from tools.enemy_health import EnemyReader
 from tools.enemy_health import game_structs as enemy_gs
+from tools.enemy_health.guest_addressing import GuestBattleClock
 from tools.character_status import CharacterReader
 from tools.enemy_health.memcore import (
     MemCore, find_running_emulator_adbs, query_adb_devices, save_adb_config,
@@ -118,9 +121,25 @@ def _tlog(*a) -> None:
     with _EARLY_TEST_LOG_LOCK:
         _EARLY_TEST_LOGS.append(message)
 
+
+#: 自动寻址诊断日志文件（绝对路径，规避 stdout 被 Qt 重定向的问题）
+_GA_LOG_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "_ga_debug.log")
+
+
+def _ga_log(message: str) -> None:
+    """把自动寻址诊断写入独立日志文件（不依赖 stdout）。"""
+    try:
+        with open(_GA_LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(f"[{time.strftime('%H:%M:%S')}] {message}\n")
+    except Exception:
+        pass
+    print(f"[自动寻址] {message}", flush=True)
+
 AUTO_REFRESH_MS = 8
 FAST_UI_MS = 8
 SLOW_UI_MS = 150
+GUEST_READY_TIMEOUT_MS = 30000  # 自动刷新链等待 guest 时间源就绪的超时（ms）
 WS_PUSH_MS = 8
 ENEMY_POLL_SEC = 1.0 / 60.0    # 完整敌我运行时数据固定 60Hz
 ENEMY_DETAIL_FULL_SEC = 1.0 / 60.0
@@ -231,6 +250,10 @@ QSlider::groove:horizontal {{ height:5px; background:{c['progress']}; border-rad
 QSlider::sub-page:horizontal {{ background:{c['primary']}; border-radius:2px; }}
 QSlider::handle:horizontal {{ width:14px; margin:-5px 0; background:{c['text']}; border:1px solid {c['border']}; border-radius:7px; }}
 QCheckBox {{ spacing:6px; }}
+QCheckBox::indicator {{ width:14px; height:14px; border:1px solid {c['border']}; border-radius:3px; }}
+QCheckBox::indicator:hover {{ border-color:{c['primary']}; }}
+QCheckBox::indicator:checked {{ border:2px solid {c['primary']}; background:{c['primary']}; }}
+QCheckBox::indicator:disabled {{ border-color:{c['disabled']}; }}
 QScrollArea#MainPageScroll {{ background:transparent; border:0; }}
 QScrollBar:vertical {{ width:11px; background:{c['bg']}; margin:0; }}
 QScrollBar:horizontal {{ height:11px; background:{c['bg']}; margin:0; }}
@@ -1724,7 +1747,49 @@ class EnemyMiniWindow(QWidget):
         QTimer.singleShot(0, self.owner._exit_enemy_mini_mode)
 
 
+class GuestAddressWorker(QThread):
+    """后台线程：定位 guest 侧 BattleController 时钟（static_fields）。
+
+    ``done`` 信号带 ``(ok, err, clock)``；clock 为定位成功时的
+    GuestBattleClock（失败时 None）。emit 回主线程由调用方连接槽处理。
+    """
+
+    done = Signal(bool, str, object)  # (ok, err_or_empty, GuestBattleClock|None)
+
+    def __init__(self, adb_serial: str) -> None:
+        super().__init__()
+        self.adb_serial = adb_serial
+        self.clock: Optional[GuestBattleClock] = None
+
+    def run(self) -> None:
+        clock = None
+        try:
+            clock = GuestBattleClock(adb_serial=self.adb_serial)
+            ok = clock.locate()
+            err = clock.last_error or ""
+            _ga_log(f"locate() 结果: ok={ok} last_error={err!r}")
+            if ok:
+                _ga_log(f"static_fields={hex(clock.static_fields)} "
+                        f"frame_addr={hex(clock.frame_addr)} "
+                        f"time_addr={hex(clock.time_addr)}")
+            self.clock = clock if ok else None
+            self.done.emit(ok, err, self.clock if ok else None)
+        except Exception as exc:
+            if clock is not None:
+                try:
+                    clock.close()
+                except Exception:
+                    pass
+            _ga_log(f"定位异常: {exc}")
+            self.clock = None
+            self.done.emit(False, str(exc), None)
+
+
 class CoachWindow(QMainWindow):
+    # 归0事件信号：由后台广播线程 emit，主线程槽触发自动刷新链
+    # （跨线程回主线程的标准方式，避免 QTimer.singleShot 从非主线程不可靠）
+    gameTimeReset = Signal()
+
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle(
@@ -1734,12 +1799,27 @@ class CoachWindow(QMainWindow):
         self.setMinimumSize(900, 560)
 
         self._provider = TimerDataProvider()
+        # 归0事件订阅：时钟归 0（新关卡）→ Signal 回主线程触发自动刷新链
+        self._provider.subscribe_game_time_reset(self._on_game_time_reset)
+        self.gameTimeReset.connect(self._on_game_time_reset_main)
+        self._guest_clock = None  # GuestBattleClock，自动寻址成功后持有
+        self._guest_addressing_gen = 0  # 递增代际，丢弃过期定位结果
+        self._guest_addressing_active = False  # 定位线程是否在跑（防重复启动）
+        self._guest_worker = None  # GuestAddressWorker，定位完成前持有
+        self._guest_ready_wait_count = 0  # guest 就绪等待轮询计数
         self._stop_event = threading.Event()
 
         self._hook_port: int = 0
         self._ws_port: int = 0
         self._ws_clients: set = set()
         self._ws_loop: asyncio.AbstractEventLoop | None = None
+        # 自动检测关卡变化并自动刷新状态
+        self._auto_refresh_enabled = False
+        self._auto_refresh_step: str | None = None  # None/deploy/enemy/rng
+        self._auto_refresh_retries = 0
+        self._custom_options = CustomOptions()
+        self._custom_options.load()
+        self._toast = ToastManager()
         self._timeline_httpd = None
         self._timeline_port: int = 0
 
@@ -2395,6 +2475,30 @@ class CoachWindow(QMainWindow):
             self.lbl_rng_status.setText("模块缺失 (tools/ak_live_rng)")
         main.addWidget(box_rng)
 
+        box_custom = CollapsibleGroupBox("更多自定义选项")
+        self.box_custom = box_custom
+        l_custom = QHBoxLayout()
+        box_custom.setContentLayout(l_custom)
+        self.chk_auto_refresh = QCheckBox("启用自动检测关卡变化并自动刷新插件状态")
+        self.chk_auto_refresh.toggled.connect(self._on_auto_refresh_toggled)
+        self.spin_auto_refresh_ms = QSpinBox()
+        self.spin_auto_refresh_ms.setRange(10, 10000)
+        self.spin_auto_refresh_ms.setValue(100)
+        self.spin_auto_refresh_ms.setSuffix(" ms")
+        self.spin_auto_refresh_ms.valueChanged.connect(
+            self._on_auto_refresh_interval_changed)
+        self.spin_auto_refresh_ms.editingFinished.connect(
+            self._on_auto_refresh_interval_committed)
+        l_custom.addWidget(self.chk_auto_refresh)
+        l_custom.addWidget(QLabel("检测频率"))
+        l_custom.addWidget(self.spin_auto_refresh_ms)
+        self.chk_auto_addressing = QCheckBox("启用自动寻址")
+        self.chk_auto_addressing.toggled.connect(
+            self._on_auto_addressing_toggled)
+        l_custom.addWidget(self.chk_auto_addressing)
+        l_custom.addStretch(1)
+        main.addWidget(box_custom)
+
         self._collapsible_sections = {
             'timer': box_cfg,
             'game': box_game,
@@ -2403,12 +2507,19 @@ class CoachWindow(QMainWindow):
             'character': box_character,
             'character_table': box_character_table,
             'rng': box_rng,
+            'custom': box_custom,
         }
         box_game.collapsedChanged.connect(self._on_game_section_collapsed)
         box_table.floatingChanged.connect(
             lambda _floating: QTimer.singleShot(0, self._fit_enemy_columns))
         box_character_table.floatingChanged.connect(
             lambda _floating: QTimer.singleShot(0, self._fit_character_columns))
+
+        # 接入 Qt toast 气泡与自定义选项配置
+        if ToastManagerQt is not None:
+            self._toast = ToastManagerQt(self)
+        self._load_auto_refresh_options()
+        self._load_auto_addressing_options()
 
         self._apply_theme(self._theme_dark, force=True)
 
@@ -2661,9 +2772,50 @@ class CoachWindow(QMainWindow):
         while not self._stop_event.is_set():
             try:
                 self._provider.refresh_sample()
+                # guest 地址失效（游戏重启）时自动重新定位一次
+                self._maybe_relocate_guest_clock()
             except Exception:
                 pass
             self._stop_event.wait(AUTO_REFRESH_MS / 1000)
+
+    def _on_game_time_reset(self) -> None:
+        """归0事件回调（广播线程）：通过 Signal 回主线程触发自动刷新链。
+
+        由 TimerDataProvider 在 refresh_sample 所在线程（非 Qt 主线程）广播
+        调用；emit Signal 由 Qt 排队到主线程槽 _on_game_time_reset_main，
+        避免跨线程操作 UI。
+        """
+        if not self._auto_refresh_enabled:
+            return
+        _ga_log("[自动刷新] 收到归0广播（新关卡），触发刷新链")
+        self.gameTimeReset.emit()
+
+    def _on_game_time_reset_main(self) -> None:
+        """主线程槽：归0事件触发自动刷新链（由 gameTimeReset 信号调度）。"""
+        if not self._auto_refresh_enabled:
+            return
+        _ga_log("[自动刷新] 主线程收到归0信号，执行刷新链")
+        self._run_auto_refresh()
+
+    def _maybe_relocate_guest_clock(self) -> None:
+        """guest 时钟地址失效时自动重新定位（防游戏重启后静默失败）。"""
+        if not self.chk_auto_addressing.isChecked():
+            return
+        if self._guest_clock is None:
+            return
+        if self._guest_clock.is_stage_locked():
+            return
+        if self._guest_addressing_active:
+            return  # 已在重定位中，避免并发
+        self._guest_addressing_gen += 1
+        gen = self._guest_addressing_gen
+        self._guest_addressing_active = True
+        worker = GuestAddressWorker(self._adb_serial_or_default())
+        worker.done.connect(
+            lambda ok, err, clock, g=gen: self._on_guest_addressed(
+                g, ok, err, clock))
+        self._guest_worker = worker
+        worker.start()
 
     def closeEvent(self, event) -> None:  # type: ignore[override]
         self._cache_current_deploy(final_reason='application_closed')
@@ -2681,6 +2833,12 @@ class CoachWindow(QMainWindow):
             QTimer.singleShot(250, self.close)
             return
         self._enemy_reader.close()
+        if self._guest_clock is not None:
+            try:
+                self._guest_clock.close()
+            except Exception:
+                pass
+            self._guest_clock = None
         self._stop_deploy_poll()
         if self._deploy_reader is not None:
             self._deploy_reader.close()
@@ -2950,9 +3108,13 @@ class CoachWindow(QMainWindow):
     def _on_enemy_scan(self) -> None:
         if not self._ensure_adb():
             self.lbl_enemy_status.setText('状态: 未选择 adb.exe, 取消扫描')
+            if self._auto_refresh_step:
+                self._abort_auto_refresh('未选择 adb.exe')
             return
         if not self._stop_enemy_poll():
             self.lbl_enemy_status.setText('上一轮敌人读取仍在停止，请稍后重试')
+            if self._auto_refresh_step:
+                self._abort_auto_refresh('上一轮敌人读取仍在停止')
             return
         self.enemy_table.setRowCount(0)   # 换关卡重扫: 清掉旧敌人行
         self._enemy_rows.clear()
@@ -3010,11 +3172,13 @@ class CoachWindow(QMainWindow):
                 else '共享定位完成，正在等待干员容器可读')
             if not self._battle_cache.is_finalized():
                 self._cache_stage_export()
+            _ga_log("[自动刷新] enemy 扫描成功，启动敌人轮询")
             self._start_enemy_poll()
         else:
             self.btn_stage_enemy_export.setEnabled(False)
             self.enemy_progress.setFormat('定位失败')
             self.lbl_character_status.setText('共享定位失败')
+        self._on_auto_refresh_step_done("enemy", ok)
 
     def _on_stage_enemy_export(self) -> None:
         """导出关卡地图与完整敌人计划，供 Vue 排轴前端直接导入。"""
@@ -3158,6 +3322,225 @@ class CoachWindow(QMainWindow):
         if snap is not None:
             self._on_enemy_snapshot(snap)
 
+    def _on_auto_refresh_toggled(self, checked: bool) -> None:
+        """开关"启用自动检测关卡变化并自动刷新插件状态"；配置持久化。
+
+        开启时默认执行一次完整刷新链（deploy→enemy→rng），建立基线；
+        此后靠 guest 时钟归 0（新关卡开始）检测触发增量刷新。
+        """
+        self._auto_refresh_enabled = bool(checked)
+        self._custom_options.set(
+            "auto_detect_stage_change", "enabled", self._auto_refresh_enabled)
+        if checked:
+            _ga_log("[自动刷新] 开关开启，等待 guest 就绪后触发初始全链扫描")
+            QTimer.singleShot(0, self._wait_guest_ready_then_refresh)
+
+    def _on_auto_refresh_interval_changed(self, value: int) -> None:
+        """频率修改即时生效（UI 层；检测间隔已无需下发 reader）。"""
+        pass
+
+    def _on_auto_refresh_interval_committed(self) -> None:
+        """频率编辑完成时持久化到 custom_options.json。"""
+        value = self.spin_auto_refresh_ms.value()
+        self._custom_options.set(
+            "auto_detect_stage_change", "check_interval_ms", int(value))
+
+    def _load_auto_refresh_options(self) -> None:
+        """从 custom_options 载入开关与频率，应用到 UI 与 reader。"""
+        opts = self._custom_options.get("auto_detect_stage_change") or {}
+        enabled = bool(opts.get("enabled", False))
+        interval_ms = int(opts.get("check_interval_ms", 100))
+        self.chk_auto_refresh.blockSignals(True)
+        self.chk_auto_refresh.setChecked(enabled)
+        self.chk_auto_refresh.blockSignals(False)
+        self.spin_auto_refresh_ms.blockSignals(True)
+        self.spin_auto_refresh_ms.setValue(interval_ms)
+        self.spin_auto_refresh_ms.blockSignals(False)
+        self._auto_refresh_enabled = enabled
+        # 启动恢复：上次开启过 → 等待 guest 就绪后触发初始全链扫描
+        if enabled:
+            _ga_log("[自动刷新] 启动恢复：上次开启，等待 guest 就绪后触发初始扫描")
+            QTimer.singleShot(0, self._wait_guest_ready_then_refresh)
+
+    # ---------- 自动寻址（guest 侧） ----------
+
+    def _on_auto_addressing_toggled(self, checked: bool) -> None:
+        """开关「启用自动寻址」；开启后后台定位 guest 时钟并持续读 frame/time。"""
+        if checked:
+            # 防重复启动：已有定位线程在跑时直接跳过
+            if self._guest_clock is not None or self._guest_addressing_active:
+                return
+            self._guest_addressing_gen += 1
+            gen = self._guest_addressing_gen
+            self._guest_addressing_active = True
+            self._custom_options.set("auto_addressing", "enabled", True)
+            if self._toast is not None:
+                self._toast.show("正在自动寻址…", kind="info")
+            worker = GuestAddressWorker(self._adb_serial_or_default())
+            worker.done.connect(
+                lambda ok, err, clock, g=gen: self._on_guest_addressed(
+                    g, ok, err, clock))
+            self._guest_worker = worker
+            worker.start()
+        else:
+            self._guest_addressing_gen += 1  # 作废在途定位结果
+            self._guest_addressing_active = False
+            self._provider.clear_guest()
+            if self._guest_clock is not None:
+                self._guest_clock.close()
+                self._guest_clock = None
+            self._custom_options.set("auto_addressing", "enabled", False)
+            if self._toast is not None:
+                self._toast.show("已关闭自动寻址", kind="info")
+
+    def _on_guest_addressed(self, gen: int, ok: bool, err: str,
+                            clock: Optional[GuestBattleClock]) -> None:
+        """主线程：处理 guest 定位结果（由 Signal 从后台线程调度）。"""
+        _ga_log(f"_on_guest_addressed: gen={gen} 当前gen={self._guest_addressing_gen} "
+                f"ok={ok} err={err!r} active={self._guest_addressing_active}")
+        self._guest_addressing_active = False
+        # 代际不匹配：用户已关闭开关或重新开启 → 丢弃过期结果
+        if gen != self._guest_addressing_gen:
+            _ga_log("  代际不匹配，丢弃结果")
+            if clock is not None:
+                try:
+                    clock.close()
+                except Exception:
+                    pass
+            return
+        if ok and clock is not None:
+            self._guest_clock = clock
+            self._provider.configure_guest(clock)
+            _ga_log("  configure_guest 完成，弹成功 toast")
+            if self._toast is not None:
+                self._toast.show(
+                    "自动寻址成功，已启用 guest 时钟", kind="success")
+        else:
+            _ga_log("  失败，回滚开关 + 弹错误 toast")
+            self._custom_options.set(
+                "auto_addressing", "enabled", False)
+            self.chk_auto_addressing.blockSignals(True)
+            self.chk_auto_addressing.setChecked(False)
+            self.chk_auto_addressing.blockSignals(False)
+            if self._toast is not None:
+                self._toast.show(
+                    f"自动寻址失败：{err or '无法连接模拟器'}", kind="error")
+
+    def _adb_serial_or_default(self) -> str:
+        """返回 guest 寻址用的 adb serial（沿用 enemy_reader 配置，缺省 16384）。"""
+        cfg = getattr(self, "_enemy_reader", None)
+        serial = getattr(cfg, "adb_serial", "") if cfg is not None else ""
+        return serial or "127.0.0.1:16384"
+
+    def _load_auto_addressing_options(self) -> None:
+        """从 custom_options 载入「启用自动寻址」开关状态。"""
+        opts = self._custom_options.get("auto_addressing") or {}
+        enabled = bool(opts.get("enabled", False))
+        self.chk_auto_addressing.blockSignals(True)
+        self.chk_auto_addressing.setChecked(enabled)
+        self.chk_auto_addressing.blockSignals(False)
+        # 若上次会话开启了自动寻址，本次启动后重新定位一次
+        if enabled:
+            QTimer.singleShot(300, self._start_auto_addressing_if_checked)
+
+    def _start_auto_addressing_if_checked(self) -> None:
+        """启动后若开关仍处于开启态，则触发一次自动寻址（恢复上次会话）。"""
+        if self.chk_auto_addressing.isChecked():
+            self._on_auto_addressing_toggled(True)
+
+    def _guest_ready(self) -> bool:
+        """guest 侧时间/帧数据源是否已就绪（兼容自动寻址 + 手动寻址）。
+
+        - 自动寻址：GuestBattleClock 已锁定 static_fields。
+        - 手动寻址（老方法）：宿主侧 pymem 已配置时间地址。
+        """
+        if (self._guest_clock is not None
+                and self._guest_clock.is_stage_locked()):
+            return True
+        if getattr(self._provider, "time_address_hex", None):
+            return True
+        return False
+
+    def _wait_guest_ready_then_refresh(self, gen: int = 0) -> None:
+        """等待 guest 时间数据源就绪后执行自动刷新链。
+
+        兼容自动寻址（GuestBattleClock 锁定）与手动寻址（宿主 pymem 配置）。
+        每 500ms 轮询检查，超时（30s）后中止并 toast 提示。
+        """
+        if self._guest_ready():
+            _ga_log("[自动刷新] guest 已就绪，直接执行刷新链")
+            QTimer.singleShot(0, self._run_auto_refresh)
+            return
+
+        def _poll() -> None:
+            if self._guest_ready():
+                _ga_log("[自动刷新] 等待后 guest 就绪，执行刷新链")
+                QTimer.singleShot(0, self._run_auto_refresh)
+                return
+            if self._guest_ready_wait_count >= GUEST_READY_TIMEOUT_MS // 500:
+                _ga_log(f"[自动刷新] guest 等待超时（{GUEST_READY_TIMEOUT_MS}ms），中止")
+                if self._auto_refresh_step:
+                    self._abort_auto_refresh("guest 时间源未就绪（请先完成寻址）")
+                return
+            self._guest_ready_wait_count += 1
+            QTimer.singleShot(500, _poll)
+
+        self._guest_ready_wait_count = 0
+        _ga_log("[自动刷新] guest 未就绪，开始等待…")
+        QTimer.singleShot(500, _poll)
+
+    def _run_auto_refresh(self) -> None:
+        """检测到关卡切换后，按顺序自动刷新 ①操作记录 ②敌人/干员 ④随机数。"""
+        if self._auto_refresh_step is not None:
+            _ga_log(f"[自动刷新] 已在流程中(_auto_refresh_step={self._auto_refresh_step})，忽略重入")
+            return  # 已在刷新流程中，避免重入
+        _ga_log("[自动刷新] 开始执行（deploy 步骤）")
+        self._auto_refresh_step = "deploy"
+        self._auto_refresh_retries = 0
+        self._toast.show("检测到关卡切换，开始自动刷新…", kind="info")
+        self._on_deploy_scan()
+
+    def _abort_auto_refresh(self, reason: str) -> None:
+        """扫描未真正启动（adb 缺失/轮询未停止等）时中止整条自动刷新链。"""
+        self._auto_refresh_step = None
+        self._auto_refresh_retries = 0
+        self._toast.show(f"自动刷新中止：{reason}", kind="error")
+
+    def _on_auto_refresh_step_done(self, step: str, ok: bool) -> None:
+        """单个自动刷新步骤完成；失败重试（≤2），成功推进下一步。"""
+        _ga_log(f"[自动刷新] 步骤 {step} 完成: ok={ok} retries={self._auto_refresh_retries}")
+        if self._auto_refresh_step != step:
+            return
+        if not ok:
+            self._auto_refresh_retries += 1
+            if self._auto_refresh_retries <= 2:
+                self._toast.show(
+                    f"自动刷新 {step} 失败，重试 {self._auto_refresh_retries}/2",
+                    kind="error")
+                if step == "deploy":
+                    self._on_deploy_scan()
+                elif step == "enemy":
+                    self._on_enemy_scan()
+                elif step == "rng":
+                    self._on_rng_scan()
+                return
+            self._toast.show(
+                f"自动刷新失败：{step} 重试 2 次后仍失败，已中止",
+                kind="error")
+            self._auto_refresh_step = None
+            self._auto_refresh_retries = 0
+            return
+        self._auto_refresh_retries = 0
+        if step == "deploy":
+            self._auto_refresh_step = "enemy"
+            self._on_enemy_scan()
+        elif step == "enemy":
+            self._auto_refresh_step = "rng"
+            self._on_rng_scan()
+        elif step == "rng":
+            self._auto_refresh_step = None
+            self._toast.show("自动刷新完成", kind="success")
+
     def _sync_battle_cache_controls(self) -> None:
         cache = self._battle_cache
         self.btn_battle_cache_export.setEnabled(cache.has_data())
@@ -3210,9 +3593,13 @@ class CoachWindow(QMainWindow):
 
     def _on_rng_scan(self) -> None:
         if RngService is None:
+            if self._auto_refresh_step:
+                self._abort_auto_refresh('RNG 模块缺失')
             return
         if not self._ensure_adb():
             self.lbl_rng_status.setText('未选择 adb.exe, 取消扫描')
+            if self._auto_refresh_step:
+                self._abort_auto_refresh('未选择 adb.exe')
             return
         self._on_rng_stop()   # 停掉上一轮监控
         self.btn_rng_scan.setEnabled(False)
@@ -3230,6 +3617,7 @@ class CoachWindow(QMainWindow):
         if svc is None:
             self.lbl_rng_status.setText(msg)
             self.btn_rng_stop.setEnabled(False)
+            self._on_auto_refresh_step_done("rng", False)
             return
         self._rng_svc = svc
         svc.start()
@@ -3240,6 +3628,7 @@ class CoachWindow(QMainWindow):
         else:
             self.lbl_rng_status.setText('监控中（部分随机引擎未定位）')
         self.btn_rng_stop.setEnabled(True)
+        self._on_auto_refresh_step_done("rng", True)
 
     def _on_rng_stop(self) -> None:
         self._rng_timer.stop()
@@ -3353,6 +3742,8 @@ class CoachWindow(QMainWindow):
     def _on_deploy_scan(self) -> None:
         if not self._ensure_adb():
             self.lbl_deploy_status.setText('未选择 adb.exe, 取消扫描')
+            if self._auto_refresh_step:
+                self._abort_auto_refresh('未选择 adb.exe')
             return
         self._cache_current_deploy()
         self._on_deploy_stop()
@@ -3395,19 +3786,24 @@ class CoachWindow(QMainWindow):
         self._sync_battle_cache_controls()
 
     def _on_deploy_scan_done(self, reader, msg: str) -> None:
+        _ga_log(f"[deploy] 扫描完成: reader={'有' if reader else 'None'} msg={msg!r}")
         self.btn_deploy_scan.setEnabled(True)
         if reader is None:
             self.lbl_deploy_status.setText(msg)
+            self._on_auto_refresh_step_done("deploy", False)
             return
         self._deploy_reader = reader
         try:
             st = reader.get_state()   # 一次性取 编队/代理序列/关卡信息 (顺带补齐干员名)
+            _ga_log(f"[deploy] get_state 完成: journal={len(st.get('journalEvents') or [])} "
+                    f"stage={st.get('stageId')!r}")
             self._deploy_squad = st.get('squad') or []
             self._deploy_journal = st.get('journalEvents') or []
             self._deploy_journal = self._attach_deploy_frames(self._deploy_journal, [])
             self._deploy_stage_info = st.get('stage') or self._deploy_stage_info
             self._deploy_stage = st.get('stageId') or ''
-        except Exception:
+        except Exception as exc:
+            _ga_log(f"[deploy] get_state 异常: {exc}")
             pass
         self._cache_current_deploy(st.get('battle') if 'st' in locals() else None)
         if self._deploy_journal:
@@ -3416,10 +3812,14 @@ class CoachWindow(QMainWindow):
             stage = f"   {self._deploy_stage_label()}" if self._deploy_stage_label() else ''
             self.lbl_deploy_status.setText(
                 f"代理作战序列 {len(self._deploy_journal)} 条 (静态){stage}")
+            _ga_log(f"[deploy] 代理作战序列 {len(self._deploy_journal)} 条")
         else:
+            _ga_log("[deploy] 实时轮询模式，启动 deploy poll")
             self._start_deploy_poll()
         self.btn_deploy_export.setEnabled(
             bool(self._deploy_stage_info or self._deploy_journal or self._deploy_events))
+        _ga_log("[deploy] 推进 enemy 步骤")
+        self._on_auto_refresh_step_done("deploy", True)
 
     def _start_deploy_poll(self) -> None:
         self._stop_deploy_poll()

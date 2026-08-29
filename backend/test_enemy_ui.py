@@ -254,7 +254,7 @@ class EnemyUiTests(unittest.TestCase):
             self.assertEqual(
                 set(sections), {
                     'timer', 'game', 'enemy', 'enemy_table',
-                    'character', 'character_table', 'rng',
+                    'character', 'character_table', 'rng', 'custom',
                 })
             self.assertTrue(all(not section.is_collapsed()
                                 for section in sections.values()))

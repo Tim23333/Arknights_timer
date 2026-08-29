@@ -1045,6 +1045,12 @@ class MemCore:
             raise RuntimeError('仅支持 memsrv v4')
         return self._chan
 
+    def close(self) -> None:
+        """关闭持有的 memsrv 通道；重复调用安全（幂等）。"""
+        if self._chan is not None:
+            self._chan.close()
+            self._chan = None
+
     def read(self, addr: int, size: int, timeout=30) -> Optional[bytes]:
         """只通过 memsrv v4 读取；大块自动拆成服务端允许的 4MB 请求。"""
         if size <= 0:
