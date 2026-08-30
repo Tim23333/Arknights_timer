@@ -260,8 +260,9 @@ class EnemyUiTests(unittest.TestCase):
                                 for section in sections.values()))
             initial_table_height = window.enemy_table.height()
 
-            # “只保留敌人数据”现在还需要收起新增的干员区块。
-            for key in ('timer', 'game', 'character', 'character_table', 'rng'):
+            # “只保留敌人数据”现在还需要收起新增的干员区块与“更多自定义选项”。
+            for key in ('timer', 'game', 'character', 'character_table', 'rng',
+                        'custom'):
                 sections[key].set_collapsed(True)
             self.app.processEvents()
 

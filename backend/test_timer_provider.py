@@ -59,20 +59,38 @@ class TimerDataProviderTimelineTests(unittest.TestCase):
 
     @patch('backend.app.services.timer_provider.AKMemoryReader')
     def test_game_time_reset_detects_new_stage(self, _reader_cls):
-        """time 严格归 0（< 0.001）→ 判定新关卡（consume 返回 True）。"""
+        """进过关卡（time 变动）后归 0 → 判定新关卡（consume 返回 True）。"""
         provider = TimerDataProvider()
         reader = FakeGuestReader()
         provider.configure_guest(reader)
 
-        # 第一次: time=10.0 (关卡进行中)
+        # 先置基线 0.0，再走秒 0→10（进关卡，置 game_time_moved）
+        reader.set_clock(0, 0.0)
+        provider.refresh_sample()
         reader.set_clock(300, 10.0)
         provider.refresh_sample()
+        self.assertTrue(provider.game_time_moved())
         self.assertFalse(provider.consume_game_time_reset())
-        # 第二次: time=0.0005 (严格归0, 新关卡载入)
+        # 归 0（新关卡载入）
         reader.set_clock(3, 0.0005)
         provider.refresh_sample()
         self.assertTrue(provider.consume_game_time_reset())
         # 消费后清除
+        self.assertFalse(provider.consume_game_time_reset())
+
+    @patch('backend.app.services.timer_provider.AKMemoryReader')
+    def test_game_time_reset_ignored_before_moved(self, _reader_cls):
+        """未进过关卡（time 恒 0）时归 0 不广播（主界面空壳不误触发）。"""
+        provider = TimerDataProvider()
+        reader = FakeGuestReader()
+        provider.configure_guest(reader)
+
+        # time 恒 0（主界面空壳），game_time_moved 未置位
+        reader.set_clock(0, 0.0)
+        provider.refresh_sample()
+        reader.set_clock(0, 0.0)
+        provider.refresh_sample()
+        self.assertFalse(provider.game_time_moved())
         self.assertFalse(provider.consume_game_time_reset())
 
     @patch('backend.app.services.timer_provider.AKMemoryReader')
@@ -89,6 +107,26 @@ class TimerDataProviderTimelineTests(unittest.TestCase):
         self.assertFalse(provider.consume_game_time_reset())
 
     @patch('backend.app.services.timer_provider.AKMemoryReader')
+    def test_game_time_moved_detects_progression(self, _reader_cls):
+        """时间值从 0 变动到非 0（进关卡走秒）→ game_time_moved 置位。"""
+        provider = TimerDataProvider()
+        reader = FakeGuestReader()
+        provider.configure_guest(reader)
+
+        # 首次读 time=0 (主界面空壳), 时间未变动
+        reader.set_clock(0, 0.0)
+        provider.refresh_sample()
+        self.assertFalse(provider.game_time_moved())
+        # time 仍 0, 不变动
+        reader.set_clock(0, 0.0)
+        provider.refresh_sample()
+        self.assertFalse(provider.game_time_moved())
+        # time 变到非 0 (进关卡走秒)
+        reader.set_clock(30, 1.0)
+        provider.refresh_sample()
+        self.assertTrue(provider.game_time_moved())
+
+    @patch('backend.app.services.timer_provider.AKMemoryReader')
     def test_reset_broadcast_notifies_subscribers(self, _reader_cls):
         """归 0 时广播给所有订阅者（多订阅者互不影响）。"""
         provider = TimerDataProvider()
@@ -101,9 +139,13 @@ class TimerDataProviderTimelineTests(unittest.TestCase):
         provider.subscribe_game_time_reset(
             lambda: notified.append("sub2"))
 
+        # 先走秒（进关卡，置 game_time_moved）
         reader.set_clock(300, 10.0)
         provider.refresh_sample()  # 10.0, 无归0
         self.assertEqual(notified, [])
+        reader.set_clock(330, 11.0)
+        provider.refresh_sample()  # 11.0 变动，置 moved
+        self.assertTrue(provider.game_time_moved())
 
         reader.set_clock(3, 0.0005)  # 归0
         provider.refresh_sample()
@@ -121,9 +163,14 @@ class TimerDataProviderTimelineTests(unittest.TestCase):
         provider.subscribe_game_time_reset(cb)
         provider.unsubscribe_game_time_reset(cb)
 
+        # 先走秒置 moved（进关卡）
         reader.set_clock(300, 10.0)
         provider.refresh_sample()
-        reader.set_clock(3, 0.0005)  # 归0
+        reader.set_clock(330, 11.0)
+        provider.refresh_sample()
+        self.assertTrue(provider.game_time_moved())
+        # 归 0：已退订 → 不应收到广播
+        reader.set_clock(3, 0.0005)
         provider.refresh_sample()
         self.assertEqual(notified, [])
 

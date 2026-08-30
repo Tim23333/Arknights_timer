@@ -11,13 +11,28 @@ import json
 from pathlib import Path
 from typing import Any, Callable
 
+from app.toast import LEVELS
+
+# SLF4J 五级信息分类：直接复用 toast.py 的权威 LEVELS，避免两处字面量漂移。
+# UI 时长输入框的顺序与键名、运行时查表都以此为唯一来源。
+TOAST_LEVELS: tuple[str, ...] = LEVELS
+
 DEFAULTS: dict[str, Any] = {
     "auto_detect_stage_change": {
         "enabled": False,
-        "check_interval_ms": 100,
     },
     "auto_addressing": {
         "enabled": False,
+    },
+    "toast": {
+        "enabled": True,
+        "duration_ms": {
+            "trace": 5000,
+            "debug": 6000,
+            "info": 8000,
+            "warn": 10000,
+            "error": 15000,
+        },
     },
 }
 

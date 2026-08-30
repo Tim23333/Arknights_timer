@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
-"""气泡式弹窗（toast）工具模块：右上角、置顶、30s 自动关闭、红叉手动关、排队堆叠。
+"""气泡式弹窗（toast）工具模块：右上角、置顶、按时长自动关闭、红叉手动关、排队堆叠。
 
 - ``ToastQueue``/``ToastQueueItem``：可单测的队列逻辑（顺序、容量、重排）。
 - ``ToastWidget``：Qt 气泡部件；``ToastManager`` 挂到主窗口右上角并管理堆叠。
+- 信息分类：``level``（SLF4J 五级：trace/debug/info/warn/error）决定展示时长；
+  独立的 ``semantic``（如 success/error）决定气泡样式，两者正交。
+- 展示时长可配置化：``ToastManager(options=...)`` 传入 ``duration_ms`` 分档时长与
+  ``enabled`` 总开关；未显式传 ``duration`` 时按 ``level`` 查表。
 """
 from __future__ import annotations
 
@@ -12,15 +16,35 @@ from typing import Optional
 TOAST_DURATION_MS = 30000
 MAX_TOASTS = 5
 
+# SLF4J 五级信息分类；level 决定展示时长
+LEVELS = ("trace", "debug", "info", "warn", "error")
+DEFAULT_LEVEL = "info"
+
+# 每档默认展示时长（ms）；可被 ToastManager(options=...) 覆盖
+DEFAULT_DURATIONS_MS = {
+    "trace": 5000,
+    "debug": 6000,
+    "info": 8000,
+    "warn": 10000,
+    "error": 15000,
+}
+
 
 @dataclass
 class ToastQueueItem:
-    """一条待显示/显示中的气泡。seq 用于稳定排序与去重。"""
+    """一条待显示/显示中的气泡。seq 用于稳定排序与去重。
+
+    level: SLF4J 五档之一，决定展示时长（duration 未显式给时按它查表）。
+    semantic: 独立语义值（如 success/error），决定气泡样式；空串走 level 默认样式。
+    duration: 展示毫秒数；None 表示在 show() 内按 level 解析。
+    """
 
     seq: int
     text: str
     title: str = ""
-    kind: str = "info"  # info | success | error
+    level: str = DEFAULT_LEVEL
+    semantic: str = ""
+    duration: Optional[int] = None
     widget: Optional[object] = None
 
 
@@ -60,15 +84,52 @@ class ToastManager:
     """挂到主窗口右上角、管理多个 ToastWidget 的容器。
 
     提供纯逻辑接口（show/remove/clear），Qt 部件由子类或调用方提供。
+
+    options: 可选配置 dict：
+      - enabled: bool，总开关；False 时 show() 返回 None 且不排队。
+      - duration_ms: dict[level, int]，每档展示时长（ms），缺省回退 DEFAULT_DURATIONS_MS。
     """
 
-    def __init__(self, max_toasts: int = MAX_TOASTS) -> None:
+    def __init__(
+        self,
+        max_toasts: int = MAX_TOASTS,
+        options: Optional[dict] = None,
+    ) -> None:
         self._queue = ToastQueue(max_toasts=max_toasts)
         self._seq = 0
+        opts = options or {}
+        self._enabled = bool(opts.get("enabled", True))
+        durations = opts.get("duration_ms") or {}
+        self._durations = {**DEFAULT_DURATIONS_MS, **durations}
 
-    def show(self, text: str, kind: str = "info", title: str = "") -> ToastQueueItem:
+    def update_options(self, options: Optional[dict]) -> None:
+        """运行时更新配置（enabled 总开关 + duration_ms 分档时长）。"""
+        opts = options or {}
+        self._enabled = bool(opts.get("enabled", True))
+        durations = opts.get("duration_ms") or {}
+        self._durations = {**DEFAULT_DURATIONS_MS, **durations}
+
+    def show(
+        self,
+        text: str,
+        level: str = DEFAULT_LEVEL,
+        semantic: str = "",
+        title: str = "",
+        duration: Optional[int] = None,
+    ) -> Optional[ToastQueueItem]:
+        """弹出一条气泡。总开关关闭时返回 None 且不排队。
+
+        duration 显式传则覆盖；None 按 level 查 options.duration_ms（缺省回退默认档）。
+        """
+        if not self._enabled:
+            return None
+        if duration is None:
+            duration = self._durations.get(
+                level, DEFAULT_DURATIONS_MS.get(level, TOAST_DURATION_MS))
         self._seq += 1
-        item = ToastQueueItem(seq=self._seq, text=text, kind=kind, title=title)
+        item = ToastQueueItem(
+            seq=self._seq, text=text, level=level, semantic=semantic,
+            title=title, duration=duration)
         self._queue.push(item)
         self._on_changed()
         return item
@@ -100,7 +161,7 @@ try:  # Qt 部件仅在 GUI 环境可用；无 Qt 时保留纯逻辑 ToastManage
     )
 
     class _ToastWidget(QFrame):
-        """单个气泡：右上角、置顶、30s 自动关、红叉手动关。"""
+        """单个气泡：右上角、置顶、按 level 时长自动关、红叉手动关。"""
 
         def __init__(
             self,
@@ -116,7 +177,7 @@ try:  # Qt 部件仅在 GUI 环境可用；无 Qt 时保留纯逻辑 ToastManage
             self.setWindowFlags(Qt.WindowType.Widget
                                 | Qt.WindowType.WindowStaysOnTopHint)
             self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
-            self.setStyleSheet(self._style(item.kind))
+            self.setStyleSheet(self._style(item.semantic, item.level))
             lay = QHBoxLayout(self)
             lay.setContentsMargins(10, 8, 10, 8)
             col = QVBoxLayout()
@@ -144,16 +205,26 @@ try:  # Qt 部件仅在 GUI 环境可用；无 Qt 时保留纯逻辑 ToastManage
             self._timer = QTimer(self)
             self._timer.setSingleShot(True)
             self._timer.timeout.connect(self._on_close)
-            self._timer.start(TOAST_DURATION_MS)
+            self._timer.start(item.duration or TOAST_DURATION_MS)
 
         @staticmethod
-        def _style(kind: str) -> str:
-            colors = {
-                "info": "rgba(40, 40, 40, 0.92)",
+        def _style(semantic: str, level: str) -> str:
+            """气泡底色：优先按 semantic 语义取色，其次按 level 默认取色。"""
+            semantic_colors = {
                 "success": "rgba(40, 110, 60, 0.92)",
                 "error": "rgba(160, 50, 50, 0.94)",
+                "info": "rgba(40, 40, 40, 0.92)",
             }
-            bg = colors.get(kind, colors["info"])
+            level_colors = {
+                "trace": "rgba(60, 60, 60, 0.92)",
+                "debug": "rgba(60, 70, 80, 0.92)",
+                "info": "rgba(40, 40, 40, 0.92)",
+                "warn": "rgba(140, 110, 40, 0.92)",
+                "error": "rgba(160, 50, 50, 0.94)",
+            }
+            bg = semantic_colors.get(semantic)
+            if bg is None:
+                bg = level_colors.get(level, level_colors["info"])
             return (
                 "QFrame { background: %s; border-radius: 8px; "
                 "border: 1px solid rgba(255,255,255,0.25); }" % bg)
@@ -164,8 +235,13 @@ try:  # Qt 部件仅在 GUI 环境可用；无 Qt 时保留纯逻辑 ToastManage
     class ToastManagerQt(ToastManager):
         """挂到主窗口右上角、管理多个 ToastWidget 的 Qt 实现。"""
 
-        def __init__(self, parent: QWidget, max_toasts: int = MAX_TOASTS) -> None:
-            super().__init__(max_toasts=max_toasts)
+        def __init__(
+            self,
+            parent: QWidget,
+            max_toasts: int = MAX_TOASTS,
+            options: Optional[dict] = None,
+        ) -> None:
+            super().__init__(max_toasts=max_toasts, options=options)
             self._parent = parent
             self._widgets: list[_ToastWidget] = []
 
@@ -195,9 +271,17 @@ try:  # Qt 部件仅在 GUI 环境可用；无 Qt 时保留纯逻辑 ToastManage
                 item.widget = None
             super().dismiss(item)
 
-        def show(self, text: str, kind: str = "info",
-                 title: str = "") -> ToastQueueItem:
-            return super().show(text, kind=kind, title=title)
+        def show(
+            self,
+            text: str,
+            level: str = DEFAULT_LEVEL,
+            semantic: str = "",
+            title: str = "",
+            duration: Optional[int] = None,
+        ) -> Optional[ToastQueueItem]:
+            return super().show(
+                text, level=level, semantic=semantic, title=title,
+                duration=duration)
 
 except Exception:  # pragma: no cover - 无 PySide6 环境
     ToastManagerQt = None  # type: ignore[assignment]
@@ -206,6 +290,9 @@ except Exception:  # pragma: no cover - 无 PySide6 环境
 __all__ = [
     "TOAST_DURATION_MS",
     "MAX_TOASTS",
+    "LEVELS",
+    "DEFAULT_LEVEL",
+    "DEFAULT_DURATIONS_MS",
     "ToastQueue",
     "ToastQueueItem",
     "ToastManager",

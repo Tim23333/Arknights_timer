@@ -24,11 +24,20 @@ class CustomOptionsTests(unittest.TestCase):
         self.assertIn("auto_detect_stage_change", DEFAULTS)
         block = DEFAULTS["auto_detect_stage_change"]
         self.assertFalse(block["enabled"])
-        self.assertEqual(block["check_interval_ms"], 100)
 
     def test_defaults_auto_addressing_disabled(self):
         self.assertIn("auto_addressing", DEFAULTS)
         self.assertFalse(DEFAULTS["auto_addressing"]["enabled"])
+
+    def test_defaults_toast_enabled_with_five_level_durations(self):
+        self.assertIn("toast", DEFAULTS)
+        toast = DEFAULTS["toast"]
+        self.assertTrue(toast["enabled"])
+        durations = toast["duration_ms"]
+        self.assertEqual(
+            set(durations), {"trace", "debug", "info", "warn", "error"})
+        for lvl, ms in durations.items():
+            self.assertGreater(ms, 0)
 
     def test_load_missing_file_returns_defaults(self):
         data = load(self.path)
@@ -39,13 +48,10 @@ class CustomOptionsTests(unittest.TestCase):
     def test_save_and_load_roundtrip(self):
         data = load(self.path)
         data["auto_detect_stage_change"]["enabled"] = True
-        data["auto_detect_stage_change"]["check_interval_ms"] = 250
         save(self.path, data)
 
         reloaded = load(self.path)
         self.assertTrue(reloaded["auto_detect_stage_change"]["enabled"])
-        self.assertEqual(
-            reloaded["auto_detect_stage_change"]["check_interval_ms"], 250)
 
     def test_save_writes_valid_json(self):
         save(self.path, DEFAULTS)
@@ -58,19 +64,14 @@ class CustomOptionsTests(unittest.TestCase):
         self.assertFalse(opts.get("auto_detect_stage_change", "enabled"))
 
         opts.set("auto_detect_stage_change", "enabled", True)
-        opts.set("auto_detect_stage_change", "check_interval_ms", 500)
 
         # 内存即时生效
         self.assertTrue(opts.get("auto_detect_stage_change", "enabled"))
-        self.assertEqual(
-            opts.get("auto_detect_stage_change", "check_interval_ms"), 500)
 
         # 已写盘，可被另一个实例读回
         opts2 = CustomOptions(self.path)
         opts2.load()
         self.assertTrue(opts2.get("auto_detect_stage_change", "enabled"))
-        self.assertEqual(
-            opts2.get("auto_detect_stage_change", "check_interval_ms"), 500)
 
     def test_auto_addressing_get_set_and_persist(self):
         opts = CustomOptions(self.path)
@@ -92,12 +93,6 @@ class CustomOptionsTests(unittest.TestCase):
 
         opts.set("auto_detect_stage_change", "enabled", True)
         self.assertEqual(seen, ["changed"])
-
-    def test_missing_subkey_returns_default(self):
-        opts = CustomOptions(self.path)
-        opts.load()
-        # 未设置的子键应回退到默认值
-        self.assertEqual(opts.get("auto_detect_stage_change", "check_interval_ms"), 100)
 
     def test_default_path_points_to_custom_options_json(self):
         p = Path(default_path())

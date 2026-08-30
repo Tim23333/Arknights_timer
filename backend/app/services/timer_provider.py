@@ -53,6 +53,9 @@ class TimerDataProvider:
         # 关卡切换检测：static_fields 时钟归 0（新关卡开始）判定用
         self._game_time_reset = False
         self._pending_reset_emit = False  # 归0待广播标志（锁外触发订阅者）
+        # 时间值变动检测：首次自动刷新需 guest 就绪 且 时间值已变动（进关卡开始走秒）
+        self._last_seen_game_time: Optional[float] = None
+        self._game_time_moved = False
         # 归0事件广播：订阅者列表（广播机制，非定向推送）
         self._reset_subscribers: list = []
         self._reset_lock = RLock()
@@ -244,6 +247,15 @@ class TimerDataProvider:
             self._game_time_reset = False
             return reset
 
+    def game_time_moved(self) -> bool:
+        """是否已检测到游戏时间值变动（进关卡开始走秒）。
+
+        首次自动刷新需 guest 就绪 且 时间值已变动；主界面空壳时钟恒 0
+        不动，不满足此条件。
+        """
+        with self._lock:
+            return self._game_time_moved
+
     def _ensure_connected(self) -> bool:
         if not self.reader:
             self._build_reader()
@@ -407,15 +419,28 @@ class TimerDataProvider:
             }
             return {"ok": False, "message": self._game_cache["message"]}
 
+        # 时间值变动检测：首次自动刷新需 guest 就绪 且 时间值已变动（进关卡开始走秒）。
+        # 主界面空壳时钟恒 0 不动，不视为"已进关卡"，避免误触发首次刷新。
+        if (self._last_seen_game_time is not None
+                and abs(game_time - self._last_seen_game_time) > 1e-6
+                and game_time > GAME_TIME_RESET_THRESHOLD):
+            self._game_time_moved = True
+        self._last_seen_game_time = game_time
+
         # 关卡切换检测：static_fields 时钟严格归 0（新关卡载入等待期，保持 0）
-        # 严格归0判定：time < 极小阈值 = 新关卡载入（归0会保持一段时间）
+        # 仅当已进过关卡（game_time_moved）后，归 0 才视为"关卡切换"广播；
+        # 主界面空壳时钟恒 0，game_time_moved 未置位，不广播避免误触发刷新。
         if game_time < GAME_TIME_RESET_THRESHOLD:
-            if not self._game_time_reset:
-                print(f"[自动寻址] 检测到时钟归0: cur={game_time:.6f}，"
-                      "判定新关卡开始", flush=True)
-                # 标记待广播（锁外由 refresh_sample 执行订阅者回调，避免死锁）
-                self._pending_reset_emit = True
-            self._game_time_reset = True
+            if self._game_time_moved:
+                if not self._game_time_reset:
+                    print(f"[自动寻址] 检测到时钟归0: cur={game_time:.6f}，"
+                          "判定新关卡开始", flush=True)
+                    # 标记待广播（锁外由 refresh_sample 执行订阅者回调，避免死锁）
+                    self._pending_reset_emit = True
+                self._game_time_reset = True
+            else:
+                # 未进关卡（主界面空壳），恒 0 不置归0标志
+                self._game_time_reset = False
         else:
             # time 恢复累计 → 解除归0标记，武装下次关卡切换
             self._game_time_reset = False
