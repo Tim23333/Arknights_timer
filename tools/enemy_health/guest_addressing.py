@@ -96,6 +96,8 @@ class GuestBattleClock:
                 continue
             self.static_fields = sf
             self.frame_addr = sf + gs.BattleControllerStaticFields.FIXED_FRAME_COUNT
+            # time_addr（+0x28 float）仅作诊断保留：读取路径实际从 frame_addr
+            # 起一次原子读 frame u32(+0x14) + FIXED_PLAY_TIME FP(+0x18)。
             self.time_addr = sf + gs.BattleControllerStaticFields.FIXED_PLAY_TIME_FLOAT
             self.last_error = ""
             return True

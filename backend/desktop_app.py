@@ -137,7 +137,9 @@ def _tlog(*a) -> None:
 #             f.write(f"[{time.strftime('%H:%M:%S')}] {message}\n")
 #     except Exception:
 #         pass
-    print(f"[自动寻址] {message}", flush=True)
+#    print(f"[自动寻址] {message}", flush=True)
+#    （2026-08-30 code review：上面这行原先漏注释，缩进落入 _tlog 体内，
+#    导致测试版早期诊断日志被错标 [自动寻址] 前缀打印，故补注释。）
 
 AUTO_REFRESH_MS = 8
 FAST_UI_MS = 8
@@ -1824,7 +1826,9 @@ class CoachWindow(QMainWindow):
         self._guest_addressing_gen = 0  # 递增代际，丢弃过期定位结果
         self._guest_addressing_active = False  # 定位线程是否在跑（防重复启动）
         self._guest_worker = None  # GuestAddressWorker，定位完成前持有
-        self._guest_ready_wait_count = 0  # guest 就绪等待轮询计数
+        # 自动寻址开关的纯 Python 镜像：_memory_worker 后台线程读此标志，
+        # 不直接跨线程读 Qt 复选框（isChecked 无跨线程保证）。
+        self._auto_addressing_enabled = False
         self._stop_event = threading.Event()
 
         self._hook_port: int = 0
@@ -2840,7 +2844,7 @@ class CoachWindow(QMainWindow):
 
     def _maybe_relocate_guest_clock(self) -> None:
         """guest 时钟地址失效时自动重新定位（防游戏重启后静默失败）。"""
-        if not self.chk_auto_addressing.isChecked():
+        if not self._auto_addressing_enabled:
             return
         if self._guest_clock is None:
             return
@@ -3444,6 +3448,9 @@ class CoachWindow(QMainWindow):
 
     def _on_auto_addressing_toggled(self, checked: bool) -> None:
         """开关「启用自动寻址」；开启后后台定位 guest 时钟并持续读 frame/time。"""
+        # 先同步纯 Python 镜像标志（_memory_worker 后台线程只读它，
+        # 不跨线程读 Qt 复选框）
+        self._auto_addressing_enabled = bool(checked)
         if checked:
             # 防重复启动：已有定位线程在跑时直接跳过
             if self._guest_clock is not None or self._guest_addressing_active:
@@ -3487,14 +3494,21 @@ class CoachWindow(QMainWindow):
                     pass
             return
         if ok and clock is not None:
-            self._guest_clock = clock
+            old_clock, self._guest_clock = self._guest_clock, clock
             self._provider.configure_guest(clock)
+            # 重定位场景：旧 clock 的 memsrv 通道显式关闭，不依赖 GC 兜底
+            if old_clock is not None and old_clock is not clock:
+                try:
+                    old_clock.close()
+                except Exception:
+                    pass
 #            _ga_log("  configure_guest 完成，弹成功 toast")
             if self._toast is not None:
                 self._toast.show(
                     "自动寻址成功，已启用 guest 时钟", semantic="success")
         else:
 #            _ga_log("  失败，回滚开关 + 弹错误 toast")
+            self._auto_addressing_enabled = False
             self._custom_options.set(
                 "auto_addressing", "enabled", False)
             self.chk_auto_addressing.blockSignals(True)
@@ -3528,6 +3542,7 @@ class CoachWindow(QMainWindow):
         """从 custom_options 载入「启用自动寻址」开关状态。"""
         opts = self._custom_options.get("auto_addressing") or {}
         enabled = bool(opts.get("enabled", False))
+        self._auto_addressing_enabled = enabled
         self.chk_auto_addressing.blockSignals(True)
         self.chk_auto_addressing.setChecked(enabled)
         self.chk_auto_addressing.blockSignals(False)
@@ -3561,37 +3576,49 @@ class CoachWindow(QMainWindow):
            （模拟器/寻址异常时中止，不永久阻塞）。
         2. 等游戏时间值变动（进关卡开始走秒）——主界面空壳时钟恒 0 不动，
            永久等待，用户可能长时间停留主界面后才进关卡。
+
+        两阶段轮询均复查 _auto_refresh_enabled：等待期间用户关闭开关时，
+        取消挂起的初始刷新（_run_auto_refresh 亦有兜底守卫）。
         """
+        if not self._auto_refresh_enabled:
+            return
         if self._guest_ready():
 #            _ga_log("[自动刷新] guest 已就绪，进入时间变动等待")
             self._wait_game_time_moved_then_refresh()
             return
 
+        ready_polls = {"count": 0}  # 每条等待链独立计数，避免多链共享互相干扰
+
         def _poll_ready() -> None:
+            if not self._auto_refresh_enabled:
+                return  # 等待期间开关被关闭，取消挂起的初始刷新
             if self._guest_ready():
 #                _ga_log("[自动刷新] 等待后 guest 就绪，进入时间变动等待")
                 self._wait_game_time_moved_then_refresh()
                 return
-            if self._guest_ready_wait_count >= GUEST_READY_TIMEOUT_MS // 500:
+            if ready_polls["count"] >= GUEST_READY_TIMEOUT_MS // 500:
 #                _ga_log(f"[自动刷新] guest 就绪等待超时（{GUEST_READY_TIMEOUT_MS}ms），中止")
                 if self._auto_refresh_step:
                     self._abort_auto_refresh("guest 时间源未就绪（请先完成寻址）")
                 return
-            self._guest_ready_wait_count += 1
+            ready_polls["count"] += 1
             QTimer.singleShot(500, _poll_ready)
 
-        self._guest_ready_wait_count = 0
 #        _ga_log("[自动刷新] guest 未就绪，开始等待…")
         QTimer.singleShot(500, _poll_ready)
 
     def _wait_game_time_moved_then_refresh(self) -> None:
         """永久等待游戏时间值变动（进关卡走秒），满足后执行自动刷新链。"""
+        if not self._auto_refresh_enabled:
+            return
         if self._provider.game_time_moved():
 #            _ga_log("[自动刷新] 时间已变动，执行刷新链")
             QTimer.singleShot(0, self._run_auto_refresh)
             return
 
         def _poll_moved() -> None:
+            if not self._auto_refresh_enabled:
+                return  # 等待期间开关被关闭，取消挂起的初始刷新
             if self._provider.game_time_moved():
 #                _ga_log("[自动刷新] 等待后时间已变动，执行刷新链")
                 QTimer.singleShot(0, self._run_auto_refresh)
@@ -3619,6 +3646,8 @@ class CoachWindow(QMainWindow):
 
     def _run_auto_refresh(self) -> None:
         """检测到关卡切换后，按顺序自动刷新 ①操作记录 ②敌人/干员 ④随机数。"""
+        if not self._auto_refresh_enabled:
+            return  # 开关已关闭（含等待期间被关闭的挂起触发），不启动刷新链
         if self._auto_refresh_step is not None:
 #            _ga_log(f"[自动刷新] 已在流程中(_auto_refresh_step={self._auto_refresh_step})，忽略重入")
             return  # 已在刷新流程中，避免重入

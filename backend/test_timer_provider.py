@@ -58,6 +58,33 @@ class TimerDataProviderTimelineTests(unittest.TestCase):
         self.assertIn("寻址工具", result.get("message", ""))
 
     @patch('backend.app.services.timer_provider.AKMemoryReader')
+    def test_configure_guest_resets_stage_detection_state(self, _reader_cls):
+        """换数据源即换基线：旧局的走秒/归0状态不带入新源。
+
+        回归 PR#3 review P3：重定位成功（游戏重启后）首读 time=0，
+        若旧局残留 _game_time_moved 会被误判为关卡切换并广播，
+        在主界面触发一轮注定失败的自动刷新链。
+        """
+        provider = TimerDataProvider()
+        reader = FakeGuestReader()
+        provider.configure_guest(reader)
+
+        # 第一局：走秒置 moved（0.0 → 10.0 两次采样）
+        reader.set_clock(0, 0.0)
+        provider.refresh_sample()
+        reader.set_clock(300, 10.0)
+        provider.refresh_sample()
+        self.assertTrue(provider.game_time_moved())
+
+        # 模拟游戏重启后重定位：换新 reader，首读 time=0（主界面空壳）
+        reader2 = FakeGuestReader(time_value=0.0, frame_value=0)
+        provider.configure_guest(reader2)
+        self.assertFalse(provider.game_time_moved())
+        provider.refresh_sample()
+        # 旧局残留状态已清零 → time=0 不触发归0广播
+        self.assertFalse(provider.consume_game_time_reset())
+
+    @patch('backend.app.services.timer_provider.AKMemoryReader')
     def test_game_time_reset_detects_new_stage(self, _reader_cls):
         """进过关卡（time 变动）后归 0 → 判定新关卡（consume 返回 True）。"""
         provider = TimerDataProvider()

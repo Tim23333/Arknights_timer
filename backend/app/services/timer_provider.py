@@ -59,6 +59,7 @@ class TimerDataProvider:
         # 归0事件广播：订阅者列表（广播机制，非定向推送）
         self._reset_subscribers: list = []
         self._reset_lock = RLock()
+        self._guest_fail_count = 0  # guest 读取连续失败计数（限流日志用）
         self._frame_times = array("d")
         self._frame_counts = array("Q")
         self._game_cache: Dict[str, Any] = {
@@ -196,6 +197,17 @@ class TimerDataProvider:
         with self._lock:
             self._guest_reader = reader
             self._clear_frame_timeline()
+            # 换数据源即换基线：清掉上一局的归0/走秒检测状态。
+            # 否则重定位成功后首读 time=0 会被上一局残留的 _game_time_moved
+            # 误判为"关卡切换"，在主界面触发一轮注定失败的自动刷新链。
+            self._reset_stage_detection_state_locked()
+
+    def _reset_stage_detection_state_locked(self) -> None:
+        """复位关卡切换/走秒检测状态（须在 _lock 内调用）。"""
+        self._game_time_reset = False
+        self._pending_reset_emit = False
+        self._last_seen_game_time = None
+        self._game_time_moved = False
 
     def subscribe_game_time_reset(self, callback) -> None:
         """注册时钟归 0（新关卡开始）事件回调；广播机制，可多订阅者。
@@ -235,7 +247,7 @@ class TimerDataProvider:
         with self._lock:
             self._guest_reader = None
             self._clear_frame_timeline()
-            self._game_time_reset = False
+            self._reset_stage_detection_state_locked()
 
     def consume_game_time_reset(self) -> bool:
         """消费并清除"时钟归 0"标志；返回此前是否检测到新关卡开始。
@@ -328,52 +340,56 @@ class TimerDataProvider:
             # guest 侧路径：auto_addressing 开启时注入，优先于此采样。
             if self._guest_reader is not None:
                 result = self._refresh_sample_guest()
-                # 归0广播：标记后锁外触发订阅者（避免在锁内执行回调导致死锁）
+                # 归0广播：仅置标记，统一移到锁外触发订阅者
+                # （避免持 _lock 执行回调：慢回调会卡死轮询线程与全部持锁调用方）
                 if self._pending_reset_emit:
                     self._pending_reset_emit = False
                     pending_emit = True
-                # 锁外广播由本方法返回前统一处理，这里不提前 return
-                if pending_emit:
-                    self._emit_reset_broadcast()
-                return result
+            else:
+                result = self._refresh_sample_host()
+        if pending_emit:
+            self._emit_reset_broadcast()
+        return result
 
-            if not self.reader or not self.reader.time_address:
-                return {"ok": False, "message": self._game_cache.get("message", "未配置地址。")}
+    def _refresh_sample_host(self) -> Dict[str, Any]:
+        """宿主 pymem 路径采样（须在 _lock 内调用）。"""
+        if not self.reader or not self.reader.time_address:
+            return {"ok": False, "message": self._game_cache.get("message", "未配置地址。")}
 
-            if not self._ensure_connected():
-                self._game_cache = {
-                    **self._game_cache,
-                    "connected": False,
-                    "game_time": None,
-                    "frame_count": None,
-                    "message": "进程连接断开，请确认模拟器仍在运行。",
-                }
-                return {"ok": False, "message": self._game_cache["message"]}
-
-            game_time, frame_count = self.reader.get_game_data()
-            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-            if game_time is None or frame_count is None:
-                self._game_cache = {
-                    **self._game_cache,
-                    "game_time": None,
-                    "frame_count": None,
-                    "message": "读取内存失败，请确认对局进行中且地址仍有效。",
-                    "last_refresh": now,
-                }
-                return {"ok": False, "message": self._game_cache["message"]}
-
-            self._record_frame_sample(game_time, frame_count)
-
+        if not self._ensure_connected():
             self._game_cache = {
-                "connected": True,
-                "configured": True,
-                "game_time": game_time,
-                "frame_count": frame_count,
-                "message": "ok",
+                **self._game_cache,
+                "connected": False,
+                "game_time": None,
+                "frame_count": None,
+                "message": "进程连接断开，请确认模拟器仍在运行。",
+            }
+            return {"ok": False, "message": self._game_cache["message"]}
+
+        game_time, frame_count = self.reader.get_game_data()
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        if game_time is None or frame_count is None:
+            self._game_cache = {
+                **self._game_cache,
+                "game_time": None,
+                "frame_count": None,
+                "message": "读取内存失败，请确认对局进行中且地址仍有效。",
                 "last_refresh": now,
             }
-            return {"ok": True, "game_time": game_time, "frame_count": frame_count}
+            return {"ok": False, "message": self._game_cache["message"]}
+
+        self._record_frame_sample(game_time, frame_count)
+
+        self._game_cache = {
+            "connected": True,
+            "configured": True,
+            "game_time": game_time,
+            "frame_count": frame_count,
+            "message": "ok",
+            "last_refresh": now,
+        }
+        return {"ok": True, "game_time": game_time, "frame_count": frame_count}
 
     def _refresh_sample_guest(self) -> Dict[str, Any]:
         """guest 侧采样：读 BattleController static_fields 的 frame/time。
@@ -394,7 +410,7 @@ class TimerDataProvider:
             frame_count, game_time = result
         except Exception as exc:
             # 每 200 次失败打一次日志（避免高频刷屏）；last_error 由 reader 记录
-            self._guest_fail_count = getattr(self, "_guest_fail_count", 0) + 1
+            self._guest_fail_count += 1
             if self._guest_fail_count % 200 == 1:
                 last_err = getattr(self._guest_reader, "last_error", "")
                 print(f"[自动寻址] guest 读取失败: {exc} | {last_err}", flush=True)
