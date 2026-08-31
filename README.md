@@ -323,21 +323,27 @@ python -m tools.enemy_health.update_from_unpack --assets <热更解包目录>
 
 ## WebSocket 接口
 
-主程序启动后会开启 WebSocket 服务，推送实时游戏数据：
+主程序默认在本机 `127.0.0.1:8765` 提供版本化 WebSocket 服务。可在「更多自定义选项」单独关闭；关闭后不保留监听端口或后台服务线程。
+
+- 游戏数据：`ws://127.0.0.1:8765/v1/game`
+- 运维状态：`ws://127.0.0.1:8765/v1/ops`
+
+游戏端点连接后按需订阅主题和频率，而不是接收无差别推送：
 
 ```json
 {
-  "game_time": 12.345,
-  "frame_count": 741,
-  "connected": true,
-  "speed_level": 2,
-  "speed_name": "2倍速",
-  "timescale": 2.0,
-  "is_paused": false
+  "type": "subscribe",
+  "topics": {
+    "battle": {"rateHz": 20},
+    "enemies": {"rateHz": 10},
+    "enemy_detail": {"scope": "all", "rateHz": 60}
+  }
 }
 ```
 
-连接地址见程序右上角「接口说明」按钮。
+服务端消息均含 `type`、`schemaVersion`、`sessionId`、`sequence`、`emittedAt` 和 `data`。可订阅 `battle`、`stage`、`enemies`、`characters`、`enemy_detail`、`character_detail`、`deploy`、`rng` 与 `quality`。详情数据由共享采样缓存生成，所有客户端复用同一份读取结果；60Hz 是可请求的上限，实际频率会受数据读取质量约束。
+
+连接地址与简要示例也可在程序右上角「接口说明」查看。
 
 ## 技术栈
 

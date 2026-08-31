@@ -161,7 +161,7 @@ class EnemyUiTests(unittest.TestCase):
     def test_enemy_mini_mode_expands_to_twenty_and_supports_mouse_actions(self):
         with tempfile.TemporaryDirectory() as temp_dir, \
                 patch.object(CoachWindow, '_start_hook_server', lambda self: None), \
-                patch.object(CoachWindow, '_start_ws_server', lambda self: None), \
+                patch.object(CoachWindow, '_start_websocket_api', lambda self: None), \
                 patch.object(CoachWindow, '_start_workers', lambda self: None), \
                 patch.object(CoachWindow, '_start_timers', lambda self: None):
             window = CoachWindow()
@@ -242,7 +242,7 @@ class EnemyUiTests(unittest.TestCase):
 
     def test_main_sections_collapse_and_enemy_table_uses_freed_height(self):
         with patch.object(CoachWindow, '_start_hook_server', lambda self: None), \
-                patch.object(CoachWindow, '_start_ws_server', lambda self: None), \
+                patch.object(CoachWindow, '_start_websocket_api', lambda self: None), \
                 patch.object(CoachWindow, '_start_workers', lambda self: None), \
                 patch.object(CoachWindow, '_start_timers', lambda self: None):
             window = CoachWindow()
@@ -288,7 +288,7 @@ class EnemyUiTests(unittest.TestCase):
 
     def test_every_main_section_can_float_and_dock_without_recreating_content(self):
         with patch.object(CoachWindow, '_start_hook_server', lambda self: None), \
-                patch.object(CoachWindow, '_start_ws_server', lambda self: None), \
+                patch.object(CoachWindow, '_start_websocket_api', lambda self: None), \
                 patch.object(CoachWindow, '_start_workers', lambda self: None), \
                 patch.object(CoachWindow, '_start_timers', lambda self: None):
             window = CoachWindow()
@@ -640,7 +640,7 @@ class EnemyUiTests(unittest.TestCase):
     def test_main_table_physically_reorders_when_pending_enemy_spawns(self):
         with tempfile.TemporaryDirectory() as temp_dir, \
                 patch.object(CoachWindow, '_start_hook_server', lambda self: None), \
-                patch.object(CoachWindow, '_start_ws_server', lambda self: None), \
+                patch.object(CoachWindow, '_start_websocket_api', lambda self: None), \
                 patch.object(CoachWindow, '_start_workers', lambda self: None), \
                 patch.object(CoachWindow, '_start_timers', lambda self: None):
             window = CoachWindow()

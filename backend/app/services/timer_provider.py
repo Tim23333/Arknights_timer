@@ -67,6 +67,7 @@ class TimerDataProvider:
             "configured": False,
             "game_time": None,
             "frame_count": None,
+            "source": None,
             "message": "请先运行「打开寻址工具」完成扫描。",
             "last_refresh": None,
         }
@@ -386,6 +387,7 @@ class TimerDataProvider:
             "configured": True,
             "game_time": game_time,
             "frame_count": frame_count,
+            "source": "host",
             "message": "ok",
             "last_refresh": now,
         }
@@ -467,6 +469,7 @@ class TimerDataProvider:
             "configured": True,
             "game_time": game_time,
             "frame_count": frame_count,
+            "source": "guest",
             "message": "ok",
             "last_refresh": now,
         }
