@@ -13,10 +13,10 @@
 
 | 数据 | 路径 | 用途 |
 |---|---|---|
-| sim bundle | `G:\Arknights\ark_parser\enemy\data\stage_sim_bundle.json` | `levels[levelId]` 含 options/routes/waveTimeline/enemyDbRefs/enemyRoster/randomSeed；`stages[stageId] -> levelId` |
-| 原始关卡 | `G:\Arknights\ark_parser\enemy\data\levels\level_main_01-01.json` | mapData.tiles / routes[].checkpoints / waves 原始结构（校准） |
-| 敌人库 | `G:\Arknights\ark_parser\enemy\data\enemy_database.json` | enemyId -> [{level, data{attributes, skills, spData, lifePointReduce, motion, enemyTags}}] |
-| 技能目录 | `G:\Arknights\ark_parser\enemy\data\skill_behavior_catalog.json` | enemyId -> {prefabKey, blackboard, priority, cooldown, initCooldown, spCost, enemySkill, abilities, buffKeys} |
+| sim bundle | `ark_parser/enemy/data/stage_sim_bundle.json` | `levels[levelId]` 含 options/routes/waveTimeline/enemyDbRefs/enemyRoster/randomSeed；`stages[stageId] -> levelId` |
+| 原始关卡 | `ark_parser/enemy/data/levels/level_main_01-01.json` | mapData.tiles / routes[].checkpoints / waves 原始结构（校准） |
+| 敌人库 | `ark_parser/enemy/data/enemy_database.json` | enemyId -> [{level, data{attributes, skills, spData, lifePointReduce, motion, enemyTags}}] |
+| 技能目录 | `ark_parser/enemy/data/skill_behavior_catalog.json` | enemyId -> {prefabKey, blackboard, priority, cooldown, initCooldown, spCost, enemySkill, abilities, buffKeys} |
 
 ## 3. 模块归属
 

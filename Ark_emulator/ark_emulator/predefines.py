@@ -18,8 +18,10 @@ import json
 import os
 import struct
 
-_INDEX = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                      "data_level_assets_index.json")
+from .project_paths import LEVEL_ASSETS_INDEX, resolve_project_path
+
+
+_INDEX = str(LEVEL_ASSETS_INDEX)
 _index_cache = None
 
 
@@ -28,7 +30,8 @@ def _asset_path(level_id):
     if _index_cache is None:
         with _io.open(_INDEX, encoding="utf-8") as f:
             _index_cache = json.load(f)
-    return _index_cache.get(level_id)
+    path = _index_cache.get(level_id)
+    return str(resolve_project_path(path)) if path else None
 
 
 class _FB:

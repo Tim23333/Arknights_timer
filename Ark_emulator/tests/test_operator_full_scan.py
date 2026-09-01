@@ -8,6 +8,7 @@ import json
 import multiprocessing
 import os
 import sys
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -15,9 +16,9 @@ from ark_emulator import Simulator
 
 
 def _operators():
-    d = json.load(open(
-        r"G:\Arknights\ark_parser\character\data\characters.json",
-        encoding="utf-8"))
+    project_root = Path(__file__).resolve().parents[2]
+    characters = project_root / "ark_parser" / "character" / "data" / "characters.json"
+    d = json.load(open(characters, encoding="utf-8"))
     ops = []
     for k, v in d.items():
         if k.startswith(("token_", "trap_")):

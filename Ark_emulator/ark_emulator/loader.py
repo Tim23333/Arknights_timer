@@ -18,8 +18,17 @@ import io
 import json
 import os
 
-_DEFAULT_DIR = r"G:\Arknights\ark_parser\enemy\data"
-_CHAR_DIR = r"G:\Arknights\ark_parser\character\data"
+from .project_paths import (
+    CHARACTER_DATA_DIR,
+    ENEMY_DATA_DIR,
+    EXTRACT_LEVEL_DATA,
+    LEVEL_ASSETS_INDEX,
+    resolve_project_path,
+)
+
+
+_DEFAULT_DIR = str(ENEMY_DATA_DIR)
+_CHAR_DIR = str(CHARACTER_DATA_DIR)
 
 
 def _load(path):
@@ -88,8 +97,8 @@ class DataStore:
     # per-instance init below no longer shadows it)
     _levels = _LEVELS_CACHE
 
-    def __init__(self, data_dir=_DEFAULT_DIR):
-        self.data_dir = data_dir
+    def __init__(self, data_dir=None):
+        self.data_dir = os.path.abspath(os.fspath(data_dir or _DEFAULT_DIR))
         self._bundle = None
         self._enemy_db = None
         self._flying = None
@@ -98,8 +107,12 @@ class DataStore:
         self._characters = None
         self._skills = None
         self._op_prefabs = None
-        self._char_dir = _CHAR_DIR if data_dir == _DEFAULT_DIR else \
-            os.path.join(data_dir, "..", "character", "data")
+        is_default_dir = (
+            os.path.normcase(os.path.normpath(self.data_dir))
+            == os.path.normcase(os.path.normpath(_DEFAULT_DIR))
+        )
+        self._char_dir = _CHAR_DIR if is_default_dir else os.path.abspath(
+            os.path.join(self.data_dir, "..", "..", "character", "data"))
         self._level_assets = None
         self._overrides = None
         self._prefab_overrides = None
@@ -782,10 +795,10 @@ class DataStore:
         if level_id in self._levels:
             return self._levels[level_id]
         if self._level_assets is None:
-            idx = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                               "data_level_assets_index.json")
+            idx = str(LEVEL_ASSETS_INDEX)
             self._level_assets = _load(idx) if os.path.exists(idx) else {}
         asset = self._level_assets.get(level_id)
+        asset = str(resolve_project_path(asset)) if asset else None
         if asset and os.path.exists(asset):
             try:
                 sys_path_ok = _parse_level_asset(asset, level_id)
@@ -905,9 +918,8 @@ def _parse_level_asset(asset_path, level_id):
     extracted levels/<id>.json. Returns True on success."""
     import sys
     import importlib.util
-    import os as _os
     spec = importlib.util.spec_from_file_location(
-        "extract_level_data", r"G:\Arknights\ark_parser\enemy\extract_level_data.py")
+        "extract_level_data", str(EXTRACT_LEVEL_DATA))
     ext = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(ext)
     out = ext.parse_level_file(asset_path)

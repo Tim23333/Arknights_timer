@@ -2,6 +2,7 @@
 """Custom level injection tests."""
 import os
 import sys
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -23,9 +24,9 @@ def test_custom_level_runs():
         [e["row"] for e in snap["enemies"]]
 
 
-def test_custom_level_save_load_roundtrip():
+def test_custom_level_save_load_roundtrip(tmp_path):
     lv = build_level(rows=4, cols=6, name="rt_test")
-    path = save_level(lv, directory=r"G:\Arknights\Ark_emulator\custom_levels")
+    path = save_level(lv, directory=tmp_path)
     loaded = load_level(path)
     assert loaded["map"]["rows"] == 4
     assert loaded["map"]["cols"] == 6
@@ -71,7 +72,8 @@ def test_multipoint_route_runs():
 
 def test_route_aware_bot_clears_1_1():
     import sys as _sys
-    _sys.path.insert(0, r"G:\Arknights\Ark_emulator\examples")
+    examples_dir = Path(__file__).resolve().parents[1] / "examples"
+    _sys.path.insert(0, str(examples_dir))
     from bot import Bot
     squad = [
         {"charId": "char_149_scave", "level": 50, "phase": 2},

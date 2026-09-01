@@ -14,11 +14,13 @@ times are extracted when the binary layout is unambiguous.
 import io
 import os
 
+from .project_paths import SPINE_ASSET_LIB
+
 
 def _load_spine_lib():
     """Locate the spine_asset library (wheel extracted in unpack_work)."""
     candidates = [
-        r"G:\Arknights\unpack_work\spine_asset_lib",
+        str(SPINE_ASSET_LIB),
     ]
     for c in candidates:
         if os.path.isdir(c) and os.path.exists(os.path.join(c, "spine_asset")):

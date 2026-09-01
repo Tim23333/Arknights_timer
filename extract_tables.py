@@ -10,6 +10,7 @@ Table identifiers are matched by prefix (hash suffix may change between game ver
 import os
 import re
 import shutil
+import struct
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent
@@ -50,6 +51,8 @@ TABLE_PREFIXES = [
 
 # Compiled pattern: match any table prefix followed by hex hash
 TABLE_PATTERN = re.compile(rf"({'|'.join(TABLE_PREFIXES)})[a-f0-9]{{4,}}")
+TABLE_FULL_PATTERN = re.compile(
+    rf"^({'|'.join(TABLE_PREFIXES)})[a-f0-9]{{4,}}$")
 
 
 def scan_cab_file(filepath: Path) -> str | None:
@@ -57,6 +60,14 @@ def scan_cab_file(filepath: Path) -> str | None:
     try:
         with open(filepath, "rb") as f:
             header = f.read(8192)
+        # exportRaw 剥离版以 [u32 名称长度][表名] 开头。优先按长度精确读取，
+        # 避免签名头首字节恰为 ASCII 十六进制字符时被正则误拼进表 ID。
+        if len(header) >= 4:
+            name_len = struct.unpack_from("<I", header, 0)[0]
+            if 0 < name_len <= 256 and 4 + name_len <= len(header):
+                table_id = header[4:4 + name_len].decode("ascii", errors="ignore")
+                if TABLE_FULL_PATTERN.fullmatch(table_id):
+                    return table_id
         # Find ASCII strings in header
         text = header.decode("ascii", errors="ignore")
         match = TABLE_PATTERN.search(text)

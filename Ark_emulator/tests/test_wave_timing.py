@@ -8,6 +8,7 @@ end-to-end timing.
 import os
 import sys
 import json
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -19,7 +20,7 @@ from ark_emulator.events import EventType
 from ark_emulator.rng import SystemRandomClone
 
 
-DATA = r"G:\Arknights\ark_parser\enemy\data\levels"
+DATA = Path(__file__).resolve().parents[2] / "ark_parser" / "enemy" / "data" / "levels"
 
 
 def _raw_waves(level_id):
