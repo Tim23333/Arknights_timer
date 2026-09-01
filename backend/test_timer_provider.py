@@ -106,6 +106,40 @@ class TimerDataProviderTimelineTests(unittest.TestCase):
         self.assertFalse(provider.consume_game_time_reset())
 
     @patch('backend.app.services.timer_provider.AKMemoryReader')
+    def test_consuming_reset_does_not_rearm_during_same_zero_window(self, _reader_cls):
+        """消费事件不解除归零锁存；持续为 0 时不能重复产生同一事件。"""
+        provider = TimerDataProvider()
+        reader = FakeGuestReader()
+        provider.configure_guest(reader)
+
+        reader.set_clock(0, 0.0)
+        provider.refresh_sample()
+        reader.set_clock(30, 1.0)
+        provider.refresh_sample()
+        reader.set_clock(0, 0.0)
+        provider.refresh_sample()
+        self.assertTrue(provider.consume_game_time_reset())
+
+        # 仍处于同一个归零窗口，不应因为 consume 清除了事件位而重新触发。
+        provider.refresh_sample()
+        self.assertFalse(provider.consume_game_time_reset())
+
+    @patch('backend.app.services.timer_provider.AKMemoryReader')
+    def test_host_reader_participates_in_stage_detection(self, _reader_cls):
+        """手动宿主寻址与 guest 使用同一套走秒/归零检测。"""
+        provider = TimerDataProvider()
+        provider.reader = FakeHostReader([(0.0, 0), (1.0, 30), (0.0, 0)])
+        notified = []
+        provider.subscribe_game_time_reset(lambda: notified.append("reset"))
+
+        self.assertTrue(provider.refresh_sample()["ok"])
+        self.assertTrue(provider.refresh_sample()["ok"])
+        self.assertTrue(provider.game_time_moved())
+        self.assertTrue(provider.refresh_sample()["ok"])
+        self.assertEqual(notified, ["reset"])
+        self.assertTrue(provider.consume_game_time_reset())
+
+    @patch('backend.app.services.timer_provider.AKMemoryReader')
     def test_game_time_reset_ignored_before_moved(self, _reader_cls):
         """未进过关卡（time 恒 0）时归 0 不广播（主界面空壳不误触发）。"""
         provider = TimerDataProvider()
@@ -218,6 +252,21 @@ class FakeGuestReader:
     def read_battle_clock(self):
         self.read_count += 1
         return (self._frame, self._time)
+
+
+class FakeHostReader:
+    """按序返回 (game_time, frame_count) 的宿主 pymem 假 reader。"""
+
+    def __init__(self, values):
+        self.time_address = 1
+        self.pm = object()
+        self._values = iter(values)
+
+    def connect(self):
+        return True
+
+    def get_game_data(self):
+        return next(self._values)
 
 
 if __name__ == '__main__':

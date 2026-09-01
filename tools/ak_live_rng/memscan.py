@@ -69,8 +69,11 @@ class PymemReader:
     def __init__(self, pm):
         self.pm = pm
         self.handle = pm.process_handle
+        self._closed = False
 
     def read(self, addr, size):
+        if self._closed:
+            return None
         import pymem.exception
         import pymem.memory
         try:
@@ -79,6 +82,8 @@ class PymemReader:
             return None
 
     def regions(self, scope="all"):
+        if self._closed:
+            return []
         import pymem.memory
         chunks = []
         curr = 0
@@ -96,6 +101,16 @@ class PymemReader:
             except Exception:
                 break
         return chunks
+
+    def close(self):
+        """释放 pymem 进程句柄；重复调用安全。"""
+        if self._closed:
+            return
+        self._closed = True
+        try:
+            self.pm.close_process()
+        except Exception:
+            pass
 
 
 def read_u64(reader, addr):

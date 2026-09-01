@@ -69,6 +69,40 @@ def _add_data_arg(src: Path, dst: str) -> str:
     return f"{src}{sep}{dst}"
 
 
+def _pyinstaller_env() -> dict:
+    """返回隔离外部 ICU 污染的 PyInstaller 子进程环境。
+
+    Qt6Core 在 Windows 上链接系统 ``icuuc.dll``。Codex/文档工具等宿主环境
+    可能把自带 Poppler 的 ICU 目录放进 PATH；PyInstaller 的依赖扫描会把那份
+    不兼容 ICU 误收进包，导致冻结程序导入 PySide6.QtCore 时出现 WinError 127
+    （找不到指定的程序）。构建时移除所有带非系统 icuuc.dll 的 PATH 项，并把
+    System32 放在最前，让扫描器识别并排除 Windows 自带 ICU。
+    """
+    env = os.environ.copy()
+    if os.name != "nt":
+        return env
+
+    system_root = Path(env.get("SystemRoot", r"C:\Windows"))
+    system32 = system_root / "System32"
+    system32_key = os.path.normcase(os.path.abspath(str(system32)))
+    kept = []
+    removed = []
+    for raw in env.get("PATH", "").split(os.pathsep):
+        if not raw:
+            continue
+        path_key = os.path.normcase(os.path.abspath(raw))
+        if path_key == system32_key:
+            continue  # 下方统一只在 PATH 首位放一份 System32
+        if path_key != system32_key and (Path(raw) / "icuuc.dll").is_file():
+            removed.append(raw)
+            continue
+        kept.append(raw)
+    env["PATH"] = os.pathsep.join([str(system32), *kept])
+    if removed:
+        print("[INFO] PyInstaller 已隔离外部 ICU PATH: " + ", ".join(removed))
+    return env
+
+
 def _frontend_version(repo_root: Path) -> str:
     """前端版本的唯一配置入口是 frontend/package.json 的 version 字段
     (页面标题与页头展示的版本号也由它注入)。"""
@@ -267,7 +301,7 @@ def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args,
     print("[INFO] 开始打包主程序...")
     print("[INFO] 命令:\n  " + " ".join(f'"{c}"' if " " in c else c for c in cmd))
 
-    proc = subprocess.run(cmd, cwd=str(backend_dir))
+    proc = subprocess.run(cmd, cwd=str(backend_dir), env=_pyinstaller_env())
     if proc.returncode != 0:
         print(f"[ERROR] 主程序打包失败，退出码={proc.returncode}")
         return proc.returncode
@@ -324,7 +358,7 @@ def _build_timer_tool(backend_dir: Path, repo_root: Path, icon_path: Path, args)
     print("[INFO] 开始打包寻址工具...")
     print("[INFO] 命令:\n  " + " ".join(f'"{c}"' if " " in c else c for c in cmd))
 
-    proc = subprocess.run(cmd, cwd=str(backend_dir))
+    proc = subprocess.run(cmd, cwd=str(backend_dir), env=_pyinstaller_env())
     if proc.returncode != 0:
         print(f"[ERROR] 寻址工具打包失败，退出码={proc.returncode}")
         return proc.returncode

@@ -14,6 +14,7 @@
 
 import os
 import sys
+import threading
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 
@@ -24,12 +25,39 @@ SCAN_MERGE_MAX = 256 * 1024 * 1024   # 设备侧扫描单调用合并上限 (防
 RNG_TCP_PORT = 27272   # RNG 通道独立端口, 与敌人监控 (默认 27271) 的 adb forward 互不干扰
 
 
+class _RngTcpChannel(TcpChannel):
+    """stop 后禁止旧的局部 channel 引用通过 batch_read() 自动重连。"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._permanent_stop = threading.Event()
+
+    def open(self):
+        if self._permanent_stop.is_set():
+            raise RuntimeError("RNG TCP 通道已永久关闭")
+        try:
+            super().open()
+        finally:
+            # 与 close_permanently() 竞态时，open 完成后再检查一次，确保刚建立
+            # 的 socket 不会在 stop() 返回后遗留。
+            if self._permanent_stop.is_set():
+                super().close()
+        if self._permanent_stop.is_set():
+            raise RuntimeError("RNG TCP 通道已永久关闭")
+
+    def close_permanently(self):
+        self._permanent_stop.set()
+        super().close()
+
+
 class AdbReader:
     """memscan 读取协议实现: read(addr, size) + regions(scope) + scan_regions。"""
 
     def __init__(self, mc: MemCore):
         self.mc = mc
         self.chan = None
+        self._channel_lock = threading.RLock()
+        self._closed = False
 
     # ---------------- 连接 ----------------
 
@@ -41,17 +69,34 @@ class AdbReader:
         status("[adb] 已连接 %s / %s pid=%d, maps %d 区域" % (
             mc.adb_serial, mc.package, pid, len(mc.regions)))
         reader = cls(mc)
-        reader._open_channel(status)
+        try:
+            reader._open_channel(status)
+        except Exception:
+            # mc.connect() 会建立一次默认端口的诊断通道；RNG 专用通道建立
+            # 失败时也必须回收它，不能等不确定的析构时机。
+            reader.close()
+            raise
         return reader
 
     def _open_channel(self, status=print):
-        self.chan = TcpChannel(self.mc, port=RNG_TCP_PORT)
-        self.chan.open()
-        if self.chan.srv_version != 4:
-            self.chan.close()
-            self.chan = None
-            raise RuntimeError("RNG 读取仅支持 memsrv v4")
+        with self._channel_lock:
+            if self._closed:
+                raise RuntimeError("RNG reader 已关闭")
+            channel = _RngTcpChannel(self.mc, port=RNG_TCP_PORT)
+            channel.open()
+            if channel.srv_version != 4:
+                channel.close()
+                raise RuntimeError("RNG 读取仅支持 memsrv v4")
+            self.chan = channel
         status("[adb] memsrv v4 通道已建立")
+
+    def _channel(self):
+        with self._channel_lock:
+            if self._closed:
+                raise RuntimeError("RNG reader 已关闭")
+            if self.chan is None:
+                self._open_channel()
+            return self.chan
 
     def ensure_alive(self, status=print):
         """游戏重启后自愈: pid 变化则重连。"""
@@ -67,9 +112,12 @@ class AdbReader:
         status("[adb] 游戏 pid 变化 (%s -> %s), 重新连接" % (self.mc.pid, pid))
         self.mc.pid = pid
         self.mc.reload_maps()
-        if self.chan:
-            self.chan.close()
-            self.chan = None
+        with self._channel_lock:
+            if self._closed:
+                return False
+            if self.chan:
+                self.chan.close()
+                self.chan = None
         self._open_channel(status)
         return True
 
@@ -82,9 +130,8 @@ class AdbReader:
         合并相邻块减少往返与边界漏报。服务或通道异常直接上抛。"""
         if not needles:
             return {}
-        if self.chan is None:
-            self._open_channel()
-        if self.chan.srv_version != 4:
+        channel = self._channel()
+        if channel.srv_version != 4:
             raise RuntimeError("RNG 扫描仅支持 memsrv v4")
         merged = []
         for base, size in sorted(regions):
@@ -99,7 +146,7 @@ class AdbReader:
             # 针数过多时分批合并结果
             for i in range(0, len(needles), 256):
                 part = list(needles[i:i + 256])
-                r = self.chan.scan(base, size, part)
+                r = channel.scan(base, size, part)
                 for nd in part:
                     out[nd].extend(r.get(nd) or [])
         return out
@@ -109,15 +156,14 @@ class AdbReader:
     def read(self, addr, size):
         if size <= 0:
             return b""
-        if self.chan is None:
-            self._open_channel()
+        channel = self._channel()
         reqs = []
         a = addr
         while a < addr + size:
             n = min(addr + size - a, SRV_MAX)
             reqs.append((a, n))
             a += n
-        parts = self.chan.batch_read(reqs)
+        parts = channel.batch_read(reqs)
         if all(p is not None for p in parts):
             return b"".join(parts)
         return None
@@ -128,8 +174,7 @@ class AdbReader:
         轮询/批量校验的延迟关键路径；通道异常直接上抛。"""
         if not requests:
             return []
-        if self.chan is None:
-            self._open_channel()
+        channel = self._channel()
         flat = []
         spans = []
         for a, s in requests:
@@ -141,7 +186,7 @@ class AdbReader:
                 s -= n
                 n_parts += 1
             spans.append(n_parts)
-        data = self.chan.batch_read(flat)
+        data = channel.batch_read(flat)
         out = []
         i = 0
         for n in spans:
@@ -185,6 +230,25 @@ class AdbReader:
                 chunks.append((a, n))
                 a += n
         return chunks
+
+    def close(self):
+        """关闭 RNG 专用通道和 MemCore 的诊断通道；重复调用安全。"""
+        with self._channel_lock:
+            if self._closed:
+                return
+            self._closed = True
+            channel = self.chan
+            self.chan = None
+        if channel is not None:
+            try:
+                permanent_close = getattr(channel, "close_permanently", None)
+                (permanent_close or channel.close)()
+            except Exception:
+                pass
+        try:
+            self.mc.close()
+        except Exception:
+            pass
 
     @staticmethod
     def _is_gc(s, e, p, n):

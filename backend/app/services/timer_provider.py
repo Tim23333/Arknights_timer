@@ -52,6 +52,7 @@ class TimerDataProvider:
         self._guest_reader: Optional[object] = None
         # 关卡切换检测：static_fields 时钟归 0（新关卡开始）判定用
         self._game_time_reset = False
+        self._reset_event_pending = False  # 可消费事件；与持续归0锁存分离
         self._pending_reset_emit = False  # 归0待广播标志（锁外触发订阅者）
         # 时间值变动检测：首次自动刷新需 guest 就绪 且 时间值已变动（进关卡开始走秒）
         self._last_seen_game_time: Optional[float] = None
@@ -205,6 +206,7 @@ class TimerDataProvider:
     def _reset_stage_detection_state_locked(self) -> None:
         """复位关卡切换/走秒检测状态（须在 _lock 内调用）。"""
         self._game_time_reset = False
+        self._reset_event_pending = False
         self._pending_reset_emit = False
         self._last_seen_game_time = None
         self._game_time_moved = False
@@ -250,13 +252,14 @@ class TimerDataProvider:
             self._reset_stage_detection_state_locked()
 
     def consume_game_time_reset(self) -> bool:
-        """消费并清除"时钟归 0"标志；返回此前是否检测到新关卡开始。
+        """消费一次"时钟归 0"事件；返回此前是否检测到新关卡开始。
 
-        UI 在检测到归 0 后调用，防止同一重置被重复触发。
+        持续归零锁存由 ``_game_time_reset`` 保持到时间重新走动；这里仅清除
+        独立事件位，避免同一段归零在下一次采样时再次被当作新边沿。
         """
         with self._lock:
-            reset = self._game_time_reset
-            self._game_time_reset = False
+            reset = self._reset_event_pending
+            self._reset_event_pending = False
             return reset
 
     def game_time_moved(self) -> bool:
@@ -314,9 +317,13 @@ class TimerDataProvider:
                 }
                 return {"ok": False, "message": self._game_cache["message"]}
 
+            # 新宿主地址同样建立新的关卡检测基线，不继承 guest/旧地址状态。
+            self._reset_stage_detection_state_locked()
+
             # 首次采样以验证数据可用
             game_time, frame_count = self.reader.get_game_data()
             if game_time is not None and frame_count is not None:
+                self._observe_game_time_locked(game_time)
                 self._record_frame_sample(game_time, frame_count)
             self._game_cache = {
                 "connected": True,
@@ -340,13 +347,12 @@ class TimerDataProvider:
             # guest 侧路径：auto_addressing 开启时注入，优先于此采样。
             if self._guest_reader is not None:
                 result = self._refresh_sample_guest()
-                # 归0广播：仅置标记，统一移到锁外触发订阅者
-                # （避免持 _lock 执行回调：慢回调会卡死轮询线程与全部持锁调用方）
-                if self._pending_reset_emit:
-                    self._pending_reset_emit = False
-                    pending_emit = True
             else:
                 result = self._refresh_sample_host()
+            # 两种数据源统一只置标记，离开 _lock 后再广播订阅者。
+            if self._pending_reset_emit:
+                self._pending_reset_emit = False
+                pending_emit = True
         if pending_emit:
             self._emit_reset_broadcast()
         return result
@@ -379,6 +385,7 @@ class TimerDataProvider:
             }
             return {"ok": False, "message": self._game_cache["message"]}
 
+        self._observe_game_time_locked(game_time)
         self._record_frame_sample(game_time, frame_count)
 
         self._game_cache = {
@@ -435,7 +442,22 @@ class TimerDataProvider:
             }
             return {"ok": False, "message": self._game_cache["message"]}
 
-        # 时间值变动检测：首次自动刷新需 guest 就绪 且 时间值已变动（进关卡开始走秒）。
+        self._observe_game_time_locked(game_time)
+
+        self._record_frame_sample(game_time, frame_count)
+        self._game_cache = {
+            "connected": True,
+            "configured": True,
+            "game_time": game_time,
+            "frame_count": frame_count,
+            "message": "ok",
+            "last_refresh": now,
+        }
+        return {"ok": True, "game_time": game_time, "frame_count": frame_count}
+
+    def _observe_game_time_locked(self, game_time: float) -> None:
+        """更新走秒/归零状态（guest 与宿主采样共用，须在 _lock 内调用）。"""
+        # 时间值变动检测：首次自动刷新需数据源就绪且时间开始走秒。
         # 主界面空壳时钟恒 0 不动，不视为"已进关卡"，避免误触发首次刷新。
         if (self._last_seen_game_time is not None
                 and abs(game_time - self._last_seen_game_time) > 1e-6
@@ -449,10 +471,11 @@ class TimerDataProvider:
         if game_time < GAME_TIME_RESET_THRESHOLD:
             if self._game_time_moved:
                 if not self._game_time_reset:
-                    print(f"[自动寻址] 检测到时钟归0: cur={game_time:.6f}，"
+                    print(f"[计时器] 检测到时钟归0: cur={game_time:.6f}，"
                           "判定新关卡开始", flush=True)
                     # 标记待广播（锁外由 refresh_sample 执行订阅者回调，避免死锁）
                     self._pending_reset_emit = True
+                    self._reset_event_pending = True
                 self._game_time_reset = True
             else:
                 # 未进关卡（主界面空壳），恒 0 不置归0标志
@@ -460,17 +483,6 @@ class TimerDataProvider:
         else:
             # time 恢复累计 → 解除归0标记，武装下次关卡切换
             self._game_time_reset = False
-
-        self._record_frame_sample(game_time, frame_count)
-        self._game_cache = {
-            "connected": True,
-            "configured": True,
-            "game_time": game_time,
-            "frame_count": frame_count,
-            "message": "ok",
-            "last_refresh": now,
-        }
-        return {"ok": True, "game_time": game_time, "frame_count": frame_count}
 
     def get_game_data(self) -> Dict[str, Optional[Any]]:
         """返回最近一次采样的缓存。"""

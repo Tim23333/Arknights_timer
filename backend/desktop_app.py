@@ -9,6 +9,7 @@ import asyncio
 import ctypes
 from ctypes import wintypes
 import json
+import math
 import os
 import socket
 import subprocess
@@ -146,6 +147,11 @@ FAST_UI_MS = 8
 SLOW_UI_MS = 150
 GUEST_READY_TIMEOUT_MS = 30000  # 自动刷新链等待 guest 时间源就绪的超时（ms）
 AUTO_REFRESH_STEP_TIMEOUT_MS = 60000  # 单个自动刷新动作最长等待时间（ms）
+# 归 0 只表示旧 BattleController 已开始销毁；等新一局时间连续两次为正，
+# 再扫描 Deploy/Enemy/RNG，避免在场景切换空窗期退化为数 GB 全堆扫描。
+STAGE_READY_POLL_MS = 250
+STAGE_READY_STABLE_SAMPLES = 2
+STAGE_READY_GAME_TIME_THRESHOLD = 0.001
 WS_PUSH_MS = 8
 ENEMY_POLL_SEC = 1.0 / 60.0    # 完整敌我运行时数据固定 60Hz
 ENEMY_DETAIL_FULL_SEC = 1.0 / 60.0
@@ -780,6 +786,22 @@ class EnemyScanWorker(QThread):
         super().__init__()
         self.reader = reader
         self.force = force
+        self.result: tuple[bool, str] | None = None
+
+    def request_stop(self) -> None:
+        """Cooperatively stop and wake a scan blocked in the memsrv channel."""
+        self.requestInterruption()
+        try:
+            self.reader.request_poll_stop()
+        except Exception:
+            try:
+                self.reader.close()
+            except Exception:
+                pass
+
+    def _finish(self, ok: bool, message: str) -> None:
+        self.result = (ok, message)
+        self.done.emit(ok, message)
 
     def run(self) -> None:
         try:
@@ -806,14 +828,15 @@ class EnemyScanWorker(QThread):
             if self.isInterruptionRequested():
                 return
             if ok:
-                self.done.emit(
+                self._finish(
                     True,
                     f"定位完成，预定敌人 {self.reader.planned_count} 个，"
                     f"当前注册实例 {len(self.reader.enemy_addrs)} 个（场上数随后实时判定）")
             else:
-                self.done.emit(False, "定位失败：请确认明日方舟已进入战斗关卡")
+                self._finish(False, "定位失败：请确认明日方舟已进入战斗关卡")
         except Exception as e:
-            self.done.emit(False, f"出错: {e}")
+            if not self.isInterruptionRequested():
+                self._finish(False, f"出错: {e}")
 
 
 class EnemyPollWorker(QThread):
@@ -1304,27 +1327,81 @@ class DeployScanWorker(QThread):
         super().__init__()
         self.adb_path = adb_path
         self.adb_serial = adb_serial
+        self.result: tuple[object, str] | None = None
+        self._io_lock = threading.Lock()
+        self._mc: MemCore | None = None
+        self._reader: DeployTrackerReader | None = None
+        self._transferred = False
+
+    def request_stop(self) -> None:
+        """Stop the scan and close both channels to wake blocking socket reads."""
+        self.requestInterruption()
+        with self._io_lock:
+            reader, mc = self._reader, self._mc
+        if reader is not None:
+            try:
+                reader.close()
+            except Exception:
+                pass
+        if mc is not None:
+            try:
+                mc.close()
+            except Exception:
+                pass
+
+    def _finish(self, reader, message: str) -> None:
+        self._transferred = reader is not None
+        self.result = (reader, message)
+        self.done.emit(reader, message)
 
     def run(self) -> None:
         try:
             mc = MemCore(adb_path=self.adb_path, adb_serial=self.adb_serial)
+            with self._io_lock:
+                self._mc = mc
+            if self.isInterruptionRequested():
+                mc.close()
+                return
             pid = mc.connect()
             self.log.emit(f"游戏 PID = {pid}")
             reader = DeployTrackerReader(mc)
+            with self._io_lock:
+                self._reader = reader
             reader.set_status_callback(lambda m: (self.log.emit(str(m)), _tlog('[部署]', m)))
             reader.set_stage_callback(lambda info: self.stage.emit(dict(info)))
             if self.isInterruptionRequested():
+                reader.close()
+                mc.close()
                 return
             if reader.locate():
                 if self.isInterruptionRequested():
+                    reader.close()
+                    mc.close()
                     return
-                self.done.emit(reader, '')
+                self._finish(reader, '')
             else:
                 suffix = ('；关卡信息已获取，但操作记录定位失败'
                           if reader.get_stage_info() else '')
-                self.done.emit(None, f'定位失败: 请确认已进入作战关卡{suffix}')
+                reader.close()
+                mc.close()
+                self._finish(None, f'定位失败: 请确认已进入作战关卡{suffix}')
         except Exception as e:
-            self.done.emit(None, f'出错: {e}')
+            if not self.isInterruptionRequested():
+                self._finish(None, f'出错: {e}')
+        finally:
+            if not self._transferred:
+                with self._io_lock:
+                    reader, mc = self._reader, self._mc
+                if reader is not None:
+                    try:
+                        reader.close()
+                    except Exception:
+                        pass
+                if mc is not None:
+                    try:
+                        mc.close()
+                    except Exception:
+                        pass
 
 
 class DeployPollWorker(QThread):
@@ -1344,6 +1421,8 @@ class DeployPollWorker(QThread):
                 battle = self.reader.get_battle_state() if ok else {}
                 self.snapshot.emit(events, battle, ok)
             except Exception:
+                if self.isInterruptionRequested():
+                    break
                 self.snapshot.emit([], {}, True)   # 偶发读失败不判死, 下轮重试
             self.msleep(int(self.interval * 1000))
 
@@ -1357,27 +1436,75 @@ class RngScanWorker(QThread):
         super().__init__()
         self.adb_path = adb_path
         self.adb_serial = adb_serial
+        self.result: tuple[object, str] | None = None
+        self._io_lock = threading.Lock()
+        self._service = None
+        self._transferred = False
+
+    def request_stop(self) -> None:
+        """Stop locating and close the RNG memsrv channel when available."""
+        self.requestInterruption()
+        with self._io_lock:
+            service = self._service
+        if service is None:
+            return
+        try:
+            service.stop(timeout=0)
+        except TypeError:
+            service.stop()
+        except Exception:
+            pass
+        reader = getattr(service, 'reader', None)
+        channel = getattr(reader, 'chan', None)
+        if channel is not None:
+            try:
+                channel.close()
+            except Exception:
+                pass
+        mc = getattr(reader, 'mc', None)
+        if mc is not None:
+            try:
+                mc.close()
+            except Exception:
+                pass
+
+    def _finish(self, service, message: str) -> None:
+        self._transferred = service is not None
+        self.result = (service, message)
+        self.done.emit(service, message)
 
     def run(self) -> None:
         try:
             svc = RngService(backend='adb', adb_path=self.adb_path,
                              adb_serial=self.adb_serial,
                              on_status=lambda m: (self.log.emit(str(m)), _tlog('[RNG]', m)))
+            with self._io_lock:
+                self._service = svc
             if self.isInterruptionRequested():
+                self.request_stop()
                 return
             if not svc.attach():
                 if self.isInterruptionRequested():
                     return
-                self.done.emit(None, 'adb 连接失败 (游戏未运行?)')
+                self._finish(None, 'adb 连接失败 (游戏未运行?)')
                 return
             if not svc.locate():
                 if self.isInterruptionRequested():
+                    self.request_stop()
                     return
-                self.done.emit(None, '定位失败: 请确认已进入战斗关卡')
+                self.request_stop()
+                self._finish(None, '定位失败: 请确认已进入战斗关卡')
                 return
-            self.done.emit(svc, '')
+            if self.isInterruptionRequested():
+                self.request_stop()
+                return
+            self._finish(svc, '')
         except Exception as e:
-            self.done.emit(None, f'出错: {e}')
+            if not self.isInterruptionRequested():
+                self._finish(None, f'出错: {e}')
+        finally:
+            if not self._transferred:
+                self.request_stop()
 
 
 class EnemyMiniWindow(QWidget):
@@ -1780,11 +1907,35 @@ class GuestAddressWorker(QThread):
         super().__init__()
         self.adb_serial = adb_serial
         self.clock: Optional[GuestBattleClock] = None
+        self.result: tuple[bool, str, object] | None = None
+        self._io_lock = threading.Lock()
+        self._transferred = False
+
+    def request_stop(self) -> None:
+        """Invalidate the result and close memsrv to wake an in-flight locate."""
+        self.requestInterruption()
+        with self._io_lock:
+            clock = self.clock
+        if clock is not None:
+            try:
+                clock.close()
+            except Exception:
+                pass
+
+    def _finish(self, ok: bool, err: str,
+                clock: Optional[GuestBattleClock]) -> None:
+        self._transferred = bool(ok and clock is not None)
+        self.result = (ok, err, clock)
+        self.done.emit(ok, err, clock)
 
     def run(self) -> None:
         clock = None
         try:
             clock = GuestBattleClock(adb_serial=self.adb_serial)
+            with self._io_lock:
+                self.clock = clock
+            if self.isInterruptionRequested():
+                return
             ok = clock.locate()
             err = clock.last_error or ""
 #            _ga_log(f"locate() 结果: ok={ok} last_error={err!r}")
@@ -1792,23 +1943,29 @@ class GuestAddressWorker(QThread):
 #                _ga_log(f"static_fields={hex(clock.static_fields)} "
 #                        f"frame_addr={hex(clock.frame_addr)} "
 #                        f"time_addr={hex(clock.time_addr)}")
+            if self.isInterruptionRequested():
+                return
             self.clock = clock if ok else None
-            self.done.emit(ok, err, self.clock if ok else None)
+            self._finish(ok, err, self.clock if ok else None)
         except Exception as exc:
-            if clock is not None:
+#            _ga_log(f"定位异常: {exc}")
+            self.clock = None
+            if not self.isInterruptionRequested():
+                self._finish(False, str(exc), None)
+        finally:
+            if not self._transferred and clock is not None:
                 try:
                     clock.close()
                 except Exception:
                     pass
-#            _ga_log(f"定位异常: {exc}")
-            self.clock = None
-            self.done.emit(False, str(exc), None)
 
 
 class CoachWindow(QMainWindow):
     # 归0事件信号：由后台广播线程 emit，主线程槽触发自动刷新链
     # （跨线程回主线程的标准方式，避免 QTimer.singleShot 从非主线程不可靠）
     gameTimeReset = Signal()
+    # memory worker 只负责判断地址失效；Qt worker 的创建/启动回到主线程。
+    guestRelocateRequested = Signal()
 
     def __init__(self) -> None:
         super().__init__()
@@ -1822,10 +1979,11 @@ class CoachWindow(QMainWindow):
         # 归0事件订阅：时钟归 0（新关卡）→ Signal 回主线程触发自动刷新链
         self._provider.subscribe_game_time_reset(self._on_game_time_reset)
         self.gameTimeReset.connect(self._on_game_time_reset_main)
+        self.guestRelocateRequested.connect(self._maybe_relocate_guest_clock)
         self._guest_clock = None  # GuestBattleClock，自动寻址成功后持有
         self._guest_addressing_gen = 0  # 递增代际，丢弃过期定位结果
         self._guest_addressing_active = False  # 定位线程是否在跑（防重复启动）
-        self._guest_worker = None  # GuestAddressWorker，定位完成前持有
+        self._guest_worker: GuestAddressWorker | None = None
         # 自动寻址开关的纯 Python 镜像：_memory_worker 后台线程读此标志，
         # 不直接跨线程读 Qt 复选框（isChecked 无跨线程保证）。
         self._auto_addressing_enabled = False
@@ -1837,7 +1995,11 @@ class CoachWindow(QMainWindow):
         self._ws_loop: asyncio.AbstractEventLoop | None = None
         # 自动检测关卡变化并自动刷新状态
         self._auto_refresh_enabled = False
+        self._auto_refresh_wait_gen = 0  # 开关每次变化即作废旧的定时等待链
+        self._stage_reset_wait_gen = 0  # 每次归0作废上一局的就绪等待
         self._auto_refresh_step: str | None = None  # None/deploy/enemy/rng
+        self._auto_refresh_stopping_step: str | None = None
+        self._auto_refresh_abort_reason = ''
         self._auto_refresh_retries = 0
         self._auto_refresh_timeout = QTimer(self)
         self._auto_refresh_timeout.setSingleShot(True)
@@ -1920,6 +2082,7 @@ class CoachWindow(QMainWindow):
 
         # 随机数追踪 (ak_live_rng): 扫描定位后服务自带轮询线程, UI 定时读快照
         self._rng_svc = None               # RngService | None
+        self._rng_service_stopping = False
         self._rng_worker: RngScanWorker | None = None
         self._rng_timer = QTimer(self)
         self._rng_timer.timeout.connect(self._on_rng_tick)
@@ -1938,6 +2101,13 @@ class CoachWindow(QMainWindow):
         self._deploy_stage: str = ''
         self._deploy_stage_info: dict = {}
         self._deploy_seen: int = 0         # 已渲染到表格的事件数
+
+        # 后台任务关闭采用两阶段：先关闭底层 I/O 并请求线程退出，再由事件循环
+        # 异步确认 finished。任何仍在运行的 QThread 都必须继续由这些字段持有。
+        self._memory_thread: threading.Thread | None = None
+        self._closing = False
+        self._shutdown_finalized = False
+        self._close_retry_pending = False
 
         self._theme_dark = _system_prefers_dark()
         self._theme_timer = QTimer(self)
@@ -2803,7 +2973,11 @@ class CoachWindow(QMainWindow):
         webbrowser.open(f"http://127.0.0.1:{self._timeline_port}/")
 
     def _start_workers(self) -> None:
-        threading.Thread(target=self._memory_worker, name="ak-memory-worker", daemon=True).start()
+        if self._memory_thread is not None and self._memory_thread.is_alive():
+            return
+        self._memory_thread = threading.Thread(
+            target=self._memory_worker, name="ak-memory-worker", daemon=True)
+        self._memory_thread.start()
 
     def _start_timers(self) -> None:
         self.t_fast = QTimer(self)
@@ -2813,12 +2987,136 @@ class CoachWindow(QMainWindow):
         self.t_slow.timeout.connect(self._tick_slow)
         self.t_slow.start(SLOW_UI_MS)
 
+    @staticmethod
+    def _scan_worker_attr(kind: str) -> str:
+        return {
+            'guest': '_guest_worker',
+            'deploy': '_deploy_scan',
+            'enemy': '_enemy_scan',
+            'rng': '_rng_worker',
+        }[kind]
+
+    def _scan_worker(self, kind: str) -> QThread | None:
+        return getattr(self, self._scan_worker_attr(kind), None)
+
+    def _scan_worker_pending(self, kind: str) -> bool:
+        """A worker remains owned until its ``finished`` signal is consumed."""
+        return self._scan_worker(kind) is not None
+
+    def _connect_scan_worker(self, kind: str, worker: QThread) -> None:
+        """Consume worker output only after ``run()`` has completely returned."""
+        worker.finished.connect(
+            lambda k=kind, w=worker: self._on_scan_worker_finished(k, w))
+
+    def _request_scan_worker_stop(self, kind: str) -> bool:
+        """Request stop without releasing the strong reference to the QThread."""
+        worker = self._scan_worker(kind)
+        if worker is None:
+            return True
+        stop = getattr(worker, 'request_stop', None)
+        if callable(stop):
+            stop()
+        else:
+            worker.requestInterruption()
+        return not worker.isRunning()
+
+    @staticmethod
+    def _discard_scan_result(kind: str, result) -> None:
+        """Close a successfully-created object that can no longer be adopted by UI."""
+        if not result:
+            return
+        resource = result[2] if kind == 'guest' else result[0]
+        if resource is None:
+            return
+        if kind == 'rng':
+            try:
+                resource.stop(timeout=0)
+            except TypeError:
+                resource.stop()
+            except Exception:
+                pass
+            reader = getattr(resource, 'reader', None)
+            channel = getattr(reader, 'chan', None)
+            if channel is not None:
+                try:
+                    channel.close()
+                except Exception:
+                    pass
+            mc = getattr(reader, 'mc', None)
+            if mc is not None:
+                try:
+                    mc.close()
+                except Exception:
+                    pass
+            return
+        try:
+            resource.close()
+        except Exception:
+            pass
+
+    def _on_scan_worker_finished(self, kind: str, worker: QThread) -> None:
+        """Release a QThread and route its result after native execution has ended."""
+        attr = self._scan_worker_attr(kind)
+        is_current = getattr(self, attr, None) is worker
+        result = getattr(worker, 'result', None)
+        if is_current:
+            setattr(self, attr, None)
+        worker.wait(0)
+        worker.deleteLater()
+        _tlog(f'[生命周期] worker {kind}/{id(worker)} finished; '
+              f'current={is_current}, result={result is not None}')
+
+        if not is_current:
+            self._discard_scan_result(kind, result)
+            return
+        if kind == 'guest':
+            self._guest_addressing_active = False
+        if self._closing:
+            self._discard_scan_result(kind, result)
+            self._schedule_close_retry()
+            return
+        if self._auto_refresh_stopping_step == kind:
+            self._discard_scan_result(kind, result)
+            self._complete_auto_refresh_abort()
+            return
+
+        if result is None:
+            if self._auto_refresh_step == kind:
+                self._abort_auto_refresh(f'{kind} 扫描已停止')
+            return
+        if kind == 'guest':
+            self._on_guest_addressed(
+                getattr(worker, 'addressing_gen', self._guest_addressing_gen),
+                result[0], result[1], result[2])
+        elif kind == 'deploy':
+            self._on_deploy_scan_done(result[0], result[1])
+        elif kind == 'enemy':
+            self._on_enemy_scan_done(result[0], result[1])
+        elif kind == 'rng':
+            self._on_rng_scan_done(result[0], result[1])
+
+    def _schedule_close_retry(self) -> None:
+        if not self._closing or self._close_retry_pending:
+            return
+        self._close_retry_pending = True
+
+        def _retry() -> None:
+            self._close_retry_pending = False
+            if self._closing:
+                self.close()
+
+        QTimer.singleShot(250, _retry)
+
     def _memory_worker(self) -> None:
         while not self._stop_event.is_set():
             try:
                 self._provider.refresh_sample()
-                # guest 地址失效（游戏重启）时自动重新定位一次
-                self._maybe_relocate_guest_clock()
+                # 仅从后台读取纯 Python 状态；Qt worker 由 Signal 调回主线程创建。
+                clock = self._guest_clock
+                if (self._auto_addressing_enabled
+                        and clock is not None
+                        and not clock.is_stage_locked()):
+                    self.guestRelocateRequested.emit()
             except Exception:
                 pass
             self._stop_event.wait(AUTO_REFRESH_MS / 1000)
@@ -2836,81 +3134,186 @@ class CoachWindow(QMainWindow):
         self.gameTimeReset.emit()
 
     def _on_game_time_reset_main(self) -> None:
-        """主线程槽：归0事件触发自动刷新链（由 gameTimeReset 信号调度）。"""
+        """主线程槽：归0后等新局稳定走秒，再触发自动刷新链。
+
+        归零时旧 BattleController 正在销毁、新对象通常尚未建立。立即扫描会
+        命中旧对象并退化为数 GB 全堆扫描；若上一局刷新仍在进行，还会形成
+        超时/重入。新的归零先取消旧链，再用独立代际只保留最新一次等待。
+        """
         if not self._auto_refresh_enabled:
             return
-#        _ga_log("[自动刷新] 主线程收到归0信号，执行刷新链")
-        self._run_auto_refresh()
+        self._stage_reset_wait_gen += 1
+        reset_gen = self._stage_reset_wait_gen
+        _tlog(f'[自动刷新] reset generation={reset_gen}; '
+              '等待新关卡 time/frame 稳定走动')
+        if (self._auto_refresh_step is not None
+                or self._auto_refresh_stopping_step is not None):
+            self._abort_auto_refresh('检测到更新的关卡，取消上一轮刷新')
+#        _ga_log("[自动刷新] 主线程收到归0信号，等待新关卡稳定走秒")
+        self._wait_new_stage_running_then_refresh(reset_gen)
+
+    def _stage_reset_wait_current(self, gen: int) -> bool:
+        return (self._auto_refresh_enabled
+                and not getattr(self, '_closing', False)
+                and gen == self._stage_reset_wait_gen)
+
+    def _wait_new_stage_running_then_refresh(
+            self, gen: int, stable_samples: int = 0,
+            last_game_time: float | None = None,
+            last_frame: int | None = None) -> None:
+        """等待最新一次归零后的游戏时间连续两次为正，再开始刷新。
+
+        若上一局 worker 仍在 stopping，保持等待而不丢失这次新关卡事件；
+        worker 真正退出、重入锁解除后再启动最新一局的扫描。
+        """
+        if not self._stage_reset_wait_current(gen):
+            return
+        game = self._provider.get_game_data()
+        value = game.get('game_time')
+        try:
+            game_time = float(value)
+        except (TypeError, ValueError):
+            game_time = 0.0
+        try:
+            frame = int(game.get('frame_count'))
+        except (TypeError, ValueError):
+            frame = None
+        ready = (math.isfinite(game_time)
+                 and game_time > STAGE_READY_GAME_TIME_THRESHOLD
+                 and frame is not None)
+        moved_forward = (
+            last_game_time is not None
+            and last_frame is not None
+            and frame is not None
+            and game_time > last_game_time + 1e-6
+            and frame > last_frame)
+        if not ready:
+            stable_samples = 0
+        elif stable_samples == 0:
+            stable_samples = 1
+        elif moved_forward:
+            stable_samples += 1
+        else:
+            # 时间为正但没有继续前进：保留为第一份基线，不把暂停/残值
+            # 当成新 BattleController 已稳定运行。
+            stable_samples = 1
+        busy = (self._auto_refresh_step is not None
+                or self._auto_refresh_stopping_step is not None)
+        if stable_samples >= STAGE_READY_STABLE_SAMPLES and not busy:
+            _tlog(f'[自动刷新] stage clock ready generation={gen}; '
+                  f'time={game_time:.6f}, frame={frame}')
+            self._run_auto_refresh()
+            return
+        QTimer.singleShot(
+            STAGE_READY_POLL_MS,
+            lambda g=gen, n=stable_samples, t=game_time, f=frame:
+            self._wait_new_stage_running_then_refresh(g, n, t, f))
 
     def _maybe_relocate_guest_clock(self) -> None:
-        """guest 时钟地址失效时自动重新定位（防游戏重启后静默失败）。"""
+        """主线程槽：guest 时钟地址失效时启动一次重新定位。"""
         if not self._auto_addressing_enabled:
             return
         if self._guest_clock is None:
             return
         if self._guest_clock.is_stage_locked():
             return
-        if self._guest_addressing_active:
+        if self._guest_addressing_active or self._scan_worker_pending('guest'):
             return  # 已在重定位中，避免并发
         self._guest_addressing_gen += 1
         gen = self._guest_addressing_gen
         self._guest_addressing_active = True
         worker = GuestAddressWorker(self._adb_serial_or_default())
-        worker.done.connect(
-            lambda ok, err, clock, g=gen: self._on_guest_addressed(
-                g, ok, err, clock))
+        worker.addressing_gen = gen
+        self._connect_scan_worker('guest', worker)
         self._guest_worker = worker
         worker.start()
 
     def closeEvent(self, event) -> None:  # type: ignore[override]
-        self._cache_current_deploy(final_reason='application_closed')
-        self._cache_rng_from_service()
+        if not self._closing:
+            self._closing = True
+            self._cache_current_deploy(final_reason='application_closed')
+            self._cache_rng_from_service()
+            self._auto_refresh_enabled = False
+            self._auto_refresh_wait_gen += 1
+            self._stage_reset_wait_gen += 1
+            self._auto_refresh_stopping_step = self._auto_refresh_step
+            self._auto_refresh_step = None
+            self._stop_auto_refresh_timeout()
+            self._auto_addressing_enabled = False
+            self._guest_addressing_gen += 1
+            self._guest_addressing_active = False
+            self._mini_hotkey_timer.stop()
+            for name in ('t_fast', 't_slow', '_theme_timer', '_rng_timer'):
+                timer = getattr(self, name, None)
+                if timer is not None:
+                    timer.stop()
+            if self._enemy_mini is not None:
+                self._enemy_mini._restoring = True
+                self._enemy_mini.close()
+                self._enemy_mini = None
+            for section in getattr(self, '_collapsible_sections', {}).values():
+                section.dock_content()
+
         self._stop_event.set()
-        self._mini_hotkey_timer.stop()
-        if self._enemy_mini is not None:
-            self._enemy_mini._restoring = True
-            self._enemy_mini.close()
-            self._enemy_mini = None
-        for section in getattr(self, '_collapsible_sections', {}).values():
-            section.dock_content()
-        if not self._stop_enemy_poll(blocking=True):
-            event.ignore()
-            QTimer.singleShot(250, self.close)
-            return
-        self._enemy_reader.close()
-        if self._guest_clock is not None:
-            try:
-                self._guest_clock.close()
-            except Exception:
-                pass
-            self._guest_clock = None
-        self._stop_deploy_poll()
+        for kind in ('guest', 'deploy', 'enemy', 'rng'):
+            self._request_scan_worker_stop(kind)
+        enemy_poll_stopped = self._stop_enemy_poll()
+        deploy_poll_stopped = self._stop_deploy_poll()
+        rng_service_stopped = self._on_rng_stop()
+
+        # Close every channel before checking thread state. This wakes socket recv()
+        # while ownership remains intact until each QThread emits finished.
+        try:
+            self._enemy_reader.close()
+        except Exception:
+            pass
         if self._deploy_reader is not None:
-            self._deploy_reader.close()
-            self._deploy_reader = None
-        self._rng_timer.stop()
-        if self._rng_svc is not None:
             try:
-                self._rng_svc.stop()
+                self._deploy_reader.close()
             except Exception:
                 pass
+        clock, self._guest_clock = self._guest_clock, None
+        if clock is not None:
+            try:
+                clock.close()
+            except Exception:
+                pass
+        qt_pending = any(
+            self._scan_worker(kind) is not None
+            for kind in ('guest', 'deploy', 'enemy', 'rng'))
+        memory_pending = (
+            self._memory_thread is not None
+            and self._memory_thread.is_alive())
+        if (qt_pending or not enemy_poll_stopped or not deploy_poll_stopped
+                or not rng_service_stopped or memory_pending):
+            event.ignore()
+            self._schedule_close_retry()
+            return
+
+        if not self._shutdown_finalized:
+            self._shutdown_finalized = True
+            try:
+                self._provider.clear_guest()
+            except Exception:
+                pass
+            self._deploy_reader = None
             self._rng_svc = None
-        if self._ws_clients:
-            for ws in list(self._ws_clients):
+            if self._ws_clients:
+                for ws in list(self._ws_clients):
+                    try:
+                        asyncio.run_coroutine_threadsafe(ws.close(), self._ws_loop)
+                    except Exception:
+                        pass
+            if self._diagnostic_log_window is not None:
+                self._diagnostic_log_window.shutdown()
+                self._diagnostic_log_window = None
+            if self._timeline_httpd is not None:
                 try:
-                    asyncio.run_coroutine_threadsafe(ws.close(), self._ws_loop)
+                    self._timeline_httpd.shutdown()
+                    self._timeline_httpd.server_close()
                 except Exception:
                     pass
-        if self._diagnostic_log_window is not None:
-            self._diagnostic_log_window.shutdown()
-            self._diagnostic_log_window = None
-        if self._timeline_httpd is not None:
-            try:
-                self._timeline_httpd.shutdown()
-                self._timeline_httpd.server_close()
-            except Exception:
-                pass
-            self._timeline_httpd = None
+                self._timeline_httpd = None
         return super().closeEvent(event)
 
     def _on_open_timer_tool(self) -> None:
@@ -2976,8 +3379,12 @@ class CoachWindow(QMainWindow):
             self.btn_select_adb.setToolTip('选择模拟器安装目录中的 adb.exe')
 
     def _adb_scan_is_running(self) -> bool:
-        return any(worker is not None and worker.isRunning() for worker in (
-            self._enemy_scan, self._rng_worker, self._deploy_scan))
+        # A worker remains owned until its ``finished`` callback has consumed
+        # the result.  Treat the short run-returned/finished-queued window as
+        # busy as well, otherwise an ADB switch can adopt a result produced for
+        # the previous device after the new readers have already been created.
+        return any(self._scan_worker_pending(kind)
+                   for kind in ('guest', 'enemy', 'rng', 'deploy'))
 
     def _activate_adb_path(self, path: str, serial: str = '') -> None:
         """停止旧连接并让敌人、RNG、操作记录统一改用新 ADB。"""
@@ -2988,8 +3395,13 @@ class CoachWindow(QMainWindow):
                 self, '正在停止监控',
                 '上一轮敌人内存读取尚未完全退出，请稍后再次选择 ADB。')
             return
-        self._on_rng_stop()
-        self._stop_deploy_poll()
+        rng_stopped = self._on_rng_stop()
+        deploy_stopped = self._stop_deploy_poll()
+        if not rng_stopped or not deploy_stopped:
+            QMessageBox.information(
+                self, '正在停止监控',
+                '上一轮 RNG 或部署读取尚未完全退出，请稍后再次选择 ADB。')
+            return
         if self._deploy_reader is not None:
             self._deploy_reader.close()
             self._deploy_reader = None
@@ -3156,6 +3568,11 @@ class CoachWindow(QMainWindow):
             if self._auto_refresh_step:
                 self._abort_auto_refresh('未选择 adb.exe')
             return
+        if self._scan_worker_pending('enemy'):
+            self.lbl_enemy_status.setText('上一轮敌人扫描仍在结束，请稍后重试')
+            if self._auto_refresh_step:
+                self._abort_auto_refresh('上一轮敌人扫描仍在结束')
+            return
         if not self._stop_enemy_poll():
             self.lbl_enemy_status.setText('上一轮敌人读取仍在停止，请稍后重试')
             if self._auto_refresh_step:
@@ -3193,7 +3610,7 @@ class CoachWindow(QMainWindow):
         self._enemy_scan = EnemyScanWorker(self._enemy_reader, force=True)
         self._enemy_scan.log.connect(self._on_enemy_log)
         self._enemy_scan.progress.connect(self._on_enemy_progress)
-        self._enemy_scan.done.connect(self._on_enemy_scan_done)
+        self._connect_scan_worker('enemy', self._enemy_scan)
         self._enemy_scan.start()
 
     def _on_enemy_log(self, msg: str) -> None:
@@ -3341,7 +3758,7 @@ class CoachWindow(QMainWindow):
             # 主通道 socket.close() 能立即打断大多数正在等待的 memsrv 读取；
             # 若线程已进入 ADB 慢速命令则保留引用，绝不让新线程并发复用 reader。
             self._enemy_reader.request_poll_stop()
-            wait_ms = 35000 if blocking else 6000
+            wait_ms = 35000 if blocking else 0
             if not worker.wait(wait_ms):
                 self.lbl_enemy_status.setText('正在等待上一轮敌人读取停止 ...')
                 self.btn_enemy_scan.setEnabled(False)
@@ -3385,11 +3802,15 @@ class CoachWindow(QMainWindow):
         此后靠 guest 时钟归 0（新关卡开始）检测触发增量刷新。
         """
         self._auto_refresh_enabled = bool(checked)
+        self._auto_refresh_wait_gen += 1
+        self._stage_reset_wait_gen += 1
+        wait_gen = self._auto_refresh_wait_gen
         self._custom_options.set(
             "auto_detect_stage_change", "enabled", self._auto_refresh_enabled)
         if checked:
 #            _ga_log("[自动刷新] 开关开启，等待 guest 就绪后触发初始全链扫描")
-            QTimer.singleShot(0, self._wait_guest_ready_then_refresh)
+            QTimer.singleShot(
+                0, lambda g=wait_gen: self._wait_guest_ready_then_refresh(g))
 
     def _load_toast_options(self) -> None:
         """从 custom_options 载入气泡开关与各信息种类展示时长，应用到 UI。
@@ -3439,10 +3860,13 @@ class CoachWindow(QMainWindow):
         self.chk_auto_refresh.setChecked(enabled)
         self.chk_auto_refresh.blockSignals(False)
         self._auto_refresh_enabled = enabled
+        self._auto_refresh_wait_gen += 1
+        wait_gen = self._auto_refresh_wait_gen
         # 启动恢复：上次开启过 → 等待 guest 就绪后触发初始全链扫描
         if enabled:
 #            _ga_log("[自动刷新] 启动恢复：上次开启，等待 guest 就绪后触发初始扫描")
-            QTimer.singleShot(0, self._wait_guest_ready_then_refresh)
+            QTimer.singleShot(
+                0, lambda g=wait_gen: self._wait_guest_ready_then_refresh(g))
 
     # ---------- 自动寻址（guest 侧） ----------
 
@@ -3453,7 +3877,8 @@ class CoachWindow(QMainWindow):
         self._auto_addressing_enabled = bool(checked)
         if checked:
             # 防重复启动：已有定位线程在跑时直接跳过
-            if self._guest_clock is not None or self._guest_addressing_active:
+            if (self._guest_clock is not None or self._guest_addressing_active
+                    or self._scan_worker_pending('guest')):
                 return
             self._guest_addressing_gen += 1
             gen = self._guest_addressing_gen
@@ -3462,18 +3887,18 @@ class CoachWindow(QMainWindow):
             if self._toast is not None:
                 self._toast.show("正在自动寻址…", semantic="info")
             worker = GuestAddressWorker(self._adb_serial_or_default())
-            worker.done.connect(
-                lambda ok, err, clock, g=gen: self._on_guest_addressed(
-                    g, ok, err, clock))
+            worker.addressing_gen = gen
+            self._connect_scan_worker('guest', worker)
             self._guest_worker = worker
             worker.start()
         else:
             self._guest_addressing_gen += 1  # 作废在途定位结果
             self._guest_addressing_active = False
-            self._provider.clear_guest()
+            self._request_scan_worker_stop('guest')
             if self._guest_clock is not None:
                 self._guest_clock.close()
                 self._guest_clock = None
+            self._provider.clear_guest()
             self._custom_options.set("auto_addressing", "enabled", False)
             if self._toast is not None:
                 self._toast.show("已关闭自动寻址", semantic="info")
@@ -3568,7 +3993,16 @@ class CoachWindow(QMainWindow):
             return True
         return False
 
-    def _wait_guest_ready_then_refresh(self, gen: int = 0) -> None:
+    def _auto_refresh_wait_current(self, gen: int) -> bool:
+        """等待链是否仍属于当前启用代际。"""
+        return self._auto_refresh_enabled and gen == self._auto_refresh_wait_gen
+
+    def _run_auto_refresh_from_wait(self, gen: int) -> None:
+        """只让当前代际的初始等待链进入自动刷新。"""
+        if self._auto_refresh_wait_current(gen):
+            self._run_auto_refresh()
+
+    def _wait_guest_ready_then_refresh(self, gen: int) -> None:
         """等待 guest 时间源就绪 + 时间值变动后执行自动刷新链。
 
         首次自动刷新分两阶段：
@@ -3580,21 +4014,21 @@ class CoachWindow(QMainWindow):
         两阶段轮询均复查 _auto_refresh_enabled：等待期间用户关闭开关时，
         取消挂起的初始刷新（_run_auto_refresh 亦有兜底守卫）。
         """
-        if not self._auto_refresh_enabled:
+        if not self._auto_refresh_wait_current(gen):
             return
         if self._guest_ready():
 #            _ga_log("[自动刷新] guest 已就绪，进入时间变动等待")
-            self._wait_game_time_moved_then_refresh()
+            self._wait_game_time_moved_then_refresh(gen)
             return
 
         ready_polls = {"count": 0}  # 每条等待链独立计数，避免多链共享互相干扰
 
         def _poll_ready() -> None:
-            if not self._auto_refresh_enabled:
-                return  # 等待期间开关被关闭，取消挂起的初始刷新
+            if not self._auto_refresh_wait_current(gen):
+                return  # 开关关闭或重新开启，取消旧代际等待链
             if self._guest_ready():
 #                _ga_log("[自动刷新] 等待后 guest 就绪，进入时间变动等待")
-                self._wait_game_time_moved_then_refresh()
+                self._wait_game_time_moved_then_refresh(gen)
                 return
             if ready_polls["count"] >= GUEST_READY_TIMEOUT_MS // 500:
 #                _ga_log(f"[自动刷新] guest 就绪等待超时（{GUEST_READY_TIMEOUT_MS}ms），中止")
@@ -3607,30 +4041,53 @@ class CoachWindow(QMainWindow):
 #        _ga_log("[自动刷新] guest 未就绪，开始等待…")
         QTimer.singleShot(500, _poll_ready)
 
-    def _wait_game_time_moved_then_refresh(self) -> None:
-        """永久等待游戏时间值变动（进关卡走秒），满足后执行自动刷新链。"""
-        if not self._auto_refresh_enabled:
+    def _wait_game_time_moved_then_refresh(
+            self, gen: int, stable_samples: int = 0,
+            last_game_time: float | None = None,
+            last_frame: int | None = None) -> None:
+        """等待当前时钟连续两次正向增长，不复用跨局锁存的 moved 标志。"""
+        if not self._auto_refresh_wait_current(gen):
             return
-        if self._provider.game_time_moved():
-#            _ga_log("[自动刷新] 时间已变动，执行刷新链")
-            QTimer.singleShot(0, self._run_auto_refresh)
+        game = self._provider.get_game_data()
+        try:
+            game_time = float(game.get('game_time'))
+        except (TypeError, ValueError):
+            game_time = 0.0
+        try:
+            frame = int(game.get('frame_count'))
+        except (TypeError, ValueError):
+            frame = None
+        ready = (math.isfinite(game_time)
+                 and game_time > STAGE_READY_GAME_TIME_THRESHOLD
+                 and frame is not None)
+        moved_forward = (
+            last_game_time is not None and last_frame is not None
+            and frame is not None
+            and game_time > last_game_time + 1e-6
+            and frame > last_frame)
+        if not ready:
+            stable_samples = 0
+        elif stable_samples == 0:
+            stable_samples = 1
+        elif moved_forward:
+            stable_samples += 1
+        else:
+            stable_samples = 1
+        if stable_samples >= STAGE_READY_STABLE_SAMPLES:
+#            _ga_log("[自动刷新] 当前时钟已稳定走动，执行刷新链")
+            QTimer.singleShot(
+                0, lambda g=gen: self._run_auto_refresh_from_wait(g))
             return
-
-        def _poll_moved() -> None:
-            if not self._auto_refresh_enabled:
-                return  # 等待期间开关被关闭，取消挂起的初始刷新
-            if self._provider.game_time_moved():
-#                _ga_log("[自动刷新] 等待后时间已变动，执行刷新链")
-                QTimer.singleShot(0, self._run_auto_refresh)
-                return
-            QTimer.singleShot(500, _poll_moved)
-
-#        _ga_log("[自动刷新] 时间未变动（未进关卡），永久等待…")
-        QTimer.singleShot(500, _poll_moved)
+#        _ga_log("[自动刷新] 当前时钟尚未稳定走动，继续等待…")
+        QTimer.singleShot(
+            STAGE_READY_POLL_MS,
+            lambda g=gen, n=stable_samples, t=game_time, f=frame:
+            self._wait_game_time_moved_then_refresh(g, n, t, f))
 
     def _start_auto_refresh_step(self, step: str) -> None:
         """启动自动刷新单步并开始超时计时。"""
         self._auto_refresh_step = step
+        _tlog(f'[自动刷新] start step={step}')
         self._auto_refresh_timeout.start(AUTO_REFRESH_STEP_TIMEOUT_MS)
         if step == "deploy":
             self._on_deploy_scan()
@@ -3648,7 +4105,8 @@ class CoachWindow(QMainWindow):
         """检测到关卡切换后，按顺序自动刷新 ①操作记录 ②敌人/干员 ④随机数。"""
         if not self._auto_refresh_enabled:
             return  # 开关已关闭（含等待期间被关闭的挂起触发），不启动刷新链
-        if self._auto_refresh_step is not None:
+        if (self._auto_refresh_step is not None
+                or self._auto_refresh_stopping_step is not None):
 #            _ga_log(f"[自动刷新] 已在流程中(_auto_refresh_step={self._auto_refresh_step})，忽略重入")
             return  # 已在刷新流程中，避免重入
 #        _ga_log("[自动刷新] 开始执行（deploy 步骤）")
@@ -3657,31 +4115,42 @@ class CoachWindow(QMainWindow):
         self._start_auto_refresh_step("deploy")
 
     def _on_auto_refresh_step_timeout(self) -> None:
-        """当前自动刷新步骤超时：停止对应扫描并中止整条链。"""
+        """当前步骤超时：进入 stopping，待 QThread finished 后才解除重入。"""
         step = self._auto_refresh_step
         if step is None:
             return
 #        _ga_log(f"[自动刷新] 步骤 {step} 超时（{AUTO_REFRESH_STEP_TIMEOUT_MS}ms），中止")
+        self._stop_auto_refresh_timeout()
+        self._auto_refresh_stopping_step = step
+        self._auto_refresh_abort_reason = f'{step} 扫描超时'
+        _tlog(f'[自动刷新] timeout step={step}; 请求停止并等待 finished')
+        self._request_scan_worker_stop(step)
         if step == "deploy":
-            worker = self._deploy_scan
-            if worker is not None:
-                worker.requestInterruption()
             self._on_deploy_stop()
         elif step == "enemy":
-            worker = self._enemy_scan
-            if worker is not None:
-                worker.requestInterruption()
             self._stop_enemy_poll()
         elif step == "rng":
-            worker = self._rng_worker
-            if worker is not None:
-                worker.requestInterruption()
             self._on_rng_stop()
-        self._abort_auto_refresh(f"{step} 扫描超时")
+        if not self._scan_worker_pending(step):
+            self._complete_auto_refresh_abort()
 
     def _abort_auto_refresh(self, reason: str) -> None:
-        """扫描未真正启动、失败或超时时中止整条自动刷新链。"""
+        """中止刷新；活跃扫描必须先退出，期间保持流程重入锁。"""
         self._stop_auto_refresh_timeout()
+        step = self._auto_refresh_step
+        if step and self._scan_worker_pending(step):
+            self._auto_refresh_stopping_step = step
+            self._auto_refresh_abort_reason = reason
+            self._request_scan_worker_stop(step)
+            return
+        self._auto_refresh_abort_reason = reason
+        self._complete_auto_refresh_abort()
+
+    def _complete_auto_refresh_abort(self) -> None:
+        """Only called with no in-flight scan worker for the stopping step."""
+        reason = self._auto_refresh_abort_reason or '扫描已停止'
+        self._auto_refresh_stopping_step = None
+        self._auto_refresh_abort_reason = ''
         self._auto_refresh_step = None
         self._auto_refresh_retries = 0
         self._toast.show(f"自动刷新中止：{reason}", level="error", semantic="error")
@@ -3691,7 +4160,12 @@ class CoachWindow(QMainWindow):
 #        _ga_log(f"[自动刷新] 步骤 {step} 完成: ok={ok} retries={self._auto_refresh_retries}")
         if self._auto_refresh_step != step:
             return
+        if self._auto_refresh_stopping_step is not None:
+            return
         self._stop_auto_refresh_timeout()
+        if not self._auto_refresh_enabled:
+            self._abort_auto_refresh('自动刷新已关闭')
+            return
         if not ok:
             self._auto_refresh_retries += 1
             if self._auto_refresh_retries <= 2:
@@ -3779,7 +4253,16 @@ class CoachWindow(QMainWindow):
             if self._auto_refresh_step:
                 self._abort_auto_refresh('未选择 adb.exe')
             return
-        self._on_rng_stop()   # 停掉上一轮监控
+        if self._scan_worker_pending('rng'):
+            self.lbl_rng_status.setText('上一轮 RNG 扫描仍在结束，请稍后重试')
+            if self._auto_refresh_step:
+                self._abort_auto_refresh('上一轮 RNG 扫描仍在结束')
+            return
+        if not self._on_rng_stop():   # 停掉上一轮监控
+            self.lbl_rng_status.setText('上一轮 RNG 服务仍在停止，请稍后重试')
+            if self._auto_refresh_step:
+                self._abort_auto_refresh('上一轮 RNG 服务仍在停止')
+            return
         self.btn_rng_scan.setEnabled(False)
         self.btn_rng_stop.setEnabled(True)
         self.lbl_rng_status.setText('扫描定位中 ...')
@@ -3787,7 +4270,7 @@ class CoachWindow(QMainWindow):
             self._enemy_reader.mc.adb_path, self._enemy_reader.mc.adb_serial)
         self._rng_worker.log.connect(
             lambda m: self.lbl_rng_status.setText(str(m).strip() or self.lbl_rng_status.text()))
-        self._rng_worker.done.connect(self._on_rng_scan_done)
+        self._connect_scan_worker('rng', self._rng_worker)
         self._rng_worker.start()
 
     def _on_rng_scan_done(self, svc, msg: str) -> None:
@@ -3800,7 +4283,13 @@ class CoachWindow(QMainWindow):
                     f'RNG 定位失败：{msg}', level="error", semantic="error")
             self._on_auto_refresh_step_done("rng", False)
             return
+        if self._rng_svc is not None:
+            self._discard_scan_result('rng', (svc, ''))
+            self.lbl_rng_status.setText('上一轮 RNG 服务尚未退出，已丢弃本次结果')
+            self._on_auto_refresh_step_done("rng", False)
+            return
         self._rng_svc = svc
+        self._rng_service_stopping = False
         svc.start()
         self._rng_timer.start(RNG_UI_MS)
         roles = {t.engine.get('role') for t in svc.trackers()}
@@ -3814,21 +4303,60 @@ class CoachWindow(QMainWindow):
                 'RNG 监控已启动', level="info", semantic="success")
         self._on_auto_refresh_step_done("rng", True)
 
-    def _on_rng_stop(self) -> None:
+    @staticmethod
+    def _stop_rng_service_once(svc) -> bool:
+        """Poll RngService shutdown without blocking the Qt event loop."""
+        try:
+            stopped = svc.stop(timeout=0)
+        except TypeError:
+            stopped = svc.stop()
+        except Exception:
+            return True
+        # Compatibility with older services whose stop() returned None.
+        return True if stopped is None else bool(stopped)
+
+    def _on_rng_stop(self) -> bool:
+        self._request_scan_worker_stop('rng')
         self._rng_timer.stop()
-        if self._rng_svc is not None:
-            self._cache_rng_from_service(self._rng_svc)
-            try:
-                self._rng_svc.stop()
-            except Exception:
-                pass
-            self._rng_svc = None
+        svc = self._rng_svc
+        service_stopped = True
+        if svc is not None:
+            if not self._rng_service_stopping:
+                self._cache_rng_from_service(svc)
+            self._rng_service_stopping = True
+            service_stopped = self._stop_rng_service_once(svc)
+            if service_stopped and self._rng_svc is svc:
+                self._rng_svc = None
+                self._rng_service_stopping = False
+            elif not service_stopped:
+                QTimer.singleShot(
+                    250, lambda s=svc: self._finish_rng_service_stop(s))
         self.btn_rng_stop.setEnabled(False)
-        self.btn_rng_scan.setEnabled(RngService is not None)
+        self.btn_rng_scan.setEnabled(
+            RngService is not None and service_stopped
+            and not self._scan_worker_pending('rng'))
         self.btn_rng_imp_export.setEnabled(self._battle_cache.has_rng('imp'))
         self.btn_rng_trivial_export.setEnabled(
             self._battle_cache.has_rng('trivial'))
+        self.lbl_rng_status.setText(
+            '已停止' if service_stopped else '正在等待 RNG 服务停止 ...')
+        return service_stopped
+
+    def _finish_rng_service_stop(self, svc) -> None:
+        if self._rng_svc is not svc or not self._rng_service_stopping:
+            return
+        if not self._stop_rng_service_once(svc):
+            QTimer.singleShot(
+                250, lambda s=svc: self._finish_rng_service_stop(s))
+            return
+        self._rng_svc = None
+        self._rng_service_stopping = False
+        self.btn_rng_scan.setEnabled(
+            RngService is not None and not self._closing
+            and not self._scan_worker_pending('rng'))
         self.lbl_rng_status.setText('已停止')
+        if self._closing:
+            self._schedule_close_retry()
 
     def _on_rng_tick(self) -> None:
         svc = self._rng_svc
@@ -3929,8 +4457,17 @@ class CoachWindow(QMainWindow):
             if self._auto_refresh_step:
                 self._abort_auto_refresh('未选择 adb.exe')
             return
+        if self._scan_worker_pending('deploy'):
+            self.lbl_deploy_status.setText('上一轮部署扫描仍在结束，请稍后重试')
+            if self._auto_refresh_step:
+                self._abort_auto_refresh('上一轮部署扫描仍在结束')
+            return
+        if not self._stop_deploy_poll():
+            self.lbl_deploy_status.setText('上一轮部署读取仍在停止，请稍后重试')
+            if self._auto_refresh_step:
+                self._abort_auto_refresh('上一轮部署读取仍在停止')
+            return
         self._cache_current_deploy()
-        self._on_deploy_stop()
         self.deploy_table.setRowCount(0)
         self._deploy_events = []
         self._deploy_journal = []
@@ -3949,7 +4486,7 @@ class CoachWindow(QMainWindow):
         self._deploy_scan.log.connect(
             lambda m: self.lbl_deploy_status.setText(str(m).strip() or self.lbl_deploy_status.text()))
         self._deploy_scan.stage.connect(self._on_deploy_stage)
-        self._deploy_scan.done.connect(self._on_deploy_scan_done)
+        self._connect_scan_worker('deploy', self._deploy_scan)
         self._deploy_scan.start()
 
     def _deploy_stage_label(self) -> str:
@@ -4006,7 +4543,9 @@ class CoachWindow(QMainWindow):
                     level="info", semantic="success")
         else:
 #            _ga_log("[deploy] 实时轮询模式，启动 deploy poll")
-            self._start_deploy_poll()
+            if not self._start_deploy_poll():
+                self._on_auto_refresh_step_done("deploy", False)
+                return
             if self._auto_refresh_step is None and self._toast is not None:
                 self._toast.show(
                     "实时轮询模式已启动，监控中",
@@ -4016,28 +4555,79 @@ class CoachWindow(QMainWindow):
 #        _ga_log("[deploy] 推进 enemy 步骤")
         self._on_auto_refresh_step_done("deploy", True)
 
-    def _start_deploy_poll(self) -> None:
-        self._stop_deploy_poll()
-        self._deploy_poll = DeployPollWorker(self._deploy_reader)
-        self._deploy_poll.snapshot.connect(self._on_deploy_snapshot)
-        self._deploy_poll.start()
+    def _start_deploy_poll(self) -> bool:
+        if self._deploy_reader is None or not self._stop_deploy_poll():
+            self.lbl_deploy_status.setText('上一轮部署读取仍在停止，未启动新的监控')
+            return False
+        worker = DeployPollWorker(self._deploy_reader)
+        worker.snapshot.connect(
+            lambda events, battle, chain_ok, w=worker:
+            self._on_deploy_snapshot_from_worker(
+                w, events, battle, chain_ok))
+        worker.finished.connect(
+            lambda w=worker: self._finish_deploy_poll_stop(w))
+        self._deploy_poll = worker
+        worker.start()
         self.btn_deploy_stop.setEnabled(True)
         stage = f"   {self._deploy_stage_label()}" if self._deploy_stage_label() else ''
         self.lbl_deploy_status.setText(f'监控中 ...{stage}')
+        return True
 
-    def _stop_deploy_poll(self) -> None:
-        if self._deploy_poll:
-            self._deploy_poll.requestInterruption()
-            self._deploy_poll.wait(3000)
-            self._deploy_poll = None
+    def _stop_deploy_poll(self) -> bool:
+        """Stop deploy polling without ever destroying a running QThread."""
+        worker = self._deploy_poll
+        if worker is not None:
+            worker.requestInterruption()
+            # Deploy uses its own 30-second TcpChannel. shutdown/close wakes recv()
+            # immediately on Windows; the QThread reference remains until finished.
+            try:
+                worker.reader.close()
+            except Exception:
+                pass
+            if worker.isRunning():
+                self.lbl_deploy_status.setText('正在等待上一轮部署读取停止 ...')
+                self.btn_deploy_scan.setEnabled(False)
+                QTimer.singleShot(
+                    250, lambda w=worker: self._finish_deploy_poll_stop(w))
+                self.btn_deploy_stop.setEnabled(False)
+                return False
+            self._finish_deploy_poll_stop(worker)
         self.btn_deploy_stop.setEnabled(False)
+        return True
+
+    def _finish_deploy_poll_stop(self, worker: DeployPollWorker | None = None) -> None:
+        worker = worker or self._deploy_poll
+        if worker is None:
+            return
+        if getattr(worker, '_lifecycle_released', False):
+            return
+        if worker.isRunning():
+            QTimer.singleShot(
+                250, lambda w=worker: self._finish_deploy_poll_stop(w))
+            return
+        worker.wait(0)
+        worker._lifecycle_released = True
+        if self._deploy_poll is worker:
+            self._deploy_poll = None
+            self.btn_deploy_scan.setEnabled(not self._closing)
+            self.btn_deploy_stop.setEnabled(False)
+        worker.deleteLater()
+        if self._closing:
+            self._schedule_close_retry()
 
     def _on_deploy_stop(self) -> None:
         self._cache_current_deploy()
-        self._stop_deploy_poll()
-        self.btn_deploy_scan.setEnabled(True)
+        stopped = self._stop_deploy_poll()
+        self.btn_deploy_scan.setEnabled(stopped and not self._scan_worker_pending('deploy'))
         if self._deploy_reader is not None:
-            self.lbl_deploy_status.setText('已停止')
+            self.lbl_deploy_status.setText(
+                '已停止' if stopped else '正在等待部署读取停止 ...')
+
+    def _on_deploy_snapshot_from_worker(
+            self, worker: DeployPollWorker, events: list,
+            battle: dict, chain_ok: bool) -> None:
+        if self._deploy_poll is worker and not self._closing:
+            self._on_deploy_snapshot(events, battle, chain_ok)
 
     def _on_deploy_snapshot(self, events: list, battle: dict, chain_ok: bool) -> None:
         if not chain_ok:

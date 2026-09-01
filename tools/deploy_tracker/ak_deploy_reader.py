@@ -280,6 +280,8 @@ class DeployTrackerReader:
         self._stage_callback = None
         self._char_names = None          # charId -> 中文名 (ark_parser/characters.json)
         self._channel = None             # TcpChannel 快速批量读取
+        self._class_scan_failure_reason = ""
+        self._last_logger_reject_reason = ""
 
     # ---------------- 基础 ----------------
 
@@ -429,6 +431,9 @@ class DeployTrackerReader:
         """
         rw_regions = [(s, e) for s, e, perms, _name in self.mc.regions if "rw" in perms]
         if not rw_regions:
+            self._class_scan_failure_reason = (
+                "读取到的进程内存映射中没有任何 rw 区域，无法搜索 IL2CPP 类名")
+            self._status("  主路径失败: " + self._class_scan_failure_reason)
             return None
         t0 = time.time()
         class_names = tuple(dict.fromkeys(class_names))
@@ -436,6 +441,8 @@ class DeployTrackerReader:
         self._status("共享扫描: 设备侧搜索 " + " / ".join(class_names) + " klass ...")
         name_scan = self._device_scan_regions(rw_regions, list(class_needles.values()))
         if name_scan is None:
+            self._class_scan_failure_reason = "设备侧类名扫描没有返回结果"
+            self._status("  主路径失败: " + self._class_scan_failure_reason)
             return None
 
         names_by_addr = {}
@@ -444,13 +451,24 @@ class DeployTrackerReader:
                 prev = self._read(addr - 1, 1)
                 if not prev or prev == b"\x00":
                     names_by_addr[addr] = name
+        name_counts = {
+            name: sum(1 for value in names_by_addr.values() if value == name)
+            for name in class_names
+        }
+        self._status("  类名命中 " + ", ".join(
+            f"{name}={name_counts[name]}" for name in class_names))
         if not names_by_addr:
-            self._status("  未找到目标类名字符串")
+            self._class_scan_failure_reason = (
+                "所有 rw 区域均未找到 BattleInOut/BattleController 类名字符串；"
+                "可能未进入游戏进程、IL2CPP 元数据布局变化或扫描区域不完整")
+            self._status("  主路径失败: " + self._class_scan_failure_reason)
             return {name: set() for name in class_names}
 
         name_needles = {addr: struct.pack("<Q", addr) for addr in names_by_addr}
         ref_scan = self._device_scan_regions(rw_regions, list(name_needles.values()))
         if ref_scan is None:
+            self._class_scan_failure_reason = "设备侧 Il2CppClass.name 引用扫描没有返回结果"
+            self._status("  主路径失败: " + self._class_scan_failure_reason)
             return None
         klass_names = {}
         for addr, needle in name_needles.items():
@@ -461,14 +479,31 @@ class DeployTrackerReader:
                 namespace = self._read_cstring(self._ptr(klass + 0x18))
                 if namespace == "Torappu.Battle":
                     klass_names[klass] = names_by_addr[addr]
+        klass_counts = {
+            name: sum(1 for value in klass_names.values() if value == name)
+            for name in class_names
+        }
+        self._status("  Torappu.Battle Il2CppClass 命中 " + ", ".join(
+            f"{name}={klass_counts[name]}" for name in class_names))
         if not klass_names:
-            self._status("  未找到目标 Torappu.Battle Il2CppClass")
+            found_names = ", ".join(sorted(set(names_by_addr.values())))
+            self._class_scan_failure_reason = (
+                f"已找到类名字符串 ({found_names})，但没有解析出 namespace="
+                "Torappu.Battle 的 Il2CppClass；Il2CppClass.name/namespace 偏移可能已漂移")
+            self._status("  主路径失败: " + self._class_scan_failure_reason)
             return {name: set() for name in class_names}
+        if "BattleController" in class_names and not klass_counts.get("BattleController"):
+            self._class_scan_failure_reason = (
+                f"类名扫描命中 BattleController={name_counts.get('BattleController', 0)}，"
+                "但没有解析出 Torappu.Battle.BattleController 的 Il2CppClass；"
+                "Il2CppClass.name/namespace 偏移可能已漂移")
 
         gc_regions = self.mc.scan_targets()
         klass_needles = {klass: struct.pack("<Q", klass) for klass in klass_names}
         obj_scan = self._device_scan_regions(gc_regions, list(klass_needles.values()))
         if obj_scan is None:
+            self._class_scan_failure_reason = "设备侧对象 klass 指针扫描没有返回结果"
+            self._status("  主路径失败: " + self._class_scan_failure_reason)
             return None
         objects = {name: set() for name in class_names}
         for klass, needle in klass_needles.items():
@@ -614,6 +649,8 @@ class DeployTrackerReader:
         """快速主路径：阶段 1 产出关卡信息，阶段 2 再绑定操作日志。"""
         objects = self._scan_class_objects(("BattleInOut", "BattleController"))
         if objects is None:
+            if not self._class_scan_failure_reason:
+                self._class_scan_failure_reason = "设备侧类/对象扫描不可用，未返回候选集合"
             return False
         bc_candidates = self._battle_controller_candidates(objects["BattleController"])
         self._status(f"  BattleController 标量候选 {len(bc_candidates)} 个")
@@ -622,7 +659,29 @@ class DeployTrackerReader:
         self._locate_stage_from_objects(objects["BattleInOut"], bc_candidates)
 
         self._status("[阶段 2/2] 定位关卡内操作记录 ...")
-        return self._bind_battle_controller_candidates(bc_candidates)
+        if not bc_candidates:
+            if self._class_scan_failure_reason:
+                self._status("  主路径失败: " + self._class_scan_failure_reason)
+                return False
+            object_count = len(objects["BattleController"])
+            if object_count:
+                self._class_scan_failure_reason = (
+                    f"klass 扫描命中 {object_count} 个 BattleController 对象，但没有对象通过"
+                    f"战斗标量校验 (state@{hex(BC_STATE)}=1..3, "
+                    f"speedLevel@{hex(BC_SPEED_LEVEL)}=0..8, "
+                    f"realPlayTime@{hex(BC_REAL_PLAY_TIME)}=0..100000)；"
+                    "相关字段偏移可能已漂移，或当前不在作战中")
+            else:
+                self._class_scan_failure_reason = (
+                    "已解析 BattleController 的 Il2CppClass，但在可扫描匿名 GC 堆中"
+                    "没有找到以该 klass 指针开头的对象；对象可能不在当前扫描区域或尚未创建")
+            self._status("  主路径失败: " + self._class_scan_failure_reason)
+            return False
+
+        ok = self._bind_battle_controller_candidates(bc_candidates)
+        if not ok and not self._class_scan_failure_reason:
+            self._class_scan_failure_reason = "BattleController 候选存在，但未能绑定有效操作日志链"
+        return ok
 
     # ---------------- 定位流程 ----------------
 
@@ -638,6 +697,8 @@ class DeployTrackerReader:
         self._journal_meta = {}
         self._battle_in_out_addr = 0
         self._stage_info = {}
+        self._class_scan_failure_reason = ""
+        self._last_logger_reject_reason = ""
 
         try:
             self.mc.reload_maps()
@@ -647,9 +708,18 @@ class DeployTrackerReader:
 
         # memsrv v4 可在设备侧按 klass 指针精确扫描，通常十几秒即可定位，且
         # 零日志可用。类扫描没有找到有效对象时，再换用完整堆快照定位算法。
-        if self._locate_via_device_class_scan():
-            return True
-        self._status("类扫描未定位到有效对象，改用完整堆快照算法 ...")
+        try:
+            if self._locate_via_device_class_scan():
+                return True
+        except Exception as exc:
+            # 保持既有语义：设备扫描协议/连接异常直接上抛。完整堆回退同样依赖
+            # 内存通道，此时盲目继续通常只会掩盖真正的 I/O 错误。
+            self._status(
+                f"设备侧类扫描异常，未进入堆快照回退: {type(exc).__name__}: {exc}")
+            raise
+        reason = self._class_scan_failure_reason or "设备侧类扫描未定位到有效操作链（未知原因）"
+        self._status(f"类扫描主路径失败原因: {reason}")
+        self._status("触发完整 GC 堆快照回退：主路径已正常完成，但没有绑定有效的当前操作链")
 
         # ---- 第 1 遍: 堆快照 + LogItem 数值候选 ----
         targets = self.mc.scan_targets()
@@ -789,42 +859,60 @@ class DeployTrackerReader:
             self._status("定位失败: 未找到 BattleLogger / ReplayController")
         return ok
 
-    def _validate_log_list(self, list_addr) -> bool:
-        """校验 List<LogItem> 容器；size==0 是刚进关卡时的正常状态。"""
+    def _validate_log_list_detail(self, list_addr):
+        """校验 List<LogItem>，返回 ``(是否有效, 失败原因)``。"""
         if not self.mc.is_ptr(list_addr):
-            return False
+            return False, f"m_logs={hex(list_addr) if list_addr else 'NULL'} 不是有效 rw 指针"
         name = self._klass_name(list_addr)
         if not (name and name.startswith("List")):
-            return False
+            return False, f"m_logs klass={name!r}，不是 List"
         d = self._read(list_addr, 0x20)
         if not d:
-            return False
+            return False, "无法读取 m_logs 的 List 头"
         items = struct.unpack_from("<Q", d, LIST_ITEMS)[0]
         size = struct.unpack_from("<i", d, LIST_SIZE)[0]
         if not (0 <= size <= 50000):
-            return False
+            return False, f"m_logs._size={size} 超出 0..50000"
         # 空 List 在不同运行时中可能使用共享空数组，也可能暂时为 NULL。
         if size == 0:
-            return items == 0 or self.mc.is_ptr(items)
+            if items == 0 or self.mc.is_ptr(items):
+                return True, ""
+            return False, f"空 m_logs 的 _items={hex(items)} 既非 NULL 也不是有效 rw 指针"
         if not self.mc.is_ptr(items):
-            return False
+            return False, f"m_logs._items={hex(items)} 不是有效 rw 指针"
         max_d = self._read(items + ARRAY_MAX_LENGTH, 4)
         if not max_d:
-            return False
+            return False, "无法读取 m_logs._items.max_length"
         max_len = struct.unpack("<i", max_d)[0]
-        return size <= max_len <= 50000
+        if not (size <= max_len <= 50000):
+            return False, f"m_logs 容量关系无效: _size={size}, max_length={max_len}"
+        return True, ""
+
+    def _validate_log_list(self, list_addr) -> bool:
+        """校验 List<LogItem> 容器；size==0 是刚进关卡时的正常状态。"""
+        ok, _reason = self._validate_log_list_detail(list_addr)
+        return ok
 
     def _bind_battle_logger(self, bc_addr, logger_addr, field_offset) -> bool:
         """强校验并绑定 BC -> BattleLogger -> m_logs 链。"""
-        if self._klass_name(logger_addr) != "BattleLogger":
+        logger_name = self._klass_name(logger_addr)
+        if logger_name != "BattleLogger":
+            self._last_logger_reject_reason = f"klass={logger_name!r}，不是 BattleLogger"
             return False
         # 防止命中上一局仍滞留在 GC 堆中的 Logger。
-        if self._ptr(logger_addr + LOGGER_CONTROLLER) != bc_addr:
+        controller = self._ptr(logger_addr + LOGGER_CONTROLLER)
+        if controller != bc_addr:
+            self._last_logger_reject_reason = (
+                f"m_controller={hex(controller) if controller else 'NULL'}，"
+                f"未反向指回候选 BattleController {hex(bc_addr)}")
             return False
         logs = self._ptr(logger_addr + LOGGER_LOGS)
-        if not self._validate_log_list(logs):
+        list_ok, list_reason = self._validate_log_list_detail(logs)
+        if not list_ok:
+            self._last_logger_reject_reason = list_reason
             return False
 
+        self._last_logger_reject_reason = ""
         self._bc_addr = bc_addr
         self._logger_addr = logger_addr
         self._logs_list_addr = logs
@@ -848,12 +936,26 @@ class DeployTrackerReader:
         live_native = sum(1 for native_rank, _sr, _bc, _st in ranked if native_rank == 0)
         self._status(f"  找到 {len(ranked)} 个 BattleController 候选, "
                      f"其中 {live_native} 个仍绑定 Unity 原生对象")
+        if not ranked:
+            self._class_scan_failure_reason = "BattleController 标量候选列表为空"
+            self._status("  主路径失败: " + self._class_scan_failure_reason)
+            return False
         if not live_native:
-            self._status("  候选均为已销毁的旧 BattleController")
+            states = ", ".join(
+                f"{hex(bc)}:{BATTLE_STATE_NAMES.get(state, state)}"
+                for _nr, _sr, bc, state in ranked[:8])
+            self._class_scan_failure_reason = (
+                f"{len(ranked)} 个 BattleController 候选的 m_CachedPtr@"
+                f"{hex(UNITY_CACHED_PTR)} 均无效，判定为已销毁/残留对象"
+                + (f"；候选状态 {states}" if states else ""))
+            self._status("  主路径失败: " + self._class_scan_failure_reason)
             return False
 
         # 当前实测偏移优先；其余范围仅作版本漂移兜底，并覆盖旧 dump 的 0x100。
         xoffs = [BC_LOGGER] + [x for x in range(0xC0, 0x148, 8) if x != BC_LOGGER]
+        logger_class_hits = 0
+        logger_rejections = []
+        valid_field_ptrs = 0
         for native_rank, _state_rank, bc, state in ranked:
             if native_rank:
                 continue
@@ -863,12 +965,18 @@ class DeployTrackerReader:
                     p = struct.unpack("<Q", d)[0]
                     if self.mc.is_ptr(p):
                         ptrs[xoff] = p
+            valid_field_ptrs += len(ptrs)
             names = self._klass_names_batch(list(ptrs.values()))
             for xoff in xoffs:
                 logger = ptrs.get(xoff, 0)
                 if not logger or names.get(logger) != "BattleLogger":
                     continue
+                logger_class_hits += 1
                 if not self._bind_battle_logger(bc, logger, xoff):
+                    detail = self._last_logger_reject_reason or "未知强校验失败"
+                    logger_rejections.append(
+                        f"BC {hex(bc)} +{hex(xoff)} -> {hex(logger)}: {detail}")
+                    self._status(f"  排除 BattleLogger 候选: {logger_rejections[-1]}")
                     continue
                 self._status(f"  BattleController @ {hex(bc)} "
                              f"(state={BATTLE_STATE_NAMES.get(state, state)}, "
@@ -878,7 +986,21 @@ class DeployTrackerReader:
                 self._resolve_replay_controller()
                 return True
 
-        self._status("  未找到能反向指回当前 BattleController 的 BattleLogger")
+        if logger_class_hits == 0:
+            self._class_scan_failure_reason = (
+                f"{live_native} 个存活 BattleController 的字段区 "
+                f"(+{hex(min(xoffs))}..+{hex(max(xoffs))}，优先 +{hex(BC_LOGGER)})"
+                f"共解析 {valid_field_ptrs} 个有效指针，但没有一个对象的 klass 是 BattleLogger；"
+                "m_logger 字段范围可能已漂移或 Logger 尚未创建")
+        else:
+            unique_rejections = list(dict.fromkeys(logger_rejections))
+            detail = "；".join(unique_rejections[:6])
+            if len(unique_rejections) > 6:
+                detail += f"；另有 {len(unique_rejections) - 6} 个失败候选"
+            self._class_scan_failure_reason = (
+                f"找到 {logger_class_hits} 个 BattleLogger klass 候选，但全部未通过"
+                f"BC 反向指针/List<LogItem> 强校验：{detail}")
+        self._status("  主路径失败: " + self._class_scan_failure_reason)
         return False
 
     def _locate_via_battle_controller(self, snap) -> bool:

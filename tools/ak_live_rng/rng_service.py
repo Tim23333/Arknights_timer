@@ -82,6 +82,8 @@ class RngService:
         self._rescan_due = None
         self._rescan_generation = 0
         self._thread = None
+        self._lifecycle_lock = threading.Lock()
+        self._reader_closed = False
 
     # ---------------- 状态 ----------------
 
@@ -93,18 +95,30 @@ class RngService:
 
     def attach(self):
         """连接一次 (成功 True); 重试策略由调用方决定。注入 reader 时恒 True。"""
+        if self._stop.is_set():
+            return False
         if self.reader is not None:
             return True
         if self.backend == "adb":
             try:
                 from adb_reader import AdbReader
-                self.reader = AdbReader.connect(
+                reader = AdbReader.connect(
                     adb_path=self.adb_path, package=self.package,
                     status=self._status, adb_serial=self.adb_serial)
-                self.package = self.reader.mc.package
-                self.adb_serial = self.reader.mc.adb_serial
+                with self._lifecycle_lock:
+                    if self._stop.is_set():
+                        close_reader = True
+                    else:
+                        self.reader = reader
+                        self._reader_closed = False
+                        close_reader = False
+                if close_reader:
+                    self._close_reader_resource(reader)
+                    return False
+                self.package = reader.mc.package
+                self.adb_serial = reader.mc.adb_serial
                 self.process = "%s / %s (pid %d)" % (
-                    self.adb_serial, self.package, self.reader.mc.pid)
+                    self.adb_serial, self.package, reader.mc.pid)
                 return True
             except Exception as ex:
                 self._status("adb 连接失败: %s" % ex)
@@ -118,7 +132,17 @@ class RngService:
         for name in (self.process_names or memscan.EMULATOR_PROCESSES):
             try:
                 pm = pymem.Pymem(name)
-                self.reader = memscan.PymemReader(pm)
+                reader = memscan.PymemReader(pm)
+                with self._lifecycle_lock:
+                    if self._stop.is_set():
+                        close_reader = True
+                    else:
+                        self.reader = reader
+                        self._reader_closed = False
+                        close_reader = False
+                if close_reader:
+                    self._close_reader_resource(reader)
+                    return False
                 self.process = name
                 return True
             except Exception:
@@ -130,6 +154,8 @@ class RngService:
 
     def locate(self):
         """定位引擎并重建 tracker 组 (缓存优先, 成功写缓存)。"""
+        if self._stop.is_set():
+            return False
         self._status("扫描定位 RNG 引擎 ...")
         self._preserve_trackers()
         if self.backend == "adb" and self.reader is not None:
@@ -153,8 +179,12 @@ class RngService:
             except Exception as ex:
                 self._status("扫描异常: %s" % ex)
                 return False
-            if engines:
+            if self._stop.is_set():
+                return False
+            if engines and self.use_cache:
                 self._save_cache(engines)
+        if self._stop.is_set():
+            return False
         with self._lock:
             self._trackers = {e["id"]: EngineTracker(self.reader, e) for e in engines}
             self._selected_id = None
@@ -218,19 +248,94 @@ class RngService:
 
     def start(self):
         """启动后台轮询线程 (幂等)。"""
-        if self._thread and self._thread.is_alive():
-            return
-        self._stop.clear()
-        self._thread = threading.Thread(target=self._poll_loop, daemon=True)
-        self._thread.start()
+        with self._lifecycle_lock:
+            if self._thread and self._thread.is_alive():
+                return True
+            # stop() 会释放进程句柄/TCP 通道，服务实例按一次性生命周期使用。
+            # UI 的重新扫描本来就会新建 RngService，拒绝复活旧实例可避免旧的
+            # 延迟重扫线程或已关闭 reader 被再次使用。
+            if self._reader_closed:
+                return False
+            self._stop.clear()
+            self._thread = threading.Thread(
+                target=self._poll_loop, name="ak-rng-poll", daemon=True)
+            self._thread.start()
+        return True
 
-    def stop(self):
-        self._preserve_trackers()
+    @staticmethod
+    def _close_reader_resource(reader):
+        """尽力释放不同 reader 后端，并打断可能阻塞的 memsrv recv。
+
+        首选 reader 自己的 close()。旧版/测试 reader 没有统一接口时，兼容
+        ``chan``/``_chan``、``mc`` 以及 pymem 的 ``close_process()``。
+        所有关闭操作都必须允许重复调用且不能阻止后续资源继续回收。
+        """
+        if reader is None:
+            return
+        close = getattr(reader, "close", None)
+        if callable(close):
+            try:
+                close()
+                return
+            except Exception:
+                pass
+
+        seen = set()
+        for name in ("chan", "_chan", "mc"):
+            resource = getattr(reader, name, None)
+            if resource is None or id(resource) in seen:
+                continue
+            seen.add(id(resource))
+            closer = getattr(resource, "close", None)
+            if callable(closer):
+                try:
+                    closer()
+                except Exception:
+                    pass
+
+        pm = getattr(reader, "pm", None)
+        close_process = getattr(pm, "close_process", None)
+        if callable(close_process):
+            try:
+                close_process()
+            except Exception:
+                pass
+
+    def stop(self, timeout=2.0):
+        """停止轮询并释放 reader；重复调用安全。
+
+        先关闭 reader/TCP 通道以唤醒阻塞读取，再有限时等待轮询线程退出。
+        从轮询线程自身调用时不会 self-join。返回值表示线程是否已经结束；
+        等待时间始终有界，``timeout=None`` 仍使用默认的 2 秒上限。
+        """
         self._stop.set()
         with self._rescan_lock:
             self._rescan_generation += 1
             self._rescan_due = None
             self._rescan.clear()
+        with self._lifecycle_lock:
+            thread = self._thread
+            if self._reader_closed:
+                reader = None
+            else:
+                reader = self.reader
+                self._reader_closed = True
+        self._close_reader_resource(reader)
+
+        current = threading.current_thread()
+        if thread is not None and thread is not current and thread.is_alive():
+            try:
+                wait = 2.0 if timeout is None else max(0.0, float(timeout))
+                thread.join(wait)
+            except (RuntimeError, ValueError):
+                # 尚未 start 或解释器关闭阶段；状态在下方统一判断。
+                pass
+        # self-call 只负责发出停止请求，函数返回时当前线程显然仍存活，因而
+        # 不能谎报“已经结束”；它会在 stop() 返回后自然退出 _poll_loop。
+        stopped = thread is None or not thread.is_alive()
+        if stopped:
+            self._preserve_trackers()
+        return stopped
 
     def request_rescan(self, delay=0):
         """安排一次重扫；已有更早任务时去重，更紧急的请求会替换较晚任务。"""
@@ -269,6 +374,8 @@ class RngService:
                 self._rescan.clear()
                 self.locate()
             for t in self.trackers():
+                if self._stop.is_set():
+                    break
                 try:
                     r = t.poll()
                     if r is None:
@@ -281,7 +388,7 @@ class RngService:
             if now - last_watch >= WATCH_INTERVAL:
                 last_watch = now
                 self._watch_objects()
-            time.sleep(self.poll_interval)
+            self._stop.wait(self.poll_interval)
 
     def _watch_objects(self):
         """静态槽反查: 重新开战后 BattleController 静态字段指向新建的
