@@ -4,6 +4,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
@@ -34,6 +35,28 @@ from backend.desktop_app import (
 
 
 class EnemyFormattingTests(unittest.TestCase):
+    def test_external_selected_detail_does_not_sample_or_publish_all_units(self):
+        requests = {
+            "enemy_detail": {
+                "scopeAll": False, "ids": {"enemy-2"}, "rateHz": 60.0,
+            },
+            "character_detail": {
+                "scopeAll": False, "ids": set(), "rateHz": 0.0,
+            },
+        }
+        worker = EnemyPollWorker(
+            object(), detail_request_provider=lambda: requests)
+        first = SimpleNamespace(addr=101, eid="1")
+        second = SimpleNamespace(addr=202, eid="2")
+        worker._external_detail_due = float("inf")
+        worker._external_enemy_details = {101: first, 202: second}
+        snap = {"ok": True, "enemies": [first, second], "characters": []}
+
+        worker._append_external_details(snap)
+
+        self.assertEqual(snap["external_enemy_details"], [second])
+        self.assertEqual(snap["external_character_details"], [])
+
     def test_skill_ready_requires_actual_zero(self):
         self.assertIn('0.04/10.00s', format_skill_cd(
             [('skill', 0.04, 10.0)], prec=2))
@@ -161,7 +184,7 @@ class EnemyUiTests(unittest.TestCase):
     def test_enemy_mini_mode_expands_to_twenty_and_supports_mouse_actions(self):
         with tempfile.TemporaryDirectory() as temp_dir, \
                 patch.object(CoachWindow, '_start_hook_server', lambda self: None), \
-                patch.object(CoachWindow, '_start_ws_server', lambda self: None), \
+                patch.object(CoachWindow, '_start_websocket_api', lambda self: None), \
                 patch.object(CoachWindow, '_start_workers', lambda self: None), \
                 patch.object(CoachWindow, '_start_timers', lambda self: None):
             window = CoachWindow()
@@ -242,7 +265,7 @@ class EnemyUiTests(unittest.TestCase):
 
     def test_main_sections_collapse_and_enemy_table_uses_freed_height(self):
         with patch.object(CoachWindow, '_start_hook_server', lambda self: None), \
-                patch.object(CoachWindow, '_start_ws_server', lambda self: None), \
+                patch.object(CoachWindow, '_start_websocket_api', lambda self: None), \
                 patch.object(CoachWindow, '_start_workers', lambda self: None), \
                 patch.object(CoachWindow, '_start_timers', lambda self: None):
             window = CoachWindow()
@@ -288,7 +311,7 @@ class EnemyUiTests(unittest.TestCase):
 
     def test_every_main_section_can_float_and_dock_without_recreating_content(self):
         with patch.object(CoachWindow, '_start_hook_server', lambda self: None), \
-                patch.object(CoachWindow, '_start_ws_server', lambda self: None), \
+                patch.object(CoachWindow, '_start_websocket_api', lambda self: None), \
                 patch.object(CoachWindow, '_start_workers', lambda self: None), \
                 patch.object(CoachWindow, '_start_timers', lambda self: None):
             window = CoachWindow()
@@ -640,7 +663,7 @@ class EnemyUiTests(unittest.TestCase):
     def test_main_table_physically_reorders_when_pending_enemy_spawns(self):
         with tempfile.TemporaryDirectory() as temp_dir, \
                 patch.object(CoachWindow, '_start_hook_server', lambda self: None), \
-                patch.object(CoachWindow, '_start_ws_server', lambda self: None), \
+                patch.object(CoachWindow, '_start_websocket_api', lambda self: None), \
                 patch.object(CoachWindow, '_start_workers', lambda self: None), \
                 patch.object(CoachWindow, '_start_timers', lambda self: None):
             window = CoachWindow()

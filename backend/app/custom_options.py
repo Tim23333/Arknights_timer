@@ -24,6 +24,9 @@ DEFAULTS: dict[str, Any] = {
     "auto_addressing": {
         "enabled": False,
     },
+    "websocket_api": {
+        "enabled": True,
+    },
     "toast": {
         "enabled": True,
         "duration_ms": {

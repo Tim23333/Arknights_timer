@@ -5,7 +5,6 @@
 """
 from __future__ import annotations
 
-import asyncio
 import ctypes
 from ctypes import wintypes
 import json
@@ -36,6 +35,7 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QProgressBar,
+    QPlainTextEdit,
     QPushButton,
     QScrollArea,
     QSizeGrip,
@@ -61,6 +61,7 @@ for _p in (str(_BACKEND_ROOT), str(_REPO_ROOT)):
         sys.path.insert(0, _p)
 
 from app.services.timer_provider import TimerDataProvider
+from app.services.websocket_api import WebSocketApi, entity_public_id
 from app.battle_session_cache import BattleSessionCache
 from app.diagnostic_log import DiagnosticLogManager, DiagnosticLogWindow
 from app.version import VERSION, VERSION_LABEL
@@ -844,12 +845,15 @@ class EnemyPollWorker(QThread):
     snapshot = Signal(dict)
 
     def __init__(self, reader: EnemyReader, character_reader: CharacterReader | None = None,
-                 interval: float = ENEMY_POLL_SEC) -> None:
+                 interval: float = ENEMY_POLL_SEC,
+                 detail_request_provider=None) -> None:
         super().__init__()
         self.reader = reader
         self.character_reader = character_reader
         self.interval = interval
         self._detail_lock = threading.Lock()
+        # EnemyReader 与 CharacterReader 共用详情 TCP 通道，详情请求必须串行化。
+        self._shared_detail_io_lock = threading.Lock()
         self._detail_addr = 0
         self._detail_due = 0.0
         self._detail_heavy_cache = None
@@ -861,6 +865,15 @@ class EnemyPollWorker(QThread):
         self._character_detail_cache = None
         self._character_detail_loading = False
         self._character_detail_error = ''
+        # 外部完整详情由单一共享任务读取，全部客户端复用同一缓存。
+        self._detail_request_provider = detail_request_provider
+        self._external_detail_lock = threading.Lock()
+        self._external_detail_due = 0.0
+        self._external_detail_loading = False
+        self._external_enemy_details: dict[int, object] = {}
+        self._external_character_details: dict[int, object] = {}
+        self._external_detail_error = ''
+        self._external_detail_revision = 0
         self.track_unattributed_damage = False
         self._snapshot_lock = threading.Lock()
         self._latest_snapshot = None
@@ -928,7 +941,8 @@ class EnemyPollWorker(QThread):
             cache = None
             error = ''
             try:
-                full = self.reader.read_enemy_detail(addr, heavy_only=True)
+                with self._shared_detail_io_lock:
+                    full = self.reader.read_enemy_detail(addr, heavy_only=True)
                 if full is not None:
                     cache = {
                         'raw_attributes': dict(full.raw_attributes),
@@ -1014,7 +1028,8 @@ class EnemyPollWorker(QThread):
             detail = None
             error = ''
             try:
-                detail = self.character_reader.read_character_detail(addr)
+                with self._shared_detail_io_lock:
+                    detail = self.character_reader.read_character_detail(addr)
                 if detail is None:
                     error = '干员详情对象已失效。'
             except Exception as exc:
@@ -1058,6 +1073,102 @@ class EnemyPollWorker(QThread):
         snap['detail_character'] = live
         if error:
             snap['character_detail_error'] = error
+
+    def _start_external_detail_refresh(self, enemies, characters, rate_hz: float) -> None:
+        with self._external_detail_lock:
+            if self._external_detail_loading:
+                return
+            self._external_detail_loading = True
+        enemy_addrs = [int(getattr(item, 'addr', 0) or 0) for item in enemies]
+        character_addrs = [int(getattr(item, 'addr', 0) or 0) for item in characters]
+
+        def load() -> None:
+            enemy_details, character_details = {}, {}
+            error = ''
+            try:
+                with self._shared_detail_io_lock:
+                    for addr in enemy_addrs:
+                        detail = self.reader.read_enemy_detail(addr, heavy_only=True)
+                        if detail is not None:
+                            enemy_details[addr] = detail
+                    if self.character_reader is not None:
+                        for addr in character_addrs:
+                            detail = self.character_reader.read_character_detail(addr)
+                            if detail is not None:
+                                character_details[addr] = detail
+            except Exception as exc:
+                error = f'外部详情采样失败：{exc}'
+            finally:
+                with self._external_detail_lock:
+                    if not error:
+                        self._external_enemy_details = enemy_details
+                        self._external_character_details = character_details
+                        self._external_detail_revision += 1
+                    self._external_detail_error = error
+                    self._external_detail_due = time.monotonic() + 1.0 / max(rate_hz, 0.2)
+                    self._external_detail_loading = False
+
+        threading.Thread(target=load, name='ExternalDetailRefresh', daemon=True).start()
+
+    def _append_external_details(self, snap: dict) -> None:
+        provider = self._detail_request_provider
+        requests = provider() if provider is not None else {}
+        enemy_request = requests.get("enemy_detail", {})
+        character_request = requests.get("character_detail", {})
+        rate_hz = max(float(enemy_request.get("rateHz", 0.0) or 0.0),
+                      float(character_request.get("rateHz", 0.0) or 0.0))
+        if not snap.get('ok'):
+            return
+        if rate_hz <= 0.0:
+            with self._external_detail_lock:
+                if self._external_enemy_details or self._external_character_details:
+                    self._external_enemy_details = {}
+                    self._external_character_details = {}
+                    self._external_detail_revision += 1
+                snap['external_enemy_details'] = []
+                snap['external_character_details'] = []
+                snap['external_detail_loading'] = False
+                snap['external_detail_revision'] = self._external_detail_revision
+            return
+
+        def requested_entities(topic: str, rows, request):
+            selected = set(str(item) for item in request.get("ids", ()))
+            scope_all = bool(request.get("scopeAll"))
+            return [entity for index, entity in enumerate(rows, 1)
+                    if scope_all
+                    or entity_public_id(topic, entity, index) in selected]
+
+        enemies = requested_entities(
+            "enemy", list(snap.get('enemies', ())), enemy_request)
+        characters = requested_entities(
+            "character", list(snap.get('characters', ())), character_request)
+        if not enemies and not characters:
+            with self._external_detail_lock:
+                self._external_enemy_details = {}
+                self._external_character_details = {}
+                self._external_detail_due = time.monotonic() + 1.0 / rate_hz
+                snap['external_enemy_details'] = []
+                snap['external_character_details'] = []
+                snap['external_detail_loading'] = False
+                snap['external_detail_revision'] = self._external_detail_revision
+            return
+        enemy_addrs = {int(getattr(item, 'addr', 0) or 0) for item in enemies}
+        character_addrs = {int(getattr(item, 'addr', 0) or 0) for item in characters}
+        with self._external_detail_lock:
+            due = self._external_detail_due
+        if time.monotonic() >= due:
+            self._start_external_detail_refresh(enemies, characters, rate_hz)
+        with self._external_detail_lock:
+            snap['external_enemy_details'] = [
+                detail for addr, detail in self._external_enemy_details.items()
+                if addr in enemy_addrs]
+            snap['external_character_details'] = [
+                detail for addr, detail in self._external_character_details.items()
+                if addr in character_addrs]
+            snap['external_detail_loading'] = self._external_detail_loading
+            snap['external_detail_revision'] = self._external_detail_revision
+            if self._external_detail_error:
+                snap['external_detail_error'] = self._external_detail_error
 
     def _collect_complete_snapshot(self) -> dict:
         channel = getattr(self.reader, '_chan', None)
@@ -1139,6 +1250,7 @@ class EnemyPollWorker(QThread):
         if not self.isInterruptionRequested():
             self._append_detail(snap)
             self._append_character_detail(snap)
+            self._append_external_details(snap)
         # 首帧进入 poll_fast 时通道可能刚刚创建，重新取一次以提交首帧计划。
         channel = getattr(self.reader, '_chan', channel)
         if channel is not None and hasattr(channel, 'end_frame_prefetch'):
@@ -1966,6 +2078,7 @@ class CoachWindow(QMainWindow):
     gameTimeReset = Signal()
     # memory worker 只负责判断地址失效；Qt worker 的创建/启动回到主线程。
     guestRelocateRequested = Signal()
+    websocketServiceStatus = Signal(dict)
 
     def __init__(self) -> None:
         super().__init__()
@@ -1988,11 +2101,12 @@ class CoachWindow(QMainWindow):
         # 不直接跨线程读 Qt 复选框（isChecked 无跨线程保证）。
         self._auto_addressing_enabled = False
         self._stop_event = threading.Event()
+        self._closing = False
+        self._ws_toast_state: tuple | None = None
+        self.websocketServiceStatus.connect(self._on_websocket_service_status)
 
         self._hook_port: int = 0
-        self._ws_port: int = 0
-        self._ws_clients: set = set()
-        self._ws_loop: asyncio.AbstractEventLoop | None = None
+        self._websocket_api: WebSocketApi | None = None
         # 自动检测关卡变化并自动刷新状态
         self._auto_refresh_enabled = False
         self._auto_refresh_wait_gen = 0  # 开关每次变化即作废旧的定时等待链
@@ -2130,7 +2244,7 @@ class CoachWindow(QMainWindow):
                 pass
         self._theme_timer.start()
         self._start_hook_server()
-        self._start_ws_server()
+        self._start_websocket_api()
         self._start_workers()
         self._start_timers()
         if self._diagnostic_log_window is not None:
@@ -2710,6 +2824,14 @@ class CoachWindow(QMainWindow):
         row_custom_toast.addStretch(1)
         l_custom.addLayout(row_custom_toast)
 
+        # 行 3：本机接口服务独占一行，避免与功能性开关混排。
+        row_custom_websocket = QHBoxLayout()
+        self.chk_websocket_api = QCheckBox("启用本地 WebSocket 接口服务")
+        self.chk_websocket_api.toggled.connect(self._on_websocket_api_toggled)
+        row_custom_websocket.addWidget(self.chk_websocket_api)
+        row_custom_websocket.addStretch(1)
+        l_custom.addLayout(row_custom_websocket)
+
         main.addWidget(box_custom)
 
         self._collapsible_sections = {
@@ -2735,6 +2857,7 @@ class CoachWindow(QMainWindow):
         self._load_auto_refresh_options()
         self._load_auto_addressing_options()
         self._load_toast_options()
+        self._load_websocket_api_options()
 
         self._apply_theme(self._theme_dark, force=True)
 
@@ -2788,31 +2911,260 @@ class CoachWindow(QMainWindow):
         self._apply_theme(_system_prefers_dark())
 
     def _show_ws_info(self) -> None:
-        if self._ws_port == 0:
-            QMessageBox.information(self, "WebSocket 接口", "WebSocket 服务未启动（可能缺少 websockets 库）。\n请执行 pip install websockets 后重试。")
+        api = self._websocket_api
+        if api is None or not api.status_snapshot().get('enabled'):
+            QMessageBox.information(self, "WebSocket 接口", "WebSocket 服务已在“更多自定义选项”中关闭。")
             return
-        addr = f"ws://127.0.0.1:{self._ws_port}"
+        status = api.status_snapshot()
+        if not status.get('port'):
+            QMessageBox.information(
+                self, "WebSocket 接口",
+                f"WebSocket 服务未能启动。\n{status.get('error') or '正在启动或端口 8765 被占用。'}")
+            return
+        addr = f"ws://127.0.0.1:{status['port']}"
         text = (
-            f"WebSocket 接口地址：\n{addr}\n\n"
-            "服务端实时推送游戏时间与逻辑帧，客户端只需连接即可接收数据。\n\n"
-            "消息格式（JSON）：\n"
-            '{\n'
-            '  "game_time": 12.345,    // float，游戏内时间（秒）\n'
-            '  "frame_count": 741,     // int，游戏逻辑帧\n'
-            '  "connected": true       // bool，内存读取是否正常\n'
-            '}\n\n'
-            "JavaScript 连接示例：\n"
-            f'const ws = new WebSocket("{addr}");\n'
-            "ws.onmessage = (e) => {\n"
-            "  const data = JSON.parse(e.data);\n"
-            "  console.log(data.game_time, data.frame_count);\n"
-            "};"
+            "Arknights Timer 本机 WebSocket 接口（v1）\n"
+            "================================================\n\n"
+            "一、服务状态与端点\n"
+            "----------------\n"
+            "状态：运行中（仅监听本机 127.0.0.1；不接受远程连接）\n"
+            f"游戏实时数据：{addr}/v1/game\n"
+            f"运维健康状态：{addr}/v1/ops\n"
+            "关闭路径：更多自定义选项 → 取消“启用本地 WebSocket 接口服务”。\n"
+            "关闭后会断开客户端并释放监听端口。\n\n"
+            "二、通用服务端消息信封\n"
+            "----------------------\n"
+            "每条消息均为 JSON，固定包含：\n"
+            "  type          消息名称，例如 battle.updated\n"
+            "  schemaVersion 协议版本，当前固定为 1\n"
+            "  sessionId     当前战斗会话标识；新局会改变\n"
+            "  sequence      单调递增序号，可用于检测漏包\n"
+            "  emittedAt     插件生成消息的 ISO 8601 时间\n"
+            "  data          对应主题的公开数据\n\n"
+            "三、连接与订阅\n"
+            "----------------\n"
+            "连接 /v1/game 后，先发送 subscribe。仅会收到已订阅主题的数据。\n"
+            "rateHz 表示每秒最多发送次数；实际频率可能因数据未变化、\n"
+            "采样质量或慢客户端背压而降低。重复 subscribe 同一主题可更新频率。\n\n"
+            "示例：\n"
+            "{\n"
+            '  "type": "subscribe",\n'
+            '  "requestId": "dashboard-1",\n'
+            '  "topics": {\n'
+            '    "battle": {"rateHz": 20},\n'
+            '    "stage": {"rateHz": 2},\n'
+            '    "enemies": {"rateHz": 10},\n'
+            '    "characters": {"rateHz": 10},\n'
+            '    "enemy_detail": {"scope": "all", "rateHz": 60},\n'
+            '    "character_detail": {"scope": "selected", "ids": ["character-1"], "rateHz": 10},\n'
+            '    "deploy": {"rateHz": 4, "includeHistory": true},\n'
+            '    "rng": {"rateHz": 2},\n'
+            '    "quality": {"rateHz": 2}\n'
+            '  }\n'
+            "}\n\n"
+            "成功后会收到 subscription.updated，其中包含每个主题请求频率与实际生效频率。\n"
+            "取消订阅：{\"type\": \"unsubscribe\", \"topics\": [\"rng\", \"characters\"]}\n"
+            "重新请求部署历史：{\"type\": \"deploy.get_history\"}\n\n"
+            "四、游戏主题、默认值与可调范围\n"
+            "--------------------------------\n"
+            "battle             默认 20Hz，范围 1–60Hz：战斗时间、逻辑帧、倍速、暂停、连接状态\n"
+            "stage              默认 2Hz，范围 0.2–20Hz：关卡、地图与编队；变化合并后发送\n"
+            "enemies            默认 10Hz，范围 1–20Hz：全体敌人基础状态、生命、位置、动作\n"
+            "characters         默认 10Hz，范围 1–20Hz：干员/召唤物基础状态、技能和战斗统计\n"
+            "enemy_detail       默认 2Hz，范围 0.2–60Hz：敌人属性、Buff、免疫、技能/行动详情\n"
+            "character_detail   默认 2Hz，范围 0.2–60Hz：干员属性、Buff、天赋、技能详情\n"
+            "deploy             默认 4Hz，范围 1–20Hz：部署、撤退、技能等操作；事件按顺序批量发送\n"
+            "rng                默认 2Hz，范围 1–10Hz：随机流摘要、有限历史与预测\n"
+            "quality            默认 2Hz，范围 0.5–5Hz：采样率、帧一致性、I/O 与发送质量\n\n"
+            "五、完整详情订阅\n"
+            "------------------\n"
+            "scope 仅用于 enemy_detail 与 character_detail；不能用于 enemies、characters\n"
+            "等基础主题。未填写 scope 时，服务按 scope: all 处理。\n\n"
+            "scope: all\n"
+            "  含义：接收当前场上该类单位的全部完整公开详情。\n"
+            "  用法：{\"enemy_detail\": {\"scope\": \"all\", \"rateHz\": 2}}\n"
+            "  ids：不需要；即使提供也不会筛选数据。适合战斗记录、全局可视化与分析。\n\n"
+            "scope: selected\n"
+            "  含义：只接收 ids 中指定单位的完整公开详情。\n"
+            "  用法：{\"character_detail\": {\"scope\": \"selected\",\n"
+            "         \"ids\": [\"character-1\", \"character-2\"], \"rateHz\": 10}}\n"
+            "  ids：必须是字符串数组；敌人 ID 从 enemies.updated.data.items[].id 获取，\n"
+            "  干员/召唤物 ID 从 characters.updated.data.items[].id 获取。\n"
+            "  目标尚未上场、死亡或离场时不会出现在详情 items 中；客户端应继续以\n"
+            "  基础快照判断生命周期，而不是把暂时缺席解释为服务错误。\n\n"
+            "scope 与 rateHz 相互独立：scope 决定“哪些单位”，rateHz 决定“最多多久推一次”。\n"
+            "all 与 selected 都复用共享详情快照；selected 只采样 ids 指定单位，可显著降低内存读取。\n"
+            "完整详情默认 2Hz、最高请求 60Hz；scope: all 的重型全场采样最高 5Hz，\n"
+            "服务可按订阅频率重复发送最新缓存，避免每个客户端重复读取游戏内存。\n"
+            "完整详情由插件共享采样并缓存，所有客户端复用同一份结果；\n"
+            "不会因连接数增加而重复读取游戏内存。60Hz 是最高可请求值，\n"
+            "当读取耗时无法承载时，请依据 quality 数据降低请求频率。\n"
+            "接口绝不公开内存地址、指针、原始内存块、ADB 配置或设备标识；任何公开字符串中\n"
+            "疑似内存地址的 0x 十六进制片段会替换为 [redacted-address]。\n\n"
+            "六、运维接口 /v1/ops\n"
+            "----------------------\n"
+            "连接后立即收到 ops.status，随后默认每 2 秒收到 ops.heartbeat。\n"
+            "可发送 {\"type\":\"subscribe\",\"topics\":{\"ops.heartbeat\":{\"rateHz\":2}}}\n"
+            "以将心跳调整到 0.2–2Hz。data 包含服务版本/运行时长、\n"
+            "timer、enemy、characters、deploy、rng 的模块状态、能力清单，\n"
+            "以及客户端数、丢弃帧数与重同步计数。\n\n"
+            "七、错误与慢客户端\n"
+            "------------------\n"
+            "无效 JSON、未知命令、未知主题、错误频率或无效详情 scope 会返回 error /\n"
+            "subscription.updated 的逐主题错误说明。高频普通帧会合并为最新状态；\n"
+            "请使用 sequence 检测缺口，并在需要时重新订阅以获取最新快照。\n\n"
+            "八、字段级参考\n"
+            "================\n\n"
+            "A. 客户端请求字段\n"
+            "  type: string，命令名。可用 subscribe、unsubscribe、deploy.get_history。\n"
+            "  requestId: string，可选；由客户端用于关联自身请求。\n"
+            "  topics: object，键为主题名，值为 true 或该主题的选项对象。\n"
+            "  rateHz: number，可选；必须落在该主题允许范围内，超范围会被限制。\n"
+            "  scope: string，仅详情主题；缺省为 all。all 接收全体，selected 接收 ids 指定对象。\n"
+            "  ids: string[]，scope=selected 时必填；元素必须来自对应基础快照的 items[].id。\n"
+            "  includeHistory: boolean，deploy 选项；请求当前缓存的完整操作列表。\n\n"
+            "B. subscription.updated.data.topics.<主题名>\n"
+            "  requestedRateHz: number，客户端发来的频率。\n"
+            "  effectiveRateHz: number，服务实际接受的频率。\n"
+            "  error: string，主题或参数错误时出现；该主题不会被订阅。\n\n"
+            "C. battle.updated.data（统一战斗快照）\n"
+            "  battle 始终使用下列固定字段集合。desktop_app 通过\n"
+            "  TimerDataProvider.get_game_data() 取得 game_time/frame_count，并调用\n"
+            "  WebSocketApi.publish_timer() 写入时间与连接字段；敌我完整帧调用\n"
+            "  WebSocketApi.publish_runtime() 时只补充战斗状态字段。两者合并后再发送。\n"
+            "  state: string，idle、initializing、playing、finished、unavailable 或 unknown。\n"
+            "  stateCode: integer|null，底层战斗状态值：0 idle、1 initializing、2 playing、3 finished。\n"
+            "  gameTime: number|null，TimerDataProvider.get_game_data().game_time；仅由\n"
+            "  WebSocketApi.publish_timer() 写入，publish_runtime() 不会覆盖。\n"
+            "  fixedFrame: integer|null，TimerDataProvider.get_game_data().frame_count；仅由\n"
+            "  WebSocketApi.publish_timer() 写入，publish_runtime() 不会覆盖。\n"
+            "  clockSource: string|null，host 为宿主读取，guest 为设备侧读取。\n"
+            "  connected: boolean，时间读取链是否连通。\n"
+            "  configured: boolean，是否已获得可用时间地址。\n"
+            "  sampledAt: string|null，最近时间缓存采样时间。\n"
+            "  message: string，读取状态或失败原因。\n"
+            "  speedLevel: number|null，游戏倍速档位。\n"
+            "  timeScale: number|null，实际时间倍率，0 表示暂停。\n"
+            "  isPaused: boolean|null，当前完整敌我帧是否暂停；尚未取得敌我帧时为 null。\n"
+            "  frameConsistent: boolean|null，完整帧首尾逻辑帧是否一致；尚未取得敌我帧时为 null。\n\n"
+            "E. enemies.updated.data\n"
+            "  items: Enemy[]，当前敌人列表。每个 Enemy 包含：\n"
+            "    id: string，本局稳定业务 ID；用于详情 selected.ids，绝非内存地址。\n"
+            "    name/code: string，敌人显示名与内部敌人代码。\n"
+            "    lifecycle: string，实体生命周期；alive: boolean，是否存活。\n"
+            "    hp/maxHp: number|null，当前与最大生命。\n"
+            "    position: object，m_posInLastFrame 实时坐标快照，含 x/y；action: object，当前公开动作状态。\n"
+            "    shield: number|null，护盾值；abnormalStatus: array，异常状态列表。\n\n"
+            "F. characters.updated.data\n"
+            "  items: Character[]，当前干员/召唤物列表；globalDamageSummary: object|null，全局伤害摘要。\n"
+            "  Character 字段：\n"
+            "    id: string，本局稳定业务 ID；characterId: string，干员配置 ID。\n"
+            "    name: string；kind: operator 或 token；alive: boolean。\n"
+            "    position: object；hp/maxHp: number|null；sp/maxSp: number|null。\n"
+            "    skill: object，当前技能状态；blockedCount: integer，阻挡数。\n"
+            "    buffCount: integer；damageTotal/healingTotal: number，累计统计。\n\n"
+            "G. enemy_detail.updated.data 与 character_detail.updated.data\n"
+            "  loading: boolean，true 表示共享详情采样正在生成下一份快照。\n"
+            "  items: Detail[]。Detail 保留对应基础对象全部字段，并额外包含：\n"
+            "    attributes: object，当前最终属性；rawAttributes: object，原始属性。\n"
+            "    buffs/globalBuffs: array，实体 Buff 与全局 Buff。\n"
+            "    skills: array，敌人技能详情或干员可用技能详情。\n"
+            "    talents: array，干员天赋；敌人通常为空数组。\n"
+            "    specialShield: number|null，特殊护盾汇总。\n"
+            "  注意：对象内部字段会因游戏单位类型变化；未知/不可读值为 null、空对象或空数组。\n\n"
+            "H. stage.updated.data\n"
+            "  stage: object，当前已识别的关卡信息；常用键为 stageId、levelId、code、name。\n"
+            "  squad: array，当前编队原始公开快照；常用键为 charId、charInstId、charName。\n\n"
+            "I. deploy.updated.data\n"
+            "  events: array，实时操作事件；每项通常含 timestamp、uniqueId、op、charId、\n"
+            "  charName、gridRow、gridCol、direction、frame、frameSource、frameSampleTime、frameTimeDelta。\n"
+            "  journal: array，代理作战的静态完整序列；普通作战通常为空数组。\n\n"
+            "J. rng.updated.data\n"
+            "  status: string|null，RNG 服务当前定位/读取状态；其中疑似内存地址会显示为\n"
+            "  [redacted-address]。selected 与 by_role 内的 status 同样遵循此规则。\n"
+            "  selected: object|null，当前选中随机流的公开摘要；selected_id: number|null，对应引擎 ID。\n"
+            "  by_role: object，imp 与 trivial 分别是战斗随机和表现随机流。每条流仅含 id、role、kind、\n"
+            "  label、status、total、cursor/cursor2、history、predictions、rate、activity、paired、rawOnly。\n"
+            "  接口不会提供 process、via、obj、array、内存地址或原始容器指针。\n\n"
+            "K. quality.updated.data\n"
+            "  sampleHz: number|null，敌我采样频率；loopMs/frameMs/ioMs: number|null，耗时指标。\n"
+            "  frameConsistent/pausedSnapshot: boolean；droppedOutboundFrames/resyncCount: integer。\n\n"
+            "L. ops.status / ops.heartbeat 的 data\n"
+            "  service.state/enabled/appVersion/protocolVersion/uptimeSeconds：服务生命周期与版本。\n"
+            "  capabilities.battle/enemies/characters/deploy/rng：各数据是否已有可发布快照。\n"
+            "  modules.timer/enemy/characters/deploy/rng.state：ready、streaming 或 unavailable。\n"
+            "  metrics.gameClients/opsClients/droppedOutboundFrames/resyncCount：连接与背压指标。\n\n"
+            "M. error.data\n"
+            "  code: string，INVALID_JSON、INVALID_SUBSCRIPTION 或 UNSUPPORTED_COMMAND。\n"
+            "  message: string，面向调用方的具体错误原因。\n\n"
+            "JavaScript 最小示例\n"
+            "-------------------\n"
+            f'const ws = new WebSocket("{addr}/v1/game");\n'
+            "ws.onopen = () => ws.send(JSON.stringify({\n"
+            "  type: 'subscribe',\n"
+            "  topics: { battle: { rateHz: 20 }, enemies: { rateHz: 10 } }\n"
+            "}));\n"
+            "ws.onmessage = (event) => console.log(JSON.parse(event.data));\n"
         )
-        dlg = QMessageBox(self)
+        dlg = QDialog(self)
         dlg.setWindowTitle("WebSocket 接口说明")
-        dlg.setText(text)
-        dlg.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse | Qt.TextInteractionFlag.TextSelectableByKeyboard)
+        dlg.resize(860, 720)
+        layout = QVBoxLayout(dlg)
+        document = QPlainTextEdit()
+        document.setReadOnly(True)
+        document.setPlainText(text)
+        document.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+        layout.addWidget(document)
+        close_button = QPushButton("关闭")
+        close_button.clicked.connect(dlg.accept)
+        layout.addWidget(close_button, alignment=Qt.AlignmentFlag.AlignRight)
         dlg.exec()
+
+    def _start_websocket_api(self) -> None:
+        """按已加载的持久化开关创建本机 WebSocket 服务。"""
+        enabled = bool((self._custom_options.get("websocket_api") or {}).get("enabled", True))
+        self._websocket_api = WebSocketApi(
+            enabled=enabled, app_version=VERSION,
+            status_listener=self.websocketServiceStatus.emit,
+        )
+        self._websocket_api.start_if_enabled()
+
+    def _load_websocket_api_options(self) -> None:
+        enabled = bool((self._custom_options.get("websocket_api") or {}).get("enabled", True))
+        self.chk_websocket_api.blockSignals(True)
+        self.chk_websocket_api.setChecked(enabled)
+        self.chk_websocket_api.blockSignals(False)
+
+    def _on_websocket_api_toggled(self, checked: bool) -> None:
+        self._custom_options.set("websocket_api", "enabled", bool(checked))
+        if self._websocket_api is not None:
+            if checked and self._toast is not None:
+                self._toast.show("正在启动本机 WebSocket 服务…", level="info", semantic="info")
+            self._websocket_api.set_enabled(bool(checked))
+
+    def _on_websocket_service_status(self, status: dict) -> None:
+        """在 Qt 主线程把服务生命周期状态显示为现有的气泡提示。"""
+        if self._closing or self._toast is None:
+            return
+        enabled = bool(status.get("enabled"))
+        port = int(status.get("port") or 0)
+        error = str(status.get("error") or "")
+        key = (enabled, port, error)
+        if key == self._ws_toast_state:
+            return
+        self._ws_toast_state = key
+        if not enabled:
+            self._toast.show("本机 WebSocket 服务已关闭", level="info", semantic="info")
+        elif error:
+            self._toast.show(
+                f"WebSocket 服务启动失败：{error}",
+                level="error", semantic="error",
+            )
+        elif port:
+            self._toast.show(
+                f"本机 WebSocket 服务已启动：ws://127.0.0.1:{port}",
+                level="info", semantic="success",
+            )
 
     def _on_toggle_stay_on_top(self, checked: bool) -> None:
         # Qt requires re-show after changing top-most flag.
@@ -2858,68 +3210,6 @@ class CoachWindow(QMainWindow):
                     conn.close()
 
         threading.Thread(target=_serve, name="ak-hook-tcp-server", daemon=True).start()
-
-    def _start_ws_server(self) -> None:
-        try:
-            import websockets
-            from websockets.exceptions import ConnectionClosed
-        except ImportError:
-            return
-
-        def _snapshot_msg() -> str:
-            game = self._provider.get_game_data()
-            return json.dumps({
-                "game_time": game.get("game_time"),
-                "frame_count": game.get("frame_count"),
-                "connected": game.get("connected", False),
-            })
-
-        async def _send_one(ws, msg: str) -> None:
-            try:
-                await ws.send(msg)
-            except ConnectionClosed:
-                self._ws_clients.discard(ws)
-
-        async def _ws_handler(ws):
-            self._ws_clients.add(ws)
-            try:
-                try:
-                    await ws.send(_snapshot_msg())
-                except ConnectionClosed:
-                    return
-                await ws.wait_closed()
-            finally:
-                self._ws_clients.discard(ws)
-
-        async def _ws_push_loop():
-            while not self._stop_event.is_set():
-                clients = list(self._ws_clients)
-                if clients:
-                    msg = _snapshot_msg()
-                    await asyncio.gather(
-                        *(_send_one(ws, msg) for ws in clients),
-                        return_exceptions=True,
-                    )
-                await asyncio.sleep(WS_PUSH_MS / 1000)
-
-        async def _ws_main():
-            async with websockets.serve(
-                _ws_handler, "127.0.0.1", 0,
-            ) as server:
-                self._ws_port = server.sockets[0].getsockname()[1]
-                while not self._stop_event.is_set():
-                    await asyncio.sleep(0.5)
-
-        def _run():
-            self._ws_loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(self._ws_loop)
-            self._ws_loop.run_until_complete(asyncio.gather(
-                _ws_main(),
-                _ws_push_loop(),
-                return_exceptions=True,
-            ))
-
-        threading.Thread(target=_run, name="ak-ws-server", daemon=True).start()
 
     @staticmethod
     def _timeline_static_dir() -> Path | None:
@@ -3112,6 +3402,9 @@ class CoachWindow(QMainWindow):
             try:
                 self._provider.refresh_sample()
                 # 仅从后台读取纯 Python 状态；Qt worker 由 Signal 调回主线程创建。
+                api = self._websocket_api
+                if api is not None:
+                    api.publish_timer(self._provider.get_game_data())
                 clock = self._guest_clock
                 if (self._auto_addressing_enabled
                         and clock is not None
@@ -3128,8 +3421,6 @@ class CoachWindow(QMainWindow):
         调用；emit Signal 由 Qt 排队到主线程槽 _on_game_time_reset_main，
         避免跨线程操作 UI。
         """
-        if not self._auto_refresh_enabled:
-            return
 #        _ga_log("[自动刷新] 收到归0广播（新关卡），触发刷新链")
         self.gameTimeReset.emit()
 
@@ -3140,6 +3431,11 @@ class CoachWindow(QMainWindow):
         命中旧对象并退化为数 GB 全堆扫描；若上一局刷新仍在进行，还会形成
         超时/重入。新的归零先取消旧链，再用独立代际只保留最新一次等待。
         """
+        if getattr(self, '_closing', False):
+            return
+        api = getattr(self, '_websocket_api', None)
+        if api is not None:
+            api.begin_session()
         if not self._auto_refresh_enabled:
             return
         self._stage_reset_wait_gen += 1
@@ -3260,6 +3556,9 @@ class CoachWindow(QMainWindow):
         enemy_poll_stopped = self._stop_enemy_poll()
         deploy_poll_stopped = self._stop_deploy_poll()
         rng_service_stopped = self._on_rng_stop()
+        websocket_stopped = (
+            self._websocket_api.stop(timeout=0)
+            if self._websocket_api is not None else True)
 
         # Close every channel before checking thread state. This wakes socket recv()
         # while ownership remains intact until each QThread emits finished.
@@ -3285,7 +3584,8 @@ class CoachWindow(QMainWindow):
             self._memory_thread is not None
             and self._memory_thread.is_alive())
         if (qt_pending or not enemy_poll_stopped or not deploy_poll_stopped
-                or not rng_service_stopped or memory_pending):
+                or not rng_service_stopped or not websocket_stopped
+                or memory_pending):
             event.ignore()
             self._schedule_close_retry()
             return
@@ -3298,12 +3598,6 @@ class CoachWindow(QMainWindow):
                 pass
             self._deploy_reader = None
             self._rng_svc = None
-            if self._ws_clients:
-                for ws in list(self._ws_clients):
-                    try:
-                        asyncio.run_coroutine_threadsafe(ws.close(), self._ws_loop)
-                    except Exception:
-                        pass
             if self._diagnostic_log_window is not None:
                 self._diagnostic_log_window.shutdown()
                 self._diagnostic_log_window = None
@@ -3362,6 +3656,9 @@ class CoachWindow(QMainWindow):
 
     def _on_refresh_game(self) -> None:
         res = self._provider.refresh_sample()
+        api = getattr(self, '_websocket_api', None)
+        if api is not None:
+            api.publish_timer(self._provider.get_game_data())
         if not res.get("ok"):
             QMessageBox.warning(self, "游戏状态", res.get("message", "刷新失败"))
 
@@ -3737,7 +4034,11 @@ class CoachWindow(QMainWindow):
             return
         self._enemy_reader.resume_polling()
         self._enemy_poll = EnemyPollWorker(
-            self._enemy_reader, self._character_reader)
+            self._enemy_reader, self._character_reader,
+            detail_request_provider=lambda: (
+                self._websocket_api.detail_requests()
+                if self._websocket_api is not None else {}),
+        )
         self._enemy_poll.set_track_unattributed_damage(
             self.chk_unattributed_damage.isChecked())
         self._enemy_poll.snapshot.connect(self._on_enemy_snapshot_ready)
@@ -4372,6 +4673,9 @@ class CoachWindow(QMainWindow):
         if not by_role and selected is not None:
             by_role = {selected.get('role'): selected}
         self._battle_cache.observe_rng(by_role)
+        api = getattr(self, '_websocket_api', None)
+        if api is not None:
+            api.publish_rng(snap)
         self._sync_battle_cache_controls()
         status = str(snap.get('status') or '未定位')
         _render_rng_snapshot(
@@ -4505,6 +4809,11 @@ class CoachWindow(QMainWindow):
         self.btn_deploy_export.setEnabled(bool(self._deploy_stage_info))
         self._battle_cache.observe_stage(self._deploy_stage_info)
         self._sync_battle_cache_controls()
+        api = getattr(self, '_websocket_api', None)
+        if api is not None:
+            api.publish_deploy(
+                self._deploy_events, self._deploy_stage_info,
+                self._deploy_squad, self._deploy_journal)
 
     def _on_deploy_scan_done(self, reader, msg: str) -> None:
 #        _ga_log(f"[deploy] 扫描完成: reader={'有' if reader else 'None'} msg={msg!r}")
@@ -4729,6 +5038,11 @@ class CoachWindow(QMainWindow):
         if final_reason:
             self._battle_cache.finalize(final_reason)
         self._sync_battle_cache_controls()
+        api = getattr(self, '_websocket_api', None)
+        if api is not None:
+            api.publish_deploy(
+                self._deploy_events, self._deploy_stage_info,
+                self._deploy_squad, self._deploy_journal)
 
     def _build_deploy_export_payload(self, events: list,
                                      stage_info: dict | None = None) -> dict:
@@ -4827,6 +5141,9 @@ class CoachWindow(QMainWindow):
         # 工作线程本身固定 60Hz 且信号只保留最新快照；这里不再做第二层
         # 时间阈值节流，否则 16.7ms 附近的轻微抖动会误跳成约 30Hz。
         now = time.time()
+        api = getattr(self, '_websocket_api', None)
+        if api is not None:
+            api.publish_runtime(snap)
         self._battle_cache.observe_runtime(snap, self._deploy_stage_info)
         if (snap.get('ok')
                 and snap.get('state') == enemy_gs.BattleState.PLAYING
