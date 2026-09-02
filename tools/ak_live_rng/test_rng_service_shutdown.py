@@ -224,3 +224,52 @@ def test_pymem_reader_close_process_is_idempotent():
     assert pm.close_calls == 1
     assert reader.read(0x1000, 4) is None
     assert reader.regions() == []
+
+
+def test_status_listener_can_be_replaced_and_cannot_break_rng_service():
+    service = RngService(reader=object(), use_cache=False)
+
+    def broken_listener(_message):
+        raise RuntimeError("deleted Qt signal source")
+
+    service.set_status_listener(broken_listener)
+    # 展示层异常必须被隔离，不能从 _status 冒泡并杀死 polling thread。
+    service._status("first")
+    assert service.status_msg == "first"
+
+    received = []
+    service.set_status_listener(received.append)
+    service._status("second")
+    assert received == ["second"]
+
+    service.set_status_listener(None)
+    service._status("third")
+    assert service.status_msg == "third"
+    assert received == ["second"]
+
+
+def test_broken_status_listener_does_not_kill_polling_thread():
+    class LostTracker:
+        engine = {"id": 7, "role": "imp", "label": "lost"}
+
+        def poll(self):
+            return None
+
+        def snapshot(self, _history_len, _predict_len):
+            return {"id": 7, "role": "imp", "total": 0, "history": []}
+
+    service = RngService(
+        reader=object(), use_cache=False, poll_interval=0.001,
+        on_status=lambda _message: (_ for _ in ()).throw(
+            RuntimeError("listener failed")))
+    service._trackers = {7: LostTracker()}
+    service._selected_id = 7
+
+    assert service.start()
+    deadline = time.monotonic() + 1.0
+    while "状态丢失" not in service.status_msg and time.monotonic() < deadline:
+        time.sleep(0.005)
+
+    assert "状态丢失" in service.status_msg
+    assert service._thread.is_alive()
+    assert service.stop(timeout=0.5)

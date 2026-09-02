@@ -2079,6 +2079,9 @@ class CoachWindow(QMainWindow):
     # memory worker 只负责判断地址失效；Qt worker 的创建/启动回到主线程。
     guestRelocateRequested = Signal()
     websocketServiceStatus = Signal(dict)
+    # RngService 在扫描 worker 结束后仍会长期运行；运行期状态必须投递给
+    # 主窗口持有的 Signal，不能继续引用已 deleteLater 的 RngScanWorker.log。
+    rngRuntimeStatus = Signal(str)
 
     def __init__(self) -> None:
         super().__init__()
@@ -2104,6 +2107,7 @@ class CoachWindow(QMainWindow):
         self._closing = False
         self._ws_toast_state: tuple | None = None
         self.websocketServiceStatus.connect(self._on_websocket_service_status)
+        self.rngRuntimeStatus.connect(self._on_rng_runtime_status)
 
         self._hook_port: int = 0
         self._websocket_api: WebSocketApi | None = None
@@ -3319,6 +3323,9 @@ class CoachWindow(QMainWindow):
         if resource is None:
             return
         if kind == 'rng':
+            set_listener = getattr(resource, 'set_status_listener', None)
+            if callable(set_listener):
+                set_listener(None)
             try:
                 resource.stop(timeout=0)
             except TypeError:
@@ -4540,6 +4547,14 @@ class CoachWindow(QMainWindow):
 
     # ================= 随机数追踪 (ak_live_rng) =================
 
+    def _on_rng_runtime_status(self, message: str) -> None:
+        """主线程槽：显示已移交 RngService 的运行期状态。"""
+        if self._closing or self._rng_svc is None:
+            return
+        text = str(message).strip()
+        if text:
+            self.lbl_rng_status.setText(text)
+
     def _on_rng_scan(self) -> None:
         if RngService is None:
             if self._auto_refresh_step:
@@ -4589,6 +4604,12 @@ class CoachWindow(QMainWindow):
             self.lbl_rng_status.setText('上一轮 RNG 服务尚未退出，已丢弃本次结果')
             self._on_auto_refresh_step_done("rng", False)
             return
+        set_listener = getattr(svc, 'set_status_listener', None)
+        if callable(set_listener):
+            set_listener(lambda message: (
+                self.rngRuntimeStatus.emit(str(message)),
+                _tlog('[RNG]', message),
+            ))
         self._rng_svc = svc
         self._rng_service_stopping = False
         svc.start()
@@ -4624,6 +4645,9 @@ class CoachWindow(QMainWindow):
         if svc is not None:
             if not self._rng_service_stopping:
                 self._cache_rng_from_service(svc)
+                set_listener = getattr(svc, 'set_status_listener', None)
+                if callable(set_listener):
+                    set_listener(None)
             self._rng_service_stopping = True
             service_stopped = self._stop_rng_service_once(svc)
             if service_stopped and self._rng_svc is svc:

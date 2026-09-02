@@ -6,7 +6,7 @@
 import re
 
 # 用户可修改：支持 3.2.4、v3.2.4、3.2.4-beta 等写法。
-VERSION = "3.5.5"
+VERSION = "3.5.6"
 
 
 def _display_label(version: str) -> str:

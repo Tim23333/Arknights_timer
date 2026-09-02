@@ -9,21 +9,26 @@ cleanup remains deterministic.
 from __future__ import annotations
 
 import os
+import gc
 import subprocess
 import sys
 import threading
 import textwrap
 import time
+import weakref
 from pathlib import Path
 from types import MethodType
+from unittest.mock import patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
+import shiboken6
 
 from backend import desktop_app
 from PySide6.QtCore import QThread, Signal
 from PySide6.QtWidgets import QApplication
+from tools.ak_live_rng.rng_service import RngService
 
 
 class _CloseProbe:
@@ -404,3 +409,46 @@ def test_blocked_deploy_poll_stop_survives_in_subprocess():
         f"child returncode={completed.returncode}\n"
         f"stdout:\n{completed.stdout}\nstderr:\n{completed.stderr}"
     )
+
+
+def test_rng_service_status_listener_outlives_deleted_scan_worker():
+    """移交后的服务不得继续持有 RngScanWorker.log 的 Signal source。"""
+    app = QApplication.instance() or QApplication([])
+    with patch.object(desktop_app.CoachWindow, '_start_hook_server', lambda self: None), \
+            patch.object(desktop_app.CoachWindow, '_start_websocket_api', lambda self: None), \
+            patch.object(desktop_app.CoachWindow, '_start_workers', lambda self: None), \
+            patch.object(desktop_app.CoachWindow, '_start_timers', lambda self: None):
+        window = desktop_app.CoachWindow()
+
+    worker = desktop_app.RngScanWorker('unused-adb')
+    service = RngService(
+        reader=object(), use_cache=False,
+        on_status=lambda message: worker.log.emit(str(message)))
+    service.start = lambda: True
+    service.trackers = lambda: []
+    worker_ref = weakref.ref(worker)
+
+    window._on_rng_scan_done(service, '')
+    shiboken6.delete(worker)
+    del worker
+    gc.collect()
+    assert worker_ref() is None, 'RngService 仍通过状态回调持有已删除 worker'
+
+    errors = []
+
+    def notify_from_poll_thread():
+        try:
+            service._status('检测到引擎对象更换 (新一局), 重新定位 ...')
+        except Exception as exc:  # pragma: no cover - 回归失败时提供证据
+            errors.append(exc)
+
+    thread = threading.Thread(target=notify_from_poll_thread)
+    thread.start()
+    thread.join(1.0)
+    app.processEvents()
+
+    assert errors == []
+    assert '检测到引擎对象更换' in window.lbl_rng_status.text()
+    assert window._on_rng_stop()
+    window.close()
+    app.processEvents()

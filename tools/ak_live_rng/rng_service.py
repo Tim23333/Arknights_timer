@@ -69,6 +69,7 @@ class RngService:
         self.process = ""
         self.via = ""
         self.status_msg = "初始化..."
+        self._status_listener_lock = threading.RLock()
         self._on_status = on_status or (lambda m: None)
         self._lock = threading.Lock()
         self._trackers = {}                 # engine_id -> EngineTracker
@@ -87,9 +88,25 @@ class RngService:
 
     # ---------------- 状态 ----------------
 
+    def set_status_listener(self, callback=None):
+        """替换状态观察者；``None`` 表示解绑并改为空操作。
+
+        RngService 的生命周期可能长于负责初次定位的 UI worker。状态监听器
+        因此必须能够在所有权转移时替换，不能永久捕获短生命周期 QObject。
+        """
+        with self._status_listener_lock:
+            self._on_status = callback or (lambda _message: None)
+
     def _status(self, msg):
         self.status_msg = msg
-        self._on_status(msg)
+        with self._status_listener_lock:
+            listener = self._on_status
+        try:
+            listener(msg)
+        except Exception:
+            # 状态监听器属于展示/诊断边界；即使 Qt 对象已删除或第三方回调
+            # 出错，也绝不能终止 RNG 定位及 polling thread。
+            pass
 
     # ---------------- 连接 ----------------
 
