@@ -88,6 +88,33 @@ def _enemy_basic(entity: Any, index: int) -> dict[str, Any]:
             "x": getattr(entity, "pos_x", None),
             "y": getattr(entity, "pos_y", None),
         }
+    route_enabled = bool(getattr(entity, "route_intent_enabled", False))
+    checkpoint = getattr(entity, "next_checkpoint", None)
+    public_checkpoint = None
+    if route_enabled and isinstance(checkpoint, dict):
+        public_checkpoint = {
+            "index": _safe(checkpoint.get("index")),
+            "type": _safe(checkpoint.get("type")),
+            "typeName": _safe(checkpoint.get("type_name")),
+            "position": _safe(checkpoint.get("position")),
+            "configuredTime": _safe(checkpoint.get("configured_time")),
+        }
+    route_intent = {
+        "enabled": route_enabled,
+        "status": getattr(entity, "route_intent_status", "disabled"),
+        "endPosition": _safe(getattr(entity, "intent_end", None)) if route_enabled else None,
+        "route": {
+            "source": getattr(entity, "route_source", "unknown"),
+            "index": getattr(entity, "intent_route_index", None),
+            "display": getattr(entity, "route_display", "") or None,
+        } if route_enabled else None,
+        "nextWaypoint": _safe(getattr(entity, "next_waypoint", None)) if route_enabled else None,
+        "nextCheckpoint": public_checkpoint,
+        "countdown": _safe(getattr(entity, "checkpoint_countdown", None)) if route_enabled else None,
+        "countdownSource": getattr(entity, "countdown_source", None) if route_enabled else None,
+        "countdownTarget": _safe(getattr(entity, "countdown_target", None)) if route_enabled else None,
+        "condition": _safe(getattr(entity, "checkpoint_condition", None)) if route_enabled else None,
+    }
     return {
         "id": entity_public_id("enemy", entity, index),
         "name": getattr(entity, "name", ""),
@@ -100,6 +127,7 @@ def _enemy_basic(entity: Any, index: int) -> dict[str, Any]:
         "action": _safe(getattr(entity, "action", {})),
         "shield": getattr(entity, "shield", None),
         "abnormalStatus": _safe(getattr(entity, "abnormal_status", [])),
+        "routeIntent": route_intent,
     }
 
 

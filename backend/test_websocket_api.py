@@ -137,6 +137,69 @@ class WebSocketApiTests(unittest.TestCase):
         position = self.api._snapshots["enemies"]["items"][0]["position"]
         self.assertEqual(position, {"x": 3.25, "y": 7.5})
 
+    def test_runtime_exports_route_intent_without_internal_addresses(self):
+        enemy = SimpleNamespace(
+            eid="enemy-1", name="enemy", pos_x=3.25, pos_y=7.5,
+            hp=100.0, max_hp=100.0, alive=True, lifecycle="active",
+            route_intent_enabled=True, route_intent_status="ready",
+            intent_end={"row": 1, "col": 10}, route_source="main",
+            intent_route_index=0, route_display="主 #1（A1 → F10）",
+            next_waypoint={"row": 2, "col": 9},
+            next_checkpoint={"index": 0, "type": 0, "type_name": "移动至目标格",
+                             "position": {"row": 2, "col": 9}, "configured_time": 0.0},
+            checkpoint_countdown=28.333, countdown_source="fragment",
+            countdown_target=80.0, checkpoint_condition=None, addr=0x123456,
+        )
+        self.api.publish_runtime({"frame_consistent": True, "state": 2,
+                                  "enemies": [enemy], "characters": []})
+        route = self.api._snapshots["enemies"]["items"][0]["routeIntent"]
+        self.assertEqual(route["route"]["index"], 0)
+        self.assertEqual(route["countdownSource"], "fragment")
+        self.assertEqual(route["nextCheckpoint"], {
+            "index": 0, "type": 0, "typeName": "移动至目标格",
+            "position": {"row": 2, "col": 9}, "configuredTime": 0.0,
+        })
+        self.assertNotIn("0x123456", json.dumps(route))
+
+    def test_runtime_exports_dynamic_route_without_checkpoint(self):
+        enemy = SimpleNamespace(
+            eid="enemy-1", route_intent_enabled=True, route_intent_status="ready",
+            intent_end={"row": 4, "col": 1}, route_source="runtime",
+            intent_route_index=None, route_display="运行时动态路线",
+            next_waypoint={"row": 4, "col": 9}, next_checkpoint=None,
+            checkpoint_countdown=None, countdown_source=None, countdown_target=None,
+            checkpoint_condition="该检查点无倒计时",
+        )
+        self.api.publish_runtime({"frame_consistent": True, "state": 2,
+                                  "enemies": [enemy], "characters": []})
+
+        route = self.api._snapshots["enemies"]["items"][0]["routeIntent"]
+        self.assertEqual(route["route"], {
+            "source": "runtime", "index": None, "display": "运行时动态路线",
+        })
+        self.assertEqual(route["nextWaypoint"], {"row": 4, "col": 9})
+        self.assertIsNone(route["nextCheckpoint"])
+        self.assertEqual(route["condition"], "该检查点无倒计时")
+
+    def test_disabled_route_intent_never_leaks_previous_projection(self):
+        enemy = SimpleNamespace(
+            eid="enemy-1", route_intent_enabled=False,
+            route_intent_status="disabled", intent_end={"row": 1, "col": 10},
+            route_source="main", intent_route_index=0,
+            route_display="主 #1（A1 → F10）", next_waypoint={"row": 2, "col": 9},
+            next_checkpoint={"index": 0, "type": 0}, checkpoint_countdown=12.0,
+            countdown_source="local", countdown_target=12.0,
+            checkpoint_condition="stale", addr=0x123456,
+        )
+        self.api.publish_runtime({"frame_consistent": True, "state": 2,
+                                  "enemies": [enemy], "characters": []})
+        route = self.api._snapshots["enemies"]["items"][0]["routeIntent"]
+        self.assertEqual(route["status"], "disabled")
+        self.assertFalse(route["enabled"])
+        for key in ("endPosition", "route", "nextWaypoint", "nextCheckpoint",
+                    "countdown", "countdownSource", "countdownTarget", "condition"):
+            self.assertIsNone(route[key])
+
     def test_quality_uses_nested_io_metrics(self):
         self.api.publish_runtime({
             "frame_consistent": True, "state": 2, "enemies": [], "characters": [],

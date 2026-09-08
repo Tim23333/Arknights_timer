@@ -233,6 +233,38 @@ class CharacterReader:
         self._global_damage_summary = self._make_global_damage_summary(
             0.0, {}, 0.0, 0.0, False)
 
+    def reset_session(self) -> None:
+        """Discard address-bound character caches before a new battle scan."""
+        for addr in self.character_addrs:
+            self.core._names.pop(addr, None)
+        self.unit_manager_addr = 0
+        self.characters_addr = 0
+        self.character_addrs = []
+        self._items = 0
+        self._count = 0
+        self._identities.clear()
+        self._attr_cached.clear()
+        self._attr_snapshots.clear()
+        self._runtime_ptrs.clear()
+        self._runtime_snapshots.clear()
+        self._positions.clear()
+        self._blocked_layouts.clear()
+        self._skill_static.clear()
+        self._skill_runtime.clear()
+        self._skill_runtime_layouts.clear()
+        self._buff_counts.clear()
+        self._buff_layouts.clear()
+        self._klass_cache.clear()
+        self._damage_logger_addr = 0
+        self._damage_stats_addr = 0
+        self._damage_list_addr = 0
+        self._damage_list_signature = (0, 0)
+        self._damage_pairs_signature = ()
+        self._damage_frame_prefetch = []
+        self._damage_layout_tick = 0
+        self._damage_entries.clear()
+        self._reset_damage_tracking()
+
     def _reset_damage_tracking(self) -> None:
         self._damage_snapshots.clear()
         self._damage_history.clear()
@@ -259,6 +291,8 @@ class CharacterReader:
             unit_manager + gs.UnitManagerFields.CHARACTERS)
         if not self.mc.is_ptr(characters):
             return False
+        if self.characters_addr and self.characters_addr != characters:
+            self.reset_session()
         self.unit_manager_addr = unit_manager
         self.characters_addr = characters
         return True
@@ -346,8 +380,10 @@ class CharacterReader:
         return info
 
     def _fill_new_identities(self, infos: dict[int, CharacterInfo]) -> None:
-        targets = [info for info in infos.values()
-                   if info.addr not in self._identities and self.mc.is_ptr(info.data_ptr)]
+        targets = [info for info in infos.values() if self.mc.is_ptr(info.data_ptr)
+                   and (info.addr not in self._identities
+                        or self._identities[info.addr].get('data_ptr') != info.data_ptr
+                        or not self._identity_is_complete(self._identities[info.addr]))]
         if not targets:
             return
         blocks = self._batch([
@@ -397,9 +433,16 @@ class CharacterReader:
         for addr, record in parsed:
             for key, _ in string_fields:
                 record[key] = strings.get(record.pop(key + '_ptr'), '')
+            if not self._identity_is_complete(record):
+                continue
             self._identities[addr] = record
             self.core._names[addr] = (
                 record.get('cid', ''), record.get('name', ''), '')
+
+    def _identity_is_complete(self, record: dict) -> bool:
+        return bool(self.mc.is_ptr(record.get('data_ptr', 0)) and record.get('cid')
+                    and record.get('name')
+                    and record.get('profession') in gs.PROFESSION_CATEGORY_NAMES)
 
     @staticmethod
     def _apply_identity(info: CharacterInfo, identity: dict) -> None:
@@ -407,11 +450,17 @@ class CharacterReader:
             if hasattr(info, key):
                 setattr(info, key, value)
 
+    def _apply_current_identity(self, info: CharacterInfo) -> None:
+        identity = self._identities.get(info.addr, {})
+        if (identity.get('data_ptr') == info.data_ptr
+                and self._identity_is_complete(identity)):
+            self._apply_identity(info, identity)
+
     def _refresh_attributes(self, infos: dict[int, CharacterInfo]) -> None:
         missing = [info for info in infos.values()
                    if info.addr not in self._attr_cached and self.mc.is_ptr(info.attr_ptr)]
         for info, data in zip(
-                missing, self._batch([(x.attr_ptr, 0x60) for x in missing])):
+                missing, self._batch([(x.attr_ptr, gs.AttributesFields.READ_SIZE) for x in missing])):
             ptr = _u64(data, gs.AttributesFields.M_CACHED_DATA) if data else 0
             if self.mc.is_ptr(ptr):
                 self._attr_cached[info.addr] = ptr
@@ -444,7 +493,7 @@ class CharacterReader:
                 missing.append((addr, info.attr_ptr))
         combo_mgrs = {}
         for (addr, _), data in zip(
-                missing, self._batch([(ptr, 0x40) for _, ptr in missing])):
+                missing, self._batch([(ptr, gs.AttributesFields.RUNTIME_HEAD_READ_SIZE) for _, ptr in missing])):
             if not data:
                 continue
             rp = self._runtime_ptrs[addr]
@@ -1686,8 +1735,9 @@ class CharacterReader:
                      if data and len(data) >= gs.CharacterFields.READ_SIZE}
             self._fill_new_identities(infos)
             for addr, info in infos.items():
-                self._apply_identity(info, self._identities.get(addr, {}))
-                self.core._names[addr] = (info.cid, info.name, '')
+                self._apply_current_identity(info)
+                if info.cid and info.name:
+                    self.core._names[addr] = (info.cid, info.name, '')
             self._refresh_attributes(infos)
             self._refresh_runtime(infos)
             self._refresh_positions_and_blocking(infos)
@@ -1699,7 +1749,7 @@ class CharacterReader:
             for info in infos.values():
                 self._finalize_character_action(info)
 
-            live = set(infos)
+            live = set(ptrs)
             for cache in (self._identities, self._attr_cached, self._attr_snapshots,
                           self._runtime_ptrs, self._runtime_snapshots, self._positions,
                           self._blocked_layouts, self._skill_runtime,
@@ -1857,11 +1907,12 @@ class CharacterReader:
             info = self._parse_main(addr, block)
             # 身份数据会在换对象后重新读取；详情页不依赖主轮询是否已跑过。
             self._fill_new_identities({addr: info})
-            self._apply_identity(info, self._identities.get(addr, {}))
-            self.core._names[addr] = (info.cid, info.name, '')
+            self._apply_current_identity(info)
+            if info.cid and info.name:
+                self.core._names[addr] = (info.cid, info.name, '')
 
             if self.mc.is_ptr(info.attr_ptr):
-                (attr_head,) = self.core._detail_batch_read([(info.attr_ptr, 0x60)])
+                (attr_head,) = self.core._detail_batch_read([(info.attr_ptr, gs.AttributesFields.READ_SIZE)])
                 if attr_head:
                     raw_ptr = _u64(attr_head, gs.AttributesFields.M_RAW_DATA)
                     cached_ptr = _u64(attr_head, gs.AttributesFields.M_CACHED_DATA)

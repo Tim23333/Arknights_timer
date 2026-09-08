@@ -189,6 +189,35 @@ class CharacterReaderTests(unittest.TestCase):
         self.assertEqual(reader._damage_history, {})
         self.assertEqual(reader._damage_snapshots, {})
 
+    def test_current_identity_requires_the_same_data_object(self):
+        reader = self._action_reader()
+        addr = 0x1000
+        reader._identities[addr] = {
+            'data_ptr': 0x2000, 'cid': 'char_test', 'name': '测试干员',
+            'profession': 1,
+        }
+        changed = CharacterInfo(addr, data_ptr=0x3000)
+        reader._apply_current_identity(changed)
+        self.assertEqual(changed.name, '')
+        current = CharacterInfo(addr, data_ptr=0x2000)
+        reader._apply_current_identity(current)
+        self.assertEqual(current.name, '测试干员')
+        self.assertEqual(current.profession, 1)
+
+    def test_reset_session_discards_address_bound_identity_caches(self):
+        reader = self._action_reader()
+        addr = 0x1000
+        reader.character_addrs = [addr]
+        reader.characters_addr = 0x2000
+        reader._identities[addr] = {'data_ptr': 0x3000, 'cid': 'char_test'}
+        reader._attr_cached[addr] = 0x4000
+        reader.core._names[addr] = ('char_test', '测试干员', '')
+        reader.reset_session()
+        self.assertEqual(reader.characters_addr, 0)
+        self.assertEqual(reader._identities, {})
+        self.assertEqual(reader._attr_cached, {})
+        self.assertNotIn(addr, reader.core._names)
+
     def test_every_runtime_group_is_refreshed_on_every_poll(self):
         reader = self._action_reader()
         addr = 0x1000

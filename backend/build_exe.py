@@ -262,6 +262,9 @@ def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args,
         cmd.extend(["--add-data", _add_data_arg(data_dir, "backend/data")])
     if static_dir.is_dir():
         cmd.extend(["--add-data", _add_data_arg(static_dir, "backend/app/static")])
+    docs_dir = backend_dir / "app" / "docs"
+    if docs_dir.is_dir():
+        cmd.extend(["--add-data", _add_data_arg(docs_dir, "backend/app/docs")])
     # 敌人名称数据库 (tools/enemy_health 运行时按 data/tables 相对路径查找)
     if tables_dir.is_dir():
         for f in tables_dir.glob("enemy_handbook_table*.bin"):

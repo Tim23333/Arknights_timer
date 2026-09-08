@@ -52,6 +52,11 @@ ENEMY_COLUMN_DEFS = [
     _col('hp', '血量', 185, True, True),
     _col('pos', '坐标', 110, True, True),
     _col('precise_pos', '精确坐标', 125, True, True),
+    _col('intent_end', '意图终点', 105, True),
+    _col('route_display', '当前路线', 180, True),
+    _col('next_waypoint', '下一路点', 105, True),
+    _col('next_checkpoint', '当前路线检查点', 170, True),
+    _col('checkpoint_countdown', '检查点倒计时', 135, True, True),
     _col('action_state', '行为状态', 72, True),
     _col('action_phase', '动作阶段', 180, True),
     _col('remaining_time', '剩余帧/时间', 170, True),
@@ -165,6 +170,17 @@ def load_visible_columns(settings, key):
     migrated = marker is True or str(marker).lower() in ('1', 'true', 'yes')
     if not migrated:
         chosen.add('precise_pos')
+        settings.setValue(migration_key, True)
+    migration_key = key + '/route_intent_v1'
+    marker = settings.value(migration_key, False)
+    migrated = marker is True or str(marker).lower() in ('1', 'true', 'yes')
+    # 这是一次性迁移：既有用户保留自己的列偏好，但首次升级到意图路线功能时
+    # 仍能直接看见新列；后续由用户在“显示列”中完全自主控制。
+    if not migrated:
+        chosen.update((
+            'intent_end', 'route_display', 'next_waypoint',
+            'next_checkpoint', 'checkpoint_countdown',
+        ))
         settings.setValue(migration_key, True)
     return chosen
 
@@ -435,6 +451,43 @@ def format_column_value(key, enemy, decimals, row=0):
         p = decimals.get('precise_pos', precision)
         return (f'({enemy.precise_pos_x:.{p}f}, '
                 f'{enemy.precise_pos_y:.{p}f})')
+    if key in {'intent_end', 'next_waypoint'}:
+        if not getattr(enemy, 'route_intent_enabled', False):
+            return '未启用'
+        value = getattr(enemy, 'intent_end' if key == 'intent_end' else 'next_waypoint', None)
+        if not isinstance(value, dict):
+            return '-'
+        return f"({value.get('row', '?')}, {value.get('col', '?')})"
+    if key == 'route_display':
+        if not getattr(enemy, 'route_intent_enabled', False):
+            return '未启用'
+        return getattr(enemy, 'route_display', '') or '-'
+    if key == 'next_checkpoint':
+        if not getattr(enemy, 'route_intent_enabled', False):
+            return '未启用'
+        checkpoint = getattr(enemy, 'next_checkpoint', None)
+        if not isinstance(checkpoint, dict):
+            if getattr(enemy, 'checkpoint_condition', None) == '该检查点无倒计时':
+                return '无'
+            return getattr(enemy, 'checkpoint_condition', None) or '-'
+        position = checkpoint.get('position')
+        suffix = (f" ({position.get('row')}, {position.get('col')})"
+                  if isinstance(position, dict) else '')
+        return f"{checkpoint.get('type_name', 'UNKNOWN')}{suffix}"
+    if key == 'checkpoint_countdown':
+        if not getattr(enemy, 'route_intent_enabled', False):
+            return '未启用'
+        value = getattr(enemy, 'checkpoint_countdown', None)
+        if value is None:
+            return getattr(enemy, 'checkpoint_condition', None) or '-'
+        source = getattr(enemy, 'countdown_source', None)
+        label = {
+            'local': '私有',
+            'global': '全局',
+            'wave': '波次',
+            'fragment': '片段',
+        }.get(source, '路线')
+        return f'{float(value):.{precision}f} 秒（{label}）'
     if key == 'action_state':
         return gs.ENEMY_STATE_NAMES.get(enemy.state_id, f'未知({enemy.state_id})')
     if key == 'action_phase':

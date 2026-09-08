@@ -36,6 +36,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPlainTextEdit,
+    QTextBrowser,
     QPushButton,
     QScrollArea,
     QSizeGrip,
@@ -1236,6 +1237,8 @@ class EnemyPollWorker(QThread):
             except Exception as exc:
                 snap['frame_guard_error'] = f'{type(exc).__name__}: {exc}'
         frame_end = guard.get('end', frame_start)
+        # TODO: 暂停检测目前有问题：游戏实际暂停时，time_scale 仍可能读取为非零，
+        # 从而使 paused_snapshot / WebSocket isPaused 错误显示为 false。
         paused = isinstance(snap.get('time_scale'), (int, float)) \
             and abs(float(snap['time_scale'])) < 1e-7
         snap['frame_start'] = frame_start
@@ -2162,6 +2165,10 @@ class CoachWindow(QMainWindow):
             in ('1', 'true', 'yes'))
         self._enemy_reader.set_precise_position_enabled(
             self._enemy_precise_position_enabled)
+        route_saved = self._settings.value('enemy_table/route_intent_enabled', False)
+        self._enemy_route_intent_enabled = (
+            route_saved is True or str(route_saved).lower() in ('1', 'true', 'yes'))
+        self._enemy_reader.set_route_intent_enabled(self._enemy_route_intent_enabled)
         self._enemy_mini: EnemyMiniWindow | None = None
         self._mini_hotkey_down = False
         self._mini_hotkey_timer = QTimer(self)
@@ -2341,6 +2348,10 @@ class CoachWindow(QMainWindow):
         self.btn_select_adb.clicked.connect(self._on_select_adb)
         self._style_secondary_button(self.btn_select_adb)
         title_row.addWidget(self.btn_select_adb)
+        self.btn_usage_tutorial = QPushButton("使用教程")
+        self.btn_usage_tutorial.clicked.connect(self._show_usage_tutorial)
+        self._style_secondary_button(self.btn_usage_tutorial)
+        title_row.addWidget(self.btn_usage_tutorial)
         self._update_adb_button()
         self.btn_battle_cache_export = QPushButton("导出本局缓存")
         self.btn_battle_cache_export.setToolTip(
@@ -2541,6 +2552,11 @@ class CoachWindow(QMainWindow):
             "会增加少量内存读取开销，可在监控中随时开关")
         self.chk_enemy_precise_position.toggled.connect(
             self._on_enemy_precise_position_toggled)
+        self.chk_enemy_route_intent = QCheckBox("同步扫描意图路线")
+        self.chk_enemy_route_intent.setChecked(self._enemy_route_intent_enabled)
+        self.chk_enemy_route_intent.setToolTip(
+            "逐帧读取敌人的路线光标、检查点和条件倒计时；关闭后不执行这些额外读取")
+        self.chk_enemy_route_intent.toggled.connect(self._on_enemy_route_intent_toggled)
         row_btn.addWidget(self.btn_enemy_scan)
         row_btn.addWidget(self.btn_enemy_stop)
         row_btn.addWidget(self.btn_stage_enemy_export)
@@ -2550,6 +2566,7 @@ class CoachWindow(QMainWindow):
         row_btn.addWidget(self.btn_enemy_mini)
         row_btn.addWidget(self.chk_enemy_hide_departed)
         row_btn.addWidget(self.chk_enemy_precise_position)
+        row_btn.addWidget(self.chk_enemy_route_intent)
         row_btn.addWidget(self.enemy_progress, 1)
         self.lbl_enemy_compact_game = QLabel("游戏时间：—\n逻辑帧：—")
         self.lbl_enemy_compact_game.setObjectName('EnemyCompactGameStatus')
@@ -3058,7 +3075,24 @@ class CoachWindow(QMainWindow):
             "    lifecycle: string，实体生命周期；alive: boolean，是否存活。\n"
             "    hp/maxHp: number|null，当前与最大生命。\n"
             "    position: object，m_posInLastFrame 实时坐标快照，含 x/y；action: object，当前公开动作状态。\n"
-            "    shield: number|null，护盾值；abnormalStatus: array，异常状态列表。\n\n"
+            "    shield: number|null，护盾值；abnormalStatus: array，异常状态列表。\n"
+            "    routeIntent: object，意图路线投影；仅在前端开启“同步扫描意图路线”后产生可用数据。\n"
+            "      enabled: boolean，当前扫描开关是否开启；status: string，disabled、unavailable、ready 或 inconsistent。\n"
+            "      endPosition: {row, col}|null，Enemy.m_routeEndPosition 读取到的实时意图终点格，零基行列。\n"
+            "      route: {source, index, display}|null，路线来源；source 为 main、extra 或 runtime。\n"
+            "        index 为静态路线的零基序号；runtime 时 index 为 null、display 为“运行时动态路线”。\n"
+            "      nextWaypoint: {row, col}|null，DirectionCursor.m_nextGrid 的当前寻路目标格；\n"
+            "        它会随移动、转弯、受阻或路线切换变化，不是向后搜索出的静态检查点。\n"
+            "      nextCheckpoint: object|null，当前 cursorIndex 对应的路线检查点，含 index、type、\n"
+            "        typeName、position、configuredTime；typeName 为中文语义，index 为零基。\n"
+            "        position 仅在“移动至目标格”“在目标格出现”“巡逻至目标格”时为 {row, col}；\n"
+            "        其他类型均为 null，避免把默认 (0,0) 误作地图目标；无检查点的动态路线为 null。\n"
+            "      countdown: number|null，四类计时检查点的剩余秒数：原地等待读取其私有 m_time；\n"
+            "        等待全局游戏时间为 configuredTime - 当前战斗逻辑时间；等待当前波次时间为\n"
+            "        configuredTime - (当前战斗逻辑时间 - Scheduler.m_waveStartTime)；等待当前\n"
+            "        片段时间同理使用 Scheduler.m_fragmentStartTime。结果最小为 0。\n"
+            "      countdownSource: local、global、wave、fragment 或 null；countdownTarget: number|null；\n"
+            "        condition: string|null；无可计算倒计时的检查点为“该检查点无倒计时”。不会输出内存地址。\n\n"
             "F. characters.updated.data\n"
             "  items: Character[]，当前干员/召唤物列表；globalDamageSummary: object|null，全局伤害摘要。\n"
             "  Character 字段：\n"
@@ -3715,6 +3749,8 @@ class CoachWindow(QMainWindow):
             diagnostics=TEST_BUILD)
         self._enemy_reader.set_precise_position_enabled(
             self.chk_enemy_precise_position.isChecked())
+        self._enemy_reader.set_route_intent_enabled(
+            self.chk_enemy_route_intent.isChecked())
         self._character_reader = CharacterReader(self._enemy_reader)
 
         if self._enemy_detail_dialog is not None:
@@ -3801,6 +3837,25 @@ class CoachWindow(QMainWindow):
     def _on_select_adb(self) -> None:
         self._select_adb(show_success=True)
 
+    def _show_usage_tutorial(self) -> None:
+        """Render the bundled Markdown placeholder without executing its content."""
+        path = _BACKEND_ROOT / 'app' / 'docs' / 'usage_tutorial.placeholder.md'
+        dlg = QDialog(self)
+        dlg.setWindowTitle('使用教程')
+        dlg.resize(780, 620)
+        layout = QVBoxLayout(dlg)
+        document = QTextBrowser()
+        document.setOpenExternalLinks(False)
+        try:
+            document.setMarkdown(path.read_text(encoding='utf-8'))
+        except OSError as exc:
+            document.setPlainText(f'无法读取使用教程：\n{path}\n\n{exc}')
+        layout.addWidget(document)
+        close_button = QPushButton('关闭')
+        close_button.clicked.connect(dlg.accept)
+        layout.addWidget(close_button)
+        dlg.exec()
+
     def _ensure_adb(self) -> bool:
         """扫描前确保 adb 可用; 找不到时弹框让用户手动选择并持久化"""
         mc = self._enemy_reader.mc
@@ -3886,6 +3941,8 @@ class CoachWindow(QMainWindow):
                     '上一轮敌人轮询仍在停止，请稍候',
                     level="warn", semantic="error")
             return
+        # A new scan starts a new battle session; managed addresses may be reused.
+        self._character_reader.reset_session()
         self.enemy_table.setRowCount(0)   # 换关卡重扫: 清掉旧敌人行
         self._enemy_rows.clear()
         self._enemy_row_lifecycle.clear()
@@ -5397,6 +5454,22 @@ class CoachWindow(QMainWindow):
         if not checked:
             for enemy in self._enemy_last:
                 enemy.precise_pos_valid = False
+            self._render_enemy_table(self._enemy_last)
+
+    def _on_enemy_route_intent_toggled(self, checked: bool) -> None:
+        """Toggle live route cursor reads without restarting enemy monitoring."""
+        checked = bool(checked)
+        self._enemy_route_intent_enabled = checked
+        self._settings.setValue('enemy_table/route_intent_enabled', checked)
+        self._enemy_reader.set_route_intent_enabled(checked)
+        self._enemy_cell_state.clear()
+        if not checked:
+            for enemy in self._enemy_last:
+                enemy.route_intent_enabled = False
+                enemy.route_intent_status = 'disabled'
+                enemy.route_display = ''
+                enemy.next_waypoint = enemy.next_checkpoint = None
+                enemy.checkpoint_countdown = enemy.countdown_source = None
             self._render_enemy_table(self._enemy_last)
 
     def _update_enemy_spawn_wait(self, row: int, enemy, row_key: int) -> None:

@@ -64,10 +64,15 @@ FIELD_MAP = {
         'MAX_SP': '<maxSp>k__BackingField', 'MINUS_HP': '<minusHp>k__BackingField',
     }),
     'EnemyFields': ('Torappu.Battle', 'Enemy', {
-        'M_CURRENT_TILE': 'm_currentTile', 'M_BLOCK_POSITION': 'm_blockPosition',
+        'M_CURRENT_TILE': 'm_currentTile', 'M_CURSOR': 'm_cursor',
+        'M_BLOCK_POSITION': 'm_blockPosition',
         'M_POS_IN_LAST_FRAME': 'm_posInLastFrame', 'M_ALL_SKILLS': 'm_allSkills',
+        'M_ROUTE_END_POSITION': 'm_routeEndPosition',
         'ROUTE_SPAWN_POS': 'm_routeSpawnPosition', 'M_SKILLS': 'm_skills',
         'DATA': '<data>k__BackingField', 'OPTIONS': '<options>k__BackingField',
+    }),
+    'CharacterFields': ('Torappu.Battle', 'Character', {
+        'CARD_UID': 'cardUid', 'DATA': '<data>k__BackingField',
     }),
     'EnemyOptionsFields': ('', 'Enemy.Options', {
         'IS_SUMMON': 'isSummon', 'HIDDEN_GROUP_KEY': 'hiddenGroupKey',
@@ -79,6 +84,19 @@ FIELD_MAP = {
         'M_ABNORMAL_ANTI_COUNTER': 'm_abnormalAntiCounter',
         'M_ABNORMAL_COMBO_MGR': 'm_abnormalComboMgr',
         'M_RAW_DATA': 'm_rawData', 'M_CACHED_DATA': 'm_cachedData',
+    }),
+    'BasicCursorFields': ('Torappu.Battle', 'BasicCursor', {
+        'ROUTE': 'm_route', 'CURSOR_INDEX': 'm_cursor', 'CHECKPOINTS': 'm_checkpoints',
+    }),
+    'DirectionCursorFields': ('Torappu.Battle', 'DirectionCursor', {
+        'NEXT_GRID': 'm_nextGrid',
+    }),
+    'RouteFields': ('Torappu.Battle', 'Route', {'DATA': 'm_data'}),
+    'CursorCheckpointFields': ('', 'BasicCursor.Checkpoint', {
+        'DATA': '<data>k__BackingField',
+    }),
+    'WaitForSecondsCheckpointFields': ('', 'BasicCursor.WaitForSecondsCheckpoint', {
+        'M_TIME': 'm_time',
     }),
     'AbnormalComboManagerFields': ('', 'Attributes.AbnormalComboManager', {
         'M_ABNORMAL_COMBO_COUNTER': 'm_abnormalComboCounter',
@@ -310,7 +328,7 @@ def build_offsets(dump_path: Path):
         enum_output[output_name] = dict(sorted(source.items(), key=lambda row: row[1]))
     required = {
         'EntityFields': ('M_HP', 'M_ATTRIBUTES', 'ID', 'BUFF_CONTAINER'),
-        'EnemyFields': ('M_SKILLS', 'DATA', 'OPTIONS', 'READ_SIZE'),
+        'EnemyFields': ('M_CURSOR', 'M_SKILLS', 'DATA', 'OPTIONS', 'READ_SIZE'),
         'AttributesFields': ('M_CACHED_DATA',),
         'BattleControllerFields': ('SCHEDULER', 'LEVEL_DATA', 'UNIT_MANAGER'),
     }

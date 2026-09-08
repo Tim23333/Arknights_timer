@@ -73,6 +73,48 @@ class EnemyFormattingTests(unittest.TestCase):
         self.assertEqual(format_column_value(
             'precise_pos', enemy, {'precise_pos': 2}), '(1.12, 2.25)')
 
+    def test_route_columns_distinguish_disabled_and_projected_values(self):
+        enemy = EnemyInfo(0x1000)
+        self.assertEqual(format_column_value('intent_end', enemy, {}), '未启用')
+        enemy.route_intent_enabled = True
+        enemy.intent_end = {'row': 1, 'col': 10}
+        enemy.route_display = '主 #1（A1 → F10）'
+        enemy.next_checkpoint = {
+            'type_name': '移动至目标格', 'position': {'row': 2, 'col': 9},
+        }
+        enemy.checkpoint_countdown = 28.333
+        enemy.countdown_source = 'fragment'
+        self.assertEqual(format_column_value('intent_end', enemy, {}), '(1, 10)')
+        self.assertEqual(format_column_value('route_display', enemy, {}), '主 #1（A1 → F10）')
+        self.assertIn('移动至目标格 (2, 9)', format_column_value('next_checkpoint', enemy, {}))
+        self.assertIn('片段', format_column_value('checkpoint_countdown', enemy, {}))
+
+    def test_non_positional_checkpoint_has_no_synthetic_grid_or_countdown(self):
+        enemy = EnemyInfo(0x1000)
+        enemy.route_intent_enabled = True
+        enemy.next_checkpoint = {'type_name': '等待当前波次时间', 'position': None}
+        enemy.checkpoint_condition = '该检查点无倒计时'
+
+        self.assertEqual(
+            format_column_value('next_checkpoint', enemy, {}), '等待当前波次时间')
+        self.assertEqual(
+            format_column_value('checkpoint_countdown', enemy, {}), '该检查点无倒计时')
+
+    def test_dynamic_route_without_checkpoint_displays_none(self):
+        enemy = EnemyInfo(0x1000)
+        enemy.route_intent_enabled = True
+        enemy.route_intent_status = 'ready'
+        enemy.route_display = '运行时动态路线'
+        enemy.next_waypoint = {'row': 4, 'col': 9}
+        enemy.next_checkpoint = None
+        enemy.checkpoint_condition = '该检查点无倒计时'
+
+        self.assertEqual(format_column_value('route_display', enemy, {}), '运行时动态路线')
+        self.assertEqual(format_column_value('next_waypoint', enemy, {}), '(4, 9)')
+        self.assertEqual(format_column_value('next_checkpoint', enemy, {}), '无')
+        self.assertEqual(
+            format_column_value('checkpoint_countdown', enemy, {}), '该检查点无倒计时')
+
 
 class EnemyUiTests(unittest.TestCase):
     @classmethod

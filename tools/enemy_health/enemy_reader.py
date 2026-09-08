@@ -246,7 +246,11 @@ class EnemyInfo:
                  'lifecycle', 'planned', 'spawn_eta', 'spawn_condition',
                  'spawn_kind', 'spawn_source', 'is_summon', 'action_ptr', 'action',
                  'skills_detail', 'current_tile_ptr', 'spawn_frame', 'end_frame',
-                 'end_reason')
+                 'end_reason', 'cursor_ptr', 'route_intent_enabled',
+                 'route_intent_status', 'cursor_class', 'intent_end', 'route_source',
+                 'intent_route_index', 'route_display', 'next_waypoint',
+                 'next_checkpoint', 'checkpoint_countdown', 'countdown_source',
+                 'countdown_target', 'checkpoint_condition')
 
     def __init__(self, addr):
         self.addr = addr
@@ -322,6 +326,20 @@ class EnemyInfo:
         self.spawn_frame = None
         self.end_frame = None
         self.end_reason = ''
+        self.cursor_ptr = 0
+        self.route_intent_enabled = False
+        self.route_intent_status = 'disabled'
+        self.cursor_class = ''
+        self.intent_end = None
+        self.route_source = 'unknown'
+        self.intent_route_index = None
+        self.route_display = ''
+        self.next_waypoint = None
+        self.next_checkpoint = None
+        self.checkpoint_countdown = None
+        self.countdown_source = None
+        self.countdown_target = None
+        self.checkpoint_condition = None
         # m_currentTile 原始指针 (未校验): 非空且是合法指针 = 实体正站在地图
         # 格子上, 是「已出场」的硬性信号, 优先级高于路线投影估算。
         self.current_tile_ptr = 0
@@ -511,6 +529,10 @@ class EnemyReader:
         self._frame_duration_snap = 1.0 / 30.0
         self.precise_position_enabled = False
         self._precise_position_reader = None
+        self.route_intent_enabled = False
+        self._route_ptr_meta = {}
+        self._route_index_meta = {}     # 全局 route_index -> 静态路线归属
+        self._cursor_class_cache = {}
         self._route_meta = {}           # routeIndex -> 起点/首个进场路线点
         self._routes_export = []        # 完整路线（供排轴前端绘图）
         self._main_route_count = 0      # 主路线数组原始长度（extra 路线顺延编号）
@@ -536,6 +558,13 @@ class EnemyReader:
         if not self.precise_position_enabled and self._precise_position_reader:
             self._precise_position_reader.clear()
 
+    def set_route_intent_enabled(self, enabled):
+        """Enable or disable per-frame enemy route intent reads."""
+        self.route_intent_enabled = bool(enabled)
+        if not self.route_intent_enabled:
+            # 类名缓存只服务于路线光标的布局验证；关闭扫描后不保留地址相关状态。
+            self._cursor_class_cache.clear()
+
     def _refresh_precise_positions(self, ptrs, infos):
         if not self.precise_position_enabled or not ptrs:
             return
@@ -550,6 +579,238 @@ class EnemyReader:
                 continue
             info.precise_pos_x, info.precise_pos_y = position
             info.precise_pos_valid = True
+
+    @staticmethod
+    def _grid_label(position):
+        """将底层零基 GridPosition(row, col) 变为地图使用的 A1 标记。"""
+        row, col = position
+        if row < 0 or col < 0:
+            return '?'
+        return f'{chr(ord("A") + row)}{col + 1}' if row < 26 else f'R{row + 1}C{col + 1}'
+
+    def _refresh_route_intents(self, infos):
+        """Project live route cursors without falling back to stale route data."""
+        for info in infos.values():
+            info.route_intent_enabled = self.route_intent_enabled
+            info.route_intent_status = 'disabled'
+            info.route_source = 'unknown'
+            info.intent_route_index = None
+            info.route_display = ''
+            info.next_waypoint = None
+            info.next_checkpoint = None
+            info.checkpoint_countdown = None
+            info.countdown_source = None
+            info.countdown_target = None
+            info.checkpoint_condition = None
+        if not self.route_intent_enabled or self._chan is None:
+            return
+
+        rows = {ep: info for ep, info in infos.items()
+                if self.mc.is_ptr(info.cursor_ptr)}
+        if not rows:
+            return
+        unknown_cursors = [info.cursor_ptr for info in rows.values()
+                           if info.cursor_ptr not in self._cursor_class_cache]
+        if unknown_cursors:
+            self._cursor_class_cache.update(
+                self._read_object_class_names_chan(unknown_cursors))
+        # BasicCursor 的布局只对已验证的普通 DirectionCursor 及其基类成立。特殊
+        # Boss 光标不能以“看起来像指针”就强读，先保留诊断并让该实体本帧不可用。
+        verified_classes = {'BasicCursor', 'DirectionCursor'}
+        for ep, info in tuple(rows.items()):
+            info.cursor_class = self._cursor_class_cache.get(info.cursor_ptr, '')
+            if info.cursor_class not in verified_classes:
+                info.route_intent_status = 'unavailable'
+                info.checkpoint_condition = (
+                    f'未验证路线光标类型：{info.cursor_class or "未知"}')
+                rows.pop(ep)
+        if not rows:
+            return
+        cursor_blocks = self._chan.batch_read([
+            (info.cursor_ptr, (gs.DirectionCursorFields.READ_SIZE
+                               if info.cursor_class == 'DirectionCursor'
+                               else gs.BasicCursorFields.READ_SIZE))
+            for info in rows.values()])
+        cursors = {}
+        for (ep, info), block in zip(rows.items(), cursor_blocks):
+            if not block:
+                info.route_intent_status = 'unavailable'
+                continue
+            route = _u64(block, gs.BasicCursorFields.ROUTE)
+            cps = _u64(block, gs.BasicCursorFields.CHECKPOINTS)
+            index = _i32(block, gs.BasicCursorFields.CURSOR_INDEX)
+            if not self.mc.is_ptr(route) or not self.mc.is_ptr(cps) or index < 0:
+                info.route_intent_status = 'unavailable'
+                continue
+            next_grid = None
+            if info.cursor_class == 'DirectionCursor':
+                # m_nextGrid 是 DirectionCursor 当前寻路结果；它与静态
+                # CheckpointData.position 不同，会随转向或改道实时变化。
+                next_grid = {
+                    'row': _i32(block, gs.DirectionCursorFields.NEXT_GRID),
+                    'col': _i32(block, gs.DirectionCursorFields.NEXT_GRID + 4),
+                }
+            cursors[ep] = (route, cps, index, next_grid)
+
+        route_blocks = self._chan.batch_read([
+            (route, gs.RouteFields.READ_SIZE)
+            for route, _cps, _index, _next_grid in cursors.values()])
+        arrays = {}
+        for (ep, (route, cps, index, next_grid)), block in zip(cursors.items(), route_blocks):
+            info = infos[ep]
+            data_ptr = _u64(block, gs.RouteFields.DATA) if block else 0
+            if not self.mc.is_ptr(data_ptr):
+                info.route_intent_status = 'unavailable'
+                continue
+            arrays[ep] = (data_ptr, cps, index, next_grid)
+
+        array_heads = self._chan.batch_read([
+            (cps, gs.Il2CppArray.ITEMS)
+            for _data, cps, _index, _next_grid in arrays.values()])
+        checkpoint_slots = {}
+        for (ep, (data_ptr, cps, index, next_grid)), head in zip(arrays.items(), array_heads):
+            count = _i32(head, gs.Il2CppArray.MAX_LENGTH) if head else -1
+            # 一些动态路线仅用 DirectionCursor.m_nextGrid 逐格寻路，不会创建
+            # Checkpoint 实例数组。它们不是读链故障：仍可提供终点与下一路点。
+            if count == 0:
+                checkpoint_slots[ep] = (data_ptr, cps, index, count, next_grid)
+                continue
+            if not (0 <= index < count <= 128):
+                infos[ep].route_intent_status = 'unavailable'
+                continue
+            checkpoint_slots[ep] = (data_ptr, cps, index, count, next_grid)
+
+        pointer_slot_items = [
+            (ep, data_ptr, cps, index, count, next_grid)
+            for ep, (data_ptr, cps, index, count, next_grid) in checkpoint_slots.items()
+            if count > 0
+        ]
+        pointer_blocks = self._chan.batch_read([
+            (cps + gs.Il2CppArray.ITEMS, count * 8)
+            for _ep, _data, cps, _index, count, _next_grid in pointer_slot_items])
+        checkpoint_ptrs = {}
+        for (ep, _data, _cps, index, count, _next_grid), block in zip(
+                pointer_slot_items, pointer_blocks):
+            if not block:
+                infos[ep].route_intent_status = 'unavailable'
+                continue
+            pointers = [_u64(block, offset * 8) for offset in range(count)]
+            # 运行时数组允许未来检查点尚未实例化；当前检查点必须可读，
+            # 不能因为遥远的空槽而丢弃当前实体的完整路线投影。
+            if not self.mc.is_ptr(pointers[index]):
+                infos[ep].route_intent_status = 'unavailable'
+                continue
+            checkpoint_ptrs[ep] = pointers
+
+        cp_rows = [(ep, slot, pointer) for ep, pointers in checkpoint_ptrs.items()
+                   for slot, pointer in enumerate(pointers)
+                   if slot >= checkpoint_slots[ep][2] and self.mc.is_ptr(pointer)]
+        cp_blocks = self._chan.batch_read([
+            (pointer, gs.WaitForSecondsCheckpointFields.READ_SIZE)
+            for _ep, _slot, pointer in cp_rows])
+        static_rows = []
+        for (ep, slot, _pointer), block in zip(cp_rows, cp_blocks):
+            data_ptr = _u64(block, gs.CursorCheckpointFields.DATA) if block else 0
+            if self.mc.is_ptr(data_ptr):
+                static_rows.append((ep, slot, block, data_ptr))
+        static_blocks = self._chan.batch_read([
+            (data_ptr, gs.RouteCheckpointFields.READ_SIZE)
+            for _ep, _slot, _block, data_ptr in static_rows])
+        checkpoints = {}
+        for (ep, slot, runtime, _data_ptr), static in zip(static_rows, static_blocks):
+            if not static:
+                continue
+            checkpoints[(ep, slot)] = {
+                'type': _i32(static, gs.RouteCheckpointFields.TYPE),
+                'position': {'row': _i32(static, gs.RouteCheckpointFields.POSITION),
+                             'col': _i32(static, gs.RouteCheckpointFields.POSITION + 4)},
+                'configured_time': self._finite_float(static, gs.RouteCheckpointFields.TIME),
+                'runtime_time': gs.fp_to_float(_u64(runtime, gs.WaitForSecondsCheckpointFields.M_TIME)),
+            }
+
+        pathfinding_checkpoint_types = gs.ROUTE_CHECKPOINT_POSITION_TYPES | {
+            gs.RouteCheckpointType.MAP_OFFSET_MOVE,
+        }
+        for ep, (data_ptr, _cps, index, count, next_grid) in checkpoint_slots.items():
+            info = infos[ep]
+            route_meta = self._route_ptr_meta.get(data_ptr)
+            if route_meta is None:
+                # GenerateRuntimeRoute 会复制 RouteData，因而运行时 m_data 指针
+                # 不一定等于 LevelData.routes 中的原对象。对正常调度敌人，可用
+                # 已绑定到该实体的静态 spawn route_index 复原归属，并以实时终点
+                # 作强校验；动态改道（恐惧、吸引、召唤等）不会通过这项校验。
+                roster_id = self._addr_to_roster.get(ep)
+                record = self._plan_by_id.get(roster_id) if roster_id is not None else None
+                scheduled_index = (record.get('route_index', -1)
+                                   if record is not None else info.route_index)
+                scheduled = self._route_index_meta.get(scheduled_index)
+                if (scheduled and info.intent_end == {
+                        'row': scheduled['end'][0], 'col': scheduled['end'][1]}):
+                    route_meta = scheduled
+            static_route_matches = route_meta and info.intent_end == {
+                'row': route_meta['end'][0], 'col': route_meta['end'][1]}
+            if static_route_matches:
+                info.route_source = route_meta['source']
+                info.intent_route_index = route_meta['index']
+                start, end = route_meta['start'], route_meta['end']
+                prefix = '额外' if route_meta['source'] == 'extra' else '主'
+                info.route_display = (
+                    f'{prefix} #{route_meta["index"] + 1}'
+                    f'（{self._grid_label(start)} → {self._grid_label(end)}）')
+                info.route_intent_status = 'ready'
+            else:
+                # 运行时改道及无检查点的逐格路线都不能冒充某条静态主/额外
+                # 路线。仍然可以安全公开 DirectionCursor 的实时投影。
+                info.route_source = 'runtime'
+                info.route_display = '运行时动态路线'
+                info.route_intent_status = 'ready'
+            current = checkpoints.get((ep, index))
+            if not current:
+                if count == 0:
+                    info.next_waypoint = next_grid
+                    info.checkpoint_condition = '该检查点无倒计时'
+                    continue
+                info.route_intent_status = 'unavailable'
+                continue
+            info.next_checkpoint = {
+                'index': index, 'type': current['type'],
+                'type_name': gs.ROUTE_CHECKPOINT_TYPE_NAMES.get(
+                    current['type'], f'未知检查点({current["type"]})'),
+                'position': (current['position']
+                             if current['type'] in gs.ROUTE_CHECKPOINT_POSITION_TYPES
+                             else None),
+                'configured_time': current['configured_time'],
+            }
+            if current['type'] in pathfinding_checkpoint_types:
+                info.next_waypoint = next_grid
+            if current['type'] == gs.RouteCheckpointType.WAIT_FOR_SECONDS:
+                if (isinstance(current['runtime_time'], (int, float))
+                        and math.isfinite(current['runtime_time'])):
+                    info.countdown_target = current['configured_time']
+                    info.checkpoint_countdown = max(0.0, current['runtime_time'])
+                    info.countdown_source = 'local'
+            elif current['type'] == gs.RouteCheckpointType.WAIT_FOR_PLAY_TIME:
+                now = self._scheduler_time_snap
+                if now is not None and current['configured_time'] is not None:
+                    info.countdown_target = current['configured_time']
+                    info.checkpoint_countdown = max(0.0, current['configured_time'] - now)
+                    info.countdown_source = 'global'
+            elif current['type'] == gs.RouteCheckpointType.WAIT_CURRENT_WAVE_TIME:
+                now = self._scheduler_time_snap
+                start = self._wave_start_time
+                if now is not None and start is not None and current['configured_time'] is not None:
+                    info.countdown_target = current['configured_time']
+                    info.checkpoint_countdown = max(0.0, current['configured_time'] - (now - start))
+                    info.countdown_source = 'wave'
+            elif current['type'] == gs.RouteCheckpointType.WAIT_CURRENT_FRAGMENT_TIME:
+                now = self._scheduler_time_snap
+                start = self._fragment_start_time
+                if now is not None and start is not None and current['configured_time'] is not None:
+                    info.countdown_target = current['configured_time']
+                    info.checkpoint_countdown = max(0.0, current['configured_time'] - (now - start))
+                    info.countdown_source = 'fragment'
+            if info.checkpoint_countdown is None:
+                info.checkpoint_condition = '该检查点无倒计时'
 
     # ================= 连接 =================
 
@@ -1033,6 +1294,8 @@ class EnemyReader:
         """读取完整路线，并保留用于估算可见进场时间的首段摘要。"""
         self._route_meta = {}
         self._routes_export = []
+        self._route_ptr_meta = {}
+        self._route_index_meta = {}
         self._main_route_count = 0
         checkpoint_names = {
             value: name for name, value in vars(gs.RouteCheckpointType).items()
@@ -1060,6 +1323,18 @@ class EnemyReader:
                          _i32(block, gs.RouteDataFields.START_POSITION + 4))
                 end = (_i32(block, gs.RouteDataFields.END_POSITION),
                        _i32(block, gs.RouteDataFields.END_POSITION + 4))
+                self._route_ptr_meta[_route_ptr] = {
+                    'source': 'extra' if is_extra else 'main',
+                    'index': slot,
+                    'start': start,
+                    'end': end,
+                }
+                self._route_index_meta[route_index] = {
+                    'source': 'extra' if is_extra else 'main',
+                    'index': slot,
+                    'start': start,
+                    'end': end,
+                }
                 checkpoints = self._read_object_array(
                     _u64(block, gs.RouteDataFields.CHECKPOINTS), 4096)
                 cp_blocks = self._detail_batch_read([
@@ -2398,7 +2673,7 @@ class EnemyReader:
                 self._attr_cache.pop(ep, None)
                 cd = None
         if cd is None:
-            ab = self.mc.read(attrp, 0x60) if self.mc.is_ptr(attrp) else None
+            ab = self.mc.read(attrp, gs.AttributesFields.READ_SIZE) if self.mc.is_ptr(attrp) else None
             cdp2 = _u64(ab, gs.AttributesFields.M_CACHED_DATA) if ab else 0
             if cdp2 and self.mc.is_ptr(cdp2):
                 cd2 = self.mc.read(
@@ -2601,6 +2876,11 @@ class EnemyReader:
         info.shield_controller_ptr = _u64(blk, gs.EntityFields.M_SHIELD_CONTROLLER)
         info.buff_container_ptr = _u64(blk, gs.EntityFields.BUFF_CONTAINER)
         if len(blk) >= gs.EnemyFields.READ_SIZE:
+            info.cursor_ptr = _u64(blk, gs.EnemyFields.M_CURSOR)
+            info.intent_end = {
+                'row': _i32(blk, gs.EnemyFields.M_ROUTE_END_POSITION),
+                'col': _i32(blk, gs.EnemyFields.M_ROUTE_END_POSITION + 4),
+            }
             info.pos_x, info.pos_y = _f32x2(blk, gs.EnemyFields.M_POS_IN_LAST_FRAME)
             info.blk_x, info.blk_y = _f32x2(blk, gs.EnemyFields.M_BLOCK_POSITION)
             info.spawn_row = _i32(blk, gs.EnemyFields.ROUTE_SPAWN_POS)
@@ -4062,7 +4342,8 @@ class EnemyReader:
         attr_eps = [ep for ep in missing
                     if self.mc.is_ptr(self._runtime_ptrs[ep].get('attr_obj', 0))]
         if attr_eps:
-            reqs = [(self._runtime_ptrs[ep]['attr_obj'], 0x40) for ep in attr_eps]
+            reqs = [(self._runtime_ptrs[ep]['attr_obj'],
+                     gs.AttributesFields.RUNTIME_HEAD_READ_SIZE) for ep in attr_eps]
             combo_mgrs = {}
             for ep, data in zip(attr_eps, self._chan.batch_read(reqs)):
                 if not data:
@@ -4425,7 +4706,7 @@ class EnemyReader:
                 ap = self._attr_ptrs.get(aep, 0)
                 if ap:
                     slot['attr_heads'].append((len(reqs), aep, ap))
-                    reqs.append((ap, 0x60))
+                    reqs.append((ap, gs.AttributesFields.READ_SIZE))
         if self.bc_addr:
             slot['bc'] = len(reqs)
             reqs.append((self.bc_addr + 0x200, 0xC0))
@@ -4573,6 +4854,7 @@ class EnemyReader:
         if readable_ptrs:
             self._refresh_runtime_chan(readable_ptrs, infos)
             self._refresh_precise_positions(readable_ptrs, infos)
+            self._refresh_route_intents(infos)
 
         # ---- 全部敌人属性每个采样帧刷新 ----
         for i, aep, expected_cdp in slot.get('attrs', ()):
@@ -5029,7 +5311,7 @@ class EnemyReader:
                 reqs.append((info.id_ptr, 0x80))
                 keys.append(('id', ep))
             if info.attr_ptr and self.mc.is_ptr(info.attr_ptr):
-                reqs.append((info.attr_ptr, 0x60))
+                reqs.append((info.attr_ptr, gs.AttributesFields.READ_SIZE))
                 keys.append(('attr', ep))
             if info.data_ptr and self.mc.is_ptr(info.data_ptr):
                 reqs.append((info.data_ptr, gs.LevelEnemyDataFields.ATTRIBUTES))
@@ -5683,7 +5965,7 @@ class EnemyReader:
             self._fill_name(addr, blk, info)
 
         # 同时读取原始和最终属性，详情页可直接比较 Buff 前后变化。
-        (attr_head,) = self._detail_batch_read([(info.attr_ptr, 0x60)]) \
+        (attr_head,) = self._detail_batch_read([(info.attr_ptr, gs.AttributesFields.READ_SIZE)]) \
             if self.mc.is_ptr(info.attr_ptr) else (None,)
         if attr_head:
             raw_ptr = _u64(attr_head, gs.AttributesFields.M_RAW_DATA)

@@ -240,9 +240,9 @@ class CharacterFields:
     DECK_BUFF_DATA = 0x460        # object*
     DECK_BUFF_BLACKBOARD = 0x468  # Blackboard*
     DEPLOY_COST_THIS_TIME = 0x504 # int32
-    CARD_UID = 0x520              # uint32
-    DATA = 0x530                  # BattleCharacterData*
-    READ_SIZE = 0x548
+    CARD_UID = 0x528              # uint32 (2.7.71)
+    DATA = 0x538                  # BattleCharacterData* (2.7.71)
+    READ_SIZE = 0x550
 
 
 class BlockedEnemyManagerFields:
@@ -476,16 +476,17 @@ class EnemyFields:
     M_BLOCK_POSITION = 0x3F8    # Vector2 (float x,y) 阻挡位置
     M_POS_IN_LAST_FRAME = 0x408 # Vector2 (float x,y) 上一帧地图坐标
     M_ALL_SKILLS = 0x448        # EnemySkill[] 全部技能组件
-    ROUTE_SPAWN_POS = 0x4B0     # GridPosition (int32 row,col) 出生格
-    ATTACK_ABILITY_CASTED = 0x4E8  # Ability* 当前普通攻击能力
-    COMBAT_ABILITY_CASTED = 0x4F0  # Ability* 当前战斗/技能能力
-    COMBAT_NEXT_ESCAPE_TIME = 0x4F8 # FP 战斗动作可退出的绝对时间
-    M_SKILLS = 0x4D0            # List<EnemySkill> 激活技能列表
-    DATA = 0x510                # LevelData.EnemyData*
-    OPTIONS = 0x518             # inline Enemy.Options
-    ATTACK_WRAPPER = 0x550      # Enemy.AttackWrapper*
-    COMBAT_WRAPPER = 0x558      # Enemy.CombatWrapper*
-    READ_SIZE = 0x568           # 含两个动作 Wrapper 与动作计时字段
+    M_ROUTE_END_POSITION = 0x4B0 # GridPosition (int32 row,col) 当前意图终点
+    ROUTE_SPAWN_POS = 0x4B8     # GridPosition (int32 row,col) 出生格 (2.7.71)
+    ATTACK_ABILITY_CASTED = 0x4F0  # Ability* 当前普通攻击能力
+    COMBAT_ABILITY_CASTED = 0x4F8  # Ability* 当前战斗/技能能力
+    COMBAT_NEXT_ESCAPE_TIME = 0x500 # FP 战斗动作可退出的绝对时间
+    M_SKILLS = 0x4D8            # List<EnemySkill> 激活技能列表
+    DATA = 0x518                # LevelData.EnemyData*
+    OPTIONS = 0x520             # inline Enemy.Options
+    ATTACK_WRAPPER = 0x558      # Enemy.AttackWrapper*
+    COMBAT_WRAPPER = 0x560      # Enemy.CombatWrapper*
+    READ_SIZE = 0x570           # 含两个动作 Wrapper 与动作计时字段
 
 
 class EnemyOptionsFields:
@@ -601,9 +602,12 @@ class AttributesFields:
     M_ABNORMAL_FLAGS_COUNTER = 0x20    # short[AbnormalFlag.E_NUM]
     M_ABNORMAL_IMMUNE_COUNTER = 0x28   # short[AbnormalFlag.E_NUM]
     M_ABNORMAL_ANTI_COUNTER = 0x30     # short[AbnormalFlag.E_NUM]
-    M_ABNORMAL_COMBO_MGR = 0x38        # Attributes.AbnormalComboManager*
-    M_RAW_DATA = 0x40                  # ObscuredFP[] 原始属性
-    M_CACHED_DATA = 0x50               # ObscuredFP[] 计算后属性 [实测]
+    M_ABNORMAL_COMBO_MGR = 0x50        # Attributes.AbnormalComboManager* (2.7.71)
+    M_RAW_DATA = 0x58                  # ObscuredFP[] 原始属性 (2.7.71)
+    M_CACHED_DATA = 0x68               # ObscuredFP[] 计算后属性 (2.7.71)
+    # 读取范围必须包含 cachedData 指针；避免字段更新后仍只读到 0x60。
+    READ_SIZE = 0x70
+    RUNTIME_HEAD_READ_SIZE = 0x58
 
 
 class AbnormalComboManagerFields:
@@ -1092,6 +1096,63 @@ class RouteCheckpointType:
     WAIT_BOSSRUSH_WAVE = 9
     MAP_OFFSET_MOVE = 10
     INVALID = 11
+
+
+# RouteData.CheckpointData.type 的面向用户中文语义。位置型检查点之外的
+# CheckpointData.position 是结构默认值，不能被投影成实际地图格。
+ROUTE_CHECKPOINT_TYPE_NAMES = {
+    RouteCheckpointType.MOVE: '移动至目标格',
+    RouteCheckpointType.WAIT_FOR_SECONDS: '原地等待',
+    RouteCheckpointType.WAIT_FOR_PLAY_TIME: '等待全局游戏时间',
+    RouteCheckpointType.WAIT_CURRENT_FRAGMENT_TIME: '等待当前片段时间',
+    RouteCheckpointType.WAIT_CURRENT_WAVE_TIME: '等待当前波次时间',
+    RouteCheckpointType.DISAPPEAR: '消失',
+    RouteCheckpointType.APPEAR_AT_POS: '在目标格出现',
+    RouteCheckpointType.ALERT: '警戒触发',
+    RouteCheckpointType.PATROL_MOVE: '巡逻至目标格',
+    RouteCheckpointType.WAIT_BOSSRUSH_WAVE: '等待首领波次',
+    RouteCheckpointType.MAP_OFFSET_MOVE: '按地图偏移移动',
+    RouteCheckpointType.INVALID: '无效检查点',
+}
+
+# 仅这些检查点的静态 position 就是可直接呈现的地图格。MAP_OFFSET_MOVE
+# 需要先按地图偏移规则换算，故不在此集合中。
+ROUTE_CHECKPOINT_POSITION_TYPES = {
+    RouteCheckpointType.MOVE,
+    RouteCheckpointType.APPEAR_AT_POS,
+    RouteCheckpointType.PATROL_MOVE,
+}
+
+
+# ============================================================
+# 运行时路线光标（只读投影）
+# ============================================================
+class BasicCursorFields:
+    ROUTE = 0x10
+    CURSOR_INDEX = 0x18
+    CHECKPOINTS = 0x28
+    READ_SIZE = 0x30
+
+
+class DirectionCursorFields:
+    """DirectionCursor 的当前寻路目标格，而非静态路线检查点。"""
+    NEXT_GRID = 0x70                  # GridPosition(row, col)
+    READ_SIZE = 0x78
+
+
+class RouteFields:
+    DATA = 0x18
+    READ_SIZE = 0x20
+
+
+class CursorCheckpointFields:
+    DATA = 0x10
+    READ_SIZE = 0x20
+
+
+class WaitForSecondsCheckpointFields:
+    M_TIME = 0x20
+    READ_SIZE = 0x28
 
 
 class WaveDataFields:

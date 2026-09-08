@@ -361,18 +361,125 @@ class EnemyDetailModelTests(unittest.TestCase):
         self.assertEqual({idx for idx, _, _ in gs.ATTRIBUTE_DEFS},
                          set(range(0, 9)) | set(range(13, 38)))
 
-    def test_august_offsets_and_new_abnormal_flag_are_loaded(self):
+    def test_2_7_71_offsets_and_new_abnormal_flag_are_loaded(self):
         self.assertEqual(gs.EntityFields.M_ATTRIBUTES, 0xB0)
         self.assertEqual(gs.EntityFields.ID, 0x148)
-        self.assertEqual(gs.EnemyFields.DATA, 0x510)
-        self.assertEqual(gs.EnemyFields.ATTACK_ABILITY_CASTED, 0x4E8)
-        self.assertEqual(gs.EnemyFields.COMBAT_NEXT_ESCAPE_TIME, 0x4F8)
-        self.assertEqual(gs.EnemyFields.ATTACK_WRAPPER, 0x550)
-        self.assertEqual(gs.EnemyFields.COMBAT_WRAPPER, 0x558)
-        self.assertEqual(gs.EnemyFields.READ_SIZE, 0x568)
+        self.assertEqual(gs.EnemyFields.DATA, 0x518)
+        self.assertEqual(gs.EnemyFields.M_ROUTE_END_POSITION, 0x4B0)
+        self.assertEqual(gs.EnemyFields.ROUTE_SPAWN_POS, 0x4B8)
+        self.assertEqual(gs.EnemyFields.ATTACK_ABILITY_CASTED, 0x4F0)
+        self.assertEqual(gs.EnemyFields.COMBAT_NEXT_ESCAPE_TIME, 0x500)
+        self.assertEqual(gs.EnemyFields.ATTACK_WRAPPER, 0x558)
+        self.assertEqual(gs.EnemyFields.COMBAT_WRAPPER, 0x560)
+        self.assertEqual(gs.EnemyFields.READ_SIZE, 0x570)
+        self.assertEqual(gs.AttributesFields.M_CACHED_DATA, 0x68)
+        self.assertEqual(gs.AttributesFields.READ_SIZE, 0x70)
+        self.assertEqual(gs.CharacterFields.DATA, 0x538)
+        self.assertEqual(gs.BasicCursorFields.CHECKPOINTS, 0x28)
+        self.assertEqual(gs.DirectionCursorFields.NEXT_GRID, 0x70)
+        self.assertEqual(gs.WaitForSecondsCheckpointFields.M_TIME, 0x20)
+        self.assertEqual(gs.ROUTE_CHECKPOINT_TYPE_NAMES[
+            gs.RouteCheckpointType.WAIT_CURRENT_WAVE_TIME], '等待当前波次时间')
         self.assertEqual(gs.BuffFields.IS_ACTUALLY_ENABLED, 0x1ED)
         self.assertEqual(gs.AbnormalFlag.E_NUM, 46)
         self.assertEqual(gs.ABNORMAL_FLAG_CN_NAMES[45], '地面束缚')
+
+    def test_route_display_uses_map_grid_labels(self):
+        self.assertEqual(EnemyReader._grid_label((0, 0)), 'A1')
+        self.assertEqual(EnemyReader._grid_label((5, 9)), 'F10')
+        self.assertEqual(EnemyReader._grid_label((-1, 0)), '?')
+
+    def test_route_intent_rejects_an_unverified_cursor_layout(self):
+        class FakeMem:
+            @staticmethod
+            def is_ptr(value):
+                return isinstance(value, int) and value >= 0x1000
+
+        class EmptyChannel:
+            @staticmethod
+            def batch_read(requests):
+                return [None for _request in requests]
+
+        reader = EnemyReader(mc=FakeMem())
+        reader.set_route_intent_enabled(True)
+        reader._chan = EmptyChannel()
+        enemy = EnemyInfo(0x1000)
+        enemy.cursor_ptr = 0x2000
+        reader._refresh_route_intents({enemy.addr: enemy})
+        self.assertEqual(enemy.route_intent_status, 'unavailable')
+        self.assertEqual(enemy.checkpoint_condition, '未验证路线光标类型：未知')
+
+    def test_route_intent_reads_live_next_grid_and_all_timer_countdowns(self):
+        """DirectionCursor 与四类等待检查点使用各自确认过的运行时字段。"""
+        cursor, route, checkpoints = 0x2000, 0x3000, 0x4000
+        route_data, runtime_checkpoint, static_checkpoint = 0x5000, 0x6000, 0x7000
+
+        def project(checkpoint_type, configured_time=20.0, checkpoint_count=1):
+            blocks = {
+                cursor: bytearray(gs.DirectionCursorFields.READ_SIZE),
+                route: bytearray(gs.RouteFields.READ_SIZE),
+                checkpoints: bytearray(gs.Il2CppArray.ITEMS + 8),
+                runtime_checkpoint: bytearray(gs.WaitForSecondsCheckpointFields.READ_SIZE),
+                static_checkpoint: bytearray(gs.RouteCheckpointFields.READ_SIZE),
+            }
+            struct.pack_into('<Q', blocks[cursor], gs.BasicCursorFields.ROUTE, route)
+            struct.pack_into('<i', blocks[cursor], gs.BasicCursorFields.CURSOR_INDEX, 0)
+            struct.pack_into('<Q', blocks[cursor], gs.BasicCursorFields.CHECKPOINTS, checkpoints)
+            struct.pack_into('<ii', blocks[cursor], gs.DirectionCursorFields.NEXT_GRID, 4, 7)
+            struct.pack_into('<Q', blocks[route], gs.RouteFields.DATA, route_data)
+            struct.pack_into('<i', blocks[checkpoints], gs.Il2CppArray.MAX_LENGTH, checkpoint_count)
+            struct.pack_into('<Q', blocks[checkpoints], gs.Il2CppArray.ITEMS, runtime_checkpoint)
+            struct.pack_into('<Q', blocks[runtime_checkpoint], gs.CursorCheckpointFields.DATA,
+                             static_checkpoint)
+            struct.pack_into('<Q', blocks[runtime_checkpoint],
+                             gs.WaitForSecondsCheckpointFields.M_TIME,
+                             int(6.5 * gs.FP_ONE))
+            struct.pack_into('<ifii', blocks[static_checkpoint],
+                             gs.RouteCheckpointFields.TYPE, checkpoint_type, configured_time, 2, 9)
+
+            reader = EnemyReader(mc=_PrecisePositionMemCore())
+            reader.set_route_intent_enabled(True)
+            reader._chan = _PrecisePositionChannel({
+                address: bytes(data) for address, data in blocks.items()})
+            reader._cursor_class_cache[cursor] = 'DirectionCursor'
+            reader._scheduler_time_snap = 100.0
+            reader._wave_start_time = 90.0
+            reader._fragment_start_time = 95.0
+            enemy = EnemyInfo(0x1000)
+            enemy.cursor_ptr = cursor
+            reader._refresh_route_intents({enemy.addr: enemy})
+            return enemy
+
+        moving = project(gs.RouteCheckpointType.MOVE)
+        self.assertEqual(moving.next_waypoint, {'row': 4, 'col': 7})
+        self.assertEqual(moving.next_checkpoint['position'], {'row': 2, 'col': 9})
+        self.assertEqual(moving.next_checkpoint['type_name'], '移动至目标格')
+        self.assertEqual(moving.checkpoint_condition, '该检查点无倒计时')
+
+        dynamic = project(gs.RouteCheckpointType.MOVE, checkpoint_count=0)
+        self.assertEqual(dynamic.route_intent_status, 'ready')
+        self.assertEqual(dynamic.route_source, 'runtime')
+        self.assertEqual(dynamic.route_display, '运行时动态路线')
+        self.assertEqual(dynamic.next_waypoint, {'row': 4, 'col': 7})
+        self.assertIsNone(dynamic.next_checkpoint)
+        self.assertEqual(dynamic.checkpoint_condition, '该检查点无倒计时')
+
+        local = project(gs.RouteCheckpointType.WAIT_FOR_SECONDS)
+        self.assertAlmostEqual(local.checkpoint_countdown, 6.5)
+        self.assertEqual(local.countdown_source, 'local')
+
+        global_time = project(gs.RouteCheckpointType.WAIT_FOR_PLAY_TIME)
+        self.assertEqual(global_time.checkpoint_countdown, 0.0)
+        self.assertEqual(global_time.countdown_source, 'global')
+
+        wave = project(gs.RouteCheckpointType.WAIT_CURRENT_WAVE_TIME)
+        self.assertEqual(wave.checkpoint_countdown, 10.0)
+        self.assertEqual(wave.countdown_source, 'wave')
+
+        fragment = project(gs.RouteCheckpointType.WAIT_CURRENT_FRAGMENT_TIME)
+        self.assertEqual(fragment.checkpoint_countdown, 15.0)
+        self.assertEqual(fragment.countdown_source, 'fragment')
+        self.assertIsNone(fragment.next_checkpoint['position'])
 
     def test_enemy_combat_post_action_uses_exact_deadline_frames(self):
         class FakeMem:
