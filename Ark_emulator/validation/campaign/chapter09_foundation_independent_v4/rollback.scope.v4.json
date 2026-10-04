@@ -1,0 +1,52 @@
+{
+  "scope": "Independent read-only diagnosis of actual unchanged forced-distance rollback test failure; joint6e43 promotion prohibited",
+  "joint_implementation": "6e43f8827415f99f83b79ff676fae533afcfda56f326d93bef8cda488172d1f9",
+  "test": "tests_v2/test_forced_distance.py::test_failed_step_rolls_back_actual_ledger_cursor_health_and_jobs",
+  "joint_checkpoint_equal": false,
+  "joint_kernel_equal": true,
+  "joint_attribute_cache_before_entries": 7,
+  "joint_attribute_cache_after_entries": 0,
+  "first_difference": {
+    "path": "/attribute_cache/entries/0",
+    "reason": "missing_actual",
+    "expected_source_event_id": 65
+  },
+  "joint_epoch_before": 1,
+  "joint_epoch_after": 4,
+  "parent_same_case": {
+    "implementation": "5c729384f50e078bd3d3ac9d211360b17bc486588770914efe92ef5b4e983826",
+    "error": "Expression \"{'accepted':True,'amount':1 / 0,'allocations':[],'events':[]}\" failed: division by zero",
+    "checkpoint_equal": true,
+    "kernel_equal": true,
+    "first_difference": null,
+    "cache_epoch_before": 1,
+    "cache_epoch_after": 4
+  },
+  "diagnosis": "Nested atomic rollback correctly restores kernel World/ledger/health/scheduler but increments derived cache_epoch and replaces immutable World view identities. AttributeSystem live cache persistence rejects old epoch/view entries and emits empty persisted cache; the new Simulation.checkpoint attribute_cache field therefore differs after a failed transaction.",
+  "recommendation": "Next task: include persistent causal attribute cache requests plus their original event identity in nested transaction savepoints, then rebind to restored validated World views after rollback without emitting events or consuming identities. Preserve current ledger and value/owner/context forgery validation. Do not merely reset cache_epoch or delete attribute_cache from test comparison.",
+  "sources_sha": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tests_v2\\test_forced_distance.py": "8ef92fea0b1ed55c2dc4c6b2f87fe88a047aa01ec7498f95519e77fa5d840db2",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tests_v2\\test_campaign_acceptance.py": "e5ba2d1a27e85befa0e5204cf7db2eb6cb8b803dbc66f39f2e91e37ddd624302",
+    "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_foundation_v4_candidate\\ark_sim\\domains\\attributes.py": "b90e5579eacf99b7d23182c30d6b8fce260ecd906590dbfe318208f16f01ce2d",
+    "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_foundation_v4_candidate\\ark_sim\\adapters\\api.py": "d9c1ae8f9bc3d617ec3324159b2afcbc8d9a0023ed48cfa44aa3a88c61d087d4",
+    "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_foundation_v4_candidate\\ark_sim\\kernel\\session.py": "56c2d146a5a77367ca70b3fb4a2bfe5b64fb34b3c0132155363e4c0f9f7f8592"
+  },
+  "raw_sha": {
+    "joint.checkpoint.json": "0cf42c8447e6255352d73fb296c0106903d5bdd63ba61c6f82f96b6349acb728",
+    "parent.receipt.json": "46b24ab8d7d9d4108a0161d09cee4ac4145543ca9ac42028df775daf1aa4a9fb"
+  },
+  "original_full_suite_failure_receipt_pending": true,
+  "original_full_suite_failure_preserved_by_root": true,
+  "read_only_source_changes": false,
+  "passed": false,
+  "cleanup": {
+    "apply": true,
+    "eligible_files": 1,
+    "eligible_bytes": 282054,
+    "log_root": "E:\\ArkSimLogs",
+    "deleted_files": 1,
+    "reclaimed_bytes": 282054,
+    "protected_files": 0,
+    "report": "E:\\ArkSimLogs\\cleanup\\20261004T192459571641Z.deleted.json"
+  }
+}

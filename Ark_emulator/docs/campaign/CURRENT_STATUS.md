@@ -632,3 +632,8 @@ Root最新8fa source真链在持久repo476checkpoint／SHAload实际通过73.10�
 4-10已再经Root actualv2inspect全日志／CPprefix／输入／命令证据通过8a3654e4...，新派生进度d7a1a03f...实际计 **5/36** process／determinism／durable完整收据；正式registry还4份，在V20守护结束前不动。派生收据明确pending注册，没用无结果意图增加count。旧2-9V20已实际7300续跑观察完全相等、phase证明独立存档，现真正从头replay进行，未final不计第六关。
 
 C6来源准备11files／62逐个SHA通过350ddfad...，计划d310c3f9...，9enemy／4projectile、3terrain、4predef、6NPC弹道和5story全部原闭包保。末关6-17原slots0／DP0／life1与隐藏aliasnull剧情配置冲突须显式策略，不能套C5别名。typedCold源23／ASPD-30、Frozen16、BSON二次cold转freeze并清全部cold已读取；新的通用纯buff.application plan能力必要，隔离开发中，不修改现主或正在8fa全suite。
+
+
+2026-10-05 日志保留更新：JT8-2 冻结 82db 原完整正向／持久检查点与补齐从头重放均通过，实际恢复进程退出 0，完整收据 c15e57ad… 已精确复制登记。32 原出生 = 13 击杀 + 19 漏怪，终局 11229／观察 11300，1,394,425 事件；正式全程进度 15/36，实际游戏反馈仍待用户核对。收据归档 v4 SHA 99a05d9d…，最新保留政策进度入口为 `tools/campaign_runthrough_progress_v9.py`。原大型日志按用户要求清理，保留来源和精简摘要。
+
+第9章联合 6e43 自有全套实际退出 1：1218 通过、1 失败，失败为持久属性缓存没有完整参与嵌套事务回滚；原 kernel/World/健康/任务/事件已回滚，但新 attribute_cache 7 条变为空。原失败及独立定位收据保留，禁止推广，生产底座继续 5c729。该状态不受临时测试日志清理改变。

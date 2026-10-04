@@ -10,6 +10,7 @@ V2 已有可运行的内容编译器、通用内核、领域系统、规则运�
 - [内容、规则、Builder 与 CLI 作者指南](docs/V2_AUTHORING.md)
 - [当前需求](docs/REQUIREMENTS.md)
 - [固定十二人主线回归持续目标](docs/campaign/GOAL.md)
+- [模拟日志固定目录、手工与自动清理](docs/SIMULATION_LOGS.md)
 - [V2 架构设计](docs/ARCHITECTURE_V2.md)
 - [全部文档索引](docs/README.md)
 
@@ -19,6 +20,7 @@ V2 已有可运行的内容编译器、通用内核、领域系统、规则运�
 
 ```powershell
 cd D:\Arknights\Arknights_timer\Ark_emulator
+New-Item -ItemType Directory -Force E:\ArkSimLogs\runs\manual | Out-Null
 
 # 检查内容、规则、引用、提供器与实际需要的计算接口
 ..\.venv\Scripts\python.exe -m ark_sim validate packages/custom/custom_guard.json
@@ -27,13 +29,16 @@ cd D:\Arknights\Arknights_timer\Ark_emulator
 ..\.venv\Scripts\python.exe -m ark_sim explain packages/custom/custom_guard.json --output dependencies.json
 
 # 运行同一内容，并导出快照与输入回放
-..\.venv\Scripts\python.exe -m ark_sim run packages/custom/custom_guard.json --seconds 1 --output sandbox_standard.json --replay-output sandbox_replay.json
+..\.venv\Scripts\python.exe -m ark_sim run packages/custom/custom_guard.json --seconds 1 --output E:/ArkSimLogs/runs/manual/sandbox_standard.json --replay-output E:/ArkSimLogs/runs/manual/sandbox_replay.json
 
 # 切换整条伤害计算管线，继续使用相同单位、技能与场景
-..\.venv\Scripts\python.exe -m ark_sim run packages/custom/custom_guard.json --ruleset ruleset/custom_balance --seconds 1 --output sandbox_balanced.json
+..\.venv\Scripts\python.exe -m ark_sim run packages/custom/custom_guard.json --ruleset ruleset/custom_balance --seconds 1 --output E:/ArkSimLogs/runs/manual/sandbox_balanced.json
 
 # 使用记录里的种子、时间、命令和身份重放
-..\.venv\Scripts\python.exe -m ark_sim replay packages/custom/custom_guard.json --record sandbox_replay.json --output sandbox_replayed.json
+..\.venv\Scripts\python.exe -m ark_sim replay packages/custom/custom_guard.json --record E:/ArkSimLogs/runs/manual/sandbox_replay.json --output E:/ArkSimLogs/runs/manual/sandbox_replayed.json
+
+# 完成数值核对和回放验证后，清理手工运行产生的大日志
+.\Clean-SimulationLogs.ps1 -RunDirectory E:/ArkSimLogs/runs/manual -Apply
 ```
 
 CLI 提供 `validate`、`explain`、`preview`、`run`、`replay`。`--output` 保存 JSON，省略时打印结果。`run --ticks` 推进整数逻辑时间，`--seconds` 通过所选 `time.quantize` 计算规则换算；规则集的 `quantum` 决定逻辑时间单位。`replay` 必须提供 `--record`，不能额外更改种子或终点。参数详情可用 `python -m ark_sim --help` 和各子命令的 `--help` 查看。
@@ -52,7 +57,7 @@ CLI 提供 `validate`、`explain`、`preview`、`run`、`replay`。`--output` �
 
 ```powershell
 ..\.venv\Scripts\python.exe -m ark_sim validate packages/ark_content/level_main_00_01.json
-..\.venv\Scripts\python.exe -m ark_sim run packages/ark_content/level_main_00_01.json --commands scenarios/level_main_00_01/commands.json --ticks 300 --output ark_00_01_preview.json
+..\.venv\Scripts\python.exe -m ark_sim run packages/ark_content/level_main_00_01.json --commands scenarios/level_main_00_01/commands.json --ticks 300 --output E:/ArkSimLogs/runs/manual/ark_00_01_preview.json
 ```
 
 首关的模型验收结果和待校准项以 [V2 实现说明](docs/V2_IMPLEMENTATION.md) 及对应证据为准。运行到某个时间点本身不表示首关完整验收通过。

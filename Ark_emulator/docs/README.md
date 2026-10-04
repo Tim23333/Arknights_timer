@@ -9,6 +9,7 @@
 | 文档或内容 | 用途 |
 |---|---|
 | [项目 README](../README.md) | V2 主入口、CLI 编译、运行、回放和 Python API |
+| [SIMULATION_LOGS.md](SIMULATION_LOGS.md) | 固定 E 盘日志目录、清理脚本、完成后自动清理及摘要保留政策 |
 | [V2_IMPLEMENTATION.md](V2_IMPLEMENTATION.md) | 实际模块边界、运行接口、原子性、回放、调试轨迹与当前限制 |
 | [V2_AUTHORING.md](V2_AUTHORING.md) | 实际内容字段、局部规则、周期恢复、技能、Buff、状态图、计算图、提供器、Builder 与 CLI |
 | [campaign/GOAL.md](campaign/GOAL.md) | 当前持续目标：固定12人覆盖模块，第0–17章末两关共36个目标，阶段与验收条件 |
