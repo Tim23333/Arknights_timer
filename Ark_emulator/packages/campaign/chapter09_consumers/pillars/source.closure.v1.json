@@ -1,0 +1,1138 @@
+{
+  "schema": "ark-sim/ch9-pillar-transitive-bson/v1",
+  "offline_only": true,
+  "source_predefines_sha256": "b71e6d794797e1e80b35d0dcf95635413f2b08ce65d8b99722482246aa88780c",
+  "required_keys": [
+    "empty",
+    "enemy_duruin[spawned]",
+    "immu_environment_damage",
+    "instant_kill",
+    "trap_dupilr_trait",
+    "trap_dupilr_trait[ondead]",
+    "trap_dupilr_trait[startdead]",
+    "trap_duplir_s[DeadLike]"
+  ],
+  "closure": {
+    "source": {
+      "path": "data/anon_textassets/buff_template_data.dat",
+      "sha256": "0c438b57b176e0fa430b5b982a58c7b524f4121aa8dbab33d3e647aa0fc1ee59",
+      "bytes": 16030804
+    },
+    "payload_sha256": "99ec60717a95fc64e99ea50959f80217e724919b7ec8825e1f6690a42e4ca799",
+    "templates": {
+      "empty": {
+        "parsed": {
+          "templateKey": "empty",
+          "effectKey": "",
+          "onEventPriority": "DEFAULT",
+          "eventToActions": {}
+        },
+        "payload_offset": 172433,
+        "document_base64": "XgAAAAJ0ZW1wbGF0ZUtleQAGAAAAZW1wdHkAAmVmZmVjdEtleQABAAAAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQAA2V2ZW50VG9BY3Rpb25zAAUAAAAAAA==",
+        "document_sha256": "a1cd280d2a084b40853417f1688f946a5e7c460b25bf168ac32adcf9cfecd427"
+      },
+      "enemy_duruin[spawned]": {
+        "parsed": {
+          "templateKey": "enemy_duruin[spawned]",
+          "effectKey": "",
+          "onEventPriority": "DEFAULT",
+          "eventToActions": {
+            "ON_BUFF_START": [
+              {
+                "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                "_ownerType": "BUFF_OWNER",
+                "_rendererIndex": -1,
+                "_enable": false,
+                "_exclusive": false,
+                "_rendererCurModeIndex": false
+              }
+            ],
+            "ON_BUFF_FINISH": [
+              {
+                "$type": "Torappu.Battle.Action.Nodes+SwitchSourceDirection, Assembly-CSharp",
+                "_targetType": "BUFF_OWNER",
+                "_rightNodes": [
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+IfElse, Assembly-CSharp",
+                    "_conditionNode": {
+                      "$type": "Torappu.Battle.Action.Nodes+CheckManhattanDistance, Assembly-CSharp",
+                      "_minDist": 1,
+                      "_maxDist": 1
+                    },
+                    "_succeedNodes": [
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_OWNER",
+                        "_rendererIndex": 0,
+                        "_enable": true,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      },
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_SOURCE",
+                        "_rendererIndex": 2,
+                        "_enable": false,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      },
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_SOURCE",
+                        "_rendererIndex": 4,
+                        "_enable": false,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      },
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_SOURCE",
+                        "_rendererIndex": 5,
+                        "_enable": false,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      }
+                    ],
+                    "_failNodes": [
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_OWNER",
+                        "_rendererIndex": 1,
+                        "_enable": true,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      },
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_SOURCE",
+                        "_rendererIndex": 1,
+                        "_enable": false,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      },
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_SOURCE",
+                        "_rendererIndex": 3,
+                        "_enable": false,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      }
+                    ]
+                  }
+                ],
+                "_leftNodes": [
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+IfElse, Assembly-CSharp",
+                    "_conditionNode": {
+                      "$type": "Torappu.Battle.Action.Nodes+CheckManhattanDistance, Assembly-CSharp",
+                      "_minDist": 1,
+                      "_maxDist": 1
+                    },
+                    "_succeedNodes": [
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_OWNER",
+                        "_rendererIndex": 2,
+                        "_enable": true,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      },
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_SOURCE",
+                        "_rendererIndex": 2,
+                        "_enable": false,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      },
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_SOURCE",
+                        "_rendererIndex": 4,
+                        "_enable": false,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      },
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_SOURCE",
+                        "_rendererIndex": 5,
+                        "_enable": false,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      }
+                    ],
+                    "_failNodes": [
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_OWNER",
+                        "_rendererIndex": 3,
+                        "_enable": true,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      },
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_SOURCE",
+                        "_rendererIndex": 1,
+                        "_enable": false,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      },
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_SOURCE",
+                        "_rendererIndex": 3,
+                        "_enable": false,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      }
+                    ]
+                  }
+                ],
+                "_upNodes": [
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+IfElse, Assembly-CSharp",
+                    "_conditionNode": {
+                      "$type": "Torappu.Battle.Action.Nodes+CheckManhattanDistance, Assembly-CSharp",
+                      "_minDist": 1,
+                      "_maxDist": 1
+                    },
+                    "_succeedNodes": [
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_OWNER",
+                        "_rendererIndex": 4,
+                        "_enable": true,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      },
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_SOURCE",
+                        "_rendererIndex": 2,
+                        "_enable": false,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      },
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_SOURCE",
+                        "_rendererIndex": 4,
+                        "_enable": false,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      },
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_SOURCE",
+                        "_rendererIndex": 5,
+                        "_enable": false,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      }
+                    ],
+                    "_failNodes": [
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_OWNER",
+                        "_rendererIndex": 5,
+                        "_enable": true,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      },
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_SOURCE",
+                        "_rendererIndex": 1,
+                        "_enable": false,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      },
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_SOURCE",
+                        "_rendererIndex": 3,
+                        "_enable": false,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      }
+                    ]
+                  }
+                ],
+                "_downNodes": [
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+IfElse, Assembly-CSharp",
+                    "_conditionNode": {
+                      "$type": "Torappu.Battle.Action.Nodes+CheckManhattanDistance, Assembly-CSharp",
+                      "_minDist": 1,
+                      "_maxDist": 1
+                    },
+                    "_succeedNodes": [
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_OWNER",
+                        "_rendererIndex": 6,
+                        "_enable": true,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      },
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_SOURCE",
+                        "_rendererIndex": 2,
+                        "_enable": false,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      },
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_SOURCE",
+                        "_rendererIndex": 4,
+                        "_enable": false,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      },
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_SOURCE",
+                        "_rendererIndex": 5,
+                        "_enable": false,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      }
+                    ],
+                    "_failNodes": [
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_OWNER",
+                        "_rendererIndex": 7,
+                        "_enable": true,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      },
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_SOURCE",
+                        "_rendererIndex": 1,
+                        "_enable": false,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      },
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                        "_ownerType": "BUFF_SOURCE",
+                        "_rendererIndex": 3,
+                        "_enable": false,
+                        "_exclusive": false,
+                        "_rendererCurModeIndex": false
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "payload_offset": 1415058,
+        "document_base64": "BRoAAAJ0ZW1wbGF0ZUtleQAWAAAAZW5lbXlfZHVydWluW3NwYXduZWRdAAJlZmZlY3RLZXkAAQAAAAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAANldmVudFRvQWN0aW9ucwCcGQAABE9OX0JVRkZfU1RBUlQAvgAAAAMwALYAAAACJHR5cGUASAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDaGFuZ2VBbmltYXRvck1lc2hSZW5kZXJlciwgQXNzZW1ibHktQ1NoYXJwAAJfb3duZXJUeXBlAAsAAABCVUZGX09XTkVSABBfcmVuZGVyZXJJbmRleAD/////CF9lbmFibGUAAAhfZXhjbHVzaXZlAAAIX3JlbmRlcmVyQ3VyTW9kZUluZGV4AAAAAARPTl9CVUZGX0ZJTklTSAC6GAAAAzAAshgAAAIkdHlwZQBDAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK1N3aXRjaFNvdXJjZURpcmVjdGlvbiwgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQALAAAAQlVGRl9PV05FUgAEX3JpZ2h0Tm9kZXMABQYAAAMwAP0FAAACJHR5cGUANAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytJZkVsc2UsIEFzc2VtYmx5LUNTaGFycAADX2NvbmRpdGlvbk5vZGUAcAAAAAIkdHlwZQBEAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NoZWNrTWFuaGF0dGFuRGlzdGFuY2UsIEFzc2VtYmx5LUNTaGFycAAQX21pbkRpc3QAAQAAABBfbWF4RGlzdAABAAAAAARfc3VjY2VlZE5vZGVzAOwCAAADMAC2AAAAAiR0eXBlAEgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2hhbmdlQW5pbWF0b3JNZXNoUmVuZGVyZXIsIEFzc2VtYmx5LUNTaGFycAACX293bmVyVHlwZQALAAAAQlVGRl9PV05FUgAQX3JlbmRlcmVySW5kZXgAAAAAAAhfZW5hYmxlAAEIX2V4Y2x1c2l2ZQAACF9yZW5kZXJlckN1ck1vZGVJbmRleAAAAAMxALcAAAACJHR5cGUASAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDaGFuZ2VBbmltYXRvck1lc2hSZW5kZXJlciwgQXNzZW1ibHktQ1NoYXJwAAJfb3duZXJUeXBlAAwAAABCVUZGX1NPVVJDRQAQX3JlbmRlcmVySW5kZXgAAgAAAAhfZW5hYmxlAAAIX2V4Y2x1c2l2ZQAACF9yZW5kZXJlckN1ck1vZGVJbmRleAAAAAMyALcAAAACJHR5cGUASAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDaGFuZ2VBbmltYXRvck1lc2hSZW5kZXJlciwgQXNzZW1ibHktQ1NoYXJwAAJfb3duZXJUeXBlAAwAAABCVUZGX1NPVVJDRQAQX3JlbmRlcmVySW5kZXgABAAAAAhfZW5hYmxlAAAIX2V4Y2x1c2l2ZQAACF9yZW5kZXJlckN1ck1vZGVJbmRleAAAAAMzALcAAAACJHR5cGUASAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDaGFuZ2VBbmltYXRvck1lc2hSZW5kZXJlciwgQXNzZW1ibHktQ1NoYXJwAAJfb3duZXJUeXBlAAwAAABCVUZGX1NPVVJDRQAQX3JlbmRlcmVySW5kZXgABQAAAAhfZW5hYmxlAAAIX2V4Y2x1c2l2ZQAACF9yZW5kZXJlckN1ck1vZGVJbmRleAAAAAAEX2ZhaWxOb2RlcwAyAgAAAzAAtgAAAAIkdHlwZQBIAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NoYW5nZUFuaW1hdG9yTWVzaFJlbmRlcmVyLCBBc3NlbWJseS1DU2hhcnAAAl9vd25lclR5cGUACwAAAEJVRkZfT1dORVIAEF9yZW5kZXJlckluZGV4AAEAAAAIX2VuYWJsZQABCF9leGNsdXNpdmUAAAhfcmVuZGVyZXJDdXJNb2RlSW5kZXgAAAADMQC3AAAAAiR0eXBlAEgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2hhbmdlQW5pbWF0b3JNZXNoUmVuZGVyZXIsIEFzc2VtYmx5LUNTaGFycAACX293bmVyVHlwZQAMAAAAQlVGRl9TT1VSQ0UAEF9yZW5kZXJlckluZGV4AAEAAAAIX2VuYWJsZQAACF9leGNsdXNpdmUAAAhfcmVuZGVyZXJDdXJNb2RlSW5kZXgAAAADMgC3AAAAAiR0eXBlAEgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2hhbmdlQW5pbWF0b3JNZXNoUmVuZGVyZXIsIEFzc2VtYmx5LUNTaGFycAACX293bmVyVHlwZQAMAAAAQlVGRl9TT1VSQ0UAEF9yZW5kZXJlckluZGV4AAMAAAAIX2VuYWJsZQAACF9leGNsdXNpdmUAAAhfcmVuZGVyZXJDdXJNb2RlSW5kZXgAAAAAAAAEX2xlZnROb2RlcwAFBgAAAzAA/QUAAAIkdHlwZQA0AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0lmRWxzZSwgQXNzZW1ibHktQ1NoYXJwAANfY29uZGl0aW9uTm9kZQBwAAAAAiR0eXBlAEQAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2hlY2tNYW5oYXR0YW5EaXN0YW5jZSwgQXNzZW1ibHktQ1NoYXJwABBfbWluRGlzdAABAAAAEF9tYXhEaXN0AAEAAAAABF9zdWNjZWVkTm9kZXMA7AIAAAMwALYAAAACJHR5cGUASAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDaGFuZ2VBbmltYXRvck1lc2hSZW5kZXJlciwgQXNzZW1ibHktQ1NoYXJwAAJfb3duZXJUeXBlAAsAAABCVUZGX09XTkVSABBfcmVuZGVyZXJJbmRleAACAAAACF9lbmFibGUAAQhfZXhjbHVzaXZlAAAIX3JlbmRlcmVyQ3VyTW9kZUluZGV4AAAAAzEAtwAAAAIkdHlwZQBIAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NoYW5nZUFuaW1hdG9yTWVzaFJlbmRlcmVyLCBBc3NlbWJseS1DU2hhcnAAAl9vd25lclR5cGUADAAAAEJVRkZfU09VUkNFABBfcmVuZGVyZXJJbmRleAACAAAACF9lbmFibGUAAAhfZXhjbHVzaXZlAAAIX3JlbmRlcmVyQ3VyTW9kZUluZGV4AAAAAzIAtwAAAAIkdHlwZQBIAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NoYW5nZUFuaW1hdG9yTWVzaFJlbmRlcmVyLCBBc3NlbWJseS1DU2hhcnAAAl9vd25lclR5cGUADAAAAEJVRkZfU09VUkNFABBfcmVuZGVyZXJJbmRleAAEAAAACF9lbmFibGUAAAhfZXhjbHVzaXZlAAAIX3JlbmRlcmVyQ3VyTW9kZUluZGV4AAAAAzMAtwAAAAIkdHlwZQBIAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NoYW5nZUFuaW1hdG9yTWVzaFJlbmRlcmVyLCBBc3NlbWJseS1DU2hhcnAAAl9vd25lclR5cGUADAAAAEJVRkZfU09VUkNFABBfcmVuZGVyZXJJbmRleAAFAAAACF9lbmFibGUAAAhfZXhjbHVzaXZlAAAIX3JlbmRlcmVyQ3VyTW9kZUluZGV4AAAAAARfZmFpbE5vZGVzADICAAADMAC2AAAAAiR0eXBlAEgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2hhbmdlQW5pbWF0b3JNZXNoUmVuZGVyZXIsIEFzc2VtYmx5LUNTaGFycAACX293bmVyVHlwZQALAAAAQlVGRl9PV05FUgAQX3JlbmRlcmVySW5kZXgAAwAAAAhfZW5hYmxlAAEIX2V4Y2x1c2l2ZQAACF9yZW5kZXJlckN1ck1vZGVJbmRleAAAAAMxALcAAAACJHR5cGUASAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDaGFuZ2VBbmltYXRvck1lc2hSZW5kZXJlciwgQXNzZW1ibHktQ1NoYXJwAAJfb3duZXJUeXBlAAwAAABCVUZGX1NPVVJDRQAQX3JlbmRlcmVySW5kZXgAAQAAAAhfZW5hYmxlAAAIX2V4Y2x1c2l2ZQAACF9yZW5kZXJlckN1ck1vZGVJbmRleAAAAAMyALcAAAACJHR5cGUASAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDaGFuZ2VBbmltYXRvck1lc2hSZW5kZXJlciwgQXNzZW1ibHktQ1NoYXJwAAJfb3duZXJUeXBlAAwAAABCVUZGX1NPVVJDRQAQX3JlbmRlcmVySW5kZXgAAwAAAAhfZW5hYmxlAAAIX2V4Y2x1c2l2ZQAACF9yZW5kZXJlckN1ck1vZGVJbmRleAAAAAAAAARfdXBOb2RlcwAFBgAAAzAA/QUAAAIkdHlwZQA0AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0lmRWxzZSwgQXNzZW1ibHktQ1NoYXJwAANfY29uZGl0aW9uTm9kZQBwAAAAAiR0eXBlAEQAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2hlY2tNYW5oYXR0YW5EaXN0YW5jZSwgQXNzZW1ibHktQ1NoYXJwABBfbWluRGlzdAABAAAAEF9tYXhEaXN0AAEAAAAABF9zdWNjZWVkTm9kZXMA7AIAAAMwALYAAAACJHR5cGUASAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDaGFuZ2VBbmltYXRvck1lc2hSZW5kZXJlciwgQXNzZW1ibHktQ1NoYXJwAAJfb3duZXJUeXBlAAsAAABCVUZGX09XTkVSABBfcmVuZGVyZXJJbmRleAAEAAAACF9lbmFibGUAAQhfZXhjbHVzaXZlAAAIX3JlbmRlcmVyQ3VyTW9kZUluZGV4AAAAAzEAtwAAAAIkdHlwZQBIAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NoYW5nZUFuaW1hdG9yTWVzaFJlbmRlcmVyLCBBc3NlbWJseS1DU2hhcnAAAl9vd25lclR5cGUADAAAAEJVRkZfU09VUkNFABBfcmVuZGVyZXJJbmRleAACAAAACF9lbmFibGUAAAhfZXhjbHVzaXZlAAAIX3JlbmRlcmVyQ3VyTW9kZUluZGV4AAAAAzIAtwAAAAIkdHlwZQBIAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NoYW5nZUFuaW1hdG9yTWVzaFJlbmRlcmVyLCBBc3NlbWJseS1DU2hhcnAAAl9vd25lclR5cGUADAAAAEJVRkZfU09VUkNFABBfcmVuZGVyZXJJbmRleAAEAAAACF9lbmFibGUAAAhfZXhjbHVzaXZlAAAIX3JlbmRlcmVyQ3VyTW9kZUluZGV4AAAAAzMAtwAAAAIkdHlwZQBIAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NoYW5nZUFuaW1hdG9yTWVzaFJlbmRlcmVyLCBBc3NlbWJseS1DU2hhcnAAAl9vd25lclR5cGUADAAAAEJVRkZfU09VUkNFABBfcmVuZGVyZXJJbmRleAAFAAAACF9lbmFibGUAAAhfZXhjbHVzaXZlAAAIX3JlbmRlcmVyQ3VyTW9kZUluZGV4AAAAAARfZmFpbE5vZGVzADICAAADMAC2AAAAAiR0eXBlAEgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2hhbmdlQW5pbWF0b3JNZXNoUmVuZGVyZXIsIEFzc2VtYmx5LUNTaGFycAACX293bmVyVHlwZQALAAAAQlVGRl9PV05FUgAQX3JlbmRlcmVySW5kZXgABQAAAAhfZW5hYmxlAAEIX2V4Y2x1c2l2ZQAACF9yZW5kZXJlckN1ck1vZGVJbmRleAAAAAMxALcAAAACJHR5cGUASAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDaGFuZ2VBbmltYXRvck1lc2hSZW5kZXJlciwgQXNzZW1ibHktQ1NoYXJwAAJfb3duZXJUeXBlAAwAAABCVUZGX1NPVVJDRQAQX3JlbmRlcmVySW5kZXgAAQAAAAhfZW5hYmxlAAAIX2V4Y2x1c2l2ZQAACF9yZW5kZXJlckN1ck1vZGVJbmRleAAAAAMyALcAAAACJHR5cGUASAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDaGFuZ2VBbmltYXRvck1lc2hSZW5kZXJlciwgQXNzZW1ibHktQ1NoYXJwAAJfb3duZXJUeXBlAAwAAABCVUZGX1NPVVJDRQAQX3JlbmRlcmVySW5kZXgAAwAAAAhfZW5hYmxlAAAIX2V4Y2x1c2l2ZQAACF9yZW5kZXJlckN1ck1vZGVJbmRleAAAAAAAAARfZG93bk5vZGVzAAUGAAADMAD9BQAAAiR0eXBlADQAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrSWZFbHNlLCBBc3NlbWJseS1DU2hhcnAAA19jb25kaXRpb25Ob2RlAHAAAAACJHR5cGUARAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDaGVja01hbmhhdHRhbkRpc3RhbmNlLCBBc3NlbWJseS1DU2hhcnAAEF9taW5EaXN0AAEAAAAQX21heERpc3QAAQAAAAAEX3N1Y2NlZWROb2RlcwDsAgAAAzAAtgAAAAIkdHlwZQBIAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NoYW5nZUFuaW1hdG9yTWVzaFJlbmRlcmVyLCBBc3NlbWJseS1DU2hhcnAAAl9vd25lclR5cGUACwAAAEJVRkZfT1dORVIAEF9yZW5kZXJlckluZGV4AAYAAAAIX2VuYWJsZQABCF9leGNsdXNpdmUAAAhfcmVuZGVyZXJDdXJNb2RlSW5kZXgAAAADMQC3AAAAAiR0eXBlAEgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2hhbmdlQW5pbWF0b3JNZXNoUmVuZGVyZXIsIEFzc2VtYmx5LUNTaGFycAACX293bmVyVHlwZQAMAAAAQlVGRl9TT1VSQ0UAEF9yZW5kZXJlckluZGV4AAIAAAAIX2VuYWJsZQAACF9leGNsdXNpdmUAAAhfcmVuZGVyZXJDdXJNb2RlSW5kZXgAAAADMgC3AAAAAiR0eXBlAEgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2hhbmdlQW5pbWF0b3JNZXNoUmVuZGVyZXIsIEFzc2VtYmx5LUNTaGFycAACX293bmVyVHlwZQAMAAAAQlVGRl9TT1VSQ0UAEF9yZW5kZXJlckluZGV4AAQAAAAIX2VuYWJsZQAACF9leGNsdXNpdmUAAAhfcmVuZGVyZXJDdXJNb2RlSW5kZXgAAAADMwC3AAAAAiR0eXBlAEgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2hhbmdlQW5pbWF0b3JNZXNoUmVuZGVyZXIsIEFzc2VtYmx5LUNTaGFycAACX293bmVyVHlwZQAMAAAAQlVGRl9TT1VSQ0UAEF9yZW5kZXJlckluZGV4AAUAAAAIX2VuYWJsZQAACF9leGNsdXNpdmUAAAhfcmVuZGVyZXJDdXJNb2RlSW5kZXgAAAAABF9mYWlsTm9kZXMAMgIAAAMwALYAAAACJHR5cGUASAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDaGFuZ2VBbmltYXRvck1lc2hSZW5kZXJlciwgQXNzZW1ibHktQ1NoYXJwAAJfb3duZXJUeXBlAAsAAABCVUZGX09XTkVSABBfcmVuZGVyZXJJbmRleAAHAAAACF9lbmFibGUAAQhfZXhjbHVzaXZlAAAIX3JlbmRlcmVyQ3VyTW9kZUluZGV4AAAAAzEAtwAAAAIkdHlwZQBIAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NoYW5nZUFuaW1hdG9yTWVzaFJlbmRlcmVyLCBBc3NlbWJseS1DU2hhcnAAAl9vd25lclR5cGUADAAAAEJVRkZfU09VUkNFABBfcmVuZGVyZXJJbmRleAABAAAACF9lbmFibGUAAAhfZXhjbHVzaXZlAAAIX3JlbmRlcmVyQ3VyTW9kZUluZGV4AAAAAzIAtwAAAAIkdHlwZQBIAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NoYW5nZUFuaW1hdG9yTWVzaFJlbmRlcmVyLCBBc3NlbWJseS1DU2hhcnAAAl9vd25lclR5cGUADAAAAEJVRkZfU09VUkNFABBfcmVuZGVyZXJJbmRleAADAAAACF9lbmFibGUAAAhfZXhjbHVzaXZlAAAIX3JlbmRlcmVyQ3VyTW9kZUluZGV4AAAAAAAAAAAAAA==",
+        "document_sha256": "0ea6500b0663e4cec77ef247324aa3833e2296c380009d681f30e00bff0ed76e"
+      },
+      "immu_environment_damage": {
+        "parsed": {
+          "templateKey": "immu_environment_damage",
+          "effectKey": "",
+          "onEventPriority": "DEFAULT",
+          "eventToActions": {
+            "ON_TAKE_DAMAGE": [
+              {
+                "$type": "Torappu.Battle.Action.Nodes+FilterDamageModifer, Assembly-CSharp",
+                "_filterAttackType": false,
+                "_attackTypeFilter": "NONE",
+                "_filterDamageType": false,
+                "_damageMask": "NONE",
+                "_filterSharedMask": true,
+                "_sharedFlag": "IS_ENVIRONMENT_DAMAGE",
+                "_filterModifierSource": false,
+                "_source": "BUFF_OWNER",
+                "_filterBySourceId": false,
+                "_sourceId": null,
+                "_checkHasScource": false,
+                "_isNoSource": false,
+                "_filterModifierCancelled": false,
+                "_filterApplyWay": false,
+                "_applyWay": "NONE"
+              },
+              {
+                "$type": "Torappu.Battle.Action.Nodes+DamageScale, Assembly-CSharp",
+                "_filterDamageType": false,
+                "_damageMask": "NONE",
+                "_filterApplyWay": false,
+                "_applyWayFilter": "NONE",
+                "_filterModifierKey": false,
+                "_modifierKey": "",
+                "_isOneMinus": false,
+                "_isStackable": false,
+                "_isValidStackCnt": false,
+                "_cachedDeltaValueToBBKey": "",
+                "_customKey": ""
+              }
+            ]
+          }
+        },
+        "payload_offset": 411086,
+        "document_base64": "SQMAAAJ0ZW1wbGF0ZUtleQAYAAAAaW1tdV9lbnZpcm9ubWVudF9kYW1hZ2UAAmVmZmVjdEtleQABAAAAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQAA2V2ZW50VG9BY3Rpb25zAN4CAAAET05fVEFLRV9EQU1BR0UAyQIAAAMwAJcBAAACJHR5cGUAQQAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytGaWx0ZXJEYW1hZ2VNb2RpZmVyLCBBc3NlbWJseS1DU2hhcnAACF9maWx0ZXJBdHRhY2tUeXBlAAACX2F0dGFja1R5cGVGaWx0ZXIABQAAAE5PTkUACF9maWx0ZXJEYW1hZ2VUeXBlAAACX2RhbWFnZU1hc2sABQAAAE5PTkUACF9maWx0ZXJTaGFyZWRNYXNrAAECX3NoYXJlZEZsYWcAFgAAAElTX0VOVklST05NRU5UX0RBTUFHRQAIX2ZpbHRlck1vZGlmaWVyU291cmNlAAACX3NvdXJjZQALAAAAQlVGRl9PV05FUgAIX2ZpbHRlckJ5U291cmNlSWQAAApfc291cmNlSWQACF9jaGVja0hhc1Njb3VyY2UAAAhfaXNOb1NvdXJjZQAACF9maWx0ZXJNb2RpZmllckNhbmNlbGxlZAAACF9maWx0ZXJBcHBseVdheQAAAl9hcHBseVdheQAFAAAATk9ORQAAAzEAJwEAAAIkdHlwZQA5AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0RhbWFnZVNjYWxlLCBBc3NlbWJseS1DU2hhcnAACF9maWx0ZXJEYW1hZ2VUeXBlAAACX2RhbWFnZU1hc2sABQAAAE5PTkUACF9maWx0ZXJBcHBseVdheQAAAl9hcHBseVdheUZpbHRlcgAFAAAATk9ORQAIX2ZpbHRlck1vZGlmaWVyS2V5AAACX21vZGlmaWVyS2V5AAEAAAAACF9pc09uZU1pbnVzAAAIX2lzU3RhY2thYmxlAAAIX2lzVmFsaWRTdGFja0NudAAAAl9jYWNoZWREZWx0YVZhbHVlVG9CQktleQABAAAAAAJfY3VzdG9tS2V5AAEAAAAAAAAAAA==",
+        "document_sha256": "de08d6d8b3c34021580cb5df59e7fc43d37cec9c6f709948dff952209c859daa"
+      },
+      "instant_kill": {
+        "parsed": {
+          "templateKey": "instant_kill",
+          "effectKey": "",
+          "onEventPriority": "DEFAULT",
+          "eventToActions": {
+            "ON_BUFF_START": [
+              {
+                "$type": "Torappu.Battle.Action.Nodes+InstantKill, Assembly-CSharp",
+                "_targetType": "TARGET",
+                "_killSource": false,
+                "_noSource": false,
+                "_withdrawIfRallyPoint": false,
+                "_resultIfInRallyPointMode": true,
+                "_skipReborn": false,
+                "_noReason": false,
+                "_markReachExit": false,
+                "_switchState": false
+              }
+            ]
+          }
+        },
+        "payload_offset": 1349193,
+        "document_base64": "ZQEAAAJ0ZW1wbGF0ZUtleQANAAAAaW5zdGFudF9raWxsAAJlZmZlY3RLZXkAAQAAAAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAANldmVudFRvQWN0aW9ucwAFAQAABE9OX0JVRkZfU1RBUlQA8QAAAAMwAOkAAAACJHR5cGUAOQAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytJbnN0YW50S2lsbCwgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQAHAAAAVEFSR0VUAAhfa2lsbFNvdXJjZQAACF9ub1NvdXJjZQAACF93aXRoZHJhd0lmUmFsbHlQb2ludAAACF9yZXN1bHRJZkluUmFsbHlQb2ludE1vZGUAAQhfc2tpcFJlYm9ybgAACF9ub1JlYXNvbgAACF9tYXJrUmVhY2hFeGl0AAAIX3N3aXRjaFN0YXRlAAAAAAAA",
+        "document_sha256": "6d76d89ed9362d7ea59edd06048c32074ce6fba6fa809da629ee46d9a072c018"
+      },
+      "trap_dupilr_trait": {
+        "parsed": {
+          "templateKey": "trap_dupilr_trait",
+          "effectKey": "",
+          "onEventPriority": "DEFAULT",
+          "eventToActions": {
+            "ON_BEFORE_APPLYING_MODIFIER": [
+              {
+                "$type": "Torappu.Battle.Action.Nodes+IfElse, Assembly-CSharp",
+                "_conditionNode": {
+                  "$type": "Torappu.Battle.Action.Nodes+CheckSourceInHitRange, Assembly-CSharp",
+                  "_targetType": "MODIFIER_TARGET"
+                },
+                "_succeedNodes": [
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+IsDamage, Assembly-CSharp"
+                  },
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+CheckFilterTag, Assembly-CSharp",
+                    "_targetType": "MODIFIER_SOURCE",
+                    "_filterTag": "dupilr",
+                    "_bbKey": "tag"
+                  },
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+                    "_buff": {
+                      "attributes": {
+                        "abnormalFlags": [],
+                        "abnormalImmunes": [],
+                        "abnormalAntis": [],
+                        "abnormalCombos": [],
+                        "abnormalComboImmunes": [],
+                        "attributeModifiers": []
+                      },
+                      "buffKey": "dupilr_trait[candead]",
+                      "loadFromDB": false,
+                      "isDurableBuff": false,
+                      "isDamageMissable": false,
+                      "isSilenceable": false,
+                      "isStunnable": false,
+                      "isFreezable": false,
+                      "isLevitatable": false,
+                      "isGroundBoundable": false,
+                      "statusResistable": "AUTOMATIC",
+                      "templateKey": "empty",
+                      "disableOverride": true,
+                      "overrideKey": null,
+                      "overrideType": "DEFAULT",
+                      "maxStackCnt": 1,
+                      "refreshRemainingTimeWhenStackMax": false,
+                      "clearAllStackCntWhenTimeUp": false,
+                      "maxValidStackCnt": -1,
+                      "independentCharacterSource": false,
+                      "overrideEffectKey": null,
+                      "overrideOnEventPriority": false,
+                      "onEventPriority": "DEFAULT",
+                      "audioSignal": null,
+                      "lifeTimeType": "INFINITY",
+                      "takeSnapshotWhenExtend": false,
+                      "durationKey": null,
+                      "lifeTime": 0.0,
+                      "triggerLifeType": "IMMEDIATELY",
+                      "triggerCnt": 0,
+                      "triggerInterval": -1.0,
+                      "waitFirstTriggerInterval": true,
+                      "firstTriggerInterval": -1.0,
+                      "priority": -1,
+                      "priorityBBKeys": [],
+                      "stripBlackboardParamsWithBuffKey": false,
+                      "blackboard": [],
+                      "enableInitDirectionFromSource": false
+                    },
+                    "_buffOwner": "BUFF_OWNER",
+                    "_useSpecialBuffSource": false,
+                    "_specialBuffSource": "BUFF_SOURCE",
+                    "_isDerivedBuff": false,
+                    "_finishDerivedBuffIfParentFinish": false,
+                    "_inherateSourceProjectileFromParentBuff": false,
+                    "_hookEffectKeyFromSourceProjectile": false
+                  },
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+CancelModifier, Assembly-CSharp",
+                    "_reason": "NONE"
+                  }
+                ],
+                "_failNodes": [
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+IfElse, Assembly-CSharp",
+                    "_conditionNode": {
+                      "$type": "Torappu.Battle.Action.Nodes+CheckFilterTag, Assembly-CSharp",
+                      "_targetType": "MODIFIER_SOURCE",
+                      "_filterTag": "dupilr",
+                      "_bbKey": "tag"
+                    },
+                    "_succeedNodes": [
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+CheckFilterTag, Assembly-CSharp",
+                        "_targetType": "MODIFIER_SOURCE",
+                        "_filterTag": "dupilr",
+                        "_bbKey": "tag"
+                      },
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+                        "_buff": {
+                          "attributes": {
+                            "abnormalFlags": [],
+                            "abnormalImmunes": [],
+                            "abnormalAntis": [],
+                            "abnormalCombos": [],
+                            "abnormalComboImmunes": [],
+                            "attributeModifiers": []
+                          },
+                          "buffKey": "dupilr_trait[candead]",
+                          "loadFromDB": false,
+                          "isDurableBuff": false,
+                          "isDamageMissable": false,
+                          "isSilenceable": false,
+                          "isStunnable": false,
+                          "isFreezable": false,
+                          "isLevitatable": false,
+                          "isGroundBoundable": false,
+                          "statusResistable": "AUTOMATIC",
+                          "templateKey": "empty",
+                          "disableOverride": true,
+                          "overrideKey": null,
+                          "overrideType": "DEFAULT",
+                          "maxStackCnt": 1,
+                          "refreshRemainingTimeWhenStackMax": false,
+                          "clearAllStackCntWhenTimeUp": false,
+                          "maxValidStackCnt": -1,
+                          "independentCharacterSource": false,
+                          "overrideEffectKey": null,
+                          "overrideOnEventPriority": false,
+                          "onEventPriority": "DEFAULT",
+                          "audioSignal": null,
+                          "lifeTimeType": "INFINITY",
+                          "takeSnapshotWhenExtend": false,
+                          "durationKey": null,
+                          "lifeTime": 0.0,
+                          "triggerLifeType": "IMMEDIATELY",
+                          "triggerCnt": 0,
+                          "triggerInterval": -1.0,
+                          "waitFirstTriggerInterval": true,
+                          "firstTriggerInterval": -1.0,
+                          "priority": -1,
+                          "priorityBBKeys": [],
+                          "stripBlackboardParamsWithBuffKey": false,
+                          "blackboard": [],
+                          "enableInitDirectionFromSource": false
+                        },
+                        "_buffOwner": "BUFF_OWNER",
+                        "_useSpecialBuffSource": false,
+                        "_specialBuffSource": "BUFF_SOURCE",
+                        "_isDerivedBuff": false,
+                        "_finishDerivedBuffIfParentFinish": false,
+                        "_inherateSourceProjectileFromParentBuff": false,
+                        "_hookEffectKeyFromSourceProjectile": false
+                      },
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+CancelModifier, Assembly-CSharp",
+                        "_reason": "NONE"
+                      }
+                    ],
+                    "_failNodes": [
+                      {
+                        "$type": "Torappu.Battle.Action.Nodes+CancelModifier, Assembly-CSharp",
+                        "_reason": "INTERRUPT"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "ON_APPLIED_MODIFIER": [
+              {
+                "$type": "Torappu.Battle.Action.Nodes+FilterByTargetHp, Assembly-CSharp",
+                "_targetType": "TARGET",
+                "_condType": "LE",
+                "_hpValue": {
+                  "_serializedValue": 0
+                }
+              },
+              {
+                "$type": "Torappu.Battle.Action.Nodes+CheckContainsBuff, Assembly-CSharp",
+                "_targetType": "BUFF_OWNER",
+                "_buffKeys": [
+                  "dupilr_trait[candead]"
+                ],
+                "isAND": true,
+                "_loadFromBlackboard": false,
+                "_checkBuffSource": false,
+                "_buffSourceType": "BUFF_SOURCE",
+                "_checkSourceHost": false
+              },
+              {
+                "$type": "Torappu.Battle.Action.Nodes+IfNot, Assembly-CSharp"
+              },
+              {
+                "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+                "_buff": {
+                  "attributes": {
+                    "abnormalFlags": [
+                      "INVINCIBLE",
+                      "TARGET_FREE",
+                      "ALLY_TARGET_FREE"
+                    ],
+                    "abnormalImmunes": [],
+                    "abnormalAntis": [],
+                    "abnormalCombos": [],
+                    "abnormalComboImmunes": [],
+                    "attributeModifiers": []
+                  },
+                  "buffKey": "dupilr_trait[startdead]",
+                  "loadFromDB": false,
+                  "isDurableBuff": false,
+                  "isDamageMissable": false,
+                  "isSilenceable": false,
+                  "isStunnable": false,
+                  "isFreezable": false,
+                  "isLevitatable": false,
+                  "isGroundBoundable": false,
+                  "statusResistable": "AUTOMATIC",
+                  "templateKey": "trap_dupilr_trait[startdead]",
+                  "disableOverride": true,
+                  "overrideKey": null,
+                  "overrideType": "DEFAULT",
+                  "maxStackCnt": 1,
+                  "refreshRemainingTimeWhenStackMax": false,
+                  "clearAllStackCntWhenTimeUp": false,
+                  "maxValidStackCnt": -1,
+                  "independentCharacterSource": false,
+                  "overrideEffectKey": "stonePillar_idle_01_buff",
+                  "overrideOnEventPriority": false,
+                  "onEventPriority": "DEFAULT",
+                  "audioSignal": null,
+                  "lifeTimeType": "LIMITED",
+                  "takeSnapshotWhenExtend": false,
+                  "durationKey": "",
+                  "lifeTime": 0.0,
+                  "triggerLifeType": "IMMEDIATELY",
+                  "triggerCnt": 0,
+                  "triggerInterval": -1.0,
+                  "waitFirstTriggerInterval": true,
+                  "firstTriggerInterval": -1.0,
+                  "priority": -1,
+                  "priorityBBKeys": [],
+                  "stripBlackboardParamsWithBuffKey": true,
+                  "blackboard": [],
+                  "enableInitDirectionFromSource": false
+                },
+                "_buffOwner": "BUFF_OWNER",
+                "_useSpecialBuffSource": false,
+                "_specialBuffSource": "BUFF_SOURCE",
+                "_isDerivedBuff": false,
+                "_finishDerivedBuffIfParentFinish": false,
+                "_inherateSourceProjectileFromParentBuff": false,
+                "_hookEffectKeyFromSourceProjectile": false
+              },
+              {
+                "$type": "Torappu.Battle.Action.Nodes+ClearAllBuffs, Assembly-CSharp",
+                "_targetType": "TARGET",
+                "_retainedBuffsWhenClear": [
+                  "dupilr_trait",
+                  "dupilr_trait[startdead]",
+                  "dupilr_trait[candead]",
+                  "dupilr_trait[ondead]",
+                  "dupilr_trait[undead]",
+                  "dupilr_abnormalimmunes",
+                  "duplir_s[has_ally_in_range]"
+                ],
+                "_alsoRemoveDurableBuff": false
+              },
+              {
+                "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+                "_buff": {
+                  "attributes": {
+                    "abnormalFlags": [],
+                    "abnormalImmunes": [],
+                    "abnormalAntis": [],
+                    "abnormalCombos": [],
+                    "abnormalComboImmunes": [],
+                    "attributeModifiers": []
+                  },
+                  "buffKey": "dupilr_effect[candead]",
+                  "loadFromDB": false,
+                  "isDurableBuff": false,
+                  "isDamageMissable": false,
+                  "isSilenceable": false,
+                  "isStunnable": false,
+                  "isFreezable": false,
+                  "isLevitatable": false,
+                  "isGroundBoundable": false,
+                  "statusResistable": "AUTOMATIC",
+                  "templateKey": "empty",
+                  "disableOverride": false,
+                  "overrideKey": null,
+                  "overrideType": "DEFAULT",
+                  "maxStackCnt": 1,
+                  "refreshRemainingTimeWhenStackMax": false,
+                  "clearAllStackCntWhenTimeUp": false,
+                  "maxValidStackCnt": -1,
+                  "independentCharacterSource": false,
+                  "overrideEffectKey": "stonePillar_idle_01_buff",
+                  "overrideOnEventPriority": false,
+                  "onEventPriority": "DEFAULT",
+                  "audioSignal": null,
+                  "lifeTimeType": "INFINITY",
+                  "takeSnapshotWhenExtend": false,
+                  "durationKey": null,
+                  "lifeTime": 0.0,
+                  "triggerLifeType": "IMMEDIATELY",
+                  "triggerCnt": 0,
+                  "triggerInterval": -1.0,
+                  "waitFirstTriggerInterval": true,
+                  "firstTriggerInterval": -1.0,
+                  "priority": -1,
+                  "priorityBBKeys": [],
+                  "stripBlackboardParamsWithBuffKey": false,
+                  "blackboard": [],
+                  "enableInitDirectionFromSource": false
+                },
+                "_buffOwner": "BUFF_OWNER",
+                "_useSpecialBuffSource": false,
+                "_specialBuffSource": "BUFF_SOURCE",
+                "_isDerivedBuff": false,
+                "_finishDerivedBuffIfParentFinish": false,
+                "_inherateSourceProjectileFromParentBuff": false,
+                "_hookEffectKeyFromSourceProjectile": false
+              }
+            ],
+            "ON_OWNER_BORN": [
+              {
+                "$type": "Torappu.Battle.Action.Nodes+ChangeAnimatorMeshRenderer, Assembly-CSharp",
+                "_ownerType": "BUFF_OWNER",
+                "_rendererIndex": -1,
+                "_enable": true,
+                "_exclusive": false,
+                "_rendererCurModeIndex": false
+              }
+            ]
+          }
+        },
+        "payload_offset": 1351529,
+        "document_base64": "Bx4AAAJ0ZW1wbGF0ZUtleQASAAAAdHJhcF9kdXBpbHJfdHJhaXQAAmVmZmVjdEtleQABAAAAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQAA2V2ZW50VG9BY3Rpb25zAKIdAAAET05fQkVGT1JFX0FQUExZSU5HX01PRElGSUVSAKwOAAADMACkDgAAAiR0eXBlADQAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrSWZFbHNlLCBBc3NlbWJseS1DU2hhcnAAA19jb25kaXRpb25Ob2RlAHQAAAACJHR5cGUAQwAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDaGVja1NvdXJjZUluSGl0UmFuZ2UsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUAEAAAAE1PRElGSUVSX1RBUkdFVAAABF9zdWNjZWVkTm9kZXMASgYAAAMwAEYAAAACJHR5cGUANgAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytJc0RhbWFnZSwgQXNzZW1ibHktQ1NoYXJwAAADMQCUAAAAAiR0eXBlADwAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2hlY2tGaWx0ZXJUYWcsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUAEAAAAE1PRElGSUVSX1NPVVJDRQACX2ZpbHRlclRhZwAHAAAAZHVwaWxyAAJfYmJLZXkABAAAAHRhZwAAAzIAAQUAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NyZWF0ZUJ1ZmYsIEFzc2VtYmx5LUNTaGFycAADX2J1ZmYA2AMAAANhdHRyaWJ1dGVzAIwAAAAEYWJub3JtYWxGbGFncwAFAAAAAARhYm5vcm1hbEltbXVuZXMABQAAAAAEYWJub3JtYWxBbnRpcwAFAAAAAARhYm5vcm1hbENvbWJvcwAFAAAAAARhYm5vcm1hbENvbWJvSW1tdW5lcwAFAAAAAARhdHRyaWJ1dGVNb2RpZmllcnMABQAAAAAAAmJ1ZmZLZXkAFgAAAGR1cGlscl90cmFpdFtjYW5kZWFkXQAIbG9hZEZyb21EQgAACGlzRHVyYWJsZUJ1ZmYAAAhpc0RhbWFnZU1pc3NhYmxlAAAIaXNTaWxlbmNlYWJsZQAACGlzU3R1bm5hYmxlAAAIaXNGcmVlemFibGUAAAhpc0xldml0YXRhYmxlAAAIaXNHcm91bmRCb3VuZGFibGUAAAJzdGF0dXNSZXNpc3RhYmxlAAoAAABBVVRPTUFUSUMAAnRlbXBsYXRlS2V5AAYAAABlbXB0eQAIZGlzYWJsZU92ZXJyaWRlAAEKb3ZlcnJpZGVLZXkAAm92ZXJyaWRlVHlwZQAIAAAAREVGQVVMVAAQbWF4U3RhY2tDbnQAAQAAAAhyZWZyZXNoUmVtYWluaW5nVGltZVdoZW5TdGFja01heAAACGNsZWFyQWxsU3RhY2tDbnRXaGVuVGltZVVwAAAQbWF4VmFsaWRTdGFja0NudAD/////CGluZGVwZW5kZW50Q2hhcmFjdGVyU291cmNlAAAKb3ZlcnJpZGVFZmZlY3RLZXkACG92ZXJyaWRlT25FdmVudFByaW9yaXR5AAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAAphdWRpb1NpZ25hbAACbGlmZVRpbWVUeXBlAAkAAABJTkZJTklUWQAIdGFrZVNuYXBzaG90V2hlbkV4dGVuZAAACmR1cmF0aW9uS2V5AAFsaWZlVGltZQAAAAAAAAAAAAJ0cmlnZ2VyTGlmZVR5cGUADAAAAElNTUVESUFURUxZABB0cmlnZ2VyQ250AAAAAAABdHJpZ2dlckludGVydmFsAAAAAAAAAPC/CHdhaXRGaXJzdFRyaWdnZXJJbnRlcnZhbAABAWZpcnN0VHJpZ2dlckludGVydmFsAAAAAAAAAPC/EHByaW9yaXR5AP////8EcHJpb3JpdHlCQktleXMABQAAAAAIc3RyaXBCbGFja2JvYXJkUGFyYW1zV2l0aEJ1ZmZLZXkAAARibGFja2JvYXJkAAUAAAAACGVuYWJsZUluaXREaXJlY3Rpb25Gcm9tU291cmNlAAAAAl9idWZmT3duZXIACwAAAEJVRkZfT1dORVIACF91c2VTcGVjaWFsQnVmZlNvdXJjZQAAAl9zcGVjaWFsQnVmZlNvdXJjZQAMAAAAQlVGRl9TT1VSQ0UACF9pc0Rlcml2ZWRCdWZmAAAIX2ZpbmlzaERlcml2ZWRCdWZmSWZQYXJlbnRGaW5pc2gAAAhfaW5oZXJhdGVTb3VyY2VQcm9qZWN0aWxlRnJvbVBhcmVudEJ1ZmYAAAhfaG9va0VmZmVjdEtleUZyb21Tb3VyY2VQcm9qZWN0aWxlAAAAAzMAXgAAAAIkdHlwZQA8AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NhbmNlbE1vZGlmaWVyLCBBc3NlbWJseS1DU2hhcnAAAl9yZWFzb24ABQAAAE5PTkUAAAAEX2ZhaWxOb2RlcwB3BwAAAzAAbwcAAAIkdHlwZQA0AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0lmRWxzZSwgQXNzZW1ibHktQ1NoYXJwAANfY29uZGl0aW9uTm9kZQCUAAAAAiR0eXBlADwAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2hlY2tGaWx0ZXJUYWcsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUAEAAAAE1PRElGSUVSX1NPVVJDRQACX2ZpbHRlclRhZwAHAAAAZHVwaWxyAAJfYmJLZXkABAAAAHRhZwAABF9zdWNjZWVkTm9kZXMAAQYAAAMwAJQAAAACJHR5cGUAPAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDaGVja0ZpbHRlclRhZywgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQAQAAAATU9ESUZJRVJfU09VUkNFAAJfZmlsdGVyVGFnAAcAAABkdXBpbHIAAl9iYktleQAEAAAAdGFnAAADMQABBQAAAiR0eXBlADgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ3JlYXRlQnVmZiwgQXNzZW1ibHktQ1NoYXJwAANfYnVmZgDYAwAAA2F0dHJpYnV0ZXMAjAAAAARhYm5vcm1hbEZsYWdzAAUAAAAABGFibm9ybWFsSW1tdW5lcwAFAAAAAARhYm5vcm1hbEFudGlzAAUAAAAABGFibm9ybWFsQ29tYm9zAAUAAAAABGFibm9ybWFsQ29tYm9JbW11bmVzAAUAAAAABGF0dHJpYnV0ZU1vZGlmaWVycwAFAAAAAAACYnVmZktleQAWAAAAZHVwaWxyX3RyYWl0W2NhbmRlYWRdAAhsb2FkRnJvbURCAAAIaXNEdXJhYmxlQnVmZgAACGlzRGFtYWdlTWlzc2FibGUAAAhpc1NpbGVuY2VhYmxlAAAIaXNTdHVubmFibGUAAAhpc0ZyZWV6YWJsZQAACGlzTGV2aXRhdGFibGUAAAhpc0dyb3VuZEJvdW5kYWJsZQAAAnN0YXR1c1Jlc2lzdGFibGUACgAAAEFVVE9NQVRJQwACdGVtcGxhdGVLZXkABgAAAGVtcHR5AAhkaXNhYmxlT3ZlcnJpZGUAAQpvdmVycmlkZUtleQACb3ZlcnJpZGVUeXBlAAgAAABERUZBVUxUABBtYXhTdGFja0NudAABAAAACHJlZnJlc2hSZW1haW5pbmdUaW1lV2hlblN0YWNrTWF4AAAIY2xlYXJBbGxTdGFja0NudFdoZW5UaW1lVXAAABBtYXhWYWxpZFN0YWNrQ250AP////8IaW5kZXBlbmRlbnRDaGFyYWN0ZXJTb3VyY2UAAApvdmVycmlkZUVmZmVjdEtleQAIb3ZlcnJpZGVPbkV2ZW50UHJpb3JpdHkAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQACmF1ZGlvU2lnbmFsAAJsaWZlVGltZVR5cGUACQAAAElORklOSVRZAAh0YWtlU25hcHNob3RXaGVuRXh0ZW5kAAAKZHVyYXRpb25LZXkAAWxpZmVUaW1lAAAAAAAAAAAAAnRyaWdnZXJMaWZlVHlwZQAMAAAASU1NRURJQVRFTFkAEHRyaWdnZXJDbnQAAAAAAAF0cmlnZ2VySW50ZXJ2YWwAAAAAAAAA8L8Id2FpdEZpcnN0VHJpZ2dlckludGVydmFsAAEBZmlyc3RUcmlnZ2VySW50ZXJ2YWwAAAAAAAAA8L8QcHJpb3JpdHkA/////wRwcmlvcml0eUJCS2V5cwAFAAAAAAhzdHJpcEJsYWNrYm9hcmRQYXJhbXNXaXRoQnVmZktleQAABGJsYWNrYm9hcmQABQAAAAAIZW5hYmxlSW5pdERpcmVjdGlvbkZyb21Tb3VyY2UAAAACX2J1ZmZPd25lcgALAAAAQlVGRl9PV05FUgAIX3VzZVNwZWNpYWxCdWZmU291cmNlAAACX3NwZWNpYWxCdWZmU291cmNlAAwAAABCVUZGX1NPVVJDRQAIX2lzRGVyaXZlZEJ1ZmYAAAhfZmluaXNoRGVyaXZlZEJ1ZmZJZlBhcmVudEZpbmlzaAAACF9pbmhlcmF0ZVNvdXJjZVByb2plY3RpbGVGcm9tUGFyZW50QnVmZgAACF9ob29rRWZmZWN0S2V5RnJvbVNvdXJjZVByb2plY3RpbGUAAAADMgBeAAAAAiR0eXBlADwAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2FuY2VsTW9kaWZpZXIsIEFzc2VtYmx5LUNTaGFycAACX3JlYXNvbgAFAAAATk9ORQAAAARfZmFpbE5vZGVzAGsAAAADMABjAAAAAiR0eXBlADwAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2FuY2VsTW9kaWZpZXIsIEFzc2VtYmx5LUNTaGFycAACX3JlYXNvbgAKAAAASU5URVJSVVBUAAAAAAAAAARPTl9BUFBMSUVEX01PRElGSUVSAPINAAADMAChAAAAAiR0eXBlAD4AAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrRmlsdGVyQnlUYXJnZXRIcCwgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQAHAAAAVEFSR0VUAAJfY29uZFR5cGUAAwAAAExFAANfaHBWYWx1ZQAfAAAAEl9zZXJpYWxpemVkVmFsdWUAAAAAAAAAAAAAAAMxAP0AAAACJHR5cGUAPwAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDaGVja0NvbnRhaW5zQnVmZiwgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQALAAAAQlVGRl9PV05FUgAEX2J1ZmZLZXlzACIAAAACMAAWAAAAZHVwaWxyX3RyYWl0W2NhbmRlYWRdAAAIaXNBTkQAAQhfbG9hZEZyb21CbGFja2JvYXJkAAAIX2NoZWNrQnVmZlNvdXJjZQAAAl9idWZmU291cmNlVHlwZQAMAAAAQlVGRl9TT1VSQ0UACF9jaGVja1NvdXJjZUhvc3QAAAADMgBDAAAAAiR0eXBlADMAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrSWZOb3QsIEFzc2VtYmx5LUNTaGFycAAAAzMAeAUAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NyZWF0ZUJ1ZmYsIEFzc2VtYmx5LUNTaGFycAADX2J1ZmYATwQAAANhdHRyaWJ1dGVzAMkAAAAEYWJub3JtYWxGbGFncwBCAAAAAjAACwAAAElOVklOQ0lCTEUAAjEADAAAAFRBUkdFVF9GUkVFAAIyABEAAABBTExZX1RBUkdFVF9GUkVFAAAEYWJub3JtYWxJbW11bmVzAAUAAAAABGFibm9ybWFsQW50aXMABQAAAAAEYWJub3JtYWxDb21ib3MABQAAAAAEYWJub3JtYWxDb21ib0ltbXVuZXMABQAAAAAEYXR0cmlidXRlTW9kaWZpZXJzAAUAAAAAAAJidWZmS2V5ABgAAABkdXBpbHJfdHJhaXRbc3RhcnRkZWFkXQAIbG9hZEZyb21EQgAACGlzRHVyYWJsZUJ1ZmYAAAhpc0RhbWFnZU1pc3NhYmxlAAAIaXNTaWxlbmNlYWJsZQAACGlzU3R1bm5hYmxlAAAIaXNGcmVlemFibGUAAAhpc0xldml0YXRhYmxlAAAIaXNHcm91bmRCb3VuZGFibGUAAAJzdGF0dXNSZXNpc3RhYmxlAAoAAABBVVRPTUFUSUMAAnRlbXBsYXRlS2V5AB0AAAB0cmFwX2R1cGlscl90cmFpdFtzdGFydGRlYWRdAAhkaXNhYmxlT3ZlcnJpZGUAAQpvdmVycmlkZUtleQACb3ZlcnJpZGVUeXBlAAgAAABERUZBVUxUABBtYXhTdGFja0NudAABAAAACHJlZnJlc2hSZW1haW5pbmdUaW1lV2hlblN0YWNrTWF4AAAIY2xlYXJBbGxTdGFja0NudFdoZW5UaW1lVXAAABBtYXhWYWxpZFN0YWNrQ250AP////8IaW5kZXBlbmRlbnRDaGFyYWN0ZXJTb3VyY2UAAAJvdmVycmlkZUVmZmVjdEtleQAZAAAAc3RvbmVQaWxsYXJfaWRsZV8wMV9idWZmAAhvdmVycmlkZU9uRXZlbnRQcmlvcml0eQAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAAKYXVkaW9TaWduYWwAAmxpZmVUaW1lVHlwZQAIAAAATElNSVRFRAAIdGFrZVNuYXBzaG90V2hlbkV4dGVuZAAAAmR1cmF0aW9uS2V5AAEAAAAAAWxpZmVUaW1lAAAAAAAAAAAAAnRyaWdnZXJMaWZlVHlwZQAMAAAASU1NRURJQVRFTFkAEHRyaWdnZXJDbnQAAAAAAAF0cmlnZ2VySW50ZXJ2YWwAAAAAAAAA8L8Id2FpdEZpcnN0VHJpZ2dlckludGVydmFsAAEBZmlyc3RUcmlnZ2VySW50ZXJ2YWwAAAAAAAAA8L8QcHJpb3JpdHkA/////wRwcmlvcml0eUJCS2V5cwAFAAAAAAhzdHJpcEJsYWNrYm9hcmRQYXJhbXNXaXRoQnVmZktleQABBGJsYWNrYm9hcmQABQAAAAAIZW5hYmxlSW5pdERpcmVjdGlvbkZyb21Tb3VyY2UAAAACX2J1ZmZPd25lcgALAAAAQlVGRl9PV05FUgAIX3VzZVNwZWNpYWxCdWZmU291cmNlAAACX3NwZWNpYWxCdWZmU291cmNlAAwAAABCVUZGX1NPVVJDRQAIX2lzRGVyaXZlZEJ1ZmYAAAhfZmluaXNoRGVyaXZlZEJ1ZmZJZlBhcmVudEZpbmlzaAAACF9pbmhlcmF0ZVNvdXJjZVByb2plY3RpbGVGcm9tUGFyZW50QnVmZgAACF9ob29rRWZmZWN0S2V5RnJvbVNvdXJjZVByb2plY3RpbGUAAAADNABjAQAAAiR0eXBlADsAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2xlYXJBbGxCdWZmcywgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQAHAAAAVEFSR0VUAARfcmV0YWluZWRCdWZmc1doZW5DbGVhcgDOAAAAAjAADQAAAGR1cGlscl90cmFpdAACMQAYAAAAZHVwaWxyX3RyYWl0W3N0YXJ0ZGVhZF0AAjIAFgAAAGR1cGlscl90cmFpdFtjYW5kZWFkXQACMwAVAAAAZHVwaWxyX3RyYWl0W29uZGVhZF0AAjQAFQAAAGR1cGlscl90cmFpdFt1bmRlYWRdAAI1ABcAAABkdXBpbHJfYWJub3JtYWxpbW11bmVzAAI2ABwAAABkdXBsaXJfc1toYXNfYWxseV9pbl9yYW5nZV0AAAhfYWxzb1JlbW92ZUR1cmFibGVCdWZmAAAAAzUAHwUAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NyZWF0ZUJ1ZmYsIEFzc2VtYmx5LUNTaGFycAADX2J1ZmYA9gMAAANhdHRyaWJ1dGVzAIwAAAAEYWJub3JtYWxGbGFncwAFAAAAAARhYm5vcm1hbEltbXVuZXMABQAAAAAEYWJub3JtYWxBbnRpcwAFAAAAAARhYm5vcm1hbENvbWJvcwAFAAAAAARhYm5vcm1hbENvbWJvSW1tdW5lcwAFAAAAAARhdHRyaWJ1dGVNb2RpZmllcnMABQAAAAAAAmJ1ZmZLZXkAFwAAAGR1cGlscl9lZmZlY3RbY2FuZGVhZF0ACGxvYWRGcm9tREIAAAhpc0R1cmFibGVCdWZmAAAIaXNEYW1hZ2VNaXNzYWJsZQAACGlzU2lsZW5jZWFibGUAAAhpc1N0dW5uYWJsZQAACGlzRnJlZXphYmxlAAAIaXNMZXZpdGF0YWJsZQAACGlzR3JvdW5kQm91bmRhYmxlAAACc3RhdHVzUmVzaXN0YWJsZQAKAAAAQVVUT01BVElDAAJ0ZW1wbGF0ZUtleQAGAAAAZW1wdHkACGRpc2FibGVPdmVycmlkZQAACm92ZXJyaWRlS2V5AAJvdmVycmlkZVR5cGUACAAAAERFRkFVTFQAEG1heFN0YWNrQ250AAEAAAAIcmVmcmVzaFJlbWFpbmluZ1RpbWVXaGVuU3RhY2tNYXgAAAhjbGVhckFsbFN0YWNrQ250V2hlblRpbWVVcAAAEG1heFZhbGlkU3RhY2tDbnQA/////whpbmRlcGVuZGVudENoYXJhY3RlclNvdXJjZQAAAm92ZXJyaWRlRWZmZWN0S2V5ABkAAABzdG9uZVBpbGxhcl9pZGxlXzAxX2J1ZmYACG92ZXJyaWRlT25FdmVudFByaW9yaXR5AAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAAphdWRpb1NpZ25hbAACbGlmZVRpbWVUeXBlAAkAAABJTkZJTklUWQAIdGFrZVNuYXBzaG90V2hlbkV4dGVuZAAACmR1cmF0aW9uS2V5AAFsaWZlVGltZQAAAAAAAAAAAAJ0cmlnZ2VyTGlmZVR5cGUADAAAAElNTUVESUFURUxZABB0cmlnZ2VyQ250AAAAAAABdHJpZ2dlckludGVydmFsAAAAAAAAAPC/CHdhaXRGaXJzdFRyaWdnZXJJbnRlcnZhbAABAWZpcnN0VHJpZ2dlckludGVydmFsAAAAAAAAAPC/EHByaW9yaXR5AP////8EcHJpb3JpdHlCQktleXMABQAAAAAIc3RyaXBCbGFja2JvYXJkUGFyYW1zV2l0aEJ1ZmZLZXkAAARibGFja2JvYXJkAAUAAAAACGVuYWJsZUluaXREaXJlY3Rpb25Gcm9tU291cmNlAAAAAl9idWZmT3duZXIACwAAAEJVRkZfT1dORVIACF91c2VTcGVjaWFsQnVmZlNvdXJjZQAAAl9zcGVjaWFsQnVmZlNvdXJjZQAMAAAAQlVGRl9TT1VSQ0UACF9pc0Rlcml2ZWRCdWZmAAAIX2ZpbmlzaERlcml2ZWRCdWZmSWZQYXJlbnRGaW5pc2gAAAhfaW5oZXJhdGVTb3VyY2VQcm9qZWN0aWxlRnJvbVBhcmVudEJ1ZmYAAAhfaG9va0VmZmVjdEtleUZyb21Tb3VyY2VQcm9qZWN0aWxlAAAAAARPTl9PV05FUl9CT1JOAL4AAAADMAC2AAAAAiR0eXBlAEgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2hhbmdlQW5pbWF0b3JNZXNoUmVuZGVyZXIsIEFzc2VtYmx5LUNTaGFycAACX293bmVyVHlwZQALAAAAQlVGRl9PV05FUgAQX3JlbmRlcmVySW5kZXgA/////whfZW5hYmxlAAEIX2V4Y2x1c2l2ZQAACF9yZW5kZXJlckN1ck1vZGVJbmRleAAAAAAAAA==",
+        "document_sha256": "835e16b3a74d73745dbfcfca10e6004f3a487f573a5378fa194e40495b442e52"
+      },
+      "trap_dupilr_trait[ondead]": {
+        "parsed": {
+          "templateKey": "trap_dupilr_trait[ondead]",
+          "effectKey": "",
+          "onEventPriority": "DEFAULT",
+          "eventToActions": {
+            "ON_TAKE_DAMAGE": [
+              {
+                "$type": "Torappu.Battle.Action.Nodes+IfTargetEqual, Assembly-CSharp",
+                "_target1": "MODIFIER_SOURCE",
+                "_target2": "MODIFIER_SOURCE",
+                "_equalIfBothNull": false
+              },
+              {
+                "$type": "Torappu.Battle.Action.Nodes+CheckContainsBuff, Assembly-CSharp",
+                "_targetType": "BUFF_OWNER",
+                "_buffKeys": [
+                  "dupilr_trait[candead]"
+                ],
+                "isAND": true,
+                "_loadFromBlackboard": false,
+                "_checkBuffSource": false,
+                "_buffSourceType": "BUFF_SOURCE",
+                "_checkSourceHost": false
+              },
+              {
+                "$type": "Torappu.Battle.Action.Nodes+CheckContainsBuff, Assembly-CSharp",
+                "_targetType": "BUFF_OWNER",
+                "_buffKeys": [
+                  "duplir_s[DeadLike]"
+                ],
+                "isAND": true,
+                "_loadFromBlackboard": false,
+                "_checkBuffSource": false,
+                "_buffSourceType": "BUFF_SOURCE",
+                "_checkSourceHost": false
+              },
+              {
+                "$type": "Torappu.Battle.Action.Nodes+IfNot, Assembly-CSharp"
+              },
+              {
+                "$type": "Torappu.Battle.Action.Nodes+ClearAllBuffs, Assembly-CSharp",
+                "_targetType": "TARGET",
+                "_retainedBuffsWhenClear": [
+                  "dupilr_trait",
+                  "dupilr_trait[ondead]",
+                  "dupilr_trait[undead]",
+                  "dupilr_abnormalimmunes",
+                  "dupilr_trait[candead]"
+                ],
+                "_alsoRemoveDurableBuff": false
+              },
+              {
+                "$type": "Torappu.Battle.Action.Nodes+SwitchSourceDirection, Assembly-CSharp",
+                "_targetType": "BUFF_OWNER",
+                "_rightNodes": [
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+SwitchMode, Assembly-CSharp",
+                    "_modeIndex": 1,
+                    "_loadModeFromBlackboard": false,
+                    "_restoreDefault": false,
+                    "_restartFSM": false,
+                    "_targetType": "TARGET"
+                  },
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+SetBodyDirection, Assembly-CSharp",
+                    "_targetType": "BUFF_OWNER",
+                    "_direction": "LEFT",
+                    "_includeFace": false,
+                    "_onlyChangeFace": false,
+                    "_useSourceDirection": false,
+                    "_directionSourceType": "SOURCE",
+                    "_useDirectionFromBlackboard": false,
+                    "_directionKey": "direction",
+                    "_force": false
+                  },
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+TriggerSkill, Assembly-CSharp",
+                    "_targetType": "BUFF_OWNER",
+                    "_checkBeforeTrigger": false
+                  },
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+CreateEffect, Assembly-CSharp",
+                    "_targetType": "TARGET",
+                    "_sourceType": "SOURCE",
+                    "_effectKey": "stonePillar_collapse_01_left",
+                    "_useSourceFaceVactor": false,
+                    "_useSourceToTargetDirection": false,
+                    "_useConstDirection": false,
+                    "_constDirection": "UP",
+                    "_createEffectHoldBySource": false,
+                    "_createEffectConstDirectionHoldBySource": false,
+                    "_useAttackPlaybackSpeed": false,
+                    "_manualSetPlaybackSpeed": false,
+                    "_blackboardKey": "",
+                    "_playbackSpeed": 1.0
+                  }
+                ],
+                "_leftNodes": [
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+SwitchMode, Assembly-CSharp",
+                    "_modeIndex": 0,
+                    "_loadModeFromBlackboard": false,
+                    "_restoreDefault": false,
+                    "_restartFSM": false,
+                    "_targetType": "TARGET"
+                  },
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+SetBodyDirection, Assembly-CSharp",
+                    "_targetType": "BUFF_OWNER",
+                    "_direction": "RIGHT",
+                    "_includeFace": false,
+                    "_onlyChangeFace": false,
+                    "_useSourceDirection": false,
+                    "_directionSourceType": "SOURCE",
+                    "_useDirectionFromBlackboard": false,
+                    "_directionKey": "direction",
+                    "_force": false
+                  },
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+TriggerSkill, Assembly-CSharp",
+                    "_targetType": "BUFF_OWNER",
+                    "_checkBeforeTrigger": false
+                  },
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+CreateEffect, Assembly-CSharp",
+                    "_targetType": "TARGET",
+                    "_sourceType": "SOURCE",
+                    "_effectKey": "stonePillar_collapse_01_right",
+                    "_useSourceFaceVactor": false,
+                    "_useSourceToTargetDirection": false,
+                    "_useConstDirection": false,
+                    "_constDirection": "UP",
+                    "_createEffectHoldBySource": false,
+                    "_createEffectConstDirectionHoldBySource": false,
+                    "_useAttackPlaybackSpeed": false,
+                    "_manualSetPlaybackSpeed": false,
+                    "_blackboardKey": "",
+                    "_playbackSpeed": 1.0
+                  }
+                ],
+                "_upNodes": [
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+SwitchMode, Assembly-CSharp",
+                    "_modeIndex": 3,
+                    "_loadModeFromBlackboard": false,
+                    "_restoreDefault": false,
+                    "_restartFSM": false,
+                    "_targetType": "TARGET"
+                  },
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+SetBodyDirection, Assembly-CSharp",
+                    "_targetType": "BUFF_OWNER",
+                    "_direction": "DOWN",
+                    "_includeFace": false,
+                    "_onlyChangeFace": false,
+                    "_useSourceDirection": false,
+                    "_directionSourceType": "SOURCE",
+                    "_useDirectionFromBlackboard": false,
+                    "_directionKey": "direction",
+                    "_force": false
+                  },
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+TriggerSkill, Assembly-CSharp",
+                    "_targetType": "BUFF_OWNER",
+                    "_checkBeforeTrigger": false
+                  },
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+CreateEffect, Assembly-CSharp",
+                    "_targetType": "TARGET",
+                    "_sourceType": "SOURCE",
+                    "_effectKey": "stonePillar_collapse_01_down",
+                    "_useSourceFaceVactor": false,
+                    "_useSourceToTargetDirection": false,
+                    "_useConstDirection": false,
+                    "_constDirection": "UP",
+                    "_createEffectHoldBySource": false,
+                    "_createEffectConstDirectionHoldBySource": false,
+                    "_useAttackPlaybackSpeed": false,
+                    "_manualSetPlaybackSpeed": false,
+                    "_blackboardKey": "",
+                    "_playbackSpeed": 1.0
+                  }
+                ],
+                "_downNodes": [
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+SwitchMode, Assembly-CSharp",
+                    "_modeIndex": 2,
+                    "_loadModeFromBlackboard": false,
+                    "_restoreDefault": false,
+                    "_restartFSM": false,
+                    "_targetType": "TARGET"
+                  },
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+SetBodyDirection, Assembly-CSharp",
+                    "_targetType": "BUFF_OWNER",
+                    "_direction": "UP",
+                    "_includeFace": false,
+                    "_onlyChangeFace": false,
+                    "_useSourceDirection": false,
+                    "_directionSourceType": "SOURCE",
+                    "_useDirectionFromBlackboard": false,
+                    "_directionKey": "direction",
+                    "_force": false
+                  },
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+TriggerSkill, Assembly-CSharp",
+                    "_targetType": "BUFF_OWNER",
+                    "_checkBeforeTrigger": false
+                  },
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+CreateEffect, Assembly-CSharp",
+                    "_targetType": "TARGET",
+                    "_sourceType": "SOURCE",
+                    "_effectKey": "stonePillar_collapse_01_up",
+                    "_useSourceFaceVactor": false,
+                    "_useSourceToTargetDirection": false,
+                    "_useConstDirection": false,
+                    "_constDirection": "UP",
+                    "_createEffectHoldBySource": false,
+                    "_createEffectConstDirectionHoldBySource": false,
+                    "_useAttackPlaybackSpeed": false,
+                    "_manualSetPlaybackSpeed": false,
+                    "_blackboardKey": "",
+                    "_playbackSpeed": 1.0
+                  }
+                ]
+              },
+              {
+                "$type": "Torappu.Battle.Action.Nodes+FinishBuff, Assembly-CSharp",
+                "_decCntIfStack": false,
+                "_updateOverrideMap": true
+              }
+            ]
+          }
+        },
+        "payload_offset": 1343640,
+        "document_base64": "oxUAAAJ0ZW1wbGF0ZUtleQAaAAAAdHJhcF9kdXBpbHJfdHJhaXRbb25kZWFkXQACZWZmZWN0S2V5AAEAAAAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAADZXZlbnRUb0FjdGlvbnMANhUAAARPTl9UQUtFX0RBTUFHRQAhFQAAAzAAmgAAAAIkdHlwZQA7AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0lmVGFyZ2V0RXF1YWwsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldDEAEAAAAE1PRElGSUVSX1NPVVJDRQACX3RhcmdldDIAEAAAAE1PRElGSUVSX1NPVVJDRQAIX2VxdWFsSWZCb3RoTnVsbAAAAAMxAP0AAAACJHR5cGUAPwAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDaGVja0NvbnRhaW5zQnVmZiwgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQALAAAAQlVGRl9PV05FUgAEX2J1ZmZLZXlzACIAAAACMAAWAAAAZHVwaWxyX3RyYWl0W2NhbmRlYWRdAAAIaXNBTkQAAQhfbG9hZEZyb21CbGFja2JvYXJkAAAIX2NoZWNrQnVmZlNvdXJjZQAAAl9idWZmU291cmNlVHlwZQAMAAAAQlVGRl9TT1VSQ0UACF9jaGVja1NvdXJjZUhvc3QAAAADMgD6AAAAAiR0eXBlAD8AAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2hlY2tDb250YWluc0J1ZmYsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIABF9idWZmS2V5cwAfAAAAAjAAEwAAAGR1cGxpcl9zW0RlYWRMaWtlXQAACGlzQU5EAAEIX2xvYWRGcm9tQmxhY2tib2FyZAAACF9jaGVja0J1ZmZTb3VyY2UAAAJfYnVmZlNvdXJjZVR5cGUADAAAAEJVRkZfU09VUkNFAAhfY2hlY2tTb3VyY2VIb3N0AAAAAzMAQwAAAAIkdHlwZQAzAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0lmTm90LCBBc3NlbWJseS1DU2hhcnAAAAM0ACEBAAACJHR5cGUAOwAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDbGVhckFsbEJ1ZmZzLCBBc3NlbWJseS1DU2hhcnAAAl90YXJnZXRUeXBlAAcAAABUQVJHRVQABF9yZXRhaW5lZEJ1ZmZzV2hlbkNsZWFyAIwAAAACMAANAAAAZHVwaWxyX3RyYWl0AAIxABUAAABkdXBpbHJfdHJhaXRbb25kZWFkXQACMgAVAAAAZHVwaWxyX3RyYWl0W3VuZGVhZF0AAjMAFwAAAGR1cGlscl9hYm5vcm1hbGltbXVuZXMAAjQAFgAAAGR1cGlscl90cmFpdFtjYW5kZWFkXQAACF9hbHNvUmVtb3ZlRHVyYWJsZUJ1ZmYAAAADNQCkEAAAAiR0eXBlAEMAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrU3dpdGNoU291cmNlRGlyZWN0aW9uLCBBc3NlbWJseS1DU2hhcnAAAl90YXJnZXRUeXBlAAsAAABCVUZGX09XTkVSAARfcmlnaHROb2RlcwACBAAAAzAAqgAAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK1N3aXRjaE1vZGUsIEFzc2VtYmx5LUNTaGFycAAQX21vZGVJbmRleAABAAAACF9sb2FkTW9kZUZyb21CbGFja2JvYXJkAAAIX3Jlc3RvcmVEZWZhdWx0AAAIX3Jlc3RhcnRGU00AAAJfdGFyZ2V0VHlwZQAHAAAAVEFSR0VUAAADMQAbAQAAAiR0eXBlAD4AAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrU2V0Qm9keURpcmVjdGlvbiwgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQALAAAAQlVGRl9PV05FUgACX2RpcmVjdGlvbgAFAAAATEVGVAAIX2luY2x1ZGVGYWNlAAAIX29ubHlDaGFuZ2VGYWNlAAAIX3VzZVNvdXJjZURpcmVjdGlvbgAAAl9kaXJlY3Rpb25Tb3VyY2VUeXBlAAcAAABTT1VSQ0UACF91c2VEaXJlY3Rpb25Gcm9tQmxhY2tib2FyZAAAAl9kaXJlY3Rpb25LZXkACgAAAGRpcmVjdGlvbgAIX2ZvcmNlAAAAAzIAfAAAAAIkdHlwZQA6AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK1RyaWdnZXJTa2lsbCwgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQALAAAAQlVGRl9PV05FUgAIX2NoZWNrQmVmb3JlVHJpZ2dlcgAAAAMzALABAAACJHR5cGUAOgAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDcmVhdGVFZmZlY3QsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUABwAAAFRBUkdFVAACX3NvdXJjZVR5cGUABwAAAFNPVVJDRQACX2VmZmVjdEtleQAdAAAAc3RvbmVQaWxsYXJfY29sbGFwc2VfMDFfbGVmdAAIX3VzZVNvdXJjZUZhY2VWYWN0b3IAAAhfdXNlU291cmNlVG9UYXJnZXREaXJlY3Rpb24AAAhfdXNlQ29uc3REaXJlY3Rpb24AAAJfY29uc3REaXJlY3Rpb24AAwAAAFVQAAhfY3JlYXRlRWZmZWN0SG9sZEJ5U291cmNlAAAIX2NyZWF0ZUVmZmVjdENvbnN0RGlyZWN0aW9uSG9sZEJ5U291cmNlAAAIX3VzZUF0dGFja1BsYXliYWNrU3BlZWQAAAhfbWFudWFsU2V0UGxheWJhY2tTcGVlZAAAAl9ibGFja2JvYXJkS2V5AAEAAAAAAV9wbGF5YmFja1NwZWVkAAAAAAAAAPA/AAAEX2xlZnROb2RlcwAEBAAAAzAAqgAAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK1N3aXRjaE1vZGUsIEFzc2VtYmx5LUNTaGFycAAQX21vZGVJbmRleAAAAAAACF9sb2FkTW9kZUZyb21CbGFja2JvYXJkAAAIX3Jlc3RvcmVEZWZhdWx0AAAIX3Jlc3RhcnRGU00AAAJfdGFyZ2V0VHlwZQAHAAAAVEFSR0VUAAADMQAcAQAAAiR0eXBlAD4AAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrU2V0Qm9keURpcmVjdGlvbiwgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQALAAAAQlVGRl9PV05FUgACX2RpcmVjdGlvbgAGAAAAUklHSFQACF9pbmNsdWRlRmFjZQAACF9vbmx5Q2hhbmdlRmFjZQAACF91c2VTb3VyY2VEaXJlY3Rpb24AAAJfZGlyZWN0aW9uU291cmNlVHlwZQAHAAAAU09VUkNFAAhfdXNlRGlyZWN0aW9uRnJvbUJsYWNrYm9hcmQAAAJfZGlyZWN0aW9uS2V5AAoAAABkaXJlY3Rpb24ACF9mb3JjZQAAAAMyAHwAAAACJHR5cGUAOgAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytUcmlnZ2VyU2tpbGwsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIACF9jaGVja0JlZm9yZVRyaWdnZXIAAAADMwCxAQAAAiR0eXBlADoAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ3JlYXRlRWZmZWN0LCBBc3NlbWJseS1DU2hhcnAAAl90YXJnZXRUeXBlAAcAAABUQVJHRVQAAl9zb3VyY2VUeXBlAAcAAABTT1VSQ0UAAl9lZmZlY3RLZXkAHgAAAHN0b25lUGlsbGFyX2NvbGxhcHNlXzAxX3JpZ2h0AAhfdXNlU291cmNlRmFjZVZhY3RvcgAACF91c2VTb3VyY2VUb1RhcmdldERpcmVjdGlvbgAACF91c2VDb25zdERpcmVjdGlvbgAAAl9jb25zdERpcmVjdGlvbgADAAAAVVAACF9jcmVhdGVFZmZlY3RIb2xkQnlTb3VyY2UAAAhfY3JlYXRlRWZmZWN0Q29uc3REaXJlY3Rpb25Ib2xkQnlTb3VyY2UAAAhfdXNlQXR0YWNrUGxheWJhY2tTcGVlZAAACF9tYW51YWxTZXRQbGF5YmFja1NwZWVkAAACX2JsYWNrYm9hcmRLZXkAAQAAAAABX3BsYXliYWNrU3BlZWQAAAAAAAAA8D8AAARfdXBOb2RlcwACBAAAAzAAqgAAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK1N3aXRjaE1vZGUsIEFzc2VtYmx5LUNTaGFycAAQX21vZGVJbmRleAADAAAACF9sb2FkTW9kZUZyb21CbGFja2JvYXJkAAAIX3Jlc3RvcmVEZWZhdWx0AAAIX3Jlc3RhcnRGU00AAAJfdGFyZ2V0VHlwZQAHAAAAVEFSR0VUAAADMQAbAQAAAiR0eXBlAD4AAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrU2V0Qm9keURpcmVjdGlvbiwgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQALAAAAQlVGRl9PV05FUgACX2RpcmVjdGlvbgAFAAAARE9XTgAIX2luY2x1ZGVGYWNlAAAIX29ubHlDaGFuZ2VGYWNlAAAIX3VzZVNvdXJjZURpcmVjdGlvbgAAAl9kaXJlY3Rpb25Tb3VyY2VUeXBlAAcAAABTT1VSQ0UACF91c2VEaXJlY3Rpb25Gcm9tQmxhY2tib2FyZAAAAl9kaXJlY3Rpb25LZXkACgAAAGRpcmVjdGlvbgAIX2ZvcmNlAAAAAzIAfAAAAAIkdHlwZQA6AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK1RyaWdnZXJTa2lsbCwgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQALAAAAQlVGRl9PV05FUgAIX2NoZWNrQmVmb3JlVHJpZ2dlcgAAAAMzALABAAACJHR5cGUAOgAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDcmVhdGVFZmZlY3QsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUABwAAAFRBUkdFVAACX3NvdXJjZVR5cGUABwAAAFNPVVJDRQACX2VmZmVjdEtleQAdAAAAc3RvbmVQaWxsYXJfY29sbGFwc2VfMDFfZG93bgAIX3VzZVNvdXJjZUZhY2VWYWN0b3IAAAhfdXNlU291cmNlVG9UYXJnZXREaXJlY3Rpb24AAAhfdXNlQ29uc3REaXJlY3Rpb24AAAJfY29uc3REaXJlY3Rpb24AAwAAAFVQAAhfY3JlYXRlRWZmZWN0SG9sZEJ5U291cmNlAAAIX2NyZWF0ZUVmZmVjdENvbnN0RGlyZWN0aW9uSG9sZEJ5U291cmNlAAAIX3VzZUF0dGFja1BsYXliYWNrU3BlZWQAAAhfbWFudWFsU2V0UGxheWJhY2tTcGVlZAAAAl9ibGFja2JvYXJkS2V5AAEAAAAAAV9wbGF5YmFja1NwZWVkAAAAAAAAAPA/AAAEX2Rvd25Ob2RlcwD+AwAAAzAAqgAAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK1N3aXRjaE1vZGUsIEFzc2VtYmx5LUNTaGFycAAQX21vZGVJbmRleAACAAAACF9sb2FkTW9kZUZyb21CbGFja2JvYXJkAAAIX3Jlc3RvcmVEZWZhdWx0AAAIX3Jlc3RhcnRGU00AAAJfdGFyZ2V0VHlwZQAHAAAAVEFSR0VUAAADMQAZAQAAAiR0eXBlAD4AAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrU2V0Qm9keURpcmVjdGlvbiwgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQALAAAAQlVGRl9PV05FUgACX2RpcmVjdGlvbgADAAAAVVAACF9pbmNsdWRlRmFjZQAACF9vbmx5Q2hhbmdlRmFjZQAACF91c2VTb3VyY2VEaXJlY3Rpb24AAAJfZGlyZWN0aW9uU291cmNlVHlwZQAHAAAAU09VUkNFAAhfdXNlRGlyZWN0aW9uRnJvbUJsYWNrYm9hcmQAAAJfZGlyZWN0aW9uS2V5AAoAAABkaXJlY3Rpb24ACF9mb3JjZQAAAAMyAHwAAAACJHR5cGUAOgAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytUcmlnZ2VyU2tpbGwsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIACF9jaGVja0JlZm9yZVRyaWdnZXIAAAADMwCuAQAAAiR0eXBlADoAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ3JlYXRlRWZmZWN0LCBBc3NlbWJseS1DU2hhcnAAAl90YXJnZXRUeXBlAAcAAABUQVJHRVQAAl9zb3VyY2VUeXBlAAcAAABTT1VSQ0UAAl9lZmZlY3RLZXkAGwAAAHN0b25lUGlsbGFyX2NvbGxhcHNlXzAxX3VwAAhfdXNlU291cmNlRmFjZVZhY3RvcgAACF91c2VTb3VyY2VUb1RhcmdldERpcmVjdGlvbgAACF91c2VDb25zdERpcmVjdGlvbgAAAl9jb25zdERpcmVjdGlvbgADAAAAVVAACF9jcmVhdGVFZmZlY3RIb2xkQnlTb3VyY2UAAAhfY3JlYXRlRWZmZWN0Q29uc3REaXJlY3Rpb25Ib2xkQnlTb3VyY2UAAAhfdXNlQXR0YWNrUGxheWJhY2tTcGVlZAAACF9tYW51YWxTZXRQbGF5YmFja1NwZWVkAAACX2JsYWNrYm9hcmRLZXkAAQAAAAABX3BsYXliYWNrU3BlZWQAAAAAAAAA8D8AAAADNgBuAAAAAiR0eXBlADgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrRmluaXNoQnVmZiwgQXNzZW1ibHktQ1NoYXJwAAhfZGVjQ250SWZTdGFjawAACF91cGRhdGVPdmVycmlkZU1hcAABAAAAAA==",
+        "document_sha256": "9e0e8cf2fc69cec0946e537553d48d6eeec18901f8315abbe5544a9d55c5ee11"
+      },
+      "trap_dupilr_trait[startdead]": {
+        "parsed": {
+          "templateKey": "trap_dupilr_trait[startdead]",
+          "effectKey": "",
+          "onEventPriority": "DEFAULT",
+          "eventToActions": {
+            "ON_BUFF_FINISH": [
+              {
+                "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+                "_buff": {
+                  "attributes": {
+                    "abnormalFlags": [],
+                    "abnormalImmunes": [],
+                    "abnormalAntis": [],
+                    "abnormalCombos": [],
+                    "abnormalComboImmunes": [],
+                    "attributeModifiers": []
+                  },
+                  "buffKey": "dupilr_trait[candead]",
+                  "loadFromDB": false,
+                  "isDurableBuff": false,
+                  "isDamageMissable": false,
+                  "isSilenceable": false,
+                  "isStunnable": false,
+                  "isFreezable": false,
+                  "isLevitatable": false,
+                  "isGroundBoundable": false,
+                  "statusResistable": "AUTOMATIC",
+                  "templateKey": "empty",
+                  "disableOverride": true,
+                  "overrideKey": null,
+                  "overrideType": "DEFAULT",
+                  "maxStackCnt": 1,
+                  "refreshRemainingTimeWhenStackMax": false,
+                  "clearAllStackCntWhenTimeUp": false,
+                  "maxValidStackCnt": -1,
+                  "independentCharacterSource": false,
+                  "overrideEffectKey": "",
+                  "overrideOnEventPriority": false,
+                  "onEventPriority": "DEFAULT",
+                  "audioSignal": null,
+                  "lifeTimeType": "INFINITY",
+                  "takeSnapshotWhenExtend": false,
+                  "durationKey": null,
+                  "lifeTime": 0.0,
+                  "triggerLifeType": "IMMEDIATELY",
+                  "triggerCnt": 0,
+                  "triggerInterval": -1.0,
+                  "waitFirstTriggerInterval": true,
+                  "firstTriggerInterval": -1.0,
+                  "priority": -1,
+                  "priorityBBKeys": [],
+                  "stripBlackboardParamsWithBuffKey": false,
+                  "blackboard": [],
+                  "enableInitDirectionFromSource": false
+                },
+                "_buffOwner": "BUFF_OWNER",
+                "_useSpecialBuffSource": false,
+                "_specialBuffSource": "BUFF_SOURCE",
+                "_isDerivedBuff": false,
+                "_finishDerivedBuffIfParentFinish": false,
+                "_inherateSourceProjectileFromParentBuff": false,
+                "_hookEffectKeyFromSourceProjectile": false
+              },
+              {
+                "$type": "Torappu.Battle.Action.Nodes+ClearAllBuffs, Assembly-CSharp",
+                "_targetType": "TARGET",
+                "_retainedBuffsWhenClear": [
+                  "dupilr_trait",
+                  "dupilr_trait[candead]",
+                  "dupilr_trait[ondead]",
+                  "dupilr_trait[undead]",
+                  "dupilr_trait[startdead]",
+                  "dupilr_abnormalimmunes",
+                  "dupilr_effect[candead]",
+                  "duplir_s[has_ally_in_range]"
+                ],
+                "_alsoRemoveDurableBuff": false
+              },
+              {
+                "$type": "Torappu.Battle.Action.Nodes+OnRallyPointLikeReborn, Assembly-CSharp",
+                "_targetType": "BUFF_OWNER"
+              }
+            ]
+          }
+        },
+        "payload_offset": 1349580,
+        "document_base64": "igcAAAJ0ZW1wbGF0ZUtleQAdAAAAdHJhcF9kdXBpbHJfdHJhaXRbc3RhcnRkZWFkXQACZWZmZWN0S2V5AAEAAAAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAADZXZlbnRUb0FjdGlvbnMAGgcAAARPTl9CVUZGX0ZJTklTSAAFBwAAAzAABgUAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NyZWF0ZUJ1ZmYsIEFzc2VtYmx5LUNTaGFycAADX2J1ZmYA3QMAAANhdHRyaWJ1dGVzAIwAAAAEYWJub3JtYWxGbGFncwAFAAAAAARhYm5vcm1hbEltbXVuZXMABQAAAAAEYWJub3JtYWxBbnRpcwAFAAAAAARhYm5vcm1hbENvbWJvcwAFAAAAAARhYm5vcm1hbENvbWJvSW1tdW5lcwAFAAAAAARhdHRyaWJ1dGVNb2RpZmllcnMABQAAAAAAAmJ1ZmZLZXkAFgAAAGR1cGlscl90cmFpdFtjYW5kZWFkXQAIbG9hZEZyb21EQgAACGlzRHVyYWJsZUJ1ZmYAAAhpc0RhbWFnZU1pc3NhYmxlAAAIaXNTaWxlbmNlYWJsZQAACGlzU3R1bm5hYmxlAAAIaXNGcmVlemFibGUAAAhpc0xldml0YXRhYmxlAAAIaXNHcm91bmRCb3VuZGFibGUAAAJzdGF0dXNSZXNpc3RhYmxlAAoAAABBVVRPTUFUSUMAAnRlbXBsYXRlS2V5AAYAAABlbXB0eQAIZGlzYWJsZU92ZXJyaWRlAAEKb3ZlcnJpZGVLZXkAAm92ZXJyaWRlVHlwZQAIAAAAREVGQVVMVAAQbWF4U3RhY2tDbnQAAQAAAAhyZWZyZXNoUmVtYWluaW5nVGltZVdoZW5TdGFja01heAAACGNsZWFyQWxsU3RhY2tDbnRXaGVuVGltZVVwAAAQbWF4VmFsaWRTdGFja0NudAD/////CGluZGVwZW5kZW50Q2hhcmFjdGVyU291cmNlAAACb3ZlcnJpZGVFZmZlY3RLZXkAAQAAAAAIb3ZlcnJpZGVPbkV2ZW50UHJpb3JpdHkAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQACmF1ZGlvU2lnbmFsAAJsaWZlVGltZVR5cGUACQAAAElORklOSVRZAAh0YWtlU25hcHNob3RXaGVuRXh0ZW5kAAAKZHVyYXRpb25LZXkAAWxpZmVUaW1lAAAAAAAAAAAAAnRyaWdnZXJMaWZlVHlwZQAMAAAASU1NRURJQVRFTFkAEHRyaWdnZXJDbnQAAAAAAAF0cmlnZ2VySW50ZXJ2YWwAAAAAAAAA8L8Id2FpdEZpcnN0VHJpZ2dlckludGVydmFsAAEBZmlyc3RUcmlnZ2VySW50ZXJ2YWwAAAAAAAAA8L8QcHJpb3JpdHkA/////wRwcmlvcml0eUJCS2V5cwAFAAAAAAhzdHJpcEJsYWNrYm9hcmRQYXJhbXNXaXRoQnVmZktleQAABGJsYWNrYm9hcmQABQAAAAAIZW5hYmxlSW5pdERpcmVjdGlvbkZyb21Tb3VyY2UAAAACX2J1ZmZPd25lcgALAAAAQlVGRl9PV05FUgAIX3VzZVNwZWNpYWxCdWZmU291cmNlAAACX3NwZWNpYWxCdWZmU291cmNlAAwAAABCVUZGX1NPVVJDRQAIX2lzRGVyaXZlZEJ1ZmYAAAhfZmluaXNoRGVyaXZlZEJ1ZmZJZlBhcmVudEZpbmlzaAAACF9pbmhlcmF0ZVNvdXJjZVByb2plY3RpbGVGcm9tUGFyZW50QnVmZgAACF9ob29rRWZmZWN0S2V5RnJvbVNvdXJjZVByb2plY3RpbGUAAAADMQCBAQAAAiR0eXBlADsAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2xlYXJBbGxCdWZmcywgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQAHAAAAVEFSR0VUAARfcmV0YWluZWRCdWZmc1doZW5DbGVhcgDsAAAAAjAADQAAAGR1cGlscl90cmFpdAACMQAWAAAAZHVwaWxyX3RyYWl0W2NhbmRlYWRdAAIyABUAAABkdXBpbHJfdHJhaXRbb25kZWFkXQACMwAVAAAAZHVwaWxyX3RyYWl0W3VuZGVhZF0AAjQAGAAAAGR1cGlscl90cmFpdFtzdGFydGRlYWRdAAI1ABcAAABkdXBpbHJfYWJub3JtYWxpbW11bmVzAAI2ABcAAABkdXBpbHJfZWZmZWN0W2NhbmRlYWRdAAI3ABwAAABkdXBsaXJfc1toYXNfYWxseV9pbl9yYW5nZV0AAAhfYWxzb1JlbW92ZUR1cmFibGVCdWZmAAAAAzIAcAAAAAIkdHlwZQBEAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK09uUmFsbHlQb2ludExpa2VSZWJvcm4sIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIAAAAAAA==",
+        "document_sha256": "944a67274653e1a21377766b75384c3d425b1c4e6adbcf6b51de1a7cf4f40973"
+      },
+      "trap_duplir_s[DeadLike]": {
+        "parsed": {
+          "templateKey": "trap_duplir_s[DeadLike]",
+          "effectKey": "",
+          "onEventPriority": "DEFAULT",
+          "eventToActions": {
+            "ON_BUFF_FINISH": [
+              {
+                "$type": "Torappu.Battle.Action.Nodes+InstantKill, Assembly-CSharp",
+                "_targetType": "TARGET",
+                "_killSource": true,
+                "_noSource": false,
+                "_withdrawIfRallyPoint": false,
+                "_resultIfInRallyPointMode": false,
+                "_skipReborn": false,
+                "_noReason": false,
+                "_markReachExit": false,
+                "_switchState": false
+              }
+            ],
+            "ON_BUFF_START": [
+              {
+                "$type": "Torappu.Battle.Action.Nodes+FinishBuffsById, Assembly-CSharp",
+                "_buffKey": "dupilr_t[auto_collapse]",
+                "_loadFromBlackboard": false,
+                "_decCntIfStack": false,
+                "_updateOverrideMap": true,
+                "_targetType": "BUFF_OWNER",
+                "_checkBuffSource": false,
+                "_sourceType": "BUFF_SOURCE",
+                "_alsoClearNullSource": false,
+                "_finishHostBuff": false,
+                "_decCntKey": null,
+                "_decCnt": 1
+              }
+            ]
+          }
+        },
+        "payload_offset": 1342904,
+        "document_base64": "xQIAAAJ0ZW1wbGF0ZUtleQAYAAAAdHJhcF9kdXBsaXJfc1tEZWFkTGlrZV0AAmVmZmVjdEtleQABAAAAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQAA2V2ZW50VG9BY3Rpb25zAFoCAAAET05fQlVGRl9GSU5JU0gA8QAAAAMwAOkAAAACJHR5cGUAOQAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytJbnN0YW50S2lsbCwgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQAHAAAAVEFSR0VUAAhfa2lsbFNvdXJjZQABCF9ub1NvdXJjZQAACF93aXRoZHJhd0lmUmFsbHlQb2ludAAACF9yZXN1bHRJZkluUmFsbHlQb2ludE1vZGUAAAhfc2tpcFJlYm9ybgAACF9ub1JlYXNvbgAACF9tYXJrUmVhY2hFeGl0AAAIX3N3aXRjaFN0YXRlAAAAAARPTl9CVUZGX1NUQVJUAEUBAAADMAA9AQAAAiR0eXBlAD0AAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrRmluaXNoQnVmZnNCeUlkLCBBc3NlbWJseS1DU2hhcnAAAl9idWZmS2V5ABgAAABkdXBpbHJfdFthdXRvX2NvbGxhcHNlXQAIX2xvYWRGcm9tQmxhY2tib2FyZAAACF9kZWNDbnRJZlN0YWNrAAAIX3VwZGF0ZU92ZXJyaWRlTWFwAAECX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIACF9jaGVja0J1ZmZTb3VyY2UAAAJfc291cmNlVHlwZQAMAAAAQlVGRl9TT1VSQ0UACF9hbHNvQ2xlYXJOdWxsU291cmNlAAAIX2ZpbmlzaEhvc3RCdWZmAAAKX2RlY0NudEtleQAQX2RlY0NudAABAAAAAAAAAA==",
+        "document_sha256": "3d06314fdcd660ddf374d71877a9e3e551ac203ca9b63e910a42f80e37e627b5"
+      }
+    },
+    "missing_templates": [],
+    "native_method_bodies_recovered": false
+  },
+  "builder_sha256": "eaad237173c8be24330541e8fb0b9aed6acafc9dcc8b7d862e760b9313b543b2",
+  "whole_stage_verified": false
+}

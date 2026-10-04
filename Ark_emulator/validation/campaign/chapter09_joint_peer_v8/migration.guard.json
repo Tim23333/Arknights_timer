@@ -1,0 +1,34 @@
+{
+  "old_core": "a54b85322f776405a22a16db56b50abfca8a48b2df99c24fa796a7a548eb5f1d",
+  "new_core": "bf6f9b60e97e0da5e389e70bb746986e4014d24c26a387ec5078d7771ea78a0c",
+  "old_peer_files_unchanged": {
+    "fixture.py": {
+      "old_sha": "a51a847fca27a57295843381cfafd4c3394f10ce7698f3e1f63c32e2f0f7c4a6",
+      "new_sha": "c53a1a3ef19bbf0ba4f11d907b5a7dd161f85db3a397b151131a6bdff9893df0",
+      "all_old_assertions_preserved": true
+    },
+    "test_v1.py": {
+      "old_sha": "6a4dc87dac6b7eb27ceca233232046b8d909b74ab266f13f1d9878b64c50c819",
+      "new_sha": "56fff4d9130cb0612b588880f0465bc6ee7f61e25792888df3327fa2196af152",
+      "all_old_assertions_preserved": true
+    },
+    "test_regression_v1.py": {
+      "old_sha": "0e308a2250a6985b5be748f5ec94a75dad1df4f42a7b01a10d0368eab8bdd850",
+      "new_sha": "199008be124f9b69f1eb53e3b74376104f9efb664f2395868bd5de3dd047d83c",
+      "all_old_assertions_preserved": true
+    }
+  },
+  "only_candidate_delta": [
+    "domains\\attributes.py"
+  ],
+  "exact_one_line_cursor_getattr_delta": true,
+  "diff": [
+    "--- \n",
+    "+++ \n",
+    "@@ -44,3 +44,3 @@\n",
+    "         return {'active':active, 'time':self._cache_time, 'rows':rows,",
+    "-            'last_calculation_event_id':self.ctx.last_calculation_event_id}",
+    "+            'last_calculation_event_id':getattr(self.ctx, 'last_calculation_event_id', None)}",
+    " "
+  ]
+}
