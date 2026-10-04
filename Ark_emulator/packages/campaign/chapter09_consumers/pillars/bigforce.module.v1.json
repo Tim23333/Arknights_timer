@@ -1,0 +1,306 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/ch9/bigforce/v1",
+    "metadata": {
+      "source_locks": {
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter09_source_prepare\\environment.native.v1.json": "1dc8bd8eef8dc726e87f836641e91c730fed474a17d01dadc872957c312bea34",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_pillar_v1\\bigforce.py": "ff55208d3d8e3350d5d40db13ed0d821d6d6885de067ab5ea1cd95b9eba8f16c"
+      },
+      "native_BuffTile": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -1925040116270354393
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 8764313853837755128
+        },
+        "m_Name": "",
+        "_tileKey": "tile_bigforce",
+        "_height": 0.0,
+        "_locateHeightOffset": 0.0,
+        "_forceBoxCollider": 0,
+        "_graphic": {
+          "m_FileID": 0,
+          "m_PathID": 0
+        },
+        "_allGraphicList": [],
+        "_effect": "",
+        "_setHoldEffectToEffectHolder": 0,
+        "_data": {
+          "tileKey": "",
+          "heightType": 0,
+          "buildableType": 3,
+          "passableMask": 3,
+          "playerSideMask": 0,
+          "blackboard": [],
+          "effects": []
+        },
+        "_mapLayer": 0,
+        "_injectEnvDmgFlagToBlackboard": 1,
+        "_targetOptions": {
+          "targetSide": 1,
+          "targetMotion": 3,
+          "targetCategory": 1,
+          "enableAdvancedOptions": 0,
+          "ignoreTargetFree": 0,
+          "ignoreAllyTargetFree": 0,
+          "ignoreHealFree": 0,
+          "ignoreMotionMode": 0,
+          "ignoreTargetSide": 0,
+          "excludeSomeAbnormalFlags": 0,
+          "containSomeAbnormalFlags": 0,
+          "excludeAbnormalFlag": 0,
+          "containAbnormalFlag": 0,
+          "purposeMask": 0,
+          "professionMask": 0,
+          "checkUnitType": 0,
+          "unitTypeMask": 0,
+          "onlyIgnoreSomeOfTargetFreeCase": 0,
+          "abnormalFlag": 0,
+          "abnormalCombo": 0
+        },
+        "_sourceSide": 1,
+        "_buffs": [
+          {
+            "attributes": {
+              "abnormalFlags": [],
+              "abnormalImmunes": [],
+              "abnormalAntis": [],
+              "abnormalCombos": [],
+              "abnormalComboImmunes": [],
+              "attributeModifiers": [
+                {
+                  "attributeType": 24,
+                  "formulaItem": 0,
+                  "value": 0.0,
+                  "loadFromBlackboard": 1,
+                  "fetchBaseValueFromSourceEntity": 0
+                }
+              ]
+            },
+            "buffKey": "tile_bigforce",
+            "loadFromDB": 0,
+            "isDurableBuff": 0,
+            "isDamageMissable": 0,
+            "isSilenceable": 0,
+            "isStunnable": 0,
+            "isFreezable": 0,
+            "isLevitatable": 0,
+            "isGroundBoundable": 0,
+            "statusResistable": 2,
+            "templateKey": "empty",
+            "disableOverride": 1,
+            "overrideKey": "",
+            "overrideType": 0,
+            "maxStackCnt": 1,
+            "refreshRemainingTimeWhenStackMax": 0,
+            "clearAllStackCntWhenTimeUp": 0,
+            "maxValidStackCnt": -1,
+            "independentCharacterSource": 0,
+            "overrideEffectKey": "",
+            "overrideOnEventPriority": 0,
+            "onEventPriority": 0,
+            "audioSignal": "",
+            "lifeTimeType": 2,
+            "takeSnapshotWhenExtend": 0,
+            "durationKey": "",
+            "lifeTime": 0.0,
+            "triggerLifeType": 0,
+            "triggerCnt": 0,
+            "triggerInterval": -1.0,
+            "waitFirstTriggerInterval": 1,
+            "firstTriggerInterval": -1.0,
+            "priority": -1,
+            "priorityBBKeys": [],
+            "stripBlackboardParamsWithBuffKey": 0,
+            "blackboard": [],
+            "enableInitDirectionFromSource": 0
+          }
+        ],
+        "_clearBuffsWhenLeft": 1
+      },
+      "reference_policy": "Static field owner selects player characters by explicit native targetSide1 projection and current model cell; leaves remove actual owned child.",
+      "whole_stage_verified": false
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/ch9/bigforce/field",
+      "kind": "entity",
+      "tags": [
+        "tile_field_owner"
+      ],
+      "components": {
+        "selection_state": {
+          "side": 0,
+          "motion": 1,
+          "category": 2,
+          "unit_type": 4
+        },
+        "spatial": {},
+        "buffs": {
+          "initial": [
+            "buff/ch9/bigforce/parent"
+          ]
+        }
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/ch9/bigforce/eligibility",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.ch9.bigforce_cell"
+      }
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/ch9/bigforce/cell",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "limit": null,
+      "eligibility": {
+        "rule": "rule/ch9/bigforce/eligibility",
+        "parameters": {
+          "source_configuration": {
+            "_ignoreTargetFree": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_needProfessionMask": 0,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_checkUnitType": 0,
+            "_targetSide": 1,
+            "_targetMotion": 3,
+            "_targetCategory": 1
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject",
+          "defaults": {
+            "camouflage": false,
+            "target_free": false,
+            "ally_target_free": false,
+            "heal_free": false,
+            "can_select_camouflage": false,
+            "motion": 0,
+            "category": 0,
+            "profession": 0,
+            "unit_type": 0,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "abnormal_immunes": [],
+            "side": 0
+          }
+        }
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/ch9/bigforce/parent",
+      "kind": "buff",
+      "aura": {
+        "selector": "selector/ch9/bigforce/cell",
+        "buff": "buff/ch9/bigforce/base_force",
+        "lease_policy": {
+          "mode": "shared",
+          "identity": [
+            "definition",
+            "target"
+          ],
+          "source_binding": "oldest_live_lease",
+          "external_child_collision": "reject"
+        }
+      }
+    },
+    {
+      "id": "buff/ch9/bigforce/base_force",
+      "kind": "buff",
+      "stacking": {
+        "mode": "refresh",
+        "identity": [
+          "definition",
+          "target"
+        ],
+        "max_stacks": 1
+      },
+      "modifiers": [
+        {
+          "attribute": "base_force_level",
+          "layer": "flat",
+          "value": 1.0
+        }
+      ],
+      "metadata": {
+        "native_inline": {
+          "attributes": {
+            "abnormalFlags": [],
+            "abnormalImmunes": [],
+            "abnormalAntis": [],
+            "abnormalCombos": [],
+            "abnormalComboImmunes": [],
+            "attributeModifiers": [
+              {
+                "attributeType": 24,
+                "formulaItem": 0,
+                "value": 0.0,
+                "loadFromBlackboard": 1,
+                "fetchBaseValueFromSourceEntity": 0
+              }
+            ]
+          },
+          "buffKey": "tile_bigforce",
+          "loadFromDB": 0,
+          "isDurableBuff": 0,
+          "isDamageMissable": 0,
+          "isSilenceable": 0,
+          "isStunnable": 0,
+          "isFreezable": 0,
+          "isLevitatable": 0,
+          "isGroundBoundable": 0,
+          "statusResistable": 2,
+          "templateKey": "empty",
+          "disableOverride": 1,
+          "overrideKey": "",
+          "overrideType": 0,
+          "maxStackCnt": 1,
+          "refreshRemainingTimeWhenStackMax": 0,
+          "clearAllStackCntWhenTimeUp": 0,
+          "maxValidStackCnt": -1,
+          "independentCharacterSource": 0,
+          "overrideEffectKey": "",
+          "overrideOnEventPriority": 0,
+          "onEventPriority": 0,
+          "audioSignal": "",
+          "lifeTimeType": 2,
+          "takeSnapshotWhenExtend": 0,
+          "durationKey": "",
+          "lifeTime": 0.0,
+          "triggerLifeType": 0,
+          "triggerCnt": 0,
+          "triggerInterval": -1.0,
+          "waitFirstTriggerInterval": 1,
+          "firstTriggerInterval": -1.0,
+          "priority": -1,
+          "priorityBBKeys": [],
+          "stripBlackboardParamsWithBuffKey": 0,
+          "blackboard": [],
+          "enableInitDirectionFromSource": 0
+        }
+      }
+    }
+  ]
+}

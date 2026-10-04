@@ -31,3 +31,20 @@ v9的真实柱体公有技能在第47刻命中石像鬼，使其进入mode3并�
 
 新候选和运行结果保持各自身份；所有大检查点与日志在E盘验证后已按用户要求清理，
 源码、来源和精简结果保留在仓库。
+
+后续原生地图准入发现`tile_bigforce`之外，一格普通`tile_floor`和一格`tile_wall`也带
+`base_force_level=1`黑板。同tileKey其他格并没有该操作数，旧按tileKey统一profile不能完整消费。
+新的隔离cell-field候选保留原地图字节对应字段，使用`map.tile_cell_mechanics`按canonical `row:col`
+声明已实现的占用Buff场，拒绝越界、非标准键、未知机制和未完整绑定的黑板。
+四个源格子的玩家角色获得基础力度+1，离开时移除所属贡献；声明与实际CP/head均验证。
+
+原生9-18三份石柱记录共享同一个alias。新转换层保留三份raw record和原alias，
+将运行注册键绑定为`main_09-16/tokenInsts/0..2`；直接使用模糊alias会拒绝，按record key可精确解析。
+完整源地图、四场owner和三个不同石柱actor的实际磁盘续跑及公开回放通过。
+这些是输入与地图模块的准入进展，不是34出生整关已执行。
+
+9-19另有一个`tile_road`格携带感染黑板180／300秒／ATK0.5／ASPD50。
+该格通过同一cell profile引用第八章已来源绑定的感染消费者，原`tile_road`身份不变。
+实际30、60刻分别执行无来源180真伤，磁盘CP／公开head完整一致；没有因tileKey不是
+`tile_infection`就忽略该格黑板。两关地图所有非空操作数都有明确消费者，
+地图框架仍拒绝未知cell机制、越界身份与未绑定字段。
