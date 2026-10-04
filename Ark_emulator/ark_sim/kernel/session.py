@@ -36,6 +36,10 @@ class Session:
         self._failure = None
         self._atomic_depth = 0
         self._cache_epoch = 0
+        self._atomic_participants = {}
+        self._capturing_atomic = False
+        self._restoring_atomic = False
+        self._atomic_restore_failure = False
 
     @property
     def time(self):
@@ -72,6 +76,33 @@ class Session:
                 raise ValueError(f"Handler already registered: {kind}")
             self._handlers[kind] = callback
 
+    def register_atomic_participant(self, key, capture, restore):
+        """Register local derived state participating in nested savepoints.
+
+        Captures are trusted private in-memory values, never kernel checkpoint
+        data. Hosts own any public persistence extension for their local state.
+        Restore runs after the kernel stores and cache epoch have rolled back.
+        Callbacks must not emit events or consume simulation identities.
+        """
+        with self._lock:
+            self._require_idle_registration()
+            name(key, 'atomic participant key')
+            if key in self._atomic_participants:
+                raise ValueError('Atomic participant already registered: '+key)
+            if not callable(capture) or not callable(restore):
+                raise TypeError('Atomic participant callbacks must be callable')
+            self._atomic_participants[key] = (capture, restore)
+            for store in (self.world,self.scheduler,self.random,self._events):
+                store._mutation_guard = self._guard_mutation
+
+    def _guard_mutation(self):
+        if self._capturing_atomic:
+            raise RuntimeError('Atomic capture callbacks cannot mutate kernel state')
+        if self._restoring_atomic:
+            raise RuntimeError('Atomic restore callbacks cannot mutate kernel state')
+        if self._atomic_restore_failure:
+            raise RuntimeError('Atomic participant rollback failed; restore a valid checkpoint before mutating')
+
     def add_system(self, callback, phase=0):
         with self._lock:
             self._require_idle_registration()
@@ -96,7 +127,8 @@ class Session:
             return seq
 
     def _require_idle_registration(self):
-        if self._advancing or self._atomic_depth:
+        self._guard_mutation()
+        if self._advancing or self._atomic_depth or self._capturing_atomic:
             raise RuntimeError("Callbacks cannot be registered during advance or an atomic operation")
 
     def _validate_schedule(self, at, phase, priority, scheduler=None):
@@ -112,19 +144,23 @@ class Session:
 
     def schedule(self, kind, payload, at, phase=0, priority=0):
         with self._lock:
+            self._guard_mutation()
             self._validate_schedule(at, phase, priority)
             return self.scheduler.schedule(kind, payload, at, phase, priority, now=self.time)
 
     def cancel(self, task_id):
         with self._lock:
+            self._guard_mutation()
             self.scheduler.cancel(task_id)
 
     def emit(self, event_type, payload, cause=None):
         with self._lock:
+            self._guard_mutation()
             return self._events.emit(event_type, payload, self.time, cause)
 
     def commit(self, intents):
         with self._lock:
+            self._guard_mutation()
             return commit(self, intents)
 
     @contextmanager
@@ -138,18 +174,29 @@ class Session:
         advancement cannot change while the operation is open.
         """
         with self._lock:
+            if self._capturing_atomic or self._restoring_atomic:
+                raise RuntimeError('Atomic capture callbacks cannot open a transaction')
+            if self._atomic_restore_failure:
+                raise RuntimeError('Atomic participant rollback failed; restore a valid checkpoint before executing')
             saved = self._capture_atomic()
             self._atomic_depth += 1
             try:
                 yield self
-            except BaseException:
-                self._restore_atomic(saved)
+            except BaseException as original:
+                try:self._restore_atomic(saved)
+                except BaseException as rollback_error:
+                    self._atomic_restore_failure = True
+                    self._failure = {'time':self.time, 'exception':type(original).__name__,
+                        'message':str(original), 'atomic_restore_failure':True,
+                        'rollback_error':str(rollback_error)}
+                    original.add_note('Atomic participant rollback failed: '+str(rollback_error))
+                    raise original from rollback_error
                 raise
             finally:
                 self._atomic_depth -= 1
 
     def _capture_atomic(self):
-        return {"world": self.world._fork_validated(), "scheduler": self.scheduler.fork(),
+        saved = {"world": self.world._fork_validated(), "scheduler": self.scheduler.fork(),
                 "events": self._events._records, "event_length": len(self._events._records),
                 "event_next_id": self._events._next_id,
                 "random_streams": dict(self.random._streams),
@@ -157,7 +204,16 @@ class Session:
                 "random_counts": dict(self.random._counts), "random_seed": clone(self.random._seed),
                 "random_algorithm": self.random._algorithm, "random_samples": self.random._samples,
                 "random_length": len(self.random._samples), "time": self.time, "quantum": self.quantum,
-                "reaction_budget": self.reaction_budget, "failure": clone(self._failure), "active_key": self._active_key}
+                "reaction_budget": self.reaction_budget, "failure": clone(self._failure), "active_key": self._active_key,
+                "atomic_restore_failure":self._atomic_restore_failure, "participants":{}}
+        if not self._atomic_participants:
+            return saved
+        self._capturing_atomic = True
+        try:
+            for key,(capture,restore) in self._atomic_participants.items():
+                saved['participants'][key] = capture()
+        finally:self._capturing_atomic = False
+        return saved
 
     def _restore_atomic(self, saved):
         # Captured world/queue records were already validated; no boundary
@@ -182,16 +238,25 @@ class Session:
         self.reaction_budget, self._failure = saved["reaction_budget"], saved["failure"]
         self._active_key = saved["active_key"]
         self._cache_epoch += 1
+        errors = []
+        self._restoring_atomic = True
+        try:
+            for key, state in saved['participants'].items():
+                try:self._atomic_participants[key][1](state)
+                except BaseException as error:errors.append(key+': '+str(error))
+        finally:self._restoring_atomic = False
+        if errors:raise RuntimeError('Atomic participant restore errors: '+'; '.join(errors))
+        self._atomic_restore_failure = saved['atomic_restore_failure']
 
     def advance(self, n):
         """Process [time, time+n), including newly scheduled same-time work."""
         with self._lock:
             integer(n, "advance units", 0)
-            if self._atomic_depth:
+            if self._atomic_depth or self._capturing_atomic or self._restoring_atomic:
                 raise RuntimeError("advance cannot run while an atomic operation is open")
             if self._advancing:
                 raise RuntimeError("advance cannot be called recursively from a callback")
-            if self._failure is not None:
+            if self._failure is not None or self._atomic_restore_failure:
                 raise RuntimeError("Session execution has failed; restore a valid checkpoint before advancing")
             end = self.time + n
             self._advancing = True
@@ -249,6 +314,7 @@ class Session:
                     self._cache_epoch += 1
             except Exception as exc:
                 self._failure = {"time": self.time, "exception": type(exc).__name__, "message": str(exc)}
+                if self._atomic_restore_failure:self._failure['atomic_restore_failure'] = True
                 raise
             finally:
                 self._active_key = None
@@ -288,7 +354,7 @@ class Session:
     def restore(self, data):
         """Validate all stores first; registered callback implementations are retained."""
         with self._lock:
-            if self._advancing or self._atomic_depth:
+            if self._advancing or self._atomic_depth or self._capturing_atomic or self._restoring_atomic:
                 raise RuntimeError("Cannot restore during advance or an atomic operation")
             data = clone(data)
             if data["schema"] != self.CHECKPOINT_SCHEMA:
@@ -314,6 +380,8 @@ class Session:
                 name(failure["exception"], "failure exception")
                 if not isinstance(failure["message"], str):
                     raise ValueError("Failure message must be a string")
+                if type(failure.get('atomic_restore_failure',False)) is not bool:
+                    raise ValueError('Atomic restore failure marker must be boolean')
             if any(task["at"] < clock.time for task in scheduler.pending):
                 raise ValueError("Checkpoint task is before checkpoint time")
             if any(event["time"] > clock.time for event in events._records):
@@ -352,4 +420,5 @@ class Session:
             for recorded, live in zip(data["systems"], self._systems):
                 live["seq"] = recorded["seq"]
             self._failure = failure
+            self._atomic_restore_failure = bool(failure and failure.get('atomic_restore_failure'))
             self._cache_epoch += 1

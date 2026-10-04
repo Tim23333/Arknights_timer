@@ -1,7 +1,12 @@
 # 当前持续目标状态
 
 2026-10-05 当前正式全程为 **15/36**，最新固定收据是 `archived_logs.receipts.v4.json`，
-进度入口为 `tools/campaign_runthrough_progress_v9.py`。生产核心保持 **5c729**。
+进度入口为 `tools/campaign_runthrough_progress_v9.py`。
+生产核心已推广为 **56f380fab9715b8edcb589b2c3fc3863d740cb149ab31e19b3f6fe3a1720fcf6**：
+自己的1219完整回归、0-1/CPP/head/850与60基线、独立generic45及content27均实际通过，
+Root重新核对所有源码/输入/测试摘要后复制19文件并保留旧5c备份；promotion收据06a3e074…。
+元素、因果缓存原子回滚、持续连接双时钟、隐匿9与复生来源判定为通用内容接口；
+石柱HP0延期与per-cell地图占用仍是隔离候选，未被此次推广或冒称整关完成。
 JT8-2 已完整补齐公有从头重放并退出0，32原出生=13击杀+19漏怪；所有已完成原始日志按用户要求清理。
 7-18 正在冻结82db/finite_v3唯一进程中继续，未结束不登记。
 第9章联合a8完整回归实际退出1：1194通过、25失败，均为隔离DomainContext首次事务缺计算cursor；

@@ -9,6 +9,7 @@ from ._data import clone, integer, name, readonly
 class Scheduler:
     def __init__(self, phase_order=None, lock=None):
         self._lock = lock or RLock()
+        self._mutation_guard = None
         self.phase_order = clone(phase_order)
         if phase_order is None:
             self._phase_ranks = None
@@ -48,6 +49,7 @@ class Scheduler:
 
     def reserve_sequence(self):
         with self._lock:
+            if self._mutation_guard is not None:self._mutation_guard()
             sequence = self._next_seq
             self._next_seq += 1
             return sequence
@@ -80,6 +82,7 @@ class Scheduler:
 
     def schedule(self, kind, payload, at, phase=0, priority=0, now=0):
         with self._lock:
+            if self._mutation_guard is not None:self._mutation_guard()
             name(kind, "task kind")
             integer(at, "task time", 0)
             integer(now, "current time", 0)
@@ -98,6 +101,7 @@ class Scheduler:
 
     def cancel(self, task_id):
         with self._lock:
+            if self._mutation_guard is not None:self._mutation_guard()
             integer(task_id, "task ID", 1)
             if task_id not in self._tasks:
                 raise KeyError(f"Unknown or completed task ID: {task_id}")
@@ -122,6 +126,7 @@ class Scheduler:
 
     def pop(self):
         with self._lock:
+            if self._mutation_guard is not None:self._mutation_guard()
             self._discard_cancelled()
             if not self._heap:
                 return None
@@ -140,6 +145,7 @@ class Scheduler:
 
     def restore(self, data):
         with self._lock:
+            if self._mutation_guard is not None:self._mutation_guard()
             data = clone(data)
             candidate = Scheduler(data["phase_order"])
             for task in data["tasks"]:

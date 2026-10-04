@@ -36,6 +36,8 @@ class Simulation:
         self.ctx = RuntimeContext(program, self.session, providers)
         self.ctx.attributes = AttributeSystem(self.ctx)
         self.ctx.resources = ResourceSystem(self.ctx)
+        from ark_sim.domains.elemental import ElementalSystem
+        self.ctx.elemental = ElementalSystem(self.ctx)
         self.ctx.effects = EffectSystem(self.ctx)
         self.ctx.buffs = BuffSystem(self.ctx)
         self.ctx.abilities = AbilitySystem(self.ctx)
@@ -141,6 +143,13 @@ class Simulation:
                     "domain.buff.lifetime": self.ctx.buffs.lifetime,
                     "domain.entity.expire": self.ctx.lifecycle.expire,
                     "domain.movement.forced_step": self.ctx.movement.forced_step}
+        def uses_elemental(value):
+            if isinstance(value,dict) or hasattr(value,'items'):
+                return 'elemental' in value or any(uses_elemental(v) for k,v in value.items() if k not in {'metadata','parameters','payload'})
+            return isinstance(value,(list,tuple)) and any(uses_elemental(v) for v in value)
+        if uses_elemental(self.program.definitions) or uses_elemental(self.program.scenario):
+            handlers["domain.elemental.expire"] = self.ctx.elemental.expire
+            self.session.add_system(self.ctx.elemental.tick, phase=0)
         for name, handler in handlers.items():
             self.session.register_handler(name, handler)
         if self.ctx.attachments is not None:
@@ -283,7 +292,7 @@ class Simulation:
     def checkpoint(self, event_reference=False):
         return {"schema": "ark-sim/session-checkpoint/v2", "program_fingerprint": self.program.fingerprint,
                 "runtime_fingerprint": self.runtime_fingerprint, "kernel": self.session.checkpoint(event_reference),
-                "commands": copy.deepcopy(self._commands)}
+                "commands": copy.deepcopy(self._commands), "attribute_cache": self.ctx.attributes.checkpoint_cache()}
 
     def export_replay(self):
         return {"schema": "ark-sim/replay/v2", "program_fingerprint": self.program.fingerprint,
@@ -311,4 +320,5 @@ class Engine:
             raise ValueError("checkpoint runtime identity mismatch")
         simulation.session.restore(checkpoint["kernel"])
         simulation._commands = copy.deepcopy(checkpoint.get("commands", []))
+        simulation.ctx.attributes.restore_cache(checkpoint.get("attribute_cache"))
         return simulation

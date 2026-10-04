@@ -182,33 +182,41 @@ class ResourceSystem:
         intent = Intent("set", self.ctx.session.world.resolve(ref), ("resources", resource, "current"), settlement["value"])
         return [intent], actual
 
-    def adjust(self, ref, resource, delta=None, *, value=None, source=None, ability=None, effect=None):
+    def adjust(self, ref, resource, delta=None, *, value=None, source=None, ability=None, effect=None, settlement_context=None):
         if getattr(getattr(getattr(self.ctx,'buffs',None),'applicability',None),'enabled',False):
-            with self.ctx.session.atomic():return self._adjust_applicability(ref,resource,delta,value=value,source=source,ability=ability,effect=effect)
-        return self._adjust_applicability(ref,resource,delta,value=value,source=source,ability=ability,effect=effect)
+            with self.ctx.session.atomic():return self._adjust_applicability(ref,resource,delta,value=value,source=source,ability=ability,effect=effect,settlement_context=settlement_context)
+        return self._adjust_applicability(ref,resource,delta,value=value,source=source,ability=ability,effect=effect,settlement_context=settlement_context)
 
-    def _adjust_applicability(self, ref, resource, delta=None, *, value=None, source=None, ability=None, effect=None):
+    def _adjust_applicability(self, ref, resource, delta=None, *, value=None, source=None, ability=None, effect=None, settlement_context=None):
         canonical=self.ctx.session.world.resolve(ref)
         rebirth=getattr(self.ctx,"rebirth",None)
         if self.ctx.get(canonical,("lifecycle","death_projectiles")) or (rebirth is not None and (self.ctx.get(canonical,("rebirth",)) is not None or canonical in rebirth._requests)):
-            with self.ctx.session.atomic():return self._adjust(canonical,resource,delta,value=value,source=source,ability=ability,effect=effect)
-        return self._adjust(canonical,resource,delta,value=value,source=source,ability=ability,effect=effect)
+            with self.ctx.session.atomic():return self._adjust(canonical,resource,delta,value=value,source=source,ability=ability,effect=effect,settlement_context=settlement_context)
+        return self._adjust(canonical,resource,delta,value=value,source=source,ability=ability,effect=effect,settlement_context=settlement_context)
 
-    def _adjust(self, ref, resource, delta=None, *, value=None, source=None, ability=None, effect=None):
+    def _adjust(self, ref, resource, delta=None, *, value=None, source=None, ability=None, effect=None, settlement_context=None):
         ref = self.ctx.session.world.resolve(ref)
         source = self.ctx.session.world.resolve(source) if source is not None else None
         intents, actual = self.change_plan(ref, resource, delta, value=value, source=source, ability=ability, effect=effect)
-        self._commit_change(ref, resource, intents, actual, source)
+        self._commit_change(ref, resource, intents, actual, source, settlement_context)
         return actual
 
-    def _commit_change(self, ref, resource, intents, actual, source):
+    def _commit_change(self, ref, resource, intents, actual, source, settlement_context=None):
         ref = self.ctx.session.world.resolve(ref)
         source = self.ctx.session.world.resolve(source) if source is not None else None
+        event={"operation":"resource_change","source":source,"target":ref,"resource":resource,"delta":actual}
+        if settlement_context is not None:
+            if (not isinstance(settlement_context,dict) or set(settlement_context)!={"operation","source","target","resource","ability","cast"}
+                or settlement_context["operation"]!="damage" or type(settlement_context["target"]) is not int
+                or (settlement_context["source"] is not None and type(settlement_context["source"]) is not int)
+                or settlement_context["source"]!=source or settlement_context["target"]!=ref or settlement_context["resource"]!=resource
+                or any(settlement_context[k] is not None and (type(settlement_context[k]) is not str or not settlement_context[k]) for k in ("ability","cast"))
+                or actual>0):raise ValueError("damage settlement context must match actual depletion source/target/resource")
+            event.update(settlement_context)
         self.ctx.session.commit(intents)
         self.ctx.emit("resource.changed", {"source": source, "target": ref, "resource": resource,
                                          "delta": actual, "value": self.current(ref, resource)})
-        if self.ctx.lifecycle:
-            self.ctx.lifecycle.check(ref, {"resource": resource, "delta": actual})
+        if self.ctx.lifecycle:self.ctx.lifecycle.check(ref,event)
 
     def payment_plan(self, ref, costs, *, ability=None, effect=None, source=None):
         costs = tuple(costs)

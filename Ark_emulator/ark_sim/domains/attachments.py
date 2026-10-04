@@ -6,7 +6,7 @@ from .selection import DEFAULT_STATE
 
 FIELDS={'id','kind','version','metadata','dependencies','duration_seconds','flight_lifetime_seconds',
     'step_interval_seconds','refresh_interval_seconds','motion','target_buff','effect','damage_integral',
-    'source_cancel_flags','ignored_owned_source_flags','force_reach_on_timeout','lifecycle','max_packets','completion_blocking','source_recovery_buff','recovery_on'}
+    'source_cancel_flags','ignored_owned_source_flags','force_reach_on_timeout','lifecycle','max_packets','completion_blocking','source_recovery_buff','recovery_on','hit_interval_seconds'}
 REASONS={'complete','target_invalid','source_invalid','source_hidden','target_hidden','source_flags',
          'cast_interrupted','battle_terminal','flight_timeout','max_packets'}
 
@@ -25,8 +25,20 @@ def validate_profile(d):
         raise ValueError('Attachment motion requires explicit rule/parameters')
     if not isinstance(d['motion']['rule'],str) or not isinstance(d['motion']['parameters'],Mapping):
         raise ValueError('Attachment motion values invalid')
-    if not isinstance(d.get('effect'),Mapping) or d['effect'].get('op')!='damage':
-        raise ValueError('Current owned attachment protocol requires an explicit actor damage effect')
+    if 'hit_interval_seconds' in d:
+        positive(d['hit_interval_seconds'], 'hit_interval_seconds')
+        if d['damage_integral']:
+            raise ValueError('Separate packet clock requires damage_integral false')
+    effect = d.get('effect')
+    if not isinstance(effect, Mapping) or effect.get('op') not in {'damage', 'elemental_attack'}:
+        raise ValueError('Owned attachment requires actor damage or an atomic health/element packet')
+    if effect.get('op') == 'elemental_attack':
+        from .elemental import validate_effect
+        validate_effect(effect)
+        # A compound packet has independently authored health and EP amounts.
+        # Integral scaling needs a separate explicit contract for both parts.
+        if d['damage_integral']:
+            raise ValueError('Compound attachment packets require damage_integral false')
     if not isinstance(d.get('target_buff'),str) or not d['target_buff']:
         raise ValueError('Attachment target_buff reference required')
     flags=d.get('source_cancel_flags')
@@ -102,6 +114,7 @@ class AttachmentSystem:
         flags=set(state.get('abnormal_flags',[]));immunes=set(state.get('abnormal_immunes',[]))
         for buff in self.ctx.get(x['source'],('buffs','instances'),[]):
             if buff['expires_at'] is not None and self.ctx.session.time>=buff['expires_at']:continue
+            if not self.ctx.buffs.applicability.active(buff):continue
             f=self.ctx.program.definitions[buff['definition']].get('selection_flags',{})
             immunes.update(f.get('abnormal_immunes',[]))
             contributed=set(f.get('abnormal_flags',[]))
@@ -158,6 +171,8 @@ class AttachmentSystem:
                         x['position']=position
                     else:self.put(x);self._schedule(x);return
                 x.update(state='held',held_until=now+self.ctx.quantize(d['duration_seconds']),next_refresh=now)
+                if 'hit_interval_seconds' in d:
+                    x['next_packet'] = now
                 self.put(x)
                 self.ctx.emit('attachment.reached',{'attachment':x['id'],'source':x['source'],'target':x['target'],
                     'held_until':x['held_until'],'position':x['position']},x['cause'])
@@ -172,6 +187,15 @@ class AttachmentSystem:
             if current is None or not current['active']:return
             x=current;reason=self.invalid(x)
             if reason:self.stop(x['id'],reason);return
+            if 'hit_interval_seconds' in d:
+                if now < x['next_packet']:
+                    self._schedule(x)
+                    return
+                interval = self.ctx.quantize(d['hit_interval_seconds'])
+                if interval < 1:
+                    raise ValueError('Attachment packet clock must advance time')
+                x['next_packet'] = now + interval
+                self.put(x)
             effect=thaw(d['effect']);units=min(self.ctx.quantize(d['step_interval_seconds']),x['held_until']-now)
             if d['damage_integral']:effect['scale']=effect.get('scale',1)*units*session.quantum
             cast=self.ctx.abilities._active(x['source'],x['cast']);ability=thaw(self.ctx.program.definitions[x['ability']])

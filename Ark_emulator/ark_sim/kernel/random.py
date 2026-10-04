@@ -139,6 +139,7 @@ class RandomStreams:
 
     def __init__(self, seed=0, lock=None, clock=None, factory=None, algorithm=None, registry=None):
         self._lock = lock or RLock()
+        self._mutation_guard = None
         if algorithm is not None:
             name(algorithm, "random algorithm")
         self._seed = clone(seed)
@@ -192,6 +193,7 @@ class RandomStreams:
 
     def sample(self, stream):
         with self._lock:
+            if self._mutation_guard is not None:self._mutation_guard()
             name(stream, "random stream")
             generator = self._generator(stream)
             rollback = clone(generator.snapshot()) if self._algorithm != DEFAULT_ALGORITHM else None
@@ -224,6 +226,7 @@ class RandomStreams:
     def empty_copy(self):
         """Keep registered trusted factories while staging a restore."""
         candidate = object.__new__(RandomStreams)
+        candidate._mutation_guard = None
         candidate._lock = RLock()
         candidate._seed, candidate._clock = clone(self._seed), self._clock
         candidate._registry = dict(self._registry)
@@ -233,6 +236,7 @@ class RandomStreams:
 
     def restore(self, data):
         with self._lock:
+            if self._mutation_guard is not None:self._mutation_guard()
             data = clone(data)
             algorithm = data["algorithm"]
             name(algorithm, "checkpoint random algorithm")

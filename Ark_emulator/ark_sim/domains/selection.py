@@ -10,6 +10,10 @@ SETS["abnormal_immunes"] = 46
 SETS["abnormal_combo_immunes"] = 2
 FIELDS = MANDATORY_FIELDS | {"abnormal_immunes","abnormal_combo_immunes"}
 DEFAULT_STATE = {**{x:False for x in BOOLS}, **{x:0 for x in MASKS}, **{x:[] for x in SETS if x!="abnormal_combo_immunes"}, "side":0}
+# Optional additions preserve legacy defaults, required fields and insertion order.
+OPTIONAL_BOOLS = {"invisible", "can_select_invisible"}
+BOOLS = BOOLS | OPTIONAL_BOOLS
+FIELDS = FIELDS | OPTIONAL_BOOLS
 SWITCHES = ("_ignoreTargetFree", "_onlyIgnoreSomeOfTargetFreeCase", "_excludeSomeAbnormalFlags", "_needProfessionMask", "_ignoreAllyTargetFree", "_ignoreHealFree", "_ignoreMotionMode", "_forceIgnoreCamouflage", "_checkUnitType")
 
 def validate_state(state, path="selection_state", contribution=False, complete=False):
@@ -73,6 +77,9 @@ def project_state(ctx, ref, defaults):
         immunity_declared = immunity_declared or "abnormal_immunes" in flags
         for key,value in flags.items():
             if key in SETS: result[key].update(value)
+            elif key in OPTIONAL_BOOLS:
+                result.setdefault(key, False)
+                if value: result[key]=True
             elif value: result[key]=True
     for key in SETS: result[key]=sorted(result[key])
     result["abnormal_flags"] = sorted(set(result["abnormal_flags"]) - set(result["abnormal_immunes"]))
@@ -82,6 +89,9 @@ def project_state(ctx, ref, defaults):
     flags=result["abnormal_flags"]
     for name,index in (("target_free",2),("ally_target_free",15),("heal_free",7),("camouflage",17)):
         result[name]=result[name] or index in flags
+    # INVISIBLE9 is distinct from CAMOUFLAGE17 and TARGET_FREE2.
+    # Do not inject new false keys into legacy readonly calculation inputs.
+    if 9 in flags: result["invisible"] = True
     if not immunity_declared:result.pop("abnormal_immunes", None)
     return result
 
@@ -109,4 +119,5 @@ def eligibility_profile(inputs, params, context):
     if s["side"]==t["side"] and t["ally_target_free"] and not c["_ignoreAllyTargetFree"]: return no("ally_target_free")
     if inputs["selector"].get("healing") and t["heal_free"] and not c["_ignoreHealFree"]: return no("heal_free")
     if t["camouflage"] and not c["_forceIgnoreCamouflage"] and not s["can_select_camouflage"]: return no("camouflage")
+    if t.get("invisible",False) and not s.get("can_select_invisible",False): return no("invisible")
     return {"accepted":True,"reason":"eligible_declared_profile"}

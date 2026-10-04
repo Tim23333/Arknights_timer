@@ -25,6 +25,9 @@ class EffectSystem:
             return self._execute(source, targets, effect, ability, cast, cause)
 
     def _execute(self, source, targets, effect, ability=None, cast=None, cause=None):
+        if effect.get('op') in {'elemental_damage', 'elemental_attack'}:
+            from .elemental import validate_effect
+            validate_effect(effect)
         if effect.get('op') == 'restart_behavior':
             from .behavior_restart import validate
             validate(effect)
@@ -89,7 +92,22 @@ class EffectSystem:
             if not waiting_self_area and not (operation == "area" and effect.get("center_position") is not None) and (health_delta or operation in {"damage", "heal", "regenerate", "apply_buff", "area", "push", "move", "displace", "trigger_ability", "set_motion_mode"}) and not getattr(self.ctx, "effect_target_available", lambda ref: True)(target) and not (getattr(self.ctx,"rebirth",None) is not None and self.ctx.rebirth.effect_allowed(target)):
                 self.ctx.emit("effect.visibility_rejected", {"source": source, "target": target, "operation": operation}, cause)
                 continue
-            if operation == "instant_kill":
+            if operation == 'elemental_damage':
+                self.ctx.elemental.apply(source,target,effect,cause,cast=cast)
+            elif operation == 'elemental_attack':
+                retained=(self.ctx.projectiles is not None and
+                          self.ctx.projectiles.retained_payload_allowed(source,target,cast) is True)
+                if source is not None and not self.ctx.active(source) and not retained:continue
+                packet=thaw(effect)
+                projectile=packet['health_effect'].pop('projectile_definition',None)
+                if projectile is not None:packet['projectile_definition']=projectile
+                # A health projectile carries this whole compound packet. Its
+                # actual impact delivers health then EP, never EP at launch.
+                if self._projectile(source,target,packet,ability,cast,cause):continue
+                self.execute(source,[target],packet['health_effect'],ability,cast,cause)
+                if self.ctx.active(target):
+                    self.ctx.elemental.apply(source,target,packet['element_effect'],cause,cast=cast)
+            elif operation == "instant_kill":
                 if getattr(self.ctx,"rebirth",None) is None:raise ValueError("instant_kill feature not compiled")
                 self.ctx.rebirth.instant_kill(source,target,effect["parameters"],ability,cast,cause)
             elif operation == 'activate_predefined':
@@ -481,9 +499,9 @@ class EffectSystem:
             self.ctx.session.commit(intents)
             for recipient, key, delta in notifications:
                 self.ctx.emit("resource.changed", {"source": source, "target": recipient, "resource": key, "delta": delta})
-                self.ctx.lifecycle.check(recipient, {"resource": key, "delta": delta})
+                self.ctx.lifecycle.check(recipient, {"operation":"damage","source":source,"target":recipient,"resource":key,"delta":delta,"ability":ability.get("id"),"cast":cast.get("id")})
         else:
-            actual = -self.ctx.resources.adjust(target, resource, -settlement["amount"], source=source, ability=ability, effect=effect)
+            actual = -self.ctx.resources.adjust(target, resource, -settlement["amount"], source=source, ability=ability, effect=effect, settlement_context={"operation":"damage","source":source,"target":target,"resource":resource,"ability":ability.get("id"),"cast":cast.get("id")})
         state = self.ctx.state()
         state["damage_dealt"] = state.get("damage_dealt", 0)+actual
         self.ctx.state_update(**state)

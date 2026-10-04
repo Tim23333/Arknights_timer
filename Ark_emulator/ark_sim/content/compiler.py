@@ -398,6 +398,7 @@ class Compiler:
                             if reference in definitions and definitions[reference].get("contract") != "attributes.growth":
                                 raise CompileError(f"{path}.growth.{attribute}: rule {reference} is not an attributes.growth rule")
                     expected_contracts = {"exit_rule": "lifecycle.exit", "active_rule": "buff.applicability", "control_rule": "buff.applicability", "recovery_freeze_rule": "resource.recovery_freeze", "recovery_rule": "resource.recovery", "amount_rule": "resource.recovery", "capacity_rule": "resource.capacity", "bounds_rule": "resource.bounds", "interval_rule": "buff.interval" if root_kind == "buff" else "time.interval", "duration_rule": "buff.duration" if root_kind == "buff" else "ability.duration"}
+                    if value.get('op')=='elemental_damage':expected_contracts['amount_rule']='elemental.packet'
                     if key in expected_contracts and isinstance(child, str) and child in definitions:
                         if definitions[child].get("contract") != expected_contracts[key]:
                             raise CompileError(f"{path}.{key}: rule {child} belongs to {definitions[child].get('contract')}, expected {expected_contracts[key]}")

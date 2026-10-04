@@ -89,7 +89,7 @@ class BehaviorSystem:
                 matched = evaluate_expression(condition, inputs, transition.get("parameters", {}))
                 if transition.get("condition_rule"):
                     matched = self.ctx.calc("behavior.threshold", {"resources": inputs["resources"],
-                         "time": session.time, "state_parameters": transition.get("parameters", {})},
+                         "time": {"current":session.time}, "state_parameters": transition.get("parameters", {})},
                          owner=ref, rule_id=transition["condition_rule"])
                 if matched:
                     self.transition(ref, transition["to"])

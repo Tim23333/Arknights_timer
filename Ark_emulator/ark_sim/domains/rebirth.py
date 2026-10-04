@@ -4,7 +4,7 @@ import math
 from ark_sim.contracts import thaw
 from .rebirth_self_buffs import finish_scope
 
-FIELDS={'zero_restore_lifecycle','waiting_actions','resource','max_count','delay_seconds','restore_ratio','restore_rule','parameters','retain_buffs','on_begin','on_finish','reset_cooldowns','reset_attack_clock'}
+FIELDS={'on_skip','skip_rule','zero_restore_lifecycle','waiting_actions','resource','max_count','delay_seconds','restore_ratio','restore_rule','parameters','retain_buffs','on_begin','on_finish','reset_cooldowns','reset_attack_clock'}
 def validate_kill(options):
  if not isinstance(options,Mapping) or set(options)!={'cause','skip_rebirth'} or not isinstance(options['cause'],str) or not options['cause'] or not options['cause'].replace('_','').replace('-','').isalnum() or type(options['skip_rebirth']) is not bool:raise ValueError('instant kill requires event-safe cause/explicit skip_rebirth bool')
 def validate(spec,components=None,definitions=None):
@@ -15,6 +15,7 @@ def validate(spec,components=None,definitions=None):
  for key in ('delay_seconds','restore_ratio'):
   v=spec[key]
   if type(v) not in (int,float) or not math.isfinite(v) or v<0 or (key=='restore_ratio' and v==0):raise ValueError('rebirth finite delay>=0/ratio>0 required')
+ if 'skip_rule' in spec and (not isinstance(spec['skip_rule'],str) or not spec['skip_rule']):raise ValueError('rebirth skip_rule must be nonempty reference')
  if not isinstance(spec.get('parameters',{}),Mapping):raise ValueError('rebirth parameters record required')
  retained=spec.get('retain_buffs',[])
  if not isinstance(retained,(list,tuple)) or any(not isinstance(x,str) or not x for x in retained) or len(set(retained))!=len(retained):raise ValueError('rebirth retained Buff IDs must be unique')
@@ -26,7 +27,7 @@ def validate(spec,components=None,definitions=None):
   if not isinstance(row,Mapping) or set(row)!={'ability','initial_delay_seconds'} or not isinstance(row['ability'],str) or not row['ability'] or row['ability'] in seen:raise ValueError('rebirth unique ability cooldown reset required')
   seen.add(row['ability']);delay=row['initial_delay_seconds']
   if type(delay) not in (int,float) or not math.isfinite(delay) or delay<0:raise ValueError('rebirth cooldown delay must be finite nonnegative')
- for key in ('on_begin','on_finish'):
+ for key in ('on_begin','on_finish','on_skip'):
   if not isinstance(spec.get(key,[]),(list,tuple)):raise ValueError('rebirth '+key+' effect list required')
   from ..content.schemas import validate_effect,DEFAULT_CAPABILITIES
   for i,effect in enumerate(spec.get(key,[])):validate_effect(effect,'rebirth.'+key+'['+str(i)+']',DEFAULT_CAPABILITIES)
@@ -54,6 +55,9 @@ def validate(spec,components=None,definitions=None):
     a=definitions.get(ident,{})
     if a.get('kind')!='ability' or a.get('activation',{}).get('mode')!='manual' or a.get('activation',{}).get('parameters',{}).get('auto_only') is not True:raise ValueError('waiting action must declare manual auto_only ability')
    if any(definitions.get(ident,{}).get('kind')!='buff' for ident in spec['waiting_actions']['buffs']):raise ValueError('waiting action Buff kind required')
+  if 'skip_rule' in spec:
+   skip=definitions.get(spec['skip_rule'],{})
+   if skip.get('kind') not in ('rule','calculation_rule') or skip.get('contract')!='lifecycle.rebirth_skip':raise ValueError('rebirth skip_rule requires strict lifecycle.rebirth_skip rule')
   rule=definitions.get(spec['restore_rule'])
   if not rule or rule.get('kind') not in ('rule','calculation_rule') or rule.get('contract')!='resource.recovery':raise ValueError('rebirth restore_rule must implement resource.recovery')
   if any(definitions.get(x,{}).get('kind')!='buff' for x in retained):raise ValueError('rebirth retained reference must be Buff')
@@ -61,7 +65,7 @@ def validate(spec,components=None,definitions=None):
 
 class RebirthSystem:
  def __init__(self,context):
-  self.ctx=context;self._requests={};self._callbacks=[];self._settling=False;self._aura_waiting_begins=[]
+  self.ctx=context;self._skip_entering=set();self._requests={};self._callbacks=[];self._settling=False;self._aura_waiting_begins=[]
   self.handlers={'domain.rebirth.finish':self.finish,'domain.rebirth.terminal_end':self.terminal_end}
  def _spec(self,ref):return self.ctx.get(ref,('rebirth',))
  def _state(self,ref):return self.ctx.get(ref,('runtime','rebirth'),{})
@@ -104,6 +108,7 @@ class RebirthSystem:
   try:return self._consume(ref,event)
   finally:self._aura_waiting_begins.pop()
  def _consume(self,ref,event):
+  if ref in self._skip_entering:return True
   request=self._requests.get(ref,[]);request=request[-1] if request else {}
   if request.get('skip_rebirth'):
    self.ctx.lifecycle.retire(ref,'dead');return True
@@ -115,6 +120,20 @@ class RebirthSystem:
   if self._state(ref).get('phase')=='waiting':return True
   if self.ctx.resources.current(ref,spec['resource'])>0:return False
   if request.get('skip_rebirth') or self.ctx.get(ref,('runtime','initializing'),False):return False
+  if spec.get('skip_rule'):
+   source=event.get('source')
+   actor=self.ctx.entity(source) if source is not None else {}
+   result=self.ctx.calc('lifecycle.rebirth_skip',{'clock':{'time':self.ctx.session.time},'source':actor,'target':self.ctx.entity(ref),'depletion_event':thaw(event)},source=source,target=ref,owner=ref,rule_id=spec['skip_rule'])
+   if type(result) is not bool:raise ValueError('rebirth skip_rule must return strict bool')
+   if result:
+    self._skip_entering.add(ref)
+    try:
+     for effect in spec.get('on_skip',[]):
+      if not self.ctx.alive(ref):break
+      self.ctx.effects.execute(ref,[ref],thaw(effect))
+     self.ctx.emit('entity.rebirth.skipped',{'source':source,'target':ref,'rule':spec['skip_rule']})
+    finally:self._skip_entering.remove(ref)
+    return False
   old=self._state(ref)
   if old.get('count',0)>=spec['max_count'] or not self.ctx.alive(ref) or self.ctx.state().get('finished'):return False
   with self.ctx.session.atomic():

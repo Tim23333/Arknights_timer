@@ -9,6 +9,7 @@ from ._data import clone, integer, name, readonly
 class World:
     def __init__(self, lock=None):
         self._lock = lock or RLock()
+        self._mutation_guard = None
         self._entities = {}
         self._aliases = {}
         self._next_id = 1
@@ -17,6 +18,7 @@ class World:
 
     def create(self, definition_id, components, tags=(), alias=None):
         with self._lock:
+            if self._mutation_guard is not None:self._mutation_guard()
             name(definition_id, "definition_id")
             if not isinstance(components, Mapping):
                 raise ValueError("components must be an object")
@@ -96,6 +98,7 @@ class World:
     def set(self, entity_id, path, value):
         """Set a component field; parent paths must already exist."""
         with self._lock:
+            if self._mutation_guard is not None:self._mutation_guard()
             if not isinstance(path, (list, tuple)) or not path:
                 raise ValueError("set path must contain at least one component field")
             value = clone(value)
@@ -129,6 +132,7 @@ class World:
 
     def delete(self, entity_id):
         with self._lock:
+            if self._mutation_guard is not None:self._mutation_guard()
             entity_id = self.resolve(entity_id)
             del self._entities[entity_id]
             self._versions[entity_id] += 1
@@ -175,6 +179,7 @@ class World:
 
     def restore(self, data):
         with self._lock:
+            if self._mutation_guard is not None:self._mutation_guard()
             data = clone(data)
             if not isinstance(data, dict):
                 raise ValueError("World checkpoint must be an object")

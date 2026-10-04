@@ -66,12 +66,14 @@ def freeze_event_payload(value, memo=None, active=None):
 class EventLog:
     def __init__(self, lock=None):
         self._lock = lock or RLock()
+        self._mutation_guard = None
         self._payload_interner = PayloadInterner()
         self._records = []
         self._next_id = 1
 
     def emit(self, event_type, payload, time, cause=None):
         with self._lock:
+            if self._mutation_guard is not None:self._mutation_guard()
             name(event_type, "event type")
             integer(time, "event time", 0)
             if cause is not None:
@@ -100,6 +102,7 @@ class EventLog:
 
     def enable_disk(self, path):
         with self._lock:
+            if self._mutation_guard is not None:self._mutation_guard()
             records = DiskEventRecords(path)
             for record in self._records:
                 records.append(record)
@@ -122,6 +125,7 @@ class EventLog:
 
     def restore(self, data):
         with self._lock:
+            if self._mutation_guard is not None:self._mutation_guard()
             if "reference" in data:
                 records = DiskEventRecords.from_reference(data["reference"])
                 data = {"records": records, "next_id": data["next_id"]}

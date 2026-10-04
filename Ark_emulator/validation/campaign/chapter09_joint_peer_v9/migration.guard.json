@@ -1,0 +1,64 @@
+{
+  "old_core": "bf6f9b60e97e0da5e389e70bb746986e4014d24c26a387ec5078d7771ea78a0c",
+  "new_core": "56f380fab9715b8edcb589b2c3fc3863d740cb149ab31e19b3f6fe3a1720fcf6",
+  "same_old45": {
+    "fixture.py": {
+      "old_sha": "c53a1a3ef19bbf0ba4f11d907b5a7dd161f85db3a397b151131a6bdff9893df0",
+      "new_sha": "f62e2f454a816dfea3fd0caae41ef25df2d831d719b1b952d4a0a5528c1678ef",
+      "old45_fixtures_assertions_preserved": true
+    },
+    "test_v1.py": {
+      "old_sha": "56fff4d9130cb0612b588880f0465bc6ee7f61e25792888df3327fa2196af152",
+      "new_sha": "cbeda3ce274d6225ff0e21e117d6fd3eb72bfa5dfaad58957f834846a33da46b",
+      "old45_fixtures_assertions_preserved": true
+    },
+    "test_regression_v1.py": {
+      "old_sha": "199008be124f9b69f1eb53e3b74376104f9efb664f2395868bd5de3dd047d83c",
+      "new_sha": "c06b7cb6023ac8e1ffa0c7ff18d6b3e647e336fe9c0aad7db9ce6c68f0769717",
+      "old45_fixtures_assertions_preserved": true
+    },
+    "test_minimal_context.py": {
+      "old_sha": "bf76bfd0e1ce7aa6a29eeffd97687d73b8044413f89d0f49d9c707e8ef929aa9",
+      "new_sha": "f1d59db0766d31ca94cb923e0946d916e60490d82376de9a600c81b8d128da49",
+      "old45_fixtures_assertions_preserved": true
+    }
+  },
+  "exact_source_delta_inventory": {
+    "domains/behavior.py": {
+      "old_sha": "326537b753ca89f95ca070894d4fdca6fe534acdd12a35edc552662286658a22",
+      "new_sha": "b353b72ba285c1003f8c1cdb77f7a27b7f43377fa982cd145e3db064e0f736da"
+    },
+    "domains/effects.py": {
+      "old_sha": "2616583ae8e397dc7bfeec2bb3b23166cef90ad2e0f9f4faa56c2194302f34ee",
+      "new_sha": "f46567642b285c53f4c74b451a5aef5b55b47c068bb79aafdc67094bb6ac8e1c",
+      "context_zero_exact_hunks": 2,
+      "changed_lines": 2,
+      "diff": [
+        "--- \n",
+        "+++ \n",
+        "@@ -502 +502 @@\n",
+        "-                self.ctx.lifecycle.check(recipient, {\"resource\": key, \"delta\": delta})",
+        "+                self.ctx.lifecycle.check(recipient, {\"operation\":\"damage\",\"source\":source,\"target\":recipient,\"resource\":key,\"delta\":delta,\"ability\":ability.get(\"id\"),\"cast\":cast.get(\"id\")})",
+        "@@ -504 +504 @@\n",
+        "-            actual = -self.ctx.resources.adjust(target, resource, -settlement[\"amount\"], source=source, ability=ability, effect=effect)",
+        "+            actual = -self.ctx.resources.adjust(target, resource, -settlement[\"amount\"], source=source, ability=ability, effect=effect, settlement_context={\"operation\":\"damage\",\"source\":source,\"target\":target,\"resource\":resource,\"ability\":ability.get(\"id\"),\"cast\":cast.get(\"id\")})"
+      ]
+    },
+    "domains/rebirth.py": {
+      "old_sha": "9209f33dba6450a76a4ec83e421e065049cb9a78876b8ca20683a7504ddf089b",
+      "new_sha": "395e97ce3e9266b9aa5c1eb3d2f65704211bc2161753a30364f5cdda370a48b5"
+    },
+    "domains/resources.py": {
+      "old_sha": "171ac9c61c856b0785ca4a8b6a5bbf7c17569ed8093256893d28c678a28692d8",
+      "new_sha": "7d618b4f5f35f00ebed56e3397781c0a03650d988fce14af6c90c135670a813c"
+    },
+    "rules/contracts.json": {
+      "old_sha": "5630437e4c5ad90b10b73f43a08e1cf851d4fe5cafdcb4e68d83f8330e623989",
+      "new_sha": "76f6b28ad79a2817aa8107611d6d54252638e65db9622d2ff80355cae72d533e"
+    }
+  },
+  "old105unchanged": true,
+  "new106": true,
+  "only_new_contract": "lifecycle.rebirth_skip",
+  "initial_guard_display_error": "context2 merged two nearby modified lines into one unified hunk; exact context0 verifies both actual edits, no source/expectation changes"
+}

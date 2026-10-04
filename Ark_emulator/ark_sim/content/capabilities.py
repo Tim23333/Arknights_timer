@@ -78,6 +78,11 @@ def capability_preflight(scenario, definitions, ruleset, rules, catalog=None):
 
     def effect(item, path, scopes):
         local = [*scopes, item.get("rules", {})]
+        if item.get('op')=='elemental_damage' and item.get('amount_rule'):
+            require('elemental.packet',path+'.amount_rule',local,item['amount_rule'])
+        if item.get('op')=='elemental_attack':
+            effect(item['health_effect'],path+'.health_effect',scopes)
+            effect(item['element_effect'],path+'.element_effect',scopes)
         if item.get("op") == "area" and item.get("membership_rule"):
             require("area.members", path+".membership_rule", explicit=item["membership_rule"])
             member_rule = definitions[item["membership_rule"]]
@@ -135,7 +140,7 @@ def capability_preflight(scenario, definitions, ruleset, rules, catalog=None):
             require("time.quantize", path, local)
         elif op == "random":
             require("random.check", path, local)
-        if item.get("amount_rule"):
+        if item.get("amount_rule") and item.get("op")!="elemental_damage":
             require("resource.recovery", path, local, item["amount_rule"])
         if item.get("selector"):
             selector(item["selector"], path, local)
@@ -265,6 +270,26 @@ def capability_preflight(scenario, definitions, ruleset, rules, catalog=None):
     def overlay_instance(item, path):
         definition = definitions[item["definition"]]
         merged = {**definition.get("components", {}), **item.get("components", {})}
+        if 'elemental' in merged:
+            from copy import deepcopy
+            from ..domains.elemental import validate as validate_elemental
+            spec=deepcopy(definition.get('components',{}).get('elemental',{}))
+            def merge_elemental(dst,src):
+                for key,value in src.items():
+                    if isinstance(value,dict) and isinstance(dst.get(key),dict):merge_elemental(dst[key],value)
+                    else:dst[key]=deepcopy(value)
+            merge_elemental(spec,item.get('components',{}).get('elemental',{}))
+            try:validate_elemental(spec)
+            except ValueError as error:raise ContentError(path+': '+str(error)) from error
+            require('elemental.eligibility',path+'.elemental',(),spec['eligibility_rule'])
+            require('time.quantize',path+'.elemental.clock')
+            for element_key,profile in spec['elements'].items():
+                for contract,binding in profile['rules'].items():require(contract,path+'.elemental.'+element_key,(),binding)
+                for phase in ('on_break','on_end'):
+                    for index,child in enumerate(profile.get(phase,())):
+                        from .schemas import validate_effect,DEFAULT_CAPABILITIES
+                        validate_effect(child,path+'.elemental.'+element_key+'.'+phase+'['+str(index)+']',DEFAULT_CAPABILITIES)
+                        effect(child,path+'.elemental.'+element_key+'.'+phase+'['+str(index)+']',())
         if "ability_arbitration" in merged:
             from copy import deepcopy
             effective=deepcopy(definition.get("components",{}))
@@ -320,6 +345,16 @@ def capability_preflight(scenario, definitions, ruleset, rules, catalog=None):
             if any(row["attack_clock"] for row in components["ability_arbitration"]["entries"]):
                 require("time.interval",identifier+".ability_arbitration",scopes)
                 require("time.quantize",identifier+".ability_arbitration",scopes)
+        if 'elemental' in components:
+            spec=components['elemental']
+            require('elemental.eligibility',identifier+'.elemental',scopes,spec['eligibility_rule'])
+            require('time.quantize',identifier+'.elemental.clock',scopes)
+            for key,profile in spec['elements'].items():
+                for contract,binding in profile['rules'].items():
+                    require(contract,identifier+'.elemental.'+key,scopes,binding)
+                for phase in ('on_break','on_end'):
+                    for index,child in enumerate(profile.get(phase,())):
+                        effect(child,identifier+'.elemental.'+key+'.'+phase+'['+str(index)+']',scopes)
         entity_scopes[identifier] = scopes
         if "rebirth" in components:
             require("resource.recovery", identifier+".rebirth.restore_rule", scopes, components["rebirth"]["restore_rule"])

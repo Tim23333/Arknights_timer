@@ -17,6 +17,7 @@ class LifecycleSystem:
         has_initial_clocks=requires_atomic(self.ctx,definition,kwargs.get("component_overrides") or {})
         from .ability_arbitration import requires_atomic as needs_arbitration_atomic
         has_initial_clocks=has_initial_clocks or needs_arbitration_atomic(definition,kwargs.get("component_overrides") or {})
+        has_initial_clocks=has_initial_clocks or "elemental" in definition.get("components", {}) or "elemental" in (kwargs.get("component_overrides") or {})
         if not has_initial_clocks and "tile_occupancy" not in definition.get("components",{}) and "tile_occupancy" not in (kwargs.get("component_overrides") or {}) and not has_connectivity and self.ctx.terrain is None and self.ctx.tile_contacts is None and kwargs.get('active', True) and kwargs.get('registration_key') is None:
             return self._create(*args, **kwargs)
         with self.ctx.session.atomic():
@@ -145,6 +146,9 @@ class LifecycleSystem:
         for key in resources:
             self.ctx.resources.adjust(ref, key, value=components["resources"][key]["current"])
         self.ctx.resources.initialize_capacities(ref)
+        elemental=getattr(self.ctx, 'elemental', None)
+        if elemental is not None:elemental.initialize(ref)
+        elif 'elemental' in components:raise ValueError('Elemental component requires its compiled runtime feature')
         for roster_id in self.ctx.program.scenario.get("roster", []):
             for effect in self.ctx.program.definitions[roster_id].get("components", {}).get("deck", {}).get("on_create", []):
                 cause = self.ctx.emit("deck.effect", {"source": ref, "target": ref, "definition": roster_id})
@@ -267,6 +271,8 @@ class LifecycleSystem:
             if not self.ctx.alive(ref):return
         rebirth=getattr(self.ctx,"rebirth",None)
         if rebirth is not None:rebirth.cancel(ref,reason)
+        elemental=getattr(self.ctx, 'elemental', None)
+        if elemental is not None:elemental.cancel(ref, reason)
         if reason == 'dead':
             generation=self.ctx.get(ref,('runtime','death_generation'),0)+1
             self.ctx.set(ref,('runtime','death_generation'),generation)
