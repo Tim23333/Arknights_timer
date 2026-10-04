@@ -1,0 +1,53 @@
+{
+  "schema": "ark-sim/c9-content-interface-design/v1",
+  "runtime_authored": false,
+  "elemental_policy": "elemental.policy.source.v1.json",
+  "pillar": {
+    "source": "predefines.native.v3.json",
+    "transitive": "duruin.transitive.source.v1.json",
+    "reference_url": "https://prts.wiki/w/破碎支柱",
+    "contracts": [
+      "Before-zero plan binds actual damage source/target lifecycle and native finite buff/action dependencies.",
+      "Direction comes from source relative spatial cell and native mode mapping; exact ties require declared policy.",
+      "Native timed collapse selects two directional cells; damage/force-withdraw/spawn retain separate qualifications.",
+      "Spawned token rewrites terrain/passability using source map-dependent profile and triggers actual route invalidation.",
+      "Ruin HP100/block3 persists until real death/withdraw/terminal cleanup. No fixed lifetime inferred from redeploy5 or spawned visual buff.5."
+    ],
+    "parameters": {
+      "pillar_hp": 5000,
+      "pillar_atk": 12000,
+      "damaged_state_seconds": 2,
+      "collapse_payload_predelay": 1.5,
+      "stun_seconds": 10,
+      "ruin_hp": 100,
+      "ruin_block": 3
+    },
+    "version_conflict": "Token assets official20250327; tables fixed56. Preserve both identities, client alignment unverified."
+  },
+  "registration": {
+    "key": [
+      "native_level_id",
+      "bucket",
+      "record_index"
+    ],
+    "raw_alias_preserved": true,
+    "duplicate_alias_request": "Reject ambiguous alias unless record reference is supplied.",
+    "reason": "9-18 three native tokenInst records all use trap_043_dupilr#1; do not rewrite raw aliases or choose first."
+  },
+  "atomicity": [
+    "Validate complete finite dependency set before mutation.",
+    "Strict bool distinct from int; all rates/durations finite.",
+    "No-op consumes no RNG and writes no state.",
+    "Lease/action handles bind lifecycle plus instance/generation; restore cannot borrow stale permission."
+  ],
+  "mandatory_probes": [
+    "threshold and resistance boundaries",
+    "neutral exclusion",
+    "all-elements lock and reset",
+    "source retire after threshold",
+    "silenced vs unsilenced prezero",
+    "pillar collapse direction and late occupants",
+    "ruin route replan and death cleanup",
+    "duplicate aliases and record-index CP/head"
+  ]
+}

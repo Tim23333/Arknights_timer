@@ -1,0 +1,62 @@
+{
+  "schema": "ark-sim/failure-source-analysis/v20",
+  "original_failure_complete": false,
+  "original_kills": 31,
+  "original_leaks": 12,
+  "source_births": 45,
+  "pending_waves": 0,
+  "alive_enemy_count": 2,
+  "original_tick": 30000,
+  "probable_explanation": "Two physical ranged sotisp units can retain Kalts at the 2.2-cell target boundary while Kalts heals. Source behavior disables movement whenever an eligible ranged target is present. Enemy damage can be below Kalts healing rate, so forward clock extension alone need not finish the wave gate.",
+  "inference_only": true,
+  "original_target_or_heal_events_available": false,
+  "actual_target_or_cycle_proven": false,
+  "source_pins": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_stage_models\\level_main_07-16.native_draft.v2.json": "c9406209f432b6f0c20c61e17665cc0189a0b9206381227e9f3389ae071bdb02",
+    "E:\\ArkSimEvidence\\campaign\\07_18_3992_native_v2\\public_v1.progress.json": "fded08b89bd1110bc23b9ba8920b748e34e5ef5c1c954918de86a1be914149bd",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter07_ranged_consumers\\policies_v1.py": "5dd76add5b1ea7902c61167a76fd018d2002d40f037e9d46c2d37443a277373c",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\scenarios\\campaign\\chapter07\\level_main_07-16\\public_plan_v2\\commands.json": "2b114c09bbe8178f1e2199b2ae087bdf843450510649dc68f2687826bd058efb"
+  },
+  "saved_enemy_hp": [
+    {
+      "hp": 1500.0
+    },
+    {
+      "hp": 1500.0
+    }
+  ],
+  "saved_enemy_positions": [
+    {
+      "col": 2.9100000000002084,
+      "row": 6.00000011711268
+    },
+    {
+      "col": 2.9100000000002084,
+      "row": 6.00000011711268
+    }
+  ],
+  "kalts_public_position": {
+    "row": 4,
+    "col": 2
+  },
+  "enemy_to_kalts_distances": [
+    2.197293896694549,
+    2.197293896694549
+  ],
+  "native_attack_radius": 2.2,
+  "positions_inside_attack_radius": true,
+  "unmodified_source_stats": {
+    "enemy_atk": 340,
+    "enemy_attack_interval": 2.5,
+    "enemy_damage_type": "physical",
+    "kalts_def": 245,
+    "kalts_heal_atk": 468,
+    "kalts_attack_interval": 2.85
+  },
+  "base_stats_only_rate_comparison": {
+    "two_enemies_physical_damage_per_second": 76.0,
+    "kalts_healing_per_second": 164.21052631578948,
+    "assumptions": "No active stat modifiers; attacks target Kalts and normal healing selects Kalts. These conditions are not asserted as observed original events."
+  },
+  "legitimate_solution": "Append deterministic late public withdrawals for exactly the fixed12 aliases. Kalts summon source explicitly has on_owner_retire=remove, so withdrawing Kalts also removes the owned Mon3tr without an enemy kill effect. Then native enemies can move and leak under original native routes."
+}

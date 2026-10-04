@@ -1,0 +1,5 @@
+from tools.chapter08_no_source_types_review.test_peer_v2 import package,make,proof
+def test_lethal_event_SP_eligible_snapshot_gain_before_death_cleanup_and_normal_protocol():
+ p=package('true',False,amount=9999);p['scenarioDraft']['scheduledEffects'][0]['effect']['attack_type']='NORMAL';pr,s=make(p);proof(p,pr,s,'lethal_sp_eligible');assert s.ctx.resources.current('target','hp')==0 and not s.ctx.alive('target') and s.ctx.resources.current('target','sp')==1;assert len([e for e in s.session.events if e['type']=='combat.kill'])==1
+def test_parent_afterhook_rejection_no_health_or_SP_actual_complete_process():
+ p=package('arts',hook=True);p['rules'][-1]['implementation']={'type':'expression','expression':"{'accepted': False, 'amount': 0, 'allocations': [], 'events': []}"};pr,s=make(p);proof(p,pr,s,'hook_reject');assert s.ctx.resources.current('target','hp')==8000 and s.ctx.resources.current('target','sp')==0;assert not [e for e in s.session.events if e['type']=='damage.accepted'] and len([e for e in s.session.events if e['type']=='damage.rejected'])==1

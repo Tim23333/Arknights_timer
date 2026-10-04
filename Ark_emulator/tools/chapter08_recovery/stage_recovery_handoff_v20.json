@@ -1,0 +1,60 @@
+{
+  "schema": "ark-sim/stage-recovery-handoff/v20",
+  "all_workers_started": true,
+  "complete_claim": false,
+  "runners_frozen_after_launch": true,
+  "raw_log_root": "E:/ArkSimLogs/runs",
+  "files": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_recovery\\recover_head_v20.py": "c385b88828393a8df42f90115e4b38986b87266dd04bcdb37ef539f098484740",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_recovery\\recover_head_jt83_v20.py": "d2164663bbbad9bd6dd1abff47a79edf944639ffbb43ce716c75ec175416c55b",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_recovery\\resume_head_checkpoint_v20.py": "f05badfd19e43c2413bca4e742e58752bee20a3986b4b852882cf5233fd4638e",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\scenarios\\campaign\\chapter07\\level_main_07-16\\public_plan_v3_finite\\commands.json": "2c87478a1236657d61327ad5fc1f42c1ffc763be83d54c3e0334f5dfb15abda7",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\scenarios\\campaign\\chapter07\\level_main_07-16\\public_plan_v3_finite\\plan.json": "d7329881bf4aba3824884120c7881662f2dcbf31627e2231729776402f716c16",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_stage_models\\level_main_07-16.native_draft.v2.life99999.finite_v3.json": "0263f6f01505c2fbb194d7dd54671f6f50e2c85a6cb382c211109c51165cb1d1",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_recovery\\c7_finite_overlay_validation_v20.json": "e2806c44122037a54d02642cb0d123dc7ee3ce0472360134218ee4215b7d46dd",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_recovery\\c7_stalemate_source_analysis_v20.json": "40cdbca5369c021d4dd29323a8aa6d6e6f193798ac6f14e084a59121e83bf24c",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_recovery\\head_prefix_guard_v20.json": "5a605a88fbb9931b2996b72ea82bc37ca5c7250fa306f0fa14a3a6f7e79fa9b0",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_recovery\\original_interrupted_head_audit_v20.json": "5aca741c2376233458381717781a526e15e54707ea82836de84a4071d407c208",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_recovery\\jt83_finite_actual_outcomes_v20.json": "63f1df37be0db316f8146ea71995e887697bb7127cbcc1966cfad07423c3713e"
+  },
+  "workers": [
+    {
+      "stage": "JT8-2",
+      "session": 64725,
+      "output": "E:/ArkSimEvidence/campaign/JT8_2_82db_native_v7/full_recovered_v20.json",
+      "run_dir": "E:/ArkSimLogs/runs/JT8_2_recovered_head_v20",
+      "prior": "E:/ArkSimEvidence/campaign/JT8_2_82db_native_v7/full_v1.checkpoint_result.json",
+      "purpose": "Authenticate unchanged original terminal/CP and complete missing head proof; old failed/incomplete report retained"
+    },
+    {
+      "stage": "JT8-3",
+      "session": 31250,
+      "output": "E:/ArkSimEvidence/campaign/JT8_3_82db_finite_v2/final_recovered_v20.json",
+      "run_dir": "E:/ArkSimLogs/runs/JT8_3_recovered_head_v20",
+      "prior": "E:/ArkSimLogs/runs/JT8_3_82db_finite_v2_final_20261004T140238137373Z/result.checkpoint_result.json",
+      "purpose": "Authenticate original fullwave terminal and saved STORY driver CP, then finish missing head proof"
+    },
+    {
+      "stage": "7-18",
+      "session": 88975,
+      "output": "E:/ArkSimEvidence/campaign/07_18_82db_finite_v3_pinned/public_v1.json",
+      "purpose": "One exact pinned V19 whole stage; only profile command hash updates the immutable old overlay, full native overlay typed equality validated, exactly 12 appended public withdrawals",
+      "package": "packages/campaign/chapter07_stage_models/level_main_07-16.native_draft.v2.life99999.finite_v3.json"
+    }
+  ],
+  "resume_note": "If a head worker is authoritatively no longer live and output absent, resume_head_checkpoint_v20.py accepts --prior --output --run-dir and --resume-checkpoint <run-dir>/head.replay_driver.checkpoint.json. Do not run concurrently with a live owner; authenticates all prior input/provider/core/program/runtime/source bytes and resumes from actual saved head CP with the recorded command cursor.",
+  "cleanup_note": "Workers clean their fixed-root raw logs after complete proofs. JT82 old raw directory lies outside --run-dir policy; root must perform targeted approved legacy retention cleanup after result. Existing original and checkpoint_result summaries remain preserved.",
+  "authentication_restore_relocation": {
+    "from": "E:/ArkSimEvidence/campaign/JT8_2_82db_native_v7/full_v1.active.jsonl.checkpoint-bd22ff993a89456f90db947f8112a8f6.branch-b62db3b60ed540649e670273fd125dd8",
+    "to": "E:/ArkSimLogs/runs/JT8_2_recovered_head_v20/authentication_restore.branch.jsonl",
+    "reason": "Engine.restore creates branch next to original CP reference; newly created authentication-only branch relocated to fixed root after releasing restored simulation."
+  },
+  "rejected_prefix": {
+    "session": 2205,
+    "tick": 400,
+    "receipt": "E:/ArkSimEvidence/campaign/07_18_82db_finite_v3/prefix_rejected_input_pin_v20.json",
+    "worker_exit": 4294967295,
+    "cleanup_exit": 0,
+    "reason": "Old profile retained oldcommands hash"
+  }
+}
