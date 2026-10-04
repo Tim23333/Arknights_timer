@@ -42,5 +42,11 @@
 
 十二个已验证整关的小收据在
 `validation/campaign/runthrough/archived_logs.receipts.v1.json`。
-清理后进度入口为 `tools/campaign_runthrough_progress_v6.py`，
+清理后进度入口最新为 `tools/campaign_runthrough_progress_v8.py`，
 保持已完成历史身份并明确原始日志已删除，不伪称当前重新核对原日志。
+
+中断恢复记录也按相同保留政策处理：原正向与检查点续跑已完成时，先认证其源码、输入、程序、
+运行时及日志身份，只补缺失的从头重放证明。新版恢复工具会保存实际head检查点与外部命令游标，
+不得将正向检查点伪装为中断head的检查点。
+不同 JSON 编码的对象键序可能使 raw SHA不同；接受前仍要求源绑定的完整数值、状态、任务、
+随机状态和事件序列一致，收据会注明比较格式，不将 raw文件缺失或摘要不同默认为通过。

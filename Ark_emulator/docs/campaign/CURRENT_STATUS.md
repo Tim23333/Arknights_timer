@@ -1,5 +1,18 @@
 # 当前持续目标状态
 
+最新正式全程 **14/36**：JT8-3 finite82真实44birth＝5kill39leak／terminal13369/end13400／base99959，
+新head实际exit0／1135901events／8外部ACK与40公开outcome完整／driver与源111guards不漂移，
+最终报告 **58e0c079…** 已Root输入type-exact、波次守恒、命令记录及恢复门核后登记 **a2e61f8b…**。
+archiveV3 **b315a5c8…**／v8进度actual14；原raw head键序变化仅编码差异，完整V14值/状态/tasks/RNG/事件序列比较通过，
+不伪称raw重放字节同一或已删除日志重新hash。
+Boss独立双公有击倒完整源数值Root流式审计 **69088525…**：160692事件、七行每行20弹、140ray/140hit，
+首次满75000/末0的28s阶段与CPP200/4900-head精确捕获同hash，实际75s召唤3297→3324 branch→4074五真实25SP设备。
+旧审计将28延迟prototypes误当7行及把d0..d3错看为.1/.2/.3sec的失败保，按源row/0..3frame≤.1s修，仅验证器改。
+已解除完成Boss与JT83目录保护，实际清16files/39647543685B；JT82仍保原日志至head完成，7新forward继续。
+第九章联合6e43独立41selection＋31元素/sight/recovery/时钟/life＋原39events cachecounter＋7伪造拒门全0，
+Root核186源码before=end=cleanup一致／receipt **07c458b5…**；ownfull10583783与ownbase11158进行，未推广。
+当前main仍5c，136a9e9c源码/内容/13登记批次已实际push；本14登记与最新候选门在下一提交批次。
+
 联合缓存修复新候选 **94d5b7a0…** 已作者17＋缓存12及Root fresh7全部actual0，
 持久当前live属性cache因果记录／纯重算与原event/FP/view/version绑定，合法RES查询后的同tick受击SP CPP全事件相同。
 checkpoint save不产生事件，tampered cache重新签record_digest也拒；direct低层调用只声明CPP，公有commands head另真实通过。
