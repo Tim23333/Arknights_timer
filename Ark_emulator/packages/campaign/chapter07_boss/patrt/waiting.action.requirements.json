@@ -1,0 +1,186 @@
+{
+  "schema": "ark-sim/patrt-waiting-action-required-contract/v1",
+  "source_closure_sha256": "acf57f6a07a5e141f9f1ddb0d37ee09fce1e25fc6555bda0504bf99e2b44b54c",
+  "native_action_pointer": "-4388941251906901814",
+  "native_action": {
+    "m_GameObject": {
+      "m_FileID": 0,
+      "m_PathID": -6200414385884043062
+    },
+    "m_Enabled": 1,
+    "m_Script": {
+      "m_FileID": 1,
+      "m_PathID": 4381884627089348317
+    },
+    "m_Name": "",
+    "_selector": {
+      "m_FileID": 0,
+      "m_PathID": -2297633667575125814
+    },
+    "_metadata": {
+      "namedAsAlias": "Immo_Rage",
+      "blackboardPrefix": ""
+    },
+    "_interruptAbilityOnDetach": 0,
+    "_attachPassiveBuffsOnDummy": 1,
+    "_ignoreIfOwnerDead": 1,
+    "_forceAsDmgOrHealAbility": 0,
+    "_waitForAttackEvent": 1,
+    "_interuptIfTargetDead": 0,
+    "_resetCdStrategy": 1,
+    "_selectTargetSource": 1,
+    "_selectTargetTiming": 0,
+    "_timeMode": 2,
+    "_alwaysIncludeTarget": 0,
+    "_allowNoTarget": 1,
+    "_animKey": "",
+    "_endAnimKey": "",
+    "_downAnimKey": "",
+    "_downEndAnimKey": "",
+    "_upAnimKey": "",
+    "_upEndAnimKey": "",
+    "_cooldown": 0.0,
+    "_cooldownKey": "duration",
+    "_preDelay": 0.0,
+    "_escapeTime": 0.0,
+    "_faceToTarget": 1,
+    "_faceToDefault": 0,
+    "_faceToFront": 0,
+    "_faceToFirstCastTarget": 0,
+    "_checkFaceToFirstCastTargetDownAttack": 0,
+    "_forceFaceToDirection": 0,
+    "_activeBuffs": [],
+    "_maxAnimScale": -1.0,
+    "_onlyPlayEndAnimWhenIsLastAbility": 0,
+    "_ignorePalsyInterrupt": 0,
+    "_affectedBySlowDown": 0,
+    "_atkScale": 1.0,
+    "_atkScaleKey": "atk_scale",
+    "_attackType": 2,
+    "_elementDamageType": 0,
+    "_epDamageRatio": 0.0,
+    "_useDynamicAttackType": 0,
+    "_deliveryParaWhenReplaceActionNode": 0,
+    "_damageType": 3,
+    "_extraDamageType": 0,
+    "_alwaysPutIncludeTargetFirst": 0
+  },
+  "native_selector": {
+    "m_GameObject": {
+      "m_FileID": 0,
+      "m_PathID": -5897492352373102390
+    },
+    "m_Enabled": 1,
+    "m_Script": {
+      "m_FileID": 1,
+      "m_PathID": 7080728813803358465
+    },
+    "m_Name": "",
+    "_targetSide": 2,
+    "_targetMotion": 1,
+    "_targetCategory": 1,
+    "_postFilter": 0,
+    "_ignoreTargetFree": 0,
+    "_onlyIgnoreSomeOfTargetFreeCase": 0,
+    "_abnormalFlag": 24,
+    "_abnormalCombo": 2,
+    "_ignoreAllyTargetFree": 0,
+    "_ignoreHealFree": 0,
+    "_ignoreMotionMode": 0,
+    "_forceIgnoreCamouflage": 0,
+    "_needProfessionMask": 0,
+    "_professionMask": 0,
+    "_excludeSomeAbnormalFlags": 0,
+    "_excludeAbnormalFlag": 46,
+    "_limitTargetNum": 0,
+    "_maxTargetKey": "max_target",
+    "_maxNum": 1,
+    "_excludeOwner": 0,
+    "_sortByTauntAtLast": 0,
+    "_ignoreHitRange": 0,
+    "_checkUnitType": 0,
+    "_unitTypeMask": 0,
+    "_abilityInputTargetAsSortSource": 0
+  },
+  "native_geometry_radius": 1.75,
+  "native_trigger_template": {
+    "templateKey": "triggerability_tick_trigger",
+    "effectKey": "",
+    "onEventPriority": "DEFAULT",
+    "eventToActions": {
+      "ON_BUFF_TRIGGER": [
+        {
+          "$type": "Torappu.Battle.Action.Nodes+TriggerAbility, Assembly-CSharp",
+          "_ownerType": "BUFF_OWNER",
+          "_targetType": "BUFF_OWNER",
+          "_abilityName": "",
+          "_checkCanUseAblityFlag": false,
+          "_castDirectly": false,
+          "_useFirstActiveAbility": false,
+          "_useCastResult": false,
+          "_triggerHostAbility": false,
+          "_notInterruptAbilityIfCasting": false
+        }
+      ]
+    }
+  },
+  "action_identity": "ability/unit/ch7/patrt/a53a85a6d0cd714f/immo_action",
+  "natural_skill_identity": "ability/unit/ch7/patrt/a53a85a6d0cd714f/immo_natural",
+  "source_timing": {
+    "action_cooldown": 0,
+    "action_pre_delay": 0,
+    "time_mode": 2,
+    "animation_key": "",
+    "immediate_timeline_at": 0,
+    "natural_enemy_skill_init_seconds": 9999,
+    "natural_enemy_skill_cooldown_seconds": 9999,
+    "owned_reborning_buff_interval_seconds": 0.8,
+    "owned_reborning_buff_duration_seconds": 60,
+    "wait_first_interval": true
+  },
+  "minimal_action_effect": {
+    "op": "area",
+    "target": "source",
+    "center": "source",
+    "membership_rule": "rule/ch7/patrt/immo_members",
+    "filters": [
+      {
+        "tag": "player"
+      }
+    ],
+    "effects": [
+      {
+        "op": "damage",
+        "damage_type": "true",
+        "scale": 0.0521,
+        "damage_flags": {
+          "source_attack_type": "SPLASH",
+          "ignore_for_sp": false
+        },
+        "read_mode": {
+          "source_attributes": "at_hit",
+          "target_attributes": "at_hit"
+        }
+      }
+    ]
+  },
+  "membership_policy": "Actualsourcecenter Circle1.75 + exacttyped targetside2/motion1/category1, postfilter0/limitfalse = allqualifiedgroundplayers; sourcebodyboundaries reference. No selection targets required, may cast withzero members.",
+  "activation_policy": {
+    "mode": "manual",
+    "parameters": {
+      "auto_only": true,
+      "blocks_attacks": false
+    },
+    "target_capture": "at_cast",
+    "require_targets": false,
+    "duration_seconds": 0
+  },
+  "scope_needs": [
+    "Only finite owned action IDs declaredinrebirth.waiting_abilities; notordinaryautomaticattacks ormanualpublicplayer",
+    "Actual live ownedBuff timer onpendingactor withinstance+generation, waitinggeneration and actoridentity captured",
+    "Calleractor HP0/activeFalse/aliveTrue remains unchanged; nohealthgrant orprojectilelease",
+    "Lease isre-read at acceptedcast/effect/area descendants andaftercallbacks; waitingfinish/cancel/death/withdraw/ownerincarnation/buffremove invalidate",
+    "Literal immediate effect at0; sourceSnapshotnotusedto reviveactor, damage readsactualcurrentattributes perdeclaredreference",
+    "SeparateEnemySkill9999 meansno genericcooldownbypass required; .8 ownedtimer requestsaction0 aliasImmo_Rage"
+  ]
+}

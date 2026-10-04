@@ -1,0 +1,1298 @@
+{
+  "passed": true,
+  "core_start": "181eb512eaa01234775ab6ebfdb7ada7f98cb6eea998093bc31a3cb412c39670",
+  "core_end": "181eb512eaa01234775ab6ebfdb7ada7f98cb6eea998093bc31a3cb412c39670",
+  "actual_module": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m45_aura_reentry_candidate\\ark_sim\\__init__.py",
+  "source_start": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m45_roster_peer\\verify.py": "8984c8006ac334379575c42a207c6214a302c1cfe517c433992c6b15b7b80d00",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m45_roster_peer\\test_peer.py": "09a9e9db925560d5df127599d337e0cb5f45d3477665e84e9af198fdd4cf2273",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_ordered_checkpoint.py": "5cdfd500f41e428b67974e5119ef3e3351d9df346cc58fca837bc4420effbc6a",
+    "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m45_aura_reentry_candidate\\ark_sim\\rules\\contracts.json": "af24e8f38ced4b432573f8bb938a19e469fab43558fb69181478d5d0e1289e35"
+  },
+  "source_end": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m45_roster_peer\\verify.py": "8984c8006ac334379575c42a207c6214a302c1cfe517c433992c6b15b7b80d00",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m45_roster_peer\\test_peer.py": "09a9e9db925560d5df127599d337e0cb5f45d3477665e84e9af198fdd4cf2273",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_ordered_checkpoint.py": "5cdfd500f41e428b67974e5119ef3e3351d9df346cc58fca837bc4420effbc6a",
+    "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m45_aura_reentry_candidate\\ark_sim\\rules\\contracts.json": "af24e8f38ced4b432573f8bb938a19e469fab43558fb69181478d5d0e1289e35"
+  },
+  "cases": [
+    {
+      "nodeid": "tools/experiments/m45_roster_peer/test_peer.py::test_samecast_source_retire_and_other_source_survives_disk_replay[False-10]",
+      "result": "passed"
+    },
+    {
+      "nodeid": "tools/experiments/m45_roster_peer/test_peer.py::test_samecast_source_retire_and_other_source_survives_disk_replay[True-17]",
+      "result": "passed"
+    },
+    {
+      "nodeid": "tools/experiments/m45_roster_peer/test_peer.py::test_remote_actual_source_retired_center_alive_samecast",
+      "result": "passed"
+    },
+    {
+      "nodeid": "tools/experiments/m45_roster_peer/test_peer.py::test_failure_after_real_retire_and_rng_restores_guard_and_valid_retry",
+      "result": "passed"
+    },
+    {
+      "nodeid": "tools/experiments/m45_roster_peer/test_peer.py::test_random_membership_single_draw_per_explicit_reconcile_no_child_repeat",
+      "result": "passed"
+    }
+  ],
+  "fixtures": [
+    {
+      "sha256": "4c8c25c62379f98fe6ebc4518db961827673338bb2478bcc9ed021094cd6a7e0",
+      "seed": 45091,
+      "fixture": {
+        "manifest": {
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "entities": [
+          {
+            "id": "unit/root",
+            "kind": "entity",
+            "tags": [
+              "emitter"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 100,
+                  "atk": 100,
+                  "def": 10
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 100,
+                  "capacity": 100,
+                  "role": "health"
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              },
+              "buffs": {
+                "initial": [
+                  "buff/root"
+                ]
+              }
+            }
+          },
+          {
+            "id": "unit/a",
+            "kind": "entity",
+            "tags": [
+              "member"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 100,
+                  "atk": 100,
+                  "def": 10
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 100,
+                  "capacity": 100,
+                  "role": "health"
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              },
+              "abilities": [
+                "ability/leave"
+              ]
+            }
+          },
+          {
+            "id": "unit/b",
+            "kind": "entity",
+            "tags": [
+              "member",
+              "victim"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 100,
+                  "atk": 100,
+                  "def": 10
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 100,
+                  "capacity": 100,
+                  "role": "health"
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              }
+            }
+          }
+        ],
+        "buffs": [
+          {
+            "id": "buff/root",
+            "kind": "buff",
+            "aura": {
+              "selector": "selector/members",
+              "buff": "buff/child"
+            }
+          },
+          {
+            "id": "buff/child",
+            "kind": "buff",
+            "stacking": {
+              "mode": "independent"
+            },
+            "modifiers": [
+              {
+                "attribute": "def",
+                "layer": "flat",
+                "value": 5
+              }
+            ],
+            "on_remove": [
+              {
+                "op": "retire",
+                "target": "source",
+                "parameters": {
+                  "reason": "withdrawn"
+                }
+              }
+            ]
+          }
+        ],
+        "selectors": [
+          {
+            "id": "selector/members",
+            "kind": "selector",
+            "region": {
+              "type": "circle",
+              "radius": 2
+            },
+            "filters": [
+              {
+                "tag": "member"
+              },
+              {
+                "state": "alive"
+              }
+            ]
+          },
+          {
+            "id": "selector/b",
+            "kind": "selector",
+            "region": {
+              "type": "all"
+            },
+            "filters": [
+              {
+                "tag": "victim"
+              }
+            ],
+            "limit": 1
+          }
+        ],
+        "abilities": [
+          {
+            "id": "ability/leave",
+            "kind": "ability",
+            "selector": "selector/b",
+            "activation": {
+              "mode": "manual",
+              "on_start": [
+                {
+                  "op": "move",
+                  "target": "source",
+                  "position": {
+                    "row": 0,
+                    "col": 6
+                  }
+                },
+                {
+                  "op": "damage",
+                  "damage_type": "physical"
+                }
+              ]
+            },
+            "timeline": []
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scene/peer45",
+          "ruleset": "ruleset/ark_standard",
+          "objectives": {},
+          "map": {
+            "rows": 3,
+            "cols": 8
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/root",
+              "instanceAlias": "root",
+              "position": {
+                "row": 0,
+                "col": 3
+              }
+            },
+            {
+              "definition": "unit/a",
+              "instanceAlias": "a",
+              "position": {
+                "row": 0,
+                "col": 4
+              }
+            },
+            {
+              "definition": "unit/b",
+              "instanceAlias": "b",
+              "position": {
+                "row": 0,
+                "col": 2
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "sha256": "3816e560b2aad37970a7e950132ccfa349006d8c018065b5591ee335be16b827",
+      "seed": 45091,
+      "fixture": {
+        "manifest": {
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "entities": [
+          {
+            "id": "unit/root",
+            "kind": "entity",
+            "tags": [
+              "emitter"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 100,
+                  "atk": 100,
+                  "def": 10
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 100,
+                  "capacity": 100,
+                  "role": "health"
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              },
+              "buffs": {
+                "initial": [
+                  "buff/root"
+                ]
+              }
+            }
+          },
+          {
+            "id": "unit/a",
+            "kind": "entity",
+            "tags": [
+              "member"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 100,
+                  "atk": 100,
+                  "def": 10
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 100,
+                  "capacity": 100,
+                  "role": "health"
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              },
+              "abilities": [
+                "ability/leave"
+              ]
+            }
+          },
+          {
+            "id": "unit/b",
+            "kind": "entity",
+            "tags": [
+              "member",
+              "victim"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 100,
+                  "atk": 100,
+                  "def": 10
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 100,
+                  "capacity": 100,
+                  "role": "health"
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              }
+            }
+          },
+          {
+            "id": "unit/extra",
+            "kind": "entity",
+            "tags": [
+              "emitter"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 100,
+                  "atk": 100,
+                  "def": 10
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 100,
+                  "capacity": 100,
+                  "role": "health"
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              },
+              "buffs": {
+                "initial": [
+                  "buff/extra"
+                ]
+              }
+            }
+          }
+        ],
+        "buffs": [
+          {
+            "id": "buff/root",
+            "kind": "buff",
+            "aura": {
+              "selector": "selector/members",
+              "buff": "buff/child"
+            }
+          },
+          {
+            "id": "buff/child",
+            "kind": "buff",
+            "stacking": {
+              "mode": "independent"
+            },
+            "modifiers": [
+              {
+                "attribute": "def",
+                "layer": "flat",
+                "value": 5
+              }
+            ],
+            "on_remove": [
+              {
+                "op": "retire",
+                "target": "source",
+                "parameters": {
+                  "reason": "withdrawn"
+                }
+              }
+            ]
+          },
+          {
+            "id": "buff/extra",
+            "kind": "buff",
+            "aura": {
+              "selector": "selector/members",
+              "buff": "buff/extra_child"
+            }
+          },
+          {
+            "id": "buff/extra_child",
+            "kind": "buff",
+            "stacking": {
+              "mode": "independent"
+            },
+            "modifiers": [
+              {
+                "attribute": "def",
+                "layer": "flat",
+                "value": 7
+              }
+            ]
+          }
+        ],
+        "selectors": [
+          {
+            "id": "selector/members",
+            "kind": "selector",
+            "region": {
+              "type": "circle",
+              "radius": 2
+            },
+            "filters": [
+              {
+                "tag": "member"
+              },
+              {
+                "state": "alive"
+              }
+            ]
+          },
+          {
+            "id": "selector/b",
+            "kind": "selector",
+            "region": {
+              "type": "all"
+            },
+            "filters": [
+              {
+                "tag": "victim"
+              }
+            ],
+            "limit": 1
+          }
+        ],
+        "abilities": [
+          {
+            "id": "ability/leave",
+            "kind": "ability",
+            "selector": "selector/b",
+            "activation": {
+              "mode": "manual",
+              "on_start": [
+                {
+                  "op": "move",
+                  "target": "source",
+                  "position": {
+                    "row": 0,
+                    "col": 6
+                  }
+                },
+                {
+                  "op": "damage",
+                  "damage_type": "physical"
+                }
+              ]
+            },
+            "timeline": []
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scene/peer45",
+          "ruleset": "ruleset/ark_standard",
+          "objectives": {},
+          "map": {
+            "rows": 3,
+            "cols": 8
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/root",
+              "instanceAlias": "root",
+              "position": {
+                "row": 0,
+                "col": 3
+              }
+            },
+            {
+              "definition": "unit/a",
+              "instanceAlias": "a",
+              "position": {
+                "row": 0,
+                "col": 4
+              }
+            },
+            {
+              "definition": "unit/b",
+              "instanceAlias": "b",
+              "position": {
+                "row": 0,
+                "col": 2
+              }
+            },
+            {
+              "definition": "unit/extra",
+              "instanceAlias": "extra",
+              "position": {
+                "row": 0,
+                "col": 1
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "sha256": "76aeb8b7faaa1bc326f4646af89414a448d0387cbb8ea909c6e92039c6cc1437",
+      "seed": 45091,
+      "fixture": {
+        "manifest": {
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "entities": [
+          {
+            "id": "unit/root",
+            "kind": "entity",
+            "tags": [
+              "emitter"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 100,
+                  "atk": 100,
+                  "def": 10
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 100,
+                  "capacity": 100,
+                  "role": "health"
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              }
+            }
+          },
+          {
+            "id": "unit/a",
+            "kind": "entity",
+            "tags": [
+              "member"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 100,
+                  "atk": 100,
+                  "def": 10
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 100,
+                  "capacity": 100,
+                  "role": "health"
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              },
+              "abilities": [
+                "ability/leave"
+              ]
+            }
+          },
+          {
+            "id": "unit/b",
+            "kind": "entity",
+            "tags": [
+              "member",
+              "victim"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 100,
+                  "atk": 100,
+                  "def": 10
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 100,
+                  "capacity": 100,
+                  "role": "health"
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              }
+            }
+          },
+          {
+            "id": "unit/remote",
+            "kind": "entity",
+            "tags": [
+              "remote"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 100,
+                  "atk": 100,
+                  "def": 10
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 100,
+                  "capacity": 100,
+                  "role": "health"
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              },
+              "abilities": [
+                "ability/setup"
+              ]
+            }
+          }
+        ],
+        "buffs": [
+          {
+            "id": "buff/root",
+            "kind": "buff",
+            "aura": {
+              "selector": "selector/members",
+              "buff": "buff/child"
+            }
+          },
+          {
+            "id": "buff/child",
+            "kind": "buff",
+            "stacking": {
+              "mode": "independent"
+            },
+            "modifiers": [
+              {
+                "attribute": "def",
+                "layer": "flat",
+                "value": 5
+              }
+            ],
+            "on_remove": [
+              {
+                "op": "retire",
+                "target": "source",
+                "parameters": {
+                  "reason": "withdrawn"
+                }
+              }
+            ]
+          }
+        ],
+        "selectors": [
+          {
+            "id": "selector/members",
+            "kind": "selector",
+            "region": {
+              "type": "circle",
+              "radius": 2
+            },
+            "filters": [
+              {
+                "tag": "member"
+              },
+              {
+                "state": "alive"
+              }
+            ]
+          },
+          {
+            "id": "selector/b",
+            "kind": "selector",
+            "region": {
+              "type": "all"
+            },
+            "filters": [
+              {
+                "tag": "victim"
+              }
+            ],
+            "limit": 1
+          },
+          {
+            "id": "selector/root",
+            "kind": "selector",
+            "region": {
+              "type": "all"
+            },
+            "filters": [
+              {
+                "tag": "emitter"
+              }
+            ],
+            "limit": 1
+          }
+        ],
+        "abilities": [
+          {
+            "id": "ability/leave",
+            "kind": "ability",
+            "selector": "selector/b",
+            "activation": {
+              "mode": "manual",
+              "on_start": [
+                {
+                  "op": "move",
+                  "target": "source",
+                  "position": {
+                    "row": 0,
+                    "col": 6
+                  }
+                },
+                {
+                  "op": "damage",
+                  "damage_type": "physical"
+                }
+              ]
+            },
+            "timeline": []
+          },
+          {
+            "id": "ability/setup",
+            "kind": "ability",
+            "selector": "selector/root",
+            "activation": {
+              "mode": "manual",
+              "on_start": [
+                {
+                  "op": "apply_buff",
+                  "buff": "buff/root"
+                }
+              ]
+            },
+            "timeline": []
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scene/peer45",
+          "ruleset": "ruleset/ark_standard",
+          "objectives": {},
+          "map": {
+            "rows": 3,
+            "cols": 8
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/root",
+              "instanceAlias": "root",
+              "position": {
+                "row": 0,
+                "col": 3
+              }
+            },
+            {
+              "definition": "unit/a",
+              "instanceAlias": "a",
+              "position": {
+                "row": 0,
+                "col": 4
+              }
+            },
+            {
+              "definition": "unit/b",
+              "instanceAlias": "b",
+              "position": {
+                "row": 0,
+                "col": 2
+              }
+            },
+            {
+              "definition": "unit/remote",
+              "instanceAlias": "remote",
+              "position": {
+                "row": 2,
+                "col": 7
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "sha256": "4c8c25c62379f98fe6ebc4518db961827673338bb2478bcc9ed021094cd6a7e0",
+      "seed": 45091,
+      "fixture": {
+        "manifest": {
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "entities": [
+          {
+            "id": "unit/root",
+            "kind": "entity",
+            "tags": [
+              "emitter"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 100,
+                  "atk": 100,
+                  "def": 10
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 100,
+                  "capacity": 100,
+                  "role": "health"
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              },
+              "buffs": {
+                "initial": [
+                  "buff/root"
+                ]
+              }
+            }
+          },
+          {
+            "id": "unit/a",
+            "kind": "entity",
+            "tags": [
+              "member"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 100,
+                  "atk": 100,
+                  "def": 10
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 100,
+                  "capacity": 100,
+                  "role": "health"
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              },
+              "abilities": [
+                "ability/leave"
+              ]
+            }
+          },
+          {
+            "id": "unit/b",
+            "kind": "entity",
+            "tags": [
+              "member",
+              "victim"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 100,
+                  "atk": 100,
+                  "def": 10
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 100,
+                  "capacity": 100,
+                  "role": "health"
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              }
+            }
+          }
+        ],
+        "buffs": [
+          {
+            "id": "buff/root",
+            "kind": "buff",
+            "aura": {
+              "selector": "selector/members",
+              "buff": "buff/child"
+            }
+          },
+          {
+            "id": "buff/child",
+            "kind": "buff",
+            "stacking": {
+              "mode": "independent"
+            },
+            "modifiers": [
+              {
+                "attribute": "def",
+                "layer": "flat",
+                "value": 5
+              }
+            ],
+            "on_remove": [
+              {
+                "op": "retire",
+                "target": "source",
+                "parameters": {
+                  "reason": "withdrawn"
+                }
+              }
+            ]
+          }
+        ],
+        "selectors": [
+          {
+            "id": "selector/members",
+            "kind": "selector",
+            "region": {
+              "type": "circle",
+              "radius": 2
+            },
+            "filters": [
+              {
+                "tag": "member"
+              },
+              {
+                "state": "alive"
+              }
+            ]
+          },
+          {
+            "id": "selector/b",
+            "kind": "selector",
+            "region": {
+              "type": "all"
+            },
+            "filters": [
+              {
+                "tag": "victim"
+              }
+            ],
+            "limit": 1
+          }
+        ],
+        "abilities": [
+          {
+            "id": "ability/leave",
+            "kind": "ability",
+            "selector": "selector/b",
+            "activation": {
+              "mode": "manual",
+              "on_start": [
+                {
+                  "op": "move",
+                  "target": "source",
+                  "position": {
+                    "row": 0,
+                    "col": 6
+                  }
+                },
+                {
+                  "op": "damage",
+                  "damage_type": "physical"
+                }
+              ]
+            },
+            "timeline": []
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scene/peer45",
+          "ruleset": "ruleset/ark_standard",
+          "objectives": {},
+          "map": {
+            "rows": 3,
+            "cols": 8
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/root",
+              "instanceAlias": "root",
+              "position": {
+                "row": 0,
+                "col": 3
+              }
+            },
+            {
+              "definition": "unit/a",
+              "instanceAlias": "a",
+              "position": {
+                "row": 0,
+                "col": 4
+              }
+            },
+            {
+              "definition": "unit/b",
+              "instanceAlias": "b",
+              "position": {
+                "row": 0,
+                "col": 2
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "sha256": "f83dac3e583195abc880cb3129eef53b8c7b1f704a547fbdf9b06d2c4c30b6e1",
+      "seed": 45091,
+      "fixture": {
+        "manifest": {
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "entities": [
+          {
+            "id": "unit/root",
+            "kind": "entity",
+            "tags": [
+              "emitter"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 100,
+                  "atk": 100,
+                  "def": 10
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 100,
+                  "capacity": 100,
+                  "role": "health"
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              },
+              "buffs": {
+                "initial": [
+                  "buff/root"
+                ]
+              }
+            }
+          },
+          {
+            "id": "unit/a",
+            "kind": "entity",
+            "tags": [
+              "member"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 100,
+                  "atk": 100,
+                  "def": 10
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 100,
+                  "capacity": 100,
+                  "role": "health"
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              },
+              "abilities": [
+                "ability/leave"
+              ]
+            }
+          },
+          {
+            "id": "unit/b",
+            "kind": "entity",
+            "tags": [
+              "member",
+              "victim"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 100,
+                  "atk": 100,
+                  "def": 10
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 100,
+                  "capacity": 100,
+                  "role": "health"
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              }
+            }
+          }
+        ],
+        "buffs": [
+          {
+            "id": "buff/root",
+            "kind": "buff",
+            "aura": {
+              "selector": "selector/members",
+              "buff": "buff/child"
+            }
+          },
+          {
+            "id": "buff/child",
+            "kind": "buff",
+            "stacking": {
+              "mode": "independent"
+            },
+            "modifiers": [
+              {
+                "attribute": "def",
+                "layer": "flat",
+                "value": 5
+              }
+            ]
+          }
+        ],
+        "selectors": [
+          {
+            "id": "selector/members",
+            "kind": "selector",
+            "region": {
+              "type": "circle",
+              "radius": 2
+            },
+            "filters": [
+              {
+                "tag": "member"
+              },
+              {
+                "state": "alive"
+              }
+            ],
+            "limit": 1,
+            "ordering": "random",
+            "parameters": {
+              "random_stream": "imp"
+            }
+          },
+          {
+            "id": "selector/b",
+            "kind": "selector",
+            "region": {
+              "type": "all"
+            },
+            "filters": [
+              {
+                "tag": "victim"
+              }
+            ],
+            "limit": 1
+          }
+        ],
+        "abilities": [
+          {
+            "id": "ability/leave",
+            "kind": "ability",
+            "selector": "selector/b",
+            "activation": {
+              "mode": "manual",
+              "on_start": [
+                {
+                  "op": "move",
+                  "target": "source",
+                  "position": {
+                    "row": 0,
+                    "col": 6
+                  }
+                },
+                {
+                  "op": "damage",
+                  "damage_type": "physical"
+                }
+              ]
+            },
+            "timeline": []
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scene/peer45",
+          "ruleset": "ruleset/ark_standard",
+          "objectives": {},
+          "map": {
+            "rows": 3,
+            "cols": 8
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/root",
+              "instanceAlias": "root",
+              "position": {
+                "row": 0,
+                "col": 3
+              }
+            },
+            {
+              "definition": "unit/a",
+              "instanceAlias": "a",
+              "position": {
+                "row": 0,
+                "col": 4
+              }
+            },
+            {
+              "definition": "unit/b",
+              "instanceAlias": "b",
+              "position": {
+                "row": 0,
+                "col": 2
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "scope": "independent samecast retire90/other source83/remote actual source, durable public commands, API failure retry and random draw budget",
+  "formal_approved": false
+}

@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from ..contracts.models import thaw
 
 
-COLLECTIONS = {"entities": "entity", "abilities": "ability", "buffs": "buff",
+COLLECTIONS = {"projectiles": "projectile", "entities": "entity", "abilities": "ability", "buffs": "buff", "controls": "control",
                "selectors": "selector", "behaviors": "behavior", "policies": "policy",
                "rules": "calculation_rule", "rulesets": "ruleset", "presets": "preset",
                "scenarios": "scenario", "definitions": None}

@@ -1,0 +1,17 @@
+# Demon two explicit animation profiles
+
+Frozen source: chapter04_sources/native.reference.json 3e392d80d000e27a50f11f2f33b0fa0f6be35dc1e91d7e321e2b9cf9681c4603. Exact variant enemy_1010_demon@0/b6763feff65e5ee5 is WALK, HP7500/ATK600/DEF230/RES50/interval2/mass2, no passive/skill/regen/born/stun immunity consumer. The fixed table values are retained; no flight is inferred from class or enemy name.
+
+Combat PPtr -4633837567288081652 is MeleeAttack on GameObject -605238212157308148. Its animation key is empty, waitForAttackEvent1, selectTargetSource2, physical damage1, atkScale1. NoPreOneshotAnimation component 413111401963979532 is on that same Combat GameObject. Actual bindings: _animWithPre=Attack (OnAttack f27, duration45); _animNoPre=Attack_NoPre (OnAttack f15, duration33); _endAnim=Attack_Idle (duration30, no OnAttack); maxAnimScale1. Empty Combat animation does not imply zero-delay damage.
+
+Current dump.cs lines544576 onward declares m_anim, OnEvent, OnCastStart, OnCastFinish, UpdatePlaybackSpeed, DoPlayAnimation and hotfix bridges. These method declarations have empty bodies. No actual GameAssembly.dll was found in the local workspace. Dispatch and hotfix selection therefore remain unknown. These facts do not justify guessing first/repeated branches as native semantics.
+
+[PRTS 萨卡兹大剑手](https://prts.wiki/w/萨卡兹大剑手), checked 2026-10-03, confirms the standard ground physical melee classification and level0 table values above, with no special ability. It does not specify animation-branch dispatch. The page warns that per-stage values can differ; this content uses the exact stage DB variant. The page is a reference cross-check, not a replacement for asset clocks.
+
+New builder tools/build_chapter04_demon_profiles.py requires an explicit supported branch policy. with_pre_only and no_pre_only each have one automatic ability and one shared actor attack clock. They hold the declared authored branch duration and publish model.animation_branch_elapsed; that event is explicitly model observation, not a recovered native animation callback. They use actual blocked-only selection and physical scale1 with at_hit operands. Mixing both alternatives into one entity is not the defined composition; choose one variant profile explicitly. Native dispatch/animation return/client feedback remain pending.
+
+Seven independent cases passed in 29.87s under frozen M58 core1ef9635ee70a8159e0523156aeeb177329d19d12a26185b98b9d9fa55ea3c3d5, source/helper/package/core start=end. A publicly deployed DEF157 guard creates real blocking. Both branches actually cast at5/65/125 (60-tick interval), deal443 with offsets27 or15, and finish at authored offsets45 or33. An off-path nearby guard receives no synthetic combat damage. Missing/unknown and not-yet-supported dynamic policies reject. Four public scenes perform actual ordered disk checkpoint continuation and recorded-command replay with complete events/input bytes hashes.
+
+This phase freezes only two static selectable models. first_with_pre_then_no_pre is explicitly rejected until a separate revision captures one branch per cast and uses the existing one actor attack clock. Neither profile claims native dispatch or complete-stage correctness.
+
+Outputs: packages/campaign/chapter04_units/demon_profiles/{with_pre_only,no_pre_only}.model.json. Evidence: validation/campaign/chapter04_demon_profiles/final.json. No frozen source or candidate core was modified.

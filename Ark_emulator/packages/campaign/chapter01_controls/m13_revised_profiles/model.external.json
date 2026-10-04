@@ -1,0 +1,1997 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/campaign/chapter01_control_lifecycle_external",
+    "version": "0.1.0",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "status": "source_backed_declared_logical_control_lifecycle_profiles",
+      "source_sha256": "caa25dcdfbb2af5707a4d0d9ec86e8c73feec38fefdaad9481b5aa3df1ecc79a",
+      "NPC_model_sha256": "e8a5b0114907b7f16977d7b061615c7501c59c072731784d53da81271b5d5b70",
+      "builder_sha256": "8f6d68cc9456b6f6172015fd681ec53abca7e511c09d96adcc0c3baba9411818",
+      "native_fullstage_controls_converted": false,
+      "headless_policy": "metadata instantly acknowledged; Delay logical game seconds; whole isolated story window inputlocked",
+      "native_UI_confirmation_game_vs_wall_clock": "client_pending",
+      "async_control_lifecycle": "model_gap",
+      "NPC_activation_profile": "create absent actor at isolated captured fragment origin +2.99; preserve aliasNone; no route_hidden",
+      "NPC_model_metadata": {
+        "status": "partial_predefined_NPC_normal_and_selected_skill_profile",
+        "source_identities": {
+          "native_predefined_source": "15eb6edf057af42e1c03acf441cc44852f1a3b4aefd511dd23428fcead1413e6",
+          "NPC_model": "4eb40df9ef979f54f289c099b78723da61fc49d00fc88fcdafb1ace3c77b779e",
+          "builder": "6305f205b2f8fbea51986852921248003d7287b2354a700c6520ef06bd98498d"
+        },
+        "native_inst": {
+          "position": {
+            "row": 3,
+            "col": 6
+          },
+          "direction": "RIGHT",
+          "hidden": true,
+          "alias": null,
+          "uniEquipIds": null,
+          "showSpIllust": false,
+          "masterInfos": null,
+          "inst": {
+            "characterKey": "char_211_adnach",
+            "level": 20,
+            "phase": "PHASE_0",
+            "favorPoint": 0,
+            "potentialRank": 0
+          },
+          "skillIndex": 0,
+          "mainSkillLvl": 1,
+          "skinId": null,
+          "tmplId": null,
+          "overrideSkillBlackboard": null,
+          "overrideTalents": null
+        },
+        "pending": [
+          "native_ACTIVATE_PREDEFINED_hidden_activation_and_routeIndex_semantics",
+          "native_implicit_selector_priority_air_filter_and_immunity",
+          "native_GetTimeScale_and_attack_FSM_callback_order",
+          "native_projectile_tracking_collision_lifetime_and_hit_callback",
+          "source_snapshot_vs_public_pin_alignment",
+          "fixed12_deck_override_and_native_card_semantics_require_stage_composition",
+          "native_skcom_atk_up_prefab_BSON_template_not_recovered",
+          "native_attribute_formula_rounding_and_modifier_application_pending",
+          "native_SP_recovery_freeze_and_cast_duration_FSM_body_pending",
+          "native_skill_activation_animation_and_attack_clock_reset_unknown",
+          "native_ACTIVATE_PREDEFINED_hidden_activation_and_sourceCards_composition_pending"
+        ],
+        "formal_stage_approved": false,
+        "activation": "definition only; no automatic source-hidden conversion or timeline activation",
+        "selector_profile": "one alive enemy in rotated exact range; implicit native priority and motion mask unproven",
+        "clock_profile": "unscaled authored OnAttack frame9, base interval1/ASPD100; client GetTimeScale pending",
+        "flight_profile": "launch planar distance / serialized speed10; live target HP/DEF at impact; captured target ID, no native homing proof",
+        "selected_skill_profile": {
+          "id": "adnach_level1_additive_ATK_ratio_periodic_SP_cast_window_v1",
+          "attribute": "effective ATK = base199 * (1 + native BB atk0.1); no intermediate integer rounding",
+          "SP": "periodic +increment1 each elapsed1s, initial0/cap50/payment50; explicitly freeze only selected ability while active",
+          "duration": "20 seconds; Buff half-open expiry independent of cast finish task; native ordering pending",
+          "attack": "existing NPC normal ability/range/frame/projectile preserved; no mode switch, attack clock reset, or extra packets",
+          "manual": "native skillType MANUAL; no auto_when_ready",
+          "client_verified": false
+        },
+        "skill_source_gaps": [
+          "native_skcom_atk_up_prefab_BSON_template_not_recovered",
+          "native_attribute_formula_rounding_and_modifier_application_pending",
+          "native_SP_recovery_freeze_and_cast_duration_FSM_body_pending",
+          "native_skill_activation_animation_and_attack_clock_reset_unknown",
+          "native_ACTIVATE_PREDEFINED_hidden_activation_and_sourceCards_composition_pending"
+        ],
+        "complete_NPC": false
+      },
+      "full_NPC_implemented": false,
+      "cards_and_STORY_barriers": "source retained; no stage integration",
+      "formal_stage_approved": false,
+      "control_ack_policy": "external",
+      "native_async_UI_and_pause_implemented": false,
+      "complete_stage": false
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/ch1_predefined_adnach_e0_l20",
+      "kind": "entity",
+      "tags": [
+        "player",
+        "ground",
+        "predefined"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 677,
+            "atk": 199,
+            "def": 74,
+            "mres": 0.0,
+            "deploy_cost": 9,
+            "block_count": 1,
+            "attack_interval": 1.0,
+            "move_speed": 1.0,
+            "mass_level": 0,
+            "redeploy_time": 70,
+            "attack_speed_ratio": 1.0,
+            "block_cost": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 677,
+            "capacity_attribute": "max_hp",
+            "role": "health"
+          },
+          "sp": {
+            "initial": 0,
+            "capacity": 50,
+            "recovery_rate": 1.0,
+            "recovery": {
+              "mode": "periodic",
+              "interval_seconds": 1
+            },
+            "parameters": {
+              "pause_at_full": true
+            },
+            "recovery_freeze_abilities": [
+              "ability/chapter01_adnach_atk_up_level1"
+            ]
+          }
+        },
+        "abilities": [
+          "ability/ch1_predefined_adnach_normal",
+          "ability/chapter01_adnach_atk_up_level1"
+        ],
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "spatial": {}
+      }
+    },
+    {
+      "id": "unit/chapter01_control_probe_driver",
+      "kind": "entity",
+      "tags": [
+        "player",
+        "control_fixture"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 1000,
+            "atk": 0,
+            "def": 0,
+            "mres": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 1000,
+            "capacity": 1000,
+            "role": "health"
+          }
+        },
+        "abilities": [
+          "ability/chapter01_control_probe_ping"
+        ],
+        "spatial": {}
+      }
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/ch1_predefined_adnach_normal",
+      "kind": "selector",
+      "region": {
+        "type": "grid_offsets",
+        "offsets": [
+          [
+            -1,
+            0
+          ],
+          [
+            -1,
+            1
+          ],
+          [
+            -1,
+            2
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            2
+          ]
+        ]
+      },
+      "filters": [
+        {
+          "tag": "enemy"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/ch1_predefined_adnach_normal",
+      "kind": "ability",
+      "activation": {
+        "mode": "automatic_attack"
+      },
+      "target_capture": "at_cast",
+      "selector": "selector/ch1_predefined_adnach_normal",
+      "parameters": {
+        "projectile_speed": 10
+      },
+      "timeline": [
+        {
+          "at_seconds": 0.3,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1,
+            "condition": "inputs.targets[0].components.runtime.alive",
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/chapter01_adnach_atk_up_level1",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "costs": [
+          {
+            "resource": "sp",
+            "amount": 50
+          }
+        ],
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/chapter01_adnach_atk_up_level1"
+          }
+        ]
+      },
+      "parameters": {
+        "blocks_attacks": false
+      },
+      "duration_seconds": 20.0,
+      "timeline": [],
+      "metadata": {
+        "native_skill_id": "skcom_atk_up[1]",
+        "native_level_index": 0,
+        "profile": {
+          "id": "adnach_level1_additive_ATK_ratio_periodic_SP_cast_window_v1",
+          "attribute": "effective ATK = base199 * (1 + native BB atk0.1); no intermediate integer rounding",
+          "SP": "periodic +increment1 each elapsed1s, initial0/cap50/payment50; explicitly freeze only selected ability while active",
+          "duration": "20 seconds; Buff half-open expiry independent of cast finish task; native ordering pending",
+          "attack": "existing NPC normal ability/range/frame/projectile preserved; no mode switch, attack clock reset, or extra packets",
+          "manual": "native skillType MANUAL; no auto_when_ready",
+          "client_verified": false
+        },
+        "client_verified": false
+      }
+    },
+    {
+      "id": "ability/chapter01_control_probe_ping",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual"
+      },
+      "timeline": [
+        {
+          "at": 0,
+          "effect": {
+            "op": "emit",
+            "target": "battle",
+            "event": "chapter01.probe.command_accepted",
+            "payload": {}
+          }
+        }
+      ],
+      "parameters": {
+        "blocks_attacks": false
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/chapter01_adnach_atk_up_level1",
+      "kind": "buff",
+      "duration_seconds": 20.0,
+      "modifiers": [
+        {
+          "attribute": "atk",
+          "layer": "direct_ratio",
+          "value": 0.1
+        }
+      ],
+      "metadata": {
+        "source_BB": [
+          {
+            "key": "atk",
+            "value": 0.1,
+            "valueStr": null
+          }
+        ],
+        "attribute_formula_is_model": true
+      }
+    }
+  ],
+  "controls": [
+    {
+      "id": "control/chapter01/main_01-11_a",
+      "kind": "control",
+      "clock_policy": "logical",
+      "ack_policy": "external",
+      "steps": [
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.source_row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_01-11_a",
+                "native_row": {
+                  "line": 1,
+                  "raw_line": "[HEADER(is_skippable=true, is_autoable=false)] 主线01-11关卡内剧情a",
+                  "command": "HEADER",
+                  "parameters": "is_skippable=true, is_autoable=false",
+                  "syntax": "command",
+                  "text": "主线01-11关卡内剧情a",
+                  "decoded_parameters": {
+                    "is_skippable": true,
+                    "is_autoable": false
+                  },
+                  "classification": "native_UI_flags",
+                  "headless_model_offset_seconds": 0
+                },
+                "UI_text_is_metadata": true,
+                "native_UI_completed": false
+              }
+            }
+          ]
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.source_row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_01-11_a",
+                "native_row": {
+                  "line": 3,
+                  "raw_line": "[name=\"\"]   时间未知 \\ 天气未知 \\ 能见度 低 ",
+                  "command": "name",
+                  "parameters": "\"\"",
+                  "syntax": "assignment",
+                  "text": "时间未知 \\ 天气未知 \\ 能见度 低 ",
+                  "classification": "speaker_and_UI_text_metadata",
+                  "decoded_parameters": {
+                    "name": ""
+                  },
+                  "headless_model_offset_seconds": 0
+                },
+                "UI_text_is_metadata": true,
+                "native_UI_completed": false
+              }
+            }
+          ]
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.source_row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_01-11_a",
+                "native_row": {
+                  "line": 4,
+                  "raw_line": "[name=\"\"]   切尔诺伯格 行动预备组A2、A4所在地",
+                  "command": "name",
+                  "parameters": "\"\"",
+                  "syntax": "assignment",
+                  "text": "切尔诺伯格 行动预备组A2、A4所在地",
+                  "classification": "speaker_and_UI_text_metadata",
+                  "decoded_parameters": {
+                    "name": ""
+                  },
+                  "headless_model_offset_seconds": 0
+                },
+                "UI_text_is_metadata": true,
+                "native_UI_completed": false
+              }
+            }
+          ]
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.source_row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_01-11_a",
+                "native_row": {
+                  "line": 5,
+                  "raw_line": "[name=\"\"]   Dr.{@nickname}营救行动 最终撤退阶段",
+                  "command": "name",
+                  "parameters": "\"\"",
+                  "syntax": "assignment",
+                  "text": "Dr.{@nickname}营救行动 最终撤退阶段",
+                  "classification": "speaker_and_UI_text_metadata",
+                  "decoded_parameters": {
+                    "name": ""
+                  },
+                  "headless_model_offset_seconds": 0
+                },
+                "UI_text_is_metadata": true,
+                "native_UI_completed": false
+              }
+            }
+          ]
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.source_row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_01-11_a",
+                "native_row": {
+                  "line": 6,
+                  "raw_line": "[dialog]",
+                  "command": "dialog",
+                  "parameters": null,
+                  "syntax": "command",
+                  "text": "",
+                  "decoded_parameters": {},
+                  "classification": "dialog_UI_transition_confirmation_unknown",
+                  "headless_model_offset_seconds": 0
+                },
+                "UI_text_is_metadata": true,
+                "native_UI_completed": false
+              }
+            }
+          ]
+        },
+        {
+          "kind": "ack",
+          "key": "line/6"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.source_row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_01-11_a",
+                "native_row": {
+                  "line": 7,
+                  "raw_line": "[Blocker(fadetime=0.3, block=true, a=0)]",
+                  "command": "Blocker",
+                  "parameters": "fadetime=0.3, block=true, a=0",
+                  "syntax": "command",
+                  "text": "",
+                  "decoded_parameters": {
+                    "fadetime": 0.3,
+                    "block": true,
+                    "a": 0
+                  },
+                  "classification": "UI_overlay_fields_not_proven_gameplay_input_lock",
+                  "headless_model_offset_seconds": 0
+                },
+                "UI_text_is_metadata": true,
+                "native_UI_completed": false
+              }
+            }
+          ]
+        }
+      ],
+      "on_start": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_01-11_a",
+            "enabled": true
+          }
+        }
+      ],
+      "on_complete": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_01-11_a",
+            "enabled": false
+          }
+        }
+      ],
+      "on_cancel": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_01-11_a",
+            "enabled": false
+          }
+        }
+      ],
+      "metadata": {
+        "native_story_source": {
+          "path": "unpack_work/release_20260831/hot_raw/main_01-11_a.dat",
+          "sha256": "331d9368108ecbcf7f3fe7d0dd60b2836c18f8c5293682f8aa0e116843ea0857",
+          "bytes": 324
+        },
+        "native_flags_and_rows": [
+          {
+            "line": 1,
+            "raw_line": "[HEADER(is_skippable=true, is_autoable=false)] 主线01-11关卡内剧情a",
+            "command": "HEADER",
+            "parameters": "is_skippable=true, is_autoable=false",
+            "syntax": "command",
+            "text": "主线01-11关卡内剧情a",
+            "decoded_parameters": {
+              "is_skippable": true,
+              "is_autoable": false
+            },
+            "classification": "native_UI_flags",
+            "headless_model_offset_seconds": 0
+          },
+          {
+            "line": 2,
+            "raw_line": "",
+            "command": null,
+            "parameters": null,
+            "syntax": "blank",
+            "text": "",
+            "classification": "blank",
+            "decoded_parameters": {},
+            "headless_model_offset_seconds": 0
+          },
+          {
+            "line": 3,
+            "raw_line": "[name=\"\"]   时间未知 \\ 天气未知 \\ 能见度 低 ",
+            "command": "name",
+            "parameters": "\"\"",
+            "syntax": "assignment",
+            "text": "时间未知 \\ 天气未知 \\ 能见度 低 ",
+            "classification": "speaker_and_UI_text_metadata",
+            "decoded_parameters": {
+              "name": ""
+            },
+            "headless_model_offset_seconds": 0
+          },
+          {
+            "line": 4,
+            "raw_line": "[name=\"\"]   切尔诺伯格 行动预备组A2、A4所在地",
+            "command": "name",
+            "parameters": "\"\"",
+            "syntax": "assignment",
+            "text": "切尔诺伯格 行动预备组A2、A4所在地",
+            "classification": "speaker_and_UI_text_metadata",
+            "decoded_parameters": {
+              "name": ""
+            },
+            "headless_model_offset_seconds": 0
+          },
+          {
+            "line": 5,
+            "raw_line": "[name=\"\"]   Dr.{@nickname}营救行动 最终撤退阶段",
+            "command": "name",
+            "parameters": "\"\"",
+            "syntax": "assignment",
+            "text": "Dr.{@nickname}营救行动 最终撤退阶段",
+            "classification": "speaker_and_UI_text_metadata",
+            "decoded_parameters": {
+              "name": ""
+            },
+            "headless_model_offset_seconds": 0
+          },
+          {
+            "line": 6,
+            "raw_line": "[dialog]",
+            "command": "dialog",
+            "parameters": null,
+            "syntax": "command",
+            "text": "",
+            "decoded_parameters": {},
+            "classification": "dialog_UI_transition_confirmation_unknown",
+            "headless_model_offset_seconds": 0
+          },
+          {
+            "line": 7,
+            "raw_line": "[Blocker(fadetime=0.3, block=true, a=0)]",
+            "command": "Blocker",
+            "parameters": "fadetime=0.3, block=true, a=0",
+            "syntax": "command",
+            "text": "",
+            "decoded_parameters": {
+              "fadetime": 0.3,
+              "block": true,
+              "a": 0
+            },
+            "classification": "UI_overlay_fields_not_proven_gameplay_input_lock",
+            "headless_model_offset_seconds": 0
+          }
+        ],
+        "native_game_wall_pause_and_UI_confirmation": "client_pending",
+        "model_completion_is_not_native_UI_completion": true
+      }
+    },
+    {
+      "id": "control/chapter01/main_01-11_b",
+      "kind": "control",
+      "clock_policy": "logical",
+      "ack_policy": "external",
+      "steps": [
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.source_row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_01-11_b",
+                "native_row": {
+                  "line": 1,
+                  "raw_line": "[HEADER(is_skippable=false, is_autoable=false, is_tutorial=true)] 主线01-11关卡内剧情b",
+                  "command": "HEADER",
+                  "parameters": "is_skippable=false, is_autoable=false, is_tutorial=true",
+                  "syntax": "command",
+                  "text": "主线01-11关卡内剧情b",
+                  "decoded_parameters": {
+                    "is_skippable": false,
+                    "is_autoable": false,
+                    "is_tutorial": true
+                  },
+                  "classification": "native_UI_flags",
+                  "headless_model_offset_seconds": 0
+                },
+                "UI_text_is_metadata": true,
+                "native_UI_completed": false
+              }
+            }
+          ]
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.source_row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_01-11_b",
+                "native_row": {
+                  "line": 3,
+                  "raw_line": "[PopupDialog(dialogHead=\"$avatar_adnach\", animStyle=\"NoWait\")] 小心，就是这家伙带着整合运动把其他侦察小队都......我先吸引她的火力！",
+                  "command": "PopupDialog",
+                  "parameters": "dialogHead=\"$avatar_adnach\", animStyle=\"NoWait\"",
+                  "syntax": "command",
+                  "text": "小心，就是这家伙带着整合运动把其他侦察小队都......我先吸引她的火力！",
+                  "decoded_parameters": {
+                    "dialogHead": "$avatar_adnach",
+                    "animStyle": "NoWait"
+                  },
+                  "classification": "UI_text_and_avatar_metadata",
+                  "headless_model_offset_seconds": 0
+                },
+                "UI_text_is_metadata": true,
+                "native_UI_completed": false
+              }
+            }
+          ]
+        },
+        {
+          "kind": "ack",
+          "key": "line/3"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.source_row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_01-11_b",
+                "native_row": {
+                  "line": 4,
+                  "raw_line": "[Delay(time=4)]",
+                  "command": "Delay",
+                  "parameters": "time=4",
+                  "syntax": "command",
+                  "text": "",
+                  "decoded_parameters": {
+                    "time": 4
+                  },
+                  "classification": "declared_time_unit_native_clock_unknown",
+                  "headless_model_offset_seconds": 0
+                },
+                "UI_text_is_metadata": true,
+                "native_UI_completed": false
+              }
+            }
+          ]
+        },
+        {
+          "kind": "delay",
+          "seconds": 4
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.source_row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_01-11_b",
+                "native_row": {
+                  "line": 5,
+                  "raw_line": "[PopupDialog(dialogHead=\"$avatar_ansel\", animStyle=\"NoWait\")] 安德切尔，别这么做！那里太危险了！",
+                  "command": "PopupDialog",
+                  "parameters": "dialogHead=\"$avatar_ansel\", animStyle=\"NoWait\"",
+                  "syntax": "command",
+                  "text": "安德切尔，别这么做！那里太危险了！",
+                  "decoded_parameters": {
+                    "dialogHead": "$avatar_ansel",
+                    "animStyle": "NoWait"
+                  },
+                  "classification": "UI_text_and_avatar_metadata",
+                  "headless_model_offset_seconds": 4
+                },
+                "UI_text_is_metadata": true,
+                "native_UI_completed": false
+              }
+            }
+          ]
+        },
+        {
+          "kind": "ack",
+          "key": "line/5"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.source_row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_01-11_b",
+                "native_row": {
+                  "line": 6,
+                  "raw_line": "[Delay(time=4)]",
+                  "command": "Delay",
+                  "parameters": "time=4",
+                  "syntax": "command",
+                  "text": "",
+                  "decoded_parameters": {
+                    "time": 4
+                  },
+                  "classification": "declared_time_unit_native_clock_unknown",
+                  "headless_model_offset_seconds": 4
+                },
+                "UI_text_is_metadata": true,
+                "native_UI_completed": false
+              }
+            }
+          ]
+        },
+        {
+          "kind": "delay",
+          "seconds": 4
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.source_row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_01-11_b",
+                "native_row": {
+                  "line": 7,
+                  "raw_line": "[PopupDialog(dialogHead=\"$avatar_adnach\", animStyle=\"NoWait\")] 没时间了，你们在后面准备部署防线等大家都撤离！",
+                  "command": "PopupDialog",
+                  "parameters": "dialogHead=\"$avatar_adnach\", animStyle=\"NoWait\"",
+                  "syntax": "command",
+                  "text": "没时间了，你们在后面准备部署防线等大家都撤离！",
+                  "decoded_parameters": {
+                    "dialogHead": "$avatar_adnach",
+                    "animStyle": "NoWait"
+                  },
+                  "classification": "UI_text_and_avatar_metadata",
+                  "headless_model_offset_seconds": 8
+                },
+                "UI_text_is_metadata": true,
+                "native_UI_completed": false
+              }
+            }
+          ]
+        },
+        {
+          "kind": "ack",
+          "key": "line/7"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.source_row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_01-11_b",
+                "native_row": {
+                  "line": 8,
+                  "raw_line": "[Delay(time=4)]",
+                  "command": "Delay",
+                  "parameters": "time=4",
+                  "syntax": "command",
+                  "text": "",
+                  "decoded_parameters": {
+                    "time": 4
+                  },
+                  "classification": "declared_time_unit_native_clock_unknown",
+                  "headless_model_offset_seconds": 8
+                },
+                "UI_text_is_metadata": true,
+                "native_UI_completed": false
+              }
+            }
+          ]
+        },
+        {
+          "kind": "delay",
+          "seconds": 4
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.source_row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_01-11_b",
+                "native_row": {
+                  "line": 9,
+                  "raw_line": "[PopupDialog(dialogHead=\"$avatar_w\", animStyle=\"NoWait\")] 很勇敢......但是毫无意义哦。再不跑的话你也会和那些人一样变成灰烬的。",
+                  "command": "PopupDialog",
+                  "parameters": "dialogHead=\"$avatar_w\", animStyle=\"NoWait\"",
+                  "syntax": "command",
+                  "text": "很勇敢......但是毫无意义哦。再不跑的话你也会和那些人一样变成灰烬的。",
+                  "decoded_parameters": {
+                    "dialogHead": "$avatar_w",
+                    "animStyle": "NoWait"
+                  },
+                  "classification": "UI_text_and_avatar_metadata",
+                  "headless_model_offset_seconds": 12
+                },
+                "UI_text_is_metadata": true,
+                "native_UI_completed": false
+              }
+            }
+          ]
+        },
+        {
+          "kind": "ack",
+          "key": "line/9"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.source_row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_01-11_b",
+                "native_row": {
+                  "line": 10,
+                  "raw_line": "[Delay(time=4)]",
+                  "command": "Delay",
+                  "parameters": "time=4",
+                  "syntax": "command",
+                  "text": "",
+                  "decoded_parameters": {
+                    "time": 4
+                  },
+                  "classification": "declared_time_unit_native_clock_unknown",
+                  "headless_model_offset_seconds": 12
+                },
+                "UI_text_is_metadata": true,
+                "native_UI_completed": false
+              }
+            }
+          ]
+        },
+        {
+          "kind": "delay",
+          "seconds": 4
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.source_row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_01-11_b",
+                "native_row": {
+                  "line": 11,
+                  "raw_line": "[PopupDialog(dialogHead=\"$avatar_adnach\", animStyle=\"NoWait\")] 啧，先撤退了！注意她的攻击方式......我们一定要想办法击退她，坚持到阿米娅她们到达。",
+                  "command": "PopupDialog",
+                  "parameters": "dialogHead=\"$avatar_adnach\", animStyle=\"NoWait\"",
+                  "syntax": "command",
+                  "text": "啧，先撤退了！注意她的攻击方式......我们一定要想办法击退她，坚持到阿米娅她们到达。",
+                  "decoded_parameters": {
+                    "dialogHead": "$avatar_adnach",
+                    "animStyle": "NoWait"
+                  },
+                  "classification": "UI_text_and_avatar_metadata",
+                  "headless_model_offset_seconds": 16
+                },
+                "UI_text_is_metadata": true,
+                "native_UI_completed": false
+              }
+            }
+          ]
+        },
+        {
+          "kind": "ack",
+          "key": "line/11"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.source_row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_01-11_b",
+                "native_row": {
+                  "line": 12,
+                  "raw_line": "[Delay(time=2)]",
+                  "command": "Delay",
+                  "parameters": "time=2",
+                  "syntax": "command",
+                  "text": "",
+                  "decoded_parameters": {
+                    "time": 2
+                  },
+                  "classification": "declared_time_unit_native_clock_unknown",
+                  "headless_model_offset_seconds": 16
+                },
+                "UI_text_is_metadata": true,
+                "native_UI_completed": false
+              }
+            }
+          ]
+        },
+        {
+          "kind": "delay",
+          "seconds": 2
+        }
+      ],
+      "on_start": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_01-11_b",
+            "enabled": true
+          }
+        }
+      ],
+      "on_complete": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_01-11_b",
+            "enabled": false
+          }
+        }
+      ],
+      "on_cancel": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_01-11_b",
+            "enabled": false
+          }
+        }
+      ],
+      "metadata": {
+        "native_story_source": {
+          "path": "unpack_work/release_20260831/hot_raw/main_01-11_b.dat",
+          "sha256": "4c025cf9c98e307b2bde0d86efa7b6b35d306b0d59d8a7f286f5a02e082cec43",
+          "bytes": 948
+        },
+        "native_flags_and_rows": [
+          {
+            "line": 1,
+            "raw_line": "[HEADER(is_skippable=false, is_autoable=false, is_tutorial=true)] 主线01-11关卡内剧情b",
+            "command": "HEADER",
+            "parameters": "is_skippable=false, is_autoable=false, is_tutorial=true",
+            "syntax": "command",
+            "text": "主线01-11关卡内剧情b",
+            "decoded_parameters": {
+              "is_skippable": false,
+              "is_autoable": false,
+              "is_tutorial": true
+            },
+            "classification": "native_UI_flags",
+            "headless_model_offset_seconds": 0
+          },
+          {
+            "line": 2,
+            "raw_line": "",
+            "command": null,
+            "parameters": null,
+            "syntax": "blank",
+            "text": "",
+            "classification": "blank",
+            "decoded_parameters": {},
+            "headless_model_offset_seconds": 0
+          },
+          {
+            "line": 3,
+            "raw_line": "[PopupDialog(dialogHead=\"$avatar_adnach\", animStyle=\"NoWait\")] 小心，就是这家伙带着整合运动把其他侦察小队都......我先吸引她的火力！",
+            "command": "PopupDialog",
+            "parameters": "dialogHead=\"$avatar_adnach\", animStyle=\"NoWait\"",
+            "syntax": "command",
+            "text": "小心，就是这家伙带着整合运动把其他侦察小队都......我先吸引她的火力！",
+            "decoded_parameters": {
+              "dialogHead": "$avatar_adnach",
+              "animStyle": "NoWait"
+            },
+            "classification": "UI_text_and_avatar_metadata",
+            "headless_model_offset_seconds": 0
+          },
+          {
+            "line": 4,
+            "raw_line": "[Delay(time=4)]",
+            "command": "Delay",
+            "parameters": "time=4",
+            "syntax": "command",
+            "text": "",
+            "decoded_parameters": {
+              "time": 4
+            },
+            "classification": "declared_time_unit_native_clock_unknown",
+            "headless_model_offset_seconds": 0
+          },
+          {
+            "line": 5,
+            "raw_line": "[PopupDialog(dialogHead=\"$avatar_ansel\", animStyle=\"NoWait\")] 安德切尔，别这么做！那里太危险了！",
+            "command": "PopupDialog",
+            "parameters": "dialogHead=\"$avatar_ansel\", animStyle=\"NoWait\"",
+            "syntax": "command",
+            "text": "安德切尔，别这么做！那里太危险了！",
+            "decoded_parameters": {
+              "dialogHead": "$avatar_ansel",
+              "animStyle": "NoWait"
+            },
+            "classification": "UI_text_and_avatar_metadata",
+            "headless_model_offset_seconds": 4
+          },
+          {
+            "line": 6,
+            "raw_line": "[Delay(time=4)]",
+            "command": "Delay",
+            "parameters": "time=4",
+            "syntax": "command",
+            "text": "",
+            "decoded_parameters": {
+              "time": 4
+            },
+            "classification": "declared_time_unit_native_clock_unknown",
+            "headless_model_offset_seconds": 4
+          },
+          {
+            "line": 7,
+            "raw_line": "[PopupDialog(dialogHead=\"$avatar_adnach\", animStyle=\"NoWait\")] 没时间了，你们在后面准备部署防线等大家都撤离！",
+            "command": "PopupDialog",
+            "parameters": "dialogHead=\"$avatar_adnach\", animStyle=\"NoWait\"",
+            "syntax": "command",
+            "text": "没时间了，你们在后面准备部署防线等大家都撤离！",
+            "decoded_parameters": {
+              "dialogHead": "$avatar_adnach",
+              "animStyle": "NoWait"
+            },
+            "classification": "UI_text_and_avatar_metadata",
+            "headless_model_offset_seconds": 8
+          },
+          {
+            "line": 8,
+            "raw_line": "[Delay(time=4)]",
+            "command": "Delay",
+            "parameters": "time=4",
+            "syntax": "command",
+            "text": "",
+            "decoded_parameters": {
+              "time": 4
+            },
+            "classification": "declared_time_unit_native_clock_unknown",
+            "headless_model_offset_seconds": 8
+          },
+          {
+            "line": 9,
+            "raw_line": "[PopupDialog(dialogHead=\"$avatar_w\", animStyle=\"NoWait\")] 很勇敢......但是毫无意义哦。再不跑的话你也会和那些人一样变成灰烬的。",
+            "command": "PopupDialog",
+            "parameters": "dialogHead=\"$avatar_w\", animStyle=\"NoWait\"",
+            "syntax": "command",
+            "text": "很勇敢......但是毫无意义哦。再不跑的话你也会和那些人一样变成灰烬的。",
+            "decoded_parameters": {
+              "dialogHead": "$avatar_w",
+              "animStyle": "NoWait"
+            },
+            "classification": "UI_text_and_avatar_metadata",
+            "headless_model_offset_seconds": 12
+          },
+          {
+            "line": 10,
+            "raw_line": "[Delay(time=4)]",
+            "command": "Delay",
+            "parameters": "time=4",
+            "syntax": "command",
+            "text": "",
+            "decoded_parameters": {
+              "time": 4
+            },
+            "classification": "declared_time_unit_native_clock_unknown",
+            "headless_model_offset_seconds": 12
+          },
+          {
+            "line": 11,
+            "raw_line": "[PopupDialog(dialogHead=\"$avatar_adnach\", animStyle=\"NoWait\")] 啧，先撤退了！注意她的攻击方式......我们一定要想办法击退她，坚持到阿米娅她们到达。",
+            "command": "PopupDialog",
+            "parameters": "dialogHead=\"$avatar_adnach\", animStyle=\"NoWait\"",
+            "syntax": "command",
+            "text": "啧，先撤退了！注意她的攻击方式......我们一定要想办法击退她，坚持到阿米娅她们到达。",
+            "decoded_parameters": {
+              "dialogHead": "$avatar_adnach",
+              "animStyle": "NoWait"
+            },
+            "classification": "UI_text_and_avatar_metadata",
+            "headless_model_offset_seconds": 16
+          },
+          {
+            "line": 12,
+            "raw_line": "[Delay(time=2)]",
+            "command": "Delay",
+            "parameters": "time=2",
+            "syntax": "command",
+            "text": "",
+            "decoded_parameters": {
+              "time": 2
+            },
+            "classification": "declared_time_unit_native_clock_unknown",
+            "headless_model_offset_seconds": 16
+          }
+        ],
+        "native_game_wall_pause_and_UI_confirmation": "client_pending",
+        "model_completion_is_not_native_UI_completion": true
+      }
+    },
+    {
+      "id": "control/chapter01/main_01-12",
+      "kind": "control",
+      "clock_policy": "logical",
+      "ack_policy": "external",
+      "steps": [
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.source_row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_01-12",
+                "native_row": {
+                  "line": 1,
+                  "raw_line": "[HEADER(is_skippable=true, is_autoable=false)] 主线01-12关卡内剧情",
+                  "command": "HEADER",
+                  "parameters": "is_skippable=true, is_autoable=false",
+                  "syntax": "command",
+                  "text": "主线01-12关卡内剧情",
+                  "decoded_parameters": {
+                    "is_skippable": true,
+                    "is_autoable": false
+                  },
+                  "classification": "native_UI_flags",
+                  "headless_model_offset_seconds": 0
+                },
+                "UI_text_is_metadata": true,
+                "native_UI_completed": false
+              }
+            }
+          ]
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.source_row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_01-12",
+                "native_row": {
+                  "line": 2,
+                  "raw_line": "[PopupDialog(dialogHead=\"$avatar_adnach\")] 能听到吗，杜宾教官？小心那个接近你们的人！她会使用特殊的爆破物进行攻击。",
+                  "command": "PopupDialog",
+                  "parameters": "dialogHead=\"$avatar_adnach\"",
+                  "syntax": "command",
+                  "text": "能听到吗，杜宾教官？小心那个接近你们的人！她会使用特殊的爆破物进行攻击。",
+                  "decoded_parameters": {
+                    "dialogHead": "$avatar_adnach"
+                  },
+                  "classification": "UI_text_and_avatar_metadata",
+                  "headless_model_offset_seconds": 0
+                },
+                "UI_text_is_metadata": true,
+                "native_UI_completed": false
+              }
+            }
+          ]
+        },
+        {
+          "kind": "ack",
+          "key": "line/2"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.source_row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_01-12",
+                "native_row": {
+                  "line": 3,
+                  "raw_line": "[PopupDialog(dialogHead=\"$avatar_doberm\")] 了解，谢谢你的情报。",
+                  "command": "PopupDialog",
+                  "parameters": "dialogHead=\"$avatar_doberm\"",
+                  "syntax": "command",
+                  "text": "了解，谢谢你的情报。",
+                  "decoded_parameters": {
+                    "dialogHead": "$avatar_doberm"
+                  },
+                  "classification": "UI_text_and_avatar_metadata",
+                  "headless_model_offset_seconds": 0
+                },
+                "UI_text_is_metadata": true,
+                "native_UI_completed": false
+              }
+            }
+          ]
+        },
+        {
+          "kind": "ack",
+          "key": "line/3"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.source_row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_01-12",
+                "native_row": {
+                  "line": 4,
+                  "raw_line": "[PopupDialog(dialogHead=\"$avatar_doberm\")] 所有人小心！......还有<@tu.kw>W</>她可能会利用附近的<@tu.kw>暗道</>偷袭后方，注意防范！",
+                  "command": "PopupDialog",
+                  "parameters": "dialogHead=\"$avatar_doberm\"",
+                  "syntax": "command",
+                  "text": "所有人小心！......还有<@tu.kw>W</>她可能会利用附近的<@tu.kw>暗道</>偷袭后方，注意防范！",
+                  "decoded_parameters": {
+                    "dialogHead": "$avatar_doberm"
+                  },
+                  "classification": "UI_text_and_avatar_metadata",
+                  "headless_model_offset_seconds": 0
+                },
+                "UI_text_is_metadata": true,
+                "native_UI_completed": false
+              }
+            }
+          ]
+        },
+        {
+          "kind": "ack",
+          "key": "line/4"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.source_row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_01-12",
+                "native_row": {
+                  "line": 5,
+                  "raw_line": "[Blocker(fadetime=0.3, block=true, a=0)]",
+                  "command": "Blocker",
+                  "parameters": "fadetime=0.3, block=true, a=0",
+                  "syntax": "command",
+                  "text": "",
+                  "decoded_parameters": {
+                    "fadetime": 0.3,
+                    "block": true,
+                    "a": 0
+                  },
+                  "classification": "UI_overlay_fields_not_proven_gameplay_input_lock",
+                  "headless_model_offset_seconds": 0
+                },
+                "UI_text_is_metadata": true,
+                "native_UI_completed": false
+              }
+            }
+          ]
+        }
+      ],
+      "on_start": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_01-12",
+            "enabled": true
+          }
+        }
+      ],
+      "on_complete": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_01-12",
+            "enabled": false
+          }
+        }
+      ],
+      "on_cancel": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_01-12",
+            "enabled": false
+          }
+        }
+      ],
+      "metadata": {
+        "native_story_source": {
+          "path": "unpack_work/release_20260831/hot_raw/main_01-12.dat",
+          "sha256": "39517085b3611b95929858bde2dd0ac2927406cf1071164a9f593492495f0784",
+          "bytes": 520
+        },
+        "native_flags_and_rows": [
+          {
+            "line": 1,
+            "raw_line": "[HEADER(is_skippable=true, is_autoable=false)] 主线01-12关卡内剧情",
+            "command": "HEADER",
+            "parameters": "is_skippable=true, is_autoable=false",
+            "syntax": "command",
+            "text": "主线01-12关卡内剧情",
+            "decoded_parameters": {
+              "is_skippable": true,
+              "is_autoable": false
+            },
+            "classification": "native_UI_flags",
+            "headless_model_offset_seconds": 0
+          },
+          {
+            "line": 2,
+            "raw_line": "[PopupDialog(dialogHead=\"$avatar_adnach\")] 能听到吗，杜宾教官？小心那个接近你们的人！她会使用特殊的爆破物进行攻击。",
+            "command": "PopupDialog",
+            "parameters": "dialogHead=\"$avatar_adnach\"",
+            "syntax": "command",
+            "text": "能听到吗，杜宾教官？小心那个接近你们的人！她会使用特殊的爆破物进行攻击。",
+            "decoded_parameters": {
+              "dialogHead": "$avatar_adnach"
+            },
+            "classification": "UI_text_and_avatar_metadata",
+            "headless_model_offset_seconds": 0
+          },
+          {
+            "line": 3,
+            "raw_line": "[PopupDialog(dialogHead=\"$avatar_doberm\")] 了解，谢谢你的情报。",
+            "command": "PopupDialog",
+            "parameters": "dialogHead=\"$avatar_doberm\"",
+            "syntax": "command",
+            "text": "了解，谢谢你的情报。",
+            "decoded_parameters": {
+              "dialogHead": "$avatar_doberm"
+            },
+            "classification": "UI_text_and_avatar_metadata",
+            "headless_model_offset_seconds": 0
+          },
+          {
+            "line": 4,
+            "raw_line": "[PopupDialog(dialogHead=\"$avatar_doberm\")] 所有人小心！......还有<@tu.kw>W</>她可能会利用附近的<@tu.kw>暗道</>偷袭后方，注意防范！",
+            "command": "PopupDialog",
+            "parameters": "dialogHead=\"$avatar_doberm\"",
+            "syntax": "command",
+            "text": "所有人小心！......还有<@tu.kw>W</>她可能会利用附近的<@tu.kw>暗道</>偷袭后方，注意防范！",
+            "decoded_parameters": {
+              "dialogHead": "$avatar_doberm"
+            },
+            "classification": "UI_text_and_avatar_metadata",
+            "headless_model_offset_seconds": 0
+          },
+          {
+            "line": 5,
+            "raw_line": "[Blocker(fadetime=0.3, block=true, a=0)]",
+            "command": "Blocker",
+            "parameters": "fadetime=0.3, block=true, a=0",
+            "syntax": "command",
+            "text": "",
+            "decoded_parameters": {
+              "fadetime": 0.3,
+              "block": true,
+              "a": 0
+            },
+            "classification": "UI_overlay_fields_not_proven_gameplay_input_lock",
+            "headless_model_offset_seconds": 0
+          }
+        ],
+        "native_game_wall_pause_and_UI_confirmation": "client_pending",
+        "model_completion_is_not_native_UI_completion": true
+      }
+    },
+    {
+      "id": "control/chapter01/level_main_01-11/w0f1a0",
+      "kind": "control",
+      "clock_policy": "logical",
+      "ack_policy": "immediate",
+      "steps": [
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.metadata_observed",
+              "payload": {
+                "level": "level_main_01-11",
+                "wave": 0,
+                "fragment": 1,
+                "action_index": 0,
+                "native_action": {
+                  "actionType": "PREVIEW_CURSOR",
+                  "managedByScheduler": true,
+                  "key": "enemy_1504_cqbw",
+                  "count": 1,
+                  "preDelay": 0.0,
+                  "interval": 1.0,
+                  "routeIndex": 1,
+                  "blockFragment": false,
+                  "autoPreviewRoute": true,
+                  "autoDisplayEnemyInfo": false,
+                  "isUnharmfulAndAlwaysCountAsKilled": false,
+                  "hiddenGroup": null,
+                  "randomSpawnGroupKey": null,
+                  "randomSpawnGroupPackKey": null,
+                  "randomType": "ALWAYS",
+                  "refreshType": "ALWAYS",
+                  "weight": 0,
+                  "dontBlockWave": false,
+                  "forceBlockWaveInBranch": false
+                },
+                "native_preview_route": {
+                  "motionMode": "WALK",
+                  "startPosition": {
+                    "row": 3,
+                    "col": 10
+                  },
+                  "endPosition": {
+                    "row": 3,
+                    "col": 0
+                  },
+                  "spawnRandomRange": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "spawnOffset": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "checkpoints": [
+                    {
+                      "type": "MOVE",
+                      "time": 0.0,
+                      "position": {
+                        "row": 3,
+                        "col": 9
+                      },
+                      "reachOffset": {
+                        "x": 0.0,
+                        "y": 0.0
+                      },
+                      "randomizeReachOffset": false,
+                      "reachDistance": 0.0
+                    },
+                    {
+                      "type": "MOVE",
+                      "time": 0.0,
+                      "position": {
+                        "row": 4,
+                        "col": 7
+                      },
+                      "reachOffset": {
+                        "x": 0.0,
+                        "y": 0.0
+                      },
+                      "randomizeReachOffset": false,
+                      "reachDistance": 0.0
+                    },
+                    {
+                      "type": "MOVE",
+                      "time": 0.0,
+                      "position": {
+                        "row": 2,
+                        "col": 7
+                      },
+                      "reachOffset": {
+                        "x": -0.11,
+                        "y": 0.01
+                      },
+                      "randomizeReachOffset": false,
+                      "reachDistance": 0.0
+                    },
+                    {
+                      "type": "MOVE",
+                      "time": 0.0,
+                      "position": {
+                        "row": 2,
+                        "col": 5
+                      },
+                      "reachOffset": {
+                        "x": 0.0,
+                        "y": 0.0
+                      },
+                      "randomizeReachOffset": false,
+                      "reachDistance": 0.0
+                    },
+                    {
+                      "type": "MOVE",
+                      "time": 0.0,
+                      "position": {
+                        "row": 3,
+                        "col": 4
+                      },
+                      "reachOffset": {
+                        "x": 0.0,
+                        "y": 0.0
+                      },
+                      "randomizeReachOffset": false,
+                      "reachDistance": 0.0
+                    }
+                  ],
+                  "allowDiagonalMove": true,
+                  "visitEveryTileCenter": false,
+                  "visitEveryNodeCenter": false,
+                  "visitEveryCheckPoint": false
+                },
+                "native_UI_render_or_action_completion": false
+              }
+            }
+          ]
+        }
+      ],
+      "metadata": {
+        "native_action": {
+          "actionType": "PREVIEW_CURSOR",
+          "managedByScheduler": true,
+          "key": "enemy_1504_cqbw",
+          "count": 1,
+          "preDelay": 0.0,
+          "interval": 1.0,
+          "routeIndex": 1,
+          "blockFragment": false,
+          "autoPreviewRoute": true,
+          "autoDisplayEnemyInfo": false,
+          "isUnharmfulAndAlwaysCountAsKilled": false,
+          "hiddenGroup": null,
+          "randomSpawnGroupKey": null,
+          "randomSpawnGroupPackKey": null,
+          "randomType": "ALWAYS",
+          "refreshType": "ALWAYS",
+          "weight": 0,
+          "dontBlockWave": false,
+          "forceBlockWaveInBranch": false
+        },
+        "profile": "executable_synchronous_metadata_observation",
+        "native_UI_or_dormant_registry_completed": false
+      }
+    },
+    {
+      "id": "control/chapter01/level_main_01-11/w0f1a2",
+      "kind": "control",
+      "clock_policy": "logical",
+      "ack_policy": "immediate",
+      "steps": [
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "spawn",
+              "definition": "unit/ch1_predefined_adnach_e0_l20",
+              "position": {
+                "row": 3,
+                "col": 6
+              },
+              "facing": "right"
+            },
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.predefined.model_creation_requested",
+              "payload": {
+                "level": "level_main_01-11",
+                "wave": 0,
+                "fragment": 1,
+                "action_index": 2,
+                "key": "char_211_adnach",
+                "native_alias": null,
+                "policy": "absent_until_activation_then_create_active_v1",
+                "native_dormant_registry_converted": false
+              }
+            }
+          ]
+        }
+      ],
+      "metadata": {
+        "native_action": {
+          "actionType": "ACTIVATE_PREDEFINED",
+          "managedByScheduler": true,
+          "key": "char_211_adnach",
+          "count": 1,
+          "preDelay": 2.99,
+          "interval": 1.0,
+          "routeIndex": 3,
+          "blockFragment": false,
+          "autoPreviewRoute": true,
+          "autoDisplayEnemyInfo": false,
+          "isUnharmfulAndAlwaysCountAsKilled": false,
+          "hiddenGroup": null,
+          "randomSpawnGroupKey": null,
+          "randomSpawnGroupPackKey": null,
+          "randomType": "ALWAYS",
+          "refreshType": "ALWAYS",
+          "weight": 0,
+          "dontBlockWave": false,
+          "forceBlockWaveInBranch": false
+        },
+        "profile": "executable_isolated_create_on_activation_profile",
+        "native_UI_or_dormant_registry_completed": false
+      }
+    },
+    {
+      "id": "control/chapter01/level_main_01-11/w0f4a1",
+      "kind": "control",
+      "clock_policy": "logical",
+      "ack_policy": "immediate",
+      "steps": [
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.metadata_observed",
+              "payload": {
+                "level": "level_main_01-11",
+                "wave": 0,
+                "fragment": 4,
+                "action_index": 1,
+                "native_action": {
+                  "actionType": "DISPLAY_ENEMY_INFO",
+                  "managedByScheduler": true,
+                  "key": "enemy_1014_rogue",
+                  "count": 3,
+                  "preDelay": 4.0,
+                  "interval": 12.0,
+                  "routeIndex": 16,
+                  "blockFragment": false,
+                  "autoPreviewRoute": true,
+                  "autoDisplayEnemyInfo": false,
+                  "isUnharmfulAndAlwaysCountAsKilled": false,
+                  "hiddenGroup": null,
+                  "randomSpawnGroupKey": null,
+                  "randomSpawnGroupPackKey": null,
+                  "randomType": "ALWAYS",
+                  "refreshType": "ALWAYS",
+                  "weight": 0,
+                  "dontBlockWave": false,
+                  "forceBlockWaveInBranch": false
+                },
+                "native_preview_route": {
+                  "motionMode": "E_NUM",
+                  "startPosition": {
+                    "row": 0,
+                    "col": 0
+                  },
+                  "endPosition": {
+                    "row": 0,
+                    "col": 0
+                  },
+                  "spawnRandomRange": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "spawnOffset": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "checkpoints": null,
+                  "allowDiagonalMove": true,
+                  "visitEveryTileCenter": false,
+                  "visitEveryNodeCenter": false,
+                  "visitEveryCheckPoint": false
+                },
+                "native_UI_render_or_action_completion": false
+              }
+            }
+          ]
+        }
+      ],
+      "metadata": {
+        "native_action": {
+          "actionType": "DISPLAY_ENEMY_INFO",
+          "managedByScheduler": true,
+          "key": "enemy_1014_rogue",
+          "count": 3,
+          "preDelay": 4.0,
+          "interval": 12.0,
+          "routeIndex": 16,
+          "blockFragment": false,
+          "autoPreviewRoute": true,
+          "autoDisplayEnemyInfo": false,
+          "isUnharmfulAndAlwaysCountAsKilled": false,
+          "hiddenGroup": null,
+          "randomSpawnGroupKey": null,
+          "randomSpawnGroupPackKey": null,
+          "randomType": "ALWAYS",
+          "refreshType": "ALWAYS",
+          "weight": 0,
+          "dontBlockWave": false,
+          "forceBlockWaveInBranch": false
+        },
+        "profile": "executable_synchronous_metadata_observation",
+        "native_UI_or_dormant_registry_completed": false
+      }
+    },
+    {
+      "id": "control/chapter01/level_main_01-12/w0f1a0",
+      "kind": "control",
+      "clock_policy": "logical",
+      "ack_policy": "immediate",
+      "steps": [
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.metadata_observed",
+              "payload": {
+                "level": "level_main_01-12",
+                "wave": 0,
+                "fragment": 1,
+                "action_index": 0,
+                "native_action": {
+                  "actionType": "DISPLAY_ENEMY_INFO",
+                  "managedByScheduler": true,
+                  "key": "enemy_1504_cqbw",
+                  "count": 1,
+                  "preDelay": 1.0,
+                  "interval": 1.0,
+                  "routeIndex": 1,
+                  "blockFragment": false,
+                  "autoPreviewRoute": false,
+                  "autoDisplayEnemyInfo": false,
+                  "isUnharmfulAndAlwaysCountAsKilled": false,
+                  "hiddenGroup": null,
+                  "randomSpawnGroupKey": null,
+                  "randomSpawnGroupPackKey": null,
+                  "randomType": "ALWAYS",
+                  "refreshType": "ALWAYS",
+                  "weight": 0,
+                  "dontBlockWave": false,
+                  "forceBlockWaveInBranch": false
+                },
+                "native_preview_route": null,
+                "native_UI_render_or_action_completion": false
+              }
+            }
+          ]
+        }
+      ],
+      "metadata": {
+        "native_action": {
+          "actionType": "DISPLAY_ENEMY_INFO",
+          "managedByScheduler": true,
+          "key": "enemy_1504_cqbw",
+          "count": 1,
+          "preDelay": 1.0,
+          "interval": 1.0,
+          "routeIndex": 1,
+          "blockFragment": false,
+          "autoPreviewRoute": false,
+          "autoDisplayEnemyInfo": false,
+          "isUnharmfulAndAlwaysCountAsKilled": false,
+          "hiddenGroup": null,
+          "randomSpawnGroupKey": null,
+          "randomSpawnGroupPackKey": null,
+          "randomType": "ALWAYS",
+          "refreshType": "ALWAYS",
+          "weight": 0,
+          "dontBlockWave": false,
+          "forceBlockWaveInBranch": false
+        },
+        "profile": "executable_synchronous_metadata_observation",
+        "native_UI_or_dormant_registry_completed": false
+      }
+    },
+    {
+      "id": "control/chapter01/level_main_01-12/w0f4a0",
+      "kind": "control",
+      "clock_policy": "logical",
+      "ack_policy": "immediate",
+      "steps": [
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "chapter01.control.metadata_observed",
+              "payload": {
+                "level": "level_main_01-12",
+                "wave": 0,
+                "fragment": 4,
+                "action_index": 0,
+                "native_action": {
+                  "actionType": "DISPLAY_ENEMY_INFO",
+                  "managedByScheduler": true,
+                  "key": "enemy_1028_mocock_2",
+                  "count": 1,
+                  "preDelay": 3.0,
+                  "interval": 1.0,
+                  "routeIndex": 15,
+                  "blockFragment": false,
+                  "autoPreviewRoute": true,
+                  "autoDisplayEnemyInfo": false,
+                  "isUnharmfulAndAlwaysCountAsKilled": false,
+                  "hiddenGroup": null,
+                  "randomSpawnGroupKey": null,
+                  "randomSpawnGroupPackKey": null,
+                  "randomType": "ALWAYS",
+                  "refreshType": "ALWAYS",
+                  "weight": 0,
+                  "dontBlockWave": false,
+                  "forceBlockWaveInBranch": false
+                },
+                "native_preview_route": {
+                  "motionMode": "E_NUM",
+                  "startPosition": {
+                    "row": 0,
+                    "col": 0
+                  },
+                  "endPosition": {
+                    "row": 0,
+                    "col": 0
+                  },
+                  "spawnRandomRange": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "spawnOffset": {
+                    "x": 0.0,
+                    "y": 0.0
+                  },
+                  "checkpoints": null,
+                  "allowDiagonalMove": true,
+                  "visitEveryTileCenter": false,
+                  "visitEveryNodeCenter": false,
+                  "visitEveryCheckPoint": false
+                },
+                "native_UI_render_or_action_completion": false
+              }
+            }
+          ]
+        }
+      ],
+      "metadata": {
+        "native_action": {
+          "actionType": "DISPLAY_ENEMY_INFO",
+          "managedByScheduler": true,
+          "key": "enemy_1028_mocock_2",
+          "count": 1,
+          "preDelay": 3.0,
+          "interval": 1.0,
+          "routeIndex": 15,
+          "blockFragment": false,
+          "autoPreviewRoute": true,
+          "autoDisplayEnemyInfo": false,
+          "isUnharmfulAndAlwaysCountAsKilled": false,
+          "hiddenGroup": null,
+          "randomSpawnGroupKey": null,
+          "randomSpawnGroupPackKey": null,
+          "randomType": "ALWAYS",
+          "refreshType": "ALWAYS",
+          "weight": 0,
+          "dontBlockWave": false,
+          "forceBlockWaveInBranch": false
+        },
+        "profile": "executable_synchronous_metadata_observation",
+        "native_UI_or_dormant_registry_completed": false
+      }
+    }
+  ]
+}

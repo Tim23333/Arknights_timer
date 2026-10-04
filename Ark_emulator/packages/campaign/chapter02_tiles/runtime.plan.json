@@ -1,0 +1,54 @@
+{
+  "schema": "ark-sim/chapter02-tile-runtime-design/v1",
+  "source_sha256": "fc5ea7050014f56b5725be44805c9c81d17e157615a7eeb7c5d64401059610af",
+  "core_base": "7aa11610867291a2274d31a7ae2ec69fb8acc03e808314a8cde29fdedd88aabe",
+  "status": "design_for_generic_mechanic_not_implemented",
+  "mapping": [
+    {
+      "native_tile_key": "tile_healing",
+      "mechanic": "occupancy_buff_field",
+      "source_modifier": 19,
+      "payload": "buff/ch2/healing_tile_member",
+      "membership": "explicit eligible actor state, same-cell gridprojection model",
+      "recovery": "target HP resource rule from effective maxHP and effective hp_ratio_recovery",
+      "on_leave": "parent-owned child removal",
+      "native_verified": false
+    },
+    {
+      "native_tile_key": "tile_gazebo",
+      "mechanic": "occupancy_buff_field",
+      "source_modifier": 7,
+      "payload": "buff/ch2/gazebo_member",
+      "membership": "explicit eligible actor state, same-cell gridprojection model",
+      "damage": "FLY_ONLY before damage request scale1.7",
+      "on_leave": "parent-owned child removal",
+      "native_verified": false
+    },
+    {
+      "native_tile_key": "tile_hole",
+      "mechanic": "occupancy_terminal_policy",
+      "movement": "explicit normalpath cost/passability vs forceddisplacement allowed profile",
+      "on_entry": "pure replaceable lifecycle decision based actorstate/motion, preserve dead/kill ledger",
+      "on_motion_change": "reevaluate explicitly",
+      "native_verified": false
+    }
+  ],
+  "kernel_requirements": [
+    "arbitrary authored tile keys mapped to generic mechanic profiles without officialID conditionals",
+    "unknown blackboard/effects/source modifiers rejected rather than cleared",
+    "compiled selector/buff/rule references in dependency closure and source ownership",
+    "virtual field owners are internal model representation, never publiccards/enemies/objectivecount",
+    "parentownedmember cleanup and timing sameframe semantics explicit/customizable",
+    "buff contribution/overrides and healing eligibility distinct contracts",
+    "effective tile overlays reread revision, no stale map snapshot",
+    "full atomic/CP/replay and noopt legacyvalue invariants"
+  ],
+  "remaining_native_accuracy": [
+    "target/getter/context and source templateLoadData methods",
+    "tilecontinuousbody/mapaxis/contact semantics",
+    "recovery/callbackorder and float/fixedpoint precision",
+    "nativehole motionchanged/lethality/movecostbody"
+  ],
+  "available_model_probes": "validation/campaign/chapter02_tiles/occupancy_adapter_final.json",
+  "actual_game_accuracy_verified": false
+}

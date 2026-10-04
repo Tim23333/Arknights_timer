@@ -1,0 +1,164 @@
+{
+  "schema": "ark-sim/c0-corner-projection-audit/v1",
+  "implementation_sha256": "c0b92545a714e763f3e43d4e13d25f0be99ecda912cb8479536982ac38f8216e",
+  "package_sha256": "2b7fe8d63a30765614a63a9914b6c3a59248600663f85972527491390bd44de8",
+  "native_selector": {
+    "id": "selector/char_151_myrtle/normal_attack",
+    "kind": "selector",
+    "region": {
+      "type": "grid_offsets",
+      "offsets": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    "filters": [
+      {
+        "tag": "enemy"
+      },
+      {
+        "state": "alive"
+      },
+      {
+        "tag": "ground"
+      }
+    ],
+    "metadata": {
+      "native_range_id": "1-1",
+      "native_selector_fields": {},
+      "priority_and_immunity_model_pending": true,
+      "m7_own_blocked_target_conversion": true
+    },
+    "parameters": {
+      "include_blocked": true
+    },
+    "limit": 1
+  },
+  "observations": [
+    {
+      "position": {
+        "row": 4.5,
+        "col": 5
+      },
+      "grid_cell": [
+        5,
+        5
+      ],
+      "half_even_projection": [
+        4,
+        5
+      ],
+      "half_up_expected": [
+        5,
+        5
+      ],
+      "horizontal_row4_range_should_include": false,
+      "actual_attacks": [
+        {
+          "id": 1022,
+          "type": "attack.accepted",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "ability": "ability/char_151_myrtle/normal_attack",
+            "cast": "cast/2/1",
+            "amount": 520.0
+          },
+          "time": 15,
+          "cause": null
+        }
+      ],
+      "runtime_fingerprint": "438f91513b2b8e622c78fbddcac414b19c01271e84df8074b247b69b24e76c34",
+      "program_fingerprint": "49049db5cbb597597898a37341f3d5ab9b656de9885f178d85bd7bcbc74401e0",
+      "initial_entities": [
+        {
+          "definition": "unit/char_151_myrtle",
+          "instanceAlias": "myrtle",
+          "position": {
+            "row": 4,
+            "col": 4
+          }
+        },
+        {
+          "definition": "unit/enemy_1000_gopro",
+          "instanceAlias": "enemy",
+          "position": {
+            "row": 4.5,
+            "col": 5
+          }
+        }
+      ],
+      "replay_inputs": {
+        "schema": "ark-sim/replay/v2",
+        "program_fingerprint": "49049db5cbb597597898a37341f3d5ab9b656de9885f178d85bd7bcbc74401e0",
+        "runtime_fingerprint": "438f91513b2b8e622c78fbddcac414b19c01271e84df8074b247b69b24e76c34",
+        "seed": 953816614,
+        "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+        "until": 16,
+        "commands": []
+      }
+    },
+    {
+      "position": {
+        "row": 5.5,
+        "col": 5
+      },
+      "grid_cell": [
+        6,
+        5
+      ],
+      "half_even_projection": [
+        6,
+        5
+      ],
+      "half_up_expected": [
+        6,
+        5
+      ],
+      "horizontal_row4_range_should_include": false,
+      "actual_attacks": [],
+      "runtime_fingerprint": "438f91513b2b8e622c78fbddcac414b19c01271e84df8074b247b69b24e76c34",
+      "program_fingerprint": "f32895bfd6e36228188a9198c0d7360f64058d26141e2f97075c9451efd1c3da",
+      "initial_entities": [
+        {
+          "definition": "unit/char_151_myrtle",
+          "instanceAlias": "myrtle",
+          "position": {
+            "row": 4,
+            "col": 4
+          }
+        },
+        {
+          "definition": "unit/enemy_1000_gopro",
+          "instanceAlias": "enemy",
+          "position": {
+            "row": 5.5,
+            "col": 5
+          }
+        }
+      ],
+      "replay_inputs": {
+        "schema": "ark-sim/replay/v2",
+        "program_fingerprint": "f32895bfd6e36228188a9198c0d7360f64058d26141e2f97075c9451efd1c3da",
+        "runtime_fingerprint": "438f91513b2b8e622c78fbddcac414b19c01271e84df8074b247b69b24e76c34",
+        "seed": 953816614,
+        "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+        "until": 16,
+        "commands": []
+      }
+    }
+  ],
+  "source_locations": {
+    "collision": "ark_sim/domains/spatial.py:GridTopology._cell",
+    "selection": "ark_sim/presets/providers.py:selector_grid"
+  },
+  "policy_gap": "selector half-even differs from collision half-up at exact ties; native comparator unknown",
+  "primary_or_packages_modified": false,
+  "formal_approval": false
+}

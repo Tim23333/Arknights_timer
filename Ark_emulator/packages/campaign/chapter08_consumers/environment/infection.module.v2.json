@@ -1,0 +1,422 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/ch8/environment/infection_v1",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "source_locks": {
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_source_prepare\\integration\\environment.native.v1.json": "c813f7c2308c2308baaa19a88a3e18305db7a18d1404f6a7f1351b018296d976",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_environment\\build_infection_v2.py": "2a327c67db6bf18c160f98a6cdab9d45fb31eee9890d8ba542917813ff602f2f",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_environment\\policies_v1.py": "adb540d53adb762b8e8d6cd2883f7dce41a755ff3990f7c032fda34925479a32"
+      },
+      "native_BuffTile": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": 6255163142357956546
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 8764313853837755128
+        },
+        "m_Name": "",
+        "_tileKey": "tile_infection",
+        "_height": 0.0,
+        "_locateHeightOffset": 0.0,
+        "_forceBoxCollider": 0,
+        "_graphic": {
+          "m_FileID": 0,
+          "m_PathID": 0
+        },
+        "_allGraphicList": [],
+        "_effect": "map_promote_01",
+        "_setHoldEffectToEffectHolder": 0,
+        "_data": {
+          "tileKey": "",
+          "heightType": 0,
+          "buildableType": 3,
+          "passableMask": 3,
+          "playerSideMask": 0,
+          "blackboard": [],
+          "effects": []
+        },
+        "_mapLayer": 0,
+        "_injectEnvDmgFlagToBlackboard": 1,
+        "_targetOptions": {
+          "targetSide": 3,
+          "targetMotion": 1,
+          "targetCategory": 1,
+          "enableAdvancedOptions": 1,
+          "ignoreTargetFree": 1,
+          "ignoreAllyTargetFree": 1,
+          "ignoreHealFree": 1,
+          "ignoreMotionMode": 0,
+          "ignoreTargetSide": 1,
+          "excludeSomeAbnormalFlags": 0,
+          "containSomeAbnormalFlags": 0,
+          "excludeAbnormalFlag": 0,
+          "containAbnormalFlag": 0,
+          "purposeMask": 0,
+          "professionMask": 0,
+          "checkUnitType": 0,
+          "unitTypeMask": 0,
+          "onlyIgnoreSomeOfTargetFreeCase": 0,
+          "abnormalFlag": 0,
+          "abnormalCombo": 0
+        },
+        "_sourceSide": 1,
+        "_buffs": [
+          {
+            "attributes": {
+              "abnormalFlags": [],
+              "abnormalImmunes": [],
+              "abnormalAntis": [],
+              "abnormalCombos": [],
+              "abnormalComboImmunes": [],
+              "attributeModifiers": [
+                {
+                  "attributeType": 1,
+                  "formulaItem": 1,
+                  "value": 0.0,
+                  "loadFromBlackboard": 1,
+                  "fetchBaseValueFromSourceEntity": 0
+                },
+                {
+                  "attributeType": 7,
+                  "formulaItem": 0,
+                  "value": 0.0,
+                  "loadFromBlackboard": 1,
+                  "fetchBaseValueFromSourceEntity": 0
+                }
+              ]
+            },
+            "buffKey": "tile_infection",
+            "loadFromDB": 0,
+            "isDurableBuff": 0,
+            "isDamageMissable": 0,
+            "isSilenceable": 0,
+            "isStunnable": 0,
+            "isFreezable": 0,
+            "isLevitatable": 0,
+            "isGroundBoundable": 0,
+            "statusResistable": 2,
+            "templateKey": "periodic_damage",
+            "disableOverride": 0,
+            "overrideKey": "",
+            "overrideType": 0,
+            "maxStackCnt": 1,
+            "refreshRemainingTimeWhenStackMax": 0,
+            "clearAllStackCntWhenTimeUp": 0,
+            "maxValidStackCnt": -1,
+            "independentCharacterSource": 0,
+            "overrideEffectKey": "common_acute_infection_buff_01",
+            "overrideOnEventPriority": 0,
+            "onEventPriority": 0,
+            "audioSignal": "",
+            "lifeTimeType": 1,
+            "takeSnapshotWhenExtend": 0,
+            "durationKey": "",
+            "lifeTime": 0.0,
+            "triggerLifeType": 2,
+            "triggerCnt": 0,
+            "triggerInterval": 1.0,
+            "waitFirstTriggerInterval": 1,
+            "firstTriggerInterval": -1.0,
+            "priority": -1,
+            "priorityBBKeys": [],
+            "stripBlackboardParamsWithBuffKey": 0,
+            "blackboard": [],
+            "enableInitDirectionFromSource": 0
+          }
+        ],
+        "_clearBuffsWhenLeft": 0
+      },
+      "native_periodic_damage": {
+        "$type": "Torappu.Battle.Action.Nodes+NoSourceDamage, Assembly-CSharp",
+        "_damageType": "PURE",
+        "_damageKey": "damage",
+        "_ignoreForSp": true,
+        "_damageWithoutModify": false,
+        "_attackType": "BUFF",
+        "_isEnvDamage": true,
+        "_isUndeadable": false,
+        "_ignoreCancelReasonMask": "NONE",
+        "_instantKillLikeDamage": false,
+        "_isNotChangeableValue": false,
+        "_multiplierByKey": false,
+        "_multiplierKey": "cnt",
+        "_modifierKey": ""
+      },
+      "source_blackboard": {
+        "damage": 180.0,
+        "atk": 0.5,
+        "attack_speed": 50.0,
+        "duration": 300.0
+      },
+      "reference_policy": {
+        "contact": "Sourceground/category1 allside ignorefree/healfree/currentmodelcell projection. Camo ignore is explicit tilecontact reference choice, not native selector body proof.",
+        "lifetime": "NativeclearBuffsWhenLeft0 and refreshRemainingTimeWhenStackMax0: first300s infection persists offcell, existinglive buff neverrefreshes. Modelentry child is only internal contact sentinel, not a fabricated native Buff or combat actor.",
+        "damage": "Actor-free sourceNone PURE/BUFF ignoreSPtrue withoutModifyfalse envtrue;180 fixed per1s after30quanta, noactorATK damage path.",
+        "stats": "ATK MULTIPLIER.5->directratio+.5;ASPD ADDITION50->normalizedratio flat+.5.",
+        "visibility": "Existing source tile/ref routes remain original; explicitprofile only infection.",
+        "nativebody_verified": false,
+        "client_verified": false
+      },
+      "tile_profile": {
+        "type": "occupancy_buff_field",
+        "definition": "unit/ch8/environment/infection_field",
+        "expected_blackboard": {
+          "damage": 180.0,
+          "atk": 0.5,
+          "attack_speed": 50.0,
+          "duration": 300.0
+        }
+      }
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/ch8/environment/infection_field",
+      "kind": "entity",
+      "tags": [
+        "tile_field_owner"
+      ],
+      "components": {
+        "selection_state": {
+          "side": 1,
+          "motion": 1,
+          "category": 2,
+          "unit_type": 4
+        },
+        "spatial": {},
+        "buffs": {
+          "initial": [
+            "buff/ch8/environment/infection/contact_parent"
+          ]
+        }
+      }
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/ch8/environment/infection",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "limit": null,
+      "eligibility": {
+        "rule": "rule/ch8/environment/infection/contact",
+        "parameters": {
+          "source_configuration": {
+            "_ignoreTargetFree": 1,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_needProfessionMask": 0,
+            "_ignoreAllyTargetFree": 1,
+            "_ignoreHealFree": 1,
+            "_ignoreMotionMode": 0,
+            "_forceIgnoreCamouflage": 1,
+            "_checkUnitType": 0,
+            "_targetSide": 7,
+            "_targetMotion": 1,
+            "_targetCategory": 1
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "absolute_mask",
+          "defaults": {
+            "heal_free": false,
+            "target_free": false,
+            "can_select_camouflage": false,
+            "camouflage": false,
+            "ally_target_free": false,
+            "motion": 0,
+            "category": 0,
+            "profession": 0,
+            "unit_type": 0,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "abnormal_immunes": [],
+            "side": 0
+          }
+        }
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/ch8/environment/infection/contact",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c8.infection_contact"
+      }
+    },
+    {
+      "id": "rule/ch8/environment/infection/install",
+      "kind": "rule",
+      "contract": "buff.application",
+      "parameters": {
+        "buff": "buff/ch8/environment/tile_infection",
+        "duration": 300.0
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c8.infection_once"
+      }
+    },
+    {
+      "id": "rule/ch8/environment/infection/no_source_pipeline",
+      "kind": "rule",
+      "contract": "damage.pipeline",
+      "implementation": {
+        "type": "expression",
+        "expression": "{'accepted':True,'amount':inputs.effect.fixed_amount,'allocations':[],'events':[]}"
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/ch8/environment/infection/contact_parent",
+      "kind": "buff",
+      "aura": {
+        "selector": "selector/ch8/environment/infection",
+        "buff": "buff/ch8/environment/infection/model_entry"
+      }
+    },
+    {
+      "id": "buff/ch8/environment/infection/model_entry",
+      "kind": "buff",
+      "stacking": {
+        "mode": "independent"
+      },
+      "effects": [
+        {
+          "op": "buff_application",
+          "allowed": [
+            "buff/ch8/environment/tile_infection"
+          ],
+          "application_rule": "rule/ch8/environment/infection/install"
+        }
+      ],
+      "metadata": {
+        "model_only_contact_sentinel": true
+      }
+    },
+    {
+      "id": "buff/ch8/environment/tile_infection",
+      "kind": "buff",
+      "duration_seconds": 300.0,
+      "interval_seconds": 1,
+      "stacking": {
+        "mode": "refresh",
+        "identity": [
+          "definition",
+          "target"
+        ],
+        "max_stacks": 1
+      },
+      "modifiers": [
+        {
+          "attribute": "atk",
+          "layer": "direct_ratio",
+          "value": 0.5
+        },
+        {
+          "attribute": "attack_speed_ratio",
+          "layer": "flat",
+          "value": 0.5
+        }
+      ],
+      "effects": [
+        {
+          "op": "no_source_damage",
+          "damage_type": "true",
+          "attack_type": "BUFF",
+          "damage_without_modify": false,
+          "fixed_amount": 180.0,
+          "ignore_for_sp": true,
+          "node_is_env_damage": true,
+          "env_blackboard_injected": true,
+          "environmental": true,
+          "origin": {
+            "mechanism": "native_tile_infection_periodic_damage"
+          },
+          "rules": {
+            "damage.pipeline": "rule/ch8/environment/infection/no_source_pipeline"
+          }
+        }
+      ],
+      "metadata": {
+        "nativebuffKey": "tile_infection",
+        "native_raw": {
+          "attributes": {
+            "abnormalFlags": [],
+            "abnormalImmunes": [],
+            "abnormalAntis": [],
+            "abnormalCombos": [],
+            "abnormalComboImmunes": [],
+            "attributeModifiers": [
+              {
+                "attributeType": 1,
+                "formulaItem": 1,
+                "value": 0.0,
+                "loadFromBlackboard": 1,
+                "fetchBaseValueFromSourceEntity": 0
+              },
+              {
+                "attributeType": 7,
+                "formulaItem": 0,
+                "value": 0.0,
+                "loadFromBlackboard": 1,
+                "fetchBaseValueFromSourceEntity": 0
+              }
+            ]
+          },
+          "buffKey": "tile_infection",
+          "loadFromDB": 0,
+          "isDurableBuff": 0,
+          "isDamageMissable": 0,
+          "isSilenceable": 0,
+          "isStunnable": 0,
+          "isFreezable": 0,
+          "isLevitatable": 0,
+          "isGroundBoundable": 0,
+          "statusResistable": 2,
+          "templateKey": "periodic_damage",
+          "disableOverride": 0,
+          "overrideKey": "",
+          "overrideType": 0,
+          "maxStackCnt": 1,
+          "refreshRemainingTimeWhenStackMax": 0,
+          "clearAllStackCntWhenTimeUp": 0,
+          "maxValidStackCnt": -1,
+          "independentCharacterSource": 0,
+          "overrideEffectKey": "common_acute_infection_buff_01",
+          "overrideOnEventPriority": 0,
+          "onEventPriority": 0,
+          "audioSignal": "",
+          "lifeTimeType": 1,
+          "takeSnapshotWhenExtend": 0,
+          "durationKey": "",
+          "lifeTime": 0.0,
+          "triggerLifeType": 2,
+          "triggerCnt": 0,
+          "triggerInterval": 1.0,
+          "waitFirstTriggerInterval": 1,
+          "firstTriggerInterval": -1.0,
+          "priority": -1,
+          "priorityBBKeys": [],
+          "stripBlackboardParamsWithBuffKey": 0,
+          "blackboard": [],
+          "enableInitDirectionFromSource": 0
+        }
+      }
+    }
+  ]
+}

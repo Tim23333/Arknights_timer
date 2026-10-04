@@ -1,0 +1,1835 @@
+{
+  "abilities": [
+    {
+      "activation": {
+        "costs": [
+          {
+            "amount": 80,
+            "resource": "sp"
+          }
+        ],
+        "mode": "manual",
+        "on_start": [
+          {
+            "delta": 1,
+            "op": "modify_resource",
+            "resource": "mode",
+            "target": "source"
+          },
+          {
+            "buff": "buff/campaign_amgoat_s3",
+            "op": "apply_buff",
+            "target": "source"
+          }
+        ]
+      },
+      "duration_seconds": 15.0,
+      "id": "ability/campaign_amgoat_s3",
+      "kind": "ability",
+      "metadata": {
+        "status": "partially_implemented"
+      },
+      "parameters": {
+        "blocks_attacks": false
+      },
+      "timeline": []
+    },
+    {
+      "activation": {
+        "condition": "inputs.resources.mode.current == 0",
+        "mode": "automatic_attack"
+      },
+      "id": "ability/campaign_amgoat_normal",
+      "kind": "ability",
+      "parameters": {
+        "projectile_speed": 10.0
+      },
+      "selector": "selector/char_180_amgoat_attack",
+      "target_capture": "each_hit",
+      "timeline": [
+        {
+          "at_seconds": 0.6666666666666666,
+          "effect": {
+            "damage_type": "arts",
+            "op": "damage"
+          }
+        }
+      ]
+    },
+    {
+      "activation": {
+        "condition": "inputs.resources.mode.current == 1",
+        "mode": "manual",
+        "parameters": {
+          "counts_as_attack": true
+        }
+      },
+      "id": "ability/campaign_amgoat_probe_packet",
+      "kind": "ability",
+      "metadata": {
+        "not_native_fsm_or_rng": true,
+        "status": "partially_implemented",
+        "synthetic_attack_signal": true
+      },
+      "parameters": {
+        "blocks_attacks": false,
+        "projectile_speed": 6.0,
+        "requires_targets": true
+      },
+      "selector": "selector/char_180_amgoat_s3_attack",
+      "target_capture": "each_hit",
+      "timeline": [
+        {
+          "at": 0,
+          "effect": {
+            "damage_type": "arts",
+            "op": "damage",
+            "read_mode": {
+              "source_attributes": "at_launch"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "activation": {
+        "condition": "inputs.payload.source == inputs.source.id and inputs.payload.target == inputs.source.id and inputs.payload.buff == \"buff/campaign_amgoat_s3\"",
+        "event": "buff.removed",
+        "mode": "passive"
+      },
+      "id": "ability/char_180_amgoat_mode_cleanup",
+      "kind": "ability",
+      "parameters": {
+        "blocks_attacks": false
+      },
+      "timeline": []
+    }
+  ],
+  "buffs": [
+    {
+      "duration_seconds": 15.0,
+      "id": "buff/campaign_amgoat_s3",
+      "kind": "buff",
+      "modifiers": [
+        {
+          "attribute": "atk",
+          "layer": "direct_ratio",
+          "value": 1.3
+        },
+        {
+          "attribute": "attack_interval",
+          "layer": "flat",
+          "value": -1.1
+        },
+        {
+          "attribute": "max_targets",
+          "layer": "flat",
+          "value": 5.0
+        }
+      ],
+      "on_remove": [
+        {
+          "op": "modify_resource",
+          "resource": "mode",
+          "target": "source",
+          "value": 0
+        }
+      ]
+    }
+  ],
+  "entities": [
+    {
+      "components": {
+        "abilities": [
+          "ability/campaign_amgoat_s3",
+          "ability/campaign_amgoat_normal",
+          "ability/campaign_amgoat_probe_packet",
+          "ability/char_180_amgoat_mode_cleanup"
+        ],
+        "attributes": {
+          "base": {
+            "atk": 100,
+            "attack_interval": 1.6,
+            "attack_speed_ratio": 1,
+            "attack_times": 1,
+            "block_count": 1,
+            "def": 0,
+            "max_hp": 10000,
+            "max_targets": 1,
+            "mres": 0
+          }
+        },
+        "behavior": {
+          "machine": "behavior/player_combat"
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "resources": {
+          "hp": {
+            "capacity": 10000,
+            "initial": 10000,
+            "role": "health"
+          },
+          "mode": {
+            "capacity": 1,
+            "initial": 0
+          },
+          "sp": {
+            "capacity": 80,
+            "initial": 55,
+            "parameters": {
+              "freeze_cast_modes": [
+                "manual"
+              ],
+              "freeze_while_cast": true,
+              "pause_at_full": true
+            },
+            "recovery": {
+              "interval_seconds": 1,
+              "mode": "periodic"
+            },
+            "recovery_rate": 1.0
+          }
+        },
+        "spatial": {}
+      },
+      "id": "unit/char_180_amgoat_fixture",
+      "kind": "entity",
+      "metadata": {
+        "status": "partially_implemented",
+        "synthetic_attributes": true
+      },
+      "tags": [
+        "player"
+      ]
+    },
+    {
+      "components": {
+        "attributes": {
+          "base": {
+            "atk": 10,
+            "attack_interval": 1,
+            "attack_speed_ratio": 1,
+            "block_cost": 1,
+            "def": 10,
+            "max_hp": 100000,
+            "move_speed": 0.1,
+            "mres": 0
+          }
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "resources": {
+          "hp": {
+            "capacity": 100000,
+            "initial": 100000,
+            "role": "health"
+          }
+        },
+        "spatial": {}
+      },
+      "id": "unit/attack_recipe_target",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground"
+      ]
+    }
+  ],
+  "manifest": {
+    "id": "package/offensive_char_180_amgoat",
+    "metadata": {
+      "client_validated": false,
+      "model_policy": {
+        "SP": "init55/cost80/time1; frozen while manual skill active, no per-target/per-packet SP",
+        "damage_sampling": "ATK230 * magic mitigation; at_launch snapshot persists through delayed impact",
+        "normal_interval": 1.6,
+        "projectile_speed": 6.0,
+        "selection": "deterministic scored live/in-range probe; dynamic min(effective max_targets,N); native RNG is pending",
+        "skill_interval_attribute": 0.5,
+        "skill_packet_driver": "explicit synthetic activate_ability command, no invented native cadence"
+      },
+      "native_animation_frames": {
+        "anims": {
+          "Attack": {
+            "d": 1.2,
+            "df": 36.0,
+            "ev": [
+              {
+                "f": 20.0,
+                "n": "OnAttack",
+                "t": 0.6667
+              }
+            ]
+          }
+        },
+        "modes": [
+          {
+            "attack": {
+              "animKey": "Attack",
+              "endAnimKey": "Idle",
+              "maxAnimScale": 1.0,
+              "preDelay": 0.0,
+              "projectileKey": "projectile_amgoat",
+              "projectileSpeed": 10.0,
+              "waitForAttackEvent": 1
+            },
+            "mode": "Default"
+          },
+          {
+            "attack": {
+              "maxAnimScale": 1.0,
+              "preDelay": 0.0,
+              "projectileKey": "projectile_amgoat_s3",
+              "waitForAttackEvent": 1
+            },
+            "mode": "S3"
+          }
+        ],
+        "skills": [
+          {
+            "name": "二重咏唱",
+            "skillId": "skchr_amgoat_1"
+          },
+          {
+            "name": "点燃",
+            "skillId": "skchr_amgoat_2"
+          },
+          {
+            "name": "火山",
+            "skillId": "skchr_amgoat_3"
+          }
+        ]
+      },
+      "native_character_components": {
+        "-4554450963658849309": {
+          "fields": {
+            "_activeBuffs": [],
+            "_affectedBySlowDown": 0,
+            "_allowNoTarget": 0,
+            "_alwaysIncludeTarget": 1,
+            "_animKey": "",
+            "_atkScale": 1.0,
+            "_atkScaleKey": "atk_scale",
+            "_attachPassiveBuffsOnDummy": 1,
+            "_attackType": 1,
+            "_checkFaceToFirstCastTargetDownAttack": 0,
+            "_cooldown": 0.0,
+            "_cooldownKey": "duration",
+            "_damageType": 2,
+            "_deliveryParaWhenReplaceActionNode": 0,
+            "_downAnimKey": "",
+            "_downEndAnimKey": "",
+            "_elementDamageType": 0,
+            "_emitToInputPosWhenTargetIsInvalid": 0,
+            "_emitToInputRootTileWhenTargetIsInvalid": 0,
+            "_endAnimKey": "",
+            "_epDamageRatio": 0.0,
+            "_escapeTime": 0.0,
+            "_extraDamageType": 0,
+            "_extraProjectileKeys": [],
+            "_faceToDefault": 0,
+            "_faceToFirstCastTarget": 0,
+            "_faceToFront": 0,
+            "_faceToTarget": 0,
+            "_fireAttackFinishWhenProjectileInvalid": 0,
+            "_fireCreateProjectileEvent": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_forceFaceToDirection": 0,
+            "_ignoreIfOwnerDead": 0,
+            "_ignorePalsyInterrupt": 0,
+            "_interruptAbilityOnDetach": 0,
+            "_interuptIfTargetDead": 0,
+            "_maxAnimScale": 1.0,
+            "_metadata": {
+              "blackboardPrefix": "",
+              "namedAsAlias": ""
+            },
+            "_minPostDelayWhenProjectileInvalid": 0.0,
+            "_mountGroup": {
+              "loopType": 0,
+              "mountPoints": []
+            },
+            "_mountPointType": 2,
+            "_notClearProjectileWhenCastEnd": 0,
+            "_onlyPlayEndAnimWhenIsLastAbility": 0,
+            "_preDelay": 0.0,
+            "_projectileDestination": 0,
+            "_projectileKey": "projectile_amgoat_s3",
+            "_resetCdStrategy": 1,
+            "_selectTargetSource": 1,
+            "_selectTargetTiming": 0,
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": 4599614501290558435
+            },
+            "_timeMode": 0,
+            "_transferSource": 0,
+            "_upAnimKey": "",
+            "_upEndAnimKey": "",
+            "_useCachedAtkOnly": 0,
+            "_useDynamicAttackType": 0,
+            "_useMountGroup": 0,
+            "_waitForAnimEndWhenProjectileInvalid": 0,
+            "_waitForAttackEvent": 1,
+            "_waitForProjectileInvalid": 0
+          },
+          "script_path_id": 4156651312234227407
+        },
+        "-7468632011799215133": {
+          "fields": {
+            "_addIndexToSignalId": 0,
+            "_alwaysHideHp": {
+              "isDefined": 0,
+              "value": 0
+            },
+            "_alwaysHideSp": {
+              "isDefined": 0,
+              "value": 0
+            },
+            "_animatorHooker": {
+              "m_FileID": 0,
+              "m_PathID": -1821829896917826589
+            },
+            "_attack": {
+              "m_FileID": 0,
+              "m_PathID": -4554450963658849309
+            },
+            "_attackTrigger": {
+              "m_FileID": 0,
+              "m_PathID": 9185881623338009571
+            },
+            "_bodyTransform": {
+              "m_FileID": 0,
+              "m_PathID": -1932412018882329629
+            },
+            "_combat": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_extraRangesToShow": [],
+            "_generalAbilities": [],
+            "_hideUIAttackRange": 0,
+            "_includeIndexZero": 0,
+            "_overrideDeadEffect": "",
+            "_overrideStartEffect": "",
+            "_rangeToShow": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_updateAttackRangeExtendByAttributeDirty": 0
+          },
+          "script_path_id": 5390319429299248724
+        },
+        "-9088785073334467613": {
+          "fields": {
+            "_animator": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_blockMode": 0,
+            "_buildCondition": {
+              "_checkUpdateBuildable": 0,
+              "_excludeOccupiedByWalkEnemy": 0,
+              "abilityName": "",
+              "advancedBuildableMask": 1,
+              "allowWalkEnemyInHostRange": 0,
+              "buildableType": 2,
+              "canNotBuildInHostAttackRange": 0,
+              "checkManuallyBuildableType": 0,
+              "excludeNoTargetTile": 0,
+              "extraBuildConditionArray": {
+                "SerializedObjectReferences": [],
+                "SerializedState": "null"
+              },
+              "extraLocateRange": "",
+              "isTryingOverlapCharacater": 0,
+              "limitByHostAbilityRange": 0,
+              "limitByHostAttackRange": 0,
+              "manuallyBuildableType": 0,
+              "needSpecifyDirection": 1,
+              "overlapOptions": {
+                "_changeTargetGraphicColor": 0,
+                "_excludeSourceId": 0,
+                "_excludeSourceIds": [],
+                "_isAllConditionOR": 1,
+                "_overlapPriority": 0,
+                "_verifySourceId": 0,
+                "_verifySourceIds": [],
+                "_verifySourceProfession": 0,
+                "_verifySourceProfessions": 0,
+                "_verifySourceTargetTokenRelationship": 0
+              },
+              "tileKey": ""
+            },
+            "_clearProjectileWhenDead": 0,
+            "_commonAbilities": [],
+            "_deadEffect": "",
+            "_defaultBodyColor": {
+              "a": 1.0,
+              "b": 1.0,
+              "g": 1.0,
+              "r": 1.0
+            },
+            "_directionIndicator": {
+              "m_FileID": 0,
+              "m_PathID": 7344355682966160355
+            },
+            "_directionTransform": {
+              "m_FileID": 0,
+              "m_PathID": -6385370441311861789
+            },
+            "_disableCharInfoPanel": 0,
+            "_disableClickCharacterInfo": 0,
+            "_disableRotateWhenDead": 0,
+            "_disableSetDirectionWhenDummy": 0,
+            "_dontMoveCameraWhenFocus": 0,
+            "_effectTransform": {
+              "m_FileID": 0,
+              "m_PathID": 2705515726245315555
+            },
+            "_hideShadowOnRecycle": 0,
+            "_hudPluginReplacePairs": [],
+            "_ignoreBlockMode": 0,
+            "_isFixedRotation": 0,
+            "_maxWithdrawCostRatioOfRawCost": 1.0,
+            "_modes": [
+              {
+                "m_FileID": 0,
+                "m_PathID": 7913478717181707235
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": -7468632011799215133
+              }
+            ],
+            "_motionMode": 0,
+            "_occupiedRemainingCharacterCnt": 1,
+            "_onlyPlayStartEffectOnce": 0,
+            "_overrideGraphicBound": -1.0,
+            "_playStartVocal": 1,
+            "_preprocessData": 0,
+            "_shadow": {
+              "m_FileID": 0,
+              "m_PathID": -353762871648730141
+            },
+            "_showDeadTweenColor": 1,
+            "_showDebugName": 0,
+            "_skillUiFollowHeadPint": 0,
+            "_skinHolder": {
+              "m_FileID": 0,
+              "m_PathID": 4482676102688850915
+            },
+            "_skipBornAudioOnMoveLikeRespawnSelf": 0,
+            "_startEffect": "",
+            "_traitAbility": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_uiMountPoint": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_useIdForAudioSignalMask": 0,
+            "_useRealBornTimeFromAnim": 0,
+            "_useSpecificDeadAnim": 0,
+            "_withdrawCostRecoverRatio": 0.5
+          },
+          "script_path_id": -1297314214590689040
+        },
+        "4126519535187444707": {
+          "fields": {
+            "_keepTarget": 0,
+            "_minTargetNum": 1,
+            "_overrideSearchTargetTick": -1
+          },
+          "script_path_id": 8607874384982393801
+        },
+        "4599614501290558435": {
+          "fields": {
+            "_alwaysAppendSelf": 0,
+            "_excludeSelf": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreTargetFree": 0,
+            "_needProfessionMask": 0,
+            "_professionMask": 0,
+            "_selectNum": 1,
+            "_targetCategory": 1,
+            "_targetMotion": 3,
+            "_targetSide": 2
+          },
+          "script_path_id": -847086478303344652
+        },
+        "7913478717181707235": {
+          "fields": {
+            "_addIndexToSignalId": 0,
+            "_alwaysHideHp": {
+              "isDefined": 0,
+              "value": 0
+            },
+            "_alwaysHideSp": {
+              "isDefined": 0,
+              "value": 0
+            },
+            "_animatorHooker": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_attack": {
+              "m_FileID": 0,
+              "m_PathID": 8315418237007152099
+            },
+            "_attackTrigger": {
+              "m_FileID": 0,
+              "m_PathID": 4126519535187444707
+            },
+            "_bodyTransform": {
+              "m_FileID": 0,
+              "m_PathID": -6124553498681424925
+            },
+            "_combat": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_extraRangesToShow": [],
+            "_generalAbilities": [],
+            "_hideUIAttackRange": 0,
+            "_includeIndexZero": 0,
+            "_overrideDeadEffect": "",
+            "_overrideStartEffect": "",
+            "_rangeToShow": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_updateAttackRangeExtendByAttributeDirty": 0
+          },
+          "script_path_id": 5390319429299248724
+        },
+        "8315418237007152099": {
+          "fields": {
+            "_activeBuffs": [],
+            "_affectedBySlowDown": 0,
+            "_allowNoTarget": 0,
+            "_alwaysIncludeTarget": 1,
+            "_animKey": "Attack",
+            "_atkScale": 1.0,
+            "_atkScaleKey": "atk_scale",
+            "_attachPassiveBuffsOnDummy": 1,
+            "_attackType": 1,
+            "_checkFaceToFirstCastTargetDownAttack": 0,
+            "_cooldown": 0.0,
+            "_cooldownKey": "duration",
+            "_damageType": 2,
+            "_deliveryParaWhenReplaceActionNode": 0,
+            "_downAnimKey": "",
+            "_downEndAnimKey": "",
+            "_elementDamageType": 0,
+            "_emitToInputPosWhenTargetIsInvalid": 0,
+            "_emitToInputRootTileWhenTargetIsInvalid": 0,
+            "_endAnimKey": "Idle",
+            "_epDamageRatio": 0.0,
+            "_escapeTime": 0.0,
+            "_extraDamageType": 0,
+            "_extraProjectileKeys": [],
+            "_faceToDefault": 0,
+            "_faceToFirstCastTarget": 0,
+            "_faceToFront": 0,
+            "_faceToTarget": 1,
+            "_fireAttackFinishWhenProjectileInvalid": 0,
+            "_fireCreateProjectileEvent": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_forceFaceToDirection": 0,
+            "_ignoreIfOwnerDead": 0,
+            "_ignorePalsyInterrupt": 0,
+            "_interruptAbilityOnDetach": 0,
+            "_interuptIfTargetDead": 0,
+            "_maxAnimScale": 1.0,
+            "_metadata": {
+              "blackboardPrefix": "",
+              "namedAsAlias": ""
+            },
+            "_minPostDelayWhenProjectileInvalid": 0.0,
+            "_mountGroup": {
+              "loopType": 0,
+              "mountPoints": []
+            },
+            "_mountPointType": 2,
+            "_notClearProjectileWhenCastEnd": 0,
+            "_onlyPlayEndAnimWhenIsLastAbility": 0,
+            "_preDelay": 0.0,
+            "_projectileDestination": 0,
+            "_projectileKey": "projectile_amgoat",
+            "_resetCdStrategy": 1,
+            "_selectTargetSource": 2,
+            "_selectTargetTiming": 0,
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_timeMode": 0,
+            "_transferSource": 0,
+            "_upAnimKey": "",
+            "_upEndAnimKey": "",
+            "_useCachedAtkOnly": 0,
+            "_useDynamicAttackType": 0,
+            "_useMountGroup": 0,
+            "_waitForAnimEndWhenProjectileInvalid": 0,
+            "_waitForAttackEvent": 1,
+            "_waitForProjectileInvalid": 0
+          },
+          "script_path_id": 4156651312234227407
+        },
+        "9185881623338009571": {
+          "fields": {
+            "_keepTarget": 0,
+            "_minTargetNum": 1,
+            "_overrideSearchTargetTick": -1
+          },
+          "script_path_id": 8607874384982393801
+        }
+      },
+      "native_normal_range": {
+        "direction": 1,
+        "grids": [
+          {
+            "col": 0,
+            "row": 1
+          },
+          {
+            "col": 1,
+            "row": 1
+          },
+          {
+            "col": 2,
+            "row": 1
+          },
+          {
+            "col": 0,
+            "row": 0
+          },
+          {
+            "col": 1,
+            "row": 0
+          },
+          {
+            "col": 2,
+            "row": 0
+          },
+          {
+            "col": 3,
+            "row": 0
+          },
+          {
+            "col": 0,
+            "row": -1
+          },
+          {
+            "col": 1,
+            "row": -1
+          },
+          {
+            "col": 2,
+            "row": -1
+          }
+        ],
+        "id": "3-1"
+      },
+      "native_selected_skill": {
+        "character_skill_index": 2,
+        "character_skill_slot": {
+          "levelUpCostCond": [
+            {
+              "levelUpCost": [
+                {
+                  "count": 6,
+                  "id": "3303",
+                  "type": "MATERIAL"
+                },
+                {
+                  "count": 4,
+                  "id": "30014",
+                  "type": "MATERIAL"
+                },
+                {
+                  "count": 7,
+                  "id": "30093",
+                  "type": "MATERIAL"
+                }
+              ],
+              "lvlUpTime": 28800,
+              "unlockCond": {
+                "level": 1,
+                "phase": "PHASE_2"
+              }
+            },
+            {
+              "levelUpCost": [
+                {
+                  "count": 12,
+                  "id": "3303",
+                  "type": "MATERIAL"
+                },
+                {
+                  "count": 4,
+                  "id": "30044",
+                  "type": "MATERIAL"
+                },
+                {
+                  "count": 7,
+                  "id": "30024",
+                  "type": "MATERIAL"
+                }
+              ],
+              "lvlUpTime": 57600,
+              "unlockCond": {
+                "level": 1,
+                "phase": "PHASE_2"
+              }
+            },
+            {
+              "levelUpCost": [
+                {
+                  "count": 15,
+                  "id": "3303",
+                  "type": "MATERIAL"
+                },
+                {
+                  "count": 6,
+                  "id": "30135",
+                  "type": "MATERIAL"
+                },
+                {
+                  "count": 5,
+                  "id": "30054",
+                  "type": "MATERIAL"
+                }
+              ],
+              "lvlUpTime": 86400,
+              "unlockCond": {
+                "level": 1,
+                "phase": "PHASE_2"
+              }
+            }
+          ],
+          "overridePrefabKey": null,
+          "overrideTokenKey": null,
+          "skillId": "skchr_amgoat_3",
+          "unlockCond": {
+            "level": 1,
+            "phase": "PHASE_2"
+          }
+        },
+        "level": {
+          "blackboard": [
+            {
+              "key": "atk",
+              "value": 1.3,
+              "valueStr": null
+            },
+            {
+              "key": "base_attack_time",
+              "value": -1.1,
+              "valueStr": null
+            },
+            {
+              "key": "attack@max_target",
+              "value": 6.0,
+              "valueStr": null
+            }
+          ],
+          "description": "攻击力<@ba.vup>+{atk:0%}</>，攻击范围<@ba.vup>增大</>，攻击间隔<@ba.vup>大幅度缩短</>，攻击变为随机对攻击范围内至多<@ba.vup>{attack@max_target}</>个敌人发射熔岩",
+          "duration": 15.0,
+          "durationType": "NONE",
+          "name": "火山",
+          "prefabId": "skchr_amgoat_3",
+          "rangeId": "x-3",
+          "skillType": "MANUAL",
+          "spData": {
+            "increment": 1.0,
+            "initSp": 55,
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 80,
+            "spType": "INCREASE_WITH_TIME"
+          }
+        },
+        "native_level_index": 9,
+        "skill_id": "skchr_amgoat_3"
+      },
+      "native_selectors": [
+        null,
+        {
+          "_alwaysAppendSelf": 0,
+          "_excludeSelf": 0,
+          "_ignoreHealFree": 0,
+          "_ignoreTargetFree": 0,
+          "_needProfessionMask": 0,
+          "_professionMask": 0,
+          "_selectNum": 1,
+          "_targetCategory": 1,
+          "_targetMotion": 3,
+          "_targetSide": 2
+        }
+      ],
+      "native_skill_prefab": {
+        "components": [
+          {
+            "cabin": "CAB-e39773c4d1462aefe0ea30134bbccdbb",
+            "class": "AbilityStandard",
+            "fields": {
+              "_attachEffects": [],
+              "_castEffects": [
+                {
+                  "_delayIfFirstAttack": 0.0,
+                  "_directionType": 0,
+                  "_effects": [
+                    "amgoat_skill_03_buff",
+                    "",
+                    "",
+                    ""
+                  ],
+                  "_endEvent": 6,
+                  "_hookEffectAfterFirstAttack": "",
+                  "_oneshot": 0,
+                  "_onlyOnce": 0,
+                  "_startEvent": 2,
+                  "_useFourDirectionalFace": 0
+                }
+              ],
+              "_castTargetEffects": [],
+              "_convertCastEndToAttachFinish": 0,
+              "_hitEffects": [],
+              "_inputTargetEffects": [],
+              "_preDelayFactor": 0.0,
+              "_recalculatePlaybackSpeed": 0
+            },
+            "gameObjectPathID": 4441785243535840507,
+            "pathID": -5518790729492359941,
+            "scriptPathID": -550693537895634864
+          },
+          {
+            "cabin": "CAB-e39773c4d1462aefe0ea30134bbccdbb",
+            "class": "Other",
+            "fields": {
+              "_default": {
+                "beginAnim": "Skill_Begin",
+                "endAnim": "Skill_End",
+                "loopAnim": "Skill_Loop"
+              },
+              "_delaySecond": 0.0,
+              "_delayToAnimateEndAnimation": 0,
+              "_delayToAnimateEndAnimationTime": 0.0,
+              "_delayToFireAttackSkillEvent": 0,
+              "_dontPlayBeginAnimFromInterrupted": 0,
+              "_down": {
+                "beginAnim": "",
+                "endAnim": "",
+                "loopAnim": ""
+              },
+              "_earlyFinishEndIdleAnimation": 0,
+              "_faceToDefault": 0,
+              "_faceToFront": 0,
+              "_fireAnimEndEvent": 0,
+              "_fireAttackFinishEvent": 1,
+              "_onlyPlayBeginAnimWhenFirstAttack": 0,
+              "_overrideDownAnimation": 0,
+              "_overrideUpAnimation": 0,
+              "_playIdleAnimInTheEnd": 0,
+              "_up": {
+                "beginAnim": "",
+                "endAnim": "",
+                "loopAnim": ""
+              },
+              "_waitForAttachFinishEvent": 0
+            },
+            "gameObjectPathID": 4441785243535840507,
+            "pathID": -3250868624220646149,
+            "scriptPathID": 680305599797508032
+          },
+          {
+            "cabin": "CAB-e39773c4d1462aefe0ea30134bbccdbb",
+            "class": "Ability",
+            "fields": {
+              "_attachPassiveBuffsOnDummy": 1,
+              "_buffs": [
+                {
+                  "attributes": {
+                    "abnormalAntis": [],
+                    "abnormalComboImmunes": [],
+                    "abnormalCombos": [],
+                    "abnormalFlags": [],
+                    "abnormalImmunes": [],
+                    "attributeModifiers": [
+                      {
+                        "attributeType": 1,
+                        "fetchBaseValueFromSourceEntity": 0,
+                        "formulaItem": 1,
+                        "loadFromBlackboard": 1,
+                        "value": 0.0
+                      },
+                      {
+                        "attributeType": 8,
+                        "fetchBaseValueFromSourceEntity": 0,
+                        "formulaItem": 0,
+                        "loadFromBlackboard": 1,
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "audioSignal": "",
+                  "blackboard": [
+                    {
+                      "key": "mode",
+                      "value": 1.0,
+                      "valueStr": ""
+                    }
+                  ],
+                  "buffKey": "amgoat_s_3",
+                  "clearAllStackCntWhenTimeUp": 0,
+                  "disableOverride": 0,
+                  "durationKey": "",
+                  "enableInitDirectionFromSource": 0,
+                  "firstTriggerInterval": -1.0,
+                  "independentCharacterSource": 0,
+                  "isDamageMissable": 0,
+                  "isDurableBuff": 0,
+                  "isFreezable": 0,
+                  "isGroundBoundable": 0,
+                  "isLevitatable": 0,
+                  "isSilenceable": 0,
+                  "isStunnable": 0,
+                  "lifeTime": 0.0,
+                  "lifeTimeType": 1,
+                  "loadFromDB": 0,
+                  "maxStackCnt": 1,
+                  "maxValidStackCnt": -1,
+                  "onEventPriority": 0,
+                  "overrideEffectKey": "",
+                  "overrideKey": "",
+                  "overrideOnEventPriority": 0,
+                  "overrideType": 0,
+                  "priority": -1,
+                  "priorityBBKeys": [],
+                  "refreshRemainingTimeWhenStackMax": 0,
+                  "statusResistable": 2,
+                  "stripBlackboardParamsWithBuffKey": 0,
+                  "takeSnapshotWhenExtend": 0,
+                  "templateKey": "switch_mode_restart_fsm",
+                  "triggerCnt": 0,
+                  "triggerInterval": -1.0,
+                  "triggerLifeType": 0,
+                  "waitFirstTriggerInterval": 1
+                }
+              ],
+              "_checkBuffEarlyFinish": 0,
+              "_enableUpdateCooldown": 0,
+              "_escapeTime": 0.0,
+              "_forceAsDmgOrHealAbility": 0,
+              "_ignoreIfOwnerDead": 0,
+              "_ignoreInfiniteBuffCooldown": 0,
+              "_interruptAbilityOnDetach": 0,
+              "_interuptIfTargetDead": 0,
+              "_metadata": {
+                "blackboardPrefix": "",
+                "namedAsAlias": ""
+              },
+              "_passiveBuffs": [],
+              "_preDelay": 0.0,
+              "_resetCdStrategy": 1,
+              "_selector": {
+                "m_FileID": 0,
+                "m_PathID": 0
+              },
+              "_updateLifetimeWhenSpellStart": 0,
+              "_waitForAttackEvent": 0,
+              "_waitForCasting": 1
+            },
+            "gameObjectPathID": 4441785243535840507,
+            "pathID": 1440918129551971579,
+            "scriptPathID": -4234909118878081699
+          },
+          {
+            "cabin": "CAB-e39773c4d1462aefe0ea30134bbccdbb",
+            "class": "AttackAbility",
+            "fields": {
+              "_allowNoTarget": 1,
+              "_allowSpRecoveryWhenAffecting": 0,
+              "_attachSignalIds": 0,
+              "_attackBlackboardModeIndex": 1,
+              "_availableValidator": {
+                "m_FileID": 0,
+                "m_PathID": 0
+              },
+              "_beginAnim": "",
+              "_beginAnimDown": "",
+              "_beginAnimValidator": {
+                "m_FileID": 0,
+                "m_PathID": 0
+              },
+              "_beginEffect": [],
+              "_canCastDuringBorn": 1,
+              "_canCastWithNoSp": 0,
+              "_canSilenced": 0,
+              "_canSwitchDuringBorn": 1,
+              "_canUseInAbnormalState": 0,
+              "_checkHasTargetBeforeDoCast": 0,
+              "_defaultModeIndex": -1,
+              "_earlySkillFinishAtAttackFinished": 0,
+              "_earlyVoice": 0,
+              "_extraAbilities": [],
+              "_extraAttackBlackboardModeIndices": [],
+              "_extraRangeIdModeIndices": [],
+              "_forceToShowRange": 0,
+              "_forceUseBaseShowRange": 0,
+              "_hasUniStackColor": 0,
+              "_hidden": 0,
+              "_hideHudSkillStackCount": 0,
+              "_hideRangeToShow": 0,
+              "_hideSkillStackCount": 0,
+              "_isRemoteControlled": 0,
+              "_limitGlobalTriggerTime": 0,
+              "_maxTriggerTime": -1,
+              "_onlyAvailableWhenTokenValid": 0,
+              "_playCharWordVoice": 1,
+              "_playCharWordWithPassiveType": 0,
+              "_playSkillBeginAnim": 0,
+              "_rangeIdModeIndex": 1,
+              "_rangeIdUsageType": 7,
+              "_rangeToShow": {
+                "m_FileID": 0,
+                "m_PathID": 0
+              },
+              "_recoverSpIfNoTarget": 0,
+              "_resetAbilityCooldownWhenCastEnd": 0,
+              "_shouldCastLikeAttack": 0,
+              "_showProgressToNext": 0,
+              "_showSpAsBulletMode": 0,
+              "_showSpBarEvenHidden": 0,
+              "_showSpRatioAsProgress": 0,
+              "_stopAffectOnInterrupt": 0,
+              "_switchToState": 0,
+              "_trigger": {
+                "m_FileID": 0,
+                "m_PathID": 0
+              },
+              "_uninterruptibleOnAbilityPredelay": 0,
+              "_useEscapeTime": 0,
+              "_useFaceVector": 0,
+              "_useTriggerInManualMode": 0,
+              "_writeDurationToAttackBlackboard": 0
+            },
+            "gameObjectPathID": 4441785243535840507,
+            "pathID": 5643925426478290171,
+            "scriptPathID": 6851783972288338031
+          }
+        ]
+      },
+      "native_skill_projectile_components": {
+        "-3310561262428287168": {
+          "fields": {
+            "_awayFromSourceAsDirection": 0,
+            "_comeBack": 0,
+            "_comeBackSpeedScale": 0.25,
+            "_delayAfterReached": 0,
+            "_delayTime": 0.0,
+            "_exactMatchCameraForward": 0,
+            "_fixOnProjectileReached": 0,
+            "_flyToPredefinedLocation": 0,
+            "_flyToTargetLocationOnly": 0,
+            "_forceReachedWhenTimeup": 1,
+            "_forceResetToTargetPosWhenReached": 0,
+            "_freezeRotationXY": 0,
+            "_freezeRotationZ": 0,
+            "_handleWithIBuildableTarget": 0,
+            "_inverseParacurve": 0,
+            "_noRaiseHeightThreshold": 1.2999999523162842,
+            "_onlyReachedInTime": 0.0,
+            "_predefinedLocation": 0,
+            "_raiseHeight": 0.15000000596046448,
+            "_randomHeightRange": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "_randomInverseParacurve": 0,
+            "_resetToTargetPosWhenReached": 0,
+            "_resetToTracetargetMapPosV3": 0,
+            "_rotateToTarget": 1,
+            "_sourceDirectionArcAngleRatio": 0.0,
+            "_speed": 6.0,
+            "_updateDelayTimeOnlyOnce": 0,
+            "_useRandomHeight": 0,
+            "_useSourceDirection": 0,
+            "_useSourceDirectionArcAngleWithRatio": 0,
+            "_useSourceDirectionRandomArcAngleStart": 0,
+            "_useSourceToTargetArcAngleWithRatio": 0,
+            "_useSourceToTargetRandomArcAngleStart": 0,
+            "_useStartToTarget": 0,
+            "_useTargetDirection": 0
+          },
+          "name": "projectile_amgoat_s3_logic",
+          "script_path_id": 5247176549481151122
+        },
+        "-3997847375607482370": {
+          "fields": {
+            "_awayFromSourceAsDirection": 0,
+            "_comeBack": 0,
+            "_comeBackSpeedScale": 0.25,
+            "_delayAfterReached": 0,
+            "_delayTime": 0.0,
+            "_exactMatchCameraForward": 0,
+            "_fixOnProjectileReached": 0,
+            "_flyToPredefinedLocation": 0,
+            "_flyToTargetLocationOnly": 0,
+            "_forceReachedWhenTimeup": 1,
+            "_forceResetToTargetPosWhenReached": 0,
+            "_freezeRotationXY": 0,
+            "_freezeRotationZ": 0,
+            "_handleWithIBuildableTarget": 0,
+            "_inverseParacurve": 0,
+            "_noRaiseHeightThreshold": 1.2999999523162842,
+            "_onlyReachedInTime": 0.0,
+            "_predefinedLocation": 0,
+            "_raiseHeight": 0.15000000596046448,
+            "_randomHeightRange": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "_randomInverseParacurve": 0,
+            "_resetToTargetPosWhenReached": 0,
+            "_resetToTracetargetMapPosV3": 0,
+            "_rotateToTarget": 1,
+            "_sourceDirectionArcAngleRatio": 0.0,
+            "_speed": 6.0,
+            "_updateDelayTimeOnlyOnce": 0,
+            "_useRandomHeight": 0,
+            "_useSourceDirection": 0,
+            "_useSourceDirectionArcAngleWithRatio": 0,
+            "_useSourceDirectionRandomArcAngleStart": 0,
+            "_useSourceToTargetArcAngleWithRatio": 0,
+            "_useSourceToTargetRandomArcAngleStart": 0,
+            "_useStartToTarget": 0,
+            "_useTargetDirection": 0
+          },
+          "name": "projectile_amgoat_s3",
+          "script_path_id": 5247176549481151122
+        },
+        "-5707941094110785728": {
+          "fields": {
+            "_alwaysPlayStartEffects": 0,
+            "_clearEffectsOnTileOnStop": 0,
+            "_clearHitEffectOnStop": 0,
+            "_clearPlayEffectOnStop": 0,
+            "_clearReachedEffectWhenStop": 0,
+            "_effectOnTrigger": [],
+            "_effectsToTargetWhenStart": [],
+            "_effectsToTileWhenStart": [],
+            "_effectsWhenHit": [
+              "amgoat_skill_03_hit"
+            ],
+            "_effectsWhenReached": [],
+            "_effectsWhenStart": [],
+            "_effectsWhenStop": [],
+            "_followTargetGround": 0,
+            "_forceReachTargetGround": 0,
+            "_mainEffectToReplace": "",
+            "_onlyPlayHitEffectOnNotTraceTarget": 0,
+            "_onlyPlayHitEffectOnTraceTarget": 0,
+            "_onlyPlayHitEffectOnce": 0,
+            "_playStartEffectOnlyOnProjectile": 0,
+            "_repalceEffectsWhenHit": [],
+            "_replaceHitEffectAfterFirstHit": 0,
+            "_replaceMainEffectWhenReach": 0,
+            "_setReachEffectOnProjectile": 0,
+            "_syncEffectScaleViaProjectile": 0,
+            "_useSourceFaceVector": 0,
+            "_useSourceFaceVectorOnHit": 0,
+            "_useTraceTargetWhenReach": 0
+          },
+          "name": "projectile_amgoat_s3_logic",
+          "script_path_id": 6834194400804168919
+        },
+        "-6125679523861621837": {
+          "fields": {
+            "_actionController": {
+              "_addExtraBuffsWhenReached": 0,
+              "_detachAllBuffsWhenStopped": 0,
+              "_detachAllExtraBuffsWhenStopped": 0,
+              "_detachBuffsWhenTargetLeave": 0,
+              "_dontAddBuffs": 0,
+              "_excludeAttachments": 0,
+              "_extraBuffsInTheEnd": [],
+              "_onlyAddBuffsToTargetOnce": 0,
+              "_onlyAddBuffsToTraceTarget": 0,
+              "_useExtraBuffsWhenStopHit": 0,
+              "_useSelfBlackboard": 0
+            },
+            "_allowZeroBlockCntLimit": 0,
+            "_alwaysHitTraceTargetInTheEnd": 1,
+            "_alwaysHitTraceTargetWhenReached": 0,
+            "_alwaysReachInTheEnd": 0,
+            "_bodyTransform": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_canHitSameTargetMultipleTimes": 0,
+            "_clearMainEffectWhenReached": 1,
+            "_containsChildrenBehaviours": 0,
+            "_eliminatableStatus": 0,
+            "_fireProjectileReachedEvent": 0,
+            "_fixDealHitTargetLeft": 0,
+            "_getLifeTimeFromBB": 0,
+            "_getMaxHitNumFromBB": 0,
+            "_hitNumType": 1,
+            "_keepAlreadyHitTime": -1.0,
+            "_lifeTime": 10.0,
+            "_lifeTimeType": 1,
+            "_limitedMaxHitNumToSourceBlockedCnt": 0,
+            "_mainEffect": "amgoat_skill_03_trail",
+            "_managedBySource": 0,
+            "_maxHitNum": 1,
+            "_maxHitNumBBKey": "",
+            "_movementAdjustableStatus": 0,
+            "_overrideAudioSignal": "",
+            "_projectileType": 0,
+            "_randomDelayToBorn": 0.0,
+            "_stopAfterFirstHit": 0,
+            "_stopAfterMaxHit": 1,
+            "_stopGraphicProjectileWhenClearMainEffect": 0,
+            "_stopWhenSourceInvalid": 0
+          },
+          "name": "projectile_amgoat_s3_graphic",
+          "script_path_id": -8797129986015012478
+        },
+        "3132411465544176563": {
+          "fields": {
+            "_awayFromSourceAsDirection": 0,
+            "_comeBack": 0,
+            "_comeBackSpeedScale": 0.25,
+            "_delayAfterReached": 0,
+            "_delayTime": 0.0,
+            "_exactMatchCameraForward": 0,
+            "_fixOnProjectileReached": 0,
+            "_flyToPredefinedLocation": 0,
+            "_flyToTargetLocationOnly": 0,
+            "_forceReachedWhenTimeup": 1,
+            "_forceResetToTargetPosWhenReached": 0,
+            "_freezeRotationXY": 0,
+            "_freezeRotationZ": 0,
+            "_handleWithIBuildableTarget": 0,
+            "_inverseParacurve": 0,
+            "_noRaiseHeightThreshold": 1.2999999523162842,
+            "_onlyReachedInTime": 0.0,
+            "_predefinedLocation": 0,
+            "_raiseHeight": 0.15000000596046448,
+            "_randomHeightRange": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "_randomInverseParacurve": 0,
+            "_resetToTargetPosWhenReached": 0,
+            "_resetToTracetargetMapPosV3": 0,
+            "_rotateToTarget": 1,
+            "_sourceDirectionArcAngleRatio": 0.0,
+            "_speed": 6.0,
+            "_updateDelayTimeOnlyOnce": 0,
+            "_useRandomHeight": 0,
+            "_useSourceDirection": 0,
+            "_useSourceDirectionArcAngleWithRatio": 0,
+            "_useSourceDirectionRandomArcAngleStart": 0,
+            "_useSourceToTargetArcAngleWithRatio": 0,
+            "_useSourceToTargetRandomArcAngleStart": 0,
+            "_useStartToTarget": 0,
+            "_useTargetDirection": 0
+          },
+          "name": "projectile_amgoat_s3_graphic",
+          "script_path_id": 5247176549481151122
+        },
+        "4450274706545577792": {
+          "fields": {
+            "_actionController": {
+              "_addExtraBuffsWhenReached": 0,
+              "_detachAllBuffsWhenStopped": 0,
+              "_detachAllExtraBuffsWhenStopped": 0,
+              "_detachBuffsWhenTargetLeave": 0,
+              "_dontAddBuffs": 0,
+              "_excludeAttachments": 0,
+              "_extraBuffsInTheEnd": [],
+              "_onlyAddBuffsToTargetOnce": 0,
+              "_onlyAddBuffsToTraceTarget": 0,
+              "_useExtraBuffsWhenStopHit": 0,
+              "_useSelfBlackboard": 0
+            },
+            "_allowZeroBlockCntLimit": 0,
+            "_alwaysHitTraceTargetInTheEnd": 1,
+            "_alwaysHitTraceTargetWhenReached": 0,
+            "_alwaysReachInTheEnd": 0,
+            "_bodyTransform": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_canHitSameTargetMultipleTimes": 0,
+            "_clearMainEffectWhenReached": 1,
+            "_containsChildrenBehaviours": 0,
+            "_eliminatableStatus": 0,
+            "_fireProjectileReachedEvent": 0,
+            "_fixDealHitTargetLeft": 0,
+            "_getLifeTimeFromBB": 0,
+            "_getMaxHitNumFromBB": 0,
+            "_hitNumType": 1,
+            "_keepAlreadyHitTime": -1.0,
+            "_lifeTime": 10.0,
+            "_lifeTimeType": 1,
+            "_limitedMaxHitNumToSourceBlockedCnt": 0,
+            "_mainEffect": "",
+            "_managedBySource": 0,
+            "_maxHitNum": 1,
+            "_maxHitNumBBKey": "",
+            "_movementAdjustableStatus": 0,
+            "_overrideAudioSignal": "",
+            "_projectileType": 0,
+            "_randomDelayToBorn": 0.0,
+            "_stopAfterFirstHit": 0,
+            "_stopAfterMaxHit": 1,
+            "_stopGraphicProjectileWhenClearMainEffect": 0,
+            "_stopWhenSourceInvalid": 0
+          },
+          "name": "projectile_amgoat_s3_logic",
+          "script_path_id": -8797129986015012478
+        },
+        "7182187420840441854": {
+          "fields": {
+            "_alwaysPlayStartEffects": 0,
+            "_clearEffectsOnTileOnStop": 0,
+            "_clearHitEffectOnStop": 0,
+            "_clearPlayEffectOnStop": 0,
+            "_clearReachedEffectWhenStop": 0,
+            "_effectOnTrigger": [],
+            "_effectsToTargetWhenStart": [],
+            "_effectsToTileWhenStart": [],
+            "_effectsWhenHit": [
+              "amgoat_skill_03_hit"
+            ],
+            "_effectsWhenReached": [],
+            "_effectsWhenStart": [],
+            "_effectsWhenStop": [],
+            "_followTargetGround": 0,
+            "_forceReachTargetGround": 0,
+            "_mainEffectToReplace": "",
+            "_onlyPlayHitEffectOnNotTraceTarget": 0,
+            "_onlyPlayHitEffectOnTraceTarget": 0,
+            "_onlyPlayHitEffectOnce": 0,
+            "_playStartEffectOnlyOnProjectile": 0,
+            "_repalceEffectsWhenHit": [],
+            "_replaceHitEffectAfterFirstHit": 0,
+            "_replaceMainEffectWhenReach": 0,
+            "_setReachEffectOnProjectile": 0,
+            "_syncEffectScaleViaProjectile": 0,
+            "_useSourceFaceVector": 0,
+            "_useSourceFaceVectorOnHit": 0,
+            "_useTraceTargetWhenReach": 0
+          },
+          "name": "projectile_amgoat_s3",
+          "script_path_id": 6834194400804168919
+        },
+        "8183958927812605950": {
+          "fields": {
+            "_actionController": {
+              "_addExtraBuffsWhenReached": 0,
+              "_detachAllBuffsWhenStopped": 0,
+              "_detachAllExtraBuffsWhenStopped": 0,
+              "_detachBuffsWhenTargetLeave": 0,
+              "_dontAddBuffs": 0,
+              "_excludeAttachments": 0,
+              "_extraBuffsInTheEnd": [],
+              "_onlyAddBuffsToTargetOnce": 0,
+              "_onlyAddBuffsToTraceTarget": 0,
+              "_useExtraBuffsWhenStopHit": 0,
+              "_useSelfBlackboard": 0
+            },
+            "_allowZeroBlockCntLimit": 0,
+            "_alwaysHitTraceTargetInTheEnd": 1,
+            "_alwaysHitTraceTargetWhenReached": 0,
+            "_alwaysReachInTheEnd": 0,
+            "_bodyTransform": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_canHitSameTargetMultipleTimes": 0,
+            "_clearMainEffectWhenReached": 1,
+            "_containsChildrenBehaviours": 0,
+            "_eliminatableStatus": 0,
+            "_fireProjectileReachedEvent": 0,
+            "_fixDealHitTargetLeft": 0,
+            "_getLifeTimeFromBB": 0,
+            "_getMaxHitNumFromBB": 0,
+            "_hitNumType": 1,
+            "_keepAlreadyHitTime": -1.0,
+            "_lifeTime": 10.0,
+            "_lifeTimeType": 1,
+            "_limitedMaxHitNumToSourceBlockedCnt": 0,
+            "_mainEffect": "amgoat_skill_03_trail",
+            "_managedBySource": 0,
+            "_maxHitNum": 1,
+            "_maxHitNumBBKey": "",
+            "_movementAdjustableStatus": 0,
+            "_overrideAudioSignal": "",
+            "_projectileType": 0,
+            "_randomDelayToBorn": 0.0,
+            "_stopAfterFirstHit": 0,
+            "_stopAfterMaxHit": 1,
+            "_stopGraphicProjectileWhenClearMainEffect": 0,
+            "_stopWhenSourceInvalid": 0
+          },
+          "name": "projectile_amgoat_s3",
+          "script_path_id": -8797129986015012478
+        }
+      },
+      "native_skill_range": {
+        "direction": 1,
+        "grids": [
+          {
+            "col": 0,
+            "row": 3
+          },
+          {
+            "col": -1,
+            "row": 2
+          },
+          {
+            "col": 0,
+            "row": 2
+          },
+          {
+            "col": 1,
+            "row": 2
+          },
+          {
+            "col": -2,
+            "row": 1
+          },
+          {
+            "col": -1,
+            "row": 1
+          },
+          {
+            "col": 0,
+            "row": 1
+          },
+          {
+            "col": 1,
+            "row": 1
+          },
+          {
+            "col": 2,
+            "row": 1
+          },
+          {
+            "col": -3,
+            "row": 0
+          },
+          {
+            "col": -2,
+            "row": 0
+          },
+          {
+            "col": -1,
+            "row": 0
+          },
+          {
+            "col": 0,
+            "row": 0
+          },
+          {
+            "col": 1,
+            "row": 0
+          },
+          {
+            "col": 2,
+            "row": 0
+          },
+          {
+            "col": 3,
+            "row": 0
+          },
+          {
+            "col": -2,
+            "row": -1
+          },
+          {
+            "col": -1,
+            "row": -1
+          },
+          {
+            "col": 0,
+            "row": -1
+          },
+          {
+            "col": 1,
+            "row": -1
+          },
+          {
+            "col": 2,
+            "row": -1
+          },
+          {
+            "col": -1,
+            "row": -2
+          },
+          {
+            "col": 0,
+            "row": -2
+          },
+          {
+            "col": 1,
+            "row": -2
+          },
+          {
+            "col": 0,
+            "row": -3
+          }
+        ],
+        "id": "x-3"
+      },
+      "official_unit_complete": false,
+      "pending_mechanics": [
+        "full_unit_attributes_talents_and_deploy_lifecycle_pending",
+        "native_animation_playback_and_mode_transition_client_alignment_pending",
+        "native_range_table_correspondence_pending",
+        "native_mode_detach_end_tick_client_alignment_pending",
+        "native_rng_fsm_unknown",
+        "native_random_selector_selectNum_to_blackboard_max_target_binding_pending",
+        "skill_attack_signal_clock_unknown_explicit_command_probe_only",
+        "deploy_random_sp_and_caster_atk_talent_pending",
+        "native_projectile_arc_homing_alignment_pending"
+      ],
+      "source_hashes": {
+        "attack_helper": "e7fea206170ee3bd5fac8e9a04f1a4cceba399c8c78a62adba9b6848d1d165ff",
+        "charpack": "2e7e1a69a7544ea80de342fa7fb006724df09f58f3508aec116abe913be9d44a",
+        "effect_frames": "166a89e07893a9a551c4be91e3e41e7442f0e33c7e0306469ba8644f0c75f090",
+        "normalized": "1611fac32beb58d7aeb9e28ffb6cd4ebcfc3a5e6f955157a5dc3fab7ebb6824b",
+        "offensive_builder": "b1de930f234cf8c3b5e2f4cf32e43e844a75938174176e731a0e81c7c01f49c1",
+        "operator_source_lock": "999b9aa22b161ef9ec0f2e9a83cfb83555dcdd599ff4ca705f27ce0ffe38e8ee",
+        "projectile_cab": "1a359a23771c0a32bff3269a244b145ee5a5d67bcbd55f6ee3dc973f7bd3337c",
+        "range_json": "4d974598394630a1ad465b954321254397f514c7fb26cba944d320ac18b874d0",
+        "roster": "cc2d1543d2429c666ccf3d9eb264db573b87544adea8ceecd80c78caadfc1d4b"
+      },
+      "status": "partially_implemented",
+      "synthetic_attributes": true
+    },
+    "version": "1"
+  },
+  "scenarioDraft": {
+    "id": "scenario/char_180_amgoat_attack_recipe",
+    "initialEntities": [
+      {
+        "definition": "unit/char_180_amgoat_fixture",
+        "instanceAlias": "actor",
+        "position": {
+          "col": 1,
+          "row": 2
+        }
+      },
+      {
+        "definition": "unit/attack_recipe_target",
+        "instanceAlias": "target",
+        "position": {
+          "col": 2,
+          "row": 2
+        }
+      }
+    ],
+    "map": {
+      "cols": 6,
+      "rows": 5
+    },
+    "metadata": {
+      "not_formal_mainline": true,
+      "status": "partially_implemented"
+    },
+    "ruleset": "ruleset/ark_standard"
+  },
+  "schemaVersion": 2,
+  "selectors": [
+    {
+      "filters": [
+        {
+          "tag": "enemy"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "id": "selector/char_180_amgoat_attack",
+      "kind": "selector",
+      "limit": 1,
+      "region": {
+        "offsets": [
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            -1,
+            0
+          ],
+          [
+            -1,
+            1
+          ],
+          [
+            -1,
+            2
+          ]
+        ],
+        "rotate_with_facing": false,
+        "type": "grid_offsets"
+      }
+    },
+    {
+      "filters": [
+        {
+          "tag": "enemy"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "id": "selector/char_180_amgoat_s3_attack",
+      "kind": "selector",
+      "limit_attribute": "max_targets",
+      "region": {
+        "offsets": [
+          [
+            3,
+            0
+          ],
+          [
+            2,
+            -1
+          ],
+          [
+            2,
+            0
+          ],
+          [
+            2,
+            1
+          ],
+          [
+            1,
+            -2
+          ],
+          [
+            1,
+            -1
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            0,
+            -3
+          ],
+          [
+            0,
+            -2
+          ],
+          [
+            0,
+            -1
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            -1,
+            -2
+          ],
+          [
+            -1,
+            -1
+          ],
+          [
+            -1,
+            0
+          ],
+          [
+            -1,
+            1
+          ],
+          [
+            -1,
+            2
+          ],
+          [
+            -2,
+            -1
+          ],
+          [
+            -2,
+            0
+          ],
+          [
+            -2,
+            1
+          ],
+          [
+            -3,
+            0
+          ]
+        ],
+        "rotate_with_facing": false,
+        "type": "grid_offsets"
+      }
+    }
+  ],
+  "status": "partially_implemented"
+}

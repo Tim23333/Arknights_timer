@@ -1,0 +1,225 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/chapter03/crate_partial/selected_route_obstacle/reference_fee_weight_v2",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "source_locks": {
+        "packages/campaign/chapter03_plans/source.plan.json": "d7f1f3037ccbc47b7c41346ca6b73b0e653257d479a7ea5261c6c1c1ba97c5c6",
+        "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_external\\battle_prefabs_tokens.20250327.ab": "b9f16db4bfc8e8c880a0f90a1a7a74eda3b47c2188d0a151e5239d154716d475"
+      },
+      "builder_sha256": "ea3592709c5b5f8a3ec1e2852c89ce4b16b59a7c546823d64055f09aa9b02b69",
+      "native_cards": {
+        "initialCnt": 5,
+        "hidden": false,
+        "alias": null,
+        "uniEquipIds": null,
+        "showSpIllust": false,
+        "masterInfos": null,
+        "inst": {
+          "characterKey": "trap_001_crate",
+          "level": 1,
+          "phase": "PHASE_0",
+          "favorPoint": 0,
+          "potentialRank": 0
+        },
+        "skillIndex": 0,
+        "mainSkillLvl": 1,
+        "skinId": null,
+        "tmplId": null,
+        "overrideSkillBlackboard": null,
+        "overrideTalents": null
+      },
+      "required_battle_resources": {
+        "crate_cards": {
+          "initial": 5,
+          "capacity": 5
+        }
+      },
+      "native_runtime_ready": false,
+      "model_gaps": [
+        "Deploy-start cooldown must use new M63 consumer, not existing retire default",
+        "Reject placement that seals any configured original ground route requires new pure connectivity consumer"
+      ],
+      "client_feedback": [
+        "Source2025asset/currenttable correspondence",
+        "Native path obstacle cost comparator"
+      ],
+      "scope": "Actual stats, finite card requirement, cost/refund/terrain ownership; no complete crate claim",
+      "parent_partial_sha256": "167e67077038e24bd17d03552016710b3c8785a5005bd9e5ec0051d54393695a",
+      "obstacle_builder_sha256": "869c43a16ffa3212095e17b899ab518d1a6c93ca79218d5f46f0ce3ea45e74c9",
+      "required_core_contract": "blocking.obstacle",
+      "contact_policy": {
+        "radius": "sqrt(native _blockRadiusSquare .20000000298)",
+        "selected_path": "only actual remaining chosen weighted route cell contact",
+        "blocking_capacity": "independent from ordinary character blockCnt3; all movers can contact"
+      },
+      "parent_source_sha256": "7ba4d02d0ce44b14e5bf091fc6335267d3443073f3a4cc08de64a9ed32a56052",
+      "reference_checked_date": "2026-10-03",
+      "reference_url": "https://prts.wiki/w/障碍物",
+      "required_source_policies": {
+        "constant_deployment_cost": 5,
+        "cooldown_seconds": 5,
+        "cooldown_starts": "after_deploy",
+        "path_cost": 1000,
+        "forbid_sealing_ground_routes": true
+      },
+      "full_stage_executed": false,
+      "actual_client_verified": false
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/ch3/crate",
+      "kind": "entity",
+      "tags": [
+        "player",
+        "token",
+        "ground",
+        "route_obstacle"
+      ],
+      "metadata": {
+        "native_id": "trap_001_crate",
+        "native_config": {
+          "initialCnt": 5,
+          "hidden": false,
+          "alias": null,
+          "uniEquipIds": null,
+          "showSpIllust": false,
+          "masterInfos": null,
+          "inst": {
+            "characterKey": "trap_001_crate",
+            "level": 1,
+            "phase": "PHASE_0",
+            "favorPoint": 0,
+            "potentialRank": 0
+          },
+          "skillIndex": 0,
+          "mainSkillLvl": 1,
+          "skinId": null,
+          "tmplId": null,
+          "overrideSkillBlackboard": null,
+          "overrideTalents": null
+        },
+        "native_block_count_table": 3,
+        "declared_model_blocking": "Explicit selected-route obstacle contact, ordinary characterblock0; sourcecategory4 kept"
+      },
+      "components": {
+        "spatial": {},
+        "attributes": {
+          "base": {
+            "max_hp": 100,
+            "atk": 0,
+            "def": 0,
+            "mres": 0.0,
+            "block_count": 0,
+            "deploy_cost": 5,
+            "redeploy_time": 5,
+            "mass_level": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100,
+            "role": "health"
+          }
+        },
+        "abilities": [],
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "deployable": {
+          "base_cost": 5,
+          "cooldown_seconds": 5,
+          "refund_ratio": 0.5,
+          "capacity": 0,
+          "terrain": "ground",
+          "stock": {
+            "resource": "crate_cards",
+            "amount": 1
+          },
+          "parameters": {
+            "max_instances": 5,
+            "refund_cap_raw_ratio": 1.0
+          },
+          "rules": {
+            "deploy.cost": "rule/ch3/crate_fixed_fee"
+          }
+        },
+        "selection_state": {
+          "side": 0,
+          "motion": 1,
+          "category": 4,
+          "unit_type": 4
+        },
+        "terrain_overlays": [
+          {
+            "key": "native_crate",
+            "priority": 0,
+            "values": {
+              "buildableType": 0,
+              "obstacleLikeMoveCost": true,
+              "physicalHeight": 0.4000000059604645
+            },
+            "preserve": [
+              "passableMask"
+            ],
+            "rule": "rule/ch3/crate_reference_weight"
+          }
+        ],
+        "route_obstacle": {
+          "rule": "rule/ch3/crate_obstacle_contact",
+          "contact_radius": 0.4472135988319589,
+          "parameters": {
+            "allowed_source_side": 1,
+            "obstacle_side": 0
+          }
+        }
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/ch3/crate_obstacle_contact",
+      "kind": "rule",
+      "contract": "blocking.obstacle",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.source.components.selection_state.side == inputs.parameters.allowed_source_side and inputs.obstacle.components.selection_state.side == inputs.parameters.obstacle_side"
+      }
+    },
+    {
+      "id": "rule/ch3/crate_fixed_fee",
+      "kind": "rule",
+      "contract": "deploy.cost",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.base_cost"
+      },
+      "metadata": {
+        "reference": "https://prts.wiki/w/障碍物",
+        "policy": "Source device base cost5 for each finite card; does not inherit operator repeat_ratio"
+      }
+    },
+    {
+      "id": "rule/ch3/crate_reference_weight",
+      "kind": "rule",
+      "contract": "terrain.tile_options",
+      "parameters": {
+        "obstacle_like_cost": 1000,
+        "normal_cost": 1
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.terrain.tile_options"
+      },
+      "metadata": {
+        "reference": "https://prts.wiki/w/障碍物",
+        "policy": "Declared reference typical obstacle path weight1000; passableMask is preserved, not a permanent walk wall"
+      }
+    }
+  ]
+}

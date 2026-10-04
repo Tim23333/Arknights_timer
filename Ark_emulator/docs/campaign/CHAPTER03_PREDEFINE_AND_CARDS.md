@@ -1,0 +1,23 @@
+# 第三章原生预放置与有限卡片接线
+
+3-7源predefines有一个trap_005_sensor（E0L60、skillIndex0、mainSkillLvl1、hiddenFalse、UP、native row4col3）和五张trap_001_crate（E0L1、同技能配置）。完整原记录位于d7f1源计划；十二人编队覆盖不能删除它们。地图坐标转换仍按原native row→rows−1−row。
+
+Sensor实际表endpoint L1/L30相同，原配置L60超普通maxLevel30，必须用明确常值NPCprofile保原配置与数值。源自INVINCIBLE5和揭露免疫INVISIBLE9要走原始枚举消费者，手动SP15/初0/回复1/持续20秒与25格range不能缩成全局揭露。技能SP冻结、真实范围加入/移出、源退出、隐身Buff底层保持由M49独立原语实现。
+
+Crate源技能被动，无攻击数值，table HP100/cost5/respawn5/blockCnt3保数据。TrapMode关键是keepCurrentPassableMask1与obstacleLikeCost1；不能把raw passable0直接当绝对墙，也不能把名义block3自动当普通盾阻挡。源描述支持敌人改路径、阻碍时破坏障碍，仍需明确加权路径／阻挡与攻击目标策略。
+
+通用部署当前只有roster、max_instances、冷却、DP和capacity，没用源有限卡片stock。建议新内容显式`deployable.stock`引用battle资源，每次**成功部署**在同一公开deploy原子事务支付1；失败位置/DP/capacity不能扣stock，撤退/死亡是否返卡由源显式策略。场景初始stock5，不把同时max_instances1当只可用1次卡片。deploy.prepare/record和owned spawn需共享消费者，不限官方crateID，schema/compiler必须检查stock resource存在/成本合法、未知字段拒绝，原无stock路径保旧语义。
+
+现M48 terrain overlay已能声明buildable0、保passable、obstacleLikeMoveCost和physicalHeight；现纯tile_options/路径规则可替换，但活跃实体阻挡cost与source破坏目标语义必须实际测试。每层由source actor持有，死亡／撤退清理，失败整atomic恢复stock/DP/path/World/RNG/事件，完整CP/回放。
+
+该文档是下一开发接口，不是已执行crate/sensor模型。源装置body与旧2025包体差异保用户后续反馈，功能消费者、有限卡片和路线/攻击行为仍属于本轮必需开发工作。
+
+Root已新增M50库存consumer（73checks通过，peer/首关基线继续），并生成明确partial crate源包`chapter03_traps/crate.partial.reference_model.json` SHA`fb568c12de476d2128571b0c7474af37304a5910f2c0b69eef9a0463d29ddb8c`。源全部TT重读，HP100／cost5／refund.5／五张stock／deploycapacity0、保passable／buildable0／obstacleLikeCost1／physicalheight.40000000596均实际接线。一次publicdeploy实消stock5→4/DP100→95，HP100，公开withdrawDP97.5/库存仍4/terrainownerlayer全清，完整replay等，报告`validation/campaign/m50_stock/crate_source_tests.json`。
+
+该partial禁止完整crate声明：普通阻挡暂显式0不借blockCnt3假装源障碍算法，源table3保metadata，weighted route/destruction/passive状态仍是真开发缺口。原底图passableMask实际1保1，测试不能猜3；保持原mask规则在其他底图同样适用。把opaque分支“硬墙”改成保mask源消费并不证明完整路线正确，必须另实现障碍代价/堵路攻击。
+
+现有通用tile_options声明obstacleLikeMoveCost→movementCost3和Dijkstra确可复用；新增实际两个crate公开部署的2×4地图测试，保持两cell passable，路线绕下排而不穿两个成本3cell，库存3，完整回放相同。源只定义obstacleLike开关，成本3是显式可替换数学默认，不能说恢复native成本。两partial源场景共2pass1.66秒。无绕路时选择障碍、逼近并破坏、有限卡片再部署仍需实际consumer与主关触发见证。
+
+独立源审查更正类别：currentdump EntityCategory DEFAULT1/TRAP_OR_ITEM2/OBSTACLE4，crate实际Token._category4必须保OBSTACLE4，不能改2迁就普通敌方selector。新partial SHA`167e67077038e24bd17d03552016710b3c8785a5005bd9e5ec0051d54393695a`直接消费root类别，原category2版本另存历史；两source测试在M51包括Worldcategory4断言fresh通过1.70秒。Sensor若root没有序列category，其既有category2仅声明默认，不当原生字段证明。后续障碍攻击资格按actualcategory4与sourceconsumer单独实现。
+
+新离线converter_v2扩展PREVIEW_CURSOR和显式nativepredefined profile：保两preview原路线元数据、实际control管理clock，不把预览占位route当出生；instance逐原记录绑定/坐标方向，card逐原配置和stock资源initial/capacity=count5，缺consumer/错count/错坐标/覆盖源DP直接拒。3-7原61birth/5control审计及六拒件共7checks实际通过；dummyunit场景只作converter source审计，不可编译/计整关，实际sensor与crate输入必须等待M49/M51组合/完整sourceclosure。旧converter工具及已运行输入未改。

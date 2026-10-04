@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/ch6/training_exit_credit",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "source_locks": {
+        "packages\\campaign\\chapter06_plans\\source.plan.json": "d310c3f98408b2686be3f065ab6212e552451b7505ec083a62418db564941608"
+      },
+      "native_flags": {
+        "combined_action_flag": true,
+        "unharmful": true,
+        "always_count_as_killed": true
+      },
+      "scope": "Source-declared options consumed by explicit exit-only reference policy, no enemy attack/boss/NPC/story implementation",
+      "reference_policy": "Unharmful prevents base life loss on route exit; alwaysCountAsKilled gives scenario kill credit on exit. Real exited actor is not combat dead. Does not suppress outgoing combat damage.",
+      "native_body_verified": false,
+      "whole_stage_executed": false,
+      "client_verified": false
+    }
+  },
+  "rules": [
+    {
+      "id": "rule/ch6/training_exit_credit",
+      "kind": "calculation_rule",
+      "contract": "lifecycle.exit",
+      "implementation": {
+        "type": "expression",
+        "expression": "{'base_life_loss': 0 if inputs.exit_parameters.unharmful else inputs.exit_parameters.loss, 'kills_delta': 1 if inputs.exit_parameters.always_count_as_killed else 0, 'leaks_delta': 0 if inputs.exit_parameters.always_count_as_killed else 1}"
+      }
+    }
+  ],
+  "actionLifecycleProfile": {
+    "native_id": "level_main_06-15",
+    "wave": 0,
+    "fragment": 0,
+    "action": 0,
+    "native_action": {
+      "actionType": "SPAWN",
+      "managedByScheduler": true,
+      "key": "enemy_1510_frstar2_s",
+      "count": 1,
+      "preDelay": 0.0,
+      "interval": 1.0,
+      "routeIndex": 0,
+      "blockFragment": false,
+      "autoPreviewRoute": false,
+      "autoDisplayEnemyInfo": false,
+      "isUnharmfulAndAlwaysCountAsKilled": true,
+      "hiddenGroup": null,
+      "randomSpawnGroupKey": null,
+      "randomSpawnGroupPackKey": null,
+      "randomType": "ALWAYS",
+      "refreshType": "ALWAYS",
+      "weight": 0,
+      "dontBlockWave": false,
+      "forceBlockWaveInBranch": false
+    },
+    "lifecycle": {
+      "exit_rule": "rule/ch6/training_exit_credit",
+      "exit_parameters": {
+        "unharmful": true,
+        "always_count_as_killed": true,
+        "loss": 1
+      }
+    }
+  }
+}

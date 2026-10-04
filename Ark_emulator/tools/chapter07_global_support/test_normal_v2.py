@@ -1,0 +1,8 @@
+"""Own exact12frame source damage/current aura and real DP/no-SP normal attack."""
+import sys
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT.parent/'unpack_work/campaign_finish_timeline_wave_v4_candidate'));sys.path.insert(1,str(ROOT))
+from ark_sim import Compiler,Engine
+from tools.chapter07_global_support.test_source_v2 import package
+def test_source_normal12frame_81cycle_with_actual_self10percent_and_DP7():
+ p=package();p['entities'].append({'id':'unit/global/blocker','kind':'entity','tags':['player'],'components':{'attributes':{'base':{'max_hp':10000,'atk':0,'def':100,'mres':0,'block_count':1}},'resources':{'hp':{'initial':10000,'capacity':10000,'role':'health'}},'selection_state':{'side':0,'motion':1,'category':1,'unit_type':1},'spatial':{},'deployable':{'base_cost':7,'capacity':1,'cooldown_seconds':0,'terrain':'ground'},'lifecycle':{'policy':'policy/ark_lifecycle'}}});p['scenarioDraft']['resources']={'dp':{'initial':20,'capacity':99}};p['scenarioDraft']['roster']=['unit/global/blocker'];p['scenarioDraft']['initialEntities'][0]['route']={'motionMode':'WALK','startPosition':{'row':0,'col':0},'endPosition':{'row':0,'col':4},'checkpoints':[]};s=Engine.create(Compiler().compile(p));s.submit({'action':'deploy','definition':'unit/global/blocker','alias':'blocker','position':{'row':0,'col':0}},at=0);s.session.advance(100);hits=[e for e in s.snapshot()['events'] if e['type']=='damage.accepted'];assert [(e['time'],e['payload']['amount']) for e in hits]==[(13,230),(94,230)];assert s.ctx.resources.current('system/battle','dp')==13 and set(s.ctx.entity('commander1')['components']['resources'])=={'hp'}

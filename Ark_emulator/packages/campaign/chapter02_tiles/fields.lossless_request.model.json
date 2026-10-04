@@ -1,0 +1,480 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/chapter02_tile_field_reference_model/lossless_request",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "source_locks": {
+        "packages/campaign/chapter02_tiles/source.reference.json": "fc5ea7050014f56b5725be44805c9c81d17e157615a7eeb7c5d64401059610af",
+        "packages/campaign/chapter02_tiles/buffs.motion_state.partial.json": "25d8b684b3ed96f4274feeaab65a455db07550ab5f06575cdf7b972f19b62c10"
+      },
+      "builder_sha256": "71af4c4ca31762763d61ec90cc4d7dabfee6b242fb8f920c80e08b49f787ed83",
+      "declared_policy": "BuffTile ALLY uses explicit virtual side0 owner; advanced options disabled; typed source qualification",
+      "feedback_pending": [
+        "native target-category getters and tile permission semantics",
+        "native world-to-cell boundary precision and hook rounding order"
+      ],
+      "actual_client_verified": false,
+      "request_builder_sha256": "c211522bc865ea0f419bc558ac77889c6528b71e89f432bec479e7b3cac3fda5",
+      "request_parent_locks": {
+        "packages/campaign/chapter02_tiles/buffs.motion_state.partial.json": "25d8b684b3ed96f4274feeaab65a455db07550ab5f06575cdf7b972f19b62c10",
+        "packages/campaign/chapter02_tiles/fields.reference_model.json": "b35e21da93109e4d32b17cc413dcf5d2744d36b5bbf90c251171cb136e45f167"
+      },
+      "required_core_provider": "model.damage.request_field_transform"
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/ch2/field/tile_healing",
+      "kind": "entity",
+      "tags": [
+        "tile_field_owner"
+      ],
+      "components": {
+        "spatial": {},
+        "selection_state": {
+          "side": 0,
+          "motion": 1,
+          "category": 1,
+          "profession": 0,
+          "unit_type": 4,
+          "target_free": false,
+          "ally_target_free": false,
+          "heal_free": false,
+          "camouflage": false,
+          "can_select_camouflage": false,
+          "abnormal_flags": [],
+          "abnormal_combos": [],
+          "target_free_flags": [],
+          "target_free_combos": []
+        },
+        "buffs": {
+          "initial": [
+            "buff/ch2/field/tile_healing"
+          ]
+        }
+      },
+      "metadata": {
+        "native_tile_key": "tile_healing",
+        "virtual_field_owner": true
+      }
+    },
+    {
+      "id": "unit/ch2/field/tile_gazebo",
+      "kind": "entity",
+      "tags": [
+        "tile_field_owner"
+      ],
+      "components": {
+        "spatial": {},
+        "selection_state": {
+          "side": 0,
+          "motion": 1,
+          "category": 1,
+          "profession": 0,
+          "unit_type": 4,
+          "target_free": false,
+          "ally_target_free": false,
+          "heal_free": false,
+          "camouflage": false,
+          "can_select_camouflage": false,
+          "abnormal_flags": [],
+          "abnormal_combos": [],
+          "target_free_flags": [],
+          "target_free_combos": []
+        },
+        "buffs": {
+          "initial": [
+            "buff/ch2/field/tile_gazebo"
+          ]
+        }
+      },
+      "metadata": {
+        "native_tile_key": "tile_gazebo",
+        "virtual_field_owner": true
+      }
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/ch2/field/tile_healing",
+      "kind": "selector",
+      "region": {
+        "type": "grid_offsets",
+        "offsets": [
+          [
+            0,
+            0
+          ]
+        ],
+        "rotate_with_facing": false
+      },
+      "filters": [
+        {
+          "state": "alive"
+        }
+      ],
+      "eligibility": {
+        "rule": "rule/ch2/tile_qualification",
+        "parameters": {
+          "source_configuration": {
+            "_targetSide": 1,
+            "_targetMotion": 3,
+            "_targetCategory": 1,
+            "_enableAdvancedOptions": 0,
+            "_ignoreTargetFree": 0,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_ignoreTargetSide": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_containSomeAbnormalFlags": 0,
+            "_excludeAbnormalFlag": 0,
+            "_containAbnormalFlag": 0,
+            "_purposeMask": 0,
+            "_professionMask": 0,
+            "_checkUnitType": 0,
+            "_unitTypeMask": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_abnormalFlag": 0,
+            "_abnormalCombo": 0,
+            "_needProfessionMask": 0,
+            "_forceIgnoreCamouflage": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject",
+          "defaults": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "profession": 0,
+            "unit_type": 4,
+            "target_free": false,
+            "ally_target_free": false,
+            "heal_free": false,
+            "camouflage": false,
+            "can_select_camouflage": false,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": []
+          }
+        }
+      },
+      "metadata": {
+        "native_target_options": {
+          "targetSide": 1,
+          "targetMotion": 3,
+          "targetCategory": 1,
+          "enableAdvancedOptions": 0,
+          "ignoreTargetFree": 0,
+          "ignoreAllyTargetFree": 0,
+          "ignoreHealFree": 0,
+          "ignoreMotionMode": 0,
+          "ignoreTargetSide": 0,
+          "excludeSomeAbnormalFlags": 0,
+          "containSomeAbnormalFlags": 0,
+          "excludeAbnormalFlag": 0,
+          "containAbnormalFlag": 0,
+          "purposeMask": 0,
+          "professionMask": 0,
+          "checkUnitType": 0,
+          "unitTypeMask": 0,
+          "onlyIgnoreSomeOfTargetFreeCase": 0,
+          "abnormalFlag": 0,
+          "abnormalCombo": 0
+        },
+        "advanced_disabled": true
+      }
+    },
+    {
+      "id": "selector/ch2/field/tile_gazebo",
+      "kind": "selector",
+      "region": {
+        "type": "grid_offsets",
+        "offsets": [
+          [
+            0,
+            0
+          ]
+        ],
+        "rotate_with_facing": false
+      },
+      "filters": [
+        {
+          "state": "alive"
+        }
+      ],
+      "eligibility": {
+        "rule": "rule/ch2/tile_qualification",
+        "parameters": {
+          "source_configuration": {
+            "_targetSide": 1,
+            "_targetMotion": 3,
+            "_targetCategory": 1,
+            "_enableAdvancedOptions": 0,
+            "_ignoreTargetFree": 0,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_ignoreTargetSide": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_containSomeAbnormalFlags": 0,
+            "_excludeAbnormalFlag": 0,
+            "_containAbnormalFlag": 0,
+            "_purposeMask": 0,
+            "_professionMask": 0,
+            "_checkUnitType": 0,
+            "_unitTypeMask": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_abnormalFlag": 0,
+            "_abnormalCombo": 0,
+            "_needProfessionMask": 0,
+            "_forceIgnoreCamouflage": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject",
+          "defaults": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "profession": 0,
+            "unit_type": 4,
+            "target_free": false,
+            "ally_target_free": false,
+            "heal_free": false,
+            "camouflage": false,
+            "can_select_camouflage": false,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": []
+          }
+        }
+      },
+      "metadata": {
+        "native_target_options": {
+          "targetSide": 1,
+          "targetMotion": 3,
+          "targetCategory": 1,
+          "enableAdvancedOptions": 0,
+          "ignoreTargetFree": 0,
+          "ignoreAllyTargetFree": 0,
+          "ignoreHealFree": 0,
+          "ignoreMotionMode": 0,
+          "ignoreTargetSide": 0,
+          "excludeSomeAbnormalFlags": 0,
+          "containSomeAbnormalFlags": 0,
+          "excludeAbnormalFlag": 0,
+          "containAbnormalFlag": 0,
+          "purposeMask": 0,
+          "professionMask": 0,
+          "checkUnitType": 0,
+          "unitTypeMask": 0,
+          "onlyIgnoreSomeOfTargetFreeCase": 0,
+          "abnormalFlag": 0,
+          "abnormalCombo": 0
+        },
+        "advanced_disabled": true
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/ch2/healing_tile_member/field_owned",
+      "kind": "buff",
+      "stacking": {
+        "mode": "independent"
+      },
+      "modifiers": [
+        {
+          "attribute": "hp_ratio_recovery",
+          "layer": "flat",
+          "value": 0.03
+        }
+      ],
+      "metadata": {
+        "native_buff": {
+          "attributes": {
+            "abnormalFlags": [],
+            "abnormalImmunes": [],
+            "abnormalAntis": [],
+            "abnormalCombos": [],
+            "abnormalComboImmunes": [],
+            "attributeModifiers": [
+              {
+                "attributeType": 19,
+                "formulaItem": 0,
+                "value": 0.0,
+                "loadFromBlackboard": 1,
+                "fetchBaseValueFromSourceEntity": 0
+              }
+            ]
+          },
+          "buffKey": "tile_healing",
+          "loadFromDB": 0,
+          "isDurableBuff": 0,
+          "isDamageMissable": 0,
+          "isSilenceable": 0,
+          "isStunnable": 0,
+          "isFreezable": 0,
+          "isLevitatable": 0,
+          "isGroundBoundable": 0,
+          "statusResistable": 2,
+          "templateKey": "empty",
+          "disableOverride": 0,
+          "overrideKey": "",
+          "overrideType": 0,
+          "maxStackCnt": 1,
+          "refreshRemainingTimeWhenStackMax": 0,
+          "clearAllStackCntWhenTimeUp": 0,
+          "maxValidStackCnt": -1,
+          "independentCharacterSource": 0,
+          "overrideEffectKey": "",
+          "overrideOnEventPriority": 0,
+          "onEventPriority": 0,
+          "audioSignal": "",
+          "lifeTimeType": 2,
+          "takeSnapshotWhenExtend": 0,
+          "durationKey": "",
+          "lifeTime": 0.0,
+          "triggerLifeType": 0,
+          "triggerCnt": 0,
+          "triggerInterval": -1.0,
+          "waitFirstTriggerInterval": 1,
+          "firstTriggerInterval": -1.0,
+          "priority": -1,
+          "priorityBBKeys": [],
+          "stripBlackboardParamsWithBuffKey": 0,
+          "blackboard": [],
+          "enableInitDirectionFromSource": 0
+        },
+        "requires_target_hp_resource_driver": true,
+        "parent_operand_definition": "buff/ch2/healing_tile_member",
+        "declared_stacking_adapter": "One owned child per occupied tile; ordinary actor occupies one projected cell. Native maxStack callbacks remain user feedback."
+      }
+    },
+    {
+      "id": "buff/ch2/field/tile_healing",
+      "kind": "buff",
+      "aura": {
+        "selector": "selector/ch2/field/tile_healing",
+        "buff": "buff/ch2/healing_tile_member/field_owned"
+      },
+      "metadata": {
+        "source_tile": "tile_healing",
+        "source_clear_when_left": 1,
+        "lifetime": "explicit infinite parent; member owned by each tile source"
+      }
+    },
+    {
+      "id": "buff/ch2/gazebo_member/field_owned",
+      "kind": "buff",
+      "stacking": {
+        "mode": "independent"
+      },
+      "modifiers": [
+        {
+          "attribute": "attack_speed_ratio",
+          "layer": "flat",
+          "value": -0.2
+        }
+      ],
+      "damage_hooks": [
+        {
+          "phase": "before",
+          "rule": "rule/ch2/gazebo_flying_scale",
+          "condition": "inputs.target.components.selection_state.motion in [2, 3]"
+        }
+      ],
+      "metadata": {
+        "native_buff": {
+          "attributes": {
+            "abnormalFlags": [],
+            "abnormalImmunes": [],
+            "abnormalAntis": [],
+            "abnormalCombos": [],
+            "abnormalComboImmunes": [],
+            "attributeModifiers": [
+              {
+                "attributeType": 7,
+                "formulaItem": 0,
+                "value": 0.0,
+                "loadFromBlackboard": 1,
+                "fetchBaseValueFromSourceEntity": 0
+              }
+            ]
+          },
+          "buffKey": "tile_gazebo",
+          "loadFromDB": 0,
+          "isDurableBuff": 0,
+          "isDamageMissable": 0,
+          "isSilenceable": 0,
+          "isStunnable": 0,
+          "isFreezable": 0,
+          "isLevitatable": 0,
+          "isGroundBoundable": 0,
+          "statusResistable": 2,
+          "templateKey": "airforce_enhance",
+          "disableOverride": 0,
+          "overrideKey": "",
+          "overrideType": 0,
+          "maxStackCnt": 1,
+          "refreshRemainingTimeWhenStackMax": 0,
+          "clearAllStackCntWhenTimeUp": 0,
+          "maxValidStackCnt": -1,
+          "independentCharacterSource": 0,
+          "overrideEffectKey": "",
+          "overrideOnEventPriority": 0,
+          "onEventPriority": 0,
+          "audioSignal": "",
+          "lifeTimeType": 2,
+          "takeSnapshotWhenExtend": 0,
+          "durationKey": "",
+          "lifeTime": 0.0,
+          "triggerLifeType": 0,
+          "triggerCnt": 0,
+          "triggerInterval": -1.0,
+          "waitFirstTriggerInterval": 1,
+          "firstTriggerInterval": -1.0,
+          "priority": -1,
+          "priorityBBKeys": [],
+          "stripBlackboardParamsWithBuffKey": 0,
+          "blackboard": [],
+          "enableInitDirectionFromSource": 0
+        },
+        "attack_speed_encoding": "explicit model percent points /100",
+        "native_hook_order_verified": false,
+        "target_motion_adapter": "explicit typed selection_state.motion mask contains FLY2; missing state rejects, no identifier/tag fallback",
+        "parent_operand_definition": "buff/ch2/gazebo_member",
+        "declared_stacking_adapter": "One owned child per occupied tile; ordinary actor occupies one projected cell. Native maxStack callbacks remain user feedback."
+      }
+    },
+    {
+      "id": "buff/ch2/field/tile_gazebo",
+      "kind": "buff",
+      "aura": {
+        "selector": "selector/ch2/field/tile_gazebo",
+        "buff": "buff/ch2/gazebo_member/field_owned"
+      },
+      "metadata": {
+        "source_tile": "tile_gazebo",
+        "source_clear_when_left": 1,
+        "lifetime": "explicit infinite parent; member owned by each tile source"
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/ch2/tile_qualification",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.targeting.eligibility"
+      }
+    }
+  ]
+}

@@ -1,0 +1,648 @@
+{
+  "schema": "ark-sim/chapter05-source-inventory/v1",
+  "fixed_commit": "56aee3d6c5a29c3a0d192456d70d14252cbb0804",
+  "source_sha256": {
+    "plan": {
+      "path": "packages/campaign/chapter05_plans/source.plan.json",
+      "sha256": "c33c5a199fce73ef7b7524e0d29e59eeca6eb69a7f2ebd7d8c253634b050bee6"
+    },
+    "enemies": {
+      "path": "packages/campaign/chapter05_sources/native.reference.json",
+      "sha256": "323baee04eca79f6e750cf45d460ffe678667c1614763814436402e8187badd5"
+    },
+    "environment": {
+      "path": "packages/campaign/chapter05_environment/source.reference.json",
+      "sha256": "60bdcf77e16d55cec2a81b0902cf44a9fb144f418d8da63f252a2cf84b58f17c"
+    },
+    "predefines": {
+      "path": "packages/campaign/chapter05_predefines/source.reference.json",
+      "sha256": "10cf48e1550983d192c33243280c764d100e1ac401f11be8d55334b7cf591faf"
+    },
+    "ordinary": {
+      "path": "packages/campaign/chapter05_units/ordinary.reference_model.json",
+      "sha256": "dda894f38a083eb7f5edb54e051498e68dfd592cf8e4773ad9e582007688919b"
+    }
+  },
+  "native_enum_source": {
+    "path": "Ark_data/dump.cs",
+    "sha256": "d25fb9fb7ec81253f112d9090e4550cd37a273ace56085d37610bb67c1e3a88f",
+    "enums": {
+      "CheckpointType": {
+        "line": 173879,
+        "raw": "public enum CheckpointType // TypeDefIndex: 4628\n{\n\t// Fields\n\tpublic int value__; // 0x0\n\tpublic const CheckpointType MOVE = 0;\n\tpublic const CheckpointType WAIT_FOR_SECONDS = 1;\n\tpublic const CheckpointType WAIT_FOR_PLAY_TIME = 2;\n\tpublic const CheckpointType WAIT_CURRENT_FRAGMENT_TIME = 3;\n\tpublic const CheckpointType WAIT_CURRENT_WAVE_TIME = 4;\n\tpublic const CheckpointType DISAPPEAR = 5;\n\tpublic const CheckpointType APPEAR_AT_POS = 6;\n\tpublic const CheckpointType ALERT = 7;\n\tpublic const CheckpointType PATROL_MOVE = 8;\n\tpublic const CheckpointType WAIT_BOSSRUSH_WAVE = 9;\n\tpublic const CheckpointType MAP_OFFSET_MOVE = 10;\n\tpublic const CheckpointType INVALID = 11;\n}",
+        "version_alignment_verified": false,
+        "runtime_consumer_verified": false
+      },
+      "DamageType": {
+        "line": 368634,
+        "raw": "public enum DamageType // TypeDefIndex: 9774\n{\n\t// Fields\n\tpublic int value__; // 0x0\n\tpublic const DamageType NONE = 0;\n\tpublic const DamageType PHYSICAL = 1;\n\tpublic const DamageType MAGICAL = 2;\n\tpublic const DamageType PURE = 3;\n\tpublic const DamageType HEAL = 4;\n\tpublic const DamageType ELEMENT = 5;\n\tpublic const DamageType E_NUM = 6;\n}",
+        "version_alignment_verified": false,
+        "runtime_consumer_verified": false
+      },
+      "SideType": {
+        "line": 368598,
+        "raw": "public enum SideTypeIndex // TypeDefIndex: 9771\n{\n\t// Fields\n\tpublic int value__; // 0x0\n\tpublic const SideTypeIndex ALLY = 0;\n\tpublic const SideTypeIndex ENEMY = 1;\n\tpublic const SideTypeIndex NEUTRAL = 2;\n\tpublic const SideTypeIndex ENUM = 3;\n}",
+        "version_alignment_verified": false,
+        "runtime_consumer_verified": false
+      },
+      "PlayerSide": {
+        "line": 1457283,
+        "raw": "public enum PlayerSide // TypeDefIndex: 37901\n{\n\t// Fields\n\tpublic int value__; // 0x0\n\tpublic const PlayerSide INVALID = -1;\n\tpublic const PlayerSide DEFAULT = 0;\n\tpublic const PlayerSide SIDE_A = 1;\n\tpublic const PlayerSide SIDE_B = 2;\n\tpublic const PlayerSide E_NUM = 3;\n}",
+        "version_alignment_verified": false,
+        "runtime_consumer_verified": false
+      },
+      "AbnormalFlag": {
+        "line": 1457160,
+        "raw": "public enum AbnormalFlag // TypeDefIndex: 37894\n{\n\t// Fields\n\tpublic int value__; // 0x0\n\tpublic const AbnormalFlag STUNNED = 0;\n\tpublic const AbnormalFlag SP_RECOVER_STOPPED = 1;\n\tpublic const AbnormalFlag TARGET_FREE = 2;\n\tpublic const AbnormalFlag BLOCK_FREE = 3;\n\tpublic const AbnormalFlag HIDDEN = 4;\n\tpublic const AbnormalFlag INVINCIBLE = 5;\n\tpublic const AbnormalFlag UNDEADABLE = 6;\n\tpublic const AbnormalFlag HEAL_FREE = 7;\n\tpublic const AbnormalFlag UNBALANCE_IMMUNE = 8;\n\tpublic const AbnormalFlag INVISIBLE = 9;\n\tpublic const AbnormalFlag UNUSED_PLACEHOLDER_2 = 14;\n\tpublic const AbnormalFlag ALLY_TARGET_FREE = 15;\n\tpublic const AbnormalFlag UNUSED_PLACEHOLDER_1 = 10;\n\tpublic const AbnormalFlag DISARMED = 11;\n\tpublic const AbnormalFlag SILENCED = 12;\n\tpublic const AbnormalFlag UNMOVABLE = 13;\n\tpublic const AbnormalFlag FROZEN = 16;\n\tpublic const AbnormalFlag CAMOUFLAGE = 17;\n\tpublic const AbnormalFlag FORCE_DISARMED = 18;\n\tpublic const AbnormalFlag STUNNED_NO_AMPLIFY_DAMAGE = 19;\n\tpublic const AbnormalFlag DISABLE_COMBAT = 20;\n\tpublic const AbnormalFlag ELEMENT_FREE_ALL = 21;\n\tpublic const AbnormalFlag UNMOVABLE_PRIVATE = 22;\n\tpublic const AbnormalFlag COLD = 23;\n\tpublic const AbnormalFlag SKILL_NOT_ACTIVATABLE = 24;\n\tpublic const AbnormalFlag LEVITATE = 25;\n\tpublic const AbnormalFlag DURANCE = 26;\n\tpublic const AbnormalFlag NOT_WITHDRAWABLE = 27;\n\tpublic const AbnormalFlag OUT_OF_GROUND = 28;\n\tpublic const AbnormalFlag SP_MODIFY_STOPPED = 29;\n\tpublic const AbnormalFlag ANTI_STATUS_RESISTABLE = 30;\n\tpublic const AbnormalFlag DISARMED_COMBAT = 31;\n\tpublic const AbnormalFlag TOWER_TARGET_FREE = 32;\n\tpublic const AbnormalFlag FEARED = 33;\n\tpublic const AbnormalFlag SKILL_ACTIVABLE_IN_ABNORMAL = 34;\n\tpublic const AbnormalFlag MOTION_TARGET_FREE = 35;\n\tpublic const AbnormalFlag FORCE_LEVITATE = 36;\n\tpublic const AbnormalFlag BUFF_ADD_CAN_BE_CANCELED_IF_DEFENSE = 37;\n\tpublic const AbnormalFlag DEFENSE_BUFF_ADD_IF_CANCELABLE_BUFF = 38;\n\tpublic const AbnormalFlag PALSY = 39;\n\tpublic const AbnormalFlag PALSYING = 40;\n\tpublic const AbnormalFlag ATTRACTED = 41;\n\tpublic const AbnormalFlag FEARED_PRIVATE = 42;\n\tpublic const AbnormalFlag DOZE = 43;\n\tpublic const AbnormalFlag TELEPORTED = 44;\n\tpublic const AbnormalFlag GROUND_BOUND = 45;\n\tpublic const AbnormalFlag E_NUM = 46;\n}",
+        "version_alignment_verified": false,
+        "runtime_consumer_verified": false
+      },
+      "BuildableType": {
+        "line": 1457224,
+        "raw": "public enum BuildableType // TypeDefIndex: 37896\n{\n\t// Fields\n\tpublic int value__; // 0x0\n\tpublic const BuildableType NONE = 0;\n\tpublic const BuildableType MELEE = 1;\n\tpublic const BuildableType RANGED = 2;\n\tpublic const BuildableType ALL = 3;\n}",
+        "version_alignment_verified": false,
+        "runtime_consumer_verified": false
+      },
+      "AbilityStandard.SelectTargetSource": {
+        "line": 369891,
+        "raw": "public enum AbilityStandard.SelectTargetSource // TypeDefIndex: 9817\n{\n\t// Fields\n\tpublic int value__; // 0x0\n\tpublic const AbilityStandard.SelectTargetSource NONE = 0;\n\tpublic const AbilityStandard.SelectTargetSource FROM_OWNER = 1;\n\tpublic const AbilityStandard.SelectTargetSource INPUT_TARGET = 2;\n\tpublic const AbilityStandard.SelectTargetSource INPUT_POINT = 3;\n\tpublic const AbilityStandard.SelectTargetSource INPUT_GRID_POS = 4;\n}",
+        "version_alignment_verified": false,
+        "runtime_consumer_verified": false
+      },
+      "AbilityStandard.SelectTargetTiming": {
+        "line": 369903,
+        "raw": "public enum AbilityStandard.SelectTargetTiming // TypeDefIndex: 9818\n{\n\t// Fields\n\tpublic int value__; // 0x0\n\tpublic const AbilityStandard.SelectTargetTiming AT_BEGINING = 0;\n\tpublic const AbilityStandard.SelectTargetTiming BEFORE_SPELL_START = 1;\n\tpublic const AbilityStandard.SelectTargetTiming RESELECT_IF_TARGET_DEAD = 2;\n\tpublic const AbilityStandard.SelectTargetTiming BEFORE_FIRST_SPELL_START = 3;\n}",
+        "version_alignment_verified": false,
+        "runtime_consumer_verified": false
+      },
+      "AbstractAnimatedAbility.TimeMode": {
+        "line": 535999,
+        "raw": "public enum AbstractAnimatedAbility.TimeMode // TypeDefIndex: 13080\n{\n\t// Fields\n\tpublic int value__; // 0x0\n\tpublic const AbstractAnimatedAbility.TimeMode FROM_ATTACK_SPEED = 0;\n\tpublic const AbstractAnimatedAbility.TimeMode FROM_ANIMATION = 1;\n\tpublic const AbstractAnimatedAbility.TimeMode SPECIFIED = 2;\n\tpublic const AbstractAnimatedAbility.TimeMode LOAD_FROM_BLACKBOARD = 3;\n}",
+        "version_alignment_verified": false,
+        "runtime_consumer_verified": false
+      }
+    }
+  },
+  "stages": {
+    "level_main_05-09": {
+      "wave_spawn_count": 51,
+      "controls": {
+        "DISPLAY_ENEMY_INFO": 1
+      },
+      "tile_counts": {
+        "tile_forbidden": 32,
+        "tile_start": 3,
+        "tile_road": 37,
+        "tile_end": 3,
+        "tile_wall": 13
+      },
+      "used_checkpoints": {
+        "MOVE": 20
+      },
+      "predefined_token_count": 4,
+      "native_branches": null,
+      "options": {
+        "characterLimit": 8,
+        "maxLifePoint": 3,
+        "initialCost": 10,
+        "maxCost": 99,
+        "costIncreaseTime": 1.0,
+        "moveMultiplier": 0.5,
+        "steeringEnabled": true,
+        "reachableCheckIgnoreStartTile": false,
+        "isTrainingLevel": false,
+        "isHardTrainingLevel": false,
+        "isPredefinedCardsSelectable": false,
+        "displayRestTime": false,
+        "maxPlayTime": -1.0,
+        "functionDisableMask": "NONE",
+        "configBlackBoard": null
+      },
+      "rune_policy": "normal difficulty1; FOUR_STAR rows retained, no hard-mode buff applied by this inventory",
+      "complete_stage_implemented": false
+    },
+    "level_main_05-10": {
+      "wave_spawn_count": 73,
+      "controls": {
+        "DISPLAY_ENEMY_INFO": 3
+      },
+      "tile_counts": {
+        "tile_forbidden": 40,
+        "tile_telout": 1,
+        "tile_telin": 1,
+        "tile_wall": 11,
+        "tile_floor": 15,
+        "tile_start": 6,
+        "tile_road": 20,
+        "tile_end": 2
+      },
+      "used_checkpoints": {
+        "MOVE": 24,
+        "WAIT_CURRENT_FRAGMENT_TIME": 6,
+        "WAIT_FOR_SECONDS": 5,
+        "DISAPPEAR": 1,
+        "APPEAR_AT_POS": 1
+      },
+      "predefined_token_count": 10,
+      "native_branches": {
+        "faust_ballis": {
+          "phases": [
+            {
+              "preDelay": 0.0,
+              "actions": [
+                {
+                  "actionType": "ACTIVATE_PREDEFINED",
+                  "managedByScheduler": true,
+                  "key": "trap_007_ballis#1",
+                  "count": 1,
+                  "preDelay": 0.0,
+                  "interval": 0.0,
+                  "routeIndex": 0,
+                  "blockFragment": false,
+                  "autoPreviewRoute": false,
+                  "autoDisplayEnemyInfo": false,
+                  "isUnharmfulAndAlwaysCountAsKilled": false,
+                  "hiddenGroup": null,
+                  "randomSpawnGroupKey": null,
+                  "randomSpawnGroupPackKey": null,
+                  "randomType": "ALWAYS",
+                  "refreshType": "ALWAYS",
+                  "weight": 0,
+                  "dontBlockWave": false,
+                  "forceBlockWaveInBranch": false
+                }
+              ]
+            },
+            {
+              "preDelay": 0.0,
+              "actions": [
+                {
+                  "actionType": "ACTIVATE_PREDEFINED",
+                  "managedByScheduler": true,
+                  "key": "trap_007_ballis#2",
+                  "count": 1,
+                  "preDelay": 0.0,
+                  "interval": 0.0,
+                  "routeIndex": 0,
+                  "blockFragment": false,
+                  "autoPreviewRoute": false,
+                  "autoDisplayEnemyInfo": false,
+                  "isUnharmfulAndAlwaysCountAsKilled": false,
+                  "hiddenGroup": null,
+                  "randomSpawnGroupKey": null,
+                  "randomSpawnGroupPackKey": null,
+                  "randomType": "ALWAYS",
+                  "refreshType": "ALWAYS",
+                  "weight": 0,
+                  "dontBlockWave": false,
+                  "forceBlockWaveInBranch": false
+                }
+              ]
+            },
+            {
+              "preDelay": 0.0,
+              "actions": [
+                {
+                  "actionType": "ACTIVATE_PREDEFINED",
+                  "managedByScheduler": true,
+                  "key": "trap_007_ballis#3",
+                  "count": 1,
+                  "preDelay": 0.0,
+                  "interval": 0.0,
+                  "routeIndex": 0,
+                  "blockFragment": false,
+                  "autoPreviewRoute": false,
+                  "autoDisplayEnemyInfo": false,
+                  "isUnharmfulAndAlwaysCountAsKilled": false,
+                  "hiddenGroup": null,
+                  "randomSpawnGroupKey": null,
+                  "randomSpawnGroupPackKey": null,
+                  "randomType": "ALWAYS",
+                  "refreshType": "ALWAYS",
+                  "weight": 0,
+                  "dontBlockWave": false,
+                  "forceBlockWaveInBranch": false
+                }
+              ]
+            },
+            {
+              "preDelay": 0.0,
+              "actions": [
+                {
+                  "actionType": "ACTIVATE_PREDEFINED",
+                  "managedByScheduler": true,
+                  "key": "trap_007_ballis#4",
+                  "count": 1,
+                  "preDelay": 0.0,
+                  "interval": 0.0,
+                  "routeIndex": 0,
+                  "blockFragment": false,
+                  "autoPreviewRoute": false,
+                  "autoDisplayEnemyInfo": false,
+                  "isUnharmfulAndAlwaysCountAsKilled": false,
+                  "hiddenGroup": null,
+                  "randomSpawnGroupKey": null,
+                  "randomSpawnGroupPackKey": null,
+                  "randomType": "ALWAYS",
+                  "refreshType": "ALWAYS",
+                  "weight": 0,
+                  "dontBlockWave": false,
+                  "forceBlockWaveInBranch": false
+                }
+              ]
+            },
+            {
+              "preDelay": 0.0,
+              "actions": [
+                {
+                  "actionType": "ACTIVATE_PREDEFINED",
+                  "managedByScheduler": true,
+                  "key": "trap_007_ballis#5",
+                  "count": 1,
+                  "preDelay": 0.0,
+                  "interval": 0.0,
+                  "routeIndex": 0,
+                  "blockFragment": false,
+                  "autoPreviewRoute": false,
+                  "autoDisplayEnemyInfo": false,
+                  "isUnharmfulAndAlwaysCountAsKilled": false,
+                  "hiddenGroup": null,
+                  "randomSpawnGroupKey": null,
+                  "randomSpawnGroupPackKey": null,
+                  "randomType": "ALWAYS",
+                  "refreshType": "ALWAYS",
+                  "weight": 0,
+                  "dontBlockWave": false,
+                  "forceBlockWaveInBranch": false
+                }
+              ]
+            },
+            {
+              "preDelay": 0.0,
+              "actions": [
+                {
+                  "actionType": "ACTIVATE_PREDEFINED",
+                  "managedByScheduler": true,
+                  "key": "trap_007_ballis#6",
+                  "count": 1,
+                  "preDelay": 0.0,
+                  "interval": 0.0,
+                  "routeIndex": 0,
+                  "blockFragment": false,
+                  "autoPreviewRoute": false,
+                  "autoDisplayEnemyInfo": false,
+                  "isUnharmfulAndAlwaysCountAsKilled": false,
+                  "hiddenGroup": null,
+                  "randomSpawnGroupKey": null,
+                  "randomSpawnGroupPackKey": null,
+                  "randomType": "ALWAYS",
+                  "refreshType": "ALWAYS",
+                  "weight": 0,
+                  "dontBlockWave": false,
+                  "forceBlockWaveInBranch": false
+                },
+                {
+                  "actionType": "ACTIVATE_PREDEFINED",
+                  "managedByScheduler": true,
+                  "key": "trap_007_ballis#7",
+                  "count": 1,
+                  "preDelay": 0.0,
+                  "interval": 0.0,
+                  "routeIndex": 0,
+                  "blockFragment": false,
+                  "autoPreviewRoute": false,
+                  "autoDisplayEnemyInfo": false,
+                  "isUnharmfulAndAlwaysCountAsKilled": false,
+                  "hiddenGroup": null,
+                  "randomSpawnGroupKey": null,
+                  "randomSpawnGroupPackKey": null,
+                  "randomType": "ALWAYS",
+                  "refreshType": "ALWAYS",
+                  "weight": 0,
+                  "dontBlockWave": false,
+                  "forceBlockWaveInBranch": false
+                }
+              ]
+            },
+            {
+              "preDelay": 0.0,
+              "actions": [
+                {
+                  "actionType": "ACTIVATE_PREDEFINED",
+                  "managedByScheduler": true,
+                  "key": "trap_007_ballis#8",
+                  "count": 1,
+                  "preDelay": 0.0,
+                  "interval": 0.0,
+                  "routeIndex": 0,
+                  "blockFragment": false,
+                  "autoPreviewRoute": false,
+                  "autoDisplayEnemyInfo": false,
+                  "isUnharmfulAndAlwaysCountAsKilled": false,
+                  "hiddenGroup": null,
+                  "randomSpawnGroupKey": null,
+                  "randomSpawnGroupPackKey": null,
+                  "randomType": "ALWAYS",
+                  "refreshType": "ALWAYS",
+                  "weight": 0,
+                  "dontBlockWave": false,
+                  "forceBlockWaveInBranch": false
+                },
+                {
+                  "actionType": "ACTIVATE_PREDEFINED",
+                  "managedByScheduler": true,
+                  "key": "trap_007_ballis#9",
+                  "count": 1,
+                  "preDelay": 0.0,
+                  "interval": 0.0,
+                  "routeIndex": 0,
+                  "blockFragment": false,
+                  "autoPreviewRoute": false,
+                  "autoDisplayEnemyInfo": false,
+                  "isUnharmfulAndAlwaysCountAsKilled": false,
+                  "hiddenGroup": null,
+                  "randomSpawnGroupKey": null,
+                  "randomSpawnGroupPackKey": null,
+                  "randomType": "ALWAYS",
+                  "refreshType": "ALWAYS",
+                  "weight": 0,
+                  "dontBlockWave": false,
+                  "forceBlockWaveInBranch": false
+                },
+                {
+                  "actionType": "ACTIVATE_PREDEFINED",
+                  "managedByScheduler": true,
+                  "key": "trap_007_ballis#10",
+                  "count": 1,
+                  "preDelay": 0.0,
+                  "interval": 0.0,
+                  "routeIndex": 0,
+                  "blockFragment": false,
+                  "autoPreviewRoute": false,
+                  "autoDisplayEnemyInfo": false,
+                  "isUnharmfulAndAlwaysCountAsKilled": false,
+                  "hiddenGroup": null,
+                  "randomSpawnGroupKey": null,
+                  "randomSpawnGroupPackKey": null,
+                  "randomType": "ALWAYS",
+                  "refreshType": "ALWAYS",
+                  "weight": 0,
+                  "dontBlockWave": false,
+                  "forceBlockWaveInBranch": false
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "options": {
+        "characterLimit": 9,
+        "maxLifePoint": 3,
+        "initialCost": 0,
+        "maxCost": 99,
+        "costIncreaseTime": 1.0,
+        "moveMultiplier": 0.5,
+        "steeringEnabled": true,
+        "reachableCheckIgnoreStartTile": false,
+        "isTrainingLevel": false,
+        "isHardTrainingLevel": false,
+        "isPredefinedCardsSelectable": false,
+        "displayRestTime": false,
+        "maxPlayTime": -1.0,
+        "functionDisableMask": "NONE",
+        "configBlackBoard": null
+      },
+      "rune_policy": "normal difficulty1; FOUR_STAR rows retained, no hard-mode buff applied by this inventory",
+      "complete_stage_implemented": false
+    }
+  },
+  "semantic_consumer_matrix": [
+    {
+      "variant_id": "enemy_1037_lunsbr@0/f32de44dcf74ba64",
+      "ordinary_definition": "unit/ch5/enemy_1037_lunsbr/f32de44dcf74ba64",
+      "all_component_classes": [
+        "Enemy",
+        "FaceSwitcher",
+        "MeleeAttack",
+        "MoveController",
+        "ShadowController",
+        "SingleSpineAnimator",
+        "SkeletonAnimation",
+        "UberEffectEmitter",
+        "UnitMode"
+      ],
+      "HP_recovery_per_second": 0.0,
+      "unconsumed_semantic_dependencies": [],
+      "source_model_reviewed": false,
+      "client_verified": false
+    },
+    {
+      "variant_id": "enemy_1044_zomstr@0/d7a3f2fb16740407",
+      "ordinary_definition": null,
+      "all_component_classes": [
+        "BoneFollower",
+        "Enemy",
+        "FaceSwitcher",
+        "MeleeAttack",
+        "MoveController",
+        "ShadowController",
+        "SingleSpineAnimator",
+        "SkeletonAnimation",
+        "UberEffectEmitter",
+        "UnitMode"
+      ],
+      "HP_recovery_per_second": 200.0,
+      "unconsumed_semantic_dependencies": [
+        "native HP recovery clock/source coefficient"
+      ],
+      "source_model_reviewed": false,
+      "client_verified": false
+    },
+    {
+      "variant_id": "enemy_1030_wteeth@0/6886869808ffa02a",
+      "ordinary_definition": "unit/ch5/enemy_1030_wteeth/6886869808ffa02a",
+      "all_component_classes": [
+        "Enemy",
+        "FaceSwitcher",
+        "MeleeAttack",
+        "MoveController",
+        "ShadowController",
+        "SingleSpineAnimator",
+        "SkeletonAnimation",
+        "UberEffectEmitter",
+        "UnitMode"
+      ],
+      "HP_recovery_per_second": 0.0,
+      "unconsumed_semantic_dependencies": [],
+      "source_model_reviewed": false,
+      "client_verified": false
+    },
+    {
+      "variant_id": "enemy_1038_lunmag@0/c1f32948ccde1934",
+      "ordinary_definition": null,
+      "all_component_classes": [
+        "AdvancedSelector",
+        "BoneFollower",
+        "CircleRange",
+        "Enemy",
+        "FaceSwitcher",
+        "MoveController",
+        "RangedAttack",
+        "SelectorTrigger",
+        "ShadowController",
+        "SingleSpineAnimator",
+        "SkeletonAnimation",
+        "UberEffectEmitter",
+        "UnitMode"
+      ],
+      "HP_recovery_per_second": 0.0,
+      "unconsumed_semantic_dependencies": [
+        "ranged/heal source selection, projectile or ally heal dispatch"
+      ],
+      "source_model_reviewed": false,
+      "client_verified": false
+    },
+    {
+      "variant_id": "enemy_1508_faust@0/86350d42c005ccb6",
+      "ordinary_definition": null,
+      "all_component_classes": [
+        "AdvancedSelector",
+        "AnimatedActionToOwnerAbility",
+        "BoneFollower",
+        "CircleRange",
+        "Enemy",
+        "EnemySkill",
+        "FaceSwitcher",
+        "LevelBranchTrigger",
+        "MoveController",
+        "PassiveBuffAbility",
+        "RangedAttack",
+        "SelectorTrigger",
+        "ShadowController",
+        "SingleSpineAnimator",
+        "SkeletonAnimation",
+        "Talent",
+        "UberEffectEmitter",
+        "UnitMode"
+      ],
+      "HP_recovery_per_second": 0.0,
+      "unconsumed_semantic_dependencies": [
+        "all passive/skill components and nested buff/BSON consumers",
+        "talent BB consumers",
+        "DB skill priority/cooldown/initCooldown/SP/branch dispatch",
+        "ranged/heal source selection, projectile or ally heal dispatch"
+      ],
+      "source_model_reviewed": false,
+      "client_verified": false
+    },
+    {
+      "variant_id": "enemy_1507_mephi@0/6468197a2a582f8b",
+      "ordinary_definition": null,
+      "all_component_classes": [
+        "AdvancedSelector",
+        "BoneFollower",
+        "CircleRange",
+        "Enemy",
+        "FaceSwitcher",
+        "GlobalAuraAbility",
+        "Heal",
+        "MoveController",
+        "SelectorTrigger",
+        "ShadowController",
+        "SingleSpineAnimator",
+        "SkeletonAnimation",
+        "Talent",
+        "TargetValidator",
+        "UberEffectEmitter",
+        "UnitMode"
+      ],
+      "HP_recovery_per_second": 0.0,
+      "unconsumed_semantic_dependencies": [
+        "all passive/skill components and nested buff/BSON consumers",
+        "talent BB consumers",
+        "ranged/heal source selection, projectile or ally heal dispatch"
+      ],
+      "source_model_reviewed": false,
+      "client_verified": false
+    },
+    {
+      "variant_id": "enemy_1043_zomsbr@0/645365ece3e81647",
+      "ordinary_definition": null,
+      "all_component_classes": [
+        "Enemy",
+        "FaceSwitcher",
+        "MeleeAttack",
+        "MoveController",
+        "ShadowController",
+        "SingleSpineAnimator",
+        "SkeletonAnimation",
+        "UberEffectEmitter",
+        "UnitMode"
+      ],
+      "HP_recovery_per_second": 80.0,
+      "unconsumed_semantic_dependencies": [
+        "native HP recovery clock/source coefficient"
+      ],
+      "source_model_reviewed": false,
+      "client_verified": false
+    },
+    {
+      "variant_id": "enemy_1045_hammer@0/9b96271736ea2ee4",
+      "ordinary_definition": null,
+      "all_component_classes": [
+        "BoneFollower",
+        "Enemy",
+        "EnemySkill",
+        "FaceSwitcher",
+        "MeleeAttack",
+        "MoveController",
+        "ReadyEnemySkillEffect",
+        "ShadowController",
+        "SingleSpineAnimator",
+        "SkeletonAnimation",
+        "UberEffectEmitter",
+        "UnitMode"
+      ],
+      "HP_recovery_per_second": 0.0,
+      "unconsumed_semantic_dependencies": [
+        "all passive/skill components and nested buff/BSON consumers",
+        "DB skill priority/cooldown/initCooldown/SP/branch dispatch"
+      ],
+      "source_model_reviewed": false,
+      "client_verified": false
+    }
+  ],
+  "source_conflicts": [
+    {
+      "status": "explicit_replaceable_reference_candidate",
+      "version": "official_20250327_tokens",
+      "alignment_with_fixed_table_commit_verified": false,
+      "replacement_rule": "Replace with exact table-aligned token asset and rebuild; never silently identify old asset as the fixed table version",
+      "download_proof": {
+        "bytes": 9824830,
+        "download_proof": {
+          "ab_bytes": 9824830,
+          "ab_md5": "9e1440026259ebe74be054962e2bd656",
+          "ab_sha256": "b9f16db4bfc8e8c880a0f90a1a7a74eda3b47c2188d0a151e5239d154716d475",
+          "archive_bytes": 8750996,
+          "archive_sha256": "51012d761ba8f5f15b73062eba791748ec0eab5c1ed887dd6a43ee47bf056978",
+          "manifest_commit": "f9453cd31ec03aad10be4409af95eb1ac2fdee5f",
+          "source_version_matches_local": false,
+          "status": "external_source_frozen_not_local_version_verified",
+          "url": "https://ak.hycdn.cn/assetbundle/official/Android/assets/25-03-27-16-19-10-4d4819/battle_prefabs_[uc]tokens.dat"
+        },
+        "manifest_name": "battle/prefabs/[uc]tokens.ab",
+        "md5": "9e1440026259ebe74be054962e2bd656",
+        "official_manifest_commit": "f9453cd31ec03aad10be4409af95eb1ac2fdee5f",
+        "sha256": "b9f16db4bfc8e8c880a0f90a1a7a74eda3b47c2188d0a151e5239d154716d475",
+        "version_id": "25-03-27-16-19-10-4d4819"
+      }
+    }
+  ],
+  "acceptance": {
+    "source_inventory_prepared": true,
+    "independent_review": false,
+    "whole_stage_execution": false,
+    "client_comparison": false
+  }
+}

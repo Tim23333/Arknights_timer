@@ -1,0 +1,11 @@
+{
+  "id": "rule/model_no_source_fixed_pipeline",
+  "kind": "calculation_rule",
+  "contract": "damage.pipeline",
+  "implementation": {
+    "type": "graph",
+    "nodes": [{"id": "settle", "expression": "{'accepted': True, 'amount': inputs.effect.fixed_amount, 'allocations': [], 'events': []}"}],
+    "output": "nodes.settle"
+  },
+  "metadata": {"model_policy": "Explicit fixed PURE source-independent reference pipeline; target after hooks still apply"}
+}

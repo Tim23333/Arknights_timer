@@ -1,0 +1,16 @@
+# M27 peer最终流式证据门状态
+
+本批独立证据最后使用run_campaign_streaming_runthrough_v5.py，实际runtime仍冻结75fd。M27_ROSTER_STORAGE_PEER_REVIEW.md中的v3/v4失败为保留历史，不因v5修复重标通过。
+
+v5九个独立case已真实完成。沿同一个明确的两leak/life99999 fixture，加入resources按hp,z,a顺序的player actor；每项绑定实际input bytes/commands/core/helper前后SHA和读取次数。
+
+- 正baseline实际两leak/life99997，CP持久化保存后从文件再次load_bound、Engine.restore续跑；资源事件z,a、HP、完整journal、canonical快照和continuation、完整recorded-command replay相等。
+- 原五个input/helper identity边界保持：normalpassed；第二读取换包、actual decode seed72与磁盘71差异、commands actualdecode差异、helper末尾内容变动都记录真实解码SHA并拒绝。拒绝case保持完整report/journal，exit1。
+- CP初次读取字节漂移、二次读取字节漂移、restore函数注入异常三case实际checkpoint_equal/durable=false，结构化phase/type/message持久化；原sim完整结束，replay独立通过而不代替CP gate，最终passfalse/exit1。
+- completion helper消失不再只抛异常：source_at_completion对应项null，source_errors保存原因，identity/passfalse，最终report/journal保留并exit1。
+
+报告validation/campaign/m27_roster_peer/stream_v5/final.json SHA `cd7243b44c258c037666524dac3e1ea2247c221461d7c3a997ac1e2faedea305`。所有工具和fault injection只在新peer文件及process-local替身执行，没有改旧live源或候选kernel。输入源/hash不从metadata推测，真正读入bytes、重新恢复后的事件顺序和资源数值都有实际见证。
+
+M27缓存六个独立正边界仍以final.json SHA `421232b70bc05cf030fb2a426d22b36cf12e5201cc73a4a9fce8c6cd3ec67456`封存；第七case只是已知canonical磁盘CP失序反例，不是成功durable证明。v3/v4 source和失败JSON均单独保留。
+
+当前所审v5输入/CP/报告持久化范围未发现未闭合阻断。此结论不含整关、native实际数据正确、M31地图、M30跨路径quota或promotion/formal receipt。固定12/36及实际中间数据正确要求保持。

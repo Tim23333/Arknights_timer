@@ -1,0 +1,556 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/ch6/frstar2_s/story",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "native_variant_id": "enemy_1510_frstar2_s@0/2ca10c3158df0a8d",
+      "source_locks": {
+        "packages\\campaign\\chapter06_boss\\frstar2_s\\source.closure.json": "fab1776b1bbee5be28c79f74adcbde93de6c307ba2de3ce1d7aad6a1dcf38116",
+        "packages\\campaign\\chapter06_cold\\model.json": "e610f9446b077c6df7a86922e6719226e5a352a3826d6fe40c49e3296437b4dc",
+        "packages\\campaign\\chapter04_boss\\ice_shield_v3\\module.reference.json": "490b35461d4ef1e53549a97312f061264f124defefa2a962a83b0e95fb9d1e4a"
+      },
+      "builder_sha256": "0688cb2732b68146ac455856f5ab331bf272ad99bbe4a933d2e2830881c346f1",
+      "reference_policies": {
+        "tile_filter": "Deployment-eligible radius2 cells excluding occupancy; selector body unavailable, explicit replaceable policy",
+        "skill_clock": "Independent cooldowns source castLikeAttack0; full-animation shared busy policy",
+        "periodic_boundary": "First tick at1second after actual buff application; cadence source interval1"
+      },
+      "normal_never_trigger": true,
+      "requires_generic_buff_no_source": true,
+      "independent_reviewed": false,
+      "whole_stage_executed": false,
+      "client_verified": false
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/ch6/frstar2_s/2ca10c3158df0a8d",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground",
+        "boss",
+        "story_boss"
+      ],
+      "metadata": {
+        "native_variant_id": "enemy_1510_frstar2_s@0/2ca10c3158df0a8d",
+        "native_reference": {
+          "useDb": true,
+          "id": "enemy_1510_frstar2_s",
+          "level": 0,
+          "overwrittenData": null
+        },
+        "undefined_immunity_rows_retained_in_source": true
+      },
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 95000,
+            "atk": 1200,
+            "def": 300,
+            "mres": 50.0,
+            "move_speed": 0.25,
+            "attack_interval": 3.7,
+            "attack_speed_ratio": 1.0,
+            "mass_level": 6,
+            "block_cost": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "role": "health",
+            "initial": 95000,
+            "capacity_attribute": "max_hp"
+          }
+        },
+        "selection_state": {
+          "side": 1,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 1,
+          "abnormal_immunes": [
+            0,
+            12
+          ]
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle",
+          "leak_loss": 1
+        },
+        "buffs": {
+          "initial": [
+            "buff/unit/ch6/frstar2_s/2ca10c3158df0a8d/blood",
+            "buff/unit/ch6/frstar2_s/2ca10c3158df0a8d/sleepimmune"
+          ]
+        },
+        "abilities": [
+          "ability/unit/ch6/frstar2_s/2ca10c3158df0a8d/shield",
+          "ability/unit/ch6/frstar2_s/2ca10c3158df0a8d/burst"
+        ],
+        "ability_arbitration": {
+          "priority_order": "higher_first",
+          "busy": "all_casts",
+          "entries": [
+            {
+              "ability": "ability/unit/ch6/frstar2_s/2ca10c3158df0a8d/shield",
+              "priority": 2,
+              "attack_clock": false,
+              "require_attack_control": false,
+              "condition": "True",
+              "parameters": {}
+            },
+            {
+              "ability": "ability/unit/ch6/frstar2_s/2ca10c3158df0a8d/burst",
+              "priority": 1,
+              "attack_clock": false,
+              "require_attack_control": false,
+              "condition": "True",
+              "parameters": {}
+            }
+          ]
+        },
+        "spatial": {
+          "motion_mode": 0,
+          "steering": {
+            "rule": "rule/unit/ch6/frstar2_s/2ca10c3158df0a8d/steering",
+            "parameters": {
+              "response_factor": 8.0,
+              "max_acceleration": 10.0,
+              "arrival_radius": 0.05
+            }
+          }
+        }
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/unit/ch6/frstar2_s/2ca10c3158df0a8d/eligibility",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.targeting.eligibility"
+      }
+    },
+    {
+      "id": "rule/unit/ch6/frstar2_s/2ca10c3158df0a8d/steering",
+      "kind": "rule",
+      "contract": "movement.steering",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.movement.steering_velocity"
+      }
+    },
+    {
+      "id": "rule/unit/ch6/frstar2_s/2ca10c3158df0a8d/members",
+      "kind": "rule",
+      "contract": "area.members",
+      "dependencies": [
+        "rule/unit/ch6/frstar2_s/2ca10c3158df0a8d/eligibility"
+      ],
+      "parameters": {
+        "radius": 3.299999952316284,
+        "eligibility": {
+          "rule": "rule/unit/ch6/frstar2_s/2ca10c3158df0a8d/eligibility",
+          "parameters": {
+            "source_configuration": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 5815765463658057254
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 7080728813803358465
+              },
+              "m_Name": "",
+              "_targetSide": 2,
+              "_targetMotion": 3,
+              "_targetCategory": 1,
+              "_postFilter": 4,
+              "_ignoreTargetFree": 0,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_abnormalFlag": 44,
+              "_abnormalCombo": 2,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 0,
+              "_needProfessionMask": 0,
+              "_professionMask": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_excludeAbnormalFlag": 46,
+              "_limitTargetNum": 0,
+              "_maxTargetKey": "max_target",
+              "_maxNum": 1,
+              "_excludeOwner": 0,
+              "_sortByTauntAtLast": 0,
+              "_ignoreHitRange": 0,
+              "_checkUnitType": 0,
+              "_unitTypeMask": 0,
+              "_abilityInputTargetAsSortSource": 0
+            },
+            "side_policy": "relative_ally_enemy",
+            "neutral_policy": "reject",
+            "defaults": {
+              "side": 0,
+              "motion": 1,
+              "category": 1,
+              "profession": 0,
+              "unit_type": 1,
+              "abnormal_flags": [],
+              "abnormal_combos": [],
+              "target_free_flags": [],
+              "target_free_combos": [],
+              "target_free": false,
+              "ally_target_free": false,
+              "heal_free": false,
+              "camouflage": false,
+              "can_select_camouflage": false,
+              "abnormal_immunes": []
+            }
+          }
+        }
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "model.area.qualified_radius"
+      }
+    },
+    {
+      "id": "rule/unit/ch6/frstar2_s/2ca10c3158df0a8d/frozen_scale",
+      "kind": "rule",
+      "contract": "damage.request",
+      "parameters": {
+        "atk_scale": 2
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c6.frozen_atkscale"
+      }
+    },
+    {
+      "id": "rule/unit/ch6/frstar2_s/2ca10c3158df0a8d/blood_pipeline",
+      "kind": "rule",
+      "contract": "damage.pipeline",
+      "implementation": {
+        "type": "graph",
+        "nodes": [
+          {
+            "id": "result",
+            "expression": "{'accepted':True,'amount':inputs.effect.fixed_amount,'allocations':[],'events':[]}"
+          }
+        ],
+        "output": "nodes.result"
+      }
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/unit/ch6/frstar2_s/2ca10c3158df0a8d/burst",
+      "kind": "ability",
+      "selector": "selector/unit/ch6/frstar2_s/2ca10c3158df0a8d/burst",
+      "initial_cooldown_seconds": 16.0,
+      "cooldown_seconds": 1000.0,
+      "duration_seconds": 3.6666666666666665,
+      "activation": {
+        "mode": "manual",
+        "forbidden_source_flags": [
+          0,
+          12
+        ],
+        "parameters": {
+          "auto_only": true,
+          "auto_when_ready": true,
+          "requires_targets": true
+        },
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/unit/ch6/frstar2_s/2ca10c3158df0a8d/burst_frozen_scale",
+            "bind_to_cast": true
+          }
+        ]
+      },
+      "timeline": [
+        {
+          "at": 87,
+          "effect": {
+            "op": "area",
+            "center": "source",
+            "membership_rule": "rule/unit/ch6/frstar2_s/2ca10c3158df0a8d/members",
+            "filters": [
+              {
+                "tag": "player"
+              }
+            ],
+            "effects": [
+              {
+                "op": "damage",
+                "damage_type": "arts",
+                "scale": 1,
+                "damage_flags": {
+                  "source_attack_type": "SPLASH",
+                  "ignore_for_sp": false
+                },
+                "on_success": [
+                  {
+                    "op": "buff_application",
+                    "application_rule": "rule/ch6/cold/application",
+                    "allowed": [
+                      "buff/ch6/cold/e2c_cold",
+                      "buff/ch6/cold/e2c_freeze"
+                    ],
+                    "parameters": {
+                      "duration_seconds": 10
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/unit/ch6/frstar2_s/2ca10c3158df0a8d/blood",
+      "kind": "buff",
+      "interval_seconds": 1,
+      "removal": {
+        "on_source_death": "remove",
+        "on_target_death": "remove"
+      },
+      "effects": [
+        {
+          "op": "no_source_damage",
+          "fixed_amount": 2000,
+          "damage_type": "true",
+          "attack_type": "BUFF",
+          "damage_without_modify": true,
+          "ignore_for_sp": true,
+          "node_is_env_damage": false,
+          "env_blackboard_injected": false,
+          "environmental": false,
+          "origin": {
+            "native_buff": "frstar2_s_periodic_damage",
+            "native_template": "periodic_damage_without_modify",
+            "source_document_sha256": "4ef7ce6389e6b3e97fb79f776bb7d3ea0ae21041c9fa2541b9039d54ad31ad27"
+          },
+          "rules": {
+            "damage.pipeline": "rule/unit/ch6/frstar2_s/2ca10c3158df0a8d/blood_pipeline"
+          }
+        }
+      ]
+    },
+    {
+      "id": "buff/unit/ch6/frstar2_s/2ca10c3158df0a8d/sleepimmune",
+      "kind": "buff",
+      "selection_flags": {
+        "abnormal_combo_immunes": [
+          0
+        ]
+      }
+    },
+    {
+      "id": "buff/unit/ch6/frstar2_s/2ca10c3158df0a8d/burst_frozen_scale",
+      "kind": "buff",
+      "damage_hooks": [
+        {
+          "phase": "before",
+          "rule": "rule/unit/ch6/frstar2_s/2ca10c3158df0a8d/frozen_scale"
+        }
+      ]
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/unit/ch6/frstar2_s/2ca10c3158df0a8d/burst",
+      "kind": "selector",
+      "region": {
+        "type": "radius",
+        "radius": 3.299999952316284
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": null,
+      "eligibility": {
+        "rule": "rule/unit/ch6/frstar2_s/2ca10c3158df0a8d/eligibility",
+        "parameters": {
+          "source_configuration": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 5815765463658057254
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 7080728813803358465
+            },
+            "m_Name": "",
+            "_targetSide": 2,
+            "_targetMotion": 3,
+            "_targetCategory": 1,
+            "_postFilter": 4,
+            "_ignoreTargetFree": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_abnormalFlag": 44,
+            "_abnormalCombo": 2,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_needProfessionMask": 0,
+            "_professionMask": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_excludeAbnormalFlag": 46,
+            "_limitTargetNum": 0,
+            "_maxTargetKey": "max_target",
+            "_maxNum": 1,
+            "_excludeOwner": 0,
+            "_sortByTauntAtLast": 0,
+            "_ignoreHitRange": 0,
+            "_checkUnitType": 0,
+            "_unitTypeMask": 0,
+            "_abilityInputTargetAsSortSource": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject",
+          "defaults": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "profession": 0,
+            "unit_type": 1,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "target_free": false,
+            "ally_target_free": false,
+            "heal_free": false,
+            "camouflage": false,
+            "can_select_camouflage": false,
+            "abnormal_immunes": []
+          }
+        }
+      }
+    }
+  ],
+  "definitions": [
+    {
+      "id": "unit/unit/ch6/frstar2_s/2ca10c3158df0a8d/sealedfloor",
+      "kind": "entity",
+      "version": "ice-shield-reference-v1",
+      "tags": [
+        "sealed_floor"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 100,
+            "atk": 0,
+            "def": 0,
+            "res": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "role": "health",
+            "initial": 100,
+            "capacity_attribute": "max_hp"
+          }
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "tile_occupancy": {
+          "blocks_deployment": true,
+          "exclusive": true,
+          "targetable": false,
+          "withdrawable": false
+        }
+      },
+      "metadata": {
+        "native_key": "trap_004_iceblock",
+        "no_terrain_rewrite": true,
+        "native_token_asset_sha": "b9f16db4bfc8e8c880a0f90a1a7a74eda3b47c2188d0a151e5239d154716d475",
+        "character_table_entry_present": false,
+        "stats_origin": "PRTS reference HP100; no source-table entry",
+        "player_withdraw_supported": false,
+        "source_policy": "Exact trap004 borrowed source asset and explicit HP100 reference; no ordinary Boss input"
+      }
+    },
+    {
+      "id": "ability/unit/ch6/frstar2_s/2ca10c3158df0a8d/shield",
+      "kind": "ability",
+      "version": "ice-shield-reference-v1",
+      "initial_cooldown_seconds": 23.0,
+      "cooldown_seconds": 1000.0,
+      "activation": {
+        "mode": "manual",
+        "parameters": {
+          "requires_targets": true,
+          "auto_when_ready": true,
+          "auto_only": true,
+          "priority": 2
+        }
+      },
+      "tile_selector": {
+        "eligibility_expression": "(inputs.cell.row-inputs.source.components.spatial.position.row)**2 + (inputs.cell.col-inputs.source.components.spatial.position.col)**2 <= params.radius**2 and inputs.tile.buildableType in params.buildable_types and not inputs.deployment_blocked",
+        "parameters": {
+          "radius": 2,
+          "buildable_types": [
+            1,
+            2,
+            3
+          ]
+        },
+        "limit": 3,
+        "selection": "uniform_without_replacement",
+        "stream": "ch6/frstar2_s/shield"
+      },
+      "timeline": [
+        {
+          "at": 55,
+          "effect": {
+            "op": "spawn_on_tiles",
+            "definition": "unit/unit/ch6/frstar2_s/2ca10c3158df0a8d/sealedfloor",
+            "parameters": {
+              "cells": "captured",
+              "recheck": false,
+              "occupant_expression": "'player' in inputs.candidate.tags",
+              "occupant_parameters": {},
+              "instant_kill": {
+                "cause": "ice_shield",
+                "skip_rebirth": false
+              },
+              "on_owner_retire": "retain"
+            }
+          }
+        }
+      ],
+      "metadata": {
+        "source_plan_sha": "fab1776b1bbee5be28c79f74adcbde93de6c307ba2de3ce1d7aad6a1dcf38116",
+        "native_filter_enum": "EXCEPT_CHARACTER",
+        "selection_policy": "deployment-eligible cell centers in radius2, exclude current deployment occupancy; uniform sample without replacement at accepted activation, root-cell occupants at frame55",
+        "source_conflict": "Native TileSelector filter/body and radius/cell boundary remain unverified; this explicit reference policy must not be called native equivalence",
+        "cooldown_policy": "Source init23/cooldown1000; independent timer from cast finish reference",
+        "kill_policy": "Current player-tag root-cell occupants at execution; true InstantKill allows rebirth"
+      },
+      "duration_seconds": 3.0
+    }
+  ]
+}

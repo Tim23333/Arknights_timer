@@ -4,6 +4,8 @@
 
 当前模拟完整性与代码问题见 [完整模拟差距评估](SIMULATION_COMPLETENESS_REVIEW.md)。
 
+2026-10-03 用户指定：当前先使用这些参考来源完成仿真，完成后由用户统一实机核对反馈。来源缺方法体／当前无客户端接口不单独阻断声明规则下的开发交付；规则必须完整执行、来源与假设明确、独立测试可复核。当前访问与关键规则核对见 [参考优先交付](campaign/REFERENCE_FIRST_DELIVERY.md)。
+
 ## 图片中的八个链接
 
 1. **网页版 AssetStudio**：[as.arkntools.app](https://as.arkntools.app/)
@@ -45,18 +47,20 @@
 
 ## 在项目中的使用顺序
 
-先固定目标服务器、客户端版本、热更版本和资源来源，再同步静态表与关卡数据。之后按资源引用补齐 Prefab、Buff、环境系统和动画事件，最后用真实战斗的同帧记录验证行为。
+先固定目标服务器、表／关卡提交、已提取资产版本和来源，再同步静态表与关卡数据。之后按实际引用补齐 Prefab、Buff、环境系统和动画事件，用独立场景核对参考数值与完整执行。用户在当前仿真交付后统一实机反馈，随后把差异映射到具体可替换规则。
 
 | 要解决的问题 | 优先参考 | 本项目对应位置 |
 |---|---|---|
-| 干员等级、精英化、技能、模组与信赖属性 | 游戏表、客户端配置 | `ark_parser/character`，`loader.py`，`battle.py` |
-| 敌人等级与关卡专属覆盖 | 敌人表、关卡 `enemyDbRefs` | `loader.py`，`battle.py` |
-| 普攻与技能伤害类型、弹道、生效时机 | Ability 与 Projectile 组件、Spine 事件 | `ai.py`，`skills.py`，`operator_skills.py`，`projectiles.py` |
-| Buff 条件、目标、优先级与黑板变量 | Prefab 与模板原文，BenaProtractor 辅助解释 | `buff_templates.py`，`buffs.py`，`action_nodes.py` |
-| 活动场地、预部署与环境管理器 | 完整关卡、环境系统资源、历史包体 | `predefines.py`，`tile_effects.py`，`prts.py`，`act31.py`，`act35.py` |
+| 干员等级、精英化、技能、模组与信赖属性 | 游戏表、客户端配置 | 离线`ark_parser/character`；V2 `packages/campaign/roster`、单位／技能内容与`ark_sim/domains/attributes.py` |
+| 敌人等级与关卡专属覆盖 | 敌人表、关卡 `enemyDbRefs` | `packages/campaign/*_sources`及精确variant绑定；V2实体、规则与Buff内容 |
+| 普攻与技能伤害类型、弹道、生效时机 | Ability 与 Projectile 组件、Spine 事件 | V2 `domains/abilities.py`、`effects.py`、`projectiles.py`与source-bound内容 |
+| Buff 条件、目标、优先级与黑板变量 | Prefab 与模板原文，BenaProtractor 辅助解释 | V2 `domains/buffs.py`、选择资格及纯damage request/pipeline规则；原始Buff模板作为离线数据 |
+| 地形、预部署、教程与环境管理器 | 完整关卡、环境系统资源、历史包体 | V2 `domains/timeline.py`、`controls.py`、`lifecycle.py`、通用terrain/tile profiles与场景数据 |
 | 随机数与帧级行为是否一致 | 真实战斗记录；抓包资料须先核实字段 | `tools/ak_live_rng`，`tools/deploy_tracker`，`tools/enemy_health` |
 
 外部仓库中的数据文件、网页说明和工具输出是参考材料。实现应记录来源与版本，并区分“静态数据确认”“源码或组件推断”“运行时实测”和“近似实现”。
+
+`ark_emulator`内旧loader/battle/skills等属于V1历史参考，仅离线读取数据；当前运行、公式扩展和验收均消费独立V2 `ark_sim`。候选的源码身份与输入必须绑定，旧运行不自动迁成新版本通过。
 
 ## 建议保存的数据来源信息
 

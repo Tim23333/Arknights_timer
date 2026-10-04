@@ -1,0 +1,15 @@
+"""Seal actual source author result separately from generic regression/client proof."""
+import json,hashlib,shutil
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2]
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def main():
+ report=ROOT/'validation/campaign/chapter08_ranged_final_guarded/verification.json';r=json.loads(report.read_bytes());assert r['passed'] and r['actual_exit']==0 and len(r['cases'])==16 and r['source_before']==r['source_after'];assert all(sha(Path(p))==h for p,h in r['source_after'].items());out=ROOT/'validation/campaign/chapter08_ranged_consumers_freeze_v1';assert not out.exists();out.mkdir(parents=True);files=list((ROOT/'tools/chapter08_ranged').glob('*.py'))+list((ROOT/'packages/campaign/chapter08_consumers/ranged').glob('*.json'))
+ for p in files:
+  dest=out/'source'/p.relative_to(ROOT);dest.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(p,dest);assert sha(p)==sha(dest)
+ evidence=[]
+ for name in ['uoffcr','ucommd','uamord']:
+  for p in (ROOT/'validation/campaign/chapter08_ranged_final_guarded'/name).glob('*.json'):evidence.append({'path':str(p),'sha':sha(p),'bytes':p.stat().st_size})
+ clock=ROOT/'validation/campaign/chapter08_selection_clock_v1/author_freeze/freeze.json'
+ obj={'core':r['core'],'module_pins':r['module_pins'],'actual_author16':{'path':str(report),'sha':sha(report),'actual_exit':0,'elapsed':r['elapsed']},'source_before':r['source_before'],'source_after':r['source_after'],'frozen_modules_helpers':{str(p):sha(p) for p in files},'source_execution_summary':r['scope'],'actual_ordered_CP_and_head_evidence':evidence,'generic_clock_dependency':{'candidate':str(ROOT.parent/'unpack_work/campaign_selection_context_clock_v1_candidate'),'author54freeze':str(clock),'sha':sha(clock),'fullsuite_and_peer_pending':True},'no_SP_resource_or_BorrowedSilenceImmunity':True,'capture_policy':'at_cast/live target/currentstats; prelaunch caster retire cancels, actual launched native managed0 projectile retained after retire; marker postlaunch disappearance does not retro-cancel captured shot. Explicit settle_blocking True before sourcecapture.', 'source_marker_witness_policy':'Actual zero-stat Buff witness for raw selector key mark_neutral[effect]; original NPC fullmarker body olderFB absent, no fabricatedstat modifiers/immunity. Replaceable reference.', 'secondary_sort_policy':'Currentdump enum SPECIFIED_BUFF3 is exact; raw sortByTauntAtLast1 mapped exacttuple hateDESC/marked-first/distance/stableID. Nativemethodbody ordering/ASPDanimationclamp/capturedTargetFree remain explicitclientpending.', 'historical_fails':'Original3992 clock missing; fixture tuple/list; busy-source manualretire refused; diagnosticself accepted; Mage119 FP expectation and precapture blocking race; duplicate source rule; pytesthook argname. All oldversions retained; no failed receipt promoted.','whole_stage_executed':False,'client_verified':False,'independent_reviewed':False};p=out/'freeze.json';p.write_text(json.dumps(obj,indent=2)+'\n',encoding='utf8');print(sha(p))
+if __name__=='__main__':main()

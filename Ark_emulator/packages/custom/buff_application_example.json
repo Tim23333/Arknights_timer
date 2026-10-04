@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/custom/buff_application_example",
+    "requires": ["preset/ark_standard"],
+    "description": "Editable Buff, duration expression and public manual skill example."
+  },
+  "rules": [
+    {
+      "id": "rule/custom/atk_up_application",
+      "kind": "calculation_rule",
+      "contract": "buff.application",
+      "implementation": {
+        "type": "expression",
+        "expression": "{'accepted':True,'operations':[{'kind':'apply','buff':'buff/custom/atk_up','duration_seconds':inputs.request.seconds,'stacks':1}]}"
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/custom/atk_up",
+      "kind": "buff",
+      "modifiers": [{"attribute": "atk", "layer": "flat", "value": 20}]
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/custom/atk_up",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "buff_application",
+            "target": "self",
+            "application_rule": "rule/custom/atk_up_application",
+            "allowed": ["buff/custom/atk_up"],
+            "parameters": {"seconds": 10}
+          }
+        ]
+      },
+      "timeline": []
+    }
+  ],
+  "entities": [
+    {
+      "id": "unit/custom/author_example",
+      "kind": "entity",
+      "tags": ["player"],
+      "components": {
+        "attributes": {"base": {"atk": 10, "max_hp": 100}},
+        "resources": {"hp": {"initial": 100, "capacity": 100, "role": "health"}},
+        "spatial": {},
+        "lifecycle": {"policy": "policy/ark_lifecycle"},
+        "abilities": ["ability/custom/atk_up"]
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/custom/buff_application_example",
+    "ruleset": "ruleset/ark_standard",
+    "map": {"rows": 1, "cols": 1},
+    "objectives": {},
+    "initialEntities": [
+      {"definition": "unit/custom/author_example", "instanceAlias": "operator", "position": {"row": 0, "col": 0}}
+    ],
+    "commands": [{"at": 0, "action": "skill", "source": "operator", "ability": "ability/custom/atk_up"}]
+  }
+}

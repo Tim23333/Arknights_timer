@@ -1,0 +1,560 @@
+FFFFFFFF                                                                 [100%]
+================================== FAILURES ===================================
+_ test_NoneSource_BUFF_true_without_modify_policy_preserves_or_skips_pipeline_hook[False-15] _
+
+self = <ark_sim.content.compiler.Compiler object at 0x000001FC1FE25EB0>
+scenario = {'schemaVersion': 2, 'manifest': {'requires': ['preset/ark_standard']}, 'rules': [{'id': 'rule/peer/pipeline', 'kind':...uffs': [{'id': 'buff/peer/hook', 'kind': 'buff', 'damage_hooks': [{'phase': 'after', 'rule': 'rule/peer/hook'}]}], ...}
+packages = None, ruleset = None, overrides = None
+
+    def compile(self, scenario, packages=None, ruleset=None, overrides=None):
+        try:
+>           return self._compile(scenario, packages, ruleset, overrides)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:211: in _compile
+    runtime = self._validate_rules(rules, definitions, selected_ruleset,
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:266: in _validate_rules
+    runtime = RuleRuntime(rules, bindings=ruleset.get("bindings", {}), catalog=self.catalog,
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\rules\runtime.py:92: in __init__
+    self.compiled = {key: validate_rule(value, self.catalog) for key, value in self.rules.items()}
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+definition = <ark_sim.contracts.models.FrozenMapping object at 0x000001FC1FE843A0>
+catalog = <ark_sim.contracts.models.FrozenMapping object at 0x000001FC1FE580D0>
+
+    def validate_rule(definition, catalog=None):
+        """Compile one definition without requiring provider registration."""
+        loaded = load_catalog(catalog)
+        if not isinstance(definition, Mapping) or not isinstance(definition.get("id"), str):
+            raise RuleError("Rule definitions require string IDs")
+        contract_id = definition.get("contract")
+        if contract_id not in loaded["contracts"]:
+            raise MissingRuleError(f"{definition['id']}: unknown contract {contract_id!r}")
+        implementation = definition.get("implementation")
+        if not isinstance(implementation, Mapping):
+            raise RuleError(f"{definition['id']}: implementation mapping required")
+        kind = implementation.get("type")
+        allowed = loaded["contracts"][contract_id].get("implementations", ("expression", "graph", "provider"))
+        if kind not in allowed:
+>           raise RuleError(f"{contract_id} does not allow implementation {kind!r}")
+E           ark_sim.rules.errors.RuleError: damage.pipeline does not allow implementation 'expression'
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\rules\runtime.py:32: RuleError
+
+The above exception was the direct cause of the following exception:
+
+bypass = False, expected = 15
+
+    @pytest.mark.parametrize('bypass,expected',[(False,15),(True,30)])
+    def test_NoneSource_BUFF_true_without_modify_policy_preserves_or_skips_pipeline_hook(bypass,expected):
+>    s=Engine.create(Compiler().compile(package()));s.ctx.effects.execute(None,[s.session.world.resolve('victim')],effect(bypass));assert s.ctx.resources.current('victim','hp')==100-expected;e=rows(s,'damage.accepted')[-1];assert e['payload']['amount']==expected and e['payload']['source'] is None and e['payload']['attack_type']=='BUFF';assert bool(rows(s,'damage.modification_bypassed')) is bypass
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tools\candidates\content_base_peer_v1\test_no_source.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <ark_sim.content.compiler.Compiler object at 0x000001FC1FE25EB0>
+scenario = {'schemaVersion': 2, 'manifest': {'requires': ['preset/ark_standard']}, 'rules': [{'id': 'rule/peer/pipeline', 'kind':...uffs': [{'id': 'buff/peer/hook', 'kind': 'buff', 'damage_hooks': [{'phase': 'after', 'rule': 'rule/peer/hook'}]}], ...}
+packages = None, ruleset = None, overrides = None
+
+    def compile(self, scenario, packages=None, ruleset=None, overrides=None):
+        try:
+            return self._compile(scenario, packages, ruleset, overrides)
+        except CompileError:
+            raise
+        except (ContentError, ValueError, TypeError, KeyError) as exc:
+>           raise CompileError(str(exc)) from exc
+E           ark_sim.content.compiler.CompileError: damage.pipeline does not allow implementation 'expression'
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:86: CompileError
+_ test_NoneSource_BUFF_true_without_modify_policy_preserves_or_skips_pipeline_hook[True-30] _
+
+self = <ark_sim.content.compiler.Compiler object at 0x000001FC1FE87F50>
+scenario = {'schemaVersion': 2, 'manifest': {'requires': ['preset/ark_standard']}, 'rules': [{'id': 'rule/peer/pipeline', 'kind':...uffs': [{'id': 'buff/peer/hook', 'kind': 'buff', 'damage_hooks': [{'phase': 'after', 'rule': 'rule/peer/hook'}]}], ...}
+packages = None, ruleset = None, overrides = None
+
+    def compile(self, scenario, packages=None, ruleset=None, overrides=None):
+        try:
+>           return self._compile(scenario, packages, ruleset, overrides)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:211: in _compile
+    runtime = self._validate_rules(rules, definitions, selected_ruleset,
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:266: in _validate_rules
+    runtime = RuleRuntime(rules, bindings=ruleset.get("bindings", {}), catalog=self.catalog,
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\rules\runtime.py:92: in __init__
+    self.compiled = {key: validate_rule(value, self.catalog) for key, value in self.rules.items()}
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+definition = <ark_sim.contracts.models.FrozenMapping object at 0x000001FC1FFDA1D0>
+catalog = <ark_sim.contracts.models.FrozenMapping object at 0x000001FC1FE86BF0>
+
+    def validate_rule(definition, catalog=None):
+        """Compile one definition without requiring provider registration."""
+        loaded = load_catalog(catalog)
+        if not isinstance(definition, Mapping) or not isinstance(definition.get("id"), str):
+            raise RuleError("Rule definitions require string IDs")
+        contract_id = definition.get("contract")
+        if contract_id not in loaded["contracts"]:
+            raise MissingRuleError(f"{definition['id']}: unknown contract {contract_id!r}")
+        implementation = definition.get("implementation")
+        if not isinstance(implementation, Mapping):
+            raise RuleError(f"{definition['id']}: implementation mapping required")
+        kind = implementation.get("type")
+        allowed = loaded["contracts"][contract_id].get("implementations", ("expression", "graph", "provider"))
+        if kind not in allowed:
+>           raise RuleError(f"{contract_id} does not allow implementation {kind!r}")
+E           ark_sim.rules.errors.RuleError: damage.pipeline does not allow implementation 'expression'
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\rules\runtime.py:32: RuleError
+
+The above exception was the direct cause of the following exception:
+
+bypass = True, expected = 30
+
+    @pytest.mark.parametrize('bypass,expected',[(False,15),(True,30)])
+    def test_NoneSource_BUFF_true_without_modify_policy_preserves_or_skips_pipeline_hook(bypass,expected):
+>    s=Engine.create(Compiler().compile(package()));s.ctx.effects.execute(None,[s.session.world.resolve('victim')],effect(bypass));assert s.ctx.resources.current('victim','hp')==100-expected;e=rows(s,'damage.accepted')[-1];assert e['payload']['amount']==expected and e['payload']['source'] is None and e['payload']['attack_type']=='BUFF';assert bool(rows(s,'damage.modification_bypassed')) is bypass
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tools\candidates\content_base_peer_v1\test_no_source.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <ark_sim.content.compiler.Compiler object at 0x000001FC1FE87F50>
+scenario = {'schemaVersion': 2, 'manifest': {'requires': ['preset/ark_standard']}, 'rules': [{'id': 'rule/peer/pipeline', 'kind':...uffs': [{'id': 'buff/peer/hook', 'kind': 'buff', 'damage_hooks': [{'phase': 'after', 'rule': 'rule/peer/hook'}]}], ...}
+packages = None, ruleset = None, overrides = None
+
+    def compile(self, scenario, packages=None, ruleset=None, overrides=None):
+        try:
+            return self._compile(scenario, packages, ruleset, overrides)
+        except CompileError:
+            raise
+        except (ContentError, ValueError, TypeError, KeyError) as exc:
+>           raise CompileError(str(exc)) from exc
+E           ark_sim.content.compiler.CompileError: damage.pipeline does not allow implementation 'expression'
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:86: CompileError
+_____________ test_target_dodge_rng_only_modified_path[False-0-1] _____________
+
+self = <ark_sim.content.compiler.Compiler object at 0x000001FC1FE58830>
+scenario = {'schemaVersion': 2, 'manifest': {'requires': ['preset/ark_standard']}, 'rules': [{'id': 'rule/peer/pipeline', 'kind':...'damage_hooks': [{'phase': 'after', 'rule': 'rule/peer/hook', 'samples': {'stream': 'peer/dodge', 'count': 1}}]}], ...}
+packages = None, ruleset = None, overrides = None
+
+    def compile(self, scenario, packages=None, ruleset=None, overrides=None):
+        try:
+>           return self._compile(scenario, packages, ruleset, overrides)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:211: in _compile
+    runtime = self._validate_rules(rules, definitions, selected_ruleset,
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:266: in _validate_rules
+    runtime = RuleRuntime(rules, bindings=ruleset.get("bindings", {}), catalog=self.catalog,
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\rules\runtime.py:92: in __init__
+    self.compiled = {key: validate_rule(value, self.catalog) for key, value in self.rules.items()}
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+definition = <ark_sim.contracts.models.FrozenMapping object at 0x000001FC1FE85780>
+catalog = <ark_sim.contracts.models.FrozenMapping object at 0x000001FC1D79D450>
+
+    def validate_rule(definition, catalog=None):
+        """Compile one definition without requiring provider registration."""
+        loaded = load_catalog(catalog)
+        if not isinstance(definition, Mapping) or not isinstance(definition.get("id"), str):
+            raise RuleError("Rule definitions require string IDs")
+        contract_id = definition.get("contract")
+        if contract_id not in loaded["contracts"]:
+            raise MissingRuleError(f"{definition['id']}: unknown contract {contract_id!r}")
+        implementation = definition.get("implementation")
+        if not isinstance(implementation, Mapping):
+            raise RuleError(f"{definition['id']}: implementation mapping required")
+        kind = implementation.get("type")
+        allowed = loaded["contracts"][contract_id].get("implementations", ("expression", "graph", "provider"))
+        if kind not in allowed:
+>           raise RuleError(f"{contract_id} does not allow implementation {kind!r}")
+E           ark_sim.rules.errors.RuleError: damage.pipeline does not allow implementation 'expression'
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\rules\runtime.py:32: RuleError
+
+The above exception was the direct cause of the following exception:
+
+bypass = False, damage = 0, samples = 1
+
+    @pytest.mark.parametrize('bypass,damage,samples',[(False,0,1),(True,30,0)])
+    def test_target_dodge_rng_only_modified_path(bypass,damage,samples):
+>    s=Engine.create(Compiler().compile(package('dodge')));before=s.session.random.snapshot();s.ctx.effects.execute(None,[s.session.world.resolve('victim')],effect(bypass));assert s.ctx.resources.current('victim','hp')==100-damage;after=s.session.random.snapshot();assert len(after['samples'])-len(before['samples'])==samples
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tools\candidates\content_base_peer_v1\test_no_source.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <ark_sim.content.compiler.Compiler object at 0x000001FC1FE58830>
+scenario = {'schemaVersion': 2, 'manifest': {'requires': ['preset/ark_standard']}, 'rules': [{'id': 'rule/peer/pipeline', 'kind':...'damage_hooks': [{'phase': 'after', 'rule': 'rule/peer/hook', 'samples': {'stream': 'peer/dodge', 'count': 1}}]}], ...}
+packages = None, ruleset = None, overrides = None
+
+    def compile(self, scenario, packages=None, ruleset=None, overrides=None):
+        try:
+            return self._compile(scenario, packages, ruleset, overrides)
+        except CompileError:
+            raise
+        except (ContentError, ValueError, TypeError, KeyError) as exc:
+>           raise CompileError(str(exc)) from exc
+E           ark_sim.content.compiler.CompileError: damage.pipeline does not allow implementation 'expression'
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:86: CompileError
+_____________ test_target_dodge_rng_only_modified_path[True-30-0] _____________
+
+self = <ark_sim.content.compiler.Compiler object at 0x000001FC1FF7BE90>
+scenario = {'schemaVersion': 2, 'manifest': {'requires': ['preset/ark_standard']}, 'rules': [{'id': 'rule/peer/pipeline', 'kind':...'damage_hooks': [{'phase': 'after', 'rule': 'rule/peer/hook', 'samples': {'stream': 'peer/dodge', 'count': 1}}]}], ...}
+packages = None, ruleset = None, overrides = None
+
+    def compile(self, scenario, packages=None, ruleset=None, overrides=None):
+        try:
+>           return self._compile(scenario, packages, ruleset, overrides)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:211: in _compile
+    runtime = self._validate_rules(rules, definitions, selected_ruleset,
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:266: in _validate_rules
+    runtime = RuleRuntime(rules, bindings=ruleset.get("bindings", {}), catalog=self.catalog,
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\rules\runtime.py:92: in __init__
+    self.compiled = {key: validate_rule(value, self.catalog) for key, value in self.rules.items()}
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+definition = <ark_sim.contracts.models.FrozenMapping object at 0x000001FC1FE27C10>
+catalog = <ark_sim.contracts.models.FrozenMapping object at 0x000001FC1FBFFB20>
+
+    def validate_rule(definition, catalog=None):
+        """Compile one definition without requiring provider registration."""
+        loaded = load_catalog(catalog)
+        if not isinstance(definition, Mapping) or not isinstance(definition.get("id"), str):
+            raise RuleError("Rule definitions require string IDs")
+        contract_id = definition.get("contract")
+        if contract_id not in loaded["contracts"]:
+            raise MissingRuleError(f"{definition['id']}: unknown contract {contract_id!r}")
+        implementation = definition.get("implementation")
+        if not isinstance(implementation, Mapping):
+            raise RuleError(f"{definition['id']}: implementation mapping required")
+        kind = implementation.get("type")
+        allowed = loaded["contracts"][contract_id].get("implementations", ("expression", "graph", "provider"))
+        if kind not in allowed:
+>           raise RuleError(f"{contract_id} does not allow implementation {kind!r}")
+E           ark_sim.rules.errors.RuleError: damage.pipeline does not allow implementation 'expression'
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\rules\runtime.py:32: RuleError
+
+The above exception was the direct cause of the following exception:
+
+bypass = True, damage = 30, samples = 0
+
+    @pytest.mark.parametrize('bypass,damage,samples',[(False,0,1),(True,30,0)])
+    def test_target_dodge_rng_only_modified_path(bypass,damage,samples):
+>    s=Engine.create(Compiler().compile(package('dodge')));before=s.session.random.snapshot();s.ctx.effects.execute(None,[s.session.world.resolve('victim')],effect(bypass));assert s.ctx.resources.current('victim','hp')==100-damage;after=s.session.random.snapshot();assert len(after['samples'])-len(before['samples'])==samples
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tools\candidates\content_base_peer_v1\test_no_source.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <ark_sim.content.compiler.Compiler object at 0x000001FC1FF7BE90>
+scenario = {'schemaVersion': 2, 'manifest': {'requires': ['preset/ark_standard']}, 'rules': [{'id': 'rule/peer/pipeline', 'kind':...'damage_hooks': [{'phase': 'after', 'rule': 'rule/peer/hook', 'samples': {'stream': 'peer/dodge', 'count': 1}}]}], ...}
+packages = None, ruleset = None, overrides = None
+
+    def compile(self, scenario, packages=None, ruleset=None, overrides=None):
+        try:
+            return self._compile(scenario, packages, ruleset, overrides)
+        except CompileError:
+            raise
+        except (ContentError, ValueError, TypeError, KeyError) as exc:
+>           raise CompileError(str(exc)) from exc
+E           ark_sim.content.compiler.CompileError: damage.pipeline does not allow implementation 'expression'
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:86: CompileError
+__________ test_bypass_true_bounds_lethal_claim_and_none_attribution __________
+
+self = <ark_sim.content.compiler.Compiler object at 0x000001FC1FE58320>
+scenario = {'schemaVersion': 2, 'manifest': {'requires': ['preset/ark_standard']}, 'rules': [{'id': 'rule/peer/pipeline', 'kind':...uffs': [{'id': 'buff/peer/hook', 'kind': 'buff', 'damage_hooks': [{'phase': 'after', 'rule': 'rule/peer/hook'}]}], ...}
+packages = None, ruleset = None, overrides = None
+
+    def compile(self, scenario, packages=None, ruleset=None, overrides=None):
+        try:
+>           return self._compile(scenario, packages, ruleset, overrides)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:211: in _compile
+    runtime = self._validate_rules(rules, definitions, selected_ruleset,
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:266: in _validate_rules
+    runtime = RuleRuntime(rules, bindings=ruleset.get("bindings", {}), catalog=self.catalog,
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\rules\runtime.py:92: in __init__
+    self.compiled = {key: validate_rule(value, self.catalog) for key, value in self.rules.items()}
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+definition = <ark_sim.contracts.models.FrozenMapping object at 0x000001FC1FFBA230>
+catalog = <ark_sim.contracts.models.FrozenMapping object at 0x000001FC1FF969B0>
+
+    def validate_rule(definition, catalog=None):
+        """Compile one definition without requiring provider registration."""
+        loaded = load_catalog(catalog)
+        if not isinstance(definition, Mapping) or not isinstance(definition.get("id"), str):
+            raise RuleError("Rule definitions require string IDs")
+        contract_id = definition.get("contract")
+        if contract_id not in loaded["contracts"]:
+            raise MissingRuleError(f"{definition['id']}: unknown contract {contract_id!r}")
+        implementation = definition.get("implementation")
+        if not isinstance(implementation, Mapping):
+            raise RuleError(f"{definition['id']}: implementation mapping required")
+        kind = implementation.get("type")
+        allowed = loaded["contracts"][contract_id].get("implementations", ("expression", "graph", "provider"))
+        if kind not in allowed:
+>           raise RuleError(f"{contract_id} does not allow implementation {kind!r}")
+E           ark_sim.rules.errors.RuleError: damage.pipeline does not allow implementation 'expression'
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\rules\runtime.py:32: RuleError
+
+The above exception was the direct cause of the following exception:
+
+    def test_bypass_true_bounds_lethal_claim_and_none_attribution():
+>    s=Engine.create(Compiler().compile(package(enemy=True)));s.ctx.effects.execute(None,[s.session.world.resolve('victim')],effect(True,500));assert s.ctx.resources.current('victim','hp')==0 and not s.ctx.alive('victim');e=rows(s,'damage.accepted')[-1];assert e['payload']['amount']==100 and e['payload']['pipeline_amount']==500 and e['payload']['source'] is None;assert s.ctx.state()['kills']==1;assert rows(s,'entity.died')[-1]['payload']['source'] is None
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tools\candidates\content_base_peer_v1\test_no_source.py:23: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <ark_sim.content.compiler.Compiler object at 0x000001FC1FE58320>
+scenario = {'schemaVersion': 2, 'manifest': {'requires': ['preset/ark_standard']}, 'rules': [{'id': 'rule/peer/pipeline', 'kind':...uffs': [{'id': 'buff/peer/hook', 'kind': 'buff', 'damage_hooks': [{'phase': 'after', 'rule': 'rule/peer/hook'}]}], ...}
+packages = None, ruleset = None, overrides = None
+
+    def compile(self, scenario, packages=None, ruleset=None, overrides=None):
+        try:
+            return self._compile(scenario, packages, ruleset, overrides)
+        except CompileError:
+            raise
+        except (ContentError, ValueError, TypeError, KeyError) as exc:
+>           raise CompileError(str(exc)) from exc
+E           ark_sim.content.compiler.CompileError: damage.pipeline does not allow implementation 'expression'
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:86: CompileError
+_ test_target_hook_bad_late_allocation_rolls_full_packet_resources_trace_rng __
+
+self = <ark_sim.content.compiler.Compiler object at 0x000001FC1FEC87D0>
+scenario = {'schemaVersion': 2, 'manifest': {'requires': ['preset/ark_standard']}, 'rules': [{'id': 'rule/peer/pipeline', 'kind':...'damage_hooks': [{'phase': 'after', 'rule': 'rule/peer/hook', 'samples': {'stream': 'peer/dodge', 'count': 1}}]}], ...}
+packages = None, ruleset = None, overrides = None
+
+    def compile(self, scenario, packages=None, ruleset=None, overrides=None):
+        try:
+>           return self._compile(scenario, packages, ruleset, overrides)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:211: in _compile
+    runtime = self._validate_rules(rules, definitions, selected_ruleset,
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:266: in _validate_rules
+    runtime = RuleRuntime(rules, bindings=ruleset.get("bindings", {}), catalog=self.catalog,
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\rules\runtime.py:92: in __init__
+    self.compiled = {key: validate_rule(value, self.catalog) for key, value in self.rules.items()}
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+definition = <ark_sim.contracts.models.FrozenMapping object at 0x000001FC1FF943D0>
+catalog = <ark_sim.contracts.models.FrozenMapping object at 0x000001FC1DA53670>
+
+    def validate_rule(definition, catalog=None):
+        """Compile one definition without requiring provider registration."""
+        loaded = load_catalog(catalog)
+        if not isinstance(definition, Mapping) or not isinstance(definition.get("id"), str):
+            raise RuleError("Rule definitions require string IDs")
+        contract_id = definition.get("contract")
+        if contract_id not in loaded["contracts"]:
+            raise MissingRuleError(f"{definition['id']}: unknown contract {contract_id!r}")
+        implementation = definition.get("implementation")
+        if not isinstance(implementation, Mapping):
+            raise RuleError(f"{definition['id']}: implementation mapping required")
+        kind = implementation.get("type")
+        allowed = loaded["contracts"][contract_id].get("implementations", ("expression", "graph", "provider"))
+        if kind not in allowed:
+>           raise RuleError(f"{contract_id} does not allow implementation {kind!r}")
+E           ark_sim.rules.errors.RuleError: damage.pipeline does not allow implementation 'expression'
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\rules\runtime.py:32: RuleError
+
+The above exception was the direct cause of the following exception:
+
+    def test_target_hook_bad_late_allocation_rolls_full_packet_resources_trace_rng():
+>    p=package('dodge');p['rules'][1]['implementation']['expression']="{'accepted':True,'amount':30,'allocations':[{'target':'target','resource':'hp','amount':20},{'target':'target','resource':'hp','amount':-1}],'events':[]}";s=Engine.create(Compiler().compile(p));before=s.checkpoint()
+                                                                                                                                                                                                                                                  ^^^^^^^^^^^^^^^^^^^^^
+
+tools\candidates\content_base_peer_v1\test_no_source.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <ark_sim.content.compiler.Compiler object at 0x000001FC1FEC87D0>
+scenario = {'schemaVersion': 2, 'manifest': {'requires': ['preset/ark_standard']}, 'rules': [{'id': 'rule/peer/pipeline', 'kind':...'damage_hooks': [{'phase': 'after', 'rule': 'rule/peer/hook', 'samples': {'stream': 'peer/dodge', 'count': 1}}]}], ...}
+packages = None, ruleset = None, overrides = None
+
+    def compile(self, scenario, packages=None, ruleset=None, overrides=None):
+        try:
+            return self._compile(scenario, packages, ruleset, overrides)
+        except CompileError:
+            raise
+        except (ContentError, ValueError, TypeError, KeyError) as exc:
+>           raise CompileError(str(exc)) from exc
+E           ark_sim.content.compiler.CompileError: damage.pipeline does not allow implementation 'expression'
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:86: CompileError
+__________ test_owned_timer_refresh_remove_origin_generation_CP_head __________
+
+self = <ark_sim.content.compiler.Compiler object at 0x000001FC1FE860C0>
+scenario = {'schemaVersion': 2, 'manifest': {'requires': ['preset/ark_standard']}, 'rules': [{'id': 'rule/peer/pipeline', 'kind':...{'id': 'buff/peer/timer', 'kind': 'buff', 'interval_seconds': 0.06666666666666667, 'duration_seconds': 0.3, ...}], ...}
+packages = None, ruleset = None, overrides = None
+
+    def compile(self, scenario, packages=None, ruleset=None, overrides=None):
+        try:
+>           return self._compile(scenario, packages, ruleset, overrides)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:211: in _compile
+    runtime = self._validate_rules(rules, definitions, selected_ruleset,
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:266: in _validate_rules
+    runtime = RuleRuntime(rules, bindings=ruleset.get("bindings", {}), catalog=self.catalog,
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\rules\runtime.py:92: in __init__
+    self.compiled = {key: validate_rule(value, self.catalog) for key, value in self.rules.items()}
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+definition = <ark_sim.contracts.models.FrozenMapping object at 0x000001FC1FF7A230>
+catalog = <ark_sim.contracts.models.FrozenMapping object at 0x000001FC1FF79D50>
+
+    def validate_rule(definition, catalog=None):
+        """Compile one definition without requiring provider registration."""
+        loaded = load_catalog(catalog)
+        if not isinstance(definition, Mapping) or not isinstance(definition.get("id"), str):
+            raise RuleError("Rule definitions require string IDs")
+        contract_id = definition.get("contract")
+        if contract_id not in loaded["contracts"]:
+            raise MissingRuleError(f"{definition['id']}: unknown contract {contract_id!r}")
+        implementation = definition.get("implementation")
+        if not isinstance(implementation, Mapping):
+            raise RuleError(f"{definition['id']}: implementation mapping required")
+        kind = implementation.get("type")
+        allowed = loaded["contracts"][contract_id].get("implementations", ("expression", "graph", "provider"))
+        if kind not in allowed:
+>           raise RuleError(f"{contract_id} does not allow implementation {kind!r}")
+E           ark_sim.rules.errors.RuleError: damage.pipeline does not allow implementation 'expression'
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\rules\runtime.py:32: RuleError
+
+The above exception was the direct cause of the following exception:
+
+    def test_owned_timer_refresh_remove_origin_generation_CP_head():
+>    p=package();p['entities'][0]['components']['buffs']['initial']=[];p['buffs'].append({'id':'buff/peer/timer','kind':'buff','interval_seconds':2/30,'duration_seconds':9/30,'effects':[effect(True,10)]});p['selectors']=[{'id':'selector/peer/victim','kind':'selector','region':{'type':'all'},'filters':[{'tag':'player'}]}];p['scenarioDraft']['scheduledEffects']=[{'at':0,'effect':{'op':'apply_buff','buff':'buff/peer/timer','selector':'selector/peer/victim'}},{'at':3,'effect':{'op':'apply_buff','buff':'buff/peer/timer','selector':'selector/peer/victim'}},{'at':8,'effect':{'op':'remove_buff','buff':'buff/peer/timer','selector':'selector/peer/victim'}}];program=Compiler().compile(p);s=Engine.create(program);s.session.advance(4);OUT.mkdir(parents=True,exist_ok=True);cp=OUT/'owned_timer4.cp.json';assert not cp.exists();h=write_ordered(cp,s.checkpoint());r=Engine.restore(program,load_bound(cp,h));s.session.advance(8);r.session.advance(8);assert s.snapshot()==r.snapshot()==replay(program,s.export_replay()).snapshot();hits=rows(s,'damage.accepted');assert [e['time'] for e in hits]==[2,5,7] and s.ctx.resources.current('victim','hp')==70;assert [e['payload']['origin']['buff_timer']['generation'] for e in hits]==[1,2,2];assert all(e['payload']['source'] is None and e['payload']['origin']['buff_timer']['owner']==s.session.world.resolve('victim') for e in hits);assert not s.ctx.entity('victim')['components']['buffs']['instances'];(OUT/'owned_timer_actual.json').write_text(json.dumps({'input':p,'cp_sha':h,'snapshot':s.snapshot()},indent=2)+'\n',encoding='utf8',newline='')
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ^^^^^^^^^^^^^^^^^^^^^
+
+tools\candidates\content_base_peer_v1\test_no_source.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <ark_sim.content.compiler.Compiler object at 0x000001FC1FE860C0>
+scenario = {'schemaVersion': 2, 'manifest': {'requires': ['preset/ark_standard']}, 'rules': [{'id': 'rule/peer/pipeline', 'kind':...{'id': 'buff/peer/timer', 'kind': 'buff', 'interval_seconds': 0.06666666666666667, 'duration_seconds': 0.3, ...}], ...}
+packages = None, ruleset = None, overrides = None
+
+    def compile(self, scenario, packages=None, ruleset=None, overrides=None):
+        try:
+            return self._compile(scenario, packages, ruleset, overrides)
+        except CompileError:
+            raise
+        except (ContentError, ValueError, TypeError, KeyError) as exc:
+>           raise CompileError(str(exc)) from exc
+E           ark_sim.content.compiler.CompileError: damage.pipeline does not allow implementation 'expression'
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:86: CompileError
+______ test_owner_dead_after_first_periodic_packet_no_more_lease_damage _______
+
+self = <ark_sim.content.compiler.Compiler object at 0x000001FC1FF94F20>
+scenario = {'schemaVersion': 2, 'manifest': {'requires': ['preset/ark_standard']}, 'rules': [{'id': 'rule/peer/pipeline', 'kind':...'effects': [{'op': 'no_source_damage', 'fixed_amount': 500, 'damage_type': 'true', 'attack_type': 'BUFF', ...}]}], ...}
+packages = None, ruleset = None, overrides = None
+
+    def compile(self, scenario, packages=None, ruleset=None, overrides=None):
+        try:
+>           return self._compile(scenario, packages, ruleset, overrides)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:211: in _compile
+    runtime = self._validate_rules(rules, definitions, selected_ruleset,
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:266: in _validate_rules
+    runtime = RuleRuntime(rules, bindings=ruleset.get("bindings", {}), catalog=self.catalog,
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\rules\runtime.py:92: in __init__
+    self.compiled = {key: validate_rule(value, self.catalog) for key, value in self.rules.items()}
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+definition = <ark_sim.contracts.models.FrozenMapping object at 0x000001FC1FE5A080>
+catalog = <ark_sim.contracts.models.FrozenMapping object at 0x000001FC1FF94700>
+
+    def validate_rule(definition, catalog=None):
+        """Compile one definition without requiring provider registration."""
+        loaded = load_catalog(catalog)
+        if not isinstance(definition, Mapping) or not isinstance(definition.get("id"), str):
+            raise RuleError("Rule definitions require string IDs")
+        contract_id = definition.get("contract")
+        if contract_id not in loaded["contracts"]:
+            raise MissingRuleError(f"{definition['id']}: unknown contract {contract_id!r}")
+        implementation = definition.get("implementation")
+        if not isinstance(implementation, Mapping):
+            raise RuleError(f"{definition['id']}: implementation mapping required")
+        kind = implementation.get("type")
+        allowed = loaded["contracts"][contract_id].get("implementations", ("expression", "graph", "provider"))
+        if kind not in allowed:
+>           raise RuleError(f"{contract_id} does not allow implementation {kind!r}")
+E           ark_sim.rules.errors.RuleError: damage.pipeline does not allow implementation 'expression'
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\rules\runtime.py:32: RuleError
+
+The above exception was the direct cause of the following exception:
+
+    def test_owner_dead_after_first_periodic_packet_no_more_lease_damage():
+>    p=package();p['entities'][0]['components']['buffs']['initial']=[];p['buffs'].append({'id':'buff/peer/lethal_timer','kind':'buff','interval_seconds':2/30,'effects':[effect(True,500)]});p['entities'][0]['components']['buffs']['initial']=['buff/peer/lethal_timer'];s=Engine.create(Compiler().compile(p));s.session.advance(10);assert len(rows(s,'damage.accepted'))==1 and not s.ctx.alive('victim')
+                                                                                                                                                                                                                                                                                           ^^^^^^^^^^^^^^^^^^^^^
+
+tools\candidates\content_base_peer_v1\test_no_source.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <ark_sim.content.compiler.Compiler object at 0x000001FC1FF94F20>
+scenario = {'schemaVersion': 2, 'manifest': {'requires': ['preset/ark_standard']}, 'rules': [{'id': 'rule/peer/pipeline', 'kind':...'effects': [{'op': 'no_source_damage', 'fixed_amount': 500, 'damage_type': 'true', 'attack_type': 'BUFF', ...}]}], ...}
+packages = None, ruleset = None, overrides = None
+
+    def compile(self, scenario, packages=None, ruleset=None, overrides=None):
+        try:
+            return self._compile(scenario, packages, ruleset, overrides)
+        except CompileError:
+            raise
+        except (ContentError, ValueError, TypeError, KeyError) as exc:
+>           raise CompileError(str(exc)) from exc
+E           ark_sim.content.compiler.CompileError: damage.pipeline does not allow implementation 'expression'
+
+..\unpack_work\campaign_content_base_v1_candidate\ark_sim\content\compiler.py:86: CompileError
+=========================== short test summary info ===========================
+FAILED tools/candidates/content_base_peer_v1/test_no_source.py::test_NoneSource_BUFF_true_without_modify_policy_preserves_or_skips_pipeline_hook[False-15]
+FAILED tools/candidates/content_base_peer_v1/test_no_source.py::test_NoneSource_BUFF_true_without_modify_policy_preserves_or_skips_pipeline_hook[True-30]
+FAILED tools/candidates/content_base_peer_v1/test_no_source.py::test_target_dodge_rng_only_modified_path[False-0-1]
+FAILED tools/candidates/content_base_peer_v1/test_no_source.py::test_target_dodge_rng_only_modified_path[True-30-0]
+FAILED tools/candidates/content_base_peer_v1/test_no_source.py::test_bypass_true_bounds_lethal_claim_and_none_attribution
+FAILED tools/candidates/content_base_peer_v1/test_no_source.py::test_target_hook_bad_late_allocation_rolls_full_packet_resources_trace_rng
+FAILED tools/candidates/content_base_peer_v1/test_no_source.py::test_owned_timer_refresh_remove_origin_generation_CP_head
+FAILED tools/candidates/content_base_peer_v1/test_no_source.py::test_owner_dead_after_first_periodic_packet_no_more_lease_damage
+8 failed in 0.55s

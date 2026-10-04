@@ -1,0 +1,450 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/ch7/demons/enemy_1084_sotidm/v1",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "native_variant_id": "enemy_1084_sotidm@0/36d5cfd40d4f58cb",
+      "source_locks": {
+        "packages\\campaign\\chapter07_boss\\demons\\enemy_1084_sotidm.source.json": "282b12397a5ef7240d72014ddc0aa4c0223302fce2258d60b6bb072e5a51112d"
+      },
+      "builder_sha256": "8c5073dd7e17d4e13f95c0f50a5b19d92649b0b74138883f4f239130ac549b60",
+      "reference_policies": {
+        "ore_switch": "ExactsourceBSON, actualore producer separateRoot task; controlledpublictransition usedauthorprobe",
+        "clock": "NaturalCD5 fromacceptedfinish, mode-specific clocks; FSMrestart preservesaccrued mainattack/cooldown exceptcaster newlyenabledmode init0 reference",
+        "timing": "Melee mode0 rawAttack16/full35; mode1 hookAttack_2 actual29/full49. TimeMode0 windup+duration ASPD,min.01reference",
+        "empty_visuals": "No gamecombat action inferred from emptytemplate/visualeffectkeys"
+      },
+      "mode_interface": "Sameactor behavior.mode0/mode1 viaactualtransition, sourceindices0/1",
+      "native_never_trigger": false,
+      "independent_reviewed": false,
+      "whole_stage_executed": false,
+      "client_verified": false
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground",
+        "ore_responsive"
+      ],
+      "metadata": {
+        "native_variant_id": "enemy_1084_sotidm@0/36d5cfd40d4f58cb",
+        "shared_listener": "buff/ch7/source/ore_listener",
+        "shared_immune": "buff/ch7/source/ore_immune"
+      },
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 8000,
+            "atk": 480,
+            "def": 400,
+            "mres": 50.0,
+            "move_speed": 0.85,
+            "attack_interval": 2.5,
+            "attack_speed_ratio": 1,
+            "mass_level": 2,
+            "block_cost": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 8000,
+            "capacity_attribute": "max_hp",
+            "role": "health"
+          }
+        },
+        "selection_state": {
+          "side": 1,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 1,
+          "abnormal_immunes": [
+            12
+          ]
+        },
+        "spatial": {},
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle",
+          "leak_loss": 1
+        },
+        "buffs": {
+          "initial": [
+            "buff/ch7/source/ore_listener",
+            "buff/ch7/source/ore_immune"
+          ]
+        },
+        "abilities": [
+          "ability/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/normal0",
+          "ability/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/normal1"
+        ],
+        "ability_arbitration": {
+          "priority_order": "higher_first",
+          "busy": "all_casts",
+          "entries": [
+            {
+              "ability": "ability/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/normal0",
+              "priority": 0,
+              "attack_clock": true,
+              "require_attack_control": true,
+              "condition": "(inputs.source.components.behavior.state if 'state' in inputs.source.components.behavior else 'mode0') == 'mode0'",
+              "parameters": {}
+            },
+            {
+              "ability": "ability/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/normal1",
+              "priority": 0,
+              "attack_clock": true,
+              "require_attack_control": true,
+              "condition": "(inputs.source.components.behavior.state if 'state' in inputs.source.components.behavior else 'mode0') == 'mode1'",
+              "parameters": {}
+            }
+          ]
+        },
+        "behavior": {
+          "machine": "behavior/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb"
+        }
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/eligibility",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.targeting.eligibility"
+      }
+    },
+    {
+      "id": "rule/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/blocked",
+      "kind": "calculation_rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "expression",
+        "expression": "{'accepted':'blocked_by' in inputs.source.components.runtime and inputs.source.components.runtime.blocked_by == inputs.candidate.id,'reason':'nativeINPUT_TARGET2'}"
+      }
+    },
+    {
+      "id": "rule/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/windup",
+      "kind": "rule",
+      "contract": "ability.windup",
+      "parameters": {
+        "minimum_speed": 0.01
+      },
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.timing_parameters.seconds / max(inputs.attributes.attack_speed_ratio, params.minimum_speed)"
+      }
+    },
+    {
+      "id": "rule/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/duration",
+      "kind": "rule",
+      "contract": "ability.duration",
+      "parameters": {
+        "minimum_speed": 0.01
+      },
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.duration_parameters.seconds / max(inputs.attributes.attack_speed_ratio, params.minimum_speed)"
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/ch7/source/ore_listener",
+      "kind": "buff"
+    },
+    {
+      "id": "buff/ch7/source/ore_immune",
+      "kind": "buff"
+    },
+    {
+      "id": "buff/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/fsm_interrupt",
+      "kind": "buff",
+      "duration_seconds": 1e-08,
+      "control": {
+        "attack": false,
+        "abilities": false,
+        "interrupt": true
+      }
+    },
+    {
+      "id": "buff/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/sotidm_effect",
+      "kind": "buff",
+      "metadata": {
+        "native_template": "empty",
+        "source_visual_only": "buff_curse_01"
+      }
+    },
+    {
+      "id": "buff/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/sotidm_effect[eye]",
+      "kind": "buff",
+      "metadata": {
+        "native_template": "empty",
+        "source_visual_only": "sotidp_buff_01_start"
+      }
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/normal0",
+      "kind": "ability",
+      "selector": "selector/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/blocker0",
+      "target_capture": "at_cast",
+      "duration_seconds": 1.1666666666666667,
+      "rules": {
+        "ability.windup": "rule/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/windup",
+        "ability.duration": "rule/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/duration"
+      },
+      "activation": {
+        "mode": "automatic_attack",
+        "settle_blocking": true,
+        "parameters": {
+          "auto_only": true
+        }
+      },
+      "timeline": [
+        {
+          "at_seconds": 0.5333333333333333,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1,
+            "damage_flags": {
+              "source_attack_type": "NORMAL",
+              "ignore_for_sp": false
+            },
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/normal1",
+      "kind": "ability",
+      "selector": "selector/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/blocker1",
+      "target_capture": "at_cast",
+      "duration_seconds": 1.6333333333333333,
+      "rules": {
+        "ability.windup": "rule/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/windup",
+        "ability.duration": "rule/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/duration"
+      },
+      "activation": {
+        "mode": "automatic_attack",
+        "settle_blocking": true,
+        "parameters": {
+          "auto_only": true
+        }
+      },
+      "timeline": [
+        {
+          "at_seconds": 0.9666666666666667,
+          "effect": {
+            "op": "damage",
+            "damage_type": "arts",
+            "scale": 1,
+            "damage_flags": {
+              "source_attack_type": "NORMAL",
+              "ignore_for_sp": false
+            },
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/blocker0",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1,
+      "eligibility": {
+        "rule": "rule/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/blocked",
+        "parameters": {
+          "source_configuration": {
+            "_targetSide": 2,
+            "_targetMotion": 1,
+            "_targetCategory": 1,
+            "_ignoreMotionMode": 0,
+            "_ignoreTargetFree": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_needProfessionMask": 0,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_checkUnitType": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject",
+          "defaults": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "profession": 0,
+            "unit_type": 1,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "target_free": false,
+            "ally_target_free": false,
+            "heal_free": false,
+            "camouflage": false,
+            "can_select_camouflage": false,
+            "abnormal_immunes": []
+          }
+        }
+      }
+    },
+    {
+      "id": "selector/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/blocker1",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1,
+      "eligibility": {
+        "rule": "rule/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/blocked",
+        "parameters": {
+          "source_configuration": {
+            "_targetSide": 2,
+            "_targetMotion": 1,
+            "_targetCategory": 1,
+            "_ignoreMotionMode": 0,
+            "_ignoreTargetFree": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_needProfessionMask": 0,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_checkUnitType": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject",
+          "defaults": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "profession": 0,
+            "unit_type": 1,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "target_free": false,
+            "ally_target_free": false,
+            "heal_free": false,
+            "camouflage": false,
+            "can_select_camouflage": false,
+            "abnormal_immunes": []
+          }
+        }
+      }
+    }
+  ],
+  "behaviors": [
+    {
+      "id": "behavior/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb",
+      "kind": "behavior",
+      "initial": "mode0",
+      "states": {
+        "mode0": {
+          "on_enter": [
+            {
+              "op": "apply_buff",
+              "target": "source",
+              "buff": "buff/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/fsm_interrupt"
+            },
+            {
+              "op": "remove_buff",
+              "target": "source",
+              "buff": "buff/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/fsm_interrupt"
+            },
+            {
+              "op": "apply_buff",
+              "target": "source",
+              "buff": "buff/ch7/source/ore_listener"
+            }
+          ],
+          "on_exit": [
+            {
+              "op": "remove_buff",
+              "target": "source",
+              "buff": "buff/ch7/source/ore_listener"
+            }
+          ]
+        },
+        "mode1": {
+          "on_enter": [
+            {
+              "op": "apply_buff",
+              "target": "source",
+              "buff": "buff/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/fsm_interrupt"
+            },
+            {
+              "op": "remove_buff",
+              "target": "source",
+              "buff": "buff/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/fsm_interrupt"
+            },
+            {
+              "op": "apply_buff",
+              "target": "source",
+              "buff": "buff/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/sotidm_effect"
+            },
+            {
+              "op": "apply_buff",
+              "target": "source",
+              "buff": "buff/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/sotidm_effect[eye]"
+            }
+          ],
+          "on_exit": [
+            {
+              "op": "remove_buff",
+              "target": "source",
+              "buff": "buff/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/sotidm_effect"
+            },
+            {
+              "op": "remove_buff",
+              "target": "source",
+              "buff": "buff/unit/ch7/enemy_1084_sotidm/36d5cfd40d4f58cb/sotidm_effect[eye]"
+            }
+          ]
+        }
+      },
+      "transitions": []
+    }
+  ]
+}

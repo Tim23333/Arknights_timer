@@ -3,15 +3,28 @@ from collections.abc import Mapping
 from .repository import ContentError
 
 
-REFERENCE_KEYS = {"definition", "ability", "buff", "selector", "machine", "policy",
+REFERENCE_KEYS = {"attachment", "target_buff", "source_recovery_buff","projectile_definition", "definition", "ability", "buff", "selector", "machine", "policy",
                   "rule", "ruleset", "extends", "prototype", "behavior"}
-REFERENCE_LISTS = {"abilities", "requires", "dependencies", "externals", "allowed", "roster"}
+REFERENCE_LISTS = {"cards","abilities", "requires", "dependencies", "externals", "allowed", "roster", "recovery_freeze_abilities", "interrupt_abilities", "retain_buffs"}
 
 
 def references(value, path="definition", calculation_bindings=None):
     result = set()
     def visit(item, location, key=None):
         if isinstance(item, Mapping):
+            if item.get('op') == 'restart_behavior':
+                from ..domains.behavior_restart import validate
+                try:options=validate(item)
+                except ValueError as error:raise ContentError(location+': '+str(error)) from error
+                # An ability may explicitly restart its own owned cast; the
+                # enclosing definition is already reachable, not a content cycle.
+                result.update(aid for aid in options['abilities'] if aid!=value.get('id'))
+            if item.get("op") == "apply_terrain_overlay":
+                terrain_rule = item.get("parameters", {}).get("rule")
+                if terrain_rule is not None:
+                    if not isinstance(terrain_rule, str) or not terrain_rule:
+                        raise ContentError(f"{location}.parameters.rule: terrain rule ID required")
+                    result.add(terrain_rule)
             if item.get("action", item.get("type")) == "deploy" and isinstance(item.get("entity"), str):
                 result.add(item["entity"])
             if "dynamic" in item:
@@ -30,7 +43,15 @@ def references(value, path="definition", calculation_bindings=None):
                         raise ContentError(f"{location}.metadata.calculation_dependencies: missing default rule binding for {calculation}")
                     result.add(binding)
             for name, child in item.items():
-                if name in {"metadata", "parameters", "payload", "inputs"}:
+                if name=='blackboard' and key=='tiles' and '.map.tiles[' in location:
+                    continue
+                if key == "timeline" and name == "policy":
+                    # Timeline's validated scheduling policy is an enum, unlike
+                    # entity/lifecycle/buff policy definition references.
+                    continue
+                if name == "origin" and (item.get("op") == "no_source_damage" or item.get("type") == "periodic_effect_field"):
+                    continue
+                if name in {"metadata", "parameters", "payload", "inputs", "expected_blackboard"}:
                     # These are data/expression records, not schema references.
                     # Providers declaring generated content use dependencies or
                     # bounded dynamicReferences instead of accidental key scans.
@@ -56,7 +77,10 @@ def references(value, path="definition", calculation_bindings=None):
                         result.add(rule)
                 elif name in REFERENCE_KEYS or name.endswith("_rule"):
                     if isinstance(child, str):
-                        result.add(child)
+                        # Remove only the already-instantiated current Buff;
+                        # construction/apply edges remain real dependencies.
+                        if not (name == "buff" and item.get("op") == "remove_buff" and child == value.get("id") and value.get("kind") == "buff"):
+                            result.add(child)
                     elif isinstance(child, Mapping):
                         visit(child, f"{location}.{name}", name)
                     elif child is not None:

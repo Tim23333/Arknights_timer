@@ -1,0 +1,55 @@
+{
+  "schema": "ark-sim/independent-runtime-counterexample/v1",
+  "status": "actual_samecast_stale_aura",
+  "core_before": "2746020dd269241d8802551ea63cb28243755ff0105a19bb09033c448f497420",
+  "core_after": "2746020dd269241d8802551ea63cb28243755ff0105a19bb09033c448f497420",
+  "source_locks": {
+    "tools/experiments/m42_peer/test_reentry.py": "fc04df9526484175694b4adca9fb5db8a5ed105573c4fb35acc48c7c8f95ba54",
+    "tools\\experiments\\m42_peer\\capture_failure.py": "f56df6b400008747aeb60831ab63b3d5441c21b08c8a42987183d07fb9f34c0c",
+    "../unpack_work/campaign_m42_aura_remove_candidate/ark_sim/domains/buffs.py": "37e95eee9db06ce9e035921f69ff0e44f23481b1fb6f0aca8299d74df5ad17b2",
+    "../unpack_work/campaign_m42_aura_remove_candidate/ark_sim/domains/lifecycle.py": "5307f945a3b78a637f38e44d9373e371017d741796a0b2a149911958339ab543"
+  },
+  "actual_module": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m42_aura_remove_candidate\\ark_sim\\__init__.py",
+  "input_sha256": "ff8e73c12748cd1258493709d2bb3d563a893af8277ebf76acdc32a2ed8c5fa0",
+  "commands_sha256": "61e9358444530d2882aa24daa35e3de23f0f4d143a6b99943bf07e79199b0286",
+  "initial_HP": 100,
+  "bare_DEF": 10,
+  "aura_DEF_delta": 5,
+  "attack": 100,
+  "expected_damage": 90,
+  "actual_damage": [
+    85
+  ],
+  "expected_final_HP": 10,
+  "actual_final_HP": 15,
+  "parent_alive_after_command": false,
+  "ordered_retire_and_damage": [
+    {
+      "id": 115,
+      "type": "entity.withdraw",
+      "payload": {
+        "source": 2,
+        "target": 2
+      },
+      "time": 0,
+      "cause": null
+    },
+    {
+      "id": 125,
+      "type": "damage.accepted",
+      "payload": {
+        "source": 3,
+        "target": 4,
+        "amount": 85,
+        "ability": "ability/leave",
+        "resource": "hp"
+      },
+      "time": 0,
+      "cause": 102
+    }
+  ],
+  "explanation": "During reconciliation a leaving child on_remove retires the parent source. Old desired/member snapshot survives until the later maintenance, and the next effect in the same ability sees stale DEF.",
+  "earlier_invalid_fixture": "Direct child->parent remove reference is a dependency cycle and rejected; original initial.log is fixture evidence only.",
+  "actual_client_verified": false,
+  "formal_approved": false
+}

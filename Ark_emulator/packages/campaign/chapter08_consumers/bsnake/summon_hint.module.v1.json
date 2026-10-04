@@ -1,0 +1,282 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/ch8/bsnake/summon_hint_v1",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "source_locks": {
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\bsnake\\source.closure.v1.json": "742d78443641451c8b54bdf75281c33cd04c198eaee373ca95991e380f05469d",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\flame\\loop.profile.v3.json": "8e2f1afbdb2f136b6d01e86de604c4a919effdb3c6f9dd6c9612198589bb18da",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_joint_v4\\build_summon_hint_v1.py": "8c0590c5bd0f115c7d5c3631f42576489edc12018d3f676731b943b7dc0e38a7"
+      },
+      "required_runtime": "20e8126120668fece832e8b6e23fd53a68fb013656a4476b5ad8e53850f6dd30",
+      "resources_required": {
+        "mode": {
+          "initial": 0,
+          "capacity": 3
+        },
+        "hint_phase": {
+          "initial": 0,
+          "capacity": 6
+        }
+      },
+      "owned_abilities": [
+        "ability/ch8/bsnake/hint",
+        "ability/ch8/bsnake/hint_countdown",
+        "ability/ch8/bsnake/summon_flame"
+      ],
+      "native_actions": [
+        {
+          "_isLoop": true,
+          "_branchId": "",
+          "_maxValidEnemyCount": -1,
+          "$type": "Torappu.Battle.Action.Nodes+MoveNextLevelBranch"
+        },
+        {
+          "_ownerType": "SOURCE",
+          "_targetType": "SOURCE",
+          "_abilityName": "Hint",
+          "_checkCanUseAblityFlag": false,
+          "_castDirectly": false,
+          "_useFirstActiveAbility": false,
+          "_useCastResult": false,
+          "_triggerHostAbility": false,
+          "_notInterruptAbilityIfCasting": false,
+          "$type": "Torappu.Battle.Action.Nodes+TriggerAbility"
+        },
+        {
+          "_ownerType": "SOURCE",
+          "_targetType": "SOURCE",
+          "_abilityName": "HintCountdown",
+          "_checkCanUseAblityFlag": false,
+          "_castDirectly": false,
+          "_useFirstActiveAbility": false,
+          "_useCastResult": false,
+          "_triggerHostAbility": false,
+          "_notInterruptAbilityIfCasting": false,
+          "$type": "Torappu.Battle.Action.Nodes+TriggerAbility"
+        }
+      ],
+      "reference_policy": "Hint selects next native phase (not current completed phase); resource phase advances modulo7 after branch request. Countdown fires once at27s and clears itself. Visual effects explicit events carry actual native aliases, no fabricated combat actor.",
+      "whole_stage_executed": false,
+      "full_boss_complete": false,
+      "client_verified": false
+    }
+  },
+  "abilities": [
+    {
+      "id": "ability/ch8/bsnake/hint",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "parameters": {
+          "auto_only": true
+        },
+        "on_start": [
+          {
+            "op": "emit",
+            "event": "source.bsnake.hint.clear"
+          },
+          {
+            "op": "emit",
+            "event": "source.bsnake.hint.show",
+            "payload": {
+              "phase_index": 0,
+              "registration_keys": [
+                "trap_021_flame#2",
+                "trap_021_flame#3",
+                "trap_021_flame#5",
+                "trap_021_flame#8",
+                "trap_021_flame#9"
+              ],
+              "effect_key": "map_fire_crystal_birth_01_buff"
+            },
+            "condition": "inputs.source.components.resources.hint_phase.current == 0"
+          },
+          {
+            "op": "emit",
+            "event": "source.bsnake.hint.show",
+            "payload": {
+              "phase_index": 1,
+              "registration_keys": [
+                "trap_021_flame#1",
+                "trap_021_flame#2",
+                "trap_021_flame#4",
+                "trap_021_flame#7",
+                "trap_021_flame#9"
+              ],
+              "effect_key": "map_fire_crystal_birth_01_buff"
+            },
+            "condition": "inputs.source.components.resources.hint_phase.current == 1"
+          },
+          {
+            "op": "emit",
+            "event": "source.bsnake.hint.show",
+            "payload": {
+              "phase_index": 2,
+              "registration_keys": [
+                "trap_021_flame#3",
+                "trap_021_flame#4",
+                "trap_021_flame#5",
+                "trap_021_flame#8",
+                "trap_021_flame#10"
+              ],
+              "effect_key": "map_fire_crystal_birth_01_buff"
+            },
+            "condition": "inputs.source.components.resources.hint_phase.current == 2"
+          },
+          {
+            "op": "emit",
+            "event": "source.bsnake.hint.show",
+            "payload": {
+              "phase_index": 3,
+              "registration_keys": [
+                "trap_021_flame#1",
+                "trap_021_flame#2",
+                "trap_021_flame#3",
+                "trap_021_flame#6",
+                "trap_021_flame#9"
+              ],
+              "effect_key": "map_fire_crystal_birth_01_buff"
+            },
+            "condition": "inputs.source.components.resources.hint_phase.current == 3"
+          },
+          {
+            "op": "emit",
+            "event": "source.bsnake.hint.show",
+            "payload": {
+              "phase_index": 4,
+              "registration_keys": [
+                "trap_021_flame#4",
+                "trap_021_flame#5",
+                "trap_021_flame#6",
+                "trap_021_flame#8",
+                "trap_021_flame#10"
+              ],
+              "effect_key": "map_fire_crystal_birth_01_buff"
+            },
+            "condition": "inputs.source.components.resources.hint_phase.current == 4"
+          },
+          {
+            "op": "emit",
+            "event": "source.bsnake.hint.show",
+            "payload": {
+              "phase_index": 5,
+              "registration_keys": [
+                "trap_021_flame#2",
+                "trap_021_flame#6",
+                "trap_021_flame#7",
+                "trap_021_flame#8",
+                "trap_021_flame#9"
+              ],
+              "effect_key": "map_fire_crystal_birth_01_buff"
+            },
+            "condition": "inputs.source.components.resources.hint_phase.current == 5"
+          },
+          {
+            "op": "emit",
+            "event": "source.bsnake.hint.show",
+            "payload": {
+              "phase_index": 6,
+              "registration_keys": [
+                "trap_021_flame#2",
+                "trap_021_flame#3",
+                "trap_021_flame#4",
+                "trap_021_flame#5",
+                "trap_021_flame#8"
+              ],
+              "effect_key": "map_fire_crystal_birth_01_buff"
+            },
+            "condition": "inputs.source.components.resources.hint_phase.current == 6"
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/ch8/bsnake/hint_countdown",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "parameters": {
+          "auto_only": true
+        },
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/ch8/source/bsnake_t[hint]"
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/ch8/bsnake/summon_flame",
+      "kind": "ability",
+      "cooldown_seconds": 50,
+      "initial_cooldown_seconds": 75,
+      "activation": {
+        "mode": "manual",
+        "parameters": {
+          "auto_only": true
+        },
+        "condition": "inputs.resources.mode.current == 1 and inputs.branches.bsnake_flame.available == True"
+      },
+      "duration_seconds": 2.3333333333333335,
+      "timeline": [
+        {
+          "at": 27,
+          "effects": [
+            {
+              "op": "advance_branch",
+              "parameters": {
+                "branch": "bsnake_flame"
+              }
+            },
+            {
+              "op": "modify_resource",
+              "target": "source",
+              "resource": "hint_phase",
+              "delta": 1,
+              "condition": "inputs.source.components.resources.hint_phase.current < 6"
+            },
+            {
+              "op": "modify_resource",
+              "target": "source",
+              "resource": "hint_phase",
+              "value": 0,
+              "condition": "inputs.source.components.resources.hint_phase.current == 6"
+            },
+            {
+              "op": "trigger_ability",
+              "target": "source",
+              "ability": "ability/ch8/bsnake/hint"
+            },
+            {
+              "op": "trigger_ability",
+              "target": "source",
+              "ability": "ability/ch8/bsnake/hint_countdown"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/ch8/source/bsnake_t[hint]",
+      "kind": "buff",
+      "duration_seconds": 27,
+      "on_remove": [
+        {
+          "op": "trigger_ability",
+          "target": "source",
+          "ability": "ability/ch8/bsnake/hint"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,251 @@
+{
+  "schema": "ark-sim/native-control-model/v1",
+  "status": "explicit_headless_model",
+  "source": {
+    "source": "unpack_work/release_20260831/hot_raw/main_00-10.dat",
+    "sha256": "fb7dfe19d0abc6dc0aa8badf4a342e405dd23913ee87db9b46bc38028ebbbb0b",
+    "script_sha256": "b5e5721d74031217286b78b69784490eea0f188c5137677e2431ed976b38c966",
+    "commands": [
+      {
+        "command": "HEADER",
+        "native_parameters": "is_skippable=true, is_autoable=false",
+        "text": "主线00-10关卡内剧情"
+      },
+      {
+        "command": "PopupDialog",
+        "native_parameters": "dialogHead=\"$avatar_amiya\"",
+        "text": "敌方单位“拾荒者”的攻击力很强......我们需要小心应对。"
+      },
+      {
+        "command": "PopupDialog",
+        "native_parameters": "dialogHead=\"$avatar_doberm\"",
+        "text": "博士，建议部署重装干员防守。"
+      },
+      {
+        "command": "PopupDialog",
+        "native_parameters": "dialogHead=\"$avatar_ace\"",
+        "text": "只有击溃他，我们才能有更大的发挥空间！"
+      },
+      {
+        "command": "Blocker",
+        "native_parameters": "fadetime=0.3, block=true, a=0",
+        "text": ""
+      }
+    ]
+  },
+  "native_control_counts": {
+    "STORY": 1,
+    "DISPLAY_ENEMY_INFO": 1
+  },
+  "scheduledEffects": [
+    {
+      "at_seconds": 0.0,
+      "effect": {
+        "op": "emit",
+        "target": "battle",
+        "event": "native.control",
+        "payload": {
+          "native_action": {
+            "actionType": "STORY",
+            "managedByScheduler": true,
+            "key": "obt/tutorial/level/main_00-10",
+            "count": 1,
+            "preDelay": 0.0,
+            "interval": 1.0,
+            "routeIndex": 0,
+            "blockFragment": false,
+            "autoPreviewRoute": false,
+            "autoDisplayEnemyInfo": false,
+            "isUnharmfulAndAlwaysCountAsKilled": false,
+            "hiddenGroup": null,
+            "randomSpawnGroupKey": null,
+            "randomSpawnGroupPackKey": null,
+            "randomType": "ALWAYS",
+            "refreshType": "ALWAYS",
+            "weight": 0,
+            "dontBlockWave": false,
+            "forceBlockWaveInBranch": false
+          },
+          "native_wave": 0,
+          "native_fragment": 0
+        },
+        "effects": [
+          {
+            "op": "input_lock",
+            "target": "battle",
+            "parameters": {
+              "key": "obt/tutorial/level/main_00-10",
+              "enabled": true
+            }
+          },
+          {
+            "op": "emit",
+            "target": "battle",
+            "event": "story.started",
+            "payload": {
+              "native_action": {
+                "actionType": "STORY",
+                "managedByScheduler": true,
+                "key": "obt/tutorial/level/main_00-10",
+                "count": 1,
+                "preDelay": 0.0,
+                "interval": 1.0,
+                "routeIndex": 0,
+                "blockFragment": false,
+                "autoPreviewRoute": false,
+                "autoDisplayEnemyInfo": false,
+                "isUnharmfulAndAlwaysCountAsKilled": false,
+                "hiddenGroup": null,
+                "randomSpawnGroupKey": null,
+                "randomSpawnGroupPackKey": null,
+                "randomType": "ALWAYS",
+                "refreshType": "ALWAYS",
+                "weight": 0,
+                "dontBlockWave": false,
+                "forceBlockWaveInBranch": false
+              },
+              "native_wave": 0,
+              "native_fragment": 0
+            }
+          },
+          {
+            "op": "emit",
+            "target": "battle",
+            "event": "story.command",
+            "payload": {
+              "command": "HEADER",
+              "native_parameters": "is_skippable=true, is_autoable=false",
+              "text": "主线00-10关卡内剧情"
+            }
+          },
+          {
+            "op": "emit",
+            "target": "battle",
+            "event": "story.command",
+            "payload": {
+              "command": "PopupDialog",
+              "native_parameters": "dialogHead=\"$avatar_amiya\"",
+              "text": "敌方单位“拾荒者”的攻击力很强......我们需要小心应对。"
+            }
+          },
+          {
+            "op": "emit",
+            "target": "battle",
+            "event": "story.command",
+            "payload": {
+              "command": "PopupDialog",
+              "native_parameters": "dialogHead=\"$avatar_doberm\"",
+              "text": "博士，建议部署重装干员防守。"
+            }
+          },
+          {
+            "op": "emit",
+            "target": "battle",
+            "event": "story.command",
+            "payload": {
+              "command": "PopupDialog",
+              "native_parameters": "dialogHead=\"$avatar_ace\"",
+              "text": "只有击溃他，我们才能有更大的发挥空间！"
+            }
+          },
+          {
+            "op": "emit",
+            "target": "battle",
+            "event": "story.command",
+            "payload": {
+              "command": "Blocker",
+              "native_parameters": "fadetime=0.3, block=true, a=0",
+              "text": ""
+            }
+          },
+          {
+            "op": "input_lock",
+            "target": "battle",
+            "parameters": {
+              "key": "obt/tutorial/level/main_00-10",
+              "enabled": false
+            }
+          },
+          {
+            "op": "emit",
+            "target": "battle",
+            "event": "story.finished",
+            "payload": {
+              "key": "obt/tutorial/level/main_00-10",
+              "policy": "headless_ack_zero_game_time_v1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "at_seconds": 49.0,
+      "effect": {
+        "op": "emit",
+        "target": "battle",
+        "event": "enemy.info_displayed",
+        "payload": {
+          "native_action": {
+            "actionType": "DISPLAY_ENEMY_INFO",
+            "managedByScheduler": true,
+            "key": "enemy_1030_wteeth",
+            "count": 1,
+            "preDelay": 4.0,
+            "interval": 1.0,
+            "routeIndex": 10,
+            "blockFragment": false,
+            "autoPreviewRoute": true,
+            "autoDisplayEnemyInfo": false,
+            "isUnharmfulAndAlwaysCountAsKilled": false,
+            "hiddenGroup": null,
+            "randomSpawnGroupKey": null,
+            "randomSpawnGroupPackKey": null,
+            "randomType": "ALWAYS",
+            "refreshType": "ALWAYS",
+            "weight": 0,
+            "dontBlockWave": false,
+            "forceBlockWaveInBranch": false
+          },
+          "native_wave": 0,
+          "native_fragment": 3,
+          "native_preview_route": {
+            "motionMode": "E_NUM",
+            "startPosition": {
+              "row": 0,
+              "col": 0
+            },
+            "endPosition": {
+              "row": 0,
+              "col": 0
+            },
+            "spawnRandomRange": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "spawnOffset": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "checkpoints": null,
+            "allowDiagonalMove": true,
+            "visitEveryTileCenter": false,
+            "visitEveryNodeCenter": false,
+            "visitEveryCheckPoint": false
+          }
+        }
+      }
+    }
+  ],
+  "model_policy": {
+    "id": "headless_ack_zero_game_time_v1",
+    "dialogue_acknowledged_at_same_logical_tick": true,
+    "blocker_input_lock_observable": true,
+    "native_ui_wall_time_simulated": false
+  },
+  "client_validated": false,
+  "formal_stage_approved": false,
+  "pending": [
+    "native_UI_input_and_pause_callback_order",
+    "source_versions_alignment"
+  ]
+}

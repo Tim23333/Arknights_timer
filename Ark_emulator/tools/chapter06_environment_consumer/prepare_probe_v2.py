@@ -1,0 +1,10 @@
+"""New source static-tile binding candidate probe; no original fixture overwrite."""
+import hashlib,json
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2];DIR=ROOT/'tools/chapter06_environment_consumer';pkg=ROOT/'packages/campaign/chapter06_environment_consumer';parent=pkg/'module.reference.json';p=json.loads(parent.read_bytes());profile={'type':'declared_static_tile','expected_options':{'buildableType':1,'passableMask':2,'heightType':'LOWLAND'},'expected_blackboard':None,'expected_effects':None};meta=p['manifest']['metadata'];meta['parent_module_sha']=hashlib.sha256(parent.read_bytes()).hexdigest();meta['required_candidate_core']='8c58a6b704da11c42540357f37331ef604ac737056c1baf40ca7b14e44578924';meta['tile_profiles']['tile_fence']=profile
+for stage in meta['native_stages'].values():
+ if stage['all_special_tile_cells']['tile_fence']:stage['converted_map']['tile_mechanics']['tile_fence']=profile
+out=pkg/'module.v2.reference.json';assert not out.exists();out.write_text(json.dumps(p,ensure_ascii=False,indent=2)+'\n',encoding='utf8',newline='')
+s=(DIR/'probe_route_v1.py').read_text().replace('campaign_chapter06_complete_base_v5_candidate','campaign_declared_static_tile_v1_candidate').replace('chapter06_environment_v1','chapter06_environment_v2').replace('module.reference.json','module.v2.reference.json').replace('a7059989b9db7f4bc0de954b32cb5c5ba10e6b92ce040c57ea0a193549b9709a','8c58a6b704da11c42540357f37331ef604ac737056c1baf40ca7b14e44578924')
+s=s.replace(" p['rules'].append({'id':'rule/ch6/env/native_move_multiplier'"," p['rules'].append({'id':'rule/m7_diagonal_path','kind':'calculation_rule','extends':'rule/ark_movement_path','parameters':{'use_route_diagonal':True,'corner_cut':False}});p['rules'].append({'id':'rule/ch6/env/native_move_multiplier'")
+out=DIR/'probe_route_v2.py';assert not out.exists();out.write_text(s,encoding='utf8',newline='');print(json.dumps({'module_sha':hashlib.sha256((pkg/'module.v2.reference.json').read_bytes()).hexdigest(),'candidate_core':meta['required_candidate_core']}))

@@ -1,0 +1,523 @@
+--- a/ark_sim/adapters/api.py
++++ b/ark_sim/adapters/api.py
+@@ -14,6 +14,7 @@
+ from ark_sim.domains.movement import SpatialSystem, MovementSystem
+ from ark_sim.domains.lifecycle import LifecycleSystem
+ from ark_sim.domains.timeline import TimelineSystem
++from ark_sim.domains.controls import ControlSystem
+ 
+ 
+ def implementation_digest():
+@@ -40,6 +41,8 @@
+         self.ctx.lifecycle = LifecycleSystem(self.ctx)
+         if program.scenario.get("timeline") is not None:
+             self.ctx.timeline = TimelineSystem(self.ctx)
++            if any(a["kind"] == "control" for w in program.scenario["timeline"]["waves"] for f in w["fragments"] for a in f["actions"]):
++                self.ctx.controls = ControlSystem(self.ctx)
+         self._commands = []
+         self._register()
+         self.runtime_fingerprint = digest({"implementation": implementation_digest(), "rules": self.ctx.rules.fingerprint,
+@@ -93,6 +96,9 @@
+         if self.ctx.timeline is not None:
+             for name, handler in self.ctx.timeline.handlers.items():
+                 self.session.register_handler(name, handler)
++        if self.ctx.controls is not None:
++            for name, handler in self.ctx.controls.handlers.items(): self.session.register_handler(name, handler)
++            self.session.add_system(self.ctx.controls.tick, phase=0)
+         self.session.add_system(self.ctx.lifecycle.prune_expired, phase=0)
+         if self.ctx.buffs.has_buffs:
+             # Registered before initial waves and input tasks: expiry at t is
+@@ -138,9 +144,14 @@
+         session = self.session
+         if self.ctx.state()["finished"]:
+             raise ValueError("scenario already finished")
++        kind = action.get("action", action.get("type"))
++        if kind == "control_ack":
++            if (self.ctx.controls is None or set(action)-{"action", "type", "control", "step"}
++                    or action.get("type", "control_ack") != "control_ack"):
++                raise ValueError("control_ack requires only active control reference and waiting step")
++            return self.ctx.controls.acknowledge(action.get("control"), action.get("step"))
+         if self.ctx.state().get("input_locks"):
+             raise ValueError("scenario input locked")
+-        kind = action.get("action", action.get("type"))
+         if kind in ("activate_ability", "skill"):
+             ref = session.world.resolve(action["source"])
+             result = self.ctx.abilities.start(ref, action["ability"], event_payload=action.get("payload"))
+--- a/ark_sim/content/capabilities.py
++++ b/ark_sim/content/capabilities.py
+@@ -206,6 +206,12 @@
+             if definition.get("movement_damage"):
+                 effect(definition["movement_damage"]["effect"], f"{identifier}.movement_damage.effect", scopes)
+             events(definition.get("events", []), f"{identifier}.events", scopes)
++        elif kind == "control":
++            require("time.quantize", identifier)
++            for name in ("on_start", "on_complete", "on_cancel"):
++                for index, item in enumerate(definition.get(name, [])): effect(item, f"{identifier}.{name}[{index}]", scopes)
++            for index, step in enumerate(definition["steps"]):
++                for item in step.get("effects", []): effect(item, f"{identifier}.steps[{index}]", scopes)
+         elif kind == "behavior" and definition.get("states"):
+             for name, state in definition["states"].items():
+                 for key in ("on_enter", "on_exit"):
+@@ -227,7 +233,7 @@
+                         if spawn.get("placement"):
+                             require("spawn.position", path, explicit=spawn["placement"]["rule"])
+                         instance_route(spawn, path+".route")
+-                    else:
++                    elif action["kind"] == "effects":
+                         for child in action["effects"]:
+                             effect(child, path, [])
+     for index, entry in enumerate(scenario.get("scheduledEffects", [])):
+--- a/ark_sim/content/compiler.py
++++ b/ark_sim/content/compiler.py
+@@ -351,7 +351,8 @@
+                     if key in {"metadata", "parameters", "payload", "inputs"}:
+                         continue
+                     if key in expected and isinstance(child, str) and child in definitions:
+-                        if definitions[child].get("kind") not in expected[key]:
++                        wanted = {"control"} if key == "definition" and value.get("kind") == "control" and "op" not in value else expected[key]
++                        if definitions[child].get("kind") not in wanted:
+                             raise CompileError(f"{path}.{key}: {child} has incompatible kind {definitions[child].get('kind')}")
+                     elif key in {"abilities", "recovery_freeze_abilities", "interrupt_abilities"} and isinstance(child, (list, tuple)):
+                         for reference in child:
+--- a/ark_sim/content/repository.py
++++ b/ark_sim/content/repository.py
+@@ -6,7 +6,7 @@
+ from ..contracts.models import thaw
+ 
+ 
+-COLLECTIONS = {"entities": "entity", "abilities": "ability", "buffs": "buff",
++COLLECTIONS = {"entities": "entity", "abilities": "ability", "buffs": "buff", "controls": "control",
+                "selectors": "selector", "behaviors": "behavior", "policies": "policy",
+                "rules": "calculation_rule", "rulesets": "ruleset", "presets": "preset",
+                "scenarios": "scenario", "definitions": None}
+--- a/ark_sim/content/schemas.py
++++ b/ark_sim/content/schemas.py
+@@ -7,6 +7,7 @@
+ 
+ COMMON = {"id", "kind", "version", "extends", "metadata", "rules", "dependencies", "dynamicReferences"}
+ FIELDS = {
++    "control": {"clock_policy", "ack_policy", "steps", "on_start", "on_complete", "on_cancel"},
+     "entity": {"tags", "components", "growth", "talents", "equipment", "progression"},
+     "ability": {"activation", "selector", "timeline", "target_capture", "interrupt_policy", "success_definition", "duration_seconds", "cooldown_seconds", "events", "parameters"},
+     "buff": {"duration_seconds", "interval_seconds", "stacking", "modifiers", "events", "effects", "parameters", "removal", "duration_rule", "interval_rule", "control", "aura", "on_remove", "movement_damage", "damage_hooks"},
+@@ -168,7 +169,36 @@
+     if kind not in FIELDS:
+         raise ContentError(f"{identifier}: unsupported definition kind {kind!r}")
+     fields(definition, COMMON | FIELDS[kind], identifier)
+-    if kind == "entity":
++    if kind == "control":
++        if definition.get("rules"): raise ContentError(f"{identifier}.rules: bind individual effect rules; control owner rule scope is unsupported")
++        if definition.get("clock_policy") != "logical": raise ContentError(f"{identifier}.clock_policy: explicit logical required")
++        if definition.get("ack_policy") not in {"external", "immediate"}: raise ContentError(f"{identifier}.ack_policy: explicit external or immediate required")
++        steps = definition.get("steps")
++        if not isinstance(steps, (list, tuple)) or len(steps) > 10000: raise ContentError(f"{identifier}.steps: bounded list required")
++        def control_effects(effects, path):
++            if not isinstance(effects, (list, tuple)): raise ContentError(f"{path}: effect list required")
++            def has_schedule(value):
++                if isinstance(value, Mapping): return value.get("op") == "schedule" or any(has_schedule(v) for k,v in value.items() if k not in {"metadata", "payload", "parameters"})
++                if isinstance(value, (list, tuple)): return any(has_schedule(v) for v in value)
++                return False
++            for index, effect in enumerate(effects):
++                validate_effect(effect, f"{path}[{index}]", capabilities)
++                if has_schedule(effect): raise ContentError(f"{path}: control effects use delay steps instead of unowned schedule jobs")
++        keys = set()
++        for index, step in enumerate(steps):
++            path = f"{identifier}.steps[{index}]"; kind_step = step.get("kind") if isinstance(step, Mapping) else None
++            if kind_step == "effects":
++                fields(step, {"kind", "effects", "metadata"}, path); control_effects(step.get("effects"), path+".effects")
++            elif kind_step == "delay":
++                fields(step, {"kind", "seconds", "metadata"}, path); number(step.get("seconds"), path+".seconds", 0)
++            elif kind_step == "ack":
++                fields(step, {"kind", "key", "metadata"}, path)
++                key = step.get("key")
++                if not isinstance(key, str) or not key or key in keys: raise ContentError(f"{path}.key: unique nonempty ack key required")
++                keys.add(key)
++            else: raise ContentError(f"{path}.kind: effects/delay/ack required")
++        for name in ("on_start", "on_complete", "on_cancel"): control_effects(definition.get(name, []), identifier+"."+name)
++    elif kind == "entity":
+         for field in ("equipment", "progression", "talents"):
+             if definition.get(field):
+                 raise ContentError(f"{identifier}.{field}: execution is unsupported in this runtime")
+@@ -419,6 +449,8 @@
+         def reserve_alias(alias, path):
+             if alias is None:
+                 return
++            if isinstance(alias, str) and alias.startswith("control/") and any(a.get("kind") == "control" for w in definition.get("timeline", {}).get("waves", []) for f in w["fragments"] for a in f["actions"]):
++                raise ContentError(f"{path}: control/ is reserved for runtime control IDs")
+             if not isinstance(alias, str) or not alias:
+                 raise ContentError(f"{path}: expected a nonempty instance alias")
+             if alias in aliases:
+@@ -452,7 +484,12 @@
+             alias = entity.get("instanceAlias")
+             reserve_alias(alias, f"{path}.instanceAlias")
+         for command in definition.get("commands", []):
+-            fields(command, {"at_seconds", "at", "action", "type", "source", "entity", "ability", "definition", "position", "row", "col", "facing", "instanceAlias", "alias", "payload", "resource", "delta", "target", "parameters", "components", "tags"}, f"{identifier}.commands")
++            fields(command, {"at_seconds", "at", "action", "type", "source", "entity", "ability", "definition", "position", "row", "col", "facing", "instanceAlias", "alias", "payload", "resource", "delta", "target", "parameters", "components", "tags", "control", "step"}, f"{identifier}.commands")
++            if command.get("action", command.get("type")) == "control_ack":
++                fields(command, {"at_seconds", "at", "action", "type", "control", "step"}, f"{identifier}.commands.control_ack")
++                if (not isinstance(command.get("control"), str) or not command["control"] or type(command.get("step")) is not int
++                        or command["step"] < 0 or command.get("type", "control_ack") != "control_ack"):
++                    raise ContentError(f"{identifier}.commands.control_ack: exact control reference and nonnegative integer step required")
+             validate_timing(command, f"{identifier}.commands")
+         for name, spec in definition.get("resources", {}).items():
+             fields(spec, RESOURCE_FIELDS, f"{identifier}.resources.{name}")
+@@ -500,10 +537,10 @@
+         for wi, wave in enumerate(definition.get("timeline", {}).get("waves", [])):
+             for fi, fragment in enumerate(wave["fragments"]):
+                 for ai, action in enumerate(fragment["actions"]):
+-                    if action["kind"] != "spawn":
++                    if action["kind"] not in {"spawn", "control"}:
+                         continue
+-                    path = f"{identifier}.timeline.waves[{wi}].fragments[{fi}].actions[{ai}].spawn.instanceAlias"
+-                    alias = action["spawn"].get("instanceAlias")
++                    path = f"{identifier}.timeline.waves[{wi}].fragments[{fi}].actions[{ai}].instanceAlias"
++                    alias = (action["spawn"] if action["kind"] == "spawn" else action).get("instanceAlias")
+                     if alias is None:
+                         continue
+                     if not isinstance(alias, str) or not alias:
+--- a/ark_sim/content/timeline_validation.py
++++ b/ark_sim/content/timeline_validation.py
+@@ -31,9 +31,9 @@
+                 raise ContentError(f"{fp}.actions: expected a list")
+             for ai, action in enumerate(fragment["actions"]):
+                 ap = f"{fp}.actions[{ai}]"
+-                fields(action, {"kind", "delay_seconds", "interval_seconds", "count", "managed", "blocks_wave", "blocks_fragment", "spawn", "effects", "metadata"}, ap)
+-                if action.get("kind") not in {"spawn", "effects"}:
+-                    raise ContentError(f"{ap}.kind: expected spawn or effects")
++                fields(action, {"kind", "delay_seconds", "interval_seconds", "count", "managed", "blocks_wave", "blocks_fragment", "spawn", "effects", "metadata", "definition", "instanceAlias"}, ap)
++                if action.get("kind") not in {"spawn", "effects", "control"}:
++                    raise ContentError(f"{ap}.kind: expected spawn/effects/control")
+                 count = action.get("count", 1)
+                 if type(count) is not int or not 0 <= count <= 10000:
+                     raise ContentError(f"{ap}.count: expected nonnegative bounded integer")
+@@ -42,7 +42,14 @@
+                 for flag in ("managed", "blocks_wave", "blocks_fragment"):
+                     if flag in action and type(action[flag]) is not bool:
+                         raise ContentError(f"{ap}.{flag}: boolean required")
+-                if action["kind"] == "spawn":
++                if action["kind"] != "control" and ("definition" in action or "instanceAlias" in action):
++                    raise ContentError(f"{ap}: control fields require control action kind")
++                if action["kind"] == "control":
++                    if "spawn" in action or "effects" in action or not isinstance(action.get("definition"), str) or not action["definition"]:
++                        raise ContentError(f"{ap}: control requires exact definition and no spawn/effects")
++                    if not action.get("managed", True) and (action.get("blocks_wave", True) or action.get("blocks_fragment", False)):
++                        raise ContentError(f"{ap}: unmanaged control cannot block wave or fragment")
++                elif action["kind"] == "spawn":
+                     if "effects" in action:
+                         raise ContentError(f"{ap}: spawn and effects are mutually exclusive")
+                     spawn = action.get("spawn")
+--- a/ark_sim/domains/context.py
++++ b/ark_sim/domains/context.py
+@@ -57,6 +57,7 @@
+             raise DomainError("compiled provider/rule identity differs from runtime; recompile with the chosen providers")
+         self.effect_phase = len(program.ruleset.get("system_order", ())) + 1
+         self.attributes = self.resources = self.effects = self.abilities = self.buffs = self.spatial = self.behavior = self.lifecycle = self.timeline = None
++        self.controls = None
+         self._notifying = 0
+         self.last_calculation_event_id = None
+ 
+--- /dev/null
++++ b/ark_sim/domains/controls.py
+@@ -0,0 +1,170 @@
++"""Content-driven asynchronous logical controls, independent of actor counts."""
++from ark_sim.contracts import thaw
++
++
++class ControlSystem:
++    def __init__(self, context):
++        self.ctx = context
++        self.handlers = {"domain.control.signal": self.signal}
++
++    def _state(self):
++        return self.ctx.state().get("controls", {"next_instance": 1, "instances": {}, "aliases": {}})
++
++    def _save(self, state):
++        self.ctx.state_update(controls=state)
++
++    def instance(self, reference):
++        if not isinstance(reference, str): raise ValueError("control reference must be an instance ID or alias")
++        state = self._state(); key = state["aliases"].get(reference, reference)
++        if key not in state["instances"]: raise ValueError("unknown control instance")
++        return state["instances"][key]
++
++    def _put(self, instance):
++        state = self._state(); state["instances"][instance["id"]] = instance; self._save(state)
++
++    def alias_exists(self, alias):
++        state = self._state()
++        return alias in state["aliases"] or alias in state["instances"]
++
++    def prepare(self, definition, alias, origins):
++        with self.ctx.session.atomic():
++            if self.ctx.state().get("finished"): raise ValueError("cannot prepare a control after terminal result")
++            if self.ctx.program.definitions[definition].get("kind") != "control": raise ValueError("control definition kind required")
++            state = self._state(); uid = "control/"+str(state["next_instance"])
++            if alias is not None:
++                if not isinstance(alias, str) or not alias or alias.startswith("control/"): raise ValueError("invalid/reserved control alias")
++                if alias in state["aliases"] or alias in state["instances"]: raise ValueError("duplicate control alias")
++                try: self.ctx.session.world.resolve(alias)
++                except KeyError: pass
++                else: raise ValueError("control alias collides with an actor alias")
++                state["aliases"][alias] = uid
++            state["next_instance"] += 1
++            instance = {"id": uid, "definition": definition, "alias": alias, "status": "pending", "phase": "pending",
++                "cursor": 0, "generation": 0, "tasks": {}, "locks": {}, "origins": dict(origins),
++                "waiting_step": None, "waiting_key": None, "prepared_at": self.ctx.session.time}
++            state["instances"][uid] = instance; self._save(state)
++            self.ctx.emit("control.pending", {"control": uid, "definition": definition, "origins": dict(origins)})
++            return uid
++
++    def lock_key(self, reference, key, enabled):
++        instance = self.instance(reference)
++        if instance["status"] not in {"running", "pending"}: raise ValueError("inactive control cannot change an input lock")
++        actual = instance["id"]+":"+key
++        if enabled: instance["locks"][key] = actual
++        else: instance["locks"].pop(key, None)
++        self._put(instance)
++        return actual
++
++    def track_start_task(self, reference, task):
++        instance = self.instance(reference); instance["tasks"]["start"] = task; self._put(instance)
++
++    def _effects(self, reference, effects):
++        for effect in effects:
++            self.ctx.effects.execute("system/battle", ["system/battle"], thaw(effect), cast={"control_instance": reference})
++
++    def begin(self, reference):
++        with self.ctx.session.atomic():
++            instance = self.instance(reference)
++            if instance["status"] != "pending": raise ValueError("control start requires pending instance")
++            if self.ctx.state().get("finished"): raise ValueError("cannot start a control after terminal result")
++            instance.update(status="running", phase="effects", started_at=self.ctx.session.time); self._put(instance)
++            instance["tasks"].pop("start", None); self._put(instance)
++            self.ctx.emit("control.started", {"control": instance["id"], "definition": instance["definition"]})
++            self._effects(instance["id"], self.ctx.program.definitions[instance["definition"]].get("on_start", ()))
++            self._advance(instance["id"])
++
++    def _advance(self, reference):
++        while True:
++            instance = self.instance(reference); definition = self.ctx.program.definitions[instance["definition"]]
++            if instance["status"] != "running": return
++            if instance["cursor"] >= len(definition["steps"]):
++                self._complete(reference); return
++            step = definition["steps"][instance["cursor"]]
++            if step["kind"] == "effects":
++                instance["phase"] = "effects"; self._put(instance)
++                self._effects(reference, step["effects"])
++                instance = self.instance(reference); instance["cursor"] += 1; self._put(instance)
++            elif step["kind"] == "delay":
++                ticks = self.ctx.quantize(step["seconds"])
++                if not ticks:
++                    instance["cursor"] += 1; self._put(instance); continue
++                instance.update(phase="delay", generation=instance["generation"]+1,
++                    wake_at=self.ctx.session.time+ticks)
++                task = self.ctx.session.schedule("domain.control.signal", {"control": reference, "generation": instance["generation"],
++                    "cursor": instance["cursor"]}, instance["wake_at"], phase=self.ctx.effect_phase)
++                instance["tasks"]["delay"] = task; self._put(instance)
++                self.ctx.emit("control.waiting_delay", {"control": reference, "step": instance["cursor"], "wake_at": instance["wake_at"]})
++                return
++            else:
++                if definition["ack_policy"] == "immediate":
++                    self.ctx.emit("control.acknowledged", {"control": reference, "step": instance["cursor"], "key": step["key"], "automatic": True})
++                    instance["cursor"] += 1; self._put(instance); continue
++                instance.update(phase="awaiting_ack", waiting_step=instance["cursor"], waiting_key=step["key"])
++                self._put(instance)
++                self.ctx.emit("control.awaiting_ack", {"control": reference, "alias": instance["alias"],
++                    "step": instance["cursor"], "key": step["key"]})
++                return
++
++    def signal(self, session, payload):
++        with session.atomic():
++            if self.ctx.state().get("finished"):
++                self.cancel_all_terminal(); return
++            instance = self.instance(payload["control"])
++            if instance["status"] != "running" or instance["phase"] != "delay" or instance["generation"] != payload["generation"] or instance["cursor"] != payload["cursor"]:
++                return
++            instance["tasks"].pop("delay", None); instance.pop("wake_at", None)
++            instance["cursor"] += 1; instance["phase"] = "effects"; self._put(instance); self._advance(instance["id"])
++
++    def acknowledge(self, reference, step):
++        with self.ctx.session.atomic():
++            instance = self.instance(reference)
++            if type(step) is not int or instance["status"] != "running" or instance["phase"] != "awaiting_ack" or step != instance["waiting_step"]:
++                raise ValueError("control acknowledgement does not match current waiting step/phase")
++            if self.ctx.state().get("finished"): raise ValueError("cannot acknowledge terminal control")
++            self.ctx.emit("control.acknowledged", {"control": instance["id"], "step": step, "key": instance["waiting_key"], "automatic": False})
++            instance.update(cursor=instance["cursor"]+1, phase="effects", waiting_step=None, waiting_key=None)
++            self._put(instance); self._advance(instance["id"])
++            return instance["id"]
++
++    def _cleanup(self, reference):
++        instance = self.instance(reference)
++        pending = {task["id"] for task in self.ctx.session.scheduler.pending}
++        for task in instance["tasks"].values():
++            if task in pending: self.ctx.session.cancel(task)
++        keys = set(instance["locks"].values())
++        if keys:
++            locks = [key for key in self.ctx.state().get("input_locks", []) if key not in keys]
++            self.ctx.state_update(input_locks=locks)
++            for key in sorted(keys): self.ctx.emit("input.lock_changed", {"source": self.ctx.session.world.resolve("system/battle"),
++                "target": self.ctx.session.world.resolve("system/battle"), "key": key, "enabled": False, "control": reference})
++        instance.update(tasks={}, locks={}, waiting_step=None, waiting_key=None, generation=instance["generation"]+1)
++        instance.pop("wake_at", None); self._put(instance)
++
++    def _complete(self, reference):
++        instance = self.instance(reference)
++        self._effects(reference, self.ctx.program.definitions[instance["definition"]].get("on_complete", ()))
++        self._cleanup(reference); instance = self.instance(reference)
++        instance.update(status="completed", phase="completed", completed_at=self.ctx.session.time); self._put(instance)
++        self.ctx.emit("control.completed", {"control": reference, "definition": instance["definition"]})
++        self.ctx.timeline.control_released(reference, "completed")
++
++    def cancel(self, reference, reason, *, policy):
++        with self.ctx.session.atomic():
++            if policy not in {"continue", "terminal"}: raise ValueError("control cancellation requires explicit continuation policy")
++            if policy == "terminal" and not self.ctx.state().get("finished"): raise ValueError("terminal cancellation requires terminal result")
++            instance = self.instance(reference)
++            if instance["status"] in {"completed", "cancelled"}: return False
++            self._effects(instance["id"], self.ctx.program.definitions[instance["definition"]].get("on_cancel", ()))
++            self._cleanup(instance["id"]); instance = self.instance(instance["id"])
++            instance.update(status="cancelled", phase="cancelled", cancelled_at=self.ctx.session.time, cancel_reason=reason, cancel_policy=policy)
++            self._put(instance); self.ctx.emit("control.cancelled", {"control": instance["id"], "reason": reason, "policy": policy})
++            self.ctx.timeline.control_released(instance["id"], "cancelled", policy=policy)
++            return True
++
++    def cancel_all_terminal(self):
++        with self.ctx.session.atomic():
++            for instance in list(self._state()["instances"].values()):
++                if instance["status"] in {"pending", "running"}: self.cancel(instance["id"], "terminal_result", policy="terminal")
++
++    def tick(self, session):
++        if self.ctx.state().get("finished"): self.cancel_all_terminal()
+--- a/ark_sim/domains/effects.py
++++ b/ark_sim/domains/effects.py
+@@ -131,13 +131,18 @@
+                     {**effect.get("payload", {}), "source": source, "target": target}, cause)
+             elif operation == "input_lock":
+                 options = effect["parameters"]
++                key = options["key"]
++                if cast.get("control_instance"):
++                    key = self.ctx.controls.lock_key(cast["control_instance"], key, options["enabled"])
++                elif getattr(self.ctx, "controls", None) is not None and key.startswith("control/"):
++                    raise ValueError("control/ input-lock keys are reserved for control ownership")
+                 locks = self.ctx.state().get("input_locks", [])
+-                locks = [key for key in locks if key != options["key"]]
++                locks = [item for item in locks if item != key]
+                 if options["enabled"]:
+-                    locks.append(options["key"])
++                    locks.append(key)
+                 self.ctx.state_update(input_locks=locks)
+                 self.ctx.emit("input.lock_changed", {"source": source, "target": target,
+-                    "key": options["key"], "enabled": options["enabled"]}, cause)
++                    "key": key, "enabled": options["enabled"]}, cause)
+             elif operation in ("state", "transition"):
+                 self.ctx.behavior.transition(target, effect["state"], cause=cause)
+             elif operation in ("move", "displace"):
+--- a/ark_sim/domains/lifecycle.py
++++ b/ark_sim/domains/lifecycle.py
+@@ -10,6 +10,9 @@
+     def create(self, definition_id, position=None, facing="right", route=None, alias=None, parameters=None,
+                deployed=False, component_overrides=None, rule_overrides=None, tags=None,
+                owner=None, lifetime_seconds=None, on_owner_retire="retain"):
++        controls = getattr(self.ctx, "controls", None)
++        if alias is not None and controls is not None and (alias.startswith("control/") or controls.alias_exists(alias)):
++            raise ValueError("actor alias collides with a control alias")
+         definition = self.ctx.program.definitions[definition_id]
+         if definition.get("kind") != "entity":
+             raise ValueError(f"{definition_id} is not an entity definition")
+@@ -159,6 +162,12 @@
+         self.retire(ref, "exited")
+ 
+     def tick(self, session):
++        if getattr(self.ctx, "controls", None) is None:
++            return self._tick(session)
++        with session.atomic():
++            return self._tick(session)
++
++    def _tick(self, session):
+         state = self.ctx.state()
+         if state.get("finished") or not self.ctx.program.scenario.get("objectives"):
+             return
+@@ -173,6 +182,10 @@
+                     "entity_states": [thaw(e) for e in session.world.entities()]})
+         if result["finished"]:
+             self.ctx.state_update(finished=True, result=result["result"], finished_at=session.time)
++            if getattr(self.ctx, "controls", None) is not None:
++                self.ctx.controls.cancel_all_terminal()
++                timeline = self.ctx.timeline._state()
++                self.ctx.timeline._stop_if_finished(timeline)
+             self.ctx.emit("scenario.finished", result)
+ 
+     def spawn_wave(self, session, wave, count_pending=True):
+--- a/ark_sim/domains/timeline.py
++++ b/ark_sim/domains/timeline.py
+@@ -70,7 +70,7 @@
+         return any(m["wave"] == state["wave_index"] and
+                    (not fragment or m["fragment"] == state["fragment_index"]) and
+                    m["blocks_fragment" if fragment else "blocks_wave"]
+-                   for m in state["members"].values())
++                   for m in (*state["members"].values(), *state.get("control_members", {}).values()))
+ 
+     def signal(self, session, payload):
+         with session.atomic():
+@@ -116,9 +116,18 @@
+                         first = session.time+self.ctx.quantize(action.get("delay_seconds", 0))
+                         for repeat in range(action.get("count", 1)):
+                             at = session.time+self.ctx.quantize(action.get("delay_seconds", 0)+repeat*action.get("interval_seconds", 0))
+-                            session.schedule("domain.timeline.action", {"wave": state["wave_index"],
++                            payload = {"wave": state["wave_index"],
+                                 "fragment": state["fragment_index"], "action": index,
+-                                "repeat": repeat, "action_start": first}, at, phase=0)
++                                "repeat": repeat, "action_start": first}
++                            if action["kind"] == "control":
++                                alias = action.get("instanceAlias")
++                                if alias is not None and action.get("count", 1) > 1: alias += f"/{repeat}"
++                                origins = {name: state[name] for name in ("play_start", "wave_start", "fragment_start")}
++                                origins["action_start"] = first
++                                payload["control"] = self.ctx.controls.prepare(action["definition"], alias, origins)
++                                state.setdefault("control_pending", {})[payload["control"]] = {"wave": state["wave_index"], "fragment": state["fragment_index"]}
++                            task = session.schedule("domain.timeline.action", payload, at, phase=0)
++                            if action["kind"] == "control": self.ctx.controls.track_start_task(payload["control"], task)
+                     if state["remaining_actions"]:
+                         break
+                 elif phase == "fragment_wait":
+@@ -182,11 +191,38 @@
+                 for effect in action["effects"]:
+                     self.ctx.effects.execute("system/battle", ["system/battle"], thaw(effect))
+                 state = self._state()
++            elif action["kind"] == "control":
++                ref = payload["control"]
++                state.get("control_pending", {}).pop(ref, None)
++                if action.get("managed", True):
++                    state.setdefault("control_members", {})[ref] = {"wave": payload["wave"], "fragment": payload["fragment"],
++                        "blocks_wave": action.get("blocks_wave", True), "blocks_fragment": action.get("blocks_fragment", False)}
++                state["remaining_actions"] -= 1
++                self._save(state)
++                self.ctx.controls.begin(ref)
++                state = self._state()
+             else:
+                 raise ValueError("unknown timeline action kind")
+-            state["remaining_actions"] -= 1
++            if action["kind"] != "control": state["remaining_actions"] -= 1
+             self.ctx.emit("timeline.action", {**payload, "origins": origins, "kind": action["kind"]})
+             self._schedule(state, session.time)
++            self._save(state)
++
++    def control_released(self, reference, reason, policy=None):
++        with self.ctx.session.atomic():
++            state = self._state()
++            pending = state.get("control_pending", {}).pop(reference, None)
++            member = state.get("control_members", {}).pop(reference, None)
++            if pending is not None and policy == "continue":
++                if (pending["wave"], pending["fragment"]) != (state["wave_index"], state["fragment_index"]):
++                    raise ValueError("pending control cancellation has stale fragment origin")
++                state["remaining_actions"] -= 1
++            if member is None and pending is None: return
++            member = member or {**pending, "blocks_wave": False, "blocks_fragment": policy == "continue"}
++            self.ctx.emit("timeline.control_released", {"control": reference, "reason": reason, **member})
++            releases = member["wave"] == state["wave_index"] and ((state["phase"] == "wave_gate" and member["blocks_wave"]) or
++                (state["phase"] == "fragment_wait" and member["blocks_fragment"] and member["fragment"] == state["fragment_index"]))
++            if not self.ctx.state().get("finished") and not state["done"] and releases: self._schedule(state, self.ctx.session.time)
+             self._save(state)
+ 
+     def entity_retired(self, ref, reason):

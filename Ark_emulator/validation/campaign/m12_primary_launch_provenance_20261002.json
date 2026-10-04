@@ -1,0 +1,127 @@
+{
+  "schema": "ark-sim/actual-suite-launch-provenance/v1",
+  "passed": true,
+  "source_transcript": "C:\\Users\\32134\\.codex\\sessions\\2026\\10\\01\\rollout-2026-10-01T15-03-01-01a0f646-1008-7372-a9c3-df5115f77689.jsonl",
+  "thread_id": "01a0f646-1008-7372-a9c3-df5115f77689",
+  "launch": {
+    "line_number": 13325,
+    "record_sha256": "5fcf012d2962a448b6cd4db09550c02cf75cc16da588b33aa8fe31640254a91c",
+    "record": {
+      "timestamp": "2026-10-02T11:29:14.122Z",
+      "ordinal": 13324,
+      "type": "response_item",
+      "payload": {
+        "type": "custom_tool_call",
+        "id": "ctc_074338a609305a80016abf9586546887d0aad6ff0060efd841",
+        "status": "completed",
+        "call_id": "call_mX7JqYNT7P99E6qucKhU8fa3",
+        "name": "exec",
+        "input": "text(await tools.exec_command({cmd:\"Move-Item -LiteralPath validation/campaign/m12_primary_full_tests_20261002.log -Destination validation/campaign/m12_primary_collection_initial_20261002.log; Move-Item -LiteralPath validation/campaign/m12_primary_full_tests_20261002.json -Destination validation/campaign/m12_primary_collection_initial_20261002.json; $env:ARKSIM_M10_REVIEW_ROOT=(Get-Location).Path; $env:CAMPAIGN_MECHANISM_PACKAGE=(Join-Path (Get-Location) 'packages/campaign/mainline_models/level_main_00-10.m12_projection.json'); $env:CAMPAIGN_SUMMON_PACKAGE=$env:CAMPAIGN_MECHANISM_PACKAGE; ..\\\\.venv\\\\Scripts\\\\python.exe tools/run_candidate_pytest.py --runtime-root . --evidence validation/campaign/m12_primary_full_tests_20261002.json -- tests_v2 -q *> validation/campaign/m12_primary_full_tests_20261002.log\",\"workdir\":\"D:\\\\Arknights\\\\Arknights_timer\\\\Ark_emulator\",\"yield_time_ms\":1000,\"max_output_tokens\":1200}));\n",
+        "internal_chat_message_metadata_passthrough": {
+          "turn_id": "01a0fc31-fd32-7401-a5c0-1b994afcfb7f",
+          "create_time": 1790940548.511748
+        }
+      }
+    }
+  },
+  "launch_response": {
+    "line_number": 13327,
+    "record_sha256": "7464ecf979280e48f01759ca277b00f608ad79b3e9bb81bb3cdea626e447d4ab",
+    "record": {
+      "timestamp": "2026-10-02T11:29:24.298Z",
+      "ordinal": 13326,
+      "type": "response_item",
+      "payload": {
+        "type": "custom_tool_call_output",
+        "id": "ctco_01a0fc60-4b4a-7080-9d1e-bcd3a773f4c3",
+        "call_id": "call_mX7JqYNT7P99E6qucKhU8fa3",
+        "output": [
+          {
+            "type": "input_text",
+            "text": "Script completed\nWall time 10.2 seconds\nOutput:\n"
+          },
+          {
+            "type": "input_text",
+            "text": "{\"chunk_id\":\"73d97a\",\"wall_time_seconds\":10.001085,\"session_id\":79422,\"original_token_count\":0,\"output\":\"\"}"
+          }
+        ],
+        "internal_chat_message_metadata_passthrough": {
+          "turn_id": "01a0fc31-fd32-7401-a5c0-1b994afcfb7f",
+          "create_time": 1790940564.298086
+        }
+      },
+      "metadata": {
+        "client_authored": false,
+        "fallback_token_limit_override": 12000
+      }
+    }
+  },
+  "terminal_poll": {
+    "call": {
+      "line_number": 13835,
+      "record_sha256": "7cf8c1aa8a35ce59b2411fe2f0d09a1416f99c0c697bbb55d4fbdd7b9096dec9",
+      "record": {
+        "timestamp": "2026-10-02T11:54:39.693Z",
+        "ordinal": 13834,
+        "type": "response_item",
+        "payload": {
+          "type": "custom_tool_call",
+          "id": "ctc_074338a609305a80016abf9b7610a887d0ad70649d75f45924",
+          "status": "completed",
+          "call_id": "call_blEsiaxioWI8gss94JuqQ8YD",
+          "name": "exec",
+          "input": "text(await tools.write_stdin({session_id:79422,chars:\"\",yield_time_ms:1000,max_output_tokens:600}));\ntext(await tools.exec_command({cmd:\"..\\\\.venv\\\\Scripts\\\\python.exe tools/record_primary_suite.py --run-evidence validation/campaign/m12_primary_full_tests_20261002.json --log validation/campaign/m12_primary_full_tests_20261002.log --package packages/campaign/mainline_models/level_main_00-10.m12_projection.json --output validation/campaign/m12_primary_test_execution_20261002.json; ..\\\\.venv\\\\Scripts\\\\python.exe tools/export_campaign_test_evidence.py --source validation/campaign/m12_primary_test_execution_20261002.json --output validation/campaign/m12_primary_tests_review_format_20261002.json\",\"workdir\":\"D:\\\\Arknights\\\\Arknights_timer\\\\Ark_emulator\",\"max_output_tokens\":1700}));\n",
+          "internal_chat_message_metadata_passthrough": {
+            "turn_id": "01a0fc31-fd32-7401-a5c0-1b994afcfb7f",
+            "create_time": 1790942068.290578
+          }
+        }
+      }
+    },
+    "response": {
+      "line_number": 13838,
+      "record_sha256": "5e37895ac26d9c931b37ac3753b842860b1fac0774d4a60fb61381797414a11a",
+      "record": {
+        "timestamp": "2026-10-02T11:54:40.658Z",
+        "ordinal": 13837,
+        "type": "response_item",
+        "payload": {
+          "type": "custom_tool_call_output",
+          "id": "ctco_01a0fc77-6e92-7282-bc72-68d88043bff5",
+          "call_id": "call_blEsiaxioWI8gss94JuqQ8YD",
+          "output": [
+            {
+              "type": "input_text",
+              "text": "Script completed\nWall time 1.0 seconds\nOutput:\n"
+            },
+            {
+              "type": "input_text",
+              "text": "{\"chunk_id\":\"2bb44a\",\"wall_time_seconds\":0.0000066,\"exit_code\":0,\"original_token_count\":0,\"output\":\"\"}"
+            },
+            {
+              "type": "input_text",
+              "text": "{\"chunk_id\":\"445cc8\",\"wall_time_seconds\":0.7858715,\"exit_code\":0,\"original_token_count\":58,\"output\":\"{\\\"summary\\\": \\\"1133 passed in 1508.30s (0:25:08)\\\", \\\"source_files\\\": 115}\\r\\n{\\\"exported\\\": \\\"validation\\\\\\\\campaign\\\\\\\\m12_primary_tests_review_format_20261002.json\\\", \\\"tests_passed\\\": 1133, \\\"test_modules\\\": 74, \\\"formal_stage_approved\\\": false}\\r\\n\"}"
+            }
+          ],
+          "internal_chat_message_metadata_passthrough": {
+            "turn_id": "01a0fc31-fd32-7401-a5c0-1b994afcfb7f",
+            "create_time": 1790942080.6587143
+          }
+        },
+        "metadata": {
+          "client_authored": false,
+          "fallback_token_limit_override": 12000
+        }
+      }
+    }
+  },
+  "actual_shell_session": 79422,
+  "environment_assignments_verified_from_actual_launch": true,
+  "environment": {
+    "CAMPAIGN_MECHANISM_PACKAGE": "packages/campaign/mainline_models/level_main_00-10.m12_projection.json",
+    "CAMPAIGN_SUMMON_PACKAGE": "packages/campaign/mainline_models/level_main_00-10.m12_projection.json",
+    "ARKSIM_M10_REVIEW_ROOT": "D:\\Arknights\\Arknights_timer\\Ark_emulator"
+  },
+  "scope": "Exact supervised shell invocation and matching returned handle/terminal result; no in-process environment instrumentation claim",
+  "formal_approval": false
+}

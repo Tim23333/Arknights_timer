@@ -1,0 +1,14 @@
+"""Same frozen M96 source / actual stats, public-only summon and SP-boundary short input."""
+import hashlib,json
+from copy import deepcopy
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[3];OUT=ROOT/'validation/campaign/m94_complete_c4';RUNTIME=ROOT.parent/'unpack_work/campaign_m94_complete_c4_candidate'
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def main():
+ source=RUNTIME/'stage/level_main_04-09.m96.v6.life99999.runthrough.prepared.json';assert sha(source)=='5a2cf3f0dcc0adbcd89be271514fa9e337bc62f1e77b7c14232a57635d583bd4';p=json.loads(source.read_bytes());original=deepcopy(p);commands=[{'at':300,'action':'deploy','entity':'unit/char_003_kalts','row':4,'col':4,'facing':'right','alias':'kalts_boundary'},{'at':600,'action':'skill','source':'kalts_boundary','ability':'ability/kalts_summon','payload':{'position':{'row':6,'col':6},'facing':'right'}},{'at':1051,'action':'skill','source':'kalts_boundary','ability':'ability/kalts_host_s3'},{'at':1700,'action':'withdraw','source':'kalts_boundary'}]
+ commandpath=OUT/'kalts_public_boundary.short.commands.prepared.json';package=RUNTIME/'stage/level_main_04-09.m96.kalts_boundary.short.prepared.json';launchpath=OUT/'kalts_public_boundary.short.launch.prepared.json'
+ if any(x.exists() for x in (commandpath,package,launchpath)):raise ValueError('Preserve independent input')
+ commandpath.write_text(json.dumps(commands,indent=2)+'\n',encoding='utf8',newline='');p['scenarioDraft']['metadata']['runthrough_profile'].update(id='level_main_04-09.m96.kalts_public_boundary.short',public_commands_variant='independent_kalts_short',public_commands_sha256=sha(commandpath));check=deepcopy(p);check['scenarioDraft']['metadata']['runthrough_profile']=original['scenarioDraft']['metadata']['runthrough_profile'];assert check==original
+ package.write_text(json.dumps(p,ensure_ascii=False,indent=2)+'\n',encoding='utf8',newline='');launch=json.loads((OUT/'runthrough_launch.m96_v6.named.prepared.json').read_bytes());launch.update(package=str(package),package_sha=sha(package),commands=str(commandpath),commands_sha=sha(commandpath),profile_id=p['scenarioDraft']['metadata']['runthrough_profile']['id'],suggested_prefix_ticks=1751,status='Prepared same-source independent public short prefix; execute after fullV6 proof, no parallel second bounded full run',boundary_policy='Original DP10 recovers to real deployment20 by300, recover actual additional10 for summon600; real owned15SP at1050 after resource-system phase, public hostS3 command1051. No stats, SP, HP, DP, seed, map, source birth timeline or slot grants.')
+ launchpath.write_text(json.dumps(launch,indent=2)+'\n',encoding='utf8',newline='');print(json.dumps({'package_sha':sha(package),'commands_sha':sha(commandpath),'launch_sha':sha(launchpath)}))
+if __name__=='__main__':main()

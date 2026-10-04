@@ -1,0 +1,1876 @@
+{
+  "passed": false,
+  "actual_counterexample": true,
+  "core": "a0335fbe62082864228c3f203adce085cf589e269329e12e719d30d1fcb4a1f4",
+  "input": {
+    "manifest": {
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/barrier",
+        "kind": "entity",
+        "tags": [
+          "player"
+        ],
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "atk": 0,
+              "def": 0,
+              "block_count": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100,
+              "role": "health"
+            }
+          },
+          "deployable": {
+            "base_cost": 2,
+            "cooldown_seconds": 0,
+            "capacity": 0,
+            "terrain": "ground",
+            "parameters": {
+              "max_instances": 5
+            },
+            "stock": {
+              "resource": "cards",
+              "amount": 1
+            },
+            "rules": {
+              "deploy.cost": "rule/fee"
+            },
+            "connectivity": {
+              "rule": "rule/connected",
+              "parameters": {}
+            }
+          },
+          "terrain_overlays": [
+            {
+              "key": "barrier",
+              "priority": 0,
+              "values": {
+                "obstacleLikeMoveCost": true
+              },
+              "preserve": [
+                "passableMask"
+              ],
+              "rule": "rule/terrain"
+            }
+          ]
+        }
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/connected",
+        "kind": "rule",
+        "contract": "deploy.connectivity",
+        "parameters": {
+          "diagonal": false,
+          "allow_corner_cut": false
+        },
+        "implementation": {
+          "type": "provider",
+          "provider": "model.deploy.ground_connectivity"
+        }
+      },
+      {
+        "id": "rule/fee",
+        "kind": "rule",
+        "contract": "deploy.cost",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.base_cost"
+        }
+      },
+      {
+        "id": "rule/terrain",
+        "kind": "rule",
+        "contract": "terrain.tile_options",
+        "parameters": {
+          "obstacle_like_cost": 1000
+        },
+        "implementation": {
+          "type": "provider",
+          "provider": "ark.terrain.tile_options"
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/connectivity",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 4
+      },
+      "roster": [
+        "unit/barrier"
+      ],
+      "resources": {
+        "dp": {
+          "initial": 10,
+          "capacity": 10
+        },
+        "cards": {
+          "initial": 5,
+          "capacity": 5
+        }
+      },
+      "parameters": {
+        "deployment_routes": [
+          {
+            "id": "original",
+            "start": {
+              "row": 0,
+              "col": 0
+            },
+            "end": {
+              "row": 0,
+              "col": 3
+            }
+          }
+        ]
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/barrier",
+          "instanceAlias": "dormant",
+          "position": {
+            "row": 0,
+            "col": 1
+          },
+          "active": false,
+          "registration_key": "dormant_barrier"
+        }
+      ]
+    }
+  },
+  "before": {
+    "schema": "ark-sim/session-checkpoint/v2",
+    "program_fingerprint": "5e3dc28c93205abfb33dc25f9eb49ff6891f4151b72d071af857a29f4f3e6c45",
+    "runtime_fingerprint": "f7343f556ab39f656bf2e45472066de1b4078f96138c39693415442603ee81a8",
+    "kernel": {
+      "schema": "ark-sim/kernel-checkpoint/v1",
+      "time": 0,
+      "boundary": true,
+      "quantum": 0.03333333333333333,
+      "reaction_budget": 10000,
+      "world": {
+        "entities": [
+          {
+            "id": 1,
+            "definition_id": "system/battle",
+            "tags": [
+              "system"
+            ],
+            "components": {
+              "attributes": {
+                "base": {},
+                "modifiers": []
+              },
+              "resources": {
+                "dp": {
+                  "current": 10,
+                  "spec": {
+                    "initial": 10,
+                    "capacity": 10
+                  }
+                },
+                "cards": {
+                  "current": 5,
+                  "spec": {
+                    "initial": 5,
+                    "capacity": 5
+                  }
+                }
+              },
+              "state": {
+                "finished": false,
+                "result": "running",
+                "pending_waves": 0,
+                "kills": 0,
+                "leaks": 0,
+                "damage_dealt": 0,
+                "deployments": {},
+                "command_results": {},
+                "predefined_registry": {
+                  "dormant_barrier": 2
+                }
+              },
+              "runtime": {
+                "alive": true,
+                "casts": {}
+              },
+              "buffs": {
+                "instances": []
+              }
+            }
+          },
+          {
+            "id": 2,
+            "definition_id": "unit/barrier",
+            "tags": [
+              "player"
+            ],
+            "components": {
+              "spatial": {
+                "position": {
+                  "row": 0,
+                  "col": 1
+                },
+                "facing": "right"
+              },
+              "attributes": {
+                "base": {
+                  "max_hp": 100,
+                  "atk": 0,
+                  "def": 0,
+                  "block_count": 0
+                },
+                "modifiers": []
+              },
+              "resources": {
+                "hp": {
+                  "current": 100,
+                  "spec": {
+                    "initial": 100,
+                    "capacity": 100,
+                    "role": "health"
+                  }
+                }
+              },
+              "deployable": {
+                "base_cost": 2,
+                "cooldown_seconds": 0,
+                "capacity": 0,
+                "terrain": "ground",
+                "parameters": {
+                  "max_instances": 5
+                },
+                "stock": {
+                  "resource": "cards",
+                  "amount": 1
+                },
+                "rules": {
+                  "deploy.cost": "rule/fee"
+                },
+                "connectivity": {
+                  "rule": "rule/connected",
+                  "parameters": {}
+                }
+              },
+              "terrain_overlays": [
+                {
+                  "key": "barrier",
+                  "priority": 0,
+                  "values": {
+                    "obstacleLikeMoveCost": true
+                  },
+                  "preserve": [
+                    "passableMask"
+                  ],
+                  "rule": "rule/terrain"
+                }
+              ],
+              "runtime": {
+                "alive": true,
+                "state": "dormant",
+                "deployed": false,
+                "initializing": false,
+                "casts": {},
+                "cooldowns": {},
+                "next_attack": 0,
+                "blocked_by": null,
+                "rule_bindings": {},
+                "active": false,
+                "activation_plan": {
+                  "deployed": false,
+                  "lifetime_seconds": null
+                }
+              },
+              "buffs": {
+                "instances": [],
+                "next_instance_id": 1
+              }
+            }
+          }
+        ],
+        "aliases": {
+          "system/battle": 1,
+          "dormant": 2
+        },
+        "next_id": 3,
+        "versions": {
+          "1": 2,
+          "2": 6
+        }
+      },
+      "scheduler": {
+        "phase_order": null,
+        "tasks": [
+          {
+            "id": 1,
+            "kind": "event_reaction",
+            "payload": {
+              "event": "entity.registered",
+              "payload": {
+                "source": 2,
+                "target": 2,
+                "definition": "unit/barrier",
+                "registration_key": "dormant_barrier",
+                "active": false
+              },
+              "cause": 1,
+              "resource_recipients": [],
+              "buff_recovery_snapshot": null
+            },
+            "at": 0,
+            "phase": 7,
+            "priority": 0,
+            "seq": 8
+          }
+        ],
+        "next_id": 2,
+        "next_seq": 9
+      },
+      "events": {
+        "records": [
+          {
+            "id": 1,
+            "type": "entity.registered",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "definition": "unit/barrier",
+              "registration_key": "dormant_barrier",
+              "active": false
+            },
+            "time": 0,
+            "cause": null
+          }
+        ],
+        "next_id": 2
+      },
+      "random": {
+        "algorithm": "python-mt19937/sha256-stream-seed-v1",
+        "version": "1",
+        "fingerprint": "d43b58ba80adc3e316b044f7541cce500f62d47052c791744df897ac3262bba4",
+        "seed": 65077,
+        "streams": {},
+        "samples": []
+      },
+      "systems": [
+        {
+          "phase": 0,
+          "priority": 0,
+          "seq": 1
+        },
+        {
+          "phase": 0,
+          "priority": 0,
+          "seq": 2
+        },
+        {
+          "phase": 2,
+          "priority": 0,
+          "seq": 3
+        },
+        {
+          "phase": 3,
+          "priority": 0,
+          "seq": 4
+        },
+        {
+          "phase": 4,
+          "priority": 0,
+          "seq": 5
+        },
+        {
+          "phase": 5,
+          "priority": 0,
+          "seq": 6
+        },
+        {
+          "phase": 6,
+          "priority": 0,
+          "seq": 7
+        }
+      ],
+      "failure": null
+    },
+    "commands": []
+  },
+  "after": {
+    "time": 0,
+    "seconds": 0.0,
+    "scenario": "scene/connectivity",
+    "program_fingerprint": "5e3dc28c93205abfb33dc25f9eb49ff6891f4151b72d071af857a29f4f3e6c45",
+    "runtime_fingerprint": "f7343f556ab39f656bf2e45472066de1b4078f96138c39693415442603ee81a8",
+    "entities": [
+      {
+        "id": 1,
+        "definition_id": "system/battle",
+        "tags": [
+          "system"
+        ],
+        "components": {
+          "attributes": {
+            "base": {},
+            "modifiers": []
+          },
+          "resources": {
+            "dp": {
+              "current": 10,
+              "spec": {
+                "initial": 10,
+                "capacity": 10
+              }
+            },
+            "cards": {
+              "current": 5,
+              "spec": {
+                "initial": 5,
+                "capacity": 5
+              }
+            }
+          },
+          "state": {
+            "finished": false,
+            "result": "running",
+            "pending_waves": 0,
+            "kills": 0,
+            "leaks": 0,
+            "damage_dealt": 0,
+            "deployments": {},
+            "command_results": {},
+            "predefined_registry": {
+              "dormant_barrier": 2
+            },
+            "terrain": {
+              "next_id": 2,
+              "revision": 1,
+              "layers": {
+                "1": {
+                  "id": 1,
+                  "sequence": 1,
+                  "owner": 2,
+                  "cell": {
+                    "row": 0,
+                    "col": 1
+                  },
+                  "key": "barrier",
+                  "priority": 0,
+                  "values": {
+                    "obstacleLikeMoveCost": true
+                  },
+                  "preserve": [
+                    "passableMask"
+                  ],
+                  "rule": "rule/terrain"
+                }
+              },
+              "effective_tiles": {
+                "0:1": {
+                  "tileKey": "tile_floor",
+                  "passableMask": 1,
+                  "buildableType": 1,
+                  "obstacleLikeMoveCost": true,
+                  "groundPassable": true,
+                  "movementCost": 1000
+                }
+              }
+            }
+          },
+          "runtime": {
+            "alive": true,
+            "casts": {}
+          },
+          "buffs": {
+            "instances": []
+          }
+        },
+        "version": 3
+      },
+      {
+        "id": 2,
+        "definition_id": "unit/barrier",
+        "tags": [
+          "player"
+        ],
+        "components": {
+          "spatial": {
+            "position": {
+              "row": 0,
+              "col": 1
+            },
+            "facing": "right"
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "atk": 0,
+              "def": 0,
+              "block_count": 0
+            },
+            "modifiers": []
+          },
+          "resources": {
+            "hp": {
+              "current": 100,
+              "spec": {
+                "initial": 100,
+                "capacity": 100,
+                "role": "health"
+              },
+              "observed_capacity": 100,
+              "capacity_signature": "68631c385b0ad396a7562e14466d662afe934c509b3496d6e9332d625474abad"
+            }
+          },
+          "deployable": {
+            "base_cost": 2,
+            "cooldown_seconds": 0,
+            "capacity": 0,
+            "terrain": "ground",
+            "parameters": {
+              "max_instances": 5
+            },
+            "stock": {
+              "resource": "cards",
+              "amount": 1
+            },
+            "rules": {
+              "deploy.cost": "rule/fee"
+            },
+            "connectivity": {
+              "rule": "rule/connected",
+              "parameters": {}
+            }
+          },
+          "terrain_overlays": [
+            {
+              "key": "barrier",
+              "priority": 0,
+              "values": {
+                "obstacleLikeMoveCost": true
+              },
+              "preserve": [
+                "passableMask"
+              ],
+              "rule": "rule/terrain"
+            }
+          ],
+          "runtime": {
+            "alive": true,
+            "state": "alive",
+            "deployed": false,
+            "initializing": false,
+            "casts": {},
+            "cooldowns": {},
+            "next_attack": 0,
+            "blocked_by": null,
+            "rule_bindings": {},
+            "active": true,
+            "activation_plan": null
+          },
+          "buffs": {
+            "instances": [],
+            "next_instance_id": 1
+          }
+        },
+        "version": 15
+      }
+    ],
+    "state": {
+      "finished": false,
+      "result": "running",
+      "pending_waves": 0,
+      "kills": 0,
+      "leaks": 0,
+      "damage_dealt": 0,
+      "deployments": {},
+      "command_results": {},
+      "predefined_registry": {
+        "dormant_barrier": 2
+      },
+      "terrain": {
+        "next_id": 2,
+        "revision": 1,
+        "layers": {
+          "1": {
+            "id": 1,
+            "sequence": 1,
+            "owner": 2,
+            "cell": {
+              "row": 0,
+              "col": 1
+            },
+            "key": "barrier",
+            "priority": 0,
+            "values": {
+              "obstacleLikeMoveCost": true
+            },
+            "preserve": [
+              "passableMask"
+            ],
+            "rule": "rule/terrain"
+          }
+        },
+        "effective_tiles": {
+          "0:1": {
+            "tileKey": "tile_floor",
+            "passableMask": 1,
+            "buildableType": 1,
+            "obstacleLikeMoveCost": true,
+            "groundPassable": true,
+            "movementCost": 1000
+          }
+        }
+      }
+    },
+    "events": [
+      {
+        "id": 1,
+        "type": "entity.registered",
+        "payload": {
+          "source": 2,
+          "target": 2,
+          "definition": "unit/barrier",
+          "registration_key": "dormant_barrier",
+          "active": false
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 2,
+        "type": "terrain.changed",
+        "payload": {
+          "revision": 1,
+          "reason": {
+            "kind": "apply_or_replace",
+            "owner": 2,
+            "layer": 1,
+            "key": "barrier"
+          },
+          "changes": [
+            {
+              "position": {
+                "row": 0,
+                "col": 1
+              },
+              "effective_tile": {
+                "tileKey": "tile_floor",
+                "passableMask": 1,
+                "buildableType": 1,
+                "obstacleLikeMoveCost": true,
+                "groundPassable": true,
+                "movementCost": 1000
+              },
+              "rule_id": "rule/terrain",
+              "trace": {
+                "calculation_id": "terrain.tile_options",
+                "rule_id": "rule/terrain",
+                "contract_version": 1,
+                "rule_fingerprint": "adb5f87ee412a81ff61c7678785986bbfb67c13f152a98264fa44ac5b8d3488f",
+                "runtime_fingerprint": "4288575c92093a4ff3334b92e5c15b76099f1084ec34f7cd5b546f2ff59f9242",
+                "inputs": {
+                  "base": {
+                    "tileKey": "tile_floor",
+                    "passableMask": 1,
+                    "buildableType": 1
+                  },
+                  "layers": [
+                    {
+                      "id": 1,
+                      "sequence": 1,
+                      "owner": 2,
+                      "cell": {
+                        "row": 0,
+                        "col": 1
+                      },
+                      "key": "barrier",
+                      "priority": 0,
+                      "values": {
+                        "obstacleLikeMoveCost": true
+                      },
+                      "preserve": [
+                        "passableMask"
+                      ],
+                      "rule": "rule/terrain"
+                    }
+                  ],
+                  "position": {
+                    "row": 0,
+                    "col": 1
+                  }
+                },
+                "parameters": {
+                  "obstacle_like_cost": 1000
+                },
+                "context": {
+                  "time": 0,
+                  "seconds": 0.0,
+                  "quantum": 0.03333333333333333,
+                  "rule_scope": {
+                    "scenario": {}
+                  }
+                },
+                "stages": [
+                  {
+                    "id": "provider",
+                    "provider": "ark.terrain.tile_options",
+                    "raw": {
+                      "tileKey": "tile_floor",
+                      "passableMask": 1,
+                      "buildableType": 1,
+                      "obstacleLikeMoveCost": true,
+                      "groundPassable": true,
+                      "movementCost": 1000
+                    }
+                  }
+                ],
+                "raw": {
+                  "tileKey": "tile_floor",
+                  "passableMask": 1,
+                  "buildableType": 1,
+                  "obstacleLikeMoveCost": true,
+                  "groundPassable": true,
+                  "movementCost": 1000
+                },
+                "value": {
+                  "tileKey": "tile_floor",
+                  "passableMask": 1,
+                  "buildableType": 1,
+                  "obstacleLikeMoveCost": true,
+                  "groundPassable": true,
+                  "movementCost": 1000
+                },
+                "numeric": {
+                  "backend": "float",
+                  "rounding": "half_even"
+                },
+                "provider": {
+                  "name": "ark.terrain.tile_options",
+                  "module": "ark_sim.presets.providers",
+                  "qualname": "terrain_tile_options",
+                  "version": "ark-preset/1",
+                  "source_sha256": "e90545eb911ee186ed2d4de5b565522e5e0765d20a8f6d43a435f2a029218c6f",
+                  "descriptor": {}
+                },
+                "binding": {
+                  "owner": "scenario",
+                  "origin": "explicit",
+                  "overrides": [
+                    {
+                      "scope": "preset",
+                      "rule_id": "rule/ark_terrain_tile_options"
+                    },
+                    {
+                      "scope": "explicit",
+                      "rule_id": "rule/terrain"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 3,
+        "type": "calculation",
+        "payload": {
+          "calculation_id": "attributes.effective",
+          "rule_id": "rule/ark_attribute_layers",
+          "source": null,
+          "target": null,
+          "value": 100,
+          "trace": {
+            "calculation_id": "attributes.effective",
+            "rule_id": "rule/ark_attribute_layers",
+            "contract_version": 1,
+            "rule_fingerprint": "b1429727a2aa9c43395ed1ff0ee1fbc56e7aa1c650636ba9a974a736def58435",
+            "runtime_fingerprint": "4288575c92093a4ff3334b92e5c15b76099f1084ec34f7cd5b546f2ff59f9242",
+            "inputs": {
+              "base": 100,
+              "modifier_layers": [],
+              "order": [
+                {
+                  "layer": "flat"
+                },
+                {
+                  "layer": "direct_ratio"
+                },
+                {
+                  "layer": "final_ratio"
+                }
+              ]
+            },
+            "parameters": {
+              "operations": {
+                "flat": "add",
+                "direct_ratio": "ratio_sum",
+                "final_ratio": "ratio_product",
+                "final_add": "add",
+                "final_mul": "factor_product"
+              },
+              "aggregator": {
+                "provider": "ark.attributes.aggregate"
+              }
+            },
+            "context": {
+              "time": 0,
+              "seconds": 0.0,
+              "quantum": 0.03333333333333333,
+              "attribute": "max_hp",
+              "attribute_sample_time": 0,
+              "rule_scope": {
+                "scenario": {},
+                "source": {},
+                "target": {},
+                "owner": {},
+                "component": {},
+                "attribute_or_resource": {},
+                "ability": {},
+                "effect": {}
+              },
+              "source_id": 2,
+              "target_id": null,
+              "owner_id": 2
+            },
+            "stages": [
+              {
+                "id": "provider",
+                "provider": "ark.attributes.layers",
+                "raw": 100
+              }
+            ],
+            "raw": 100,
+            "value": 100,
+            "numeric": {
+              "backend": "float",
+              "rounding": "half_even"
+            },
+            "provider": {
+              "name": "ark.attributes.layers",
+              "module": "ark_sim.presets.providers",
+              "qualname": "attribute_layers",
+              "version": "ark-preset/1",
+              "source_sha256": "939ebedaee9e807f0640706e97f4ae37d8eeb73a3954a4a8974560c5bec85a73",
+              "descriptor": {
+                "version": "ark-preset/1",
+                "attribute_time_dependency": "modifiers"
+              }
+            },
+            "binding": {
+              "owner": "owner",
+              "origin": "preset",
+              "overrides": [
+                {
+                  "scope": "preset",
+                  "rule_id": "rule/ark_attribute_layers"
+                }
+              ]
+            }
+          }
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 4,
+        "type": "calculation",
+        "payload": {
+          "calculation_id": "attributes.effective",
+          "rule_id": "rule/ark_attribute_layers",
+          "source": null,
+          "target": null,
+          "value": 0,
+          "trace": {
+            "calculation_id": "attributes.effective",
+            "rule_id": "rule/ark_attribute_layers",
+            "contract_version": 1,
+            "rule_fingerprint": "b1429727a2aa9c43395ed1ff0ee1fbc56e7aa1c650636ba9a974a736def58435",
+            "runtime_fingerprint": "4288575c92093a4ff3334b92e5c15b76099f1084ec34f7cd5b546f2ff59f9242",
+            "inputs": {
+              "base": 0,
+              "modifier_layers": [],
+              "order": [
+                {
+                  "layer": "flat"
+                },
+                {
+                  "layer": "direct_ratio"
+                },
+                {
+                  "layer": "final_ratio"
+                }
+              ]
+            },
+            "parameters": {
+              "operations": {
+                "flat": "add",
+                "direct_ratio": "ratio_sum",
+                "final_ratio": "ratio_product",
+                "final_add": "add",
+                "final_mul": "factor_product"
+              },
+              "aggregator": {
+                "provider": "ark.attributes.aggregate"
+              }
+            },
+            "context": {
+              "time": 0,
+              "seconds": 0.0,
+              "quantum": 0.03333333333333333,
+              "attribute": "atk",
+              "attribute_sample_time": 0,
+              "rule_scope": {
+                "scenario": {},
+                "source": {},
+                "target": {},
+                "owner": {},
+                "component": {},
+                "attribute_or_resource": {},
+                "ability": {},
+                "effect": {}
+              },
+              "source_id": 2,
+              "target_id": null,
+              "owner_id": 2
+            },
+            "stages": [
+              {
+                "id": "provider",
+                "provider": "ark.attributes.layers",
+                "raw": 0
+              }
+            ],
+            "raw": 0,
+            "value": 0,
+            "numeric": {
+              "backend": "float",
+              "rounding": "half_even"
+            },
+            "provider": {
+              "name": "ark.attributes.layers",
+              "module": "ark_sim.presets.providers",
+              "qualname": "attribute_layers",
+              "version": "ark-preset/1",
+              "source_sha256": "939ebedaee9e807f0640706e97f4ae37d8eeb73a3954a4a8974560c5bec85a73",
+              "descriptor": {
+                "version": "ark-preset/1",
+                "attribute_time_dependency": "modifiers"
+              }
+            },
+            "binding": {
+              "owner": "owner",
+              "origin": "preset",
+              "overrides": [
+                {
+                  "scope": "preset",
+                  "rule_id": "rule/ark_attribute_layers"
+                }
+              ]
+            }
+          }
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 5,
+        "type": "calculation",
+        "payload": {
+          "calculation_id": "attributes.effective",
+          "rule_id": "rule/ark_attribute_layers",
+          "source": null,
+          "target": null,
+          "value": 0,
+          "trace": {
+            "calculation_id": "attributes.effective",
+            "rule_id": "rule/ark_attribute_layers",
+            "contract_version": 1,
+            "rule_fingerprint": "b1429727a2aa9c43395ed1ff0ee1fbc56e7aa1c650636ba9a974a736def58435",
+            "runtime_fingerprint": "4288575c92093a4ff3334b92e5c15b76099f1084ec34f7cd5b546f2ff59f9242",
+            "inputs": {
+              "base": 0,
+              "modifier_layers": [],
+              "order": [
+                {
+                  "layer": "flat"
+                },
+                {
+                  "layer": "direct_ratio"
+                },
+                {
+                  "layer": "final_ratio"
+                }
+              ]
+            },
+            "parameters": {
+              "operations": {
+                "flat": "add",
+                "direct_ratio": "ratio_sum",
+                "final_ratio": "ratio_product",
+                "final_add": "add",
+                "final_mul": "factor_product"
+              },
+              "aggregator": {
+                "provider": "ark.attributes.aggregate"
+              }
+            },
+            "context": {
+              "time": 0,
+              "seconds": 0.0,
+              "quantum": 0.03333333333333333,
+              "attribute": "def",
+              "attribute_sample_time": 0,
+              "rule_scope": {
+                "scenario": {},
+                "source": {},
+                "target": {},
+                "owner": {},
+                "component": {},
+                "attribute_or_resource": {},
+                "ability": {},
+                "effect": {}
+              },
+              "source_id": 2,
+              "target_id": null,
+              "owner_id": 2
+            },
+            "stages": [
+              {
+                "id": "provider",
+                "provider": "ark.attributes.layers",
+                "raw": 0
+              }
+            ],
+            "raw": 0,
+            "value": 0,
+            "numeric": {
+              "backend": "float",
+              "rounding": "half_even"
+            },
+            "provider": {
+              "name": "ark.attributes.layers",
+              "module": "ark_sim.presets.providers",
+              "qualname": "attribute_layers",
+              "version": "ark-preset/1",
+              "source_sha256": "939ebedaee9e807f0640706e97f4ae37d8eeb73a3954a4a8974560c5bec85a73",
+              "descriptor": {
+                "version": "ark-preset/1",
+                "attribute_time_dependency": "modifiers"
+              }
+            },
+            "binding": {
+              "owner": "owner",
+              "origin": "preset",
+              "overrides": [
+                {
+                  "scope": "preset",
+                  "rule_id": "rule/ark_attribute_layers"
+                }
+              ]
+            }
+          }
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 6,
+        "type": "calculation",
+        "payload": {
+          "calculation_id": "attributes.effective",
+          "rule_id": "rule/ark_attribute_layers",
+          "source": null,
+          "target": null,
+          "value": 0,
+          "trace": {
+            "calculation_id": "attributes.effective",
+            "rule_id": "rule/ark_attribute_layers",
+            "contract_version": 1,
+            "rule_fingerprint": "b1429727a2aa9c43395ed1ff0ee1fbc56e7aa1c650636ba9a974a736def58435",
+            "runtime_fingerprint": "4288575c92093a4ff3334b92e5c15b76099f1084ec34f7cd5b546f2ff59f9242",
+            "inputs": {
+              "base": 0,
+              "modifier_layers": [],
+              "order": [
+                {
+                  "layer": "flat"
+                },
+                {
+                  "layer": "direct_ratio"
+                },
+                {
+                  "layer": "final_ratio"
+                }
+              ]
+            },
+            "parameters": {
+              "operations": {
+                "flat": "add",
+                "direct_ratio": "ratio_sum",
+                "final_ratio": "ratio_product",
+                "final_add": "add",
+                "final_mul": "factor_product"
+              },
+              "aggregator": {
+                "provider": "ark.attributes.aggregate"
+              }
+            },
+            "context": {
+              "time": 0,
+              "seconds": 0.0,
+              "quantum": 0.03333333333333333,
+              "attribute": "block_count",
+              "attribute_sample_time": 0,
+              "rule_scope": {
+                "scenario": {},
+                "source": {},
+                "target": {},
+                "owner": {},
+                "component": {},
+                "attribute_or_resource": {},
+                "ability": {},
+                "effect": {}
+              },
+              "source_id": 2,
+              "target_id": null,
+              "owner_id": 2
+            },
+            "stages": [
+              {
+                "id": "provider",
+                "provider": "ark.attributes.layers",
+                "raw": 0
+              }
+            ],
+            "raw": 0,
+            "value": 0,
+            "numeric": {
+              "backend": "float",
+              "rounding": "half_even"
+            },
+            "provider": {
+              "name": "ark.attributes.layers",
+              "module": "ark_sim.presets.providers",
+              "qualname": "attribute_layers",
+              "version": "ark-preset/1",
+              "source_sha256": "939ebedaee9e807f0640706e97f4ae37d8eeb73a3954a4a8974560c5bec85a73",
+              "descriptor": {
+                "version": "ark-preset/1",
+                "attribute_time_dependency": "modifiers"
+              }
+            },
+            "binding": {
+              "owner": "owner",
+              "origin": "preset",
+              "overrides": [
+                {
+                  "scope": "preset",
+                  "rule_id": "rule/ark_attribute_layers"
+                }
+              ]
+            }
+          }
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 7,
+        "type": "calculation",
+        "payload": {
+          "calculation_id": "resource.capacity",
+          "rule_id": "rule/ark_resource_capacity",
+          "source": null,
+          "target": 2,
+          "value": 100,
+          "trace": {
+            "calculation_id": "resource.capacity",
+            "rule_id": "rule/ark_resource_capacity",
+            "contract_version": 1,
+            "rule_fingerprint": "80087a0b8db405748a985e49edb1dd2ccff005cf4d9392d133709caa46d642d2",
+            "runtime_fingerprint": "4288575c92093a4ff3334b92e5c15b76099f1084ec34f7cd5b546f2ff59f9242",
+            "inputs": {
+              "attributes": {
+                "max_hp": 100,
+                "atk": 0,
+                "def": 0,
+                "block_count": 0
+              },
+              "capacity_parameters": {
+                "capacity": 100
+              }
+            },
+            "parameters": {},
+            "context": {
+              "time": 0,
+              "seconds": 0.0,
+              "quantum": 0.03333333333333333,
+              "resource": "hp",
+              "rule_scope": {
+                "scenario": {},
+                "source": {},
+                "target": {},
+                "owner": {},
+                "component": {},
+                "attribute_or_resource": {},
+                "ability": {},
+                "effect": {}
+              },
+              "source_id": null,
+              "target_id": 2,
+              "owner_id": 2
+            },
+            "stages": [
+              {
+                "id": "expression",
+                "expression": "inputs.capacity_parameters.capacity",
+                "raw": 100
+              }
+            ],
+            "raw": 100,
+            "value": 100,
+            "numeric": {
+              "backend": "float",
+              "rounding": "half_even"
+            },
+            "binding": {
+              "owner": "owner",
+              "origin": "preset",
+              "overrides": [
+                {
+                  "scope": "preset",
+                  "rule_id": "rule/ark_resource_capacity"
+                }
+              ]
+            }
+          }
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 8,
+        "type": "calculation",
+        "payload": {
+          "calculation_id": "resource.bounds",
+          "rule_id": "rule/ark_resource_bounds",
+          "source": null,
+          "target": 2,
+          "value": {
+            "value": 100,
+            "overflow": 0,
+            "accepted": true
+          },
+          "trace": {
+            "calculation_id": "resource.bounds",
+            "rule_id": "rule/ark_resource_bounds",
+            "contract_version": 1,
+            "rule_fingerprint": "547ee3abeac866ecf94d8b35a4b2f7a285e04a107d06ccff1b271d9914a59fd7",
+            "runtime_fingerprint": "4288575c92093a4ff3334b92e5c15b76099f1084ec34f7cd5b546f2ff59f9242",
+            "inputs": {
+              "candidate": 100,
+              "capacity": 100,
+              "bounds_parameters": {}
+            },
+            "parameters": {},
+            "context": {
+              "time": 0,
+              "seconds": 0.0,
+              "quantum": 0.03333333333333333,
+              "resource": "hp",
+              "rule_scope": {
+                "scenario": {},
+                "source": {},
+                "target": {},
+                "owner": {},
+                "component": {},
+                "attribute_or_resource": {},
+                "ability": {},
+                "effect": {}
+              },
+              "source_id": null,
+              "target_id": 2,
+              "owner_id": 2
+            },
+            "stages": [
+              {
+                "id": "provider",
+                "provider": "ark.resource.bounds",
+                "raw": {
+                  "value": 100,
+                  "overflow": 0,
+                  "accepted": true
+                }
+              }
+            ],
+            "raw": {
+              "value": 100,
+              "overflow": 0,
+              "accepted": true
+            },
+            "value": {
+              "value": 100,
+              "overflow": 0,
+              "accepted": true
+            },
+            "numeric": {
+              "backend": "float",
+              "rounding": "half_even"
+            },
+            "provider": {
+              "name": "ark.resource.bounds",
+              "module": "ark_sim.presets.providers",
+              "qualname": "resource_bounds",
+              "version": "ark-preset/1",
+              "source_sha256": "ad74febe6cbf3aabdf523e12f7f201fe8b21d9d1ffdc44eef69462d3660b64d7",
+              "descriptor": {}
+            },
+            "binding": {
+              "owner": "owner",
+              "origin": "preset",
+              "overrides": [
+                {
+                  "scope": "preset",
+                  "rule_id": "rule/ark_resource_bounds"
+                }
+              ]
+            }
+          }
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 9,
+        "type": "resource.changed",
+        "payload": {
+          "source": null,
+          "target": 2,
+          "resource": "hp",
+          "delta": 0,
+          "value": 100
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 10,
+        "type": "calculation",
+        "payload": {
+          "calculation_id": "attributes.effective",
+          "rule_id": "rule/ark_attribute_layers",
+          "source": null,
+          "target": null,
+          "value": 100,
+          "trace": {
+            "calculation_id": "attributes.effective",
+            "rule_id": "rule/ark_attribute_layers",
+            "contract_version": 1,
+            "rule_fingerprint": "b1429727a2aa9c43395ed1ff0ee1fbc56e7aa1c650636ba9a974a736def58435",
+            "runtime_fingerprint": "4288575c92093a4ff3334b92e5c15b76099f1084ec34f7cd5b546f2ff59f9242",
+            "inputs": {
+              "base": 100,
+              "modifier_layers": [],
+              "order": [
+                {
+                  "layer": "flat"
+                },
+                {
+                  "layer": "direct_ratio"
+                },
+                {
+                  "layer": "final_ratio"
+                }
+              ]
+            },
+            "parameters": {
+              "operations": {
+                "flat": "add",
+                "direct_ratio": "ratio_sum",
+                "final_ratio": "ratio_product",
+                "final_add": "add",
+                "final_mul": "factor_product"
+              },
+              "aggregator": {
+                "provider": "ark.attributes.aggregate"
+              }
+            },
+            "context": {
+              "time": 0,
+              "seconds": 0.0,
+              "quantum": 0.03333333333333333,
+              "attribute": "max_hp",
+              "attribute_sample_time": 0,
+              "rule_scope": {
+                "scenario": {},
+                "source": {},
+                "target": {},
+                "owner": {},
+                "component": {},
+                "attribute_or_resource": {},
+                "ability": {},
+                "effect": {}
+              },
+              "source_id": 2,
+              "target_id": null,
+              "owner_id": 2
+            },
+            "stages": [
+              {
+                "id": "provider",
+                "provider": "ark.attributes.layers",
+                "raw": 100
+              }
+            ],
+            "raw": 100,
+            "value": 100,
+            "numeric": {
+              "backend": "float",
+              "rounding": "half_even"
+            },
+            "provider": {
+              "name": "ark.attributes.layers",
+              "module": "ark_sim.presets.providers",
+              "qualname": "attribute_layers",
+              "version": "ark-preset/1",
+              "source_sha256": "939ebedaee9e807f0640706e97f4ae37d8eeb73a3954a4a8974560c5bec85a73",
+              "descriptor": {
+                "version": "ark-preset/1",
+                "attribute_time_dependency": "modifiers"
+              }
+            },
+            "binding": {
+              "owner": "owner",
+              "origin": "preset",
+              "overrides": [
+                {
+                  "scope": "preset",
+                  "rule_id": "rule/ark_attribute_layers"
+                }
+              ]
+            }
+          }
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 11,
+        "type": "calculation",
+        "payload": {
+          "calculation_id": "attributes.effective",
+          "rule_id": "rule/ark_attribute_layers",
+          "source": null,
+          "target": null,
+          "value": 0,
+          "trace": {
+            "calculation_id": "attributes.effective",
+            "rule_id": "rule/ark_attribute_layers",
+            "contract_version": 1,
+            "rule_fingerprint": "b1429727a2aa9c43395ed1ff0ee1fbc56e7aa1c650636ba9a974a736def58435",
+            "runtime_fingerprint": "4288575c92093a4ff3334b92e5c15b76099f1084ec34f7cd5b546f2ff59f9242",
+            "inputs": {
+              "base": 0,
+              "modifier_layers": [],
+              "order": [
+                {
+                  "layer": "flat"
+                },
+                {
+                  "layer": "direct_ratio"
+                },
+                {
+                  "layer": "final_ratio"
+                }
+              ]
+            },
+            "parameters": {
+              "operations": {
+                "flat": "add",
+                "direct_ratio": "ratio_sum",
+                "final_ratio": "ratio_product",
+                "final_add": "add",
+                "final_mul": "factor_product"
+              },
+              "aggregator": {
+                "provider": "ark.attributes.aggregate"
+              }
+            },
+            "context": {
+              "time": 0,
+              "seconds": 0.0,
+              "quantum": 0.03333333333333333,
+              "attribute": "atk",
+              "attribute_sample_time": 0,
+              "rule_scope": {
+                "scenario": {},
+                "source": {},
+                "target": {},
+                "owner": {},
+                "component": {},
+                "attribute_or_resource": {},
+                "ability": {},
+                "effect": {}
+              },
+              "source_id": 2,
+              "target_id": null,
+              "owner_id": 2
+            },
+            "stages": [
+              {
+                "id": "provider",
+                "provider": "ark.attributes.layers",
+                "raw": 0
+              }
+            ],
+            "raw": 0,
+            "value": 0,
+            "numeric": {
+              "backend": "float",
+              "rounding": "half_even"
+            },
+            "provider": {
+              "name": "ark.attributes.layers",
+              "module": "ark_sim.presets.providers",
+              "qualname": "attribute_layers",
+              "version": "ark-preset/1",
+              "source_sha256": "939ebedaee9e807f0640706e97f4ae37d8eeb73a3954a4a8974560c5bec85a73",
+              "descriptor": {
+                "version": "ark-preset/1",
+                "attribute_time_dependency": "modifiers"
+              }
+            },
+            "binding": {
+              "owner": "owner",
+              "origin": "preset",
+              "overrides": [
+                {
+                  "scope": "preset",
+                  "rule_id": "rule/ark_attribute_layers"
+                }
+              ]
+            }
+          }
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 12,
+        "type": "calculation",
+        "payload": {
+          "calculation_id": "attributes.effective",
+          "rule_id": "rule/ark_attribute_layers",
+          "source": null,
+          "target": null,
+          "value": 0,
+          "trace": {
+            "calculation_id": "attributes.effective",
+            "rule_id": "rule/ark_attribute_layers",
+            "contract_version": 1,
+            "rule_fingerprint": "b1429727a2aa9c43395ed1ff0ee1fbc56e7aa1c650636ba9a974a736def58435",
+            "runtime_fingerprint": "4288575c92093a4ff3334b92e5c15b76099f1084ec34f7cd5b546f2ff59f9242",
+            "inputs": {
+              "base": 0,
+              "modifier_layers": [],
+              "order": [
+                {
+                  "layer": "flat"
+                },
+                {
+                  "layer": "direct_ratio"
+                },
+                {
+                  "layer": "final_ratio"
+                }
+              ]
+            },
+            "parameters": {
+              "operations": {
+                "flat": "add",
+                "direct_ratio": "ratio_sum",
+                "final_ratio": "ratio_product",
+                "final_add": "add",
+                "final_mul": "factor_product"
+              },
+              "aggregator": {
+                "provider": "ark.attributes.aggregate"
+              }
+            },
+            "context": {
+              "time": 0,
+              "seconds": 0.0,
+              "quantum": 0.03333333333333333,
+              "attribute": "def",
+              "attribute_sample_time": 0,
+              "rule_scope": {
+                "scenario": {},
+                "source": {},
+                "target": {},
+                "owner": {},
+                "component": {},
+                "attribute_or_resource": {},
+                "ability": {},
+                "effect": {}
+              },
+              "source_id": 2,
+              "target_id": null,
+              "owner_id": 2
+            },
+            "stages": [
+              {
+                "id": "provider",
+                "provider": "ark.attributes.layers",
+                "raw": 0
+              }
+            ],
+            "raw": 0,
+            "value": 0,
+            "numeric": {
+              "backend": "float",
+              "rounding": "half_even"
+            },
+            "provider": {
+              "name": "ark.attributes.layers",
+              "module": "ark_sim.presets.providers",
+              "qualname": "attribute_layers",
+              "version": "ark-preset/1",
+              "source_sha256": "939ebedaee9e807f0640706e97f4ae37d8eeb73a3954a4a8974560c5bec85a73",
+              "descriptor": {
+                "version": "ark-preset/1",
+                "attribute_time_dependency": "modifiers"
+              }
+            },
+            "binding": {
+              "owner": "owner",
+              "origin": "preset",
+              "overrides": [
+                {
+                  "scope": "preset",
+                  "rule_id": "rule/ark_attribute_layers"
+                }
+              ]
+            }
+          }
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 13,
+        "type": "calculation",
+        "payload": {
+          "calculation_id": "attributes.effective",
+          "rule_id": "rule/ark_attribute_layers",
+          "source": null,
+          "target": null,
+          "value": 0,
+          "trace": {
+            "calculation_id": "attributes.effective",
+            "rule_id": "rule/ark_attribute_layers",
+            "contract_version": 1,
+            "rule_fingerprint": "b1429727a2aa9c43395ed1ff0ee1fbc56e7aa1c650636ba9a974a736def58435",
+            "runtime_fingerprint": "4288575c92093a4ff3334b92e5c15b76099f1084ec34f7cd5b546f2ff59f9242",
+            "inputs": {
+              "base": 0,
+              "modifier_layers": [],
+              "order": [
+                {
+                  "layer": "flat"
+                },
+                {
+                  "layer": "direct_ratio"
+                },
+                {
+                  "layer": "final_ratio"
+                }
+              ]
+            },
+            "parameters": {
+              "operations": {
+                "flat": "add",
+                "direct_ratio": "ratio_sum",
+                "final_ratio": "ratio_product",
+                "final_add": "add",
+                "final_mul": "factor_product"
+              },
+              "aggregator": {
+                "provider": "ark.attributes.aggregate"
+              }
+            },
+            "context": {
+              "time": 0,
+              "seconds": 0.0,
+              "quantum": 0.03333333333333333,
+              "attribute": "block_count",
+              "attribute_sample_time": 0,
+              "rule_scope": {
+                "scenario": {},
+                "source": {},
+                "target": {},
+                "owner": {},
+                "component": {},
+                "attribute_or_resource": {},
+                "ability": {},
+                "effect": {}
+              },
+              "source_id": 2,
+              "target_id": null,
+              "owner_id": 2
+            },
+            "stages": [
+              {
+                "id": "provider",
+                "provider": "ark.attributes.layers",
+                "raw": 0
+              }
+            ],
+            "raw": 0,
+            "value": 0,
+            "numeric": {
+              "backend": "float",
+              "rounding": "half_even"
+            },
+            "provider": {
+              "name": "ark.attributes.layers",
+              "module": "ark_sim.presets.providers",
+              "qualname": "attribute_layers",
+              "version": "ark-preset/1",
+              "source_sha256": "939ebedaee9e807f0640706e97f4ae37d8eeb73a3954a4a8974560c5bec85a73",
+              "descriptor": {
+                "version": "ark-preset/1",
+                "attribute_time_dependency": "modifiers"
+              }
+            },
+            "binding": {
+              "owner": "owner",
+              "origin": "preset",
+              "overrides": [
+                {
+                  "scope": "preset",
+                  "rule_id": "rule/ark_attribute_layers"
+                }
+              ]
+            }
+          }
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 14,
+        "type": "calculation",
+        "payload": {
+          "calculation_id": "resource.capacity",
+          "rule_id": "rule/ark_resource_capacity",
+          "source": null,
+          "target": 2,
+          "value": 100,
+          "trace": {
+            "calculation_id": "resource.capacity",
+            "rule_id": "rule/ark_resource_capacity",
+            "contract_version": 1,
+            "rule_fingerprint": "80087a0b8db405748a985e49edb1dd2ccff005cf4d9392d133709caa46d642d2",
+            "runtime_fingerprint": "4288575c92093a4ff3334b92e5c15b76099f1084ec34f7cd5b546f2ff59f9242",
+            "inputs": {
+              "attributes": {
+                "max_hp": 100,
+                "atk": 0,
+                "def": 0,
+                "block_count": 0
+              },
+              "capacity_parameters": {
+                "capacity": 100
+              }
+            },
+            "parameters": {},
+            "context": {
+              "time": 0,
+              "seconds": 0.0,
+              "quantum": 0.03333333333333333,
+              "resource": "hp",
+              "rule_scope": {
+                "scenario": {},
+                "source": {},
+                "target": {},
+                "owner": {},
+                "component": {},
+                "attribute_or_resource": {},
+                "ability": {},
+                "effect": {}
+              },
+              "source_id": null,
+              "target_id": 2,
+              "owner_id": 2
+            },
+            "stages": [
+              {
+                "id": "expression",
+                "expression": "inputs.capacity_parameters.capacity",
+                "raw": 100
+              }
+            ],
+            "raw": 100,
+            "value": 100,
+            "numeric": {
+              "backend": "float",
+              "rounding": "half_even"
+            },
+            "binding": {
+              "owner": "owner",
+              "origin": "preset",
+              "overrides": [
+                {
+                  "scope": "preset",
+                  "rule_id": "rule/ark_resource_capacity"
+                }
+              ]
+            }
+          }
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 15,
+        "type": "entity.created",
+        "payload": {
+          "source": 2,
+          "target": 2,
+          "definition": "unit/barrier"
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 16,
+        "type": "entity.activated",
+        "payload": {
+          "source": 2,
+          "target": 2,
+          "registration_key": "dormant_barrier"
+        },
+        "time": 0,
+        "cause": null
+      }
+    ]
+  },
+  "active": true
+}

@@ -1,0 +1,15 @@
+# M26 第1章源绑定组装
+
+`tools/build_chapter01_m26_content.py` 新包从M22实际持续投射物输入构造，再合入M24敌人decision，避免从旧M21父decision包组装时遗漏M22。现有技能/效果/Buff、波次和地图保持原数据；新M25资格挂在实际owned selector引用上。
+
+包身份：1-11 `a1a8a9091da743d0cbf966e2d44f521488f64d5dbd6d6bfe153f452d7431e215`，1-12 `a68023a0ec81cc95df9ccdec452979f5131fda648dc6673b8a3e9110108e38a1`，运行core仍7aa116。1-11保留M23显式fixed12教学覆盖与原卡片资料，不宣称原生教学卡完整战斗实现。
+
+四normal selector绑定实际UnitMode→Trigger同GO来源；W两mode的C4另外使用RangedAttack明确PPtr的第五SecondaryFilterAdvancedSelector。C4实际targetMotion3，普通攻击targetMotion1，两个配置独立保留。geometry、原过滤器、排序和INPUT_TARGET转交仍为声明模型／来源正文缺口，未提升实际准确性。
+
+20行actor来源稀疏patch按实际字段绑定，再新增NPC自身E0L20 Character源：fresh Unity TT root motion0→mask1、表professionSNIPER→2，未用固定12卡数据替代NPC。Cannon/EMP category2、Mon3tr category1按源 literal保留。未知side/category/unit_type/status按每actor显式数学policy分列，所有未知getter/生效writer与2025/2026版本缺口继续pending。
+
+实际4项组装测试通过，包含M22所有技能/效果/Buff/projectiles与原waves/map相等、sourcepatch不被math覆盖、C4/normal条件分离、两个完整原场景20刻的CP/commands replay。首轮因可选effects键不存在出现夹具KeyError，改用optional section比较后通过；原失败report保留。两包builder `--check` 通过。独立peer继续，不算全程。
+
+初版未绑定C4/NPC源literal与后续未带教学overlay的字节均保存在包内history子目录，仅历史参考；当前以以上两个SHA为准。完整证据见 `validation/campaign/m26_content/composition_final.json`。
+
+独立peer已fresh通过九项，含6实际fixture与76 source/helper锁，core/输入起止相等、CP/recordedcommand replay；报告 `validation/campaign/m26_content_peer/final.json` SHA `a048a6e8f8a513314c42727a05ef390fa3ba6dde2b29932dd45f9f1947a08f3e`。此前包在审阅中更新时hash门真实拒绝，没有把旧执行迁为新身份通过。原夹具/哈希失败记录保留。

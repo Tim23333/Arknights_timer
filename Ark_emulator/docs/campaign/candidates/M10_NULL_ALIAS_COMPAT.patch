@@ -1,0 +1,8 @@
+--- a/ark_sim/content/compiler.py
++++ b/ark_sim/content/compiler.py
+@@ -450,4 +450,4 @@
+         for item in instances:
+             base = definitions[item["definition"]].get("components", {})
+             actual = merge(base, item.get("components", {}))
+-            check_freeze(actual.get("resources", {}), actual.get("abilities", []), item.get("instanceAlias", item["definition"]))
++            check_freeze(actual.get("resources", {}), actual.get("abilities", []), item.get("instanceAlias") or item["definition"])

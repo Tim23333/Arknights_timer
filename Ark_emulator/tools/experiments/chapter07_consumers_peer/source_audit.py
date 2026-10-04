@@ -1,0 +1,23 @@
+import json,hashlib
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[3];BASE=ROOT/'packages/campaign';OUT=ROOT/'validation/campaign/chapter07_consumers_source_audit_v1';OUT.mkdir(exist_ok=False)
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+ore=BASE/'chapter07_predefines_consumer/ore.module.v3.json';mine=BASE/'chapter07_predefines_consumer/mine.module.v2.json';story=BASE/'chapter07_predefines_consumer/story.controls.v2.json';native=BASE/'chapter07_sources/native.reference.json';raw=BASE/'chapter07_predefines/source.v4.reference.json';names=['enemy_1083_sotiab','enemy_1083_sotiab_2','enemy_1078_sotisc'];mods=[BASE/('chapter07_strength_melee/module.'+n+'.v6.json') for n in names]
+files=[Path(__file__),ore,mine,story,native,raw,*mods,ROOT/'tools/chapter07_predefines/policies_v1.py',ROOT/'tools/chapter07_strength_melee/policies_v2.py',ROOT/'tools/campaign_content_composition_v2.py',ROOT/'tools/control_driver/public_ack_v2.py']
+before={str(p):sha(p) for p in files}
+load=lambda p:json.loads(p.read_text(encoding='utf8'))
+s=load(raw);n=load(native);witness=[]
+for name,mfile in zip(names,mods):
+ variant=next(v for k,v in n['variants'].items() if k.startswith(name+'@'));resolved=variant['native_enemy']['resolved'];m=load(mfile);entity=m['entities'][0];derived=next(b for b in m['buffs'] if b.get('modifiers'));bb=resolved['talentBlackboard'][0];mod=derived['modifiers'][0]
+ assert mod['value']==bb['value'] and entity['components']['attributes']['base']['atk']==resolved['attributes']['atk']
+ assert entity['id'] in derived['id'] and 'enemy_talent_strength' in derived['id']
+ buffs=[b for c in n['prefabs'][name]['components'].values() for b in c.get('raw',{}).get('_buffs',[]) if 'strength_talent' in b.get('buffKey','')]
+ assert len(buffs)==2 and all(b['triggerInterval']==.25 and b['waitFirstTriggerInterval']==1 and b['isSilenceable']==0 for b in buffs)
+ witness.append({'variant':variant['variant_id'],'source_stats':resolved['attributes'],'source_blackboard':bb,'native_listener_rows':buffs,'ir_entity':entity['id'],'ir_derived':derived,'selected_quantization_policy':'.25seconds ceil8 quanta; firstlistener8, not native coroutine exactness'})
+o=load(ore);mi=load(mine);st=load(story)
+ore_bb=s['skill_tables']['sktok_ore']['levels'][0];mine_bb=s['skill_tables']['sktok_mine']['levels'][0]
+assert ore_bb['spData']['spCost']==7 and mine_bb['spData']['spCost']==25 and mine_bb['blackboard'][0]['value']==2000
+report={'passed':True,'guards_start':before,'guards_end':{str(p):sha(p) for p in files},'strength':witness,'ore_source':{'skill':ore_bb,'prefab':s['skill_prefabs']['sktok_ore'],'bson':{k:s['bson_templates']['templates'][k] for k in ['ore_s','ore_buff','instant_damage_pure','switch_mode_when_trigger']}},'mine_source':{'skill':mine_bb,'prefab':s['skill_prefabs']['sktok_mine'],'bson':{k:s['bson_templates']['templates'][k] for k in ['damage_scale[input]','instant_damage_pure','suicide']}},'story_module':st,'selected_replaceable_policies':{'ore':'13 projected cells; fixed0.6000000238 ceil19 finish substitute, model1second castbusy; damage500 sourceNONE targetSPnotignored; immunity/listener actual live Buff checked at payload; temporary payload selfremove; activecast retire cancels. Native actual finish/cancel and graphics comparison unverified but selected model is executable.','mine':'Closed centre distance radius.550000011920929, sourceground/type/free/camo eligibility; mode20seconds distinctSP25; currentfloat tick0SP gives749. Emptyanimation immediate mode1-ready attack; damage_scale first then2000=>3000; suicide retire reasondead preservesHP. Nativecontact/emptyanimation lifecycle replaceable, not absent capability.','cards':'Source stock15, fee5,max1,capacity0,refund0,retirecooldown7; true scenario deploy_capacity authority; fixed12 roster cards admitted only explicit new478 interface. Old4f16 rejection preserved.','story':'All7 UTF8 source rows; actualpublic5acks only observed+1tick; protect15 andfade9; inputlock lifecycle; durable driverCP3/head. Logicalmodel, not renderedclientpause proof.','strength':'Exact source .5/.8/.3 BB; derived IR IDs scoped by source definition; shared native marker remains same; explicit equal-definition composition and currentdurationNone provider2. Nativekeys/rawBSON preserved.'},'scope':'Source data audit; independent runtime reports separate. No whole/client/native-method-body approval.'}
+assert report['guards_start']==report['guards_end']
+with (OUT/'audit.json').open('x',encoding='utf8') as f:json.dump(report,f,ensure_ascii=False,indent=2)
+print(json.dumps({'sha':sha(OUT/'audit.json'),'strength_variants':len(witness),'guards_equal':True}))

@@ -1,0 +1,1025 @@
+{
+  "abilities": [
+    {
+      "activation": {
+        "costs": [
+          {
+            "amount": 24,
+            "resource": "sp"
+          }
+        ],
+        "mode": "manual"
+      },
+      "duration_seconds": 16.0,
+      "id": "ability/campaign_myrtle_s2",
+      "kind": "ability",
+      "metadata": {
+        "native_skill_id": "skchr_myrtle_2",
+        "status": "partially_implemented"
+      },
+      "parameters": {
+        "blocks_attacks": true,
+        "healing": true
+      },
+      "selector": "selector/campaign_myrtle_heal",
+      "target_capture": "each_hit",
+      "timeline": [
+        {
+          "at": 0,
+          "effect": {
+            "buff": "buff/campaign_myrtle_no_block",
+            "op": "apply_buff",
+            "target": "source"
+          }
+        },
+        {
+          "at_seconds": 1.0,
+          "effect": {
+            "delta": 1.0,
+            "op": "modify_resource",
+            "resource": "dp",
+            "target": "battle"
+          },
+          "repeat": {
+            "count": 16,
+            "interval_seconds": 1.0
+          }
+        },
+        {
+          "at_seconds": 0.5329999923706055,
+          "effect": {
+            "op": "heal",
+            "scale": 0.5,
+            "target": "selected"
+          },
+          "repeat": {
+            "count": 16,
+            "interval_seconds": 1.0
+          }
+        }
+      ]
+    },
+    {
+      "activation": {
+        "mode": "automatic_attack"
+      },
+      "id": "ability/campaign_myrtle_fixture_attack",
+      "kind": "ability",
+      "selector": "selector/campaign_myrtle_enemy",
+      "timeline": [
+        {
+          "at": 0,
+          "effect": {
+            "damage_type": "physical",
+            "op": "damage"
+          }
+        }
+      ]
+    }
+  ],
+  "buffs": [
+    {
+      "duration_seconds": 16.0,
+      "id": "buff/campaign_myrtle_no_block",
+      "kind": "buff",
+      "modifiers": [
+        {
+          "attribute": "block_count",
+          "layer": "final_ratio",
+          "value": -1
+        }
+      ]
+    }
+  ],
+  "entities": [
+    {
+      "components": {
+        "abilities": [
+          "ability/campaign_myrtle_fixture_attack",
+          "ability/campaign_myrtle_s2"
+        ],
+        "attributes": {
+          "base": {
+            "atk": 100,
+            "attack_interval": 1,
+            "attack_speed_ratio": 1,
+            "block_count": 1,
+            "def": 0,
+            "max_hp": 1000,
+            "mres": 0
+          }
+        },
+        "behavior": {
+          "machine": "behavior/player_combat"
+        },
+        "resources": {
+          "hp": {
+            "capacity": 1000,
+            "initial": 1000,
+            "role": "health"
+          },
+          "sp": {
+            "capacity": 24,
+            "initial": 10,
+            "parameters": {
+              "freeze_cast_modes": [
+                "manual"
+              ],
+              "freeze_while_cast": true,
+              "pause_at_full": true
+            },
+            "recovery": {
+              "interval_seconds": 1,
+              "mode": "periodic"
+            },
+            "recovery_rate": 1.0
+          }
+        },
+        "spatial": {}
+      },
+      "id": "unit/campaign_myrtle_fixture",
+      "kind": "entity",
+      "metadata": {
+        "status": "partially_implemented",
+        "synthetic_attributes": true
+      },
+      "tags": [
+        "player"
+      ]
+    },
+    {
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 2000
+          }
+        },
+        "resources": {
+          "hp": {
+            "capacity": 2000,
+            "initial": 100,
+            "role": "health"
+          }
+        },
+        "spatial": {}
+      },
+      "id": "unit/campaign_myrtle_ally",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ]
+    },
+    {
+      "components": {
+        "attributes": {
+          "base": {
+            "def": 0,
+            "max_hp": 999999,
+            "mres": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "capacity": 999999,
+            "initial": 999999,
+            "role": "health"
+          }
+        },
+        "spatial": {}
+      },
+      "id": "unit/campaign_myrtle_target",
+      "kind": "entity",
+      "tags": [
+        "enemy"
+      ]
+    }
+  ],
+  "manifest": {
+    "id": "package/campaign_myrtle_s2_prototype",
+    "metadata": {
+      "client_validated": false,
+      "native_char_components": {
+        "-4407543729288334495": {
+          "fields": {
+            "_abilityInputTargetAsSortSource": 0,
+            "_abnormalCombo": 2,
+            "_abnormalFlag": 29,
+            "_checkUnitType": 0,
+            "_excludeAbnormalFlag": 46,
+            "_excludeOwner": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreHitRange": 0,
+            "_ignoreMotionMode": 0,
+            "_ignoreTargetFree": 0,
+            "_limitTargetNum": 1,
+            "_maxNum": 1,
+            "_maxTargetKey": "max_target",
+            "_needProfessionMask": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_postFilter": 3,
+            "_professionMask": 0,
+            "_sortByTauntAtLast": 0,
+            "_targetCategory": 1,
+            "_targetMotion": 3,
+            "_targetSide": 1,
+            "_unitTypeMask": 0
+          },
+          "script_path_id": 7080728813803358465
+        },
+        "-661438494929734815": {
+          "fields": {
+            "_keepTarget": 0,
+            "_minTargetNum": 1,
+            "_overrideSearchTargetTick": -1
+          },
+          "script_path_id": 8607874384982393801
+        },
+        "4170900438269670241": {
+          "fields": {
+            "_addIndexToSignalId": 1,
+            "_alwaysHideHp": {
+              "isDefined": 0,
+              "value": 0
+            },
+            "_alwaysHideSp": {
+              "isDefined": 0,
+              "value": 0
+            },
+            "_animatorHooker": {
+              "m_FileID": 0,
+              "m_PathID": -5924866451138825375
+            },
+            "_attack": {
+              "m_FileID": 0,
+              "m_PathID": 673272970802344801
+            },
+            "_attackTrigger": {
+              "m_FileID": 0,
+              "m_PathID": -661438494929734815
+            },
+            "_bodyTransform": {
+              "m_FileID": 0,
+              "m_PathID": -4150121730692435103
+            },
+            "_combat": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_extraRangesToShow": [],
+            "_generalAbilities": [],
+            "_hideUIAttackRange": 0,
+            "_includeIndexZero": 0,
+            "_overrideDeadEffect": "",
+            "_overrideStartEffect": "",
+            "_rangeToShow": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_updateAttackRangeExtendByAttributeDirty": 0
+          },
+          "script_path_id": 5390319429299248724
+        },
+        "6228503509698720609": {
+          "fields": {
+            "_animator": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_blockMode": 0,
+            "_buildCondition": {
+              "_checkUpdateBuildable": 0,
+              "_excludeOccupiedByWalkEnemy": 0,
+              "abilityName": "",
+              "advancedBuildableMask": 1,
+              "allowWalkEnemyInHostRange": 0,
+              "buildableType": 1,
+              "canNotBuildInHostAttackRange": 0,
+              "checkManuallyBuildableType": 0,
+              "excludeNoTargetTile": 0,
+              "extraBuildConditionArray": {
+                "SerializedObjectReferences": [],
+                "SerializedState": "null"
+              },
+              "extraLocateRange": "",
+              "isTryingOverlapCharacater": 0,
+              "limitByHostAbilityRange": 0,
+              "limitByHostAttackRange": 0,
+              "manuallyBuildableType": 0,
+              "needSpecifyDirection": 1,
+              "overlapOptions": {
+                "_changeTargetGraphicColor": 0,
+                "_excludeSourceId": 0,
+                "_excludeSourceIds": [],
+                "_isAllConditionOR": 1,
+                "_overlapPriority": 0,
+                "_verifySourceId": 0,
+                "_verifySourceIds": [],
+                "_verifySourceProfession": 0,
+                "_verifySourceProfessions": 0,
+                "_verifySourceTargetTokenRelationship": 0
+              },
+              "tileKey": ""
+            },
+            "_clearProjectileWhenDead": 0,
+            "_commonAbilities": [],
+            "_deadEffect": "",
+            "_defaultBodyColor": {
+              "a": 1.0,
+              "b": 1.0,
+              "g": 1.0,
+              "r": 1.0
+            },
+            "_directionIndicator": {
+              "m_FileID": 0,
+              "m_PathID": -2884418562629717151
+            },
+            "_directionTransform": {
+              "m_FileID": 0,
+              "m_PathID": 7783267333052937057
+            },
+            "_disableCharInfoPanel": 0,
+            "_disableClickCharacterInfo": 0,
+            "_disableRotateWhenDead": 0,
+            "_disableSetDirectionWhenDummy": 0,
+            "_dontMoveCameraWhenFocus": 0,
+            "_effectTransform": {
+              "m_FileID": 0,
+              "m_PathID": -6929237369783864479
+            },
+            "_hideShadowOnRecycle": 0,
+            "_hudPluginReplacePairs": [],
+            "_ignoreBlockMode": 0,
+            "_isFixedRotation": 0,
+            "_maxWithdrawCostRatioOfRawCost": 1.0,
+            "_modes": [
+              {
+                "m_FileID": 0,
+                "m_PathID": -2833171295535189151
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": 5330705879706743649
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": 4170900438269670241
+              }
+            ],
+            "_motionMode": 0,
+            "_occupiedRemainingCharacterCnt": 1,
+            "_onlyPlayStartEffectOnce": 0,
+            "_overrideGraphicBound": -1.0,
+            "_playStartVocal": 1,
+            "_preprocessData": 0,
+            "_shadow": {
+              "m_FileID": 0,
+              "m_PathID": -5102020443604667551
+            },
+            "_showDeadTweenColor": 1,
+            "_showDebugName": 0,
+            "_skillUiFollowHeadPint": 0,
+            "_skinHolder": {
+              "m_FileID": 0,
+              "m_PathID": 6350143580850598753
+            },
+            "_skipBornAudioOnMoveLikeRespawnSelf": 0,
+            "_startEffect": "",
+            "_traitAbility": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_uiMountPoint": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_useIdForAudioSignalMask": 0,
+            "_useRealBornTimeFromAnim": 0,
+            "_useSpecificDeadAnim": 0,
+            "_withdrawCostRecoverRatio": 0.5
+          },
+          "script_path_id": -1297314214590689040
+        },
+        "673272970802344801": {
+          "fields": {
+            "_activeBuffs": [],
+            "_affectedBySlowDown": 0,
+            "_allowNoTarget": 0,
+            "_alwaysIncludeTarget": 1,
+            "_animKey": "",
+            "_applyEPHeal": 0,
+            "_applyHealScaleToEPHealScale": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_checkFaceToFirstCastTargetDownAttack": 0,
+            "_cooldown": 1.0,
+            "_cooldownKey": "duration",
+            "_downAnimKey": "",
+            "_downEndAnimKey": "",
+            "_endAnimKey": "",
+            "_escapeTime": 1.0,
+            "_faceToDefault": 0,
+            "_faceToFirstCastTarget": 0,
+            "_faceToFront": 0,
+            "_faceToTarget": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_forceFaceToDirection": 0,
+            "_hasNoActionNode": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreIfOwnerDead": 0,
+            "_ignorePalsyInterrupt": 0,
+            "_interruptAbilityOnDetach": 0,
+            "_interuptIfTargetDead": 0,
+            "_isCont": 1,
+            "_isHpRatio": 0,
+            "_maxAnimScale": -1.0,
+            "_metadata": {
+              "blackboardPrefix": "",
+              "namedAsAlias": ""
+            },
+            "_onlyPlayEndAnimWhenIsLastAbility": 0,
+            "_preDelay": 0.5329999923706055,
+            "_resetCdStrategy": 1,
+            "_selectTargetSource": 1,
+            "_selectTargetTiming": 0,
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": -4407543729288334495
+            },
+            "_timeMode": 2,
+            "_upAnimKey": "",
+            "_upEndAnimKey": "",
+            "_waitForAttackEvent": 1
+          },
+          "script_path_id": -1761593469416546375
+        }
+      },
+      "native_enum_evidence": {
+        "public const AttributeModifierData.AttributeModifier.FormulaItemType FINAL_SCALER": 3,
+        "public const AttributeType BLOCK_CNT": 5,
+        "public const FilterUtil.FilterType HP_RATIO_NOT_FULL_ASC": 3
+      },
+      "native_skill_level": {
+        "blackboard": [
+          {
+            "key": "attack@heal_scale",
+            "value": 0.5,
+            "valueStr": null
+          },
+          {
+            "key": "interval",
+            "value": 1.0,
+            "valueStr": null
+          },
+          {
+            "key": "value",
+            "value": 16.0,
+            "valueStr": null
+          },
+          {
+            "key": "cost",
+            "value": 1.0,
+            "valueStr": null
+          }
+        ],
+        "description": "停止攻击，持续时间内回复总共<@ba.vup>{value}</>点部署费用，并每秒治疗周围一名友方单位相当于桃金娘攻击力<@ba.vup>{attack@heal_scale:0%}</>的生命",
+        "duration": 16.0,
+        "durationType": "NONE",
+        "name": "治愈之翼",
+        "prefabId": "skchr_myrtle_2",
+        "rangeId": "x-4",
+        "skillType": "MANUAL",
+        "spData": {
+          "increment": 1.0,
+          "initSp": 10,
+          "levelUpCost": null,
+          "maxChargeTime": 1,
+          "spCost": 24,
+          "spType": "INCREASE_WITH_TIME"
+        }
+      },
+      "native_skill_prefab": {
+        "components": [
+          {
+            "cabin": "CAB-e39773c4d1462aefe0ea30134bbccdbb",
+            "class": "AttackAbility",
+            "fields": {
+              "_allowNoTarget": 1,
+              "_allowSpRecoveryWhenAffecting": 0,
+              "_attachSignalIds": 0,
+              "_attackBlackboardModeIndex": 2,
+              "_availableValidator": {
+                "m_FileID": 0,
+                "m_PathID": 0
+              },
+              "_beginAnim": "",
+              "_beginAnimDown": "",
+              "_beginAnimValidator": {
+                "m_FileID": 0,
+                "m_PathID": 0
+              },
+              "_beginEffect": [],
+              "_canCastDuringBorn": 1,
+              "_canCastWithNoSp": 0,
+              "_canSilenced": 0,
+              "_canSwitchDuringBorn": 1,
+              "_canUseInAbnormalState": 0,
+              "_checkHasTargetBeforeDoCast": 0,
+              "_defaultModeIndex": -1,
+              "_earlySkillFinishAtAttackFinished": 0,
+              "_earlyVoice": 0,
+              "_extraAbilities": [],
+              "_extraAttackBlackboardModeIndices": [],
+              "_extraRangeIdModeIndices": [],
+              "_forceToShowRange": 0,
+              "_forceUseBaseShowRange": 0,
+              "_hasUniStackColor": 0,
+              "_hidden": 0,
+              "_hideHudSkillStackCount": 0,
+              "_hideRangeToShow": 0,
+              "_hideSkillStackCount": 0,
+              "_isRemoteControlled": 0,
+              "_limitGlobalTriggerTime": 0,
+              "_maxTriggerTime": -1,
+              "_onlyAvailableWhenTokenValid": 0,
+              "_playCharWordVoice": 1,
+              "_playCharWordWithPassiveType": 0,
+              "_playSkillBeginAnim": 0,
+              "_rangeIdModeIndex": 2,
+              "_rangeIdUsageType": 7,
+              "_rangeToShow": {
+                "m_FileID": 0,
+                "m_PathID": 0
+              },
+              "_recoverSpIfNoTarget": 0,
+              "_resetAbilityCooldownWhenCastEnd": 0,
+              "_shouldCastLikeAttack": 0,
+              "_showProgressToNext": 0,
+              "_showSpAsBulletMode": 0,
+              "_showSpBarEvenHidden": 0,
+              "_showSpRatioAsProgress": 0,
+              "_stopAffectOnInterrupt": 0,
+              "_switchToState": 0,
+              "_trigger": {
+                "m_FileID": 0,
+                "m_PathID": 0
+              },
+              "_uninterruptibleOnAbilityPredelay": 0,
+              "_useEscapeTime": 0,
+              "_useFaceVector": 0,
+              "_useTriggerInManualMode": 0,
+              "_writeDurationToAttackBlackboard": 0
+            },
+            "gameObjectPathID": -29682396844574325,
+            "pathID": -6650069239152297589,
+            "scriptPathID": 6851783972288338031
+          },
+          {
+            "cabin": "CAB-e39773c4d1462aefe0ea30134bbccdbb",
+            "class": "Other",
+            "fields": {
+              "_default": {
+                "beginAnim": "Skill_Begin",
+                "endAnim": "Skill_End",
+                "loopAnim": "Skill_Loop"
+              },
+              "_delaySecond": 0.0,
+              "_delayToAnimateEndAnimation": 0,
+              "_delayToAnimateEndAnimationTime": 0.0,
+              "_delayToFireAttackSkillEvent": 0,
+              "_dontPlayBeginAnimFromInterrupted": 0,
+              "_down": {
+                "beginAnim": "",
+                "endAnim": "",
+                "loopAnim": ""
+              },
+              "_earlyFinishEndIdleAnimation": 0,
+              "_faceToDefault": 1,
+              "_faceToFront": 0,
+              "_fireAnimEndEvent": 0,
+              "_fireAttackFinishEvent": 0,
+              "_onlyPlayBeginAnimWhenFirstAttack": 0,
+              "_overrideDownAnimation": 0,
+              "_overrideUpAnimation": 0,
+              "_playIdleAnimInTheEnd": 0,
+              "_up": {
+                "beginAnim": "",
+                "endAnim": "",
+                "loopAnim": ""
+              },
+              "_waitForAttachFinishEvent": 0
+            },
+            "gameObjectPathID": -29682396844574325,
+            "pathID": 3302478589059414411,
+            "scriptPathID": 680305599797508032
+          },
+          {
+            "cabin": "CAB-e39773c4d1462aefe0ea30134bbccdbb",
+            "class": "Ability",
+            "fields": {
+              "_attachPassiveBuffsOnDummy": 1,
+              "_buffs": [
+                {
+                  "attributes": {
+                    "abnormalAntis": [],
+                    "abnormalComboImmunes": [],
+                    "abnormalCombos": [],
+                    "abnormalFlags": [],
+                    "abnormalImmunes": [],
+                    "attributeModifiers": [
+                      {
+                        "attributeType": 5,
+                        "fetchBaseValueFromSourceEntity": 0,
+                        "formulaItem": 3,
+                        "loadFromBlackboard": 0,
+                        "value": 0.0
+                      }
+                    ]
+                  },
+                  "audioSignal": "",
+                  "blackboard": [
+                    {
+                      "key": "mode",
+                      "value": 2.0,
+                      "valueStr": ""
+                    }
+                  ],
+                  "buffKey": "astersi_s_2[a]",
+                  "clearAllStackCntWhenTimeUp": 0,
+                  "disableOverride": 0,
+                  "durationKey": "",
+                  "enableInitDirectionFromSource": 0,
+                  "firstTriggerInterval": -1.0,
+                  "independentCharacterSource": 0,
+                  "isDamageMissable": 0,
+                  "isDurableBuff": 0,
+                  "isFreezable": 0,
+                  "isGroundBoundable": 0,
+                  "isLevitatable": 0,
+                  "isSilenceable": 0,
+                  "isStunnable": 0,
+                  "lifeTime": 0.0,
+                  "lifeTimeType": 1,
+                  "loadFromDB": 0,
+                  "maxStackCnt": 1,
+                  "maxValidStackCnt": -1,
+                  "onEventPriority": 0,
+                  "overrideEffectKey": "myrtle_skill_02_buff",
+                  "overrideKey": "",
+                  "overrideOnEventPriority": 0,
+                  "overrideType": 0,
+                  "priority": -1,
+                  "priorityBBKeys": [],
+                  "refreshRemainingTimeWhenStackMax": 0,
+                  "statusResistable": 2,
+                  "stripBlackboardParamsWithBuffKey": 0,
+                  "takeSnapshotWhenExtend": 0,
+                  "templateKey": "switch_mode_restart_fsm",
+                  "triggerCnt": 0,
+                  "triggerInterval": -1.0,
+                  "triggerLifeType": 0,
+                  "waitFirstTriggerInterval": 1
+                },
+                {
+                  "attributes": {
+                    "abnormalAntis": [],
+                    "abnormalComboImmunes": [],
+                    "abnormalCombos": [],
+                    "abnormalFlags": [],
+                    "abnormalImmunes": [],
+                    "attributeModifiers": []
+                  },
+                  "audioSignal": "",
+                  "blackboard": [],
+                  "buffKey": "astersi_s_2[b]",
+                  "clearAllStackCntWhenTimeUp": 0,
+                  "disableOverride": 0,
+                  "durationKey": "",
+                  "enableInitDirectionFromSource": 0,
+                  "firstTriggerInterval": -1.0,
+                  "independentCharacterSource": 0,
+                  "isDamageMissable": 0,
+                  "isDurableBuff": 0,
+                  "isFreezable": 0,
+                  "isGroundBoundable": 0,
+                  "isLevitatable": 0,
+                  "isSilenceable": 0,
+                  "isStunnable": 0,
+                  "lifeTime": 0.0,
+                  "lifeTimeType": 1,
+                  "loadFromDB": 0,
+                  "maxStackCnt": 1,
+                  "maxValidStackCnt": -1,
+                  "onEventPriority": 0,
+                  "overrideEffectKey": "myrtle_skill_02_buff_02",
+                  "overrideKey": "",
+                  "overrideOnEventPriority": 0,
+                  "overrideType": 0,
+                  "priority": -1,
+                  "priorityBBKeys": [],
+                  "refreshRemainingTimeWhenStackMax": 0,
+                  "statusResistable": 2,
+                  "stripBlackboardParamsWithBuffKey": 0,
+                  "takeSnapshotWhenExtend": 0,
+                  "templateKey": "periodic_cost",
+                  "triggerCnt": 0,
+                  "triggerInterval": 1.0,
+                  "triggerLifeType": 2,
+                  "waitFirstTriggerInterval": 1
+                }
+              ],
+              "_checkBuffEarlyFinish": 0,
+              "_enableUpdateCooldown": 0,
+              "_escapeTime": 0.0,
+              "_forceAsDmgOrHealAbility": 0,
+              "_ignoreIfOwnerDead": 0,
+              "_ignoreInfiniteBuffCooldown": 0,
+              "_interruptAbilityOnDetach": 0,
+              "_interuptIfTargetDead": 0,
+              "_metadata": {
+                "blackboardPrefix": "",
+                "namedAsAlias": ""
+              },
+              "_passiveBuffs": [],
+              "_preDelay": 0.0,
+              "_resetCdStrategy": 1,
+              "_selector": {
+                "m_FileID": 0,
+                "m_PathID": 0
+              },
+              "_updateLifetimeWhenSpellStart": 0,
+              "_waitForAttackEvent": 0,
+              "_waitForCasting": 1
+            },
+            "gameObjectPathID": -29682396844574325,
+            "pathID": 7458720872929114507,
+            "scriptPathID": -4234909118878081699
+          }
+        ]
+      },
+      "official_selected_skill": {
+        "character_skill_index": 1,
+        "character_skill_slot": {
+          "levelUpCostCond": [
+            {
+              "levelUpCost": [
+                {
+                  "count": 2,
+                  "id": "3303",
+                  "type": "MATERIAL"
+                },
+                {
+                  "count": 1,
+                  "id": "30054",
+                  "type": "MATERIAL"
+                },
+                {
+                  "count": 4,
+                  "id": "30033",
+                  "type": "MATERIAL"
+                }
+              ],
+              "lvlUpTime": 28800,
+              "unlockCond": {
+                "level": 1,
+                "phase": "PHASE_2"
+              }
+            },
+            {
+              "levelUpCost": [
+                {
+                  "count": 4,
+                  "id": "3303",
+                  "type": "MATERIAL"
+                },
+                {
+                  "count": 2,
+                  "id": "30074",
+                  "type": "MATERIAL"
+                },
+                {
+                  "count": 2,
+                  "id": "30054",
+                  "type": "MATERIAL"
+                }
+              ],
+              "lvlUpTime": 57600,
+              "unlockCond": {
+                "level": 1,
+                "phase": "PHASE_2"
+              }
+            },
+            {
+              "levelUpCost": [
+                {
+                  "count": 6,
+                  "id": "3303",
+                  "type": "MATERIAL"
+                },
+                {
+                  "count": 2,
+                  "id": "30125",
+                  "type": "MATERIAL"
+                },
+                {
+                  "count": 2,
+                  "id": "30084",
+                  "type": "MATERIAL"
+                }
+              ],
+              "lvlUpTime": 86400,
+              "unlockCond": {
+                "level": 1,
+                "phase": "PHASE_2"
+              }
+            }
+          ],
+          "overridePrefabKey": null,
+          "overrideTokenKey": null,
+          "skillId": "skchr_myrtle_2",
+          "unlockCond": {
+            "level": 1,
+            "phase": "PHASE_1"
+          }
+        },
+        "level": {
+          "blackboard": [
+            {
+              "key": "attack@heal_scale",
+              "value": 0.5,
+              "valueStr": null
+            },
+            {
+              "key": "interval",
+              "value": 1.0,
+              "valueStr": null
+            },
+            {
+              "key": "value",
+              "value": 16.0,
+              "valueStr": null
+            },
+            {
+              "key": "cost",
+              "value": 1.0,
+              "valueStr": null
+            }
+          ],
+          "description": "停止攻击，持续时间内回复总共<@ba.vup>{value}</>点部署费用，并每秒治疗周围一名友方单位相当于桃金娘攻击力<@ba.vup>{attack@heal_scale:0%}</>的生命",
+          "duration": 16.0,
+          "durationType": "NONE",
+          "name": "治愈之翼",
+          "prefabId": "skchr_myrtle_2",
+          "rangeId": "x-4",
+          "skillType": "MANUAL",
+          "spData": {
+            "increment": 1.0,
+            "initSp": 10,
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 24,
+            "spType": "INCREASE_WITH_TIME"
+          }
+        },
+        "native_level_index": 9,
+        "skill_id": "skchr_myrtle_2"
+      },
+      "official_unit_config_imported": false,
+      "scope": "skill composition prototype; not mainline conversion",
+      "source_hashes": {
+        "charpack": "8f86aa31b7ebaf744e1d37b24e2f495c54831060e739fb09b8016de505abeb47",
+        "native_enum_dump": "d25fb9fb7ec81253f112d9090e4550cd37a273ace56085d37610bb67c1e3a88f",
+        "official_normalized": "1611fac32beb58d7aeb9e28ffb6cd4ebcfc3a5e6f955157a5dc3fab7ebb6824b",
+        "official_source_lock": "999b9aa22b161ef9ec0f2e9a83cfb83555dcdd599ff4ca705f27ce0ffe38e8ee",
+        "offline_range_json": "4d974598394630a1ad465b954321254397f514c7fb26cba944d320ac18b874d0",
+        "roster_reference": "cc2d1543d2429c666ccf3d9eb264db573b87544adea8ceecd80c78caadfc1d4b"
+      },
+      "timing_limits": [
+        "DP endpoint at16 is an explicit model settlement policy, client same-tick expiry order pending",
+        "heal first hit follows mode2 component preDelay; animation/FSM client alignment pending",
+        "talent25HP regeneration, official attributes/trust and deploy lifecycle pending"
+      ]
+    },
+    "version": "1"
+  },
+  "scenarioDraft": {
+    "id": "scenario/campaign_myrtle_s2_prototype",
+    "initialEntities": [
+      {
+        "definition": "unit/campaign_myrtle_fixture",
+        "instanceAlias": "myrtle",
+        "position": {
+          "col": 2,
+          "row": 2
+        }
+      },
+      {
+        "definition": "unit/campaign_myrtle_ally",
+        "instanceAlias": "ally",
+        "position": {
+          "col": 3,
+          "row": 2
+        }
+      },
+      {
+        "definition": "unit/campaign_myrtle_target",
+        "instanceAlias": "target",
+        "position": {
+          "col": 3,
+          "row": 3
+        }
+      }
+    ],
+    "map": {
+      "cols": 5,
+      "rows": 5
+    },
+    "metadata": {
+      "not_formal_mainline": true,
+      "status": "partially_implemented"
+    },
+    "resources": {
+      "dp": {
+        "capacity": 99,
+        "initial": 0
+      }
+    },
+    "ruleset": "ruleset/ark_standard"
+  },
+  "schemaVersion": 2,
+  "selectors": [
+    {
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "id": "selector/campaign_myrtle_heal",
+      "kind": "selector",
+      "limit": 1,
+      "region": {
+        "offsets": [
+          [
+            1,
+            -1
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            -1
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            -1,
+            -1
+          ],
+          [
+            -1,
+            0
+          ],
+          [
+            -1,
+            1
+          ]
+        ],
+        "rotate_with_facing": false,
+        "type": "grid_offsets"
+      }
+    },
+    {
+      "filters": [
+        {
+          "tag": "enemy"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "id": "selector/campaign_myrtle_enemy",
+      "kind": "selector",
+      "limit": 1,
+      "region": {
+        "type": "all"
+      }
+    }
+  ],
+  "status": "partially_implemented"
+}

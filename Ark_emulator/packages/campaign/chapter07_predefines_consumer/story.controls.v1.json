@@ -1,0 +1,219 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/ch7/story_controls/v1",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "source_locks": {
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_predefines_consumer\\story.requirements.v1.json": "9d57d7c78b955ed8a008187deea0f1cbcb6724b634293444604970c91fc46a5c",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter07_predefines\\build_story_controls_v1.py": "e55e5057bea33c27b214cd38b13b8289a32408dc5c961b0feb74f3230b0731f6"
+      },
+      "reference_policy": {
+        "popupdialog": "Public actual-await ack at observed boundary +1; samehalfopen protocol asC6, 4 ackrows expected",
+        "tutorial": "protectTime.5 beforepublicack, focus data preserved model only",
+        "blocker": "finalfade.3 modeltiming, explicit lock lifecycle",
+        "header": "skippabletrue/autoablefalse source preserved; fixedtestnoSkip"
+      },
+      "whole_stage_executed": false,
+      "client_verified": false
+    }
+  },
+  "controls": [
+    {
+      "id": "control/ch7/main_07-16",
+      "kind": "control",
+      "clock_policy": "logical",
+      "ack_policy": "external",
+      "on_start": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "main_07-16/tutorial",
+            "enabled": true
+          }
+        }
+      ],
+      "on_complete": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "main_07-16/tutorial",
+            "enabled": false
+          }
+        }
+      ],
+      "on_cancel": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "main_07-16/tutorial",
+            "enabled": false
+          }
+        }
+      ],
+      "steps": [
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "source.story.row",
+              "payload": {
+                "line": 1,
+                "command": "HEADER",
+                "parameters": "is_skippable=true, is_autoable=false",
+                "text": "主线07-16关卡内剧情",
+                "raw": "[HEADER(is_skippable=true, is_autoable=false)] 主线07-16关卡内剧情"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "source.story.row",
+              "payload": {
+                "line": 2,
+                "command": "PopupDialog",
+                "parameters": "dialogHead=\"$avatar_kalts\"",
+                "text": "爱国者正用他的大盾掩护着他的部队。那是乌萨斯军事温迪戈的战斗方式。",
+                "raw": "[PopupDialog(dialogHead=\"$avatar_kalts\")] 爱国者正用他的大盾掩护着他的部队。那是乌萨斯军事温迪戈的战斗方式。"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "ack",
+          "key": "main_07-16/line/2"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "source.story.row",
+              "payload": {
+                "line": 3,
+                "command": "PopupDialog",
+                "parameters": "dialogHead=\"$avatar_kalts\"",
+                "text": "想要摧毁游击队的指挥中枢，就必须削弱他，解除他的战场支配力。",
+                "raw": "[PopupDialog(dialogHead=\"$avatar_kalts\")] 想要摧毁游击队的指挥中枢，就必须削弱他，解除他的战场支配力。"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "ack",
+          "key": "main_07-16/line/3"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "source.story.row",
+              "payload": {
+                "line": 4,
+                "command": "PopupDialog",
+                "parameters": "dialogHead=\"$avatar_kalts\"",
+                "text": "但这并不容易，他的肉体与铠甲<@tu.kw>坚不可摧</>，法术与常规武器对强大的爱国者而言，如同虫蜇。",
+                "raw": "[PopupDialog(dialogHead=\"$avatar_kalts\")] 但这并不容易，他的肉体与铠甲<@tu.kw>坚不可摧</>，法术与常规武器对强大的爱国者而言，如同虫蜇。"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "ack",
+          "key": "main_07-16/line/4"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "source.story.row",
+              "payload": {
+                "line": 5,
+                "command": "PopupDialog",
+                "parameters": "dialogHead=\"$avatar_kalts\"",
+                "text": "击溃他的<@tu.kw>防护</>。不要让游击队在他的掩护下自由行动。",
+                "raw": "[PopupDialog(dialogHead=\"$avatar_kalts\")] 击溃他的<@tu.kw>防护</>。不要让游击队在他的掩护下自由行动。"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "ack",
+          "key": "main_07-16/line/5"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "source.story.row",
+              "payload": {
+                "line": 6,
+                "command": "Tutorial",
+                "parameters": "focusX=-5, focusY=15, focusWidth=220, focusHeight=220,           animStyle=\"Highlight\", focusStyle=\"HighlightRect\", black=\"$f_tut_black\",anchor=\"BottomRight\",           protectTime=0.5, dialogHead=\"$avatar_kalts\", dialogX=\"$f_lower_dialog_pos_x\", dialogY=\"$f_lower_dialog_pos_y\"",
+                "text": "后勤干员会用<@tu.kw>干扰地雷</>为你提供帮助。合理运用你的战术，击败他。",
+                "raw": "[Tutorial(focusX=-5, focusY=15, focusWidth=220, focusHeight=220,           animStyle=\"Highlight\", focusStyle=\"HighlightRect\", black=\"$f_tut_black\",anchor=\"BottomRight\",           protectTime=0.5, dialogHead=\"$avatar_kalts\", dialogX=\"$f_lower_dialog_pos_x\", dialogY=\"$f_lower_dialog_pos_y\")] 后勤干员会用<@tu.kw>干扰地雷</>为你提供帮助。合理运用你的战术，击败他。"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "delay",
+          "seconds": 0.5
+        },
+        {
+          "kind": "ack",
+          "key": "main_07-16/tutorial/6"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "source.story.row",
+              "payload": {
+                "line": 7,
+                "command": "Blocker",
+                "parameters": "fadetime=0.3, block=true, a=0",
+                "text": "",
+                "raw": "[Blocker(fadetime=0.3, block=true, a=0)]"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "delay",
+          "seconds": 0.3
+        }
+      ],
+      "metadata": {
+        "source_key": "obt/tutorial/level/main_07-16",
+        "payload_sha": "77285da03cb5c0e8fe948953a43f8a9564eb025971a87b8962a73a1279f14423",
+        "actual_source_rows": 7,
+        "expected_popup_acks": 4,
+        "expected_tutorial_acks": 1,
+        "protect_time_seconds": 0.5,
+        "fade_time_seconds": 0.3
+      }
+    }
+  ]
+}

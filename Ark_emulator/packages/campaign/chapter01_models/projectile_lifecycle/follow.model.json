@@ -1,0 +1,635 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/chapter01/projectile-lifecycle",
+    "version": "0.1.0",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "source": "packages/campaign/chapter01_sources/native.reference.json",
+      "source_sha256": "a242f94040c7f96d175056e6ceffa285ea10f60bec00db1ab7f354fe0739b0cd",
+      "builder_sha256": "7d3c48209c0520a84186a1823a198a15b9b3de39cc94aee39f1535c89bd710ff",
+      "profiles": {
+        "hp_mode": "resource-change event; 0 < hp/max_hp <= .5 activates reversible mode1; no ATK modifier",
+        "FSM_restart": "cancel pending automatic attacks and reset next_attack; active C4 survives mode change",
+        "C4_clock": "named timer, not native SP; recovery includes tick0: Default first readiness tick269/period600ticks; T1 ready on entry; reset Default9s on restore",
+        "C4_target": "Default stable one in radius2.5; T1 stable three; cast captures actor identity",
+        "C4_bomb": "fixed 1x launch .6s plus attached lifetime3.2s; target current position at explosion; overlapping bombs settle separately",
+        "sampling": "source ATK at cast, target DEF at explosion; no target-death cancellation; dead source cancels remaining cast",
+        "normal_packet": {
+          "selected": "two_full_packets_model",
+          "available": {
+            "two_full_packets_model": [
+              9,
+              23
+            ],
+            "first_signal_only_model": [
+              9
+            ]
+          },
+          "interpretation": "explicit model selection: one full physical packet per selected authored signal; animation events alone do not prove native packet count",
+          "target": "one ground player captured at cast; stable runtime ID ordering replaces native postFilter4 priority",
+          "clock": "DB4s/ASPD100; unscaled frame9/23; mode restart cancels unlaunched normal tasks; native FSM pending",
+          "flight": "launch planar distance /speed5 capped10s, captured ID; source retirement preserves launched packet, target retirement discards packet",
+          "C4_interlock": "cancel pending normal tasks + reset attack clock at C4 start; already launched projectiles remain; block new normal casts until C4 finishes"
+        }
+      },
+      "status": "partial_W_normal_HP_C4_composed_model",
+      "client_pending": [
+        "native_C4_projectile_attach_callbacks_and_expiry_not_recovered",
+        "native_Default_C4_null_selector_inheritance",
+        "native_C4_cooldown_restart_and_mode_transition_driver_semantics",
+        "native_HP_checker_event_order_and_comparison_algorithm",
+        "native_normal_attack_two_event_packets_and_parabolic_motion_not_authored",
+        "native_target_sorting_and_projectile_invalid_FSM"
+      ],
+      "model_gaps": [
+        "native_C4_projectile_lifetime_and_invalid_callback_adapter",
+        "native_Paracurve_collision_tracking_and_projectile_expiry_not_converted",
+        "native_C4_AttachToTarget_invalid_callback_not_converted"
+      ],
+      "full_enemy_implemented": false,
+      "formal_stage_approved": false,
+      "source_identities": {
+        "chapter01_source_audit": "a242f94040c7f96d175056e6ceffa285ea10f60bec00db1ab7f354fe0739b0cd",
+        "prior_HP_C4_builder": "99df32f439d3a48826ab3cd33e9a3d95b0ba13d5531b9418abfda31efd16592e",
+        "new_builder": "7d3c48209c0520a84186a1823a198a15b9b3de39cc94aee39f1535c89bd710ff",
+        "offline_source_helper": "36f171d6f1e59431e499acbdd0618bec97c89c02f61a453fc1ae0ea9eb05326c",
+        "animation_reader_helper": "a9f7a2de3a6dde0f8e41cf5abbaf7d4cce6a75328e21ee294451dd84d75d96be"
+      },
+      "projectile_lifecycle_profile": {
+        "packet_profile": "two_full_packets_model",
+        "attachment": "follow",
+        "clock": "authored_30Hz_source_float_snap_model",
+        "trajectory": "planar-homing/swept-trace-point/visual-parabola-model",
+        "C4_radius2_5": "declared area interpretation of range_radius; native blast shape unproven",
+        "source_audit_sha256": "b02d1da3872c4b262c263c8f586da52e0101a33023da115a68d660dbb61c1ddf",
+        "old_W_package_sha256": "4b647811d8808130970ac85b8a068b4623feb2e1e4fa68dca61d87cccea0df9a",
+        "old_source_body_unknown": true,
+        "no_fullBoss_or_stage_receipt": true
+      }
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/chapter01_w",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground",
+        "boss"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 10000,
+            "atk": 470,
+            "def": 100,
+            "mres": 50.0,
+            "attack_interval": 4.0,
+            "attack_speed_ratio": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 10000,
+            "capacity": 10000,
+            "role": "health"
+          },
+          "mode": {
+            "initial": 0,
+            "capacity": 1
+          },
+          "c4_clock_0": {
+            "initial": 11.0,
+            "capacity": 20.0,
+            "recovery_rate": 1,
+            "parameters": {
+              "pause_at_full": true
+            }
+          },
+          "c4_clock_1": {
+            "initial": 0,
+            "capacity": 20.0,
+            "recovery_rate": 1,
+            "parameters": {
+              "pause_at_full": true
+            }
+          }
+        },
+        "spatial": {},
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "abilities": [
+          "ability/chapter01_w_c4_0",
+          "ability/chapter01_w_c4_1",
+          "ability/chapter01_w_enter_mode1",
+          "ability/chapter01_w_leave_mode1",
+          "ability/chapter01_w_normal_0",
+          "ability/chapter01_w_normal_1"
+        ]
+      }
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/chapter01_w_c4_0",
+      "kind": "ability",
+      "metadata": {
+        "native_enemy_id": "enemy_1504_cqbw",
+        "native_skill_key": "C4",
+        "mode": 0,
+        "client_verified": false
+      },
+      "activation": {
+        "mode": "manual",
+        "condition": "inputs.resources.mode.current == 0",
+        "costs": [
+          {
+            "resource": "c4_clock_0",
+            "amount": 20.0
+          }
+        ],
+        "parameters": {
+          "auto_when_ready": true,
+          "auto_only": true,
+          "requires_targets": true,
+          "cancel_pending_attacks": true,
+          "reset_attack_clock": true
+        }
+      },
+      "selector": "selector/chapter01_w_c4_0",
+      "target_capture": "at_cast",
+      "parameters": {
+        "blocks_attacks": true,
+        "wait_for_projectiles": true
+      },
+      "timeline": [
+        {
+          "at_seconds": 0.6,
+          "effect": {
+            "op": "area",
+            "center": "target",
+            "radius": 2.5,
+            "filters": [
+              {
+                "tag": "player"
+              }
+            ],
+            "effects": [
+              {
+                "op": "damage",
+                "damage_type": "physical",
+                "scale": 1.8,
+                "read_mode": {
+                  "source_attributes": "at_hit"
+                }
+              }
+            ],
+            "projectile_definition": "projectile/chapter01_w/c4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/chapter01_w_c4_1",
+      "kind": "ability",
+      "metadata": {
+        "native_enemy_id": "enemy_1504_cqbw",
+        "native_skill_key": "C4",
+        "mode": 1,
+        "client_verified": false
+      },
+      "activation": {
+        "mode": "manual",
+        "condition": "inputs.resources.mode.current == 1",
+        "costs": [
+          {
+            "resource": "c4_clock_1",
+            "amount": 20.0
+          }
+        ],
+        "parameters": {
+          "auto_when_ready": true,
+          "auto_only": true,
+          "requires_targets": true,
+          "cancel_pending_attacks": true,
+          "reset_attack_clock": true
+        }
+      },
+      "selector": "selector/chapter01_w_c4_1",
+      "target_capture": "at_cast",
+      "parameters": {
+        "blocks_attacks": true,
+        "wait_for_projectiles": true
+      },
+      "timeline": [
+        {
+          "at_seconds": 0.6,
+          "effect": {
+            "op": "area",
+            "center": "target",
+            "radius": 2.5,
+            "filters": [
+              {
+                "tag": "player"
+              }
+            ],
+            "effects": [
+              {
+                "op": "damage",
+                "damage_type": "physical",
+                "scale": 1.8,
+                "read_mode": {
+                  "source_attributes": "at_hit"
+                }
+              }
+            ],
+            "projectile_definition": "projectile/chapter01_w/c4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/chapter01_w_enter_mode1",
+      "kind": "ability",
+      "activation": {
+        "mode": "passive",
+        "event": "resource.changed",
+        "condition": "inputs.payload.target == inputs.source.id and inputs.payload.resource == 'hp' and 0 < inputs.resources.hp.current <= 5000 and inputs.resources.mode.current == 0",
+        "parameters": {
+          "cancel_pending_attacks": true,
+          "reset_attack_clock": true
+        },
+        "on_start": [
+          {
+            "op": "modify_resource",
+            "target": "source",
+            "resource": "mode",
+            "value": 1
+          },
+          {
+            "op": "modify_resource",
+            "target": "source",
+            "resource": "c4_clock_1",
+            "value": 20.0
+          },
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/chapter01_w_mode1"
+          }
+        ]
+      },
+      "parameters": {
+        "blocks_attacks": false
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/chapter01_w_leave_mode1",
+      "kind": "ability",
+      "activation": {
+        "mode": "passive",
+        "event": "resource.changed",
+        "condition": "inputs.payload.target == inputs.source.id and inputs.payload.resource == 'hp' and inputs.resources.hp.current > 5000 and inputs.resources.mode.current == 1",
+        "parameters": {
+          "cancel_pending_attacks": true,
+          "reset_attack_clock": true
+        },
+        "on_start": [
+          {
+            "op": "remove_buff",
+            "target": "source",
+            "buff": "buff/chapter01_w_mode1"
+          },
+          {
+            "op": "modify_resource",
+            "target": "source",
+            "resource": "c4_clock_0",
+            "value": 11.0
+          }
+        ]
+      },
+      "parameters": {
+        "blocks_attacks": false
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/chapter01_w_normal_0",
+      "kind": "ability",
+      "activation": {
+        "mode": "automatic_attack",
+        "condition": "inputs.resources.mode.current == 0"
+      },
+      "selector": "selector/chapter01_w_normal_0",
+      "target_capture": "at_cast",
+      "parameters": {},
+      "rules": {
+        "projectile.flight_time": "rule/chapter01_w_flight"
+      },
+      "metadata": {
+        "native_mode": 0,
+        "packet_profile": "two_full_packets_model",
+        "native_two_events_not_packet_count_proof": true
+      },
+      "timeline": [
+        {
+          "at_seconds": 0.3,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1,
+            "condition": "inputs.targets[0].components.runtime.alive",
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            },
+            "projectile_definition": "projectile/chapter01_w/normal"
+          }
+        },
+        {
+          "at_seconds": 0.7666666666666667,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1,
+            "condition": "inputs.targets[0].components.runtime.alive",
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            },
+            "projectile_definition": "projectile/chapter01_w/normal"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/chapter01_w_normal_1",
+      "kind": "ability",
+      "activation": {
+        "mode": "automatic_attack",
+        "condition": "inputs.resources.mode.current == 1"
+      },
+      "selector": "selector/chapter01_w_normal_1",
+      "target_capture": "at_cast",
+      "parameters": {},
+      "rules": {
+        "projectile.flight_time": "rule/chapter01_w_flight"
+      },
+      "metadata": {
+        "native_mode": 1,
+        "packet_profile": "two_full_packets_model",
+        "native_two_events_not_packet_count_proof": true
+      },
+      "timeline": [
+        {
+          "at_seconds": 0.3,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1,
+            "condition": "inputs.targets[0].components.runtime.alive",
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            },
+            "projectile_definition": "projectile/chapter01_w/normal"
+          }
+        },
+        {
+          "at_seconds": 0.7666666666666667,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1,
+            "condition": "inputs.targets[0].components.runtime.alive",
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            },
+            "projectile_definition": "projectile/chapter01_w/normal"
+          }
+        }
+      ]
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/chapter01_w_c4_0",
+      "kind": "selector",
+      "region": {
+        "type": "radius",
+        "radius": 2.5
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "ordering": "stable",
+      "limit": 1
+    },
+    {
+      "id": "selector/chapter01_w_c4_1",
+      "kind": "selector",
+      "region": {
+        "type": "radius",
+        "radius": 2.5
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "ordering": "stable",
+      "limit": 3
+    },
+    {
+      "id": "selector/chapter01_w_normal_0",
+      "kind": "selector",
+      "region": {
+        "type": "radius",
+        "radius": 2.5
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "tag": "ground"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "ordering": "stable",
+      "limit": 1
+    },
+    {
+      "id": "selector/chapter01_w_normal_1",
+      "kind": "selector",
+      "region": {
+        "type": "radius",
+        "radius": 2.5
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "tag": "ground"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "ordering": "stable",
+      "limit": 1
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/chapter01_w_mode1",
+      "kind": "buff",
+      "on_remove": [
+        {
+          "op": "modify_resource",
+          "target": "source",
+          "resource": "mode",
+          "value": 0
+        }
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/chapter01_w_flight",
+      "kind": "calculation_rule",
+      "contract": "projectile.flight_time",
+      "implementation": {
+        "type": "expression",
+        "expression": "min(inputs.distance / inputs.speed, params.lifetime_seconds)"
+      },
+      "parameters": {
+        "lifetime_seconds": 10
+      },
+      "metadata": {
+        "profile": "launch_distance_speed_cap_v1",
+        "client_verified": false
+      }
+    },
+    {
+      "id": "rule/projectile/trajectory",
+      "kind": "calculation_rule",
+      "contract": "projectile.trajectory",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.projectile.trajectory"
+      }
+    },
+    {
+      "id": "rule/projectile/collision",
+      "kind": "calculation_rule",
+      "contract": "projectile.collision",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.projectile.collision"
+      }
+    }
+  ],
+  "status": "executable_declared_projectile_profile_client_pending",
+  "projectiles": [
+    {
+      "id": "projectile/chapter01_w/normal",
+      "kind": "projectile",
+      "motion": {
+        "rule": "rule/projectile/trajectory",
+        "parameters": {
+          "mode": "homing",
+          "speed": 5,
+          "raise_height": 0.30000001192092896,
+          "height_threshold": 1.2999999523162842
+        }
+      },
+      "collision": {
+        "rule": "rule/projectile/collision",
+        "parameters": {
+          "enabled": true,
+          "radius": 0
+        }
+      },
+      "lifetime_seconds": 10,
+      "max_hits": 1,
+      "can_hit_same_target": false,
+      "stop_after_max": true,
+      "stop_after_first": false,
+      "attach_at_launch": false,
+      "lifecycle": {
+        "source_invalid": "retain",
+        "source_hidden": "retain",
+        "target_invalid": "cancel",
+        "target_hidden": "cancel",
+        "finish_on_reach": true,
+        "hit_on_reach": true,
+        "force_reach_on_expire": true,
+        "hit_on_expire": true
+      },
+      "on_invalid": [],
+      "metadata": {
+        "client_body_calibrated": false,
+        "source_attack_component_closure": true
+      }
+    },
+    {
+      "id": "projectile/chapter01_w/c4",
+      "kind": "projectile",
+      "motion": {
+        "rule": "rule/projectile/trajectory",
+        "parameters": {
+          "mode": "follow",
+          "speed": 5,
+          "raise_height": 0.30000001192092896,
+          "height_threshold": 1.2999999523162842
+        }
+      },
+      "collision": {
+        "rule": "rule/projectile/collision",
+        "parameters": {
+          "enabled": false,
+          "radius": 0
+        }
+      },
+      "lifetime_seconds": 3.2,
+      "max_hits": 1,
+      "can_hit_same_target": false,
+      "stop_after_max": false,
+      "stop_after_first": false,
+      "attach_at_launch": true,
+      "lifecycle": {
+        "source_invalid": "retain",
+        "source_hidden": "retain",
+        "target_invalid": "retain_position",
+        "target_hidden": "retain_position",
+        "finish_on_reach": false,
+        "hit_on_reach": false,
+        "force_reach_on_expire": true,
+        "hit_on_expire": true
+      },
+      "on_invalid": [],
+      "metadata": {
+        "client_body_calibrated": false,
+        "source_attack_component_closure": true
+      }
+    }
+  ]
+}

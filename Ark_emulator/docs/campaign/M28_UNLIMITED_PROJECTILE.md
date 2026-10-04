@@ -1,0 +1,42 @@
+# M28 无限弹体总hit cap与skulsr显式状态接口
+
+冻结候选为 `../unpack_work/campaign_m28_unlimited_projectile_candidate`，core `cb0e7a97a2621aaf4b14dc942181686906733acbcc61f6a5a23ebae9448e997b`。祖先是冻结M26 `7aa116...`，仅改schemas.py和projectiles.py；未改primary、M26、M27或旧live。
+
+## 通用合同
+
+projectile.max_hits要求明确存在：非负整数为有限总cap，null为无限总cap。bool、负数、string、float和缺字段编译拒绝。null不改变lifetime、同target重复策略、reach/invalid/callback、cast等待或RNG规则。stop_after_max+null不触发cap停止；stop_after_first仍只允许首个实际成功hit，跳过无效或被去重的目标不算成功hit。无大数sentinel、无官方ID分支。
+
+初版2fc1发现真实漏洞：同次collision返回两目标，原循环对两者都结算后才检查stop_after_first。因此null或finitecap2+stopfirst实际产生2hit而预期1。旧2fc1两文件、prepare脚本、原测试和完整2hit反例封在validation/campaign/m28_unlimited/history_2fc1。新候选在第一有效hit后break；不是在遇到无效目标时break，也不修改native skulsr原始stopfirst0。
+
+14项fresh新测试通过2.42秒，9个实际运行fixture在decode/compile前封SHA/初态/seed2801。独立定数fixture真实验证：null两目标各100且同target不重复、允许重复时仅tick1/2各两hit（tick3寿命半开结束）、一次attack.accepted与SP1、pending cast只在实际失效后释放一次；finite0/1/2；null和finite2的stopfirst；第一目标在launch之后退场仍由第二有效目标命中；on_invalid已变更HP/事件/jobs并取随机后，后续纯规则失败使完整checkpoint恢复。CP续跑和recorded-command replay均相等。
+
+report core_final.json SHA `f98baa1e8d660f762835c837dbcaa5126271e8984f9da726080e52d63a4f86ff`。有限cap1同fixture实际两进程old7aa/newcb0e各112事件与快照逐值相等，比较只剔除runtime_fingerprint/rule_fingerprint两个身份字段；event SHA `95b7cba86e05313481741fa874940c0246cd2b0801faeaef9d0fb1c6a8ce2f39`，snapshot SHA `8e1ade8cce7d8ab1992b0918b284b9ae342a756a7ba6a8fc3bf15962aa4cad76`。这不是声称原来finite2的stopfirst错误结果不变；那一边界被有意纠正。
+
+未改的7个V2兼容模块实际210passed/7.34秒，tests/module SHA前后相等，report compatibility_final.json SHA `27a5e20d58f2b4bdf635534b5aaf0c8c2344f459accf022b8fa432a1849c5189`。
+
+## skulsr来源与接口
+
+source冲突结论见SKULSR_NATIVE_CONFLICT.md。真实Unity TT、BSON、current/旧dump、两DLL IL与684份本地hot/base Lua已封；没有本地可用native函数body，0.4000000059604645 vsDB0.5保持无法决定。LifeType.INFINITY2确切证明_maxHitNum1为inactive。
+
+新builder必须显式传threshold_policy serialized或DB，并必须明确same_frame_policy=damage_then_attachment；不给默认，不给native正确。两包不同SHA：
+
+- skulsr.serialized.partial.json：`25c2c140b16536fa8a31456d8f1b8839e633f633ba7940dd3e4d2fadad56c28d`
+- skulsr.DB.partial.json：`856378cc9cccfe31f54d8e9f5b78dd72c9db443567f7c8e9df8a8d09d5066295`
+
+来源参数保留，条件表达式和参数可替换；ATK+0.5 Buff、mode1/restore0和BSON restart字段由source对照。声明profile用资源事件反应，0<hp<=source_base_max_hp*选定ratio进入mode1，治疗超过阈值恢复；只取消pending automatic攻击并重置clock，manual probe和已在途packet保留。原生OnTick/LoadData/同帧优先/有效maxHP和restart算法并未恢复。
+
+UnitMode._attack角色声明为ATTACK，_combat角色声明为COMBAT；来源mask1只给ATTACK附加减防。真实FamilyGroupMask枚举证明ATTACK1/COMBAT2，但Wrapper如何设置Ability.Options.familyGroup方法体仍缺。public manual指令是显式状态接口，不冒称原生enemy自动dispatch。
+
+6项fresh7秒通过，5个实际fixture/701文件前后锁、core不变，CP与完整commands replay相等：
+
+- 同HP4700，serialized仍mode0/COMBAT f53实伤900，DB进入mode1/同f53实伤1400，公开probe证明未擅自把冲突统一。
+- 实际Spatial建立与可部署blocker的关系，COMBAT不附加DEF Buff。
+- ATTACK f14/f17、距离约一格、speed5，实际tick20/23两包；exact float32 atkScale0.25999999046，先伤害后附加DEF-.5分别159.99999046/209.99999046，一cast只发一次attack.accepted。
+- mode1对应两包289.99998569/339.99998569，公开restore后mode回0。旧mode0能力在mode1实际condition拒绝。
+- require_native仍拒绝，缺threshold/sameframe显式策略仍拒绝，build/check相等。
+
+skulsr_final.json SHA `1b75d4c6e3b8a28b5c9c61d8a375e13a877b60eb689736a5f85bcd43657c9936`。初始probe遗漏target.deployable因此没有实际阻挡且source移动改变飞行时间；补真实可部署blocker后用Spatial的关系和原速度独立算术验证，没有ctx伪写blocked_by或从actual倒推source参数。
+
+剩余硬缺口：source阈值加载/版本冲突、原生family/附加先后、enemy自动FSM、skulsr源3×3 projectile BoxCollider的native物理及hit-time资格。当前trace-only碰撞只是明确受限profile，不代表源Box完整消费；null通用cap已实现也不能清除此几何缺口。Aoemag map/Unity axes方法只有签名，没有paired-client锚点，因此未猜测投影。
+
+所有partial都actual_game_correct=false/formal_approved=false。没有正式阶段收据或promotion，固定12/36和全程实际中间数据正确要求保持。

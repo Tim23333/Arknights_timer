@@ -1,0 +1,27 @@
+......F.............                                                     [100%]
+================================== FAILURES ===================================
+_ test_changed_intermediate_input_same_original_final_cannot_verify[capacity] _
+
+tmp_path = WindowsPath('C:/Users/32134/AppData/Local/Temp/pytest-of-32134/pytest-743/test_changed_intermediate_inpu5')
+mutation = 'capacity'
+
+    @pytest.mark.parametrize('mutation',['delta','source','target','resource','candidate','capacity','bounds_raw','bounds_value','bounds_context_owner','bounds_context_time','post_current','post_target','pre_current','bool_delta'])
+    def test_changed_intermediate_input_same_original_final_cannot_verify(tmp_path,mutation):
+     records=deepcopy(BASE);change=next(e for e in records if e['id']==293333);bound=next(e for e in records if e['id']==293332);pre=next(e for e in records if e['id']==293316);post=next(e for e in records if e['id']==293334)
+     if mutation in ('delta','source','target','resource'):change['payload'][mutation]={'delta':-2,'source':999,'target':999,'resource':'hp'}[mutation]
+     if mutation in ('candidate','capacity'):bound['payload']['trace']['inputs'][mutation]+=1
+     if mutation in ('bounds_raw','bounds_value'):bound['payload']['trace'][mutation.split('_')[1]]['value']=1
+     if mutation=='bounds_context_owner':bound['payload']['trace']['context']['owner_id']=28
+     if mutation=='bounds_context_time':bound['payload']['trace']['context']['time']+=1
+     if mutation=='post_current':post['payload']['trace']['inputs']['resources']['shield_charge']['current']=1
+     if mutation=='post_target':post['payload']['trace']['context']['target_id']=999
+     if mutation=='pre_current':pre['payload']['trace']['inputs']['target']['components']['resources']['shield_charge']['current']=2
+     if mutation=='bool_delta':change['payload']['delta']=False
+>    r=run(tmp_path,records);assert not r['delta_only_resource_v6']['verified'];assert r['failures'] or r['delta_only_resource_v6']['pending_fields']
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E    AssertionError: assert not [{'event': 293333, 'before_event': 288586, 'before_body_event': 293316, 'bounds_event': 293332, ...}]
+
+tools\trace_audit\campaign_05_10\test_delta_v6.py:26: AssertionError
+=========================== short test summary info ===========================
+FAILED tools/trace_audit/campaign_05_10/test_delta_v6.py::test_changed_intermediate_input_same_original_final_cannot_verify[capacity]
+1 failed, 19 passed in 0.23s

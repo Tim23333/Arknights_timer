@@ -1,0 +1,102 @@
+{
+  "schema": "ark-sim/model-validation/v2",
+  "date": "2026-10-02",
+  "scope": "Independent model expectations and deterministic continuation; no client frame oracle",
+  "passed": true,
+  "custom_rulesets": {
+    "ruleset/ark_standard": {
+      "damage": 850.0,
+      "expected": 850,
+      "replay_equal": true,
+      "program_fingerprint": "1e1eca70d4d9664509f1f93aa1efe401522aa9a7b6a85c26086a42666144e391",
+      "state_sha256": "e737e24bc7f09d12da66fc83ffbc5f73845e9301db80961f98abed632bf7eb44",
+      "events_sha256": "3e3e10cf344baae04e0a34d04d29c4985c892fd2083b7f879e1375062a5864de",
+      "event_count": 646
+    },
+    "ruleset/custom_balance": {
+      "damage": 60.0,
+      "expected": 60,
+      "replay_equal": true,
+      "program_fingerprint": "5883115b0e07ce4a667c3ae51c89e2ab9257892d532fbe382eaac25e89d3be59",
+      "state_sha256": "af853e1a28b7ba3b5e9f347457afc1f27cedca3cd46034052b31847f7e0ef9ba",
+      "events_sha256": "e1c1c9efd60c5429814dd8bbc930ec9f3772fba9c6957fed149eb867683babeb",
+      "event_count": 642
+    }
+  },
+  "level_00_01": {
+    "status": "model_validated",
+    "client_frame_validation": "pending",
+    "content_sha256": "74f1bf9a2721694bc732cf51e09696ab552a27a5c66a07a3ba75537083054584",
+    "commands_sha256": "f4aee6f7fd1673d96c908b2c22c8fa63f10c9365e2e9ca5b27f650dee4c59de5",
+    "program_fingerprint": "6113aac3785d4cb56da4e6d255d01db5ac89e19a9b96a8918c37e1709368da59",
+    "runtime_fingerprint": "18c1f4a6f33e415061d580a7600bfc5f1457b0e4083c1357df36a6844b31101d",
+    "quantum": 0.03333333333333333,
+    "final_state": {
+      "finished": true,
+      "result": "victory",
+      "pending_waves": 0,
+      "kills": 11,
+      "leaks": 0,
+      "damage_dealt": 7160.0,
+      "deployments": {
+        "unit/char_502_nblade": {
+          "count": 1,
+          "ready_at": 0
+        },
+        "unit/char_124_kroos": {
+          "count": 1,
+          "ready_at": 0
+        }
+      },
+      "command_results": {},
+      "finished_at": 2408
+    },
+    "end_time": 2550,
+    "finished_seconds": 80.26666666666667,
+    "commands_observed": [
+      {
+        "id": 47,
+        "type": "command.accepted",
+        "payload": {
+          "action": {
+            "action": "deploy",
+            "entity": "unit/char_502_nblade",
+            "row": 3,
+            "col": 3,
+            "facing": "right",
+            "alias": "nblade"
+          },
+          "result": 2
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 1635,
+        "type": "command.accepted",
+        "payload": {
+          "action": {
+            "action": "deploy",
+            "entity": "unit/char_124_kroos",
+            "row": 1,
+            "col": 3,
+            "facing": "down",
+            "alias": "kroos"
+          },
+          "result": 4
+        },
+        "time": 180,
+        "cause": null
+      }
+    ],
+    "observations": {
+      "state_sha256": "13d79cc661e134f4fc59e04623801ac439153a8a1306d716ee13d3e81c522f6e",
+      "events_sha256": "f822598b7e034199b515b72755a07c27fc13135a8c402d5aa44177d3b804a73f",
+      "event_count": 181937
+    },
+    "checkpoint_at": 300,
+    "checkpoint_resume_equal": true,
+    "replay_equal": true,
+    "replay_file": "validation/campaign/frost_complete_v1/baseline_v5.replay.json"
+  }
+}

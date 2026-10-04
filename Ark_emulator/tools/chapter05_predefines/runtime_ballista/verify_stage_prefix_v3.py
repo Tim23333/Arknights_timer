@@ -1,0 +1,19 @@
+"""Real latest8fa full-source short public prefixes, native DP/slots and passive traps."""
+import argparse,hashlib,json,sys
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[3];RUNTIME=ROOT.parent/'unpack_work/campaign_chapter05_complete_v3_candidate';OUT=ROOT/'validation/campaign/chapter05_public_v3';PIN='8fa4e36752e92f7de691f0e617adb0b3fdb0188f1f4e17c519514b7f51a7e525';sys.path.insert(0,str(RUNTIME));sys.path.insert(1,str(ROOT))
+import ark_sim
+from ark_sim import Compiler,Engine
+from ark_sim.adapters.api import implementation_digest
+from ark_sim.tools.replay import replay
+from tools.campaign_ordered_checkpoint import write_ordered,load_bound
+from ark_sim.contracts import thaw
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def main():
+ ap=argparse.ArgumentParser();ap.add_argument('--stage',choices=['level_main_05-09','level_main_05-10'],required=True);ap.add_argument('--ticks',type=int,default=900);args=ap.parse_args();assert implementation_digest()==PIN and Path(ark_sim.__file__).resolve().parent==RUNTIME/'ark_sim';r=next(x for x in json.loads((OUT/'prepared_commands.json').read_bytes())['cases'] if x['native_id']==args.stage);package=Path(r['overlay']);commands=Path(r['commands']);assert sha(package)==r['overlay_sha'] and sha(commands)==r['commands_sha'];p=json.loads(package.read_bytes());paths=[package,commands,Path(r['parent']),Path(__file__),ROOT/'tools/campaign_ordered_checkpoint.py']+[f for f in (RUNTIME/'ark_sim').rglob('*') if f.is_file() and f.suffix in ('.py','.json')];before={str(x):sha(x) for x in paths};program=Compiler().compile(p);s=Engine.create(program)
+ for c in json.loads(commands.read_bytes()):
+  if c['at']<args.ticks:s.submit({k:v for k,v in c.items() if k!='at'},at=c['at'])
+ split=args.ticks//2;s.advance(split);cp=OUT/(args.stage+f'.cp{split}.json');h=write_ordered(cp,s.checkpoint());restored=Engine.restore(program,load_bound(cp,h));s.advance(args.ticks-split);restored.advance(args.ticks-split);assert s.snapshot()==restored.snapshot()==replay(program,s.export_replay()).snapshot();after={str(x):sha(x) for x in paths};assert before==after and implementation_digest()==PIN;event=thaw(tuple(s.session.events));final=OUT/(args.stage+f'.prefix{args.ticks}.full.json');final.write_text(json.dumps(s.snapshot(),indent=2)+'\n',encoding='utf8',newline='');ballista=[e for e in s.session.world.entities() if e['definition_id']=='unit/ch5/ballista/source_level6'];ids={e['id'] for e in ballista};report={'core':PIN,'stage':args.stage,'overlay_sha':sha(package),'commands_sha':sha(commands),'seed':p['scenarioDraft']['seed'],'native_DP':r['native_DP'],'native_slots':r['native_slots'],'full_source_birth_plan':r['births'],'variants':r['variants'],'ticks':s.session.time,'events':len(event),'public_command_events':[e for e in event if e['type'].startswith('command.')],'actual_ballista_count':len(ballista),'actual_ballista_active':[e['id'] for e in ballista if s.ctx.active(e['id'])],'actual_ballista_launched':[e for e in event if e['type']=='projectile.launched' and e['payload']['source'] in ids],'actual_ballista_damage':[e for e in event if e['type']=='damage.accepted' and e['payload']['source'] in ids],'actual_source_activations':[e for e in event if e['type']=='entity.activated'],'actual_ability_started':[e for e in event if e['type']=='ability.started'],'checkpoint_sha':h,'CP_resume_equal':True,'start_public_replay_equal':True,'full_snapshot_sha':sha(final),'guard_before':before,'guard_after':after,'whole_stage_executed':False,'client_verified':False};dest=OUT/(args.stage+f'.prefix{args.ticks}.verification.json')
+ if dest.exists():raise ValueError('Preserve prefix')
+ dest.write_text(json.dumps(report,indent=2)+'\n',encoding='utf8',newline='');print(json.dumps({'stage':args.stage,'events':len(event),'ballista_active':len(report['actual_ballista_active']),'launched':len(report['actual_ballista_launched']),'report_sha':sha(dest)}))
+if __name__=='__main__':main()

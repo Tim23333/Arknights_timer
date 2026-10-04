@@ -1,0 +1,4 @@
+"""Preserve missing-policy failure; explicitly use existing source route transition policy."""
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2];p=ROOT/'tools/chapter06_environment_consumer/probe_route_v2.py';s=p.read_text().replace('chapter06_environment_v2','chapter06_environment_v3');s=s.replace("route=stage['converted_used_routes']['1'];p['scenarioDraft']", "route=deepcopy(stage['converted_used_routes']['1']);route['transition_policy']={'rule':'rule/ch6/env/living_transition','parameters':{'hidden_effects':'reject','hidden_auras':'suspend','launched_source_effects':'retain','resource_timers':'continue'}};p['rules'].append({'id':'rule/ch6/env/living_transition','kind':'rule','contract':'movement.transition','implementation':{'type':'provider','provider':'ark.movement.living_transition'}});p['scenarioDraft']")
+out=p.with_name('probe_route_v3.py');assert not out.exists();out.write_text(s,encoding='utf8',newline='');print(out)

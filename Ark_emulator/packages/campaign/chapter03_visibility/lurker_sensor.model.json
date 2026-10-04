@@ -1,0 +1,1105 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/chapter03/visibility",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "source_locks": {
+        "Ark_emulator/packages/campaign/enemy_sources.lock.json": "3917103d46eeb8610f8c951c16510b72f1c72d0243bcd615dea9e7e6aa28c69b",
+        "unpack_work/campaign_tables/enemy_database.json": "8630fe9c4fe23d3d22f09ed430da1dc308b15b5b5d98718f00181d08c5e186af",
+        "Ark_emulator/packages/campaign/operator_sources.lock.json": "999b9aa22b161ef9ec0f2e9a83cfb83555dcdd599ff4ca705f27ce0ffe38e8ee",
+        "unpack_work/campaign_tables/character_table.json": "0594fa76c65862aff7f5d0300d8e3092a8d5ad823d15a26176c0cefc53505bd4",
+        "unpack_work/campaign_tables/skill_table.json": "9b73c47ebf5a33031970e5e94c1e03a75691501472b8c3098e2c76a4fff1b319",
+        "unpack_work/campaign_tables/range_table.reference_56a.json": "a98344d688a8933c4dd7ddaae3cb76c4347295359a18b60b918042cc2542d9d9",
+        "Ark_emulator/packages/campaign/native_reference/reference.manifest.json": "1436a5ab15330f2f917f8efd8b3fc4ba1b6bfc3c89e418b96b33f95dec8a29a5",
+        "Ark_emulator/packages/campaign/chapter01_sources/native.reference.json": "a242f94040c7f96d175056e6ceffa285ea10f60bec00db1ab7f354fe0739b0cd",
+        "Ark_emulator/packages/campaign/chapter02_sources/native.reference.json": "97447895b3edc69f0f60113ea96bc240c25c0fe980897614e93a94dd75e0d492",
+        "Ark_emulator/packages/campaign/native_reference/level_main_03-07.json": "6c8676136eaa6ab5869038ae6365643720acd6c26dca2eb408b92f1ee1f55fdb",
+        "Ark_emulator/packages/campaign/native_reference/level_main_03-08.json": "9ef631f0ab05574ccae0fc75784a480ad9ca5905c05c47a46b807beca721734c",
+        "data/battle/enm_pfb_3.ab_unpacked/CAB-ef3a5632a5f1224887cc6e898efc163c": "bfcd6a439190289f55569490c8cd9774125ff582f0d0e7dcc960f9a6ba09abcb",
+        "unpack_work/campaign_external/battle_prefabs_tokens.20250327.ab": "b9f16db4bfc8e8c880a0f90a1a7a74eda3b47c2188d0a151e5239d154716d475",
+        "data/battle/prefabs/[uc]skills.ab_unpacked/CAB-e39773c4d1462aefe0ea30134bbccdbb": "98e56225c787c6aa846667058f244f4192604988af148062e220b7e07f686682",
+        "data/battle/prefabs/[uc]tiles.ab_unpacked/CAB-a3035ec54e4c62f1271965a646b6fe4e": "ee2e5a71e90a5478ca52864e194d0cfcafb8c4880d83fbdb03aee0351e299c2f",
+        "data/anon/75eaab74f6c7ddba9cfdde6dd7d06007.bin_unpacked/CAB-658d74aab777086fc32b93f385be999a": "b0497aaab46a2f07e0e6f0a1ceab6c8ae0b220adffd306143ff911ea1ff9f4c5",
+        "data/anon_textassets/buff_template_data.dat": "0c438b57b176e0fa430b5b982a58c7b524f4121aa8dbab33d3e647aa0fc1ee59",
+        "Ark_data/Il2CppDumper_current/dump.cs": "18c43dde9466317c45a786a0e4fa35cd8894d128592adda4394704bf99ea477b",
+        "Ark_emulator/tools/build_chapter03_source_plan.py": "a0873874a66d8f0cf3c0fe8385fd9fb466cea06907310f2887b676da40fa8058",
+        "Ark_emulator/tools/build_mainline_dependencies.py": "207dc8ca06ff534ebbbd2de279c0fa125a5f3b9ee07aa1fe58ddec8d297059d4",
+        "Ark_emulator/tools/build_chapter01_enemy_sources.py": "36f171d6f1e59431e499acbdd0618bec97c89c02f61a453fc1ae0ea9eb05326c",
+        "data/refs/arts/enm_art_3.ab_unpacked/CAB-4463197635215184957a37747f2d6d0f": "db89ccbe1c8b5595012be0a1ca41997d447494d6ef1e332c4325380eca759a83"
+      },
+      "visibility_source_sha256": "04fe48891768381f474fe9872e8858d725707ad4d581e0268dd81730d5f21bb7",
+      "builder_sha256": "6610779e808867dc1aaec02f9ee5eafaa2810bf388bda0f536441a2d84034040",
+      "status": "declared visibility/skill partial device dependency",
+      "model_delivery_ready": false,
+      "client_verified": false,
+      "formal_approved": false,
+      "feedback_pending": [
+        "checker event/body restore clock correspondence",
+        "20250327 sensor assets versus20260929 fixed tables",
+        "native anti/immunity ordering and target-free getter mapping"
+      ],
+      "model_gaps": [
+        "Sensor terrain/card/predefine integration is separate; retain original stage dependencies, do not delete Sensor/crate"
+      ]
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/chapter03/enemy_1009_lurker/477247d885e1ebfe",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground"
+      ],
+      "rules": {
+        "targeting.availability": "rule/visibility/available"
+      },
+      "metadata": {
+        "native_variant": "enemy_1009_lurker@0/477247d885e1ebfe",
+        "native_motion": "WALK"
+      },
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 2200,
+            "atk": 300,
+            "def": 90,
+            "mres": 20.0,
+            "move_speed": 1.0,
+            "attack_interval": 2.0,
+            "attack_speed_ratio": 1.0,
+            "block_cost": 1,
+            "mass_level": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 2200,
+            "capacity": 2200,
+            "role": "health"
+          }
+        },
+        "spatial": {
+          "motion_mode": 0,
+          "steering": {
+            "rule": "rule/visibility/steering",
+            "parameters": {
+              "response_factor": 8,
+              "max_acceleration": 10,
+              "arrival_radius": 0.05
+            }
+          }
+        },
+        "selection_state": {
+          "side": 1,
+          "motion": 1,
+          "category": 1,
+          "profession": 0,
+          "unit_type": 1,
+          "abnormal_flags": [],
+          "abnormal_combos": [],
+          "target_free_flags": [],
+          "target_free_combos": [],
+          "target_free": false,
+          "ally_target_free": false,
+          "heal_free": false,
+          "camouflage": false,
+          "can_select_camouflage": false
+        },
+        "buffs": {
+          "initial": [
+            "buff/lurker/controller"
+          ]
+        },
+        "abilities": [
+          "ability/lurker/normal"
+        ],
+        "behavior": {
+          "machine": "behavior/lurker"
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle",
+          "leak_loss": 1
+        }
+      }
+    },
+    {
+      "id": "unit/chapter03/trap_005_sensor",
+      "kind": "entity",
+      "tags": [
+        "player",
+        "device"
+      ],
+      "metadata": {
+        "native_id": "trap_005_sensor",
+        "native_category": 2,
+        "source_version_gap": "official20250327 bundle versus fixed20260929 table"
+      },
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 100,
+            "atk": 0,
+            "def": 0,
+            "mres": 0,
+            "block_count": 3,
+            "taunt_level": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100,
+            "role": "health"
+          },
+          "sp": {
+            "initial": 0,
+            "capacity": 15,
+            "recovery_rate": 1,
+            "recovery_rule": "rule/ark_resource_recovery",
+            "recovery_freeze_abilities": [
+              "ability/sensor/reveal"
+            ]
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "side": 0,
+          "motion": 1,
+          "category": 2,
+          "profession": 0,
+          "unit_type": 1,
+          "abnormal_flags": [],
+          "abnormal_combos": [],
+          "target_free_flags": [],
+          "target_free_combos": [],
+          "target_free": false,
+          "ally_target_free": false,
+          "heal_free": false,
+          "camouflage": false,
+          "can_select_camouflage": false
+        },
+        "buffs": {
+          "initial": [
+            "buff/sensor/invulnerable"
+          ]
+        },
+        "abilities": [
+          "ability/sensor/reveal"
+        ],
+        "deployable": {
+          "base_cost": 5,
+          "capacity": 0,
+          "cooldown_seconds": 5,
+          "terrain": "ground"
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/lurker/controller",
+      "kind": "buff",
+      "toggle": {
+        "rule": "rule/visibility/held",
+        "buff": "buff/lurker/invisible",
+        "initial_enabled": true,
+        "restore_delay_seconds": 3,
+        "events": [
+          {
+            "event": "attack.accepted",
+            "owner_role": "source"
+          }
+        ]
+      },
+      "metadata": {
+        "source_checker": {
+          "script_path_id": -6339019266161532961,
+          "gameobject_path_id": 308192806244723644,
+          "gameobject_name": "1",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 308192806244723644
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": -6339019266161532961
+            },
+            "m_Name": "",
+            "_isInitToggled": 1,
+            "_disableWhenAttack": 1,
+            "_disableWhenBlocked": 1,
+            "_disableWhenInAttackState": 0,
+            "_disableWhenInCombatState": 0,
+            "_disableWhenOutputHeal": 0,
+            "_disableWhenTakeDamage": 0,
+            "_disableWhenAppliedModifier": 0,
+            "_disableWhenAppliedDamageModifier": 0,
+            "_disableWhenMoving": 0,
+            "_restoreDelay": 3.0,
+            "_disableDuringReborn": 0
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:-6339019266161532961",
+          "native_class": "AdvancedCompoundToggleChecker"
+        },
+        "source_toggle": {
+          "script_path_id": 5578302910068743633,
+          "gameobject_path_id": 308192806244723644,
+          "gameobject_name": "1",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 308192806244723644
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 5578302910068743633
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_buffs": [
+              {
+                "attributes": {
+                  "abnormalFlags": [
+                    9
+                  ],
+                  "abnormalImmunes": [],
+                  "abnormalAntis": [],
+                  "abnormalCombos": [],
+                  "abnormalComboImmunes": [],
+                  "attributeModifiers": []
+                },
+                "buffKey": "talent_1",
+                "loadFromDB": 0,
+                "isDurableBuff": 0,
+                "isDamageMissable": 0,
+                "isSilenceable": 0,
+                "isStunnable": 0,
+                "isFreezable": 0,
+                "isLevitatable": 0,
+                "isGroundBoundable": 0,
+                "statusResistable": 2,
+                "templateKey": "empty",
+                "disableOverride": 0,
+                "overrideKey": "",
+                "overrideType": 0,
+                "maxStackCnt": 1,
+                "refreshRemainingTimeWhenStackMax": 0,
+                "clearAllStackCntWhenTimeUp": 0,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": 0,
+                "overrideEffectKey": "common_invisible",
+                "overrideOnEventPriority": 0,
+                "onEventPriority": 0,
+                "audioSignal": "",
+                "lifeTimeType": 2,
+                "takeSnapshotWhenExtend": 0,
+                "durationKey": "",
+                "lifeTime": 0.0,
+                "triggerLifeType": 0,
+                "triggerCnt": 0,
+                "triggerInterval": -1.0,
+                "waitFirstTriggerInterval": 1,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": 0,
+                "blackboard": [],
+                "enableInitDirectionFromSource": 0
+              }
+            ],
+            "_checker": {
+              "m_FileID": 0,
+              "m_PathID": 1915533585889569724
+            },
+            "_unmanagedBuffsWhenToggleOn": [],
+            "_setToggleFalseOnDetached": 0,
+            "_isInverseToggle": 0,
+            "_buffsWhenToggleOff": []
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:5578302910068743633",
+          "native_class": "ToggleablePassiveBuffAbility"
+        },
+        "pulse_profile": "first accepted attack packet, selectable event contract; native event dispatch body not recovered"
+      }
+    },
+    {
+      "id": "buff/lurker/invisible",
+      "kind": "buff",
+      "stacking": {
+        "mode": "independent"
+      },
+      "selection_flags": {
+        "abnormal_flags": [
+          9
+        ]
+      }
+    },
+    {
+      "id": "buff/sensor/invulnerable",
+      "kind": "buff",
+      "selection_flags": {
+        "abnormal_flags": [
+          5
+        ]
+      },
+      "damage_hooks": [
+        {
+          "phase": "after",
+          "rule": "rule/sensor/invulnerable"
+        }
+      ],
+      "metadata": {
+        "source_self_passive": {
+          "script_path_id": 1989622337588801895,
+          "gameobject_path_id": 5674920017824755211,
+          "gameobject_name": "Passive",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 5674920017824755211
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 0,
+              "m_PathID": 1989622337588801895
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_buffs": [
+              {
+                "attributes": {
+                  "abnormalFlags": [
+                    5
+                  ],
+                  "abnormalImmunes": [],
+                  "abnormalAntis": [],
+                  "abnormalCombos": [],
+                  "abnormalComboImmunes": [],
+                  "attributeModifiers": []
+                },
+                "buffKey": "",
+                "loadFromDB": 0,
+                "isDurableBuff": 0,
+                "isDamageMissable": 0,
+                "isSilenceable": 0,
+                "isStunnable": 0,
+                "isFreezable": 0,
+                "isLevitatable": 0,
+                "statusResistable": 2,
+                "templateKey": "empty",
+                "disableOverride": 0,
+                "overrideKey": "",
+                "overrideType": 0,
+                "maxStackCnt": 1,
+                "refreshRemainingTimeWhenStackMax": 0,
+                "clearAllStackCntWhenTimeUp": 0,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": 0,
+                "overrideEffectKey": "",
+                "overrideOnEventPriority": 0,
+                "onEventPriority": 0,
+                "audioSignal": "",
+                "lifeTimeType": 2,
+                "takeSnapshotWhenExtend": 0,
+                "durationKey": "",
+                "lifeTime": 0.0,
+                "triggerLifeType": 0,
+                "triggerCnt": 0,
+                "triggerInterval": -1.0,
+                "waitFirstTriggerInterval": 1,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": 0,
+                "blackboard": []
+              }
+            ]
+          },
+          "script_key": "battle_prefabs_tokens.20250327.ab:1989622337588801895",
+          "native_class": "PassiveBuffAbility"
+        }
+      }
+    },
+    {
+      "id": "buff/sensor/reveal_member",
+      "kind": "buff",
+      "stacking": {
+        "mode": "independent"
+      },
+      "selection_flags": {
+        "abnormal_immunes": [
+          9
+        ]
+      }
+    },
+    {
+      "id": "buff/sensor/reveal",
+      "kind": "buff",
+      "duration_seconds": 20,
+      "aura": {
+        "selector": "selector/sensor/reveal",
+        "buff": "buff/sensor/reveal_member"
+      },
+      "metadata": {
+        "source_aura": {
+          "script_path_id": 9073738633337710967,
+          "gameobject_path_id": -4598895411065311414,
+          "gameobject_name": "Aura",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -4598895411065311414
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 9073738633337710967
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_buffs": [
+              {
+                "attributes": {
+                  "abnormalFlags": [],
+                  "abnormalImmunes": [
+                    9
+                  ],
+                  "abnormalAntis": [],
+                  "abnormalCombos": [],
+                  "abnormalComboImmunes": [],
+                  "attributeModifiers": []
+                },
+                "buffKey": "anti_invi",
+                "loadFromDB": 0,
+                "isDurableBuff": 0,
+                "isDamageMissable": 0,
+                "isSilenceable": 0,
+                "isStunnable": 0,
+                "isFreezable": 0,
+                "isLevitatable": 0,
+                "isGroundBoundable": 0,
+                "statusResistable": 2,
+                "templateKey": "empty",
+                "disableOverride": 0,
+                "overrideKey": "",
+                "overrideType": 0,
+                "maxStackCnt": 1,
+                "refreshRemainingTimeWhenStackMax": 0,
+                "clearAllStackCntWhenTimeUp": 0,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": 0,
+                "overrideEffectKey": "",
+                "overrideOnEventPriority": 0,
+                "onEventPriority": 0,
+                "audioSignal": "",
+                "lifeTimeType": 2,
+                "takeSnapshotWhenExtend": 0,
+                "durationKey": "",
+                "lifeTime": 0.0,
+                "triggerLifeType": 0,
+                "triggerCnt": 0,
+                "triggerInterval": -1.0,
+                "waitFirstTriggerInterval": 1,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": 0,
+                "blackboard": [],
+                "enableInitDirectionFromSource": 0
+              }
+            ],
+            "_passiveBuffs": [],
+            "_selfOption": 2,
+            "_removeBuffWhenTargetLeave": 1,
+            "_removeBuffWhenAbilityDetached": 1,
+            "_onlyAddBuffOnceForEachTarget": 0,
+            "_effects": [
+              "map_induction_01"
+            ],
+            "_createEffectOnDummy": 1,
+            "_targetValidator": {
+              "m_FileID": 0,
+              "m_PathID": 9001571510382178122
+            },
+            "_ignoreOwnerFakeDeath": 0
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:9073738633337710967",
+          "native_class": "AuraAbility"
+        },
+        "source_target_validator": {
+          "script_path_id": -3637692038217913187,
+          "gameobject_path_id": -4598895411065311414,
+          "gameobject_name": "Aura",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -4598895411065311414
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": -3637692038217913187
+            },
+            "m_Name": "",
+            "_targetOptions": {
+              "targetSide": 2,
+              "targetMotion": 3,
+              "targetCategory": 1,
+              "enableAdvancedOptions": 1,
+              "ignoreTargetFree": 1,
+              "ignoreAllyTargetFree": 0,
+              "ignoreHealFree": 0,
+              "ignoreMotionMode": 0,
+              "ignoreTargetSide": 0,
+              "excludeSomeAbnormalFlags": 0,
+              "containSomeAbnormalFlags": 0,
+              "excludeAbnormalFlag": 0,
+              "containAbnormalFlag": 0,
+              "purposeMask": 0,
+              "professionMask": 0,
+              "checkUnitType": 0,
+              "unitTypeMask": 0,
+              "onlyIgnoreSomeOfTargetFreeCase": 0,
+              "abnormalFlag": 0,
+              "abnormalCombo": 0
+            }
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:-3637692038217913187",
+          "native_class": "TargetValidator"
+        },
+        "explicit_bypass": "9 only from actual abnormalImmunes[9] and ignoreTargetFree1; not all hidden flags"
+      }
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/lurker/combat",
+      "kind": "selector",
+      "region": {
+        "type": "all",
+        "blocked_only": true
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1
+    },
+    {
+      "id": "selector/sensor/reveal",
+      "kind": "selector",
+      "region": {
+        "type": "grid_offsets",
+        "offsets": [
+          [
+            3,
+            0
+          ],
+          [
+            2,
+            -1
+          ],
+          [
+            2,
+            0
+          ],
+          [
+            2,
+            1
+          ],
+          [
+            1,
+            -2
+          ],
+          [
+            1,
+            -1
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            0,
+            -3
+          ],
+          [
+            0,
+            -2
+          ],
+          [
+            0,
+            -1
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            -1,
+            -2
+          ],
+          [
+            -1,
+            -1
+          ],
+          [
+            -1,
+            0
+          ],
+          [
+            -1,
+            1
+          ],
+          [
+            -1,
+            2
+          ],
+          [
+            -2,
+            -1
+          ],
+          [
+            -2,
+            0
+          ],
+          [
+            -2,
+            1
+          ],
+          [
+            -3,
+            0
+          ]
+        ],
+        "rotate_with_facing": true
+      },
+      "filters": [
+        {
+          "tag": "enemy"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "parameters": {
+        "visibility_bypass_flags": [
+          9
+        ]
+      },
+      "limit": null,
+      "metadata": {
+        "source_range_id": "x-3",
+        "source_exact_grids": [
+          {
+            "row": 3,
+            "col": 0
+          },
+          {
+            "row": 2,
+            "col": -1
+          },
+          {
+            "row": 2,
+            "col": 0
+          },
+          {
+            "row": 2,
+            "col": 1
+          },
+          {
+            "row": 1,
+            "col": -2
+          },
+          {
+            "row": 1,
+            "col": -1
+          },
+          {
+            "row": 1,
+            "col": 0
+          },
+          {
+            "row": 1,
+            "col": 1
+          },
+          {
+            "row": 1,
+            "col": 2
+          },
+          {
+            "row": 0,
+            "col": -3
+          },
+          {
+            "row": 0,
+            "col": -2
+          },
+          {
+            "row": 0,
+            "col": -1
+          },
+          {
+            "row": 0,
+            "col": 0
+          },
+          {
+            "row": 0,
+            "col": 1
+          },
+          {
+            "row": 0,
+            "col": 2
+          },
+          {
+            "row": 0,
+            "col": 3
+          },
+          {
+            "row": -1,
+            "col": -2
+          },
+          {
+            "row": -1,
+            "col": -1
+          },
+          {
+            "row": -1,
+            "col": 0
+          },
+          {
+            "row": -1,
+            "col": 1
+          },
+          {
+            "row": -1,
+            "col": 2
+          },
+          {
+            "row": -2,
+            "col": -1
+          },
+          {
+            "row": -2,
+            "col": 0
+          },
+          {
+            "row": -2,
+            "col": 1
+          },
+          {
+            "row": -3,
+            "col": 0
+          }
+        ]
+      }
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/lurker/normal",
+      "kind": "ability",
+      "selector": "selector/lurker/combat",
+      "activation": {
+        "mode": "automatic_attack",
+        "parameters": {
+          "auto_only": true
+        }
+      },
+      "timeline": [
+        {
+          "at_seconds": 0.4,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1
+          }
+        }
+      ],
+      "metadata": {
+        "source_attack": {
+          "script_path_id": 4381884627089348317,
+          "gameobject_path_id": 4827367186110294972,
+          "gameobject_name": "Combat",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 4827367186110294972
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 4381884627089348317
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_waitForAttackEvent": 1,
+            "_interuptIfTargetDead": 0,
+            "_resetCdStrategy": 1,
+            "_selectTargetSource": 2,
+            "_selectTargetTiming": 0,
+            "_timeMode": 0,
+            "_alwaysIncludeTarget": 1,
+            "_allowNoTarget": 0,
+            "_animKey": "Attack",
+            "_endAnimKey": "Idle",
+            "_downAnimKey": "",
+            "_downEndAnimKey": "",
+            "_upAnimKey": "",
+            "_upEndAnimKey": "",
+            "_cooldown": 0.0,
+            "_cooldownKey": "duration",
+            "_preDelay": 0.0,
+            "_escapeTime": 0.0,
+            "_faceToTarget": 1,
+            "_faceToDefault": 0,
+            "_faceToFront": 0,
+            "_faceToFirstCastTarget": 0,
+            "_checkFaceToFirstCastTargetDownAttack": 0,
+            "_forceFaceToDirection": 0,
+            "_activeBuffs": [],
+            "_maxAnimScale": 1.100000023841858,
+            "_onlyPlayEndAnimWhenIsLastAbility": 0,
+            "_ignorePalsyInterrupt": 0,
+            "_affectedBySlowDown": 1,
+            "_atkScale": 1.0,
+            "_atkScaleKey": "atk_scale",
+            "_attackType": 1,
+            "_elementDamageType": 0,
+            "_epDamageRatio": 0.0,
+            "_useDynamicAttackType": 0,
+            "_deliveryParaWhenReplaceActionNode": 0,
+            "_damageType": 1,
+            "_extraDamageType": 0,
+            "_alwaysPutIncludeTargetFirst": 0
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:4381884627089348317",
+          "native_class": "MeleeAttack"
+        },
+        "source_frame": [
+          {
+            "name": "OnAttack",
+            "source_seconds_float32": 0.4000000059604645,
+            "seconds": 0.4,
+            "frame": 12,
+            "exact_authored_frame": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "ability/sensor/reveal",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "costs": [
+          {
+            "resource": "sp",
+            "amount": 15
+          }
+        ],
+        "duration_seconds": 20,
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/sensor/reveal"
+          }
+        ]
+      },
+      "timeline": [],
+      "metadata": {
+        "source_skill": {
+          "skillId": "sktok_sensor",
+          "iconId": null,
+          "hidden": false,
+          "levels": [
+            {
+              "name": "反隐",
+              "rangeId": "x-3",
+              "description": "开启时周围敌方单位的<$ba.invisible>隐匿</>效果失效",
+              "skillType": "MANUAL",
+              "durationType": "NONE",
+              "spData": {
+                "spType": "INCREASE_WITH_TIME",
+                "levelUpCost": null,
+                "maxChargeTime": 1,
+                "spCost": 15,
+                "initSp": 0,
+                "increment": 1.0
+              },
+              "prefabId": "sktok_sensor",
+              "duration": 20.0,
+              "blackboard": {}
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/visibility/held",
+      "kind": "rule",
+      "contract": "passive.toggle",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.blocked_by != None and inputs.blocker_active"
+      }
+    },
+    {
+      "id": "rule/visibility/available",
+      "kind": "rule",
+      "contract": "targeting.availability",
+      "parameters": {
+        "hidden_flag": 9
+      },
+      "implementation": {
+        "type": "expression",
+        "expression": "params.hidden_flag not in inputs.selection_states.candidate.abnormal_flags or inputs.selection_states.source.side == inputs.selection_states.candidate.side or ('parameters' in inputs.selector and 'visibility_bypass_flags' in inputs.selector.parameters and params.hidden_flag in inputs.selector.parameters.visibility_bypass_flags) or ('parameters' in inputs.effect and 'visibility_bypass_flags' in inputs.effect.parameters and params.hidden_flag in inputs.effect.parameters.visibility_bypass_flags)"
+      }
+    },
+    {
+      "id": "rule/visibility/steering",
+      "kind": "rule",
+      "contract": "movement.steering",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.movement.steering_velocity"
+      }
+    },
+    {
+      "id": "rule/sensor/invulnerable",
+      "kind": "rule",
+      "contract": "damage.pipeline",
+      "implementation": {
+        "type": "graph",
+        "nodes": [
+          {
+            "id": "result",
+            "expression": "{'accepted':False,'amount':0,'allocations':[],'events':[]}"
+          }
+        ],
+        "output": "nodes.result"
+      }
+    }
+  ],
+  "behaviors": [
+    {
+      "id": "behavior/lurker",
+      "kind": "behavior",
+      "initial": "active",
+      "states": {
+        "active": {}
+      },
+      "transitions": [],
+      "decision": {
+        "rule": "rule/ark_behavior_decision",
+        "default_mode": 0,
+        "profiles": [
+          {
+            "mode": 0,
+            "selectors": [
+              {
+                "key": "normal",
+                "selector": "selector/lurker/combat"
+              }
+            ],
+            "cast_groups": [
+              {
+                "key": "normal",
+                "abilities": [
+                  "ability/lurker/normal"
+                ]
+              }
+            ],
+            "parameters": {
+              "target_key": "normal",
+              "blocked_target": true,
+              "stop_cast_groups": [
+                "normal"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

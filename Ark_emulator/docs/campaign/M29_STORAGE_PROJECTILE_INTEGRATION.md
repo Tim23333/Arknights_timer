@@ -1,0 +1,21 @@
+# M29 存储与通用投射物合并
+
+Root在新目录 `unpack_work/campaign_m29_storage_projectile_candidate` 组装冻结M27存储与M28无限命中接口，共同祖先M26。当前core `356b38d7b9d189e55c37b1337c6b75fd2da2d745bf7c040af7f311dbf61c80e7`。
+
+M27只改kernel/events、session与新增interning；M28只改schema与projectiles。实际检查共同父SHA后无文件重叠，复制M28两份文件保原字节，未解决隐含冲突。构造工具 `tools/candidates/m29_integration/prepare_candidate.py`，来源与结果SHA见 `validation/campaign/m29_integration/composition.json`。
+
+M28使用max_hits:null明确无限总命中数量，仍受寿命、same-target、失效、碰撞与stop_after_first约束；首次有效命中停止在loop内执行，避免无限或finite2下同一collision batch仍打两个目标。原失败2fc source与反例由作者封存。M28原生INFINITY2/maxHitNum1 inactive来源保留，skulsr阈值/group/body准确性仍pending。
+
+实际121项feature/kernel/replay/owned/chapter1content检查通过6.94秒。作者测试副本只改实际runtime目录名，不改数值与边界断言，原/副本SHA分别保存。M29初始完整0-1/CP/replay/custom基线及完整V2套件现分别session22234/10164运行，未标通过。
+
+更新：完整0-1基线22234已真实exit0，11/0、181937事件、内存checkpoint恢复与commands replay相等，custom850/60通过，core/source身份相等。完整suite10164仍实际运行，已知stopfirst跨reach漏洞仍阻能力批准；该基线不证明另工具的durable checkpoint排序正确。
+
+完整套件10164现已真实exit0：1182passed/2178.91秒，核心356b、catalog/preset/helper/current-input起止全部守恒。实际范围是完整tests_v2（catalog82原test使用86实际目录副本）及storage/unlimited/ch1content/M23/ch2tiles检查；不同于历史M21另带M16/M17/M18/M20全部特定copies的1236选择，不混计数。已知reach-stopfirst独立反例没有被这些测试覆盖，绿套件不消除该阻断，仍需新M30。
+
+完整套件明确设置CAMPAIGN_SUMMON_PACKAGE为已修订M12输入与ARKSIM_M10_REVIEW_ROOT为实际候选。Catalog克隆将实际4个新增契约反映为86，原primary82测试字节保持；除函数标签/count82→86与相同docsfixture路径搬迁，规则断言不改。运行起止core/catalog/preset/helper/input全部锁定，原结果须真实terminal才能通过。
+
+M27 qualified1-12完整测试仍在75fd上执行，M29结果不迁用其身份。PrimaryM12和历史0-10/0-11模型收据保持原版本，后续promotion要求新身份完整验证与独立复核。模型通过不能提升native/client准确性。
+
+## 独立复核新增阻断
+
+冻结M28/M29的stop_after_first仅处理collision hit loop，独立peer发现另一真实路径：nullcap+hit_on_reach=true/finish_on_reach=false，在tick1抵达fallback先命中A40却未结束，tick2 collision再命中B40。正确声明应只有首次A40且即时释放waiting cast。原fixture/事件和失败预期保留，candidatecb0e/356b不改；新M30候选负责统一collision/reach/expire各路径。当前M29全量/基线结果即便通过，也不能覆盖该未测漏洞或批准无限投射物完整性。

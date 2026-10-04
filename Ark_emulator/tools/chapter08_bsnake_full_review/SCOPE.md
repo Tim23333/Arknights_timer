@@ -1,0 +1,13 @@
+# Independent controlled four-mode source run
+
+This fixture consumes the frozen `four_modes.wave_source.v5.json` (`944c66226964c3eac64f6e00295e37839489a12da378377724e34f43cbe67613`) and foundation `82db6a9db5ddd3a4c3c58f05b04e773419312ae77d5fc086fbb98a7a984bf8ae`. It does not import author tests or their expected-result containers.
+
+The Boss retains source base HP 50,000 and ATK 770. The first boost makes effective capacity 75,000 and ATK 1,155. The first restoration policy returns effective capacity, while preserving raw `hpRechargeRatio=.5`; this is an explicit website/reference interpretation, because the native schema separates `hpRatio` from `hpRechargeRatio` and the latter's native final-amount mapping remains unproven. The second restoration is zero.
+
+Seven recipient containers have fixed HP 60,000, DEF 31, and distinct RES values 17/37/53/73. They are controlled measurement recipients, not an alteration to the fixed twelve roster or native enemy stats. The nine-by-fifteen geometry gives seven interior rows. Ten real native flame registrations and the source looping seven-phase branch program are included without replacing them with dummy devices. This run must demonstrate a real Summon and real 25-SP device operation before its source claim can pass.
+
+Three deliberately small managed waves preserve delayed births and post/pre delays. The Default passive's first-death TrackTrue request and the Reborn passive's second-death ReleaseFalse request are separate native modes. Expected initial timeline clocks are Boss birth 37, first public defeat 57, restoration 207, first screen end 1047, invincibility end 1497, second public defeat 4500, final entry 4650, final end 5490. Wave membership assertions require actual event inspection; a prepared clock table alone does not prove them.
+
+The input is not the native forty-four-birth JT8-3 stage and does not claim a whole-stage completion. It excludes the visual proxy under development. Public commands, source-periodic casting, actual disk checkpoints at waiting 200 and terminal 4900, complete state/journal continuation, and full public replay are separate required proofs. The primitive and public-head claims must not be merged with historical 37,500-restoration results.
+
+`build_input_v1.py` failed compilation because the flame source provider was absent. Its original file and failure scope are retained. `build_input_v2.py` registers the actual source flame provider and fixes the prepared Boss entity reference to 20 (system 1, devices 2–11, director 12, recipients 13–19). No frozen source model or runtime file was changed.

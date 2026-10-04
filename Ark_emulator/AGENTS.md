@@ -25,7 +25,10 @@ V2 运行时不得导入或委托 V1 的战斗、地图、波次、属性、伤�
 
 ## 验证
 
-从此目录运行 `..\.venv\Scripts\python.exe -m pytest tests_v2 -q`。
+当前生产底座增加 `buff.lifetime_rate` 后，旧数量测试仍保留历史 98 契约断言字节，
+当前完整回归入口为 `..\.venv\Scripts\python.exe tools/run_primary_v2_suite.py`。
+它仅替换该历史测试为精确旧 98 项加新契约的逐字段及不可变性验证，其余 1218 项保持不变。
+使用原始 `pytest tests_v2 -q` 会执行保留的历史数量断言；不得将其失败与当前完整入口混淆。
 内容修改同时使用 `python -m ark_sim validate <内容包>` 检查实际引用。
 涉及首关执行语义、规则、调度或回放的变化，运行 `tools/verify_v2_baseline.py` 更新相应证据。
 纯文档和历史标记无需重新执行长程模型。

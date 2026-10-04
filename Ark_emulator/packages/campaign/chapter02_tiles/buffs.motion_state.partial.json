@@ -1,0 +1,266 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/chapter02_tile_buff_dependencies/typed_motion",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "source_sha256": "fc5ea7050014f56b5725be44805c9c81d17e157615a7eeb7c5d64401059610af",
+      "builder_sha256": "db66709c4376237865da80beaae766a91b7b0511f93bac9455187edd83b664cb",
+      "source_target_options": {
+        "tile_healing": {
+          "targetSide": 1,
+          "targetMotion": 3,
+          "targetCategory": 1,
+          "enableAdvancedOptions": 0,
+          "ignoreTargetFree": 0,
+          "ignoreAllyTargetFree": 0,
+          "ignoreHealFree": 0,
+          "ignoreMotionMode": 0,
+          "ignoreTargetSide": 0,
+          "excludeSomeAbnormalFlags": 0,
+          "containSomeAbnormalFlags": 0,
+          "excludeAbnormalFlag": 0,
+          "containAbnormalFlag": 0,
+          "purposeMask": 0,
+          "professionMask": 0,
+          "checkUnitType": 0,
+          "unitTypeMask": 0,
+          "onlyIgnoreSomeOfTargetFreeCase": 0,
+          "abnormalFlag": 0,
+          "abnormalCombo": 0
+        },
+        "tile_gazebo": {
+          "targetSide": 1,
+          "targetMotion": 3,
+          "targetCategory": 1,
+          "enableAdvancedOptions": 0,
+          "ignoreTargetFree": 0,
+          "ignoreAllyTargetFree": 0,
+          "ignoreHealFree": 0,
+          "ignoreMotionMode": 0,
+          "ignoreTargetSide": 0,
+          "excludeSomeAbnormalFlags": 0,
+          "containSomeAbnormalFlags": 0,
+          "excludeAbnormalFlag": 0,
+          "containAbnormalFlag": 0,
+          "purposeMask": 0,
+          "professionMask": 0,
+          "checkUnitType": 0,
+          "unitTypeMask": 0,
+          "onlyIgnoreSomeOfTargetFreeCase": 0,
+          "abnormalFlag": 0,
+          "abnormalCombo": 0
+        },
+        "tile_hole": null
+      },
+      "scope": "Only actual source Buff numerical operands; occupancy/enter/leave callback adapter not implemented",
+      "native_game_verified": false,
+      "require_complete_rejected": true,
+      "pending": [
+        "native BuffTile target filtering/selected membership and callbacks",
+        "source-side/abnormal permission and class category getter",
+        "maxHP ratio recovery precision/timing, cannot assert heal/free policy",
+        "native HoleTile entry/flight/motionchange lethality",
+        "gazebo damagehook insertion/rounding order"
+      ],
+      "parent_sha256": "0101470fa4e3d9426f9e5b10a2f62033b80dfbcf9f9c6458da68ba800b02a697",
+      "motion_builder_sha256": "5831562d5d457c38dcb948bb463ca05b77cb1bba9bc68af2ade236a0fdc5d33b",
+      "required_actor_state": [
+        "selection_state.motion"
+      ],
+      "typed_motion_encoding": {
+        "WALK": 1,
+        "FLY": 2,
+        "ALL": 3
+      },
+      "tag_adapter_removed": "chapter02 source actors use fly while earlier synthetic probes used flying; type state avoids tag spelling dependence",
+      "native_motion_getter_verified": false
+    }
+  },
+  "buffs": [
+    {
+      "id": "buff/ch2/healing_tile_member",
+      "kind": "buff",
+      "stacking": {
+        "mode": "refresh"
+      },
+      "modifiers": [
+        {
+          "attribute": "hp_ratio_recovery",
+          "layer": "flat",
+          "value": 0.03
+        }
+      ],
+      "metadata": {
+        "native_buff": {
+          "attributes": {
+            "abnormalFlags": [],
+            "abnormalImmunes": [],
+            "abnormalAntis": [],
+            "abnormalCombos": [],
+            "abnormalComboImmunes": [],
+            "attributeModifiers": [
+              {
+                "attributeType": 19,
+                "formulaItem": 0,
+                "value": 0.0,
+                "loadFromBlackboard": 1,
+                "fetchBaseValueFromSourceEntity": 0
+              }
+            ]
+          },
+          "buffKey": "tile_healing",
+          "loadFromDB": 0,
+          "isDurableBuff": 0,
+          "isDamageMissable": 0,
+          "isSilenceable": 0,
+          "isStunnable": 0,
+          "isFreezable": 0,
+          "isLevitatable": 0,
+          "isGroundBoundable": 0,
+          "statusResistable": 2,
+          "templateKey": "empty",
+          "disableOverride": 0,
+          "overrideKey": "",
+          "overrideType": 0,
+          "maxStackCnt": 1,
+          "refreshRemainingTimeWhenStackMax": 0,
+          "clearAllStackCntWhenTimeUp": 0,
+          "maxValidStackCnt": -1,
+          "independentCharacterSource": 0,
+          "overrideEffectKey": "",
+          "overrideOnEventPriority": 0,
+          "onEventPriority": 0,
+          "audioSignal": "",
+          "lifeTimeType": 2,
+          "takeSnapshotWhenExtend": 0,
+          "durationKey": "",
+          "lifeTime": 0.0,
+          "triggerLifeType": 0,
+          "triggerCnt": 0,
+          "triggerInterval": -1.0,
+          "waitFirstTriggerInterval": 1,
+          "firstTriggerInterval": -1.0,
+          "priority": -1,
+          "priorityBBKeys": [],
+          "stripBlackboardParamsWithBuffKey": 0,
+          "blackboard": [],
+          "enableInitDirectionFromSource": 0
+        },
+        "requires_target_hp_resource_driver": true
+      }
+    },
+    {
+      "id": "buff/ch2/gazebo_member",
+      "kind": "buff",
+      "stacking": {
+        "mode": "refresh"
+      },
+      "modifiers": [
+        {
+          "attribute": "attack_speed_ratio",
+          "layer": "flat",
+          "value": -0.2
+        }
+      ],
+      "damage_hooks": [
+        {
+          "phase": "before",
+          "rule": "rule/ch2/gazebo_flying_scale",
+          "condition": "inputs.target.components.selection_state.motion in [2, 3]"
+        }
+      ],
+      "metadata": {
+        "native_buff": {
+          "attributes": {
+            "abnormalFlags": [],
+            "abnormalImmunes": [],
+            "abnormalAntis": [],
+            "abnormalCombos": [],
+            "abnormalComboImmunes": [],
+            "attributeModifiers": [
+              {
+                "attributeType": 7,
+                "formulaItem": 0,
+                "value": 0.0,
+                "loadFromBlackboard": 1,
+                "fetchBaseValueFromSourceEntity": 0
+              }
+            ]
+          },
+          "buffKey": "tile_gazebo",
+          "loadFromDB": 0,
+          "isDurableBuff": 0,
+          "isDamageMissable": 0,
+          "isSilenceable": 0,
+          "isStunnable": 0,
+          "isFreezable": 0,
+          "isLevitatable": 0,
+          "isGroundBoundable": 0,
+          "statusResistable": 2,
+          "templateKey": "airforce_enhance",
+          "disableOverride": 0,
+          "overrideKey": "",
+          "overrideType": 0,
+          "maxStackCnt": 1,
+          "refreshRemainingTimeWhenStackMax": 0,
+          "clearAllStackCntWhenTimeUp": 0,
+          "maxValidStackCnt": -1,
+          "independentCharacterSource": 0,
+          "overrideEffectKey": "",
+          "overrideOnEventPriority": 0,
+          "onEventPriority": 0,
+          "audioSignal": "",
+          "lifeTimeType": 2,
+          "takeSnapshotWhenExtend": 0,
+          "durationKey": "",
+          "lifeTime": 0.0,
+          "triggerLifeType": 0,
+          "triggerCnt": 0,
+          "triggerInterval": -1.0,
+          "waitFirstTriggerInterval": 1,
+          "firstTriggerInterval": -1.0,
+          "priority": -1,
+          "priorityBBKeys": [],
+          "stripBlackboardParamsWithBuffKey": 0,
+          "blackboard": [],
+          "enableInitDirectionFromSource": 0
+        },
+        "attack_speed_encoding": "explicit model percent points /100",
+        "native_hook_order_verified": false,
+        "target_motion_adapter": "explicit typed selection_state.motion mask contains FLY2; missing state rejects, no identifier/tag fallback"
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/ch2/tile_hp_ratio_recovery",
+      "kind": "rule",
+      "contract": "resource.recovery",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.current + inputs.delta_seconds * inputs.attributes.max_hp * inputs.attributes.hp_ratio_recovery"
+      }
+    },
+    {
+      "id": "rule/ch2/gazebo_flying_scale",
+      "kind": "rule",
+      "contract": "damage.request",
+      "parameters": {
+        "atk_scale": 1.7
+      },
+      "implementation": {
+        "type": "graph",
+        "nodes": [
+          {
+            "id": "result",
+            "expression": "{'accepted':True,'effect':{'op':'damage','damage_type':inputs.effect.damage_type,'attack':inputs.effect.attack,'defense':inputs.effect.defense,'resistance':inputs.effect.resistance,'scale':inputs.effect.scale*params.atk_scale,'additions':inputs.effect.additions},'effects':[]}"
+          }
+        ],
+        "output": "nodes.result"
+      }
+    }
+  ]
+}

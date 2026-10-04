@@ -1,0 +1,193 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/campaign/chapter01/predefined_adnach",
+    "version": "0.1.0",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "status": "partial_NPC_create_and_normal_attack_model",
+      "source_identities": {
+        "chapter01_audit": "a242f94040c7f96d175056e6ceffa285ea10f60bec00db1ab7f354fe0739b0cd",
+        "builder": "3233b03e1c52fe98233569de8b14371d6084e645cfa4b9b746811001b14de5bd",
+        "offline_range_json": "4d974598394630a1ad465b954321254397f514c7fb26cba944d320ac18b874d0",
+        "table_lock": "999b9aa22b161ef9ec0f2e9a83cfb83555dcdd599ff4ca705f27ce0ffe38e8ee",
+        "normalization_helper": "d9cf843d96af4a240f358bfa57bf86d6183b9bffcaceae08e7dde0bdc3e3e3ec",
+        "animation_binding_helper": "a9f7a2de3a6dde0f8e41cf5abbaf7d4cce6a75328e21ee294451dd84d75d96be",
+        "native_asset_helper": "36f171d6f1e59431e499acbdd0618bec97c89c02f61a453fc1ae0ea9eb05326c"
+      },
+      "native_inst": {
+        "position": {
+          "row": 3,
+          "col": 6
+        },
+        "direction": "RIGHT",
+        "hidden": true,
+        "alias": null,
+        "uniEquipIds": null,
+        "showSpIllust": false,
+        "masterInfos": null,
+        "inst": {
+          "characterKey": "char_211_adnach",
+          "level": 20,
+          "phase": "PHASE_0",
+          "favorPoint": 0,
+          "potentialRank": 0
+        },
+        "skillIndex": 0,
+        "mainSkillLvl": 1,
+        "skinId": null,
+        "tmplId": null,
+        "overrideSkillBlackboard": null,
+        "overrideTalents": null
+      },
+      "pending": [
+        "native_ACTIVATE_PREDEFINED_hidden_activation_and_routeIndex_semantics",
+        "native_selected_skill_not_converted",
+        "native_implicit_selector_priority_air_filter_and_immunity",
+        "native_GetTimeScale_and_attack_FSM_callback_order",
+        "native_projectile_tracking_collision_lifetime_and_hit_callback",
+        "source_snapshot_vs_public_pin_alignment",
+        "fixed12_deck_override_and_native_card_semantics_require_stage_composition"
+      ],
+      "formal_stage_approved": false,
+      "activation": "definition only; no automatic source-hidden conversion or timeline activation",
+      "selector_profile": "one alive enemy in rotated exact range; implicit native priority and motion mask unproven",
+      "clock_profile": "unscaled authored OnAttack frame9, base interval1/ASPD100; client GetTimeScale pending",
+      "flight_profile": "launch planar distance / serialized speed10; live target HP/DEF at impact; captured target ID, no native homing proof"
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/ch1_predefined_adnach_e0_l20",
+      "kind": "entity",
+      "tags": [
+        "player",
+        "ground",
+        "predefined"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 677,
+            "atk": 199,
+            "def": 74,
+            "mres": 0.0,
+            "deploy_cost": 9,
+            "block_count": 1,
+            "attack_interval": 1.0,
+            "move_speed": 1.0,
+            "mass_level": 0,
+            "redeploy_time": 70,
+            "attack_speed_ratio": 1.0,
+            "block_cost": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 677,
+            "capacity_attribute": "max_hp",
+            "role": "health"
+          }
+        },
+        "abilities": [
+          "ability/ch1_predefined_adnach_normal"
+        ],
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "spatial": {}
+      }
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/ch1_predefined_adnach_normal",
+      "kind": "selector",
+      "region": {
+        "type": "grid_offsets",
+        "offsets": [
+          [
+            -1,
+            0
+          ],
+          [
+            -1,
+            1
+          ],
+          [
+            -1,
+            2
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            2
+          ]
+        ]
+      },
+      "filters": [
+        {
+          "tag": "enemy"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/ch1_predefined_adnach_normal",
+      "kind": "ability",
+      "activation": {
+        "mode": "automatic_attack"
+      },
+      "target_capture": "at_cast",
+      "selector": "selector/ch1_predefined_adnach_normal",
+      "parameters": {
+        "projectile_speed": 10
+      },
+      "timeline": [
+        {
+          "at_seconds": 0.3,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1,
+            "condition": "inputs.targets[0].components.runtime.alive",
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,117 @@
+--- a/ark_sim/domains/spatial.py
++++ b/ark_sim/domains/spatial.py
+@@ -9,6 +9,23 @@
+ 
+ class UnreachablePathError(ValueError):
+     pass
++
++
++def project_cell(position):
++    """Standard model cell projection: exact half ties toward positive infinity.
++
++    This is a shared geometry profile, not a claim about native comparators.
++    It projects finite continuous coordinates without imposing map bounds.
++    """
++    if not isinstance(position, Mapping) or not {"row", "col"}.issubset(position):
++        raise ValueError("position needs row and col")
++    values = []
++    for coordinate in ("row", "col"):
++        value = position[coordinate]
++        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
++            raise ValueError("position coordinates must be finite numbers")
++        values.append(math.floor(value + 0.5))
++    return tuple(values)
+ 
+ 
+ def route_motion_mode(route):
+@@ -90,15 +107,7 @@
+         return bool((tile.get("passableMask", 1) or 0) & 1)
+ 
+     def _cell(self, position):
+-        if not isinstance(position, Mapping) or not {"row", "col"}.issubset(position):
+-            raise ValueError("position needs row and col")
+-        values = []
+-        for coordinate in ("row", "col"):
+-            value = position[coordinate]
+-            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+-                raise ValueError("position coordinates must be finite numbers")
+-            values.append(math.floor(value + 0.5))
+-        cell = tuple(values)
++        cell = project_cell(position)
+         if not self.inside(*cell):
+             raise ValueError(f"position outside map: {dict(position)}")
+         return cell
+--- a/ark_sim/domains/movement.py
++++ b/ark_sim/domains/movement.py
+@@ -1,7 +1,7 @@
+ """Spatial plans and movement rates are separate, replaceable decisions."""
+ import math
+ from ark_sim.contracts import thaw
+-from .spatial import GridTopology, route_motion_mode
++from .spatial import GridTopology, route_motion_mode, project_cell
+ 
+ 
+ class SpatialSystem:
+@@ -146,7 +146,8 @@
+                     "target": entity, "positions": [{"blocker": other}, {"target": position}],
+                     "paths": {"remaining": list(spatial.get("movement_path", ()))}, "states": {}}, source=blocker, target=ref)
+                 path = spatial.get("movement_path", ())
+-                on_path = any(round(p["row"]) == round(other["row"]) and round(p["col"]) == round(other["col"]) for p in path) or (round(position["row"]),round(position["col"])) == (round(other["row"]),round(other["col"]))
++                blocker_cell = project_cell(other)
++                on_path = any(project_cell(p) == blocker_cell for p in path) or project_cell(position) == blocker_cell
+                 if plan["accepted"] and on_path and used[blocker]+volume <= capacity:
+                     current = blocker
+                     used[blocker] += volume
+@@ -377,8 +378,8 @@
+             else:
+                 offset = effect.get("offset", {"row": 0, "col": effect.get("distance", 0)})
+                 destination = {"row": position["row"]+offset.get("row", 0), "col": position["col"]+offset.get("col", 0)}
+-            if not self.ctx.spatial.grid.inside(round(destination["row"]), round(destination["col"])):
+-                raise ValueError("displacement exits the declared map")
++            # Share the same half-up border profile as route/compiler cells.
++            self.ctx.spatial.grid._cell(destination)
+             self.travel(target, destination, "direct")
+             self.ctx.set(target, ("runtime", "blocked_by"), None)
+             self.ctx.buffs.reconcile()
+--- a/ark_sim/presets/providers.py
++++ b/ark_sim/presets/providers.py
+@@ -191,6 +191,7 @@
+ 
+ 
+ def selector_grid(inputs, params, context):
++    from ark_sim.domains.spatial import project_cell
+     source = inputs["source"]
+     region = inputs["region"]
+     position = source["components"]["spatial"]["position"]
+@@ -200,7 +201,7 @@
+         if region.get("rotate_with_facing", True):
+             row, col = {"right": (row, col), "up": (-col, row),
+                         "left": (-row, -col), "down": (col, -row)}[facing]
+-        cells.add((round(position["row"] + row), round(position["col"] + col)))
++        cells.add(project_cell({"row": position["row"] + row, "col": position["col"] + col}))
+     accepted = []
+     for entity in inputs["candidates"]:
+         pos = entity["components"].get("spatial", {}).get("position")
+@@ -213,7 +214,7 @@
+         elif region.get("type") == "manhattan":
+             inside = abs(pos["row"]-position["row"])+abs(pos["col"]-position["col"]) <= region["radius"]
+         else:
+-            inside = (round(pos["row"]), round(pos["col"])) in cells
++            inside = project_cell(pos) in cells
+         if params.get("include_blocked") and entity["components"].get("runtime", {}).get("blocked_by") == source["id"]:
+             inside = True
+         if inside:
+--- a/ark_sim/content/spatial_validation.py
++++ b/ark_sim/content/spatial_validation.py
+@@ -54,8 +54,9 @@
+     for key in ("row", "col"):
+         finite(value[key], f"{path}.{key}")
+     if map_definition:
+-        for key, size in (("row", "rows"), ("col", "cols")):
+-            cell = math.floor(value[key] + 0.5)
++        from ..domains.spatial import project_cell
++        projected = project_cell(value)
++        for key, size, cell in (("row", "rows", projected[0]), ("col", "cols", projected[1])):
+             if not 0 <= cell < map_definition[size]:
+                 fail(f"{path}.{key}", "position outside declared map")
+ 

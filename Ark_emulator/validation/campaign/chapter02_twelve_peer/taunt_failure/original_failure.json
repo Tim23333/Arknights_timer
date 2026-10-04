@@ -1,0 +1,80 @@
+{
+  "schema": "ark-sim/content-priority-counterexample/v1",
+  "status": "actual_declared_block_priority_failure",
+  "core_before": "a829685336bc55af4d5b3098f6eca9887ce870906ab20429ec43de789630fbc9",
+  "core_after": "a829685336bc55af4d5b3098f6eca9887ce870906ab20429ec43de789630fbc9",
+  "source_locks": {
+    "packages/campaign/chapter02_units/main_02-10.enemies.reference_module.json": "bf13eb78c7b81dd0727c60f3d88d4f7d09a5244c6cfb9dad1e959ad0c5dd3859",
+    "tools/build_chapter02_10_enemy_module.py": "a910f8a51fb0989d0b93410048ff334e402d812350080c50771a0bd87cbaa1fc",
+    "tools/experiments/chapter02_twelve_peer/test_module.py": "031fec0cc9379ab54ad1fee5efb6fbef101fcdb0b6a7b8f98cb0d1afca0e3c76",
+    "tools\\experiments\\chapter02_twelve_peer\\capture_taunt.py": "1569ee43a15ba35da1318d5267979a56d520c06640cd47ecd004c5dd6d5c494e"
+  },
+  "cases": [
+    {
+      "native_enemy_id": "enemy_1011_wizard",
+      "actual_blocked_by": 4,
+      "blocker_taunt": 0,
+      "other_taunt": 20,
+      "expected_targets": [
+        4
+      ],
+      "actual_packets": [
+        {
+          "id": 668,
+          "type": "damage.accepted",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "amount": 160.0,
+            "ability": "ability/chapter02/1011_wizard",
+            "resource": "hp"
+          },
+          "time": 23,
+          "cause": null
+        }
+      ],
+      "other_HP": 3840.0,
+      "files": {
+        "validation\\campaign\\chapter02_twelve_peer\\taunt_failure\\enemy_1011_wizard\\commands.json": "957368a7a95b66aa2f9ccba871cb5deeb536744bd80435966886bd339000e031",
+        "validation\\campaign\\chapter02_twelve_peer\\taunt_failure\\enemy_1011_wizard\\final.json": "8371d8adcc41173d82c85f2e47083c0e64def1e5702fd2239a3c79e5fd02ed6b",
+        "validation\\campaign\\chapter02_twelve_peer\\taunt_failure\\enemy_1011_wizard\\input.json": "b63a3a87a39a19b21c497eca412da9a49b307c8ed3332efd6e3350ceaab0eef2",
+        "validation\\campaign\\chapter02_twelve_peer\\taunt_failure\\enemy_1011_wizard\\replay.json": "de8ba9db05f16659d44ffeb053cccb7214e31970726135bfca48984dc8f607f6"
+      }
+    },
+    {
+      "native_enemy_id": "enemy_1028_mocock",
+      "actual_blocked_by": 4,
+      "blocker_taunt": 0,
+      "other_taunt": 20,
+      "expected_targets": [
+        4
+      ],
+      "actual_packets": [
+        {
+          "id": 794,
+          "type": "damage.accepted",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "amount": 170.0,
+            "ability": "ability/chapter02/1028_mocock",
+            "resource": "hp"
+          },
+          "time": 29,
+          "cause": null
+        }
+      ],
+      "other_HP": 3830.0,
+      "files": {
+        "validation\\campaign\\chapter02_twelve_peer\\taunt_failure\\enemy_1028_mocock\\commands.json": "957368a7a95b66aa2f9ccba871cb5deeb536744bd80435966886bd339000e031",
+        "validation\\campaign\\chapter02_twelve_peer\\taunt_failure\\enemy_1028_mocock\\final.json": "c0145e57c06d63ff314e5f61bbe5d0d946f1a2f9843fc68404e9b846b4458e7a",
+        "validation\\campaign\\chapter02_twelve_peer\\taunt_failure\\enemy_1028_mocock\\input.json": "020035050e4df619d8f2e84a975651aa952b2c37a909a659d0070a7471eb44d8",
+        "validation\\campaign\\chapter02_twelve_peer\\taunt_failure\\enemy_1028_mocock\\replay.json": "b3ee9535185791dd5f3219a26909a045e4b5ac646566f8d19c25f170a1396359"
+      }
+    }
+  ],
+  "expectation": "Actual combat INPUT_TARGET2 module declares current blocker first. Finite additive -1e6 does not guarantee this before arbitrary legal taunt.",
+  "fixture_error_preserved": "initial.log used scenario instanceAlias for public deploy instead of alias; corrected before runtime target assertions.",
+  "client_verified": false,
+  "formal_approved": false
+}

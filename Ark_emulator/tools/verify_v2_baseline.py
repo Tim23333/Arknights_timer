@@ -135,6 +135,7 @@ def main():
     parser.add_argument("--max-ticks", type=int, default=4500)
     parser.add_argument("--checkpoint-at", type=int, default=300)
     args = parser.parse_args()
+    args.output = args.output.resolve()
     if not 0 <= args.checkpoint_at < args.max_ticks:
         parser.error("checkpoint-at must be nonnegative and below max-ticks")
     report = {"schema": "ark-sim/model-validation/v2", "date": "2026-10-02",

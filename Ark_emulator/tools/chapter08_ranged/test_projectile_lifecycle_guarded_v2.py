@@ -1,0 +1,4 @@
+from tools.chapter08_ranged.test_uoffcr_guarded_v3 import package,make,save_cp,hits,ROOT,OUT
+
+def test_source_retirement_after_actual_launch_retains_native_projectile():
+ p=package();p['selectors'].append({'id':'selector/test/sourcekill','kind':'selector','region':{'type':'all'},'filters':[{'field':{'path':['id'],'equals':2}}]});p['abilities'].append({'id':'ability/test/retire','kind':'ability','selector':'selector/test/sourcekill','activation':{'mode':'manual'},'timeline':[{'at_seconds':0,'effect':{'op':'retire','parameters':{'reason':'withdrawn'}}}]});p['entities'][-1]['components']['abilities']=['ability/test/retire'];pr,s,reg=make(p);s.submit({'action':'skill','source':'target','ability':'ability/test/retire'},at=16);save_cp(p,s,pr,reg,15,30,'retained15');assert [(e['time'],e['payload']['amount']) for e in hits(s)]==[(18,219)];assert not s.ctx.active('source')

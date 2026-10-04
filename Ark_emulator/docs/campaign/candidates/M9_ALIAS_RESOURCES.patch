@@ -1,0 +1,72 @@
+--- a/ark_sim/content/schemas.py
++++ b/ark_sim/content/schemas.py
+@@ -414,7 +414,16 @@
+                 for effect in transition.get("effects", []):
+                     validate_effect(effect, f"{path}.effects", capabilities)
+     elif kind == "scenario":
+-        aliases = set()
++        aliases = {"system/battle"}
++
++        def reserve_alias(alias, path):
++            if alias is None:
++                return
++            if not isinstance(alias, str) or not alias:
++                raise ContentError(f"{path}: expected a nonempty instance alias")
++            if alias in aliases:
++                raise ContentError(f"{identifier}: duplicate instance alias {alias} at {path}")
++            aliases.add(alias)
+         map_definition = definition.get("map")
+         if map_definition is not None:
+             validate_map(map_definition, f"{identifier}.map")
+@@ -441,10 +450,7 @@
+             if "route" in spatial:
+                 validate_route(spatial["route"], f"{path}.components.spatial.route", map_definition)
+             alias = entity.get("instanceAlias")
+-            if alias is not None:
+-                if alias in aliases:
+-                    raise ContentError(f"{identifier}: duplicate instance alias {alias}")
+-                aliases.add(alias)
++            reserve_alias(alias, f"{path}.instanceAlias")
+         for command in definition.get("commands", []):
+             fields(command, {"at_seconds", "at", "action", "type", "source", "entity", "ability", "definition", "position", "row", "col", "facing", "instanceAlias", "alias", "payload", "resource", "delta", "target", "parameters", "components", "tags"}, f"{identifier}.commands")
+             validate_timing(command, f"{identifier}.commands")
+@@ -490,6 +496,21 @@
+             spatial = wave.get("components", {}).get("spatial", {})
+             if "route" in spatial:
+                 validate_route(spatial["route"], f"{path}.components.spatial.route", map_definition)
++            reserve_alias(wave.get("instanceAlias"), f"{path}.instanceAlias")
++        for wi, wave in enumerate(definition.get("timeline", {}).get("waves", [])):
++            for fi, fragment in enumerate(wave["fragments"]):
++                for ai, action in enumerate(fragment["actions"]):
++                    if action["kind"] != "spawn":
++                        continue
++                    path = f"{identifier}.timeline.waves[{wi}].fragments[{fi}].actions[{ai}].spawn.instanceAlias"
++                    alias = action["spawn"].get("instanceAlias")
++                    if alias is None:
++                        continue
++                    if not isinstance(alias, str) or not alias:
++                        reserve_alias(alias, path)
++                    count = action.get("count", 1)
++                    for repeat in range(count):
++                        reserve_alias(f"{alias}/{repeat}" if count > 1 else alias, path)
+     return definition
+ 
+ 
+--- a/ark_sim/domains/resources.py
++++ b/ark_sim/domains/resources.py
+@@ -176,11 +176,15 @@
+         return [intent], actual
+ 
+     def adjust(self, ref, resource, delta=None, *, value=None, source=None, ability=None, effect=None):
++        ref = self.ctx.session.world.resolve(ref)
++        source = self.ctx.session.world.resolve(source) if source is not None else None
+         intents, actual = self.change_plan(ref, resource, delta, value=value, source=source, ability=ability, effect=effect)
+         self._commit_change(ref, resource, intents, actual, source)
+         return actual
+ 
+     def _commit_change(self, ref, resource, intents, actual, source):
++        ref = self.ctx.session.world.resolve(ref)
++        source = self.ctx.session.world.resolve(source) if source is not None else None
+         self.ctx.session.commit(intents)
+         self.ctx.emit("resource.changed", {"source": source, "target": ref, "resource": resource,
+                                          "delta": actual, "value": self.current(ref, resource)})

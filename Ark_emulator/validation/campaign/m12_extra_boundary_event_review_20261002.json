@@ -1,0 +1,134 @@
+{
+  "schema": "ark-sim/extra-boundary-artifact-review/v1",
+  "passed": true,
+  "implementation_sha256": "bd60c068f0af7694e8e62c16868f4d310b6bb92681f8ebbf5d97814fba28ac11",
+  "input_package_sha256": "0fbba3f0548d2efaef97d7c1be98a620e65b6408755bfddbd49a132ef72fddf4",
+  "cases": [
+    {
+      "case": "normal_defense_inside_outside_reentry",
+      "independent_event_math": "passed",
+      "identity": {
+        "path": "validation/campaign/kalts_boundaries_m12_final_20261002.json",
+        "sha256": "8caedaec17eb0cd205e9419ebe8b9ddeda77d661027922bd065e5ee47c2e0d3e",
+        "case": "normal_defense_inside_outside_reentry",
+        "program_fingerprint": "16100b7e1dc7b8f4d15e5d3bee99f53ef6552e98fe40ec6a2863058bdb4bf80f",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.finished",
+          "ability.started",
+          "buff.applied",
+          "buff.removed",
+          "command.accepted",
+          "damage.accepted",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/witness_kalts_boundaries.py",
+            "source_sha256": "58ff27eedada955f8dbc521caddeb03c6670abdd7d3c81a1aae9a54595bedf64",
+            "result": "passed"
+          }
+        ],
+        "formal_approval": false
+      }
+    },
+    {
+      "case": "s3_defense_inside_outside_reentry",
+      "independent_event_math": "passed",
+      "identity": {
+        "path": "validation/campaign/kalts_boundaries_m12_final_20261002.json",
+        "sha256": "8caedaec17eb0cd205e9419ebe8b9ddeda77d661027922bd065e5ee47c2e0d3e",
+        "case": "s3_defense_inside_outside_reentry",
+        "program_fingerprint": "bdd9433f0535c7212596a644923e57a8f1b53c41be2e8d04b2ff2a7de0d9792b",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.finished",
+          "ability.started",
+          "buff.applied",
+          "buff.removed",
+          "command.accepted",
+          "damage.accepted",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/witness_kalts_boundaries.py",
+            "source_sha256": "58ff27eedada955f8dbc521caddeb03c6670abdd7d3c81a1aae9a54595bedf64",
+            "result": "passed"
+          }
+        ],
+        "formal_approval": false
+      }
+    },
+    {
+      "case": "other_killer_keeps_no_kill_penalty",
+      "independent_event_math": "passed",
+      "identity": {
+        "path": "validation/campaign/kalts_boundaries_m12_final_20261002.json",
+        "sha256": "8caedaec17eb0cd205e9419ebe8b9ddeda77d661027922bd065e5ee47c2e0d3e",
+        "case": "other_killer_keeps_no_kill_penalty",
+        "program_fingerprint": "ac2605c1df02952607029ab028e251ce733c80cf39b9bb3cfb2fd10dbe2b459c",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.finished",
+          "ability.started",
+          "buff.applied",
+          "buff.removed",
+          "combat.kill",
+          "command.accepted",
+          "damage.accepted",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/witness_kalts_boundaries.py",
+            "source_sha256": "58ff27eedada955f8dbc521caddeb03c6670abdd7d3c81a1aae9a54595bedf64",
+            "result": "passed"
+          }
+        ],
+        "formal_approval": false
+      }
+    },
+    {
+      "case": "friend_damage_capacity_source_exit",
+      "independent_event_math": "passed",
+      "identity": {
+        "path": "validation/campaign/angel_blessing_damage_m12_final_20261002.json",
+        "sha256": "b99f72ab1bdfddb70e08f672f4c55d39015649e2f487c87151c81ac0e638e933",
+        "case": "friend_damage_capacity_source_exit",
+        "program_fingerprint": "60b4be1e8575a45e2a0f899d56706c52ef575f278d2e6855ca8381036e973c00",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.finished",
+          "ability.started",
+          "attack.accepted",
+          "buff.applied",
+          "buff.removed",
+          "command.accepted",
+          "damage.accepted",
+          "healing.accepted",
+          "regeneration.accepted",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/witness_angel_blessing_damage.py",
+            "source_sha256": "14ad4c48f0ae7cc6616e11a648ca56f4d03abe06a92cfad598a1d96b33ad59d4",
+            "result": "passed"
+          }
+        ],
+        "formal_approval": false
+      }
+    }
+  ],
+  "scope": "Independent arithmetic on preserved event receipts; no additional combat runs",
+  "tests": [
+    {
+      "path": "tools/audit_m12_extra_boundaries.py",
+      "source_sha256": "89ea7bd1dc043d3996138537beba5400edc973eb28d4806c441b4ade16b21a07",
+      "result": "passed"
+    }
+  ],
+  "formal_approval": false,
+  "client_pending_preserved": true
+}

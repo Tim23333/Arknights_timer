@@ -1,0 +1,55 @@
+# 第2章最后两关 exact native 来源
+
+`tools/build_chapter02_enemy_sources.py` 只离线读取固定目标level_main_02-09与02-10，生成独占chapter02_sources/native.reference、dependency.matrix、attacks.model和assertions。没有改primary/candidate core、旧chapter01工具/包、共享Spine reader，也没有整关长程。
+
+## 变体、关卡与来源锁
+
+2-9实际52spawn/5variant，DISPLAY7；2-10实际36spawn/12variant，STORY1/DISPLAY1。两关共16个不同variant，defdrn共享同一个真实level0配置。变体ID由nativeID、DB level及原始reference/继承resolved内容签名组成；不按ID覆盖不同level/overwrittenData。SPAWN绑定若同ID有多个候选，保留variant_candidates与ambiguous状态，不擅自选最后一个。
+
+native reference manifest的URL/commit/SHA/size/cache identity与固定enemy DB lock实际验证。各stage完整native JSON保存map/options/runes/predefines/hardPredefines/exclude/branches/waves/routes/enemyDbRefs，root plan源SHA也保存。两关predefines为空仍保留原始结构；FOUR_STAR等inactive rune不冒充标准难度效果。目录status仍source partial，stage runnable=false。
+
+2-9 SPAWN引用路线含MOVE56/WAIT_SECONDS18；2-10含MOVE70/WAIT_FRAGMENT1/WAIT_SECONDS10。控制动作源保留原wave/fragment/action index、flags与routeIndex。2-10 story实际TextAsset是HEADER/PopupDialog2/Blocker；它不是所有控制已转换的声明。
+
+## exact prefab与动画图
+
+扫描exact敌人GameObject，沿Transform层级/本地Mono引用采集组件，按真实MonoScript FileID/PathID读取ClassName/Namespace/AssemblyName。保存raw modes、_combat、_attack、_attackTrigger及每个非空节点独立animation binding，general/common abilities与所有passive/skill组件也留在raw闭包。null pointer明确native_null，不凭缺attack指针造攻击。
+
+Spine沿serialized animator/skeletonDataAsset/TextAsset指针解析并保存payload/hash；共享库前后身份不变。enemy_1027_mob_2明确指向基础mob skeleton，严格旧helper按名称拒绝这一alias。新工具保留该初始拒绝证据，再依据exact指针读取实际共享TextAsset，而非按敌人名字猜fallback；因此其普通源帧可恢复，未修改旧helper。
+
+采集完整Transform与Unity Collider/Collider2D/Rigidbody字段，避免仅扫Mono漏掉AOE碰撞几何；局部位置、旋转、scale与Collider raw同时保留。动态PhysicsRange/ProjectileHit绑定正文仍未知，不能直接把Box大小或视觉效果转成已校准游戏半径。
+
+## 无人机与空降兵：实际分类
+
+airdrp/airdrp_2实际WALK/MELEE空降兵，源MeleeAttack physical1、OnAttack13；它们不是攻击无人机。真正的攻击无人机yokai_2是FLY/RANGED，range2，ATK220，但damage执行组件也名MeleeAttack，physical1、OnAttack8且无projectile。组件类名不意味着blocked-only近战；该drone未被纳入简单近战模型。
+
+yokai与defdrn是FLY/NONE，源combat为EmptyAnimatedAbility、attack null，不能从可用Spine效果造普攻。defdrn拥有真实AuraAbility：DB talent defup.def300/radius2.5；Buff DEF attributeType2/formulaItem0/loadFromBlackboard1、selfOption2、removeWhenLeave/Detached1及targetValidator都保留。SelfOption/validator/BB绑定与Aura正文需下一阶段模型，不把NONE理解为无任何机制。
+
+## 术师与AOE
+
+wizard实际RangedAttack，damageType2（arts），OnAttack19，projectile_enemy_magic_ball；弹道AdvancedMovement实际speed10。它不能套用敌表plan的“physical”粗分类，也不能套用mocock的Paracurve speed5。
+
+aoemag实际RANGED/arts2，combat与attack同一个MeleeAttack节点，OnAttack24，无projectile。主trigger AdvancedSelector limit1，damage节点引用另一AdvancedSelector，limitTargetNum0，搭配PhysicsRange。该selector GameObject真实两个BoxCollider2D size1×3与3×1，offset0/0；其它body colliders另行保存，不能混淆成同一AOE范围。这支持源cross-shape依赖审计，但实际坐标空间/变换/target采样及PhysicsRange正文未恢复，未转换成假圆形AOE。
+
+## 碎骨：独立近战、榴弹与阶段
+
+enemy_1500_skulsr两关唯一在2-10，level0 HP10500/ATK1000/DEF150/RES30、mass5、lifeReduce2、applyWayALL。两个mode(Default/Ignite)各有MeleeAttack combat与独立RangedAttack attack。
+
+combat physical1/scale1、animCombat OnAttack53；attack physical1/raw scale0.25999999046325684、animAttack OnAttack14/17、projectile_skulsr、useDynamicAttackType1。不能只恢复_combat就把Boss全部当普通近战，也不能把榴弹两事件猜成一包。
+
+榴弹SimpleProjectile hitNumType2/maxHit1、寿命10、Paracurve speed5、HitBehaviour onlyCheckHitWhenReachTarget1/onlyTraceTarget0/goThroughWall1/targetMotion3/ignoreCamouflage1保存。实际BoxCollider2D为size3×3、offset0/0。hitNumType语义、多目标集合、跟踪、落点与damage scale算法正文未知，不将maxHit1与hitNumType2组合偷换成普通单目标弹。
+
+HP checker序列化min0/max0.4000000059604645、useLTForMax0、toggleOnce0、loadMinHpRatioFromBlackboard0；固定DB的atkup.hp_ratio却为0.5。工具在matrix/source_disagreements明确保留两者，未选择一个阈值以减少差异。原生Talent/LoadData正文和源版本对应关系未证明。
+
+阶段Buff skulsr_t_1有ATK attributeType1/formulaItem1/loadFromBB1，BB mode1，template switch_mode_restart_fsm。DB atkup.atk0.5/defdown.def−0.5保存。BSON模板ON_START切mode并restart、ON_FINISH恢复default并restart；不将toggleOnce0写成不可逆阶段。DEF降低与榴弹on-hit依赖的实际作用链仍保持原始组件/BB，未造公式或忽略这些字段。
+
+DEF降低进一步确证在独立PassiveAttachmentAbility，pathID7012198926299991560、branch DefDown/Talent：_additiveActiveBuffs内skulsr_attack、DEF attributeType2/formulaItem1/value−0.5/loadFromBlackboard0、lifeTime5、targetFamilyMask1。即使该组件_buffs空，也不能漏掉；矩阵把这种attachment单独纳入复杂依赖。它与最终damage/派发顺序的正文仍未恢复。
+
+## 可执行简单攻击子集
+
+仅作者单mode、DB MELEE、exact MeleeAttack、physical1、单OnAttack、无passive/skill/talent或projectile/on-hit复杂依赖的9个variant：airdrp、airdrp_2、mob、mob_2、nsabr、litamr、wteeth、handax、shield。abilities/selectors均带variant身份，后续必须按唯一variant绑定，不盲目以nativeID覆盖。
+
+实际Engine probe使用各variant真实ATK/HP/DEF/interval，明确合成HP2000000/DEF30的blocker；独立Python算physical预期，检查前一tick未受伤、确切source帧命中、同格非blocker不受伤。九项真实probe通过，program/runtime与primary implementation身份记录assertions。windup仍为unscaled_source_event模型，客户端攻速/动画FSM未校准。
+
+生成与--check重新读取所有源，保存实际文件字节SHA与源码helper SHA。源码decl只保留空方法声明，不当成可执行native正文。原生两关仍不可执行，复杂敌人/光环/AOE/Boss/controls/route机制是明确gap；源齐全和9个攻击模型不提升formal案例或客户端准确状态。
+
+最终当前新mechanic依赖为：yokai_2的空中即时RANGED physical选敌；defdrn的DEF光环；wizard的arts/AdvancedMovement speed10弹道；aoemag的PhysicsRange+双Box cross形状；碎骨的近远程动态切换、两发榴弹/3×3 hit形状、5秒DEF attachment与有冲突的HP阶段。airdrp空降路径/出生点属于关卡空间控制而非攻击无人机；其13frame普通近战可独立验证。mocock按已有source-backed范围/飞行profile仍client_pending，不能因为其旧章节已读来源就宣称新关卡完整。

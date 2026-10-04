@@ -1,0 +1,42 @@
+{
+  "schema": "ark-sim/independent-content-counterexample/v1",
+  "status": "actual_declared_composition_gap",
+  "actual_core_before": "2165e5e267fa62012867d7676e0ad68f53234217e0b62fec31ace3956f23fdd6",
+  "actual_core_after": "2165e5e267fa62012867d7676e0ad68f53234217e0b62fec31ace3956f23fdd6",
+  "actual_module": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m38_integrated_candidate\\ark_sim\\__init__.py",
+  "source_locks": {
+    "tools/build_chapter02_tile_fields.py": "71af4c4ca31762763d61ec90cc4d7dabfee6b242fb8f920c80e08b49f787ed83",
+    "packages/campaign/chapter02_tiles/fields.reference_model.json": "b35e21da93109e4d32b17cc413dcf5d2744d36b5bbf90c251171cb136e45f167",
+    "packages/campaign/chapter02_tiles/buffs.motion_state.partial.json": "25d8b684b3ed96f4274feeaab65a455db07550ab5f06575cdf7b972f19b62c10",
+    "packages/campaign/chapter02_tiles/source.reference.json": "fc5ea7050014f56b5725be44805c9c81d17e157615a7eeb7c5d64401059610af",
+    "packages/campaign/skills.weedy.json": "204a7173ba8666d4ef1cb2e71b9087d536e548e0d94d4bf1f60a6517e43c4116",
+    "tools\\experiments\\chapter02_fields_peer\\capture_failure.py": "a40fec5b66ae00b2d80cc76a3257cbfda4210f39b91471e01bc84ae330848a28",
+    "tools/experiments/chapter02_fields_peer/test_fields.py": "867723ef5cf40038964d0d1e87958d762044baa29496f8578186fa59b913afb5"
+  },
+  "input_sha256": "354ead97a9fa2bd210d58832b568ce6071c53b9b9f674d16fbd57d04f5ba73f8",
+  "commands_sha256": "e0d81648ffc0385fc064e1f066701cfaed97bf16f29219a25dd51ba45ecfd219",
+  "initial_target_HP": 5000,
+  "expected_damage_from_exact_Weedy_rule": 600.0,
+  "expected_target_HP": 4400,
+  "actual_target_HP": 5000,
+  "command_rejection": [
+    {
+      "id": 53,
+      "type": "command.rejected",
+      "payload": {
+        "action": {
+          "action": "skill",
+          "source": "caster",
+          "ability": "ability/hit"
+        },
+        "reason": "Expression \"{'accepted':True,'effect':{'op':'damage','damage_type':inputs.effect.damage_type,'attack':inputs.effect.attack,'defense':inputs.effect.defense,'resistance':inputs.effect.resistance,'scale':inputs.effect.scale*params.atk_scale,'additions':inputs.effect.additions},'effects':[]}\" failed: 'attack'"
+      },
+      "time": 0,
+      "cause": null
+    }
+  ],
+  "reason": "Gazebo before-hook assumes ATK/DEF/RES input bindings absent in this actual selected Weedy distance pipeline, then reconstructs a request without parameters/distance.",
+  "model_vs_client": "Expectation comes from literal selected pure rule. Native true-damage gazebo applicability remains separate pending source/body/feedback.",
+  "target_content_mutated": false,
+  "formal_approved": false
+}

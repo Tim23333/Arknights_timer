@@ -1,0 +1,11 @@
+# M41 independent contact review
+
+Actual imported candidate: `../unpack_work/campaign_m41_hole_contact_candidate`, core `43cdc7a22226ed71c8743976254048e6d4fd2258fff6668f06eb2966e78fe9d3`. Five independently authored cases passed in 1.57 seconds. `validation/campaign/m41_peer/review.json` SHA256 is `8b478a4faef36977465f100294ef46decb790624e4e634cea5bf655ba8337213`; source/core/helper hashes match before and after. The report records actual serialized fixture bytes' SHA and decoded values before compilation, plus seeds. Tests do not import the author's fixture or expected-value functions.
+
+Both frozen airdrop variants were created on the actual declared hole profile, retaining HP1450 and2300 through tick44; both fall at exactly tick45 with HP0, two enemy deaths and zero leaks. The checkpoint was saved preserving insertion order, reread from bound disk bytes and continued, then compared with recorded-command replay. This uses the new birth-contact adapter, not an edit to the historical birth package.
+
+An actual public move command enters a hole and produces one environment death with zero ordinary damage and no `damage.accepted` or caster `combat.kill`. A flying actor survives creation on the same cell, then a public ground-motion effect at tick4 immediately triggers contact death. The replaceable false rule preserves the living actor and HP while native map passableMask remains3. These cases establish declared model behavior rather than recover a native method body.
+
+A separate direct-API instrumentation case forces real lifecycle retirement to fail after retirement, RNG consumption and scheduling. The full pre-call checkpoint is restored, the contact guard is empty, and a subsequent valid retry settles once. This API fault injection is not described as command replay evidence.
+
+No issue was found in this bounded review. Normal-path costs, native appearance callback timing, failed-death/revival semantics and client attribution remain explicit feedback items. Manual removal after the phase-0 observer is documented by the candidate as next-tick contact checking; M42's aura membership synchronization does not change that declared contact clock. This is not a whole-stage run, promotion or formal receipt.

@@ -1,0 +1,1824 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/ch8/bsnake/first_screen_v2",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "required_runtime": "20e8126120668fece832e8b6e23fd53a68fb013656a4476b5ad8e53850f6dd30",
+      "source_locks": {
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\bsnake\\source.closure.v1.json": "742d78443641451c8b54bdf75281c33cd04c198eaee373ca95991e380f05469d",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\bsnake\\firecommon.module.v2.json": "064eea971767e0e86b7564eaabf44fdb4eb7b51cdb83a52d9055c476548bde90",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_joint_v4\\build_first_screen_v1.py": "e59583ae86dc0fb60fbc450f27087f93f0f4a0b60dbbe6a23f74c21af25b0dff",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\bsnake\\first_screen.module.v1.json": "9a4d05e53637c92dac5a22ea7fb34cf62b824728057a8d477ec634d261996d37",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_joint_v4\\build_first_screen_v2.py": "20b370515f3509052c6e5d13eb97792ed581fd554dc0c077923e78fdd3a30858"
+      },
+      "source_screen_profile": {
+        "prefabKey": "ScreenAttack",
+        "priority": 1,
+        "cooldown": 0.0,
+        "initCooldown": 0.0,
+        "spCost": 0,
+        "blackboard": [
+          {
+            "key": "atk_scale",
+            "value": 1.0,
+            "valueStr": null
+          },
+          {
+            "key": "duration",
+            "value": 28.0,
+            "valueStr": null
+          },
+          {
+            "key": "interval",
+            "value": 2.0,
+            "valueStr": null
+          },
+          {
+            "key": "trig_cnt",
+            "value": 10.0,
+            "valueStr": null
+          },
+          {
+            "key": "invincible",
+            "value": 15.0,
+            "valueStr": null
+          }
+        ]
+      },
+      "source_finish_template": {
+        "ON_BUFF_FINISH": [
+          {
+            "$type": "Torappu.Battle.Action.Nodes+SwitchMode, Assembly-CSharp",
+            "_modeIndex": 1,
+            "_loadModeFromBlackboard": false,
+            "_restoreDefault": false,
+            "_restartFSM": true,
+            "_targetType": "TARGET"
+          },
+          {
+            "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+            "_buff": {
+              "attributes": {
+                "abnormalFlags": [
+                  "INVINCIBLE"
+                ],
+                "abnormalImmunes": [],
+                "abnormalAntis": null,
+                "abnormalCombos": [],
+                "abnormalComboImmunes": [],
+                "attributeModifiers": []
+              },
+              "buffKey": "reborn_up[invincible]",
+              "loadFromDB": false,
+              "isDurableBuff": false,
+              "isDamageMissable": false,
+              "isSilenceable": false,
+              "isStunnable": false,
+              "isFreezable": false,
+              "isLevitatable": false,
+              "isGroundBoundable": false,
+              "statusResistable": "AUTOMATIC",
+              "templateKey": "empty",
+              "disableOverride": false,
+              "overrideKey": null,
+              "overrideType": "DEFAULT",
+              "maxStackCnt": 1,
+              "refreshRemainingTimeWhenStackMax": false,
+              "clearAllStackCntWhenTimeUp": false,
+              "maxValidStackCnt": -1,
+              "independentCharacterSource": false,
+              "overrideEffectKey": "common_invincible_01",
+              "overrideOnEventPriority": false,
+              "onEventPriority": "DEFAULT",
+              "audioSignal": null,
+              "lifeTimeType": "LIMITED",
+              "takeSnapshotWhenExtend": false,
+              "durationKey": "invincible",
+              "lifeTime": 0.0,
+              "triggerLifeType": "IMMEDIATELY",
+              "triggerCnt": 0,
+              "triggerInterval": -1.0,
+              "waitFirstTriggerInterval": true,
+              "firstTriggerInterval": -1.0,
+              "priority": -1,
+              "priorityBBKeys": [],
+              "stripBlackboardParamsWithBuffKey": false,
+              "blackboard": [],
+              "enableInitDirectionFromSource": false
+            },
+            "_buffOwner": "BUFF_OWNER",
+            "_useSpecialBuffSource": false,
+            "_specialBuffSource": "BUFF_SOURCE",
+            "_isDerivedBuff": false,
+            "_finishDerivedBuffIfParentFinish": false,
+            "_inherateSourceProjectileFromParentBuff": false,
+            "_hookEffectKeyFromSourceProjectile": false
+          },
+          {
+            "$type": "Torappu.Battle.Action.Nodes+TriggerAbility, Assembly-CSharp",
+            "_ownerType": "BUFF_OWNER",
+            "_targetType": "BUFF_OWNER",
+            "_abilityName": "Hint",
+            "_checkCanUseAblityFlag": false,
+            "_castDirectly": false,
+            "_useFirstActiveAbility": false,
+            "_useCastResult": false,
+            "_triggerHostAbility": false,
+            "_notInterruptAbilityIfCasting": false
+          }
+        ],
+        "ON_BUFF_TRIGGER": [
+          {
+            "$type": "Torappu.Battle.Action.Nodes+TriggerAbility, Assembly-CSharp",
+            "_ownerType": "BUFF_OWNER",
+            "_targetType": "BUFF_OWNER",
+            "_abilityName": "ScreenAttack",
+            "_checkCanUseAblityFlag": false,
+            "_castDirectly": false,
+            "_useFirstActiveAbility": false,
+            "_useCastResult": false,
+            "_triggerHostAbility": false,
+            "_notInterruptAbilityIfCasting": false
+          }
+        ]
+      },
+      "scope": "First5s revival→native28s periodic10volley→mode1/invincible15; Hint request is observed, actual hint consumer pending",
+      "source_conflict": "RawRebornTalent hpRechargeRatio.5 plus boost.5 yields37500; PRTS current prose says100%. Literal fixedsource policy preserved for user comparison.",
+      "reference_policy": "Originalthree-row controlledray geometry. Sourcecasting flags22UNMOVABLE_PRIVATE/5INVINCIBLE preserved; INVINCIBLE maps target_free for normal selection plus damage rejection. Casting28 duration projected finiteBuff, sourcefirstscreen28/endmode1/invincible15 realconsumer; separate ordinaryskill gating and fullcasting-node ownership pending join.",
+      "full_boss_complete": false,
+      "whole_stage_executed": false,
+      "client_verified": false,
+      "source_buff_during_casting": {
+        "script_path_id": 6838209345780682387,
+        "gameobject_path_id": 8123818292276458884,
+        "gameobject_name": "ScreenAttack",
+        "raw": {
+          "m_GameObject": {
+            "m_FileID": 0,
+            "m_PathID": 8123818292276458884
+          },
+          "m_Enabled": 1,
+          "m_Script": {
+            "m_FileID": 1,
+            "m_PathID": 6838209345780682387
+          },
+          "m_Name": "",
+          "_buffs": [
+            {
+              "attributes": {
+                "abnormalFlags": [
+                  22,
+                  5
+                ],
+                "abnormalImmunes": [],
+                "abnormalAntis": [],
+                "abnormalCombos": [],
+                "abnormalComboImmunes": [],
+                "attributeModifiers": []
+              },
+              "buffKey": "bsnake_s[screen_attack]",
+              "loadFromDB": 0,
+              "isDurableBuff": 0,
+              "isDamageMissable": 0,
+              "isSilenceable": 0,
+              "isStunnable": 0,
+              "isFreezable": 0,
+              "isLevitatable": 0,
+              "isGroundBoundable": 0,
+              "statusResistable": 2,
+              "templateKey": "enemy_bsnake_s[screen_attack]",
+              "disableOverride": 0,
+              "overrideKey": "",
+              "overrideType": 0,
+              "maxStackCnt": 1,
+              "refreshRemainingTimeWhenStackMax": 0,
+              "clearAllStackCntWhenTimeUp": 0,
+              "maxValidStackCnt": -1,
+              "independentCharacterSource": 0,
+              "overrideEffectKey": "",
+              "overrideOnEventPriority": 0,
+              "onEventPriority": 0,
+              "audioSignal": "",
+              "lifeTimeType": 1,
+              "takeSnapshotWhenExtend": 0,
+              "durationKey": "",
+              "lifeTime": 0.0,
+              "triggerLifeType": 1,
+              "triggerCnt": 0,
+              "triggerInterval": -1.0,
+              "waitFirstTriggerInterval": 1,
+              "firstTriggerInterval": -1.0,
+              "priority": -1,
+              "priorityBBKeys": [],
+              "stripBlackboardParamsWithBuffKey": 0,
+              "blackboard": [],
+              "enableInitDirectionFromSource": 0
+            }
+          ]
+        },
+        "script_key": "CAB-658d74aab777086fc32b93f385be999a:6838209345780682387",
+        "native_class": "BuffDuringCasting"
+      },
+      "enum_mapping": {
+        "UNMOVABLE_PRIVATE": 22,
+        "INVINCIBLE": 5,
+        "INVISIBLE": 9
+      }
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/ch8/bsnake/cadb87696bef4de2",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground",
+        "boss"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 50000,
+            "atk": 770,
+            "def": 800,
+            "mres": 50,
+            "move_speed": 0.5,
+            "attack_interval": 4.5,
+            "attack_speed_ratio": 1,
+            "mass_level": 6
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 50000,
+            "capacity_attribute": "max_hp",
+            "role": "health"
+          },
+          "mode": {
+            "initial": 0,
+            "capacity": 3
+          },
+          "screen_packets": {
+            "initial": 0,
+            "capacity": 10
+          }
+        },
+        "selection_state": {
+          "camouflage": false,
+          "target_free": false,
+          "heal_free": false,
+          "can_select_camouflage": false,
+          "ally_target_free": false,
+          "motion": 1,
+          "category": 1,
+          "profession": 0,
+          "unit_type": 2,
+          "abnormal_flags": [],
+          "abnormal_combos": [],
+          "target_free_flags": [],
+          "target_free_combos": [],
+          "abnormal_immunes": [
+            0,
+            12,
+            16,
+            25
+          ],
+          "side": 1,
+          "abnormal_combo_immunes": [
+            0
+          ]
+        },
+        "spatial": {},
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle",
+          "leak_loss": 2
+        },
+        "abilities": [
+          "ability/ch8/bsnake/firecommon"
+        ],
+        "behavior": {
+          "machine": "behavior/ch8/bsnake/firstscreen"
+        },
+        "rebirth": {
+          "resource": "hp",
+          "max_count": 1,
+          "delay_seconds": 5,
+          "restore_ratio": 0.5,
+          "restore_rule": "rule/ch8/bsnake/first_restore",
+          "retain_buffs": [
+            "buff/source/bsnake/reborn_up"
+          ],
+          "on_begin": [
+            {
+              "op": "apply_buff",
+              "target": "source",
+              "buff": "buff/source/bsnake/reborn_up"
+            }
+          ],
+          "on_finish": [
+            {
+              "op": "modify_resource",
+              "target": "source",
+              "resource": "mode",
+              "value": 2
+            },
+            {
+              "op": "transition",
+              "target": "source",
+              "state": "screen"
+            },
+            {
+              "op": "apply_buff",
+              "target": "source",
+              "buff": "buff/ch8/source/bsnake_s[screen_attack]"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/ch8/bsnake/firecommon/motion",
+      "kind": "rule",
+      "contract": "projectile.trajectory",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.bsnake.screen_row"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/firecommon/eligibility",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.targeting.eligibility"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/firecommon/collision",
+      "kind": "rule",
+      "contract": "projectile.collision",
+      "dependencies": [
+        "rule/ch8/bsnake/firecommon/eligibility"
+      ],
+      "implementation": {
+        "type": "provider",
+        "provider": "model.projectile.qualified_swept_ray"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/first_restore",
+      "kind": "rule",
+      "contract": "resource.recovery",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/invincible",
+      "kind": "rule",
+      "contract": "damage.pipeline",
+      "implementation": {
+        "type": "graph",
+        "nodes": [
+          {
+            "id": "result",
+            "expression": "{'accepted':False,'amount':0,'allocations':[],'events':[]}"
+          }
+        ],
+        "output": "nodes.result"
+      }
+    }
+  ],
+  "projectiles": [
+    {
+      "id": "projectile/ch8/bsnake/firecommon/r1/d0",
+      "kind": "projectile",
+      "motion": {
+        "rule": "rule/ch8/bsnake/firecommon/motion",
+        "parameters": {
+          "row": 1,
+          "border": 1,
+          "height": 0.5,
+          "delay_seconds": 0.0,
+          "speed": 2.5,
+          "extent_policy": "map_bounds"
+        }
+      },
+      "collision": {
+        "rule": "rule/ch8/bsnake/firecommon/collision",
+        "allow_other_targets": true,
+        "parameters": {
+          "qualified_ray": true,
+          "radius": 0.25,
+          "exclude_source": true,
+          "eligibility": {
+            "rule": "rule/ch8/bsnake/firecommon/eligibility",
+            "parameters": {
+              "source_configuration": {
+                "_targetSide": 2,
+                "_targetMotion": 3,
+                "_targetCategory": 1,
+                "_enableAdvancedOptions": 1,
+                "_ignoreTargetFree": 0,
+                "_ignoreAllyTargetFree": 0,
+                "_ignoreHealFree": 0,
+                "_ignoreMotionMode": 0,
+                "_ignoreTargetSide": 0,
+                "_excludeSomeAbnormalFlags": 0,
+                "_containSomeAbnormalFlags": 0,
+                "_excludeAbnormalFlag": 0,
+                "_containAbnormalFlag": 0,
+                "_purposeMask": 0,
+                "_professionMask": 0,
+                "_checkUnitType": 0,
+                "_unitTypeMask": 0,
+                "_onlyIgnoreSomeOfTargetFreeCase": 0,
+                "_abnormalFlag": 0,
+                "_abnormalCombo": 0,
+                "_forceIgnoreCamouflage": 0,
+                "_needProfessionMask": 0
+              },
+              "side_policy": "relative_ally_enemy",
+              "neutral_policy": "reject",
+              "defaults": {
+                "camouflage": false,
+                "target_free": false,
+                "heal_free": false,
+                "can_select_camouflage": false,
+                "ally_target_free": false,
+                "motion": 0,
+                "category": 0,
+                "profession": 0,
+                "unit_type": 0,
+                "abnormal_flags": [],
+                "abnormal_combos": [],
+                "target_free_flags": [],
+                "target_free_combos": [],
+                "abnormal_immunes": [],
+                "side": 0
+              }
+            }
+          }
+        }
+      },
+      "lifetime_seconds": 60.0,
+      "max_hits": 1,
+      "can_hit_same_target": false,
+      "stop_after_max": true,
+      "stop_after_first": false,
+      "attach_at_launch": false,
+      "completion_blocking": false,
+      "lifecycle": {
+        "source_invalid": "retain",
+        "source_hidden": "retain",
+        "target_invalid": "retain_position",
+        "target_hidden": "retain_position",
+        "finish_on_reach": true,
+        "hit_on_reach": false,
+        "force_reach_on_expire": false,
+        "hit_on_expire": false
+      }
+    },
+    {
+      "id": "projectile/ch8/bsnake/firecommon/r1/d1",
+      "kind": "projectile",
+      "motion": {
+        "rule": "rule/ch8/bsnake/firecommon/motion",
+        "parameters": {
+          "row": 1,
+          "border": 1,
+          "height": 0.5,
+          "delay_seconds": 0.03333333333333333,
+          "speed": 2.5,
+          "extent_policy": "map_bounds"
+        }
+      },
+      "collision": {
+        "rule": "rule/ch8/bsnake/firecommon/collision",
+        "allow_other_targets": true,
+        "parameters": {
+          "qualified_ray": true,
+          "radius": 0.25,
+          "exclude_source": true,
+          "eligibility": {
+            "rule": "rule/ch8/bsnake/firecommon/eligibility",
+            "parameters": {
+              "source_configuration": {
+                "_targetSide": 2,
+                "_targetMotion": 3,
+                "_targetCategory": 1,
+                "_enableAdvancedOptions": 1,
+                "_ignoreTargetFree": 0,
+                "_ignoreAllyTargetFree": 0,
+                "_ignoreHealFree": 0,
+                "_ignoreMotionMode": 0,
+                "_ignoreTargetSide": 0,
+                "_excludeSomeAbnormalFlags": 0,
+                "_containSomeAbnormalFlags": 0,
+                "_excludeAbnormalFlag": 0,
+                "_containAbnormalFlag": 0,
+                "_purposeMask": 0,
+                "_professionMask": 0,
+                "_checkUnitType": 0,
+                "_unitTypeMask": 0,
+                "_onlyIgnoreSomeOfTargetFreeCase": 0,
+                "_abnormalFlag": 0,
+                "_abnormalCombo": 0,
+                "_forceIgnoreCamouflage": 0,
+                "_needProfessionMask": 0
+              },
+              "side_policy": "relative_ally_enemy",
+              "neutral_policy": "reject",
+              "defaults": {
+                "camouflage": false,
+                "target_free": false,
+                "heal_free": false,
+                "can_select_camouflage": false,
+                "ally_target_free": false,
+                "motion": 0,
+                "category": 0,
+                "profession": 0,
+                "unit_type": 0,
+                "abnormal_flags": [],
+                "abnormal_combos": [],
+                "target_free_flags": [],
+                "target_free_combos": [],
+                "abnormal_immunes": [],
+                "side": 0
+              }
+            }
+          }
+        }
+      },
+      "lifetime_seconds": 60.0,
+      "max_hits": 1,
+      "can_hit_same_target": false,
+      "stop_after_max": true,
+      "stop_after_first": false,
+      "attach_at_launch": false,
+      "completion_blocking": false,
+      "lifecycle": {
+        "source_invalid": "retain",
+        "source_hidden": "retain",
+        "target_invalid": "retain_position",
+        "target_hidden": "retain_position",
+        "finish_on_reach": true,
+        "hit_on_reach": false,
+        "force_reach_on_expire": false,
+        "hit_on_expire": false
+      }
+    },
+    {
+      "id": "projectile/ch8/bsnake/firecommon/r1/d2",
+      "kind": "projectile",
+      "motion": {
+        "rule": "rule/ch8/bsnake/firecommon/motion",
+        "parameters": {
+          "row": 1,
+          "border": 1,
+          "height": 0.5,
+          "delay_seconds": 0.06666666666666667,
+          "speed": 2.5,
+          "extent_policy": "map_bounds"
+        }
+      },
+      "collision": {
+        "rule": "rule/ch8/bsnake/firecommon/collision",
+        "allow_other_targets": true,
+        "parameters": {
+          "qualified_ray": true,
+          "radius": 0.25,
+          "exclude_source": true,
+          "eligibility": {
+            "rule": "rule/ch8/bsnake/firecommon/eligibility",
+            "parameters": {
+              "source_configuration": {
+                "_targetSide": 2,
+                "_targetMotion": 3,
+                "_targetCategory": 1,
+                "_enableAdvancedOptions": 1,
+                "_ignoreTargetFree": 0,
+                "_ignoreAllyTargetFree": 0,
+                "_ignoreHealFree": 0,
+                "_ignoreMotionMode": 0,
+                "_ignoreTargetSide": 0,
+                "_excludeSomeAbnormalFlags": 0,
+                "_containSomeAbnormalFlags": 0,
+                "_excludeAbnormalFlag": 0,
+                "_containAbnormalFlag": 0,
+                "_purposeMask": 0,
+                "_professionMask": 0,
+                "_checkUnitType": 0,
+                "_unitTypeMask": 0,
+                "_onlyIgnoreSomeOfTargetFreeCase": 0,
+                "_abnormalFlag": 0,
+                "_abnormalCombo": 0,
+                "_forceIgnoreCamouflage": 0,
+                "_needProfessionMask": 0
+              },
+              "side_policy": "relative_ally_enemy",
+              "neutral_policy": "reject",
+              "defaults": {
+                "camouflage": false,
+                "target_free": false,
+                "heal_free": false,
+                "can_select_camouflage": false,
+                "ally_target_free": false,
+                "motion": 0,
+                "category": 0,
+                "profession": 0,
+                "unit_type": 0,
+                "abnormal_flags": [],
+                "abnormal_combos": [],
+                "target_free_flags": [],
+                "target_free_combos": [],
+                "abnormal_immunes": [],
+                "side": 0
+              }
+            }
+          }
+        }
+      },
+      "lifetime_seconds": 60.0,
+      "max_hits": 1,
+      "can_hit_same_target": false,
+      "stop_after_max": true,
+      "stop_after_first": false,
+      "attach_at_launch": false,
+      "completion_blocking": false,
+      "lifecycle": {
+        "source_invalid": "retain",
+        "source_hidden": "retain",
+        "target_invalid": "retain_position",
+        "target_hidden": "retain_position",
+        "finish_on_reach": true,
+        "hit_on_reach": false,
+        "force_reach_on_expire": false,
+        "hit_on_expire": false
+      }
+    },
+    {
+      "id": "projectile/ch8/bsnake/firecommon/r1/d3",
+      "kind": "projectile",
+      "motion": {
+        "rule": "rule/ch8/bsnake/firecommon/motion",
+        "parameters": {
+          "row": 1,
+          "border": 1,
+          "height": 0.5,
+          "delay_seconds": 0.1,
+          "speed": 2.5,
+          "extent_policy": "map_bounds"
+        }
+      },
+      "collision": {
+        "rule": "rule/ch8/bsnake/firecommon/collision",
+        "allow_other_targets": true,
+        "parameters": {
+          "qualified_ray": true,
+          "radius": 0.25,
+          "exclude_source": true,
+          "eligibility": {
+            "rule": "rule/ch8/bsnake/firecommon/eligibility",
+            "parameters": {
+              "source_configuration": {
+                "_targetSide": 2,
+                "_targetMotion": 3,
+                "_targetCategory": 1,
+                "_enableAdvancedOptions": 1,
+                "_ignoreTargetFree": 0,
+                "_ignoreAllyTargetFree": 0,
+                "_ignoreHealFree": 0,
+                "_ignoreMotionMode": 0,
+                "_ignoreTargetSide": 0,
+                "_excludeSomeAbnormalFlags": 0,
+                "_containSomeAbnormalFlags": 0,
+                "_excludeAbnormalFlag": 0,
+                "_containAbnormalFlag": 0,
+                "_purposeMask": 0,
+                "_professionMask": 0,
+                "_checkUnitType": 0,
+                "_unitTypeMask": 0,
+                "_onlyIgnoreSomeOfTargetFreeCase": 0,
+                "_abnormalFlag": 0,
+                "_abnormalCombo": 0,
+                "_forceIgnoreCamouflage": 0,
+                "_needProfessionMask": 0
+              },
+              "side_policy": "relative_ally_enemy",
+              "neutral_policy": "reject",
+              "defaults": {
+                "camouflage": false,
+                "target_free": false,
+                "heal_free": false,
+                "can_select_camouflage": false,
+                "ally_target_free": false,
+                "motion": 0,
+                "category": 0,
+                "profession": 0,
+                "unit_type": 0,
+                "abnormal_flags": [],
+                "abnormal_combos": [],
+                "target_free_flags": [],
+                "target_free_combos": [],
+                "abnormal_immunes": [],
+                "side": 0
+              }
+            }
+          }
+        }
+      },
+      "lifetime_seconds": 60.0,
+      "max_hits": 1,
+      "can_hit_same_target": false,
+      "stop_after_max": true,
+      "stop_after_first": false,
+      "attach_at_launch": false,
+      "completion_blocking": false,
+      "lifecycle": {
+        "source_invalid": "retain",
+        "source_hidden": "retain",
+        "target_invalid": "retain_position",
+        "target_hidden": "retain_position",
+        "finish_on_reach": true,
+        "hit_on_reach": false,
+        "force_reach_on_expire": false,
+        "hit_on_expire": false
+      }
+    },
+    {
+      "id": "projectile/ch8/bsnake/firecommon/r2/d0",
+      "kind": "projectile",
+      "motion": {
+        "rule": "rule/ch8/bsnake/firecommon/motion",
+        "parameters": {
+          "row": 2,
+          "border": 1,
+          "height": 0.5,
+          "delay_seconds": 0.0,
+          "speed": 2.5,
+          "extent_policy": "map_bounds"
+        }
+      },
+      "collision": {
+        "rule": "rule/ch8/bsnake/firecommon/collision",
+        "allow_other_targets": true,
+        "parameters": {
+          "qualified_ray": true,
+          "radius": 0.25,
+          "exclude_source": true,
+          "eligibility": {
+            "rule": "rule/ch8/bsnake/firecommon/eligibility",
+            "parameters": {
+              "source_configuration": {
+                "_targetSide": 2,
+                "_targetMotion": 3,
+                "_targetCategory": 1,
+                "_enableAdvancedOptions": 1,
+                "_ignoreTargetFree": 0,
+                "_ignoreAllyTargetFree": 0,
+                "_ignoreHealFree": 0,
+                "_ignoreMotionMode": 0,
+                "_ignoreTargetSide": 0,
+                "_excludeSomeAbnormalFlags": 0,
+                "_containSomeAbnormalFlags": 0,
+                "_excludeAbnormalFlag": 0,
+                "_containAbnormalFlag": 0,
+                "_purposeMask": 0,
+                "_professionMask": 0,
+                "_checkUnitType": 0,
+                "_unitTypeMask": 0,
+                "_onlyIgnoreSomeOfTargetFreeCase": 0,
+                "_abnormalFlag": 0,
+                "_abnormalCombo": 0,
+                "_forceIgnoreCamouflage": 0,
+                "_needProfessionMask": 0
+              },
+              "side_policy": "relative_ally_enemy",
+              "neutral_policy": "reject",
+              "defaults": {
+                "camouflage": false,
+                "target_free": false,
+                "heal_free": false,
+                "can_select_camouflage": false,
+                "ally_target_free": false,
+                "motion": 0,
+                "category": 0,
+                "profession": 0,
+                "unit_type": 0,
+                "abnormal_flags": [],
+                "abnormal_combos": [],
+                "target_free_flags": [],
+                "target_free_combos": [],
+                "abnormal_immunes": [],
+                "side": 0
+              }
+            }
+          }
+        }
+      },
+      "lifetime_seconds": 60.0,
+      "max_hits": 1,
+      "can_hit_same_target": false,
+      "stop_after_max": true,
+      "stop_after_first": false,
+      "attach_at_launch": false,
+      "completion_blocking": false,
+      "lifecycle": {
+        "source_invalid": "retain",
+        "source_hidden": "retain",
+        "target_invalid": "retain_position",
+        "target_hidden": "retain_position",
+        "finish_on_reach": true,
+        "hit_on_reach": false,
+        "force_reach_on_expire": false,
+        "hit_on_expire": false
+      }
+    },
+    {
+      "id": "projectile/ch8/bsnake/firecommon/r2/d1",
+      "kind": "projectile",
+      "motion": {
+        "rule": "rule/ch8/bsnake/firecommon/motion",
+        "parameters": {
+          "row": 2,
+          "border": 1,
+          "height": 0.5,
+          "delay_seconds": 0.03333333333333333,
+          "speed": 2.5,
+          "extent_policy": "map_bounds"
+        }
+      },
+      "collision": {
+        "rule": "rule/ch8/bsnake/firecommon/collision",
+        "allow_other_targets": true,
+        "parameters": {
+          "qualified_ray": true,
+          "radius": 0.25,
+          "exclude_source": true,
+          "eligibility": {
+            "rule": "rule/ch8/bsnake/firecommon/eligibility",
+            "parameters": {
+              "source_configuration": {
+                "_targetSide": 2,
+                "_targetMotion": 3,
+                "_targetCategory": 1,
+                "_enableAdvancedOptions": 1,
+                "_ignoreTargetFree": 0,
+                "_ignoreAllyTargetFree": 0,
+                "_ignoreHealFree": 0,
+                "_ignoreMotionMode": 0,
+                "_ignoreTargetSide": 0,
+                "_excludeSomeAbnormalFlags": 0,
+                "_containSomeAbnormalFlags": 0,
+                "_excludeAbnormalFlag": 0,
+                "_containAbnormalFlag": 0,
+                "_purposeMask": 0,
+                "_professionMask": 0,
+                "_checkUnitType": 0,
+                "_unitTypeMask": 0,
+                "_onlyIgnoreSomeOfTargetFreeCase": 0,
+                "_abnormalFlag": 0,
+                "_abnormalCombo": 0,
+                "_forceIgnoreCamouflage": 0,
+                "_needProfessionMask": 0
+              },
+              "side_policy": "relative_ally_enemy",
+              "neutral_policy": "reject",
+              "defaults": {
+                "camouflage": false,
+                "target_free": false,
+                "heal_free": false,
+                "can_select_camouflage": false,
+                "ally_target_free": false,
+                "motion": 0,
+                "category": 0,
+                "profession": 0,
+                "unit_type": 0,
+                "abnormal_flags": [],
+                "abnormal_combos": [],
+                "target_free_flags": [],
+                "target_free_combos": [],
+                "abnormal_immunes": [],
+                "side": 0
+              }
+            }
+          }
+        }
+      },
+      "lifetime_seconds": 60.0,
+      "max_hits": 1,
+      "can_hit_same_target": false,
+      "stop_after_max": true,
+      "stop_after_first": false,
+      "attach_at_launch": false,
+      "completion_blocking": false,
+      "lifecycle": {
+        "source_invalid": "retain",
+        "source_hidden": "retain",
+        "target_invalid": "retain_position",
+        "target_hidden": "retain_position",
+        "finish_on_reach": true,
+        "hit_on_reach": false,
+        "force_reach_on_expire": false,
+        "hit_on_expire": false
+      }
+    },
+    {
+      "id": "projectile/ch8/bsnake/firecommon/r2/d2",
+      "kind": "projectile",
+      "motion": {
+        "rule": "rule/ch8/bsnake/firecommon/motion",
+        "parameters": {
+          "row": 2,
+          "border": 1,
+          "height": 0.5,
+          "delay_seconds": 0.06666666666666667,
+          "speed": 2.5,
+          "extent_policy": "map_bounds"
+        }
+      },
+      "collision": {
+        "rule": "rule/ch8/bsnake/firecommon/collision",
+        "allow_other_targets": true,
+        "parameters": {
+          "qualified_ray": true,
+          "radius": 0.25,
+          "exclude_source": true,
+          "eligibility": {
+            "rule": "rule/ch8/bsnake/firecommon/eligibility",
+            "parameters": {
+              "source_configuration": {
+                "_targetSide": 2,
+                "_targetMotion": 3,
+                "_targetCategory": 1,
+                "_enableAdvancedOptions": 1,
+                "_ignoreTargetFree": 0,
+                "_ignoreAllyTargetFree": 0,
+                "_ignoreHealFree": 0,
+                "_ignoreMotionMode": 0,
+                "_ignoreTargetSide": 0,
+                "_excludeSomeAbnormalFlags": 0,
+                "_containSomeAbnormalFlags": 0,
+                "_excludeAbnormalFlag": 0,
+                "_containAbnormalFlag": 0,
+                "_purposeMask": 0,
+                "_professionMask": 0,
+                "_checkUnitType": 0,
+                "_unitTypeMask": 0,
+                "_onlyIgnoreSomeOfTargetFreeCase": 0,
+                "_abnormalFlag": 0,
+                "_abnormalCombo": 0,
+                "_forceIgnoreCamouflage": 0,
+                "_needProfessionMask": 0
+              },
+              "side_policy": "relative_ally_enemy",
+              "neutral_policy": "reject",
+              "defaults": {
+                "camouflage": false,
+                "target_free": false,
+                "heal_free": false,
+                "can_select_camouflage": false,
+                "ally_target_free": false,
+                "motion": 0,
+                "category": 0,
+                "profession": 0,
+                "unit_type": 0,
+                "abnormal_flags": [],
+                "abnormal_combos": [],
+                "target_free_flags": [],
+                "target_free_combos": [],
+                "abnormal_immunes": [],
+                "side": 0
+              }
+            }
+          }
+        }
+      },
+      "lifetime_seconds": 60.0,
+      "max_hits": 1,
+      "can_hit_same_target": false,
+      "stop_after_max": true,
+      "stop_after_first": false,
+      "attach_at_launch": false,
+      "completion_blocking": false,
+      "lifecycle": {
+        "source_invalid": "retain",
+        "source_hidden": "retain",
+        "target_invalid": "retain_position",
+        "target_hidden": "retain_position",
+        "finish_on_reach": true,
+        "hit_on_reach": false,
+        "force_reach_on_expire": false,
+        "hit_on_expire": false
+      }
+    },
+    {
+      "id": "projectile/ch8/bsnake/firecommon/r2/d3",
+      "kind": "projectile",
+      "motion": {
+        "rule": "rule/ch8/bsnake/firecommon/motion",
+        "parameters": {
+          "row": 2,
+          "border": 1,
+          "height": 0.5,
+          "delay_seconds": 0.1,
+          "speed": 2.5,
+          "extent_policy": "map_bounds"
+        }
+      },
+      "collision": {
+        "rule": "rule/ch8/bsnake/firecommon/collision",
+        "allow_other_targets": true,
+        "parameters": {
+          "qualified_ray": true,
+          "radius": 0.25,
+          "exclude_source": true,
+          "eligibility": {
+            "rule": "rule/ch8/bsnake/firecommon/eligibility",
+            "parameters": {
+              "source_configuration": {
+                "_targetSide": 2,
+                "_targetMotion": 3,
+                "_targetCategory": 1,
+                "_enableAdvancedOptions": 1,
+                "_ignoreTargetFree": 0,
+                "_ignoreAllyTargetFree": 0,
+                "_ignoreHealFree": 0,
+                "_ignoreMotionMode": 0,
+                "_ignoreTargetSide": 0,
+                "_excludeSomeAbnormalFlags": 0,
+                "_containSomeAbnormalFlags": 0,
+                "_excludeAbnormalFlag": 0,
+                "_containAbnormalFlag": 0,
+                "_purposeMask": 0,
+                "_professionMask": 0,
+                "_checkUnitType": 0,
+                "_unitTypeMask": 0,
+                "_onlyIgnoreSomeOfTargetFreeCase": 0,
+                "_abnormalFlag": 0,
+                "_abnormalCombo": 0,
+                "_forceIgnoreCamouflage": 0,
+                "_needProfessionMask": 0
+              },
+              "side_policy": "relative_ally_enemy",
+              "neutral_policy": "reject",
+              "defaults": {
+                "camouflage": false,
+                "target_free": false,
+                "heal_free": false,
+                "can_select_camouflage": false,
+                "ally_target_free": false,
+                "motion": 0,
+                "category": 0,
+                "profession": 0,
+                "unit_type": 0,
+                "abnormal_flags": [],
+                "abnormal_combos": [],
+                "target_free_flags": [],
+                "target_free_combos": [],
+                "abnormal_immunes": [],
+                "side": 0
+              }
+            }
+          }
+        }
+      },
+      "lifetime_seconds": 60.0,
+      "max_hits": 1,
+      "can_hit_same_target": false,
+      "stop_after_max": true,
+      "stop_after_first": false,
+      "attach_at_launch": false,
+      "completion_blocking": false,
+      "lifecycle": {
+        "source_invalid": "retain",
+        "source_hidden": "retain",
+        "target_invalid": "retain_position",
+        "target_hidden": "retain_position",
+        "finish_on_reach": true,
+        "hit_on_reach": false,
+        "force_reach_on_expire": false,
+        "hit_on_expire": false
+      }
+    },
+    {
+      "id": "projectile/ch8/bsnake/firecommon/r3/d0",
+      "kind": "projectile",
+      "motion": {
+        "rule": "rule/ch8/bsnake/firecommon/motion",
+        "parameters": {
+          "row": 3,
+          "border": 1,
+          "height": 0.5,
+          "delay_seconds": 0.0,
+          "speed": 2.5,
+          "extent_policy": "map_bounds"
+        }
+      },
+      "collision": {
+        "rule": "rule/ch8/bsnake/firecommon/collision",
+        "allow_other_targets": true,
+        "parameters": {
+          "qualified_ray": true,
+          "radius": 0.25,
+          "exclude_source": true,
+          "eligibility": {
+            "rule": "rule/ch8/bsnake/firecommon/eligibility",
+            "parameters": {
+              "source_configuration": {
+                "_targetSide": 2,
+                "_targetMotion": 3,
+                "_targetCategory": 1,
+                "_enableAdvancedOptions": 1,
+                "_ignoreTargetFree": 0,
+                "_ignoreAllyTargetFree": 0,
+                "_ignoreHealFree": 0,
+                "_ignoreMotionMode": 0,
+                "_ignoreTargetSide": 0,
+                "_excludeSomeAbnormalFlags": 0,
+                "_containSomeAbnormalFlags": 0,
+                "_excludeAbnormalFlag": 0,
+                "_containAbnormalFlag": 0,
+                "_purposeMask": 0,
+                "_professionMask": 0,
+                "_checkUnitType": 0,
+                "_unitTypeMask": 0,
+                "_onlyIgnoreSomeOfTargetFreeCase": 0,
+                "_abnormalFlag": 0,
+                "_abnormalCombo": 0,
+                "_forceIgnoreCamouflage": 0,
+                "_needProfessionMask": 0
+              },
+              "side_policy": "relative_ally_enemy",
+              "neutral_policy": "reject",
+              "defaults": {
+                "camouflage": false,
+                "target_free": false,
+                "heal_free": false,
+                "can_select_camouflage": false,
+                "ally_target_free": false,
+                "motion": 0,
+                "category": 0,
+                "profession": 0,
+                "unit_type": 0,
+                "abnormal_flags": [],
+                "abnormal_combos": [],
+                "target_free_flags": [],
+                "target_free_combos": [],
+                "abnormal_immunes": [],
+                "side": 0
+              }
+            }
+          }
+        }
+      },
+      "lifetime_seconds": 60.0,
+      "max_hits": 1,
+      "can_hit_same_target": false,
+      "stop_after_max": true,
+      "stop_after_first": false,
+      "attach_at_launch": false,
+      "completion_blocking": false,
+      "lifecycle": {
+        "source_invalid": "retain",
+        "source_hidden": "retain",
+        "target_invalid": "retain_position",
+        "target_hidden": "retain_position",
+        "finish_on_reach": true,
+        "hit_on_reach": false,
+        "force_reach_on_expire": false,
+        "hit_on_expire": false
+      }
+    },
+    {
+      "id": "projectile/ch8/bsnake/firecommon/r3/d1",
+      "kind": "projectile",
+      "motion": {
+        "rule": "rule/ch8/bsnake/firecommon/motion",
+        "parameters": {
+          "row": 3,
+          "border": 1,
+          "height": 0.5,
+          "delay_seconds": 0.03333333333333333,
+          "speed": 2.5,
+          "extent_policy": "map_bounds"
+        }
+      },
+      "collision": {
+        "rule": "rule/ch8/bsnake/firecommon/collision",
+        "allow_other_targets": true,
+        "parameters": {
+          "qualified_ray": true,
+          "radius": 0.25,
+          "exclude_source": true,
+          "eligibility": {
+            "rule": "rule/ch8/bsnake/firecommon/eligibility",
+            "parameters": {
+              "source_configuration": {
+                "_targetSide": 2,
+                "_targetMotion": 3,
+                "_targetCategory": 1,
+                "_enableAdvancedOptions": 1,
+                "_ignoreTargetFree": 0,
+                "_ignoreAllyTargetFree": 0,
+                "_ignoreHealFree": 0,
+                "_ignoreMotionMode": 0,
+                "_ignoreTargetSide": 0,
+                "_excludeSomeAbnormalFlags": 0,
+                "_containSomeAbnormalFlags": 0,
+                "_excludeAbnormalFlag": 0,
+                "_containAbnormalFlag": 0,
+                "_purposeMask": 0,
+                "_professionMask": 0,
+                "_checkUnitType": 0,
+                "_unitTypeMask": 0,
+                "_onlyIgnoreSomeOfTargetFreeCase": 0,
+                "_abnormalFlag": 0,
+                "_abnormalCombo": 0,
+                "_forceIgnoreCamouflage": 0,
+                "_needProfessionMask": 0
+              },
+              "side_policy": "relative_ally_enemy",
+              "neutral_policy": "reject",
+              "defaults": {
+                "camouflage": false,
+                "target_free": false,
+                "heal_free": false,
+                "can_select_camouflage": false,
+                "ally_target_free": false,
+                "motion": 0,
+                "category": 0,
+                "profession": 0,
+                "unit_type": 0,
+                "abnormal_flags": [],
+                "abnormal_combos": [],
+                "target_free_flags": [],
+                "target_free_combos": [],
+                "abnormal_immunes": [],
+                "side": 0
+              }
+            }
+          }
+        }
+      },
+      "lifetime_seconds": 60.0,
+      "max_hits": 1,
+      "can_hit_same_target": false,
+      "stop_after_max": true,
+      "stop_after_first": false,
+      "attach_at_launch": false,
+      "completion_blocking": false,
+      "lifecycle": {
+        "source_invalid": "retain",
+        "source_hidden": "retain",
+        "target_invalid": "retain_position",
+        "target_hidden": "retain_position",
+        "finish_on_reach": true,
+        "hit_on_reach": false,
+        "force_reach_on_expire": false,
+        "hit_on_expire": false
+      }
+    },
+    {
+      "id": "projectile/ch8/bsnake/firecommon/r3/d2",
+      "kind": "projectile",
+      "motion": {
+        "rule": "rule/ch8/bsnake/firecommon/motion",
+        "parameters": {
+          "row": 3,
+          "border": 1,
+          "height": 0.5,
+          "delay_seconds": 0.06666666666666667,
+          "speed": 2.5,
+          "extent_policy": "map_bounds"
+        }
+      },
+      "collision": {
+        "rule": "rule/ch8/bsnake/firecommon/collision",
+        "allow_other_targets": true,
+        "parameters": {
+          "qualified_ray": true,
+          "radius": 0.25,
+          "exclude_source": true,
+          "eligibility": {
+            "rule": "rule/ch8/bsnake/firecommon/eligibility",
+            "parameters": {
+              "source_configuration": {
+                "_targetSide": 2,
+                "_targetMotion": 3,
+                "_targetCategory": 1,
+                "_enableAdvancedOptions": 1,
+                "_ignoreTargetFree": 0,
+                "_ignoreAllyTargetFree": 0,
+                "_ignoreHealFree": 0,
+                "_ignoreMotionMode": 0,
+                "_ignoreTargetSide": 0,
+                "_excludeSomeAbnormalFlags": 0,
+                "_containSomeAbnormalFlags": 0,
+                "_excludeAbnormalFlag": 0,
+                "_containAbnormalFlag": 0,
+                "_purposeMask": 0,
+                "_professionMask": 0,
+                "_checkUnitType": 0,
+                "_unitTypeMask": 0,
+                "_onlyIgnoreSomeOfTargetFreeCase": 0,
+                "_abnormalFlag": 0,
+                "_abnormalCombo": 0,
+                "_forceIgnoreCamouflage": 0,
+                "_needProfessionMask": 0
+              },
+              "side_policy": "relative_ally_enemy",
+              "neutral_policy": "reject",
+              "defaults": {
+                "camouflage": false,
+                "target_free": false,
+                "heal_free": false,
+                "can_select_camouflage": false,
+                "ally_target_free": false,
+                "motion": 0,
+                "category": 0,
+                "profession": 0,
+                "unit_type": 0,
+                "abnormal_flags": [],
+                "abnormal_combos": [],
+                "target_free_flags": [],
+                "target_free_combos": [],
+                "abnormal_immunes": [],
+                "side": 0
+              }
+            }
+          }
+        }
+      },
+      "lifetime_seconds": 60.0,
+      "max_hits": 1,
+      "can_hit_same_target": false,
+      "stop_after_max": true,
+      "stop_after_first": false,
+      "attach_at_launch": false,
+      "completion_blocking": false,
+      "lifecycle": {
+        "source_invalid": "retain",
+        "source_hidden": "retain",
+        "target_invalid": "retain_position",
+        "target_hidden": "retain_position",
+        "finish_on_reach": true,
+        "hit_on_reach": false,
+        "force_reach_on_expire": false,
+        "hit_on_expire": false
+      }
+    },
+    {
+      "id": "projectile/ch8/bsnake/firecommon/r3/d3",
+      "kind": "projectile",
+      "motion": {
+        "rule": "rule/ch8/bsnake/firecommon/motion",
+        "parameters": {
+          "row": 3,
+          "border": 1,
+          "height": 0.5,
+          "delay_seconds": 0.1,
+          "speed": 2.5,
+          "extent_policy": "map_bounds"
+        }
+      },
+      "collision": {
+        "rule": "rule/ch8/bsnake/firecommon/collision",
+        "allow_other_targets": true,
+        "parameters": {
+          "qualified_ray": true,
+          "radius": 0.25,
+          "exclude_source": true,
+          "eligibility": {
+            "rule": "rule/ch8/bsnake/firecommon/eligibility",
+            "parameters": {
+              "source_configuration": {
+                "_targetSide": 2,
+                "_targetMotion": 3,
+                "_targetCategory": 1,
+                "_enableAdvancedOptions": 1,
+                "_ignoreTargetFree": 0,
+                "_ignoreAllyTargetFree": 0,
+                "_ignoreHealFree": 0,
+                "_ignoreMotionMode": 0,
+                "_ignoreTargetSide": 0,
+                "_excludeSomeAbnormalFlags": 0,
+                "_containSomeAbnormalFlags": 0,
+                "_excludeAbnormalFlag": 0,
+                "_containAbnormalFlag": 0,
+                "_purposeMask": 0,
+                "_professionMask": 0,
+                "_checkUnitType": 0,
+                "_unitTypeMask": 0,
+                "_onlyIgnoreSomeOfTargetFreeCase": 0,
+                "_abnormalFlag": 0,
+                "_abnormalCombo": 0,
+                "_forceIgnoreCamouflage": 0,
+                "_needProfessionMask": 0
+              },
+              "side_policy": "relative_ally_enemy",
+              "neutral_policy": "reject",
+              "defaults": {
+                "camouflage": false,
+                "target_free": false,
+                "heal_free": false,
+                "can_select_camouflage": false,
+                "ally_target_free": false,
+                "motion": 0,
+                "category": 0,
+                "profession": 0,
+                "unit_type": 0,
+                "abnormal_flags": [],
+                "abnormal_combos": [],
+                "target_free_flags": [],
+                "target_free_combos": [],
+                "abnormal_immunes": [],
+                "side": 0
+              }
+            }
+          }
+        }
+      },
+      "lifetime_seconds": 60.0,
+      "max_hits": 1,
+      "can_hit_same_target": false,
+      "stop_after_max": true,
+      "stop_after_first": false,
+      "attach_at_launch": false,
+      "completion_blocking": false,
+      "lifecycle": {
+        "source_invalid": "retain",
+        "source_hidden": "retain",
+        "target_invalid": "retain_position",
+        "target_hidden": "retain_position",
+        "finish_on_reach": true,
+        "hit_on_reach": false,
+        "force_reach_on_expire": false,
+        "hit_on_expire": false
+      }
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/ch8/bsnake/firecommon",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "parameters": {
+          "auto_only": true
+        },
+        "condition": "inputs.resources.mode.current == 2 and inputs.resources.screen_packets.current < 10",
+        "on_start": [
+          {
+            "op": "modify_resource",
+            "target": "source",
+            "resource": "screen_packets",
+            "delta": 1
+          },
+          {
+            "op": "emit",
+            "target": "source",
+            "event": "source.bsnake.screen.volley"
+          }
+        ]
+      },
+      "timeline": [
+        {
+          "at_seconds": 0,
+          "effect": {
+            "op": "random",
+            "target": "source",
+            "stream": "bsnake.screen.birth",
+            "probability": 1,
+            "on_success": [
+              {
+                "op": "damage",
+                "damage_type": "arts",
+                "scale": 1.0,
+                "projectile_definition": "projectile/ch8/bsnake/firecommon/r1/d0",
+                "condition": "params.random_sample == 0",
+                "read_mode": {
+                  "source_attributes": "at_hit",
+                  "target_attributes": "at_hit"
+                },
+                "damage_flags": {
+                  "source_attack_type": "NORMAL",
+                  "ignore_for_sp": false
+                }
+              },
+              {
+                "op": "damage",
+                "damage_type": "arts",
+                "scale": 1.0,
+                "projectile_definition": "projectile/ch8/bsnake/firecommon/r1/d1",
+                "condition": "params.random_sample > 0 and params.random_sample <= 1/3",
+                "read_mode": {
+                  "source_attributes": "at_hit",
+                  "target_attributes": "at_hit"
+                },
+                "damage_flags": {
+                  "source_attack_type": "NORMAL",
+                  "ignore_for_sp": false
+                }
+              },
+              {
+                "op": "damage",
+                "damage_type": "arts",
+                "scale": 1.0,
+                "projectile_definition": "projectile/ch8/bsnake/firecommon/r1/d2",
+                "condition": "params.random_sample > 1/3 and params.random_sample <= 2/3",
+                "read_mode": {
+                  "source_attributes": "at_hit",
+                  "target_attributes": "at_hit"
+                },
+                "damage_flags": {
+                  "source_attack_type": "NORMAL",
+                  "ignore_for_sp": false
+                }
+              },
+              {
+                "op": "damage",
+                "damage_type": "arts",
+                "scale": 1.0,
+                "projectile_definition": "projectile/ch8/bsnake/firecommon/r1/d3",
+                "condition": "params.random_sample > 2/3",
+                "read_mode": {
+                  "source_attributes": "at_hit",
+                  "target_attributes": "at_hit"
+                },
+                "damage_flags": {
+                  "source_attack_type": "NORMAL",
+                  "ignore_for_sp": false
+                }
+              }
+            ],
+            "on_failure": []
+          }
+        },
+        {
+          "at_seconds": 0,
+          "effect": {
+            "op": "random",
+            "target": "source",
+            "stream": "bsnake.screen.birth",
+            "probability": 1,
+            "on_success": [
+              {
+                "op": "damage",
+                "damage_type": "arts",
+                "scale": 1.0,
+                "projectile_definition": "projectile/ch8/bsnake/firecommon/r2/d0",
+                "condition": "params.random_sample == 0",
+                "read_mode": {
+                  "source_attributes": "at_hit",
+                  "target_attributes": "at_hit"
+                },
+                "damage_flags": {
+                  "source_attack_type": "NORMAL",
+                  "ignore_for_sp": false
+                }
+              },
+              {
+                "op": "damage",
+                "damage_type": "arts",
+                "scale": 1.0,
+                "projectile_definition": "projectile/ch8/bsnake/firecommon/r2/d1",
+                "condition": "params.random_sample > 0 and params.random_sample <= 1/3",
+                "read_mode": {
+                  "source_attributes": "at_hit",
+                  "target_attributes": "at_hit"
+                },
+                "damage_flags": {
+                  "source_attack_type": "NORMAL",
+                  "ignore_for_sp": false
+                }
+              },
+              {
+                "op": "damage",
+                "damage_type": "arts",
+                "scale": 1.0,
+                "projectile_definition": "projectile/ch8/bsnake/firecommon/r2/d2",
+                "condition": "params.random_sample > 1/3 and params.random_sample <= 2/3",
+                "read_mode": {
+                  "source_attributes": "at_hit",
+                  "target_attributes": "at_hit"
+                },
+                "damage_flags": {
+                  "source_attack_type": "NORMAL",
+                  "ignore_for_sp": false
+                }
+              },
+              {
+                "op": "damage",
+                "damage_type": "arts",
+                "scale": 1.0,
+                "projectile_definition": "projectile/ch8/bsnake/firecommon/r2/d3",
+                "condition": "params.random_sample > 2/3",
+                "read_mode": {
+                  "source_attributes": "at_hit",
+                  "target_attributes": "at_hit"
+                },
+                "damage_flags": {
+                  "source_attack_type": "NORMAL",
+                  "ignore_for_sp": false
+                }
+              }
+            ],
+            "on_failure": []
+          }
+        },
+        {
+          "at_seconds": 0,
+          "effect": {
+            "op": "random",
+            "target": "source",
+            "stream": "bsnake.screen.birth",
+            "probability": 1,
+            "on_success": [
+              {
+                "op": "damage",
+                "damage_type": "arts",
+                "scale": 1.0,
+                "projectile_definition": "projectile/ch8/bsnake/firecommon/r3/d0",
+                "condition": "params.random_sample == 0",
+                "read_mode": {
+                  "source_attributes": "at_hit",
+                  "target_attributes": "at_hit"
+                },
+                "damage_flags": {
+                  "source_attack_type": "NORMAL",
+                  "ignore_for_sp": false
+                }
+              },
+              {
+                "op": "damage",
+                "damage_type": "arts",
+                "scale": 1.0,
+                "projectile_definition": "projectile/ch8/bsnake/firecommon/r3/d1",
+                "condition": "params.random_sample > 0 and params.random_sample <= 1/3",
+                "read_mode": {
+                  "source_attributes": "at_hit",
+                  "target_attributes": "at_hit"
+                },
+                "damage_flags": {
+                  "source_attack_type": "NORMAL",
+                  "ignore_for_sp": false
+                }
+              },
+              {
+                "op": "damage",
+                "damage_type": "arts",
+                "scale": 1.0,
+                "projectile_definition": "projectile/ch8/bsnake/firecommon/r3/d2",
+                "condition": "params.random_sample > 1/3 and params.random_sample <= 2/3",
+                "read_mode": {
+                  "source_attributes": "at_hit",
+                  "target_attributes": "at_hit"
+                },
+                "damage_flags": {
+                  "source_attack_type": "NORMAL",
+                  "ignore_for_sp": false
+                }
+              },
+              {
+                "op": "damage",
+                "damage_type": "arts",
+                "scale": 1.0,
+                "projectile_definition": "projectile/ch8/bsnake/firecommon/r3/d3",
+                "condition": "params.random_sample > 2/3",
+                "read_mode": {
+                  "source_attributes": "at_hit",
+                  "target_attributes": "at_hit"
+                },
+                "damage_flags": {
+                  "source_attack_type": "NORMAL",
+                  "ignore_for_sp": false
+                }
+              }
+            ],
+            "on_failure": []
+          }
+        }
+      ]
+    }
+  ],
+  "behaviors": [
+    {
+      "id": "behavior/ch8/bsnake/firstscreen",
+      "kind": "behavior",
+      "initial": "normal",
+      "states": {
+        "normal": {},
+        "screen": {},
+        "enraged": {}
+      },
+      "transitions": []
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/source/bsnake/reborn_up",
+      "kind": "buff",
+      "modifiers": [
+        {
+          "attribute": "max_hp",
+          "layer": "direct_ratio",
+          "value": 0.5
+        },
+        {
+          "attribute": "atk",
+          "layer": "direct_ratio",
+          "value": 0.5
+        }
+      ]
+    },
+    {
+      "id": "buff/ch8/source/bsnake_s[screen_attack]",
+      "kind": "buff",
+      "duration_seconds": 28.0,
+      "interval_seconds": 2.0,
+      "control": {
+        "move": false,
+        "block": false,
+        "attack": false
+      },
+      "selection_flags": {
+        "target_free": true,
+        "abnormal_flags": [
+          22,
+          5
+        ]
+      },
+      "damage_hooks": [
+        {
+          "phase": "after",
+          "rule": "rule/ch8/bsnake/invincible"
+        }
+      ],
+      "effects": [
+        {
+          "op": "trigger_ability",
+          "target": "source",
+          "ability": "ability/ch8/bsnake/firecommon",
+          "condition": "inputs.source.components.resources.screen_packets.current < 10"
+        }
+      ],
+      "on_remove": [
+        {
+          "op": "modify_resource",
+          "target": "source",
+          "resource": "mode",
+          "value": 1
+        },
+        {
+          "op": "restart_behavior",
+          "target": "self",
+          "state": "enraged",
+          "parameters": {
+            "abilities": [
+              "ability/ch8/bsnake/firecommon"
+            ],
+            "reset_attack_clock": true,
+            "initial_cooldowns": {},
+            "reason": "source_first_screen_finish"
+          }
+        },
+        {
+          "op": "apply_buff",
+          "target": "source",
+          "buff": "buff/ch8/source/reborn_up[invincible]"
+        },
+        {
+          "op": "emit",
+          "target": "source",
+          "event": "source.bsnake.hint.requested"
+        }
+      ]
+    },
+    {
+      "id": "buff/ch8/source/reborn_up[invincible]",
+      "kind": "buff",
+      "duration_seconds": 15.0,
+      "selection_flags": {
+        "target_free": true,
+        "abnormal_flags": [
+          5
+        ]
+      },
+      "damage_hooks": [
+        {
+          "phase": "after",
+          "rule": "rule/ch8/bsnake/invincible"
+        }
+      ]
+    }
+  ]
+}

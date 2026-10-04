@@ -1,0 +1,52 @@
+{
+  "schema": "ark-sim/independent-payment-counterexamples/v1",
+  "status": "actual_duplicate_record_and_partial_DP_failures",
+  "core_before": "5bc6264ca22c03645b482c89e9081a73cf1b898af5d25222c9120a433ced6ddf",
+  "core_after": "5bc6264ca22c03645b482c89e9081a73cf1b898af5d25222c9120a433ced6ddf",
+  "source_locks": {
+    "tools/experiments/m50_peer/test_stock.py": "91999f9fcd441331d9527d2ddc337832669dcdd4fcb6e2167d7047c4d727fa85",
+    "tools\\experiments\\m50_peer\\capture_failure.py": "bd38718cbbe06ec90304071e56aa42ed32cf2ab93afb1fb210ebfdc1d757abfe",
+    "../unpack_work/campaign_m50_deploy_stock_candidate/ark_sim/domains/deployment.py": "2da0932d0869e6abefb77b86ad7986dd0ecb3f693e7fb441efc649745c21cba4",
+    "../unpack_work/campaign_m50_deploy_stock_candidate/ark_sim/adapters/api.py": "bcdba8726e61e5a42aa3d1757f73f1c0b64eb547559653e78f0b9665e09d0d3c"
+  },
+  "actual_module": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m50_deploy_stock_candidate\\ark_sim\\__init__.py",
+  "duplicate_record": {
+    "before_tickets": 2,
+    "after_tickets": 1,
+    "actors": 2,
+    "expected": "repeat record rejects and leaves stock unchanged",
+    "scope": "direct internal record boundary explicitly requested by Root; not a second public deployment"
+  },
+  "partial_DP": {
+    "initial_dp": 4,
+    "after_dp": 3,
+    "actual_paid": 1,
+    "stored_paid_cost": 4.0,
+    "tickets": 2,
+    "commands": [
+      {
+        "id": 19,
+        "type": "command.accepted",
+        "payload": {
+          "action": {
+            "action": "deploy",
+            "definition": "unit/widget",
+            "alias": "widget0",
+            "position": {
+              "row": 0,
+              "col": 0
+            }
+          },
+          "result": 2
+        },
+        "time": 0,
+        "cause": null
+      }
+    ],
+    "expected": "partial DP payment rejects and rolls entire command back",
+    "scope": "existing public deployment adjust path inherited from a829, exposed with separate finite stock; ordinary default bounds not claimed affected"
+  },
+  "fixture_errors_preserved": "Bounds accepts provider only; initial expression/graph fixtures and missing overflow provider result logged separately and corrected before these actual observations.",
+  "actual_client_verified": false,
+  "formal_approved": false
+}

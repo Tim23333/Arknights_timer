@@ -1,0 +1,754 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/ch6/npc/amiya_reference",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "source_locks": {
+        "packages\\campaign\\chapter06_predefines\\source.reference.json": "7d27130c475a332f29d9b21a853d7b28a81785e3cf9a322f9c03c9c54089c66f",
+        "packages\\campaign\\chapter06_npcs\\inputs.reference.json": "0f00d6a763541c0f67bea1cd7acfb12a06c27b244c0021bdd1e62c63695c87a2",
+        "ark_emulator\\data_range_table.json": "4d974598394630a1ad465b954321254397f514c7fb26cba944d320ac18b874d0"
+      },
+      "builder_sha": "597eea8475aafba3ab5c015211ba75793b7bf490df2e44d4f1b80a1cb27cfc71",
+      "native_no_skill": true,
+      "policies": {
+        "timing": "4frame first begin plus nativepreDelay .48300001025 ceil15; not fake3 copies of19f OnAttack because waitForAttackEvent0.",
+        "trajectory": "Two source .15000000596 stages modeled as planar interpolation; startDistance2.5 retained, exact nativecurvature/sourcehandoff unresolved replaceable policy.",
+        "additional_visual": "Native onlyFeedActionsToFirstOne1: two empty projectile visuals preserved as metadata, no extra combat damage.",
+        "talent": "Attack2/kill8 source BB retained; native no selected skill produces no fabricated SP store; later selectedskill uses newinput.",
+        "source_lifetime": "Live source-owner hooks on retained projectiles explicit reference policy."
+      },
+      "complete_source_policies": false,
+      "whole_stage_executed": false,
+      "client_verified": false
+    }
+  },
+  "rules": [
+    {
+      "id": "rule/ch6/npc/amiya_eligible",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.targeting.eligibility"
+      }
+    },
+    {
+      "id": "rule/ch6/npc/amiya_motion",
+      "kind": "rule",
+      "contract": "projectile.trajectory",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c6.amiya_movement"
+      },
+      "parameters": {
+        "start_duration": 0.15000000596046448,
+        "travel_duration": 0.15000000596046448,
+        "start_distance": 2.5
+      }
+    },
+    {
+      "id": "rule/ch6/npc/amiya_collision",
+      "kind": "rule",
+      "contract": "projectile.collision",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.projectile.collision"
+      }
+    }
+  ],
+  "entities": [
+    {
+      "id": "unit/ch6/npc/char_002_amiya",
+      "kind": "entity",
+      "tags": [
+        "player",
+        "ground",
+        "native_npc"
+      ],
+      "metadata": {
+        "native_character": "char_002_amiya",
+        "native_instance": {
+          "position": {
+            "row": 4,
+            "col": 3
+          },
+          "direction": "RIGHT",
+          "hidden": true,
+          "alias": null,
+          "uniEquipIds": null,
+          "showSpIllust": false,
+          "masterInfos": null,
+          "inst": {
+            "characterKey": "char_002_amiya",
+            "level": 25,
+            "phase": "PHASE_2",
+            "favorPoint": 0,
+            "potentialRank": 0
+          },
+          "skillIndex": -1,
+          "mainSkillLvl": 1,
+          "skinId": null,
+          "tmplId": null,
+          "overrideSkillBlackboard": null,
+          "overrideTalents": null
+        }
+      },
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 1284,
+            "atk": 544,
+            "def": 113,
+            "mres": 20.0,
+            "attack_interval": 1.6,
+            "attack_speed_ratio": 1,
+            "block_count": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 1284,
+            "capacity_attribute": "max_hp",
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "camouflage": false,
+          "can_select_camouflage": false,
+          "ally_target_free": false,
+          "target_free": false,
+          "heal_free": false,
+          "motion": 1,
+          "category": 1,
+          "profession": 0,
+          "unit_type": 1,
+          "abnormal_flags": [],
+          "abnormal_combos": [],
+          "target_free_flags": [],
+          "target_free_combos": [],
+          "abnormal_immunes": [],
+          "side": 0
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "abilities": [
+          "ability/ch6/npc/amiya_normal"
+        ],
+        "buffs": {
+          "initial": [
+            "buff/ch6/npc/amiya_sp_talent"
+          ]
+        }
+      }
+    },
+    {
+      "id": "unit/npc_probe/amiya_target",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 10000,
+            "def": 31,
+            "mres": 25
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 10000,
+            "capacity": 10000,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "side": 1,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 2
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    },
+    {
+      "id": "unit/npc_probe/amiya_controller",
+      "kind": "entity",
+      "components": {
+        "spatial": {},
+        "abilities": [
+          "ability/npc_probe/activate_amiya"
+        ]
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/ch6/npc/amiya_sp_talent",
+      "kind": "buff",
+      "events": [
+        {
+          "event": "damage.accepted",
+          "condition": "inputs.payload.source == context.owner.id and inputs.payload.amount > 0",
+          "effects": [
+            {
+              "op": "modify_resource",
+              "resource": "sp",
+              "delta": 2,
+              "parameters": {
+                "if_resource_present": true
+              },
+              "target": "source",
+              "condition": "inputs.targets[0].components.runtime.alive"
+            }
+          ],
+          "target": "event_target"
+        },
+        {
+          "event": "combat.kill",
+          "condition": "inputs.payload.source == context.owner.id",
+          "effects": [
+            {
+              "op": "modify_resource",
+              "resource": "sp",
+              "delta": 8,
+              "parameters": {
+                "if_resource_present": true
+              },
+              "target": "source"
+            }
+          ],
+          "target": "event_source"
+        }
+      ]
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/ch6/npc/amiya_normal",
+      "kind": "ability",
+      "activation": {
+        "mode": "automatic_attack",
+        "parameters": {
+          "auto_only": true
+        }
+      },
+      "initial_cooldown_seconds": 0.13333333333333333,
+      "selector": "selector/ch6/npc/amiya",
+      "target_capture": "at_cast",
+      "timeline": [
+        {
+          "at_seconds": 0.4830000102519989,
+          "effect": {
+            "op": "damage",
+            "damage_type": "arts",
+            "scale": 1,
+            "projectile_definition": "projectile/ch6/npc/amiya",
+            "damage_flags": {
+              "source_attack_type": "NORMAL",
+              "ignore_for_sp": false
+            }
+          }
+        }
+      ],
+      "metadata": {
+        "normal_attack_source": {
+          "script_path_id": -3698736381282439861,
+          "gameobject_path_id": 8234588796025602150,
+          "gameobject_name": "Attack",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 8234588796025602150
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": -3698736381282439861
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_waitForAttackEvent": 0,
+            "_interuptIfTargetDead": 0,
+            "_resetCdStrategy": 1,
+            "_selectTargetSource": 2,
+            "_selectTargetTiming": 0,
+            "_timeMode": 0,
+            "_alwaysIncludeTarget": 1,
+            "_allowNoTarget": 0,
+            "_animKey": "",
+            "_endAnimKey": "Attack_End",
+            "_downAnimKey": "",
+            "_downEndAnimKey": "",
+            "_upAnimKey": "",
+            "_upEndAnimKey": "",
+            "_cooldown": 0.0,
+            "_cooldownKey": "duration",
+            "_preDelay": 0.4830000102519989,
+            "_escapeTime": 0.13300000131130219,
+            "_faceToTarget": 1,
+            "_faceToDefault": 0,
+            "_faceToFront": 0,
+            "_faceToFirstCastTarget": 0,
+            "_checkFaceToFirstCastTargetDownAttack": 0,
+            "_forceFaceToDirection": 0,
+            "_activeBuffs": [],
+            "_maxAnimScale": -1.0,
+            "_onlyPlayEndAnimWhenIsLastAbility": 0,
+            "_ignorePalsyInterrupt": 0,
+            "_affectedBySlowDown": 0,
+            "_atkScale": 1.0,
+            "_atkScaleKey": "atk_scale",
+            "_attackType": 1,
+            "_elementDamageType": 0,
+            "_epDamageRatio": 0.0,
+            "_useDynamicAttackType": 0,
+            "_deliveryParaWhenReplaceActionNode": 0,
+            "_projectileKey": "projectile_amiya",
+            "_mountPointType": 2,
+            "_useMountGroup": 0,
+            "_mountGroup": {
+              "loopType": 0,
+              "mountPoints": []
+            },
+            "_damageType": 2,
+            "_waitForProjectileInvalid": 0,
+            "_notClearProjectileWhenCastEnd": 0,
+            "_fireAttackFinishWhenProjectileInvalid": 0,
+            "_minPostDelayWhenProjectileInvalid": 0.0,
+            "_waitForAnimEndWhenProjectileInvalid": 0,
+            "_projectileDestination": 0,
+            "_extraDamageType": 0,
+            "_emitToInputPosWhenTargetIsInvalid": 0,
+            "_emitToInputRootTileWhenTargetIsInvalid": 0,
+            "_useCachedAtkOnly": 0,
+            "_transferSource": 0,
+            "_extraProjectileKeys": [],
+            "_fireCreateProjectileEvent": 0,
+            "_additionalTimes": 2,
+            "_triggerDelta": 0.0,
+            "_waitAttackEventForAllAttacks": 0,
+            "_additionalProjectile": "projectile_amiya_empty",
+            "_useMultiAdditionalProjectiles": 0,
+            "_additionalProjectiles": [],
+            "_enableMountPointGroup": 0,
+            "_mountPointGroup": [],
+            "_onlyFeedActionsToFirstOne": 1,
+            "_onlyTrigAudioSignalForFirstOne": 0,
+            "_limitToOneTargetAfterFirstRound": 0,
+            "_splitDamage": 0,
+            "_addSpellCntToSignalId": 0,
+            "_onlyFeedActiveBuffToLastOne": 0,
+            "_onlyFeedActiveBuffToFirstOne": 0,
+            "_refreshTimesOnCastStart": 0,
+            "_castToFirstRoundTargetLocationsAtProjectileBirth": 0,
+            "_hookTheLastProjectile": ""
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:-3698736381282439861",
+          "native_class": "MultiRangedAttack"
+        },
+        "empty_visual_projectile_source": {
+          "source": {
+            "path": "data/battle/prefabs/[uc]projectiles.ab_unpacked/CAB-34af01ecb5d2ad63aca01b6e0d71279d",
+            "sha256": "1a359a23771c0a32bff3269a244b145ee5a5d67bcbd55f6ee3dc973f7bd3337c",
+            "bytes": 4860839
+          },
+          "root_gameobject_path_id": 633638527340303507,
+          "hierarchy": [
+            {
+              "path_id": 633638527340303507,
+              "name": "projectile_amiya_empty",
+              "parent_path_id": null
+            }
+          ],
+          "components": {
+            "-4869062224212470637": {
+              "script_path_id": -8797129986015012478,
+              "gameobject_path_id": 633638527340303507,
+              "gameobject_name": "projectile_amiya_empty",
+              "raw": {
+                "m_GameObject": {
+                  "m_FileID": 0,
+                  "m_PathID": 633638527340303507
+                },
+                "m_Enabled": 1,
+                "m_Script": {
+                  "m_FileID": 1,
+                  "m_PathID": -8797129986015012478
+                },
+                "m_Name": "",
+                "_randomDelayToBorn": 0.0,
+                "_bodyTransform": {
+                  "m_FileID": 0,
+                  "m_PathID": 0
+                },
+                "_keepAlreadyHitTime": -1.0,
+                "_mainEffect": "amiya_attack_01_trail",
+                "_clearMainEffectWhenReached": 0,
+                "_actionController": {
+                  "_detachBuffsWhenTargetLeave": 0,
+                  "_detachAllBuffsWhenStopped": 0,
+                  "_onlyAddBuffsToTraceTarget": 0,
+                  "_onlyAddBuffsToTargetOnce": 0,
+                  "_dontAddBuffs": 0,
+                  "_excludeAttachments": 0,
+                  "_useSelfBlackboard": 0,
+                  "_extraBuffsInTheEnd": [],
+                  "_useExtraBuffsWhenStopHit": 0,
+                  "_addExtraBuffsWhenReached": 0,
+                  "_detachAllExtraBuffsWhenStopped": 0
+                },
+                "_fixDealHitTargetLeft": 0,
+                "_stopGraphicProjectileWhenClearMainEffect": 0,
+                "_overrideAudioSignal": "",
+                "_fireProjectileReachedEvent": 0,
+                "_eliminatableStatus": 0,
+                "_movementAdjustableStatus": 0,
+                "_managedBySource": 0,
+                "_projectileType": 0,
+                "_containsChildrenBehaviours": 0,
+                "_canHitSameTargetMultipleTimes": 0,
+                "_lifeTimeType": 1,
+                "_lifeTime": 10.0,
+                "_getLifeTimeFromBB": 0,
+                "_hitNumType": 1,
+                "_maxHitNum": 1,
+                "_getMaxHitNumFromBB": 0,
+                "_maxHitNumBBKey": "",
+                "_stopAfterMaxHit": 1,
+                "_stopAfterFirstHit": 0,
+                "_stopWhenSourceInvalid": 0,
+                "_alwaysHitTraceTargetInTheEnd": 1,
+                "_alwaysHitTraceTargetWhenReached": 0,
+                "_alwaysReachInTheEnd": 0,
+                "_limitedMaxHitNumToSourceBlockedCnt": 0,
+                "_allowZeroBlockCntLimit": 0
+              },
+              "script_key": "CAB-658d74aab777086fc32b93f385be999a:-8797129986015012478",
+              "native_class": "SimpleProjectile"
+            },
+            "2909627831399928979": {
+              "script_path_id": 2247585246492197002,
+              "gameobject_path_id": 633638527340303507,
+              "gameobject_name": "projectile_amiya_empty",
+              "raw": {
+                "m_GameObject": {
+                  "m_FileID": 0,
+                  "m_PathID": 633638527340303507
+                },
+                "m_Enabled": 1,
+                "m_Script": {
+                  "m_FileID": 1,
+                  "m_PathID": 2247585246492197002
+                },
+                "m_Name": "",
+                "_rotateToTarget": 0,
+                "_forceReachedWhenTimeup": 1,
+                "_useSourceDirection": 0,
+                "_useTargetDirection": 0,
+                "_useStartToTarget": 0,
+                "_awayFromSourceAsDirection": 0,
+                "_flyToTargetLocationOnly": 0,
+                "_useSourceDirectionRandomArcAngleStart": 0,
+                "_useSourceToTargetRandomArcAngleStart": 0,
+                "_useSourceDirectionArcAngleWithRatio": 0,
+                "_useSourceToTargetArcAngleWithRatio": 0,
+                "_sourceDirectionArcAngleRatio": 0.0,
+                "_flyToPredefinedLocation": 0,
+                "_predefinedLocation": 0,
+                "_freezeRotationZ": 0,
+                "_freezeRotationXY": 0,
+                "_exactMatchCameraForward": 0,
+                "_resetToTargetPosWhenReached": 0,
+                "_resetToTracetargetMapPosV3": 0,
+                "_handleWithIBuildableTarget": 0,
+                "_forceResetToTargetPosWhenReached": 0,
+                "_fixOnProjectileReached": 0,
+                "_onlyReachedInTime": 0.0,
+                "_startDistance": 2.5,
+                "_zOffset": 0.0,
+                "_startDuration": 0.15000000596046448,
+                "_time": 0.15000000596046448
+              },
+              "script_key": "CAB-658d74aab777086fc32b93f385be999a:2247585246492197002",
+              "native_class": "AmiyaDefaultMovement"
+            }
+          },
+          "external_references": [],
+          "geometry_sources": [
+            {
+              "path_id": 8420090467099464851,
+              "gameobject_path_id": 633638527340303507,
+              "gameobject_name": "projectile_amiya_empty",
+              "unity_type": "Transform",
+              "raw": {
+                "m_GameObject": {
+                  "m_FileID": 0,
+                  "m_PathID": 633638527340303507
+                },
+                "m_LocalRotation": {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "z": 0.0,
+                  "w": 1.0
+                },
+                "m_LocalPosition": {
+                  "x": -3.3611950874328613,
+                  "y": -3.7151455879211426,
+                  "z": -9.2802734375
+                },
+                "m_LocalScale": {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "z": 1.0
+                },
+                "m_Children": [],
+                "m_Father": {
+                  "m_FileID": 0,
+                  "m_PathID": 0
+                }
+              }
+            }
+          ]
+        },
+        "visual_additional_times": 2,
+        "visual_only_no_extra_damage": true
+      }
+    },
+    {
+      "id": "ability/npc_probe/activate_amiya",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "activate_predefined",
+            "target": "battle",
+            "parameters": {
+              "key": "char_002_amiya"
+            }
+          }
+        ]
+      },
+      "timeline": []
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/ch6/npc/amiya",
+      "kind": "selector",
+      "region": {
+        "type": "grid_offsets",
+        "offsets": [
+          [
+            -1,
+            0
+          ],
+          [
+            -1,
+            1
+          ],
+          [
+            -1,
+            2
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            2
+          ]
+        ]
+      },
+      "filters": [
+        {
+          "tag": "enemy"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1,
+      "eligibility": {
+        "rule": "rule/ch6/npc/amiya_eligible",
+        "parameters": {
+          "source_configuration": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 7646380254045765734
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 7080728813803358465
+            },
+            "m_Name": "",
+            "_targetSide": 2,
+            "_targetMotion": 3,
+            "_targetCategory": 1,
+            "_postFilter": 4,
+            "_ignoreTargetFree": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_abnormalFlag": 29,
+            "_abnormalCombo": 2,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_needProfessionMask": 0,
+            "_professionMask": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_excludeAbnormalFlag": 46,
+            "_limitTargetNum": 1,
+            "_maxTargetKey": "max_target",
+            "_maxNum": 1,
+            "_excludeOwner": 0,
+            "_sortByTauntAtLast": 0,
+            "_ignoreHitRange": 0,
+            "_checkUnitType": 0,
+            "_unitTypeMask": 0,
+            "_abilityInputTargetAsSortSource": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject",
+          "defaults": {
+            "camouflage": false,
+            "can_select_camouflage": false,
+            "ally_target_free": false,
+            "target_free": false,
+            "heal_free": false,
+            "motion": 1,
+            "category": 1,
+            "profession": 0,
+            "unit_type": 1,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "abnormal_immunes": [],
+            "side": 0
+          }
+        }
+      }
+    }
+  ],
+  "projectiles": [
+    {
+      "id": "projectile/ch6/npc/amiya",
+      "kind": "projectile",
+      "motion": {
+        "rule": "rule/ch6/npc/amiya_motion"
+      },
+      "collision": {
+        "rule": "rule/ch6/npc/amiya_collision",
+        "parameters": {
+          "enabled": true,
+          "radius": 0
+        }
+      },
+      "lifetime_seconds": 10,
+      "max_hits": 1,
+      "can_hit_same_target": false,
+      "stop_after_max": true,
+      "stop_after_first": false,
+      "attach_at_launch": false,
+      "lifecycle": {
+        "source_invalid": "retain",
+        "source_hidden": "retain",
+        "target_invalid": "cancel",
+        "target_hidden": "cancel",
+        "finish_on_reach": true,
+        "hit_on_reach": true,
+        "force_reach_on_expire": true,
+        "hit_on_expire": true
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/npc_probe/amiya",
+    "ruleset": "ruleset/ark_standard",
+    "map": {
+      "rows": 3,
+      "cols": 5
+    },
+    "objectives": {},
+    "parameters": {
+      "deploy_capacity": 0
+    },
+    "resources": {
+      "dp": {
+        "initial": 0,
+        "capacity": 99
+      }
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/ch6/npc/char_002_amiya",
+        "active": false,
+        "registration_key": "char_002_amiya",
+        "position": {
+          "row": 1,
+          "col": 1
+        }
+      },
+      {
+        "definition": "unit/npc_probe/amiya_target",
+        "instanceAlias": "target",
+        "position": {
+          "row": 1,
+          "col": 2
+        }
+      },
+      {
+        "definition": "unit/npc_probe/amiya_controller",
+        "instanceAlias": "controller",
+        "position": {
+          "row": 0,
+          "col": 0
+        }
+      }
+    ]
+  }
+}

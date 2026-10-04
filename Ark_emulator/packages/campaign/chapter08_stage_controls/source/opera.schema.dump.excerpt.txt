@@ -1,0 +1,757 @@
+// Namespace: Torappu.Battle.Opera
+[CreateAssetMenu(menuName = "Torappu/Level/OperaConfig")]
+public class OperaConfig : ScriptableObject // TypeDefIndex: 11415
+{
+	// Fields
+	[SerializeField]
+	private List<OperaCommand> _commands; // 0x18
+
+	// Properties
+	public List<OperaCommand> commands { get; }
+
+	// Methods
+
+	// RVA: 0x53ABC0 Offset: 0x5393C0 VA: 0x18053ABC0
+	public List<OperaCommand> get_commands() { }
+
+	// RVA: 0x54DFC0 Offset: 0x54C7C0 VA: 0x18054DFC0
+	public void .ctor() { }
+}
+
+// Namespace: Torappu.Battle.Opera
+[Serializable]
+public struct OperaCommand // TypeDefIndex: 11416
+{
+	// Fields
+	public string key; // 0x0
+	public OperaNodeArray operaNodes; // 0x8
+	public float duration; // 0x10
+}
+
+// Namespace: Torappu.Battle.Opera
+[Usage(32767)]
+public class OperaInfoAttribute : Attribute // TypeDefIndex: 11417
+{
+	// Fields
+	public string Category; // 0x10
+	public string Description; // 0x18
+
+	// Methods
+
+	// RVA: 0xAD5540 Offset: 0xAD3D40 VA: 0x180AD5540
+	public void .ctor() { }
+}
+
+// Namespace: Torappu.Battle.Opera
+[Serializable]
+public abstract class OperaNode : IHotfixable // TypeDefIndex: 11418
+{
+	// Fields
+	[SerializeField]
+	private float _preDelay; // 0x10
+	private static DelegateBridge __Hotfix0_Execute; // 0x0
+	private static DelegateBridge __Hotfix0_get_param; // 0x8
+	private static DelegateBridge __Hotfix0_OnCompleted; // 0x10
+	private static DelegateBridge _c__Hotfix0_ctor; // 0x18
+
+	// Properties
+	public object param { get; }
+	public abstract CameraController.PostprocessMask postProcessType { get; }
+
+	// Methods
+
+	// RVA: 0xAD55B0 Offset: 0xAD3DB0 VA: 0x180AD55B0
+	public void Execute() { }
+
+	// RVA: 0xAD56E0 Offset: 0xAD3EE0 VA: 0x180AD56E0
+	public object get_param() { }
+
+	// RVA: -1 Offset: -1 Slot: 4
+	public abstract CameraController.PostprocessMask get_postProcessType();
+
+	// RVA: 0xAC7300 Offset: 0xAC5B00 VA: 0x180AC7300 Slot: 5
+	public virtual void OnCompleted() { }
+
+	// RVA: -1 Offset: -1 Slot: 6
+	protected abstract void DoExecute();
+
+	// RVA: 0xAD5680 Offset: 0xAD3E80 VA: 0x180AD5680
+	protected void .ctor() { }
+}
+
+// Namespace: Torappu.Battle.Opera
+[OperaInfo(Category = "Camera")]
+public class CameraShake : OperaNode // TypeDefIndex: 11419
+{
+	// Fields
+	[SerializeField]
+	private float _duration; // 0x18
+	[SerializeField]
+	private Vector3 _strength; // 0x1C
+	[SerializeField]
+	private int _vibrato; // 0x28
+	[SerializeField]
+	private float _randomness; // 0x2C
+	private static DelegateBridge __Hotfix0_get_postProcessType; // 0x0
+	private static DelegateBridge __Hotfix0_DoExecute; // 0x8
+	private static DelegateBridge _c__Hotfix0_ctor; // 0x10
+
+	// Properties
+	public override CameraController.PostprocessMask postProcessType { get; }
+
+	// Methods
+
+	// RVA: 0xAC6910 Offset: 0xAC5110 VA: 0x180AC6910 Slot: 4
+	public override CameraController.PostprocessMask get_postProcessType() { }
+
+	// RVA: 0xAC67B0 Offset: 0xAC4FB0 VA: 0x180AC67B0 Slot: 6
+	protected override void DoExecute() { }
+
+	// RVA: 0xAC6870 Offset: 0xAC5070 VA: 0x180AC6870
+	public void .ctor() { }
+}
+
+// Namespace: Torappu.Battle.Opera
+[OperaInfo(Category = "Camera")]
+public class MoveCamera : OperaNode // TypeDefIndex: 11420
+{
+	// Fields
+	[SerializeField]
+	private Vector3 _offset; // 0x18
+	private static DelegateBridge __Hotfix0_get_postProcessType; // 0x0
+	private static DelegateBridge __Hotfix0_DoExecute; // 0x8
+	private static DelegateBridge _c__Hotfix0_ctor; // 0x10
+
+	// Properties
+	public override CameraController.PostprocessMask postProcessType { get; }
+
+	// Methods
+
+	// RVA: 0xAD5450 Offset: 0xAD3C50 VA: 0x180AD5450 Slot: 4
+	public override CameraController.PostprocessMask get_postProcessType() { }
+
+	// RVA: 0xAD5310 Offset: 0xAD3B10 VA: 0x180AD5310 Slot: 6
+	protected override void DoExecute() { }
+
+	// RVA: 0xAD53B0 Offset: 0xAD3BB0 VA: 0x180AD53B0
+	public void .ctor() { }
+}
+
+// Namespace: 
+[CompilerGenerated]
+[Serializable]
+private sealed class ColorGrading.<>c // TypeDefIndex: 11421
+{
+	// Fields
+	public static readonly ColorGrading.<>c <>9; // 0x0
+	public static DOGetter<float> <>9__5_0; // 0x8
+	public static DOSetter<float> <>9__5_1; // 0x10
+	public static DOGetter<float> <>9__5_2; // 0x18
+	public static DOSetter<float> <>9__5_3; // 0x20
+	public static DOGetter<float> <>9__5_4; // 0x28
+	public static DOSetter<float> <>9__5_5; // 0x30
+
+	// Methods
+
+	// RVA: 0xADB4C0 Offset: 0xAD9CC0 VA: 0x180ADB4C0
+	private static void .cctor() { }
+
+	// RVA: 0x541CF0 Offset: 0x5404F0 VA: 0x180541CF0
+	public void .ctor() { }
+
+	// RVA: 0x56FBB0 Offset: 0x56E3B0 VA: 0x18056FBB0
+	internal float <DoExecute>b__5_0() { }
+
+	// RVA: 0xADB3A0 Offset: 0xAD9BA0 VA: 0x180ADB3A0
+	internal void <DoExecute>b__5_1(float val) { }
+
+	// RVA: 0xA2A7A0 Offset: 0xA28FA0 VA: 0x180A2A7A0
+	internal float <DoExecute>b__5_2() { }
+
+	// RVA: 0x53EED0 Offset: 0x53D6D0 VA: 0x18053EED0
+	internal void <DoExecute>b__5_3(float val) { }
+
+	// RVA: 0xA2A7A0 Offset: 0xA28FA0 VA: 0x180A2A7A0
+	internal float <DoExecute>b__5_4() { }
+
+	// RVA: 0xADB410 Offset: 0xAD9C10 VA: 0x180ADB410
+	internal void <DoExecute>b__5_5(float val) { }
+}
+
+// Namespace: Torappu.Battle.Opera
+[OperaInfo(Category = "Screen")]
+public class ColorGrading : OperaNode // TypeDefIndex: 11422
+{
+	// Fields
+	[SerializeField]
+	private float _fadeInTime; // 0x18
+	[SerializeField]
+	private float _keepTime; // 0x1C
+	[SerializeField]
+	private float _fadeOutTime; // 0x20
+	private static DelegateBridge __Hotfix0_get_postProcessType; // 0x0
+	private static DelegateBridge __Hotfix0_DoExecute; // 0x8
+	private static DelegateBridge __Hotfix0_OnCompleted; // 0x10
+	private static DelegateBridge _c__Hotfix0_ctor; // 0x18
+
+	// Properties
+	public override CameraController.PostprocessMask postProcessType { get; }
+
+	// Methods
+
+	// RVA: 0xAC7400 Offset: 0xAC5C00 VA: 0x180AC7400 Slot: 4
+	public override CameraController.PostprocessMask get_postProcessType() { }
+
+	// RVA: 0xAC6C50 Offset: 0xAC5450 VA: 0x180AC6C50 Slot: 6
+	protected override void DoExecute() { }
+
+	// RVA: 0xAC7270 Offset: 0xAC5A70 VA: 0x180AC7270 Slot: 5
+	public override void OnCompleted() { }
+
+	// RVA: 0xAC7360 Offset: 0xAC5B60 VA: 0x180AC7360
+	public void .ctor() { }
+
+	// RVA: 0xAC7300 Offset: 0xAC5B00 VA: 0x180AC7300
+	private void <>xLuaBaseProxy_OnCompleted() { }
+}
+
+// Namespace: Torappu.Battle.Opera
+[OperaInfo(Category = "Audio")]
+public class GlobalAudio : OperaNode, IAudioSource // TypeDefIndex: 11423
+{
+	// Fields
+	[SerializeField]
+	private string _signal; // 0x18
+	[SerializeField]
+	private Vector3 _position; // 0x20
+	private static DelegateBridge __Hotfix0_get_postProcessType; // 0x0
+	private static DelegateBridge __Hotfix0_DoExecute; // 0x8
+	private static DelegateBridge __Hotfix0_GatherAudio; // 0x10
+	private static DelegateBridge _c__Hotfix0_ctor; // 0x18
+
+	// Properties
+	public override CameraController.PostprocessMask postProcessType { get; }
+
+	// Methods
+
+	// RVA: 0xAD3220 Offset: 0xAD1A20 VA: 0x180AD3220 Slot: 4
+	public override CameraController.PostprocessMask get_postProcessType() { }
+
+	// RVA: 0xAD3020 Offset: 0xAD1820 VA: 0x180AD3020 Slot: 6
+	protected override void DoExecute() { }
+
+	// RVA: 0xAD30F0 Offset: 0xAD18F0 VA: 0x180AD30F0 Slot: 7
+	public void GatherAudio(List<string> results) { }
+
+	// RVA: 0xAD3180 Offset: 0xAD1980 VA: 0x180AD3180
+	public void .ctor() { }
+}
+
+// Namespace: Torappu.Battle.Opera
+[OperaInfo(Category = "Audio")]
+public class PlayAudio : OperaNode, IAudioSource // TypeDefIndex: 11424
+{
+	// Fields
+	[SerializeField]
+	private string _signal; // 0x18
+	private static DelegateBridge __Hotfix0_get_postProcessType; // 0x0
+	private static DelegateBridge __Hotfix0_DoExecute; // 0x8
+	private static DelegateBridge __Hotfix0_GatherAudio; // 0x10
+	private static DelegateBridge _c__Hotfix0_ctor; // 0x18
+
+	// Properties
+	public override CameraController.PostprocessMask postProcessType { get; }
+
+	// Methods
+
+	// RVA: 0xAD5CD0 Offset: 0xAD44D0 VA: 0x180AD5CD0 Slot: 4
+	public override CameraController.PostprocessMask get_postProcessType() { }
+
+	// RVA: 0xAD5950 Offset: 0xAD4150 VA: 0x180AD5950 Slot: 6
+	protected override void DoExecute() { }
+
+	// RVA: 0xAD5BA0 Offset: 0xAD43A0 VA: 0x180AD5BA0 Slot: 7
+	public void GatherAudio(List<string> results) { }
+
+	// RVA: 0xAD5C30 Offset: 0xAD4430 VA: 0x180AD5C30
+	public void .ctor() { }
+}
+
+// Namespace: Torappu.Battle.Opera
+[OperaInfo(Category = "Effect")]
+public class PlayEffect : OperaNode, IOperaEffectSource // TypeDefIndex: 11425
+{
+	// Fields
+	[SerializeField]
+	private string _effectKey; // 0x18
+	[SerializeField]
+	private bool _holdByTile; // 0x20
+	private CameraController.PostprocessMask _postProcessType; // 0x21
+	private static DelegateBridge __Hotfix0_get_postProcessType; // 0x0
+	private static DelegateBridge __Hotfix0_DoExecute; // 0x8
+	private static DelegateBridge __Hotfix0_GatherEffects; // 0x10
+	private static DelegateBridge _c__Hotfix0_ctor; // 0x18
+
+	// Properties
+	public override CameraController.PostprocessMask postProcessType { get; }
+
+	// Methods
+
+	// RVA: 0xAD63C0 Offset: 0xAD4BC0 VA: 0x180AD63C0 Slot: 4
+	public override CameraController.PostprocessMask get_postProcessType() { }
+
+	// RVA: 0xAD5EC0 Offset: 0xAD46C0 VA: 0x180AD5EC0 Slot: 6
+	protected override void DoExecute() { }
+
+	// RVA: 0xAD6290 Offset: 0xAD4A90 VA: 0x180AD6290 Slot: 7
+	public void GatherEffects(List<string> results) { }
+
+	// RVA: 0xAD6320 Offset: 0xAD4B20 VA: 0x180AD6320
+	public void .ctor() { }
+}
+
+// Namespace: 
+[CompilerGenerated]
+private sealed class PlayScreenEffect.<>c__DisplayClass8_0 // TypeDefIndex: 11426
+{
+	// Fields
+	public PlayScreenEffect <>4__this; // 0x10
+	public Animator animator; // 0x18
+
+	// Methods
+
+	// RVA: 0x541CF0 Offset: 0x5404F0 VA: 0x180541CF0
+	public void .ctor() { }
+
+	// RVA: 0xADB480 Offset: 0xAD9C80 VA: 0x180ADB480
+	internal void <DoExecute>b__0() { }
+}
+
+// Namespace: Torappu.Battle.Opera
+[OperaInfo(Category = "Effect")]
+public class PlayScreenEffect : OperaNode, IOperaEffectSource // TypeDefIndex: 11427
+{
+	// Fields
+	[SerializeField]
+	private string _effectKey; // 0x18
+	[SerializeField]
+	private bool _holdEffect; // 0x20
+	[SerializeField]
+	private bool _needDelaySetBoolForEffect; // 0x21
+	[SerializeField]
+	private float _time; // 0x24
+	[SerializeField]
+	private string _key; // 0x28
+	[SerializeField]
+	private bool _flag; // 0x30
+	private static DelegateBridge __Hotfix0_get_postProcessType; // 0x0
+	private static DelegateBridge __Hotfix0_DoExecute; // 0x8
+	private static DelegateBridge __Hotfix0_GatherEffects; // 0x10
+	private static DelegateBridge _c__Hotfix0_ctor; // 0x18
+
+	// Properties
+	public override CameraController.PostprocessMask postProcessType { get; }
+
+	// Methods
+
+	// RVA: 0xAD6CE0 Offset: 0xAD54E0 VA: 0x180AD6CE0 Slot: 4
+	public override CameraController.PostprocessMask get_postProcessType() { }
+
+	// RVA: 0xAD68C0 Offset: 0xAD50C0 VA: 0x180AD68C0 Slot: 6
+	protected override void DoExecute() { }
+
+	// RVA: 0xAD6B80 Offset: 0xAD5380 VA: 0x180AD6B80 Slot: 7
+	public void GatherEffects(List<string> results) { }
+
+	// RVA: 0xAD6C10 Offset: 0xAD5410 VA: 0x180AD6C10
+	public void .ctor() { }
+}
+
+// Namespace: Torappu.Battle.Opera
+[OperaInfo(Category = "Effect")]
+public class PlayCameraEffect : OperaNode // TypeDefIndex: 11428
+{
+	// Fields
+	[SerializeField]
+	private string _effectKey; // 0x18
+	private static DelegateBridge __Hotfix0_get_postProcessType; // 0x0
+	private static DelegateBridge __Hotfix0_DoExecute; // 0x8
+	private static DelegateBridge _c__Hotfix0_ctor; // 0x10
+
+	// Properties
+	public override CameraController.PostprocessMask postProcessType { get; }
+
+	// Methods
+
+	// RVA: 0xAD5E60 Offset: 0xAD4660 VA: 0x180AD5E60 Slot: 4
+	public override CameraController.PostprocessMask get_postProcessType() { }
+
+	// RVA: 0xAD5D30 Offset: 0xAD4530 VA: 0x180AD5D30 Slot: 6
+	protected override void DoExecute() { }
+
+	// RVA: 0xAD5DC0 Offset: 0xAD45C0 VA: 0x180AD5DC0
+	public void .ctor() { }
+}
+
+// Namespace: Torappu.Battle.Opera
+[OperaInfo(Category = "Effect")]
+public class PlayMapEffect : OperaNode, IOperaEffectSource // TypeDefIndex: 11429
+{
+	// Fields
+	[SerializeField]
+	private string _effectKey; // 0x18
+	[SerializeField]
+	private bool _holdByTile; // 0x20
+	private static DelegateBridge __Hotfix0_get_postProcessType; // 0x0
+	private static DelegateBridge __Hotfix0_DoExecute; // 0x8
+	private static DelegateBridge __Hotfix0_GatherEffects; // 0x10
+	private static DelegateBridge _c__Hotfix0_ctor; // 0x18
+
+	// Properties
+	public override CameraController.PostprocessMask postProcessType { get; }
+
+	// Methods
+
+	// RVA: 0xAD6860 Offset: 0xAD5060 VA: 0x180AD6860 Slot: 4
+	public override CameraController.PostprocessMask get_postProcessType() { }
+
+	// RVA: 0xAD6420 Offset: 0xAD4C20 VA: 0x180AD6420 Slot: 6
+	protected override void DoExecute() { }
+
+	// RVA: 0xAD6730 Offset: 0xAD4F30 VA: 0x180AD6730 Slot: 7
+	public void GatherEffects(List<string> results) { }
+
+	// RVA: 0xAD67C0 Offset: 0xAD4FC0 VA: 0x180AD67C0
+	public void .ctor() { }
+}
+
+// Namespace: Torappu.Battle.Opera
+[OperaInfo(Category = "Effect")]
+public class FinishHoldEffectIfExist : OperaNode // TypeDefIndex: 11430
+{
+	// Fields
+	private static DelegateBridge __Hotfix0_get_postProcessType; // 0x0
+	private static DelegateBridge __Hotfix0_DoExecute; // 0x8
+	private static DelegateBridge _c__Hotfix0_ctor; // 0x10
+
+	// Properties
+	public override CameraController.PostprocessMask postProcessType { get; }
+
+	// Methods
+
+	// RVA: 0xACDE90 Offset: 0xACC690 VA: 0x180ACDE90 Slot: 4
+	public override CameraController.PostprocessMask get_postProcessType() { }
+
+	// RVA: 0xACDD70 Offset: 0xACC570 VA: 0x180ACDD70 Slot: 6
+	protected override void DoExecute() { }
+
+	// RVA: 0xACDDF0 Offset: 0xACC5F0 VA: 0x180ACDDF0
+	public void .ctor() { }
+}
+
+// Namespace: Torappu.Battle.Opera
+[OperaInfo(Category = "Effect")]
+public class FinishTileHoldEffect : OperaNode // TypeDefIndex: 11431
+{
+	// Fields
+	[SerializeField]
+	private string _effectKey; // 0x18
+	private static DelegateBridge __Hotfix0_get_postProcessType; // 0x0
+	private static DelegateBridge __Hotfix0_DoExecute; // 0x8
+	private static DelegateBridge _c__Hotfix0_ctor; // 0x10
+
+	// Properties
+	public override CameraController.PostprocessMask postProcessType { get; }
+
+	// Methods
+
+	// RVA: 0xACE180 Offset: 0xACC980 VA: 0x180ACE180 Slot: 4
+	public override CameraController.PostprocessMask get_postProcessType() { }
+
+	// RVA: 0xACDEF0 Offset: 0xACC6F0 VA: 0x180ACDEF0 Slot: 6
+	protected override void DoExecute() { }
+
+	// RVA: 0xACE0E0 Offset: 0xACC8E0 VA: 0x180ACE0E0
+	public void .ctor() { }
+}
+
+// Namespace: Torappu.Battle.Opera
+[OperaInfo(Category = "Tile")]
+public class RewriteTileOptionsInArea : OperaNode // TypeDefIndex: 11432
+{
+	// Fields
+	[SerializeField]
+	private GridPosition _min; // 0x18
+	[SerializeField]
+	private GridPosition _max; // 0x20
+	[SerializeField]
+	private BuildableType _buildableType; // 0x28
+	[SerializeField]
+	private bool _restoreOptions; // 0x2C
+	private static DelegateBridge __Hotfix0_get_postProcessType; // 0x0
+	private static DelegateBridge __Hotfix0_DoExecute; // 0x8
+	private static DelegateBridge __Hotfix0__CheckInArea; // 0x10
+	private static DelegateBridge _c__Hotfix0_ctor; // 0x18
+
+	// Properties
+	public override CameraController.PostprocessMask postProcessType { get; }
+
+	// Methods
+
+	// RVA: 0xAD7130 Offset: 0xAD5930 VA: 0x180AD7130 Slot: 4
+	public override CameraController.PostprocessMask get_postProcessType() { }
+
+	// RVA: 0xAD6D40 Offset: 0xAD5540 VA: 0x180AD6D40 Slot: 6
+	protected override void DoExecute() { }
+
+	// RVA: 0xAD6F20 Offset: 0xAD5720 VA: 0x180AD6F20
+	private bool _CheckInArea(GridPosition grid) { }
+
+	// RVA: 0xAD7090 Offset: 0xAD5890 VA: 0x180AD7090
+	public void .ctor() { }
+}
+
+// Namespace: Torappu.Battle.Opera
+[OperaInfo(Category = "Buff")]
+public class CreateBuffInArea : OperaNode, IBuffSource // TypeDefIndex: 11433
+{
+	// Fields
+	[SerializeField]
+	private GridPosition _min; // 0x18
+	[SerializeField]
+	private GridPosition _max; // 0x20
+	[SerializeField]
+	private BuffData _buff; // 0x28
+	private static DelegateBridge __Hotfix0_get_postProcessType; // 0x0
+	private static DelegateBridge __Hotfix0_DoExecute; // 0x8
+	private static DelegateBridge __Hotfix0_GatherBuffs; // 0x10
+	private static DelegateBridge __Hotfix0__CheckInArea; // 0x18
+	private static DelegateBridge _c__Hotfix0_ctor; // 0x20
+
+	// Properties
+	public override CameraController.PostprocessMask postProcessType { get; }
+
+	// Methods
+
+	// RVA: 0xACA050 Offset: 0xAC8850 VA: 0x180ACA050 Slot: 4
+	public override CameraController.PostprocessMask get_postProcessType() { }
+
+	// RVA: 0xAC9A40 Offset: 0xAC8240 VA: 0x180AC9A40 Slot: 6
+	protected override void DoExecute() { }
+
+	// RVA: 0xAC9D60 Offset: 0xAC8560 VA: 0x180AC9D60 Slot: 7
+	public void GatherBuffs(List<BuffData> results) { }
+
+	// RVA: 0xAC9DF0 Offset: 0xAC85F0 VA: 0x180AC9DF0
+	private bool _CheckInArea(GridPosition grid) { }
+
+	// RVA: 0xAC9F60 Offset: 0xAC8760 VA: 0x180AC9F60
+	public void .ctor() { }
+}
+
+// Namespace: Torappu.Battle.Opera
+[OperaInfo(Category = "Buff")]
+public class CreateBuffToCertainId : OperaNode, IBuffSource // TypeDefIndex: 11434
+{
+	// Fields
+	[SerializeField]
+	private string _id; // 0x18
+	[SerializeField]
+	private BuffData _buff; // 0x20
+	private static DelegateBridge __Hotfix0_get_postProcessType; // 0x0
+	private static DelegateBridge __Hotfix0_DoExecute; // 0x8
+	private static DelegateBridge __Hotfix0_GatherBuffs; // 0x10
+	private static DelegateBridge _c__Hotfix0_ctor; // 0x18
+
+	// Properties
+	public override CameraController.PostprocessMask postProcessType { get; }
+
+	// Methods
+
+	// RVA: 0xACA560 Offset: 0xAC8D60 VA: 0x180ACA560 Slot: 4
+	public override CameraController.PostprocessMask get_postProcessType() { }
+
+	// RVA: 0xACA0B0 Offset: 0xAC88B0 VA: 0x180ACA0B0 Slot: 6
+	protected override void DoExecute() { }
+
+	// RVA: 0xACA3E0 Offset: 0xAC8BE0 VA: 0x180ACA3E0 Slot: 7
+	public void GatherBuffs(List<BuffData> results) { }
+
+	// RVA: 0xACA470 Offset: 0xAC8C70 VA: 0x180ACA470
+	public void .ctor() { }
+}
+
+// Namespace: Torappu.Battle.Opera
+[OperaInfo(Category = "Common")]
+public class PauseGame : OperaNode // TypeDefIndex: 11435
+{
+	// Fields
+	[SerializeField]
+	private Consts.BattlePauseKey _pauseKey; // 0x18
+	[SerializeField]
+	private bool _isPause; // 0x1C
+	private static DelegateBridge __Hotfix0_get_postProcessType; // 0x0
+	private static DelegateBridge __Hotfix0_DoExecute; // 0x8
+	private static DelegateBridge _c__Hotfix0_ctor; // 0x10
+
+	// Properties
+	public override CameraController.PostprocessMask postProcessType { get; }
+
+	// Methods
+
+	// RVA: 0xAD58F0 Offset: 0xAD40F0 VA: 0x180AD58F0 Slot: 4
+	public override CameraController.PostprocessMask get_postProcessType() { }
+
+	// RVA: 0xAD57B0 Offset: 0xAD3FB0 VA: 0x180AD57B0 Slot: 6
+	protected override void DoExecute() { }
+
+	// RVA: 0xAD5840 Offset: 0xAD4040 VA: 0x180AD5840
+	public void .ctor() { }
+}
+
+// Namespace: Torappu.Battle.Opera
+[OperaInfo(Category = "Common")]
+public class SetSpawnEnemyAllowance : OperaNode // TypeDefIndex: 11436
+{
+	// Fields
+	[SerializeField]
+	private bool _isEnableSpawnEnemy; // 0x18
+	private static DelegateBridge __Hotfix0_get_postProcessType; // 0x0
+	private static DelegateBridge __Hotfix0_DoExecute; // 0x8
+	private static DelegateBridge _c__Hotfix0_ctor; // 0x10
+
+	// Properties
+	public override CameraController.PostprocessMask postProcessType { get; }
+
+	// Methods
+
+	// RVA: 0xAD72D0 Offset: 0xAD5AD0 VA: 0x180AD72D0 Slot: 4
+	public override CameraController.PostprocessMask get_postProcessType() { }
+
+	// RVA: 0xAD7190 Offset: 0xAD5990 VA: 0x180AD7190 Slot: 6
+	protected override void DoExecute() { }
+
+	// RVA: 0xAD7230 Offset: 0xAD5A30 VA: 0x180AD7230
+	public void .ctor() { }
+}
+
+// Namespace: Torappu.Battle.Opera
+[OperaInfo(Category = "Common")]
+public class KillAllEnemy : OperaNode // TypeDefIndex: 11437
+{
+	// Fields
+	[SerializeField]
+	private bool _finishCurrentWave; // 0x18
+	[SerializeField]
+	private bool _checkEnemyLevelMask; // 0x19
+	[SerializeField]
+	private EnemyLevelMask _enemyLevelMask; // 0x1C
+	private static DelegateBridge __Hotfix0_get_postProcessType; // 0x0
+	private static DelegateBridge __Hotfix0_DoExecute; // 0x8
+	private static DelegateBridge _c__Hotfix0_ctor; // 0x10
+
+	// Properties
+	public override CameraController.PostprocessMask postProcessType { get; }
+
+	// Methods
+
+	// RVA: 0xAD3E60 Offset: 0xAD2660 VA: 0x180AD3E60 Slot: 4
+	public override CameraController.PostprocessMask get_postProcessType() { }
+
+	// RVA: 0xAD3A30 Offset: 0xAD2230 VA: 0x180AD3A30 Slot: 6
+	protected override void DoExecute() { }
+
+	// RVA: 0xAD3DB0 Offset: 0xAD25B0 VA: 0x180AD3DB0
+	public void .ctor() { }
+}
+
+// Namespace: Torappu.Battle.Opera
+[OperaInfo(Category = "Common")]
+public class KillAllNeutral : OperaNode // TypeDefIndex: 11438
+{
+	// Fields
+	private static DelegateBridge __Hotfix0_get_postProcessType; // 0x0
+	private static DelegateBridge __Hotfix0_DoExecute; // 0x8
+	private static DelegateBridge _c__Hotfix0_ctor; // 0x10
+
+	// Properties
+	public override CameraController.PostprocessMask postProcessType { get; }
+
+	// Methods
+
+	// RVA: 0xAD4230 Offset: 0xAD2A30 VA: 0x180AD4230 Slot: 4
+	public override CameraController.PostprocessMask get_postProcessType() { }
+
+	// RVA: 0xAD3EC0 Offset: 0xAD26C0 VA: 0x180AD3EC0 Slot: 6
+	protected override void DoExecute() { }
+
+	// RVA: 0xAD4190 Offset: 0xAD2990 VA: 0x180AD4190
+	public void .ctor() { }
+}
+
+// Namespace: Torappu.Battle.Opera
+[OperaInfo(Category = "Common")]
+public class KillAllCharacter : OperaNode // TypeDefIndex: 11439
+{
+	// Fields
+	[SerializeField]
+	private bool _killCharacter; // 0x18
+	[SerializeField]
+	private bool _respawnTimeDecByRatio; // 0x19
+	[SerializeField]
+	private float _respawnTimeDecRatio; // 0x1C
+	[SerializeField]
+	private bool _killTrap; // 0x20
+	[SerializeField]
+	private bool _killToken; // 0x21
+	[SerializeField]
+	private bool _forceWithdraw; // 0x22
+	private static DelegateBridge __Hotfix0_get_postProcessType; // 0x0
+	private static DelegateBridge __Hotfix0_DoExecute; // 0x8
+	private static DelegateBridge _c__Hotfix0_ctor; // 0x10
+
+	// Properties
+	public override CameraController.PostprocessMask postProcessType { get; }
+
+	// Methods
+
+	// RVA: 0xAD39D0 Offset: 0xAD21D0 VA: 0x180AD39D0 Slot: 4
+	public override CameraController.PostprocessMask get_postProcessType() { }
+
+	// RVA: 0xAD3480 Offset: 0xAD1C80 VA: 0x180AD3480 Slot: 6
+	protected override void DoExecute() { }
+
+	// RVA: 0xAD3920 Offset: 0xAD2120 VA: 0x180AD3920
+	public void .ctor() { }
+}
+
+// Namespace: Torappu.Battle.Opera
+[OperaInfo(Category = "Act46Side")]
+public class Act46SideCreateOrCleanMapEffect : OperaNode // TypeDefIndex: 11440
+{
+	// Fields
+	[SerializeField]
+	private string _effectKey; // 0x18
+	[SerializeField]
+	private Vector3 _pos; // 0x20
+	[SerializeField]
+	private bool _isClean; // 0x2C
+	private static DelegateBridge __Hotfix0_get_postProcessType; // 0x0
+	private static DelegateBridge __Hotfix0_DoExecute; // 0x8
+	private static DelegateBridge _c__Hotfix0_ctor; // 0x10
+
+	// Properties
+	public override CameraController.PostprocessMask postProcessType { get; }
+
+	// Methods
+
+	// RVA: 0xAC5CB0 Offset: 0xAC44B0 VA: 0x180AC5CB0 Slot: 4
+	public override CameraController.PostprocessMask get_postProcessType() { }
+
+	// RVA: 0xAC5AA0 Offset: 0xAC42A0 VA: 0x180AC5AA0 Slot: 6
+	protected override void DoExecute() { }
+
+	// RVA: 0xAC5C10 Offset: 0xAC4410 VA: 0x180AC5C10
+	public void .ctor() { }
+}
+

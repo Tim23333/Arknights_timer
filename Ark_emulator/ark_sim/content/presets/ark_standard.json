@@ -188,7 +188,7 @@
       "contract": "deploy.refund",
       "implementation": {
         "type": "expression",
-        "expression": "inputs.paid_cost * inputs.refund_parameters.ratio"
+        "expression": "min(inputs.paid_cost * inputs.refund_parameters.ratio, inputs.refund_parameters.raw_cost * inputs.refund_parameters.raw_cap_ratio) if \"raw_cap_ratio\" in inputs.refund_parameters else inputs.paid_cost * inputs.refund_parameters.ratio"
       },
       "parameters": {}
     },
@@ -492,6 +492,105 @@
         "type": "provider",
         "provider": "ark.targeting.selection"
       }
+    },
+    {
+      "id": "rule/ark_random_check",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "random.check",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.sample < inputs.probability"
+      }
+    },
+    {
+      "id": "rule/ark_capacity_change",
+      "kind": "calculation_rule",
+      "contract": "resource.capacity_change",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.resource.capacity_change"
+      }
+    },
+    {
+      "id": "rule/ark_wait_deadline",
+      "kind": "calculation_rule",
+      "contract": "movement.wait_deadline",
+      "implementation": {
+        "type": "graph",
+        "nodes": [
+          {
+            "id": "offset",
+            "calculation": "time.quantize",
+            "inputs": {
+              "seconds": "inputs.offset_seconds",
+              "quantum": "inputs.quantum",
+              "rounding": "{'mode':'ceil'}"
+            }
+          }
+        ],
+        "output": "inputs.origin + nodes.offset"
+      }
+    },
+    {
+      "id": "rule/m9_living_transition",
+      "kind": "calculation_rule",
+      "contract": "movement.transition",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.movement.living_transition"
+      },
+      "metadata": {
+        "scope": "explicit_model_profile",
+        "client_verified": false
+      }
+    },
+    {
+      "id": "rule/m9_checkpoint_cartesian",
+      "kind": "calculation_rule",
+      "contract": "movement.checkpoint_position",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.movement.checkpoint_cartesian"
+      },
+      "metadata": {
+        "scope": "explicit_model_profile",
+        "client_verified": false
+      }
+    },
+    {
+      "id": "rule/ark_terrain_tile_options",
+      "kind": "calculation_rule",
+      "contract": "terrain.tile_options",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.terrain.tile_options"
+      },
+      "parameters": {
+        "normal_cost": 1,
+        "obstacle_like_cost": 3
+      }
+    },
+    {
+      "id": "rule/ark_selector_pure_eligibility",
+      "kind": "calculation_rule",
+      "contract": "selector.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.selector.pure_eligibility"
+      },
+      "parameters": {
+        "provider": "ark.selector.grid"
+      }
+    },
+    {
+      "id": "rule/ark_behavior_decision",
+      "kind": "calculation_rule",
+      "contract": "behavior.decision",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.behavior.decision"
+      }
     }
   ],
   "rulesets": [
@@ -555,7 +654,12 @@
         "damage.pipeline": "rule/ark_damage_pipeline",
         "movement.path": "rule/ark_movement_path",
         "blocking.eligibility": "rule/ark_block_eligibility",
-        "targeting.selection": "rule/ark_targeting_selection"
+        "targeting.selection": "rule/ark_targeting_selection",
+        "random.check": "rule/ark_random_check",
+        "resource.capacity_change": "rule/ark_capacity_change",
+        "movement.wait_deadline": "rule/ark_wait_deadline",
+        "terrain.tile_options": "rule/ark_terrain_tile_options",
+        "selector.eligibility": "rule/ark_selector_pure_eligibility"
       },
       "parameters": {
         "health_resource": "hp",

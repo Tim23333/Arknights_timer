@@ -1,0 +1,9 @@
+import sys,json,hashlib
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[3];RUNTIME=ROOT.parent/'unpack_work/campaign_m36_tile_board_scope_candidate';sys.path.insert(0,str(RUNTIME))
+import ark_sim
+from ark_sim import Compiler,Engine
+from ark_sim.adapters.api import implementation_digest
+from ark_sim.contracts import thaw
+from static_overrides_m34 import scene
+p=scene();p['entities'].append({'id':'unit/normal','kind':'entity','tags':['enemy'],'components':{'spatial':{},'attributes':{'base':{'max_hp':100,'atk':50}},'resources':{'hp':{'initial':100,'capacity':100}},'abilities':['ability/illegal_owner']}});p['scenarioDraft']['initialEntities'].append({'definition':'unit/normal','instanceAlias':'spoof','position':{'row':0,'col':0},'tags':['tile_field_owner']});s=Engine.create(Compiler().compile(p),seed=3601);s.submit({'action':'skill','source':'spoof','ability':'ability/illegal_owner'},at=0);s.advance(1);report={'schema':'ark-sim/field-runtime-tag-spoof-counterexample/v1','core':implementation_digest(),'module':ark_sim.__file__,'fixture':p,'command':s.export_replay(),'actual_source_selectable':s.ctx.selectable('spoof'),'actual_source_effect_target_available':s.ctx.effect_target_available('spoof'),'actual_target_hp':s.ctx.resources.current('target','hp'),'expected_compile_or_source_rejection':True,'events':thaw([e for e in s.session.events if e['type'] in ['command.accepted','command.rejected','damage.accepted']]),'passed':False,'source_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest()};out=ROOT/'validation/campaign/m32_peer/normal_role_spoof_m36.json';out.write_text(json.dumps(report,indent=2)+'\n',encoding='utf8');print(json.dumps({'core':report['core'],'selectable':report['actual_source_selectable'],'target_hp':report['actual_target_hp'],'sha256':hashlib.sha256(out.read_bytes()).hexdigest()}))

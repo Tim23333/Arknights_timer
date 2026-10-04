@@ -1,0 +1,712 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/ch5/faust/combat_partial",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "source_locks": {
+        "packages\\campaign\\chapter05_sources\\native.reference.json": "323baee04eca79f6e750cf45d460ffe678667c1614763814436402e8187badd5"
+      },
+      "builder_sha": "351f87b315ccabf5e4e2de1927c24fa4525afea9df2a5bda06031358dfdf917e",
+      "status": "combat_consumer_pending_peer_and_SummonBallis",
+      "full_stage_executed": false,
+      "client_verified": false,
+      "stage_rules": {
+        "blocking.eligibility": "rule/ch5/faust/block_policy"
+      },
+      "policies": {
+        "range": "DB20 scaled circle",
+        "target_order": "highest raw taunt then latest entity id; replaceable",
+        "invincible": "150s actor damage afterhook cancels packet; active_rule enables exact expiry settle",
+        "critical_clock": "shared normal5s, cooldown17 from cast finish; explicit reference; source body unverified",
+        "projectile": "planar homing10/s trace point, source_retire retain, lifetime5 force hit; native camera/collider unverified"
+      },
+      "pending": [
+        "SummonBallis15/30 priority1 Skill2frame27/50 andbranch7/10",
+        "Actual ballista consumers/full5-10"
+      ]
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/ch5/faust/level0",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "boss",
+        "faust"
+      ],
+      "metadata": {
+        "native_variant_id": "enemy_1508_faust@0/86350d42c005ccb6",
+        "native_reference": {
+          "useDb": true,
+          "id": "enemy_1508_faust",
+          "level": 0,
+          "overwrittenData": null
+        }
+      },
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 37000,
+            "atk": 1000,
+            "def": 350,
+            "mres": 35,
+            "move_speed": 0.5,
+            "attack_interval": 5,
+            "attack_speed_ratio": 1,
+            "mass_level": 5,
+            "block_cost": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 37000,
+            "capacity_attribute": "max_hp",
+            "role": "health"
+          }
+        },
+        "spatial": {
+          "motion_mode": 0,
+          "steering": {
+            "rule": "rule/ch5/faust/steering",
+            "parameters": {
+              "response_factor": 8.0,
+              "max_acceleration": 10.0,
+              "arrival_radius": 0.05
+            }
+          }
+        },
+        "selection_state": {
+          "side": 1,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 2,
+          "abnormal_immunes": [
+            0,
+            12,
+            18
+          ],
+          "abnormal_flags": [
+            3
+          ],
+          "abnormal_combo_immunes": [
+            0
+          ]
+        },
+        "buffs": {
+          "initial": [
+            "buff/ch5/faust/invincible"
+          ]
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle",
+          "leak_loss": 2
+        },
+        "abilities": [
+          "ability/ch5/faust/normal",
+          "ability/ch5/faust/critical"
+        ],
+        "ability_arbitration": {
+          "priority_order": "higher_first",
+          "busy": "all_casts",
+          "entries": [
+            {
+              "ability": "ability/ch5/faust/critical",
+              "priority": 0,
+              "attack_clock": true,
+              "require_attack_control": true,
+              "condition": "True",
+              "parameters": {}
+            },
+            {
+              "ability": "ability/ch5/faust/normal",
+              "priority": -1,
+              "attack_clock": true,
+              "require_attack_control": true,
+              "condition": "True",
+              "parameters": {}
+            }
+          ]
+        },
+        "behavior": {
+          "machine": "behavior/ch5/faust/combat"
+        }
+      }
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/ch5/faust/normal",
+      "kind": "ability",
+      "selector": "selector/ch5/faust/target",
+      "rules": {
+        "targeting.score": "rule/ch5/faust/score"
+      },
+      "duration_seconds": 3,
+      "activation": {
+        "mode": "automatic_attack",
+        "parameters": {
+          "auto_only": true
+        }
+      },
+      "timeline": [
+        {
+          "at": 40,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1,
+            "projectile_definition": "projectile/ch5/faust/normal",
+            "damage_flags": {
+              "source_attack_type": "NORMAL",
+              "ignore_for_sp": false
+            },
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            }
+          }
+        }
+      ],
+      "metadata": {
+        "source_combat": {
+          "m_GameObject": {
+            "m_FileID": 0,
+            "m_PathID": 6906787289429336426
+          },
+          "m_Enabled": 1,
+          "m_Script": {
+            "m_FileID": 1,
+            "m_PathID": 4156651312234227407
+          },
+          "m_Name": "",
+          "_selector": {
+            "m_FileID": 0,
+            "m_PathID": 0
+          },
+          "_metadata": {
+            "namedAsAlias": "",
+            "blackboardPrefix": ""
+          },
+          "_interruptAbilityOnDetach": 0,
+          "_attachPassiveBuffsOnDummy": 1,
+          "_ignoreIfOwnerDead": 0,
+          "_forceAsDmgOrHealAbility": 0,
+          "_waitForAttackEvent": 1,
+          "_interuptIfTargetDead": 0,
+          "_resetCdStrategy": 1,
+          "_selectTargetSource": 2,
+          "_selectTargetTiming": 0,
+          "_timeMode": 0,
+          "_alwaysIncludeTarget": 1,
+          "_allowNoTarget": 0,
+          "_animKey": "Attack",
+          "_endAnimKey": "Idle",
+          "_downAnimKey": "",
+          "_downEndAnimKey": "",
+          "_upAnimKey": "",
+          "_upEndAnimKey": "",
+          "_cooldown": 0.0,
+          "_cooldownKey": "duration",
+          "_preDelay": 0.0,
+          "_escapeTime": 0.0,
+          "_faceToTarget": 1,
+          "_faceToDefault": 0,
+          "_faceToFront": 0,
+          "_faceToFirstCastTarget": 0,
+          "_checkFaceToFirstCastTargetDownAttack": 0,
+          "_forceFaceToDirection": 0,
+          "_activeBuffs": [],
+          "_maxAnimScale": 1.0,
+          "_onlyPlayEndAnimWhenIsLastAbility": 0,
+          "_ignorePalsyInterrupt": 0,
+          "_affectedBySlowDown": 1,
+          "_atkScale": 1.0,
+          "_atkScaleKey": "atk_scale",
+          "_attackType": 1,
+          "_elementDamageType": 0,
+          "_epDamageRatio": 0.0,
+          "_useDynamicAttackType": 0,
+          "_deliveryParaWhenReplaceActionNode": 0,
+          "_projectileKey": "projectile_faust",
+          "_mountPointType": 2,
+          "_useMountGroup": 0,
+          "_mountGroup": {
+            "loopType": 0,
+            "mountPoints": []
+          },
+          "_damageType": 1,
+          "_waitForProjectileInvalid": 0,
+          "_notClearProjectileWhenCastEnd": 0,
+          "_fireAttackFinishWhenProjectileInvalid": 0,
+          "_minPostDelayWhenProjectileInvalid": 0.0,
+          "_waitForAnimEndWhenProjectileInvalid": 0,
+          "_projectileDestination": 0,
+          "_extraDamageType": 0,
+          "_emitToInputPosWhenTargetIsInvalid": 0,
+          "_emitToInputRootTileWhenTargetIsInvalid": 0,
+          "_useCachedAtkOnly": 0,
+          "_transferSource": 0,
+          "_extraProjectileKeys": [],
+          "_fireCreateProjectileEvent": 0
+        },
+        "source_animation": {
+          "duration": {
+            "source_seconds_float32": 3.0,
+            "seconds": 3.0,
+            "frame": 90,
+            "exact_authored_frame": true
+          },
+          "events": [
+            {
+              "name": "OnAttack",
+              "source_seconds_float32": 1.3333333730697632,
+              "seconds": 1.3333333333333333,
+              "frame": 40,
+              "exact_authored_frame": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ability/ch5/faust/critical",
+      "kind": "ability",
+      "selector": "selector/ch5/faust/target",
+      "rules": {
+        "targeting.score": "rule/ch5/faust/score"
+      },
+      "duration_seconds": 3,
+      "activation": {
+        "mode": "manual",
+        "parameters": {
+          "auto_only": true
+        }
+      },
+      "timeline": [
+        {
+          "at": 40,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 2,
+            "projectile_definition": "projectile/ch5/faust/critical",
+            "damage_flags": {
+              "source_attack_type": "NORMAL",
+              "ignore_for_sp": false
+            },
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            }
+          }
+        }
+      ],
+      "metadata": {
+        "source_combat": {
+          "m_GameObject": {
+            "m_FileID": 0,
+            "m_PathID": 7130966083545358698
+          },
+          "m_Enabled": 1,
+          "m_Script": {
+            "m_FileID": 1,
+            "m_PathID": 4156651312234227407
+          },
+          "m_Name": "",
+          "_selector": {
+            "m_FileID": 0,
+            "m_PathID": 0
+          },
+          "_metadata": {
+            "namedAsAlias": "",
+            "blackboardPrefix": ""
+          },
+          "_interruptAbilityOnDetach": 0,
+          "_attachPassiveBuffsOnDummy": 1,
+          "_ignoreIfOwnerDead": 0,
+          "_forceAsDmgOrHealAbility": 0,
+          "_waitForAttackEvent": 1,
+          "_interuptIfTargetDead": 0,
+          "_resetCdStrategy": 1,
+          "_selectTargetSource": 2,
+          "_selectTargetTiming": 0,
+          "_timeMode": 0,
+          "_alwaysIncludeTarget": 1,
+          "_allowNoTarget": 0,
+          "_animKey": "Skill_1",
+          "_endAnimKey": "Idle",
+          "_downAnimKey": "",
+          "_downEndAnimKey": "",
+          "_upAnimKey": "",
+          "_upEndAnimKey": "",
+          "_cooldown": 0.0,
+          "_cooldownKey": "duration",
+          "_preDelay": 0.0,
+          "_escapeTime": 0.0,
+          "_faceToTarget": 1,
+          "_faceToDefault": 0,
+          "_faceToFront": 0,
+          "_faceToFirstCastTarget": 0,
+          "_checkFaceToFirstCastTargetDownAttack": 0,
+          "_forceFaceToDirection": 0,
+          "_activeBuffs": [],
+          "_maxAnimScale": 1.0,
+          "_onlyPlayEndAnimWhenIsLastAbility": 0,
+          "_ignorePalsyInterrupt": 0,
+          "_affectedBySlowDown": 1,
+          "_atkScale": 1.0,
+          "_atkScaleKey": "atk_scale",
+          "_attackType": 1,
+          "_elementDamageType": 0,
+          "_epDamageRatio": 0.0,
+          "_useDynamicAttackType": 0,
+          "_deliveryParaWhenReplaceActionNode": 0,
+          "_projectileKey": "projectile_faust_s1",
+          "_mountPointType": 2,
+          "_useMountGroup": 0,
+          "_mountGroup": {
+            "loopType": 0,
+            "mountPoints": []
+          },
+          "_damageType": 1,
+          "_waitForProjectileInvalid": 0,
+          "_notClearProjectileWhenCastEnd": 0,
+          "_fireAttackFinishWhenProjectileInvalid": 0,
+          "_minPostDelayWhenProjectileInvalid": 0.0,
+          "_waitForAnimEndWhenProjectileInvalid": 0,
+          "_projectileDestination": 0,
+          "_extraDamageType": 0,
+          "_emitToInputPosWhenTargetIsInvalid": 0,
+          "_emitToInputRootTileWhenTargetIsInvalid": 0,
+          "_useCachedAtkOnly": 0,
+          "_transferSource": 0,
+          "_extraProjectileKeys": [],
+          "_fireCreateProjectileEvent": 0
+        },
+        "source_animation": {
+          "duration": {
+            "source_seconds_float32": 3.0,
+            "seconds": 3.0,
+            "frame": 90,
+            "exact_authored_frame": true
+          },
+          "events": [
+            {
+              "name": "OnAttack",
+              "source_seconds_float32": 1.3333333730697632,
+              "seconds": 1.3333333333333333,
+              "frame": 40,
+              "exact_authored_frame": true
+            }
+          ]
+        }
+      },
+      "initial_cooldown_seconds": 17,
+      "cooldown_seconds": 17
+    }
+  ],
+  "projectiles": [
+    {
+      "id": "projectile/ch5/faust/normal",
+      "kind": "projectile",
+      "motion": {
+        "rule": "rule/ch5/faust/trajectory",
+        "parameters": {
+          "mode": "homing",
+          "speed": 10
+        }
+      },
+      "collision": {
+        "rule": "rule/ch5/faust/collision",
+        "parameters": {
+          "enabled": true,
+          "radius": 0
+        }
+      },
+      "lifetime_seconds": 5,
+      "max_hits": 1,
+      "can_hit_same_target": false,
+      "stop_after_max": true,
+      "stop_after_first": false,
+      "attach_at_launch": false,
+      "lifecycle": {
+        "source_invalid": "retain",
+        "source_hidden": "retain",
+        "target_invalid": "cancel",
+        "target_hidden": "cancel",
+        "finish_on_reach": true,
+        "hit_on_reach": true,
+        "force_reach_on_expire": true,
+        "hit_on_expire": true
+      },
+      "on_invalid": []
+    },
+    {
+      "id": "projectile/ch5/faust/critical",
+      "kind": "projectile",
+      "motion": {
+        "rule": "rule/ch5/faust/trajectory",
+        "parameters": {
+          "mode": "homing",
+          "speed": 10
+        }
+      },
+      "collision": {
+        "rule": "rule/ch5/faust/collision",
+        "parameters": {
+          "enabled": true,
+          "radius": 0
+        }
+      },
+      "lifetime_seconds": 5,
+      "max_hits": 1,
+      "can_hit_same_target": false,
+      "stop_after_max": true,
+      "stop_after_first": false,
+      "attach_at_launch": false,
+      "lifecycle": {
+        "source_invalid": "retain",
+        "source_hidden": "retain",
+        "target_invalid": "cancel",
+        "target_hidden": "cancel",
+        "finish_on_reach": true,
+        "hit_on_reach": true,
+        "force_reach_on_expire": true,
+        "hit_on_expire": true
+      },
+      "on_invalid": []
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/ch5/faust/eligible",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.targeting.eligibility"
+      }
+    },
+    {
+      "id": "rule/ch5/faust/score",
+      "kind": "rule",
+      "contract": "targeting.score",
+      "implementation": {
+        "type": "expression",
+        "expression": "-100000*(inputs.candidate.components.attributes.base.taunt_level if 'taunt_level' in inputs.candidate.components.attributes.base else 0)-inputs.candidate.id"
+      }
+    },
+    {
+      "id": "rule/ch5/faust/steering",
+      "kind": "rule",
+      "contract": "movement.steering",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.movement.steering_velocity"
+      }
+    },
+    {
+      "id": "rule/ch5/faust/trajectory",
+      "kind": "rule",
+      "contract": "projectile.trajectory",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.projectile.trajectory"
+      }
+    },
+    {
+      "id": "rule/ch5/faust/collision",
+      "kind": "rule",
+      "contract": "projectile.collision",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.projectile.collision"
+      }
+    },
+    {
+      "id": "rule/ch5/faust/invincible",
+      "kind": "rule",
+      "contract": "damage.pipeline",
+      "implementation": {
+        "type": "graph",
+        "nodes": [
+          {
+            "id": "answer",
+            "expression": "{'accepted':False,'amount':0,'allocations':[],'events':[]}"
+          }
+        ],
+        "output": "nodes.answer"
+      }
+    },
+    {
+      "id": "rule/ch5/faust/active",
+      "kind": "rule",
+      "contract": "buff.applicability",
+      "implementation": {
+        "type": "expression",
+        "expression": "True"
+      }
+    },
+    {
+      "id": "rule/ch5/faust/block_policy",
+      "kind": "rule",
+      "contract": "blocking.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.blocking.status"
+      },
+      "parameters": {
+        "block_free_flag": 3,
+        "base_rule": "rule/ark_block_eligibility"
+      },
+      "dependencies": [
+        "rule/ark_block_eligibility"
+      ]
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/ch5/faust/target",
+      "kind": "selector",
+      "region": {
+        "type": "radius",
+        "radius": 20
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1,
+      "eligibility": {
+        "rule": "rule/ch5/faust/eligible",
+        "parameters": {
+          "source_configuration": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 8369462585458516330
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 7080728813803358465
+            },
+            "m_Name": "",
+            "_targetSide": 2,
+            "_targetMotion": 1,
+            "_targetCategory": 1,
+            "_postFilter": 4,
+            "_ignoreTargetFree": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_abnormalFlag": 44,
+            "_abnormalCombo": 2,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_needProfessionMask": 0,
+            "_professionMask": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_excludeAbnormalFlag": 46,
+            "_limitTargetNum": 1,
+            "_maxTargetKey": "max_target",
+            "_maxNum": 1,
+            "_excludeOwner": 0,
+            "_sortByTauntAtLast": 0,
+            "_ignoreHitRange": 0,
+            "_checkUnitType": 0,
+            "_unitTypeMask": 0,
+            "_abilityInputTargetAsSortSource": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject",
+          "defaults": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "profession": 0,
+            "unit_type": 1,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "target_free": false,
+            "ally_target_free": false,
+            "heal_free": false,
+            "camouflage": false,
+            "can_select_camouflage": false
+          }
+        }
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/ch5/faust/invincible",
+      "kind": "buff",
+      "duration_seconds": 150,
+      "active_rule": "rule/ch5/faust/active",
+      "selection_flags": {
+        "abnormal_flags": [
+          5
+        ]
+      },
+      "damage_hooks": [
+        {
+          "phase": "after",
+          "rule": "rule/ch5/faust/invincible"
+        }
+      ]
+    }
+  ],
+  "behaviors": [
+    {
+      "id": "behavior/ch5/faust/combat",
+      "kind": "behavior",
+      "initial": "active",
+      "states": {
+        "active": {}
+      },
+      "transitions": [],
+      "decision": {
+        "rule": "rule/ark_behavior_decision",
+        "default_mode": 0,
+        "profiles": [
+          {
+            "mode": 0,
+            "selectors": [
+              {
+                "key": "normal",
+                "selector": "selector/ch5/faust/target"
+              }
+            ],
+            "cast_groups": [
+              {
+                "key": "combat",
+                "abilities": [
+                  "ability/ch5/faust/normal",
+                  "ability/ch5/faust/critical"
+                ]
+              }
+            ],
+            "parameters": {
+              "target_key": "normal",
+              "blocked_target": false,
+              "stop_on_target": true,
+              "stop_cast_groups": [
+                "combat"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

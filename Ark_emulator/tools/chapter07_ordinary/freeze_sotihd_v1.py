@@ -1,0 +1,14 @@
+"""First actual ordinary source consumer scope, not chapter stage or nativebody approval."""
+import hashlib,json,shutil
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2];OUT=ROOT/'validation/campaign/chapter07_ordinary_freeze_v1'
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def main():
+ report=ROOT/'validation/campaign/chapter07_ordinary_guarded_final_v5/verification.json';r=json.loads(report.read_bytes());assert r['passed'] and r['actual_exit']==0 and r['source_before']==r['source_after'];assert all(sha(Path(p))==h for p,h in r['source_after'].items());module=ROOT/r['module'];m=json.loads(module.read_bytes());assert sha(module)==r['module_sha'];assert not OUT.exists();OUT.mkdir(parents=True);evidence=[]
+ for dir in (ROOT/'validation/campaign/chapter07_ordinary_guarded_final_v5',ROOT/'validation/campaign/chapter07_ordinary_public_guarded_v5'):
+  for p in dir.glob('*'):
+   if p.is_file():evidence.append({'path':str(p),'sha':sha(p),'bytes':p.stat().st_size})
+ for p in list((ROOT/'tools/chapter07_ordinary').glob('*.py'))+list((ROOT/'packages/campaign/chapter07_ordinary').glob('*.json')):
+  dst=OUT/'source'/p.relative_to(ROOT);dst.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(p,dst);assert sha(dst)==sha(p)
+ result={'variant':'enemy_1077_sotihd@0/11aeb9d877d72938','core':r['core'],'module':{'path':str(module),'sha':sha(module)},'author8':{'report':str(report),'sha':sha(report),'actual_exit':0,'elapsed':r['elapsed']},'source_before':r['source_before'],'source_after':r['source_after'],'actual_evidence':evidence,'source_scope':{'HP':2900,'ATK':350,'DEF':150,'RES':20,'moveSpeed':1.9,'interval':1.4,'silenceImmune_source12':True,'no_passive_or_enemySkill':True,'source_SPresource_not_invented':True,'native_relative18_frame_actual_public_start1_hit19':True,'normal_interval42_actual_hit19_then61':True,'damage350minusDEF100_true250':True,'public_apply_buff_currentDEF300_true50':True,'public_apply_buff_ASPD3_reference18_to6':True,'actual_current_public_ordered_CP_SHAload_resume_head_equal':True,'unblocked_no_free_target_source_death_cancels':True},'reference_policy_limits':{'capture_hit':m['manifest']['metadata']['capture_and_hit_reference_policy'],'ASPD':m['manifest']['metadata']['windup_reference_policy'],'undefined_source_fields':m['manifest']['metadata']['unprovided_fields']},'old_guessed_enum8_unexecuted_content_and_false_absoluteframe_expectations_preserved':True,'old_real_midcast_targetfree_failure_preserved_not_game_corrected':True,'independent_reviewed':False,'new_core_changed':False,'primary_modified':False,'C7_whole_stage_executed':False,'client_verified':False};out=OUT/'freeze.json';out.write_text(json.dumps(result,indent=2)+'\n',encoding='utf8',newline='');print(json.dumps({'sha':sha(out),'module_sha':sha(module),'actual_author8':True,'independent_pending':True}))
+if __name__=='__main__':main()

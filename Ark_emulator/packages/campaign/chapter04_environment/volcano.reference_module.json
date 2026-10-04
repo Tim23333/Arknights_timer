@@ -1,0 +1,381 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/chapter04/volcano_reference",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "source_locks": {
+        "packages\\campaign\\chapter04_environment\\source.reference.json": "148a5a8648801f8c7eee655d5c0daa1f4f7469cefe3abd2d304dcdc33a121dc8"
+      },
+      "builder_sha256": "bc989d48acc175e8d27e84045ccedf45c426a199f0ee04e061afb3241ab77873",
+      "tile_profiles": {
+        "tile_volcano": {
+          "type": "periodic_effect_field",
+          "expected_blackboard": {
+            "damage": 700.0,
+            "cd_min": 13.0,
+            "cd_max": 19.0
+          },
+          "origin": {
+            "native_prefab": "tile_volcano",
+            "native_component": "-4218245673668302011",
+            "source_sha256": "148a5a8648801f8c7eee655d5c0daa1f4f7469cefe3abd2d304dcdc33a121dc8"
+          },
+          "trigger": {
+            "rule": "rule/ch4/volcano_clock",
+            "stream": "field/volcano",
+            "sample_count": 1,
+            "parameters": {},
+            "initial": {
+              "mode": "sampled"
+            }
+          },
+          "membership": {
+            "rule": "rule/ch4/volcano_members",
+            "parameters": {}
+          },
+          "effects": [
+            {
+              "op": "no_source_damage",
+              "fixed_amount": 700.0,
+              "damage_type": "true",
+              "attack_type": "NONE",
+              "damage_without_modify": false,
+              "ignore_for_sp": false,
+              "node_is_env_damage": false,
+              "env_blackboard_injected": true,
+              "environmental": true,
+              "origin": {
+                "native_node": "Torappu.Battle.Action.Nodes+NoSourceDamage"
+              },
+              "rules": {
+                "damage.pipeline": "rule/ch4/volcano_fixed_damage"
+              }
+            }
+          ]
+        }
+      },
+      "source_trigger": {
+        "path_id": "-6117950067858855099",
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": 3427967721682119493
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": -6273563539880628122
+        },
+        "m_Name": "",
+        "_preDelay": -1.0,
+        "_preDelayEffect": "",
+        "_defaultInterval": 1.0
+      },
+      "source_cast": {
+        "path_id": "-4218245673668302011",
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": 3427967721682119493
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": -3608587646578225672
+        },
+        "m_Name": "",
+        "_tileKey": "tile_volcano",
+        "_height": 0.0,
+        "_locateHeightOffset": 0.0,
+        "_forceBoxCollider": 0,
+        "_graphic": {
+          "m_FileID": 0,
+          "m_PathID": 0
+        },
+        "_allGraphicList": [],
+        "_effect": "map_eruption_02",
+        "_setHoldEffectToEffectHolder": 0,
+        "_data": {
+          "tileKey": "",
+          "heightType": 0,
+          "buildableType": 3,
+          "passableMask": 0,
+          "playerSideMask": 0,
+          "blackboard": [],
+          "effects": []
+        },
+        "_mapLayer": 0,
+        "_injectEnvDmgFlagToBlackboard": 1,
+        "_targetOptions": {
+          "targetSide": 3,
+          "targetMotion": 1,
+          "targetCategory": 1,
+          "enableAdvancedOptions": 1,
+          "ignoreTargetFree": 0,
+          "ignoreAllyTargetFree": 0,
+          "ignoreHealFree": 0,
+          "ignoreMotionMode": 0,
+          "ignoreTargetSide": 0,
+          "excludeSomeAbnormalFlags": 0,
+          "containSomeAbnormalFlags": 0,
+          "excludeAbnormalFlag": 0,
+          "containAbnormalFlag": 0,
+          "purposeMask": 0,
+          "professionMask": 0,
+          "checkUnitType": 0,
+          "unitTypeMask": 0,
+          "onlyIgnoreSomeOfTargetFreeCase": 0,
+          "abnormalFlag": 0,
+          "abnormalCombo": 0
+        },
+        "_sourceSide": 0,
+        "_actions": {
+          "SerializedState": "[{\"_damageType\":\"PURE\",\"_damageKey\":\"damage\",\"_ignoreForSp\":false,\"_damageWithoutModify\":false,\"_attackType\":\"NONE\",\"_isEnvDamage\":false,\"_isUndeadable\":false,\"_ignoreCancelReasonMask\":\"NONE\",\"_instantKillLikeDamage\":false,\"_isNotChangeableValue\":false,\"_multiplierByKey\":false,\"_multiplierKey\":\"cnt\",\"_modifierKey\":\"\",\"$type\":\"Torappu.Battle.Action.Nodes+NoSourceDamage\"}]",
+          "SerializedObjectReferences": []
+        },
+        "_actionsOnTrigger": {
+          "SerializedState": "null",
+          "SerializedObjectReferences": []
+        },
+        "_actionsToSlot": {
+          "SerializedState": "null",
+          "SerializedObjectReferences": []
+        },
+        "_castEffect": "map_eruption_03",
+        "_hitEffect": "common_firemagic_hit_01",
+        "_castMaxCnt": -1,
+        "_extraTargetRange": {
+          "m_FileID": 0,
+          "m_PathID": 3910120178923023173
+        },
+        "_onlyCombatEnemyInExtraRange": 1
+      },
+      "source_action": {
+        "_damageType": "PURE",
+        "_damageKey": "damage",
+        "_ignoreForSp": false,
+        "_damageWithoutModify": false,
+        "_attackType": "NONE",
+        "_isEnvDamage": false,
+        "_isUndeadable": false,
+        "_ignoreCancelReasonMask": "NONE",
+        "_instantKillLikeDamage": false,
+        "_isNotChangeableValue": false,
+        "_multiplierByKey": false,
+        "_multiplierKey": "cnt",
+        "_modifierKey": "",
+        "$type": "Torappu.Battle.Action.Nodes+NoSourceDamage"
+      },
+      "source_geometry": [
+        {
+          "path_id": -4786407729959064763,
+          "gameobject_path_id": 3427967721682119493,
+          "gameobject_name": "tile_volcano",
+          "unity_type": "Transform",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 3427967721682119493
+            },
+            "m_LocalRotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 1.0
+            },
+            "m_LocalPosition": {
+              "x": -1.8700000047683716,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "m_LocalScale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            },
+            "m_Children": [
+              {
+                "m_FileID": 0,
+                "m_PathID": -2820165617937274043
+              }
+            ],
+            "m_Father": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            }
+          }
+        },
+        {
+          "path_id": -7042251377352889531,
+          "gameobject_path_id": 3427967721682119493,
+          "gameobject_name": "tile_volcano",
+          "unity_type": "CircleCollider2D",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 3427967721682119493
+            },
+            "m_Enabled": 1,
+            "m_Density": 1.0,
+            "m_Material": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "m_IsTrigger": true,
+            "m_UsedByEffector": false,
+            "m_UsedByComposite": false,
+            "m_Offset": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "m_Radius": 1.7100000381469727
+          }
+        },
+        {
+          "path_id": -2820165617937274043,
+          "gameobject_path_id": 7973661232797461317,
+          "gameobject_name": "Range",
+          "unity_type": "Transform",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 7973661232797461317
+            },
+            "m_LocalRotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 1.0
+            },
+            "m_LocalPosition": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "m_LocalScale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            },
+            "m_Children": [],
+            "m_Father": {
+              "m_FileID": 0,
+              "m_PathID": -4786407729959064763
+            }
+          }
+        },
+        {
+          "path_id": 1667857524546546501,
+          "gameobject_path_id": 7973661232797461317,
+          "gameobject_name": "Range",
+          "unity_type": "CircleCollider2D",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 7973661232797461317
+            },
+            "m_Enabled": 1,
+            "m_Density": 1.0,
+            "m_Material": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "m_IsTrigger": true,
+            "m_UsedByEffector": false,
+            "m_UsedByComposite": false,
+            "m_Offset": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "m_Radius": 0.7099999785423279
+          }
+        }
+      ],
+      "model_policies": {
+        "first_trigger": "preDelay -1 projected to a sampled first interval",
+        "stream": "separate named stream field/volcano; native stream/call order pending comparison",
+        "membership": "half-up cell projection: own cell plus four orthogonal neighbouring cells for enemies in blocked or attacking state",
+        "visibility": "explicit reference exclusion9/17; native extra targetOptions contain no such flag bits",
+        "availability": "explicit no-source default side2; raw CastTile sourceSide0 preserved separately",
+        "environmental": "reference environment classification; distinct from native node _isEnvDamage False"
+      },
+      "pending_source_semantics": [
+        "Native Collider2D overlap and target radius versus cell projection",
+        "Exact meaning of onlyCombatEnemyInExtraRange",
+        "Native initial random stream and quantization order"
+      ],
+      "scope": "Eight source-bound field operands; no enemy spawn or complete-stage approval",
+      "whole_stage_executed": false,
+      "actual_client_verified": false
+    }
+  },
+  "rules": [
+    {
+      "id": "rule/ch4/volcano_fixed_damage",
+      "kind": "rule",
+      "contract": "damage.pipeline",
+      "implementation": {
+        "type": "graph",
+        "nodes": [
+          {
+            "id": "settle",
+            "expression": "{'accepted':True,'amount':inputs.effect.fixed_amount,'allocations':[],'events':[]}"
+          }
+        ],
+        "output": "nodes.settle"
+      }
+    },
+    {
+      "id": "rule/ch4/volcano_clock",
+      "kind": "rule",
+      "contract": "field.trigger",
+      "parameters": {
+        "minimum_key": "cd_min",
+        "maximum_key": "cd_max"
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "model.field.uniform_trigger"
+      }
+    },
+    {
+      "id": "rule/ch4/volcano_members",
+      "kind": "rule",
+      "contract": "field.members",
+      "parameters": {
+        "side_mask": 3,
+        "motion_mask": 1,
+        "category_mask": 1,
+        "extra_offsets": [
+          [
+            -1,
+            0
+          ],
+          [
+            0,
+            -1
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "combat_policy": "blocked_or_attacking",
+        "exclude_flags": [
+          9,
+          17
+        ],
+        "respect_target_free": true
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "model.field.cell_combat_members"
+      }
+    }
+  ]
+}

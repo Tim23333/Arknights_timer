@@ -1,0 +1,281 @@
+{
+  "schema_version": 1,
+  "bounded_storage_passed": true,
+  "core_start": "75fdf7c2ffe99014f707aa900cbe5c4dffc9756229a81b607f0f3ef9178d9b90",
+  "core_end": "75fdf7c2ffe99014f707aa900cbe5c4dffc9756229a81b607f0f3ef9178d9b90",
+  "module_path": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m27_event_intern_candidate\\ark_sim\\__init__.py",
+  "source_start": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m27_roster_peer\\verify.py": "c7cf8d2910ca68a1c3eeb28b111baba4507f32d1d89526182cead93d2e8bb03e",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m27_roster_peer\\test_roster_storage.py": "95971d15d48fc33507d782d1aab819d483295d7c03a1cde778bebcddb47690c9",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_streaming_evidence.py": "11451f80155440fdf5cf43601b3d4e2a9a614277e3d42bf250db12419683069d",
+    "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m27_event_intern_candidate\\ark_sim\\rules\\contracts.json": "af24e8f38ced4b432573f8bb938a19e469fab43558fb69181478d5d0e1289e35",
+    "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m27_event_intern_candidate\\ark_sim\\content\\presets\\ark_standard.json": "1070ba6793cee5ded71c0f0b89a96ba72973d49989407e70a858a575febb9814"
+  },
+  "source_end": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m27_roster_peer\\verify.py": "c7cf8d2910ca68a1c3eeb28b111baba4507f32d1d89526182cead93d2e8bb03e",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m27_roster_peer\\test_roster_storage.py": "95971d15d48fc33507d782d1aab819d483295d7c03a1cde778bebcddb47690c9",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_streaming_evidence.py": "11451f80155440fdf5cf43601b3d4e2a9a614277e3d42bf250db12419683069d",
+    "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m27_event_intern_candidate\\ark_sim\\rules\\contracts.json": "af24e8f38ced4b432573f8bb938a19e469fab43558fb69181478d5d0e1289e35",
+    "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m27_event_intern_candidate\\ark_sim\\content\\presets\\ark_standard.json": "1070ba6793cee5ded71c0f0b89a96ba72973d49989407e70a858a575febb9814"
+  },
+  "cases": [
+    {
+      "nodeid": "tools/experiments/m27_roster_peer/test_roster_storage.py::test_original_json_scalar_subclasses_order_signedzero_and_aliases",
+      "result": "passed",
+      "scope": "storage boundary positive"
+    },
+    {
+      "nodeid": "tools/experiments/m27_roster_peer/test_roster_storage.py::test_warm_cache_invalid_input_cannot_add_records_or_mutate_cache",
+      "result": "passed",
+      "scope": "storage boundary positive"
+    },
+    {
+      "nodeid": "tools/experiments/m27_roster_peer/test_roster_storage.py::test_forced_collision_preserves_nested_types_values_and_field_order",
+      "result": "passed",
+      "scope": "storage boundary positive"
+    },
+    {
+      "nodeid": "tools/experiments/m27_roster_peer/test_roster_storage.py::test_eviction_is_only_performance_state_history_and_iterator_detached",
+      "result": "passed",
+      "scope": "storage boundary positive"
+    },
+    {
+      "nodeid": "tools/experiments/m27_roster_peer/test_roster_storage.py::test_nested_real_transaction_jobs_rng_world_alias_and_cause_rollback",
+      "result": "passed",
+      "scope": "storage boundary positive"
+    },
+    {
+      "nodeid": "tools/experiments/m27_roster_peer/test_roster_storage.py::test_actual_effect_packets_checkpoint_replay_with_identical_operands",
+      "result": "passed",
+      "scope": "storage boundary positive"
+    },
+    {
+      "nodeid": "tools/experiments/m27_roster_peer/test_roster_storage.py::test_canonical_checkpoint_known_persistent_order_counterexample",
+      "result": "passed",
+      "scope": "known canonical disk-order failure reproduced"
+    }
+  ],
+  "fixture_inputs": [
+    {
+      "sha256": "a9cb38449833e40840fc092c113ac2148229807dae42bf076e4c664d8686cfe0",
+      "seed": 2704,
+      "document": {
+        "entities": [
+          {
+            "id": "unit/actor",
+            "kind": "entity",
+            "components": {
+              "attributes": {
+                "base": {
+                  "max_hp": 100
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 100,
+                  "capacity": 100
+                }
+              },
+              "spatial": {},
+              "abilities": [
+                "ability/payload"
+              ]
+            }
+          }
+        ],
+        "abilities": [
+          {
+            "id": "ability/payload",
+            "kind": "ability",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at_seconds": 0.1,
+                "effect": {
+                  "op": "emit",
+                  "event": "peer.packet",
+                  "payload": {
+                    "operands": [
+                      {
+                        "hp": 100,
+                        "ratio": 1.7,
+                        "typed": [
+                          false,
+                          0,
+                          0.0,
+                          -0.0
+                        ]
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "at_seconds": 0.2,
+                "effect": {
+                  "op": "emit",
+                  "event": "peer.packet",
+                  "payload": {
+                    "operands": [
+                      {
+                        "hp": 100,
+                        "ratio": 1.7,
+                        "typed": [
+                          false,
+                          0,
+                          0.0,
+                          -0.0
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scenario/storage_peer",
+          "ruleset": "ruleset/ark_standard",
+          "objectives": {},
+          "map": {
+            "rows": 1,
+            "cols": 1
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/actor",
+              "instanceAlias": "actor",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "sha256": "7286aa0c9babca8f484839eddf1466d45ffc63b697b2b890a66d0f1f5561df53",
+      "seed": 2704,
+      "document": {
+        "entities": [
+          {
+            "id": "unit/actor",
+            "kind": "entity",
+            "components": {
+              "attributes": {
+                "base": {
+                  "max_hp": 100
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 100,
+                  "capacity": 100
+                },
+                "z": {
+                  "initial": 0,
+                  "capacity": 10,
+                  "recovery_rate": 1
+                },
+                "a": {
+                  "initial": 0,
+                  "capacity": 10,
+                  "recovery_rate": 2
+                }
+              },
+              "spatial": {},
+              "abilities": [
+                "ability/payload"
+              ]
+            }
+          }
+        ],
+        "abilities": [
+          {
+            "id": "ability/payload",
+            "kind": "ability",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at_seconds": 0.1,
+                "effect": {
+                  "op": "emit",
+                  "event": "peer.packet",
+                  "payload": {
+                    "operands": [
+                      {
+                        "hp": 100,
+                        "ratio": 1.7,
+                        "typed": [
+                          false,
+                          0,
+                          0.0,
+                          -0.0
+                        ]
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "at_seconds": 0.2,
+                "effect": {
+                  "op": "emit",
+                  "event": "peer.packet",
+                  "payload": {
+                    "operands": [
+                      {
+                        "hp": 100,
+                        "ratio": 1.7,
+                        "typed": [
+                          false,
+                          0,
+                          0.0,
+                          -0.0
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scenario/storage_peer",
+          "ruleset": "ruleset/ark_standard",
+          "objectives": {},
+          "map": {
+            "rows": 1,
+            "cols": 1
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/actor",
+              "instanceAlias": "actor",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "known_separate_tool_bug": {
+    "original_durable_expectation": "disk checkpoint continuation equals original",
+    "actual": false,
+    "path": "durable_counterexample.json",
+    "in_memory_checkpoint_equal": true,
+    "cause": "sorted mapping resources order altered by canonical serialization; not75fd interner regression"
+  },
+  "native_accuracy_verified": false,
+  "formal_approved": false
+}

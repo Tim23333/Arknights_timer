@@ -1,0 +1,15 @@
+# Content revision: combat INPUT_TARGET2 is a candidate constraint
+
+Parent `main_02-10.enemies.reference_module.json` SHA256 `bf13eb78c7b81dd0727c60f3d88d4f7d09a5244c6cfb9dad1e959ad0c5dd3859` and its previous evidence remain frozen. Independent review demonstrated that finite `-1000000` blocked priority can lose to legal taunt20 weighted `-100000*20`. That is a real declared-policy defect; the former15-case success does not cover arbitrary taunt.
+
+New module `packages/campaign/chapter02_units/main_02-10.enemies.combat_guard.reference_module.json` SHA256 is `5594dde971d422885d261b02658a476f315d9b88c706e76af3f5f5f547b03497`. It changes three source-bound selector eligibility rules and their shared score rule, adding one generic content graph. Other definitions, boss/player behavior, HP/ATK/DEF, timing and projectiles remain exactly equal to bf13. A fresh compilation/pruning records the actual72-definition closure, preserving the parent's composition separately.
+
+The graph first evaluates the existing exact source options. If the source has a nonnull `runtime.blocked_by`, the candidate must be that same canonical ID. Geometry, tags, free state and source masks still apply. If the blocker is ineligible, there is no fallback to a different actor. In blocked mode score is0, since only the qualified blocker remains. Unblocked mode retains the explicit taunt/distance/ID comparator. No larger magic priority constant or core official-ID branch is introduced.
+
+Exactly three consumers are selected by raw combat `selectTargetSource=2` together with the parent's explicit source-binding marker: wizard and mocock have actual RangedAttack combat components; Aoemag has actual MeleeAttack. The graph does not infer the consumer from names or restrict the source field to RangedAttack.
+
+Fourteen independent tests passed in26.92 seconds under actual M48 `a829685336bc55af4d5b3098f6eca9887ce870906ab20429ec43de789630fbc9`. Public deployment establishes a genuine blocking relation, then all three select that actor for taunt20,1000000 and−1000000. Free, geometric and tag-ineligible blockers produce no alternate cast. Unblocked ordinary taunt behavior remains. Successful scenarios have ordered disk checkpoint and recorded-command replay equality. A definition-diff assertion proves that only the three selectors, shared score and added graph change.
+
+The first unsealed fixture also instantiated a preplaced copy of the deployable probe, so the second public deployment was correctly refused by max_instances1. The corrected fixture removes that duplicate and still independently requires the actual public-deploy relation. No production rule or expectation was weakened.
+
+Final source/core/package/helper guards match before and after. Report `validation/campaign/chapter02_combat_guard/final.json` SHA256 is `62cd04d2eb0a1bc6e3aac883dc4bd5c1f3709972b54fe58b826c22c343cfde37`; generator `--check` passed. This is a content-only mathematical correction. Native comparator internals remain feedback, and no full stage, promotion or formal receipt is asserted.

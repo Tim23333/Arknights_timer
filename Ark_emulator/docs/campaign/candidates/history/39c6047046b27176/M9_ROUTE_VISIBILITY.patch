@@ -1,0 +1,563 @@
+--- a/ark_sim/content/capabilities.py
++++ b/ark_sim/content/capabilities.py
+@@ -97,6 +97,11 @@
+         events(definition.get("events", []), f"{path}.events", local)
+ 
+     def route(path, scopes, definition=None):
++        definition = definition or {}
++        if definition.get("transition_policy"):
++            require("movement.transition", path+".transition_policy", scopes, definition["transition_policy"]["rule"])
++        if definition.get("reach_offset_policy"):
++            require("movement.checkpoint_position", path+".reach_offset_policy", scopes, definition["reach_offset_policy"]["rule"])
+         for calculation in ("time.quantize", "movement.path", "movement.speed", "movement.distance",
+                             "blocking.eligibility", "blocking.capacity", "blocking.occupancy", "lifecycle.leak_loss"):
+             require(calculation, path, scopes)
+@@ -125,6 +130,16 @@
+             key = "fragment_start" if kind in (3, "WAIT_CURRENT_FRAGMENT_TIME") else "wave_start" if kind in (4, "WAIT_CURRENT_WAVE_TIME") else None
+             if key and (type(origins.get(key)) is not int or origins[key] < 0):
+                 raise ContentError(f"{path}.checkpoints[{index}]: deadline requires captured {key} origin")
++
++    def instance_route(item, path):
++        entity = definitions[item["definition"]]
++        spatial = entity.get("components", {}).get("spatial", {})
++        overrides = item.get("components", {}).get("spatial", {})
++        actual = item.get("route", overrides.get("route", spatial.get("route")))
++        if actual:
++            scopes = [*entity_scopes.get(item["definition"], []), item.get("rules", {}),
++                      spatial.get("rules", {}), overrides.get("rules", {})]
++            route(path, scopes, actual)
+ 
+     entity_scopes = {}
+     for identifier, definition in definitions.items():
+@@ -209,10 +224,7 @@
+                         spawn = action["spawn"]
+                         if spawn.get("placement"):
+                             require("spawn.position", path, explicit=spawn["placement"]["rule"])
+-                        if spawn.get("route"):
+-                            scopes = entity_scopes.get(spawn["definition"], [])
+-                            spatial = definitions[spawn["definition"]].get("components", {}).get("spatial", {})
+-                            route(path+".route", [*scopes, spatial.get("rules", {})], spawn["route"])
++                        instance_route(spawn, path+".route")
+                     else:
+                         for child in action["effects"]:
+                             effect(child, path, [])
+@@ -225,14 +237,10 @@
+         require("time.quantize", f"{scenario['id']}.waves[{index}]")
+         if wave.get("placement"):
+             require("spawn.position", f"{scenario['id']}.waves[{index}].placement", explicit=wave["placement"]["rule"])
+-        if wave.get("route"):
+-            scopes = entity_scopes.get(wave["definition"], [])
+-            spatial = definitions[wave["definition"]].get("components", {}).get("spatial", {})
+-            route(f"{scenario['id']}.waves[{index}].route", [*scopes, spatial.get("rules", {})], wave["route"])
++        instance_route(wave, f"{scenario['id']}.waves[{index}].route")
+     for index, item in enumerate(scenario.get("initialEntities", [])):
+         captured_origins(item, f"{scenario['id']}.initialEntities[{index}].route")
+-        if item.get("route"):
+-            route(f"{scenario['id']}.initialEntities[{index}].route", entity_scopes.get(item["definition"], []), item["route"])
++        instance_route(item, f"{scenario['id']}.initialEntities[{index}].route")
+     if scenario.get("objectives"):
+         require("lifecycle.result", f"{scenario['id']}.objectives")
+     for command in scenario.get("commands", []):
+--- a/ark_sim/content/presets/ark_standard.json
++++ b/ark_sim/content/presets/ark_standard.json
+@@ -530,6 +530,32 @@
+           }
+         ],
+         "output": "inputs.origin + nodes.offset"
++      }
++    },
++    {
++      "id": "rule/m9_living_transition",
++      "kind": "calculation_rule",
++      "contract": "movement.transition",
++      "implementation": {
++        "type": "provider",
++        "provider": "ark.movement.living_transition"
++      },
++      "metadata": {
++        "scope": "explicit_model_profile",
++        "client_verified": false
++      }
++    },
++    {
++      "id": "rule/m9_checkpoint_cartesian",
++      "kind": "calculation_rule",
++      "contract": "movement.checkpoint_position",
++      "implementation": {
++        "type": "provider",
++        "provider": "ark.movement.checkpoint_cartesian"
++      },
++      "metadata": {
++        "scope": "explicit_model_profile",
++        "client_verified": false
+       }
+     }
+   ],
+--- a/ark_sim/content/spatial_validation.py
++++ b/ark_sim/content/spatial_validation.py
+@@ -12,7 +12,29 @@
+                          "tile_start", "tile_flystart", "tile_end", "tile_empty"})
+ MOTION = {"WALK": 0, "FLY": 1}
+ CHECKPOINT = {"MOVE": 0, "WAIT_FOR_SECONDS": 1, "WAIT_FOR_PLAY_TIME": 2,
+-              "WAIT_CURRENT_FRAGMENT_TIME": 3, "WAIT_CURRENT_WAVE_TIME": 4}
++              "WAIT_CURRENT_FRAGMENT_TIME": 3, "WAIT_CURRENT_WAVE_TIME": 4,
++              "DISAPPEAR": 5, "APPEAR_AT_POS": 6}
++
++
++def route_policy(value, path, transition=False):
++    if not isinstance(value, Mapping) or set(value) != {"rule", "parameters"}:
++        fail(path, "explicit rule and parameters required")
++    if not isinstance(value["rule"], str) or not value["rule"]:
++        fail(path+".rule", "nonempty calculation rule ID required")
++    params = value["parameters"]
++    if transition:
++        choices = {"hidden_effects": {"reject", "allow"}, "hidden_auras": {"suspend", "retain"},
++                   "launched_source_effects": {"retain", "discard"}, "resource_timers": {"continue"}}
++        if not isinstance(params, Mapping) or set(params) != set(choices):
++            fail(path+".parameters", "all visibility/resource model choices must be explicit")
++        for key, allowed in choices.items():
++            if params[key] not in allowed: fail(path+".parameters."+key, "unsupported visibility model choice")
++    else:
++        if not isinstance(params, Mapping) or set(params) != {"axis_signs"}:
++            fail(path+".parameters", "explicit Cartesian axis_signs required")
++        axes = params["axis_signs"]
++        if not isinstance(axes, Mapping) or set(axes) != {"row", "col"} or any(type(v) is not int or v not in (-1, 1) for v in axes.values()):
++            fail(path+".parameters.axis_signs", "row/col must each be integer +1 or -1")
+ 
+ 
+ def fail(path, message):
+@@ -79,6 +101,9 @@
+         checkpoints = []
+     if not isinstance(checkpoints, (list, tuple)):
+         fail(f"{path}.checkpoints", "expected a list")
++    if "transition_policy" in route: route_policy(route["transition_policy"], path+".transition_policy", True)
++    if "reach_offset_policy" in route: route_policy(route["reach_offset_policy"], path+".reach_offset_policy")
++    hidden = False
+     for index, checkpoint in enumerate(checkpoints):
+         location = f"{path}.checkpoints[{index}]"
+         if not isinstance(checkpoint, Mapping):
+@@ -89,15 +114,45 @@
+         if isinstance(checkpoint.get("type"), str) or (
+                 isinstance(checkpoint.get("type"), Mapping) and "value" not in checkpoint["type"]):
+             checkpoint["type"] = kind
+-        if kind == 0 and "position" not in checkpoint:
++        if kind in (0, 6) and "position" not in checkpoint:
+             fail(f"{location}.position", "required by MOVE checkpoint")
+         if "position" in checkpoint and checkpoint["position"] is not None:
+             position(checkpoint["position"], f"{location}.position", map_definition)
+-        elif kind == 0:
++        elif kind in (0, 6):
+             fail(f"{location}.position", "required by MOVE checkpoint")
+         if kind in (1, 2, 3, 4):
+             time = checkpoint.get("time")
+             finite(0 if time is None else time, f"{location}.time", 0)
++        if kind in (5, 6):
++            if "transition_policy" not in route: fail(location, "disappear/appear requires explicit transition_policy")
++            if kind == 5 and hidden: fail(location, "nested disappear has no matching appearance")
++            if kind == 6 and not hidden: fail(location, "appearance requires preceding disappearance")
++            hidden = kind == 5
++        elif hidden and kind == 0:
++            fail(location, "hidden route permits WAIT then APPEAR, not MOVE")
++        offset = checkpoint.get("reachOffset", {"x": 0, "y": 0})
++        if not isinstance(offset, Mapping) or set(offset) != {"x", "y"}: fail(location+".reachOffset", "exact x/y offset required")
++        for axis in ("x", "y"): finite(offset[axis], location+".reachOffset."+axis)
++        if type(checkpoint.get("randomizeReachOffset", False)) is not bool or checkpoint.get("randomizeReachOffset", False):
++            fail(location+".randomizeReachOffset", "random checkpoint offset has no declared supported sampler")
++        reach = checkpoint.get("reachDistance", 0)
++        finite(0 if reach is None else reach, location+".reachDistance", 0)
++        if reach: fail(location+".reachDistance", "nonzero native capture radius requires another explicit model")
++        if any(offset.values()):
++            if kind not in (0, 6): fail(location, "nonzero offset only supported for MOVE/APPEAR")
++            if "reach_offset_policy" not in route: fail(location, "nonzero reachOffset requires explicit reach_offset_policy")
++            signs = route["reach_offset_policy"]["parameters"]["axis_signs"]
++            actual = {"row": checkpoint["position"]["row"]+signs["row"]*offset["y"],
++                      "col": checkpoint["position"]["col"]+signs["col"]*offset["x"]}
++            position(actual, location+".effective_position", map_definition)
++        else: actual = checkpoint.get("position")
++        if (kind == 6 or (kind == 0 and any(offset.values()))) and map_definition:
++            from ark_sim.domains.spatial import GridTopology
++            topology = GridTopology(map_definition)
++            row, col = topology._cell(actual)
++            if enum(route.get("motionMode"), MOTION, path+".motionMode") == 0 and not topology.passable(row, col):
++                fail(location+".effective_position", "ground appearance/offset cannot target an impassable cell")
++    if hidden: fail(path, "route ends disappeared without paired appearance")
+ 
+ 
+ def validate_map(value, path):
+--- a/ark_sim/domains/abilities.py
++++ b/ark_sim/domains/abilities.py
+@@ -68,6 +68,8 @@
+                 runtime["next_attack"] = now
+             if params.get("cancel_pending_attacks") or params.get("reset_attack_clock"):
+                 self.ctx.set(source, ("runtime",), runtime)
++            if self.ctx.route_hidden(source):
++                raise ActivationRejected("Ability source is route-hidden")
+             if params.get("auto_only") and not automatic:
+                 raise ActivationRejected("Automatic-only ability cannot be activated by a player command")
+             if not self._condition(activation.get("condition"), source, ability, event_payload):
+--- a/ark_sim/domains/buffs.py
++++ b/ark_sim/domains/buffs.py
+@@ -208,7 +208,8 @@
+                                 or (parent["expires_at"] is not None and self.ctx.session.time >= parent["expires_at"])):
+                             self.remove(center, parent["id"])
+                             continue
+-                        desired = set(self.ctx.spatial.select(center, aura["selector"]))
++                        available = self.ctx.aura_available(center) and self.ctx.aura_available(parent["source"])
++                        desired = set(self.ctx.spatial.select(center, aura["selector"])) if available else set()
+                         desired = {ref for ref in desired if self.ctx.alive(ref)}
+                         members = dict(parent.get("aura_members", {}))
+                         for member, child in list(members.items()):
+--- a/ark_sim/domains/context.py
++++ b/ark_sim/domains/context.py
+@@ -85,6 +85,21 @@
+ 
+     def set(self, ref, path, value):
+         return self.session.commit([Intent("set", self.session.world.resolve(ref), tuple(path), value)])
++
++    def route_hidden(self, ref):
++        return bool(self.get(ref, ("spatial", "route_hidden"), False))
++
++    def visibility_policy(self, ref):
++        return self.get(ref, ("spatial", "route", "transition_policy", "parameters"), {})
++
++    def selectable(self, ref):
++        return self.alive(ref) and not self.route_hidden(ref)
++
++    def effect_target_available(self, ref):
++        return not self.route_hidden(ref) or self.visibility_policy(ref).get("hidden_effects", "reject") == "allow"
++
++    def aura_available(self, ref):
++        return not self.route_hidden(ref) or self.visibility_policy(ref).get("hidden_auras", "suspend") == "retain"
+ 
+     def state(self):
+         return self.get("system/battle", ("state",))
+--- a/ark_sim/domains/effects.py
++++ b/ark_sim/domains/effects.py
+@@ -26,6 +26,9 @@
+     def _execute(self, source, targets, effect, ability=None, cast=None, cause=None):
+         source = self.ctx.session.world.resolve(source)
+         ability, cast = ability or {}, cast or {}
++        if (cast.get("projectile_impact") and self.ctx.route_hidden(source) and
++                self.ctx.visibility_policy(source).get("launched_source_effects", "retain") == "discard"):
++            return
+         condition = effect.get("condition")
+         if condition and not evaluate_expression(condition, {"source": self.ctx.entity(source),
+                 "targets": [self.ctx.entity(t) for t in targets], "time": self.ctx.session.time}, effect.get("parameters", {})):
+@@ -37,6 +40,12 @@
+         for target in selected:
+             target = self.ctx.session.world.resolve(target)
+             operation = effect["op"]
++            health_delta = operation == "modify_resource" and (
++                self.ctx.get(target, ("resources", effect.get("resource"), "spec", "role")) == "health" or
++                effect.get("resource") == self.ctx.program.ruleset.get("parameters", {}).get("health_resource"))
++            if (health_delta or operation in {"damage", "heal", "regenerate", "apply_buff", "area", "push", "move", "displace", "trigger_ability"}) and not self.ctx.effect_target_available(target):
++                self.ctx.emit("effect.visibility_rejected", {"source": source, "target": target, "operation": operation}, cause)
++                continue
+             if operation == "random":
+                 sample = self.ctx.session.random.sample(effect["stream"])
+                 accepted = self.ctx.calc("random.check", {"sample": sample, "probability": effect.get("probability", 1)},
+@@ -56,7 +65,7 @@
+                 members = []
+                 for entity in self.ctx.session.world.entities():
+                     pos = entity["components"].get("spatial", {}).get("position")
+-                    if pos is None or not self.ctx.alive(entity["id"]):
++                    if pos is None or not self.ctx.selectable(entity["id"]):
+                         continue
+                     if math.hypot(pos["row"]-position["row"], pos["col"]-position["col"]) > effect["radius"]:
+                         continue
+@@ -330,6 +339,9 @@
+             for allocation in settlement["allocations"]:
+                 recipient = allocation.get("target", target)
+                 recipient = self.ctx.session.world.resolve(target if recipient == "target" else source if recipient == "source" else recipient)
++                if not self.ctx.effect_target_available(recipient):
++                    self.ctx.emit("effect.visibility_rejected", {"source": source, "target": recipient, "operation": "damage_allocation"}, cause)
++                    continue
+                 key = allocation.get("resource", resource)
+                 change = allocation.get("delta", -allocation.get("amount", 0))
+                 group = (recipient, key)
+--- a/ark_sim/domains/movement.py
++++ b/ark_sim/domains/movement.py
+@@ -16,7 +16,8 @@
+     def select(self, source, selector_id, ability=None, effect=None, primary=None):
+         definition = self.ctx.program.definitions[selector_id]
+         entity = self.ctx.entity(source)
+-        candidates = [thaw(e) for e in self.ctx.session.world.entities() if e["id"] != self.ctx.session.world.resolve("system/battle")]
++        candidates = [thaw(e) for e in self.ctx.session.world.entities() if e["id"] != self.ctx.session.world.resolve("system/battle")
++                      and not self.ctx.route_hidden(e["id"])]
+         if definition.get("parameters", {}).get("exclude_source"):
+             candidates = [e for e in candidates if e["id"] != entity["id"]]
+         if definition.get("parameters", {}).get("exclude_primary"):
+@@ -87,6 +88,8 @@
+             return
+         blockers = []
+         for entity in entities:
++            if self.ctx.route_hidden(entity["id"]):
++                continue
+             if not self.ctx.buffs.controls(entity["id"])["block"]:
+                 continue
+             spatial = entity["components"].get("spatial", {})
+@@ -104,6 +107,11 @@
+             if not spatial.get("route"):
+                 continue
+             current = self.blocked_by(ref)
++            if self.ctx.route_hidden(ref):
++                if current is not None:
++                    self.ctx.set(ref, ("runtime", "blocked_by"), None)
++                    self.ctx.emit("blocking.changed", {"source": None, "target": ref, "reason": "route_hidden"})
++                continue
+             if spatial.get("forced_motion"):
+                 if current is not None:
+                     self.ctx.set(ref, ("runtime", "blocked_by"), None)
+@@ -162,6 +170,74 @@
+         value = cp.get("type") or 0
+         return value.get("value", 0) if isinstance(value, dict) else value
+ 
++    def checkpoint_position(self, ref, checkpoint, route, spatial):
++        point = checkpoint["position"]
++        offset = checkpoint.get("reachOffset", {"x": 0, "y": 0})
++        if not any(offset.values()):
++            return dict(point)
++        policy = route.get("reach_offset_policy")
++        if not policy:
++            raise ValueError("nonzero checkpoint offset requires explicit policy")
++        with self.ctx.session.atomic():
++            actual = self.ctx.calc("movement.checkpoint_position", {"position": point, "offset": offset,
++                "parameters": policy["parameters"]}, source=ref, rule_id=policy["rule"])
++            if not isinstance(actual, dict) or set(actual) != {"row", "col"}:
++                raise ValueError("checkpoint position rule must return exactly row/col")
++            row, col = self.ctx.spatial.grid._cell(actual)
++            if route_motion_mode(route) == 0 and not self.ctx.spatial.grid.passable(row, col):
++                raise ValueError("checkpoint offset destination is impassable")
++            return actual
++
++    def transition_checkpoint(self, ref, checkpoint, route, spatial, state):
++        with self.ctx.session.atomic():
++            kind = self.checkpoint_type(checkpoint)
++            policy = route.get("transition_policy")
++            if not policy:
++                raise ValueError("transition checkpoint requires explicit policy")
++            was_hidden = bool(spatial.get("route_hidden", False))
++            if was_hidden != (kind == 6):
++                raise ValueError("runtime transition pair is invalid")
++            prepared = thaw(checkpoint)
++            if kind == 6:
++                prepared["position"] = self.checkpoint_position(ref, checkpoint, route, spatial)
++            plan = self.ctx.calc("movement.transition", {"kind": kind, "position": spatial["position"],
++                "checkpoint": prepared, "parameters": policy["parameters"]}, source=ref, rule_id=policy["rule"])
++            if not isinstance(plan, dict) or set(plan) != {"hidden", "relocate", "position"} or type(plan["hidden"]) is not bool or type(plan["relocate"]) is not bool:
++                raise ValueError("transition rule must return hidden/relocate booleans and position")
++            if plan["hidden"] != (kind == 5) or plan["relocate"] != (kind == 6):
++                raise ValueError("transition rule conflicts with disappear/appear meaning")
++            if not isinstance(plan["position"], dict) or set(plan["position"]) != {"row", "col"}:
++                raise ValueError("transition position must contain exactly row/col")
++            row, col = self.ctx.spatial.grid._cell(plan["position"])
++            if plan["relocate"] and route_motion_mode(route) == 0 and not self.ctx.spatial.grid.passable(row, col):
++                raise ValueError("appearance destination is impassable")
++            origin = dict(spatial["position"])
++            if kind == 5:
++                self.ctx.abilities.interrupt(ref, "route_disappeared")
++            motion = spatial.pop("forced_motion", None)
++            if motion:
++                pending = {t["id"] for t in self.ctx.session.scheduler.pending}
++                if motion["task"] in pending: self.ctx.session.cancel(motion["task"])
++            spatial["route_hidden"] = plan["hidden"]
++            spatial["velocity"] = {"row": 0, "col": 0}
++            spatial.pop("movement_path", None)
++            state.pop("wait_until", None)
++            state["checkpoint"] += 1
++            state["path_index"] = 0
++            if plan["relocate"]:
++                # Relocation is not traveled distance. Preserve the existing
++                # ledger/cursors so pending periodic packets cannot count teleport.
++                spatial["position"] = dict(plan["position"])
++            self.ctx.set(ref, ("spatial",), spatial)
++            if self.ctx.spatial.blocked_by(ref) is not None:
++                self.ctx.set(ref, ("runtime", "blocked_by"), None)
++                self.ctx.emit("blocking.changed", {"source": None, "target": ref, "reason": "route_transition"})
++            self.ctx.spatial.blocking()
++            self.ctx.buffs.reconcile()
++            self.ctx.emit("movement.visibility_changed", {"source": ref, "target": ref, "hidden": plan["hidden"],
++                "origin": origin, "position": dict(spatial["position"]), "relocated": plan["relocate"],
++                "policy": thaw(policy), "distance_recorded": 0})
++
+     def tick(self, session):
+         if self.ctx.state().get("finished"):
+             return
+@@ -169,6 +245,7 @@
+             ref = entity["id"]
+             if not self.ctx.alive(ref):
+                 continue
++            route_hidden = self.ctx.route_hidden(ref)
+             configured_steering = entity["components"].get("spatial", {}).get("steering")
+             if configured_steering:
+                 stationary = (not self.ctx.buffs.controls(ref)["move"] or
+@@ -176,9 +253,9 @@
+                               (route_motion_mode(entity["components"]["spatial"].get("route")) == 0 and self.ctx.spatial.blocked_by(ref)))
+                 if stationary and self.ctx.get(ref, ("spatial", "velocity"), {"row": 0, "col": 0}) != {"row": 0, "col": 0}:
+                     self.ctx.set(ref, ("spatial", "velocity"), {"row": 0, "col": 0})
+-            if not self.ctx.buffs.controls(ref)["move"]:
+-                continue
+-            if self.ctx.get(ref, ("runtime", "behavior_decision"), {}).get("move") is False:
++            if not route_hidden and not self.ctx.buffs.controls(ref)["move"]:
++                continue
++            if not route_hidden and self.ctx.get(ref, ("runtime", "behavior_decision"), {}).get("move") is False:
+                 continue
+             spatial = self.ctx.get(ref, ("spatial",), {})
+             if spatial.get("forced_motion"):
+@@ -186,13 +263,21 @@
+             route = spatial.get("route")
+             if not route:
+                 continue
+-            if route_motion_mode(route) == 0 and self.ctx.spatial.blocked_by(ref):
++            next_cp = spatial.get("movement", {}).get("checkpoint", 0)
++            instant_transition = next_cp < len(route.get("checkpoints") or []) and self.checkpoint_type(route["checkpoints"][next_cp]) in (5, 6)
++            if not route_hidden and not instant_transition and route_motion_mode(route) == 0 and self.ctx.spatial.blocked_by(ref):
+                 continue
+             state = spatial.setdefault("movement", {"checkpoint": 0, "path_index": 0})
+             checkpoints = route.get("checkpoints") or []
+             cursor = state["checkpoint"]
+             waiting = False
+-            while cursor < len(checkpoints) and self.checkpoint_type(checkpoints[cursor]) in (1, 2, 3, 4):
++            while cursor < len(checkpoints) and self.checkpoint_type(checkpoints[cursor]) in (1, 2, 3, 4, 5, 6):
++                if self.checkpoint_type(checkpoints[cursor]) in (5, 6):
++                    self.transition_checkpoint(ref, checkpoints[cursor], route, spatial, state)
++                    spatial = self.ctx.get(ref, ("spatial",), {})
++                    state = spatial["movement"]
++                    cursor = state["checkpoint"]
++                    continue
+                 if "wait_until" not in state:
+                     kind = self.checkpoint_type(checkpoints[cursor])
+                     if kind == 1:
+@@ -223,7 +308,13 @@
+                     spatial["velocity"] = {"row": 0, "col": 0}
+                 self.ctx.set(ref, ("spatial",), spatial)
+                 continue
+-            point = checkpoints[cursor].get("position") if cursor < len(checkpoints) else route["endPosition"]
++            if self.ctx.route_hidden(ref):
++                raise ValueError("hidden route reached non-WAIT/non-APPEAR action")
++            if not self.ctx.buffs.controls(ref)["move"] or self.ctx.get(ref, ("runtime", "behavior_decision"), {}).get("move") is False:
++                continue
++            if route_motion_mode(route) == 0 and self.ctx.spatial.blocked_by(ref):
++                continue
++            point = self.checkpoint_position(ref, checkpoints[cursor], route, spatial) if cursor < len(checkpoints) else route["endPosition"]
+             if not spatial.get("movement_path"):
+                 spatial["movement_path"] = self.ctx.calc("movement.path", {"map": self.ctx.spatial.map_definition,
+                         "origin": spatial["position"], "destination": point, "checkpoints": checkpoints}, source=ref,
+--- a/ark_sim/domains/providers.py
++++ b/ark_sim/domains/providers.py
+@@ -2,6 +2,8 @@
+ from ark_sim.presets import providers as ark
+ 
+ BUILTIN_PROVIDERS = {
++    "ark.movement.checkpoint_cartesian": ark.checkpoint_cartesian_position,
++    "ark.movement.living_transition": ark.living_route_transition,
+     "ark.spawn.uniform_rect": ark.spawn_uniform_rect,
+     "ark.movement.steering_velocity": ark.steering_velocity,
+     "ark.attributes.layers": ark.attribute_layers,
+--- a/ark_sim/presets/providers.py
++++ b/ark_sim/presets/providers.py
+@@ -1,5 +1,16 @@
+ """Pure Ark preset decisions. User providers can replace every entry."""
+ import math
++
++
++def checkpoint_cartesian_position(inputs, params, context):
++    signs = inputs["parameters"]["axis_signs"]
++    return {"row": inputs["position"]["row"]+signs["row"]*inputs["offset"]["y"],
++            "col": inputs["position"]["col"]+signs["col"]*inputs["offset"]["x"]}
++
++
++def living_route_transition(inputs, params, context):
++    return {"hidden": inputs["kind"] == 5, "relocate": inputs["kind"] == 6,
++            "position": dict(inputs["checkpoint"]["position"]) if inputs["kind"] == 6 else dict(inputs["position"])}
+ 
+ 
+ def attribute_layers(inputs, params, context):
+--- a/ark_sim/rules/contracts.json
++++ b/ark_sim/rules/contracts.json
+@@ -3062,6 +3062,85 @@
+       },
+       "contractVersion": 1,
+       "status": "declared"
++    },
++    {
++      "id": "movement.transition",
++      "kind": "calculation",
++      "owner": "source",
++      "inputs": [
++        {
++          "name": "kind",
++          "type": "integer",
++          "required": true
++        },
++        {
++          "name": "position",
++          "type": "position",
++          "required": true
++        },
++        {
++          "name": "checkpoint",
++          "type": "value_map",
++          "required": true
++        },
++        {
++          "name": "parameters",
++          "type": "value_map",
++          "required": true
++        }
++      ],
++      "outputType": "value_map",
++      "implementations": [
++        "expression",
++        "graph",
++        "provider"
++      ],
++      "description": "Explicit replaceable route model; no native-body accuracy claim.",
++      "pureEvaluation": true,
++      "writesStateDirectly": false,
++      "versionsRequired": true,
++      "outputSchema": {
++        "type": "value_map"
++      },
++      "contractVersion": 1,
++      "status": "declared"
++    },
++    {
++      "id": "movement.checkpoint_position",
++      "kind": "calculation",
++      "owner": "source",
++      "inputs": [
++        {
++          "name": "position",
++          "type": "position",
++          "required": true
++        },
++        {
++          "name": "offset",
++          "type": "value_map",
++          "required": true
++        },
++        {
++          "name": "parameters",
++          "type": "value_map",
++          "required": true
++        }
++      ],
++      "outputType": "position",
++      "implementations": [
++        "expression",
++        "graph",
++        "provider"
++      ],
++      "description": "Explicit replaceable route model; no native-body accuracy claim.",
++      "pureEvaluation": true,
++      "writesStateDirectly": false,
++      "versionsRequired": true,
++      "outputSchema": {
++        "type": "position"
++      },
++      "contractVersion": 1,
++      "status": "declared"
+     }
+   ],
+   "types": {

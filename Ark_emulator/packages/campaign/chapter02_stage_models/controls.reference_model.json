@@ -1,0 +1,244 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/chapter02_reference_story_control",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "source_locks": {
+        "packages/campaign/chapter02_sources/native.reference.json": "97447895b3edc69f0f60113ea96bc240c25c0fe980897614e93a94dd75e0d492"
+      },
+      "builder_sha256": "cee1aea39589657c02d655d7af2086e06e0f663c6909bdfe6310a12e77f3528f",
+      "audit_helper_sha256": "44863a7e4ff2c68aa340bb3e5991ab8e74636fe96614e7c0f65a58b600e11a84",
+      "actual_client_verified": false
+    }
+  },
+  "controls": [
+    {
+      "id": "control/reference/story/main_02-10",
+      "kind": "control",
+      "clock_policy": "logical",
+      "ack_policy": "immediate",
+      "steps": [
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "reference.story.row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_02-10",
+                "native_row": {
+                  "line": 1,
+                  "raw_line": "[HEADER(is_skippable=true, is_autoable=false)] 主线02-10教学",
+                  "command": "HEADER",
+                  "parameters": "is_skippable=true, is_autoable=false",
+                  "syntax": "command",
+                  "text": "主线02-10教学",
+                  "decoded_parameters": {
+                    "is_skippable": true,
+                    "is_autoable": false
+                  },
+                  "classification": "native_UI_flags",
+                  "headless_model_offset_seconds": 0
+                },
+                "policy": "declared logical immediate acknowledgement; visual UI remains metadata"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "reference.story.row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_02-10",
+                "native_row": {
+                  "line": 2,
+                  "raw_line": "[PopupDialog(dialogHead=\"$avatar_amiya\")] 博士，地面上有一些技术部门设置的<@tu.kw>医疗符文</>，将干员布置在这个位置，就可以恢复生命。",
+                  "command": "PopupDialog",
+                  "parameters": "dialogHead=\"$avatar_amiya\"",
+                  "syntax": "command",
+                  "text": "博士，地面上有一些技术部门设置的<@tu.kw>医疗符文</>，将干员布置在这个位置，就可以恢复生命。",
+                  "decoded_parameters": {
+                    "dialogHead": "$avatar_amiya"
+                  },
+                  "classification": "UI_text_and_avatar_metadata",
+                  "headless_model_offset_seconds": 0
+                },
+                "policy": "declared logical immediate acknowledgement; visual UI remains metadata"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "ack",
+          "key": "line/2"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "reference.story.row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_02-10",
+                "native_row": {
+                  "line": 3,
+                  "raw_line": "[PopupDialog(dialogHead=\"$avatar_sys\")] 长按这些地点可以获得更加详细的情报。",
+                  "command": "PopupDialog",
+                  "parameters": "dialogHead=\"$avatar_sys\"",
+                  "syntax": "command",
+                  "text": "长按这些地点可以获得更加详细的情报。",
+                  "decoded_parameters": {
+                    "dialogHead": "$avatar_sys"
+                  },
+                  "classification": "UI_text_and_avatar_metadata",
+                  "headless_model_offset_seconds": 0
+                },
+                "policy": "declared logical immediate acknowledgement; visual UI remains metadata"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "ack",
+          "key": "line/3"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "reference.story.row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_02-10",
+                "native_row": {
+                  "line": 4,
+                  "raw_line": "[Blocker(fadetime=0.3, block=true, a=0)]",
+                  "command": "Blocker",
+                  "parameters": "fadetime=0.3, block=true, a=0",
+                  "syntax": "command",
+                  "text": "",
+                  "decoded_parameters": {
+                    "fadetime": 0.3,
+                    "block": true,
+                    "a": 0
+                  },
+                  "classification": "UI_overlay_fields_not_proven_gameplay_input_lock",
+                  "headless_model_offset_seconds": 0
+                },
+                "policy": "declared logical immediate acknowledgement; visual UI remains metadata"
+              }
+            }
+          ]
+        }
+      ],
+      "on_start": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_02-10",
+            "enabled": true
+          }
+        }
+      ],
+      "on_complete": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_02-10",
+            "enabled": false
+          }
+        }
+      ],
+      "on_cancel": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_02-10",
+            "enabled": false
+          }
+        }
+      ],
+      "metadata": {
+        "native_story_key": "obt/tutorial/level/main_02-10",
+        "native_story_source": {
+          "path": "unpack_work/release_20260831/hot_raw/main_02-10.dat",
+          "sha256": "164715b127782bfe13842bf2b3d5eabb86aa177a96d12eb13f5a9bea53ffe511",
+          "bytes": 396
+        },
+        "payload_sha256": "dd62da54ac88439ace8f8a74e206bd56c341640ea581e56028b85afce9964845",
+        "classified_rows": [
+          {
+            "line": 1,
+            "raw_line": "[HEADER(is_skippable=true, is_autoable=false)] 主线02-10教学",
+            "command": "HEADER",
+            "parameters": "is_skippable=true, is_autoable=false",
+            "syntax": "command",
+            "text": "主线02-10教学",
+            "decoded_parameters": {
+              "is_skippable": true,
+              "is_autoable": false
+            },
+            "classification": "native_UI_flags",
+            "headless_model_offset_seconds": 0
+          },
+          {
+            "line": 2,
+            "raw_line": "[PopupDialog(dialogHead=\"$avatar_amiya\")] 博士，地面上有一些技术部门设置的<@tu.kw>医疗符文</>，将干员布置在这个位置，就可以恢复生命。",
+            "command": "PopupDialog",
+            "parameters": "dialogHead=\"$avatar_amiya\"",
+            "syntax": "command",
+            "text": "博士，地面上有一些技术部门设置的<@tu.kw>医疗符文</>，将干员布置在这个位置，就可以恢复生命。",
+            "decoded_parameters": {
+              "dialogHead": "$avatar_amiya"
+            },
+            "classification": "UI_text_and_avatar_metadata",
+            "headless_model_offset_seconds": 0
+          },
+          {
+            "line": 3,
+            "raw_line": "[PopupDialog(dialogHead=\"$avatar_sys\")] 长按这些地点可以获得更加详细的情报。",
+            "command": "PopupDialog",
+            "parameters": "dialogHead=\"$avatar_sys\"",
+            "syntax": "command",
+            "text": "长按这些地点可以获得更加详细的情报。",
+            "decoded_parameters": {
+              "dialogHead": "$avatar_sys"
+            },
+            "classification": "UI_text_and_avatar_metadata",
+            "headless_model_offset_seconds": 0
+          },
+          {
+            "line": 4,
+            "raw_line": "[Blocker(fadetime=0.3, block=true, a=0)]",
+            "command": "Blocker",
+            "parameters": "fadetime=0.3, block=true, a=0",
+            "syntax": "command",
+            "text": "",
+            "decoded_parameters": {
+              "fadetime": 0.3,
+              "block": true,
+              "a": 0
+            },
+            "classification": "UI_overlay_fields_not_proven_gameplay_input_lock",
+            "headless_model_offset_seconds": 0
+          }
+        ],
+        "native_wall_clock_pause_ui_verified": false,
+        "declared_policy": "Story preserves managed lifetime/input lock/ack steps; PopupDialog acknowledged immediately; Blocker visual fadetime is metadata, not combat delay."
+      }
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+# 人口账本与关卡完成
+
+第1章45（1-11）/30（1-12）是原始waves的SPAWN之和，不含注册NPC/EMP与我方owned summons。它也不能单凭扫描为空证明任意未知原生方法不会创建敌方召唤。
+
+`tools/campaign_population_ledger.py` 提供纯只读World诊断，分别列出wave enemies、non-wave enemies、registered predefines、player owned、public deployments和other。Wave口径目前读取实际timeline写入的wave/fragment/action timing origins；注册读取系统registry，owned读取ownership。优先保registered独立，再将enemy分wave/nonwave；敌方owned不会混入我方token。终结状态、活跃/存活、来源定义和实例ID逐项保留。
+
+独立小场景验证一只真实timeline敌人、另直接创建敌方owned召唤、我方token和注册休眠NPC分别计数，完整checkpoint读取前后相等。首次fixture未声明token/summon依赖而被Compiler合法裁剪，保原失败；补真实依赖后1项通过。直接创建场景是账本诊断，不作为公开commands replay或原生客户端证明。
+
+账本尚未替换冻结整关runner人口门。未来具有非wave敌人的章节应把原native wave出生与额外敌人来源分别对照，并验证每个生命周期终结；不能宽松地令未知额外出生跳过人口守恒。当前group只是声明模型来源诊断，最终实际准确性仍需源正文或客户端采集。
+
+M31新增内部tile_field_owner时，账本另列tile_field_owners，优先于其他分类。实际M31单格场景只有1内部field、0wave/0registered/0owned，读取前后CP相等；不把内部表示计为实际敌人或干员。

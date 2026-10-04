@@ -1,0 +1,206 @@
+{
+  "schema": "ark-sim/map-board-reference-scope-counterexample/v1",
+  "core": "2866c7d55f83b20cec71de1e24a6a57a426b0c02d4b307ab0fe468a7bd687f8a",
+  "module": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m39_field_role_candidate\\ark_sim\\__init__.py",
+  "fixture": {
+    "entities": [
+      {
+        "id": "unit/owner",
+        "kind": "entity",
+        "tags": [
+          "tile_field_owner"
+        ],
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 1,
+              "atk": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1,
+              "capacity": 1
+            }
+          },
+          "buffs": {
+            "initial": [
+              "buff/parent"
+            ]
+          }
+        }
+      },
+      {
+        "id": "unit/target",
+        "kind": "entity",
+        "tags": [
+          "player"
+        ],
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "def": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100,
+              "role": "health"
+            }
+          }
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/parent",
+        "kind": "buff",
+        "aura": {
+          "selector": "selector/cell",
+          "buff": "buff/member"
+        }
+      },
+      {
+        "id": "buff/member",
+        "kind": "buff",
+        "stacking": {
+          "mode": "independent"
+        },
+        "modifiers": []
+      }
+    ],
+    "selectors": [
+      {
+        "id": "selector/cell",
+        "kind": "selector",
+        "region": {
+          "type": "grid_offsets",
+          "offsets": [
+            [
+              0,
+              0
+            ]
+          ],
+          "rotate_with_facing": false
+        },
+        "filters": [
+          {
+            "tag": "player"
+          }
+        ]
+      },
+      {
+        "id": "selector/target",
+        "kind": "selector",
+        "region": {
+          "type": "all"
+        },
+        "filters": [
+          {
+            "tag": "player"
+          },
+          {
+            "state": "alive"
+          }
+        ],
+        "limit": 1
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/illegal_owner",
+        "kind": "ability",
+        "selector": "selector/target",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "damage",
+              "damage_type": "physical"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scenario/static_override_counter",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 4,
+        "tiles": [
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "custom_field",
+            "buildableType": 1,
+            "passableMask": 1,
+            "blackboard": {
+              "definition": "unit/owner",
+              "tags": [
+                "player"
+              ],
+              "components": {
+                "abilities": [
+                  "not/an/ability"
+                ]
+              },
+              "provider": "unregistered"
+            }
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1
+          }
+        ],
+        "tile_mechanics": {
+          "custom_field": {
+            "type": "occupancy_buff_field",
+            "definition": "unit/owner",
+            "expected_blackboard": {
+              "definition": "unit/owner",
+              "tags": [
+                "player"
+              ],
+              "components": {
+                "abilities": [
+                  "not/an/ability"
+                ]
+              },
+              "provider": "unregistered"
+            }
+          }
+        }
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/target",
+          "instanceAlias": "target",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        }
+      ]
+    }
+  },
+  "expected": "compile accepted because all map BB and expectedboard are explicit data",
+  "actual_compile_error": "'not/an/ability'",
+  "source_sha256": "2ca887c65d859fd3c19b923450dbbee452c87c478c2ea09c9faa021b0b3441a7",
+  "passed": false
+}

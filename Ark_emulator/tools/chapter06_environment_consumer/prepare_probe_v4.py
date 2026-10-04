@@ -1,0 +1,6 @@
+"""Declare real source melee Cold dependency; do not remove genuine source Buffs."""
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2];p=ROOT/'tools/chapter06_environment_consumer/probe_route_v3.py';s=p.read_text().replace('chapter06_environment_v3','chapter06_environment_v4');s=s.replace('from ark_sim.tools.replay import replay','from ark_sim.tools.replay import replay\nfrom tools.chapter06.cold.policies import providers')
+s=s.replace("p=json.loads(UNIT.read_bytes());uid=", "p=json.loads(UNIT.read_bytes());cold=json.loads((ROOT/'packages/campaign/chapter06_cold/model.json').read_bytes());\n for key in ('rules','buffs','abilities','selectors'):p.setdefault(key,[]).extend(cold.get(key,[]))\n uid=")
+s=s.replace('program=Compiler().compile(p);s=Engine.create(program,event_journal_path=active)','reg=providers();program=Compiler(providers=reg).compile(p);s=Engine.create(program,providers=reg,event_journal_path=active)').replace('r=Engine.restore(program,load_checkpoint(cp))','r=Engine.restore(program,load_checkpoint(cp),providers=reg)').replace("h=replay(program,record,event_journal_path=OUT/'head.active.jsonl')","h=replay(program,record,providers=reg,event_journal_path=OUT/'head.active.jsonl')")
+out=p.with_name('probe_route_v4.py');assert not out.exists();out.write_text(s,encoding='utf8',newline='');print(out)

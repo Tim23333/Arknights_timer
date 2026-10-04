@@ -1,0 +1,2827 @@
+{
+  "schema": "ark-sim/angel-blessing-damage-witness/v1",
+  "passed": true,
+  "implementation_sha256": "bd60c068f0af7694e8e62c16868f4d310b6bb92681f8ebbf5d97814fba28ac11",
+  "input_package_sha256": "0fbba3f0548d2efaef97d7c1be98a620e65b6408755bfddbd49a132ef72fddf4",
+  "selected_cases": [
+    "friend_damage_capacity_source_exit"
+  ],
+  "identity_at_start": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\mainline_models\\level_main_00-10.m12_projection.json": "0fbba3f0548d2efaef97d7c1be98a620e65b6408755bfddbd49a132ef72fddf4",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\witness_angel_blessing_damage.py": "14ad4c48f0ae7cc6616e11a648ca56f4d03abe06a92cfad598a1d96b33ad59d4",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\witness_deployed_six.py": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\witness_deployed_offensive.py": "712c80a95afc04d01620f4d7a5c5586ec01812fcdcda931b51d5cecb5167ce4e",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\operators.normalized.json": "1611fac32beb58d7aeb9e28ffb6cd4ebcfc3a5e6f955157a5dc3fab7ebb6824b",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\skills.angel.json": "724df525cda110e29763170c9044827022c8d3aa9fbf7488bd5118031d77a121",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\talents.attack.json": "bb0e679cdd1e266ee7248f728029a7ce67cb2cf5151ba378205dcff3a7186204"
+  },
+  "formal_approval": false,
+  "cases": {
+    "friend_damage_capacity_source_exit": {
+      "expected": {
+        "friend_attack_before_after": [
+          501.2,
+          470
+        ],
+        "friend_base_maxHP": 1565,
+        "blessed_maxHP": 1721.5,
+        "heal_clamps_to_blessed_capacity": 720.6666666666666,
+        "tick1_regen_precedes_heal": 0.8333333333333334,
+        "friend_attack_ticks": [
+          15,
+          54
+        ],
+        "source_exit_absolute_HP_clamps_to_base": 1565,
+        "native_HP_policy_pending": true
+      },
+      "program_fingerprint": "60b4be1e8575a45e2a0f899d56706c52ef575f278d2e6855ca8381036e973c00",
+      "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+      "checkpoint_equal": true,
+      "replay_equal": true,
+      "tick": 57,
+      "events": [
+        {
+          "id": 16,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1000
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 33,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 2,
+            "resource": "sp",
+            "delta": 0,
+            "value": 0
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 79,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "sp",
+            "delta": 6.0,
+            "value": 6.0
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 155,
+          "type": "buff.applied",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/talent_myrtle_parent",
+            "instance": "buff/2/1",
+            "stacks": 1
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 233,
+          "type": "buff.applied",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/talent_myrtle_member",
+            "instance": "buff/2/2",
+            "stacks": 1
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 246,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 3,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1000000
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 273,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 1,
+            "resource": "dp",
+            "delta": -14.0,
+            "value": 36.0
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 290,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 5,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1598
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 308,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 5,
+            "resource": "mode",
+            "delta": 0,
+            "value": 0
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 326,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 5,
+            "resource": "sp",
+            "delta": 0,
+            "value": 20
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 483,
+          "type": "buff.applied",
+          "payload": {
+            "source": 5,
+            "target": 5,
+            "buff": "buff/talent_angel_speed",
+            "instance": "buff/5/1",
+            "stacks": 1
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 583,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 5,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1598
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 616,
+          "type": "buff.applied",
+          "payload": {
+            "source": 5,
+            "target": 5,
+            "buff": "buff/talent_angel_blessing_self",
+            "instance": "buff/5/2",
+            "stacks": 1
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 625,
+          "type": "command.accepted",
+          "payload": {
+            "action": {
+              "action": "deploy",
+              "entity": "unit/char_103_angel",
+              "alias": "angel",
+              "position": {
+                "row": 4,
+                "col": 3
+              },
+              "facing": "right"
+            },
+            "result": 5
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 716,
+          "type": "ability.started",
+          "payload": {
+            "source": 2,
+            "ability": "ability/char_151_myrtle/normal_attack",
+            "cast": "cast/2/1",
+            "targets": [
+              3
+            ]
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 774,
+          "type": "ability.started",
+          "payload": {
+            "source": 5,
+            "ability": "ability/campaign_angel_normal",
+            "cast": "cast/5/1",
+            "targets": [
+              3
+            ]
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 810,
+          "type": "ability.started",
+          "payload": {
+            "source": 5,
+            "ability": "ability/talent_angel_deploy_bless",
+            "cast": "cast/5/2",
+            "targets": [
+              5
+            ]
+          },
+          "time": 0,
+          "cause": 624
+        },
+        {
+          "id": 891,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1000
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 908,
+          "type": "buff.applied",
+          "payload": {
+            "source": 5,
+            "target": 2,
+            "buff": "buff/talent_angel_friend",
+            "instance": "buff/2/3",
+            "stacks": 1
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 912,
+          "type": "ability.finished",
+          "payload": {
+            "source": 5,
+            "ability": "ability/talent_angel_deploy_bless",
+            "cast": "cast/5/2"
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 930,
+          "type": "ability.started",
+          "payload": {
+            "source": 4,
+            "ability": "ability/blessing_heal",
+            "cast": "cast/4/1",
+            "targets": [
+              2
+            ]
+          },
+          "time": 1,
+          "cause": null
+        },
+        {
+          "id": 931,
+          "type": "command.accepted",
+          "payload": {
+            "action": {
+              "action": "skill",
+              "source": "probe",
+              "ability": "ability/blessing_heal"
+            },
+            "result": "cast/4/1"
+          },
+          "time": 1,
+          "cause": null
+        },
+        {
+          "id": 987,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0.8333333333333712,
+            "value": 1000.8333333333334
+          },
+          "time": 1,
+          "cause": null
+        },
+        {
+          "id": 989,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0.8333333333333712
+          },
+          "time": 1,
+          "cause": 969
+        },
+        {
+          "id": 1007,
+          "type": "resource.changed",
+          "payload": {
+            "source": 4,
+            "target": 2,
+            "resource": "hp",
+            "delta": 720.6666666666669,
+            "value": 1721.5000000000002
+          },
+          "time": 1,
+          "cause": null
+        },
+        {
+          "id": 1009,
+          "type": "healing.accepted",
+          "payload": {
+            "source": 4,
+            "target": 2,
+            "amount": 720.6666666666669
+          },
+          "time": 1,
+          "cause": null
+        },
+        {
+          "id": 1010,
+          "type": "ability.finished",
+          "payload": {
+            "source": 4,
+            "ability": "ability/blessing_heal",
+            "cast": "cast/4/1"
+          },
+          "time": 1,
+          "cause": null
+        },
+        {
+          "id": 1069,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0.0,
+            "value": 1721.5000000000002
+          },
+          "time": 2,
+          "cause": null
+        },
+        {
+          "id": 1071,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0.0
+          },
+          "time": 2,
+          "cause": 1051
+        },
+        {
+          "id": 1130,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0.0,
+            "value": 1721.5000000000002
+          },
+          "time": 3,
+          "cause": null
+        },
+        {
+          "id": 1132,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0.0
+          },
+          "time": 3,
+          "cause": 1112
+        },
+        {
+          "id": 1191,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0.0,
+            "value": 1721.5000000000002
+          },
+          "time": 4,
+          "cause": null
+        },
+        {
+          "id": 1193,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0.0
+          },
+          "time": 4,
+          "cause": 1173
+        },
+        {
+          "id": 1252,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0.0,
+            "value": 1721.5000000000002
+          },
+          "time": 5,
+          "cause": null
+        },
+        {
+          "id": 1254,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0.0
+          },
+          "time": 5,
+          "cause": 1234
+        },
+        {
+          "id": 1313,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0.0,
+            "value": 1721.5000000000002
+          },
+          "time": 6,
+          "cause": null
+        },
+        {
+          "id": 1315,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0.0
+          },
+          "time": 6,
+          "cause": 1295
+        },
+        {
+          "id": 1374,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0.0,
+            "value": 1721.5000000000002
+          },
+          "time": 7,
+          "cause": null
+        },
+        {
+          "id": 1376,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0.0
+          },
+          "time": 7,
+          "cause": 1356
+        },
+        {
+          "id": 1435,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0.0,
+            "value": 1721.5000000000002
+          },
+          "time": 8,
+          "cause": null
+        },
+        {
+          "id": 1437,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0.0
+          },
+          "time": 8,
+          "cause": 1417
+        },
+        {
+          "id": 1493,
+          "type": "resource.changed",
+          "payload": {
+            "source": 5,
+            "target": 3,
+            "resource": "hp",
+            "delta": -593.4200000000419,
+            "value": 999406.58
+          },
+          "time": 9,
+          "cause": null
+        },
+        {
+          "id": 1495,
+          "type": "damage.accepted",
+          "payload": {
+            "source": 5,
+            "target": 3,
+            "amount": 593.4200000000419,
+            "ability": "ability/campaign_angel_normal",
+            "resource": "hp"
+          },
+          "time": 9,
+          "cause": null
+        },
+        {
+          "id": 1496,
+          "type": "attack.accepted",
+          "payload": {
+            "source": 5,
+            "target": 3,
+            "ability": "ability/campaign_angel_normal",
+            "cast": "cast/5/1",
+            "amount": 593.4200000000419
+          },
+          "time": 9,
+          "cause": null
+        },
+        {
+          "id": 1497,
+          "type": "ability.finished",
+          "payload": {
+            "source": 5,
+            "ability": "ability/campaign_angel_normal",
+            "cast": "cast/5/1"
+          },
+          "time": 9,
+          "cause": null
+        },
+        {
+          "id": 1516,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0.0,
+            "value": 1721.5000000000002
+          },
+          "time": 9,
+          "cause": null
+        },
+        {
+          "id": 1518,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0.0
+          },
+          "time": 9,
+          "cause": 1498
+        },
+        {
+          "id": 1577,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0.0,
+            "value": 1721.5000000000002
+          },
+          "time": 10,
+          "cause": null
+        },
+        {
+          "id": 1579,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0.0
+          },
+          "time": 10,
+          "cause": 1559
+        },
+        {
+          "id": 1638,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0.0,
+            "value": 1721.5000000000002
+          },
+          "time": 11,
+          "cause": null
+        },
+        {
+          "id": 1640,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0.0
+          },
+          "time": 11,
+          "cause": 1620
+        },
+        {
+          "id": 1699,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0.0,
+            "value": 1721.5000000000002
+          },
+          "time": 12,
+          "cause": null
+        },
+        {
+          "id": 1701,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0.0
+          },
+          "time": 12,
+          "cause": 1681
+        },
+        {
+          "id": 1760,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0.0,
+            "value": 1721.5000000000002
+          },
+          "time": 13,
+          "cause": null
+        },
+        {
+          "id": 1762,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0.0
+          },
+          "time": 13,
+          "cause": 1742
+        },
+        {
+          "id": 1821,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0.0,
+            "value": 1721.5000000000002
+          },
+          "time": 14,
+          "cause": null
+        },
+        {
+          "id": 1823,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0.0
+          },
+          "time": 14,
+          "cause": 1803
+        },
+        {
+          "id": 1876,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "resource": "hp",
+            "delta": -501.19999999995343,
+            "value": 998905.38
+          },
+          "time": 15,
+          "cause": null
+        },
+        {
+          "id": 1878,
+          "type": "damage.accepted",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "amount": 501.19999999995343,
+            "ability": "ability/char_151_myrtle/normal_attack",
+            "resource": "hp"
+          },
+          "time": 15,
+          "cause": null
+        },
+        {
+          "id": 1879,
+          "type": "attack.accepted",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "ability": "ability/char_151_myrtle/normal_attack",
+            "cast": "cast/2/1",
+            "amount": 501.19999999995343
+          },
+          "time": 15,
+          "cause": null
+        },
+        {
+          "id": 1880,
+          "type": "ability.finished",
+          "payload": {
+            "source": 2,
+            "ability": "ability/char_151_myrtle/normal_attack",
+            "cast": "cast/2/1"
+          },
+          "time": 15,
+          "cause": null
+        },
+        {
+          "id": 1899,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0.0,
+            "value": 1721.5000000000002
+          },
+          "time": 15,
+          "cause": null
+        },
+        {
+          "id": 1901,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0.0
+          },
+          "time": 15,
+          "cause": 1881
+        },
+        {
+          "id": 1908,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 1,
+            "resource": "dp",
+            "delta": 7.0,
+            "value": 43.0
+          },
+          "time": 16,
+          "cause": null
+        },
+        {
+          "id": 1930,
+          "type": "command.accepted",
+          "payload": {
+            "action": {
+              "action": "withdraw",
+              "source": "angel"
+            },
+            "result": 5
+          },
+          "time": 16,
+          "cause": null
+        },
+        {
+          "id": 1969,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0.0,
+            "value": 1721.5000000000002
+          },
+          "time": 16,
+          "cause": null
+        },
+        {
+          "id": 1971,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0.0
+          },
+          "time": 16,
+          "cause": 1951
+        },
+        {
+          "id": 2030,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 2,
+            "resource": "hp",
+            "delta": -156.50000000000023,
+            "value": 1565
+          },
+          "time": 16,
+          "cause": null
+        },
+        {
+          "id": 2047,
+          "type": "buff.removed",
+          "payload": {
+            "source": 5,
+            "target": 2,
+            "buff": "buff/talent_angel_friend",
+            "instance": "buff/2/3"
+          },
+          "time": 16,
+          "cause": null
+        },
+        {
+          "id": 2138,
+          "type": "buff.removed",
+          "payload": {
+            "source": 5,
+            "target": 5,
+            "buff": "buff/talent_angel_speed",
+            "instance": "buff/5/1"
+          },
+          "time": 16,
+          "cause": null
+        },
+        {
+          "id": 2216,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 5,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1598
+          },
+          "time": 16,
+          "cause": null
+        },
+        {
+          "id": 2249,
+          "type": "buff.removed",
+          "payload": {
+            "source": 5,
+            "target": 5,
+            "buff": "buff/talent_angel_blessing_self",
+            "instance": "buff/5/2"
+          },
+          "time": 16,
+          "cause": null
+        },
+        {
+          "id": 2291,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 17,
+          "cause": null
+        },
+        {
+          "id": 2293,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 17,
+          "cause": 2273
+        },
+        {
+          "id": 2335,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 18,
+          "cause": null
+        },
+        {
+          "id": 2337,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 18,
+          "cause": 2317
+        },
+        {
+          "id": 2379,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 19,
+          "cause": null
+        },
+        {
+          "id": 2381,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 19,
+          "cause": 2361
+        },
+        {
+          "id": 2423,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 20,
+          "cause": null
+        },
+        {
+          "id": 2425,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 20,
+          "cause": 2405
+        },
+        {
+          "id": 2467,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 21,
+          "cause": null
+        },
+        {
+          "id": 2469,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 21,
+          "cause": 2449
+        },
+        {
+          "id": 2511,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 22,
+          "cause": null
+        },
+        {
+          "id": 2513,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 22,
+          "cause": 2493
+        },
+        {
+          "id": 2555,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 23,
+          "cause": null
+        },
+        {
+          "id": 2557,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 23,
+          "cause": 2537
+        },
+        {
+          "id": 2599,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 24,
+          "cause": null
+        },
+        {
+          "id": 2601,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 24,
+          "cause": 2581
+        },
+        {
+          "id": 2643,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 25,
+          "cause": null
+        },
+        {
+          "id": 2645,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 25,
+          "cause": 2625
+        },
+        {
+          "id": 2687,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 26,
+          "cause": null
+        },
+        {
+          "id": 2689,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 26,
+          "cause": 2669
+        },
+        {
+          "id": 2731,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 27,
+          "cause": null
+        },
+        {
+          "id": 2733,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 27,
+          "cause": 2713
+        },
+        {
+          "id": 2775,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 28,
+          "cause": null
+        },
+        {
+          "id": 2777,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 28,
+          "cause": 2757
+        },
+        {
+          "id": 2785,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 44.0
+          },
+          "time": 29,
+          "cause": null
+        },
+        {
+          "id": 2830,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "sp",
+            "delta": 1.0,
+            "value": 7.0
+          },
+          "time": 29,
+          "cause": null
+        },
+        {
+          "id": 2854,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 29,
+          "cause": null
+        },
+        {
+          "id": 2856,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 29,
+          "cause": 2836
+        },
+        {
+          "id": 2898,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 30,
+          "cause": null
+        },
+        {
+          "id": 2900,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 30,
+          "cause": 2880
+        },
+        {
+          "id": 2942,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 31,
+          "cause": null
+        },
+        {
+          "id": 2944,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 31,
+          "cause": 2924
+        },
+        {
+          "id": 2986,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 32,
+          "cause": null
+        },
+        {
+          "id": 2988,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 32,
+          "cause": 2968
+        },
+        {
+          "id": 3030,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 33,
+          "cause": null
+        },
+        {
+          "id": 3032,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 33,
+          "cause": 3012
+        },
+        {
+          "id": 3074,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 34,
+          "cause": null
+        },
+        {
+          "id": 3076,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 34,
+          "cause": 3056
+        },
+        {
+          "id": 3118,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 35,
+          "cause": null
+        },
+        {
+          "id": 3120,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 35,
+          "cause": 3100
+        },
+        {
+          "id": 3162,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 36,
+          "cause": null
+        },
+        {
+          "id": 3164,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 36,
+          "cause": 3144
+        },
+        {
+          "id": 3206,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 37,
+          "cause": null
+        },
+        {
+          "id": 3208,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 37,
+          "cause": 3188
+        },
+        {
+          "id": 3250,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 38,
+          "cause": null
+        },
+        {
+          "id": 3252,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 38,
+          "cause": 3232
+        },
+        {
+          "id": 3327,
+          "type": "ability.started",
+          "payload": {
+            "source": 2,
+            "ability": "ability/char_151_myrtle/normal_attack",
+            "cast": "cast/2/2",
+            "targets": [
+              3
+            ]
+          },
+          "time": 39,
+          "cause": null
+        },
+        {
+          "id": 3349,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 39,
+          "cause": null
+        },
+        {
+          "id": 3351,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 39,
+          "cause": 3331
+        },
+        {
+          "id": 3393,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 40,
+          "cause": null
+        },
+        {
+          "id": 3395,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 40,
+          "cause": 3375
+        },
+        {
+          "id": 3437,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 41,
+          "cause": null
+        },
+        {
+          "id": 3439,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 41,
+          "cause": 3419
+        },
+        {
+          "id": 3481,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 42,
+          "cause": null
+        },
+        {
+          "id": 3483,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 42,
+          "cause": 3463
+        },
+        {
+          "id": 3525,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 43,
+          "cause": null
+        },
+        {
+          "id": 3527,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 43,
+          "cause": 3507
+        },
+        {
+          "id": 3569,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 44,
+          "cause": null
+        },
+        {
+          "id": 3571,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 44,
+          "cause": 3551
+        },
+        {
+          "id": 3613,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 45,
+          "cause": null
+        },
+        {
+          "id": 3615,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 45,
+          "cause": 3595
+        },
+        {
+          "id": 3657,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 46,
+          "cause": null
+        },
+        {
+          "id": 3659,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 46,
+          "cause": 3639
+        },
+        {
+          "id": 3701,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 47,
+          "cause": null
+        },
+        {
+          "id": 3703,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 47,
+          "cause": 3683
+        },
+        {
+          "id": 3745,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 48,
+          "cause": null
+        },
+        {
+          "id": 3747,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 48,
+          "cause": 3727
+        },
+        {
+          "id": 3789,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 49,
+          "cause": null
+        },
+        {
+          "id": 3791,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 49,
+          "cause": 3771
+        },
+        {
+          "id": 3833,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 50,
+          "cause": null
+        },
+        {
+          "id": 3835,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 50,
+          "cause": 3815
+        },
+        {
+          "id": 3877,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 51,
+          "cause": null
+        },
+        {
+          "id": 3879,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 51,
+          "cause": 3859
+        },
+        {
+          "id": 3921,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 52,
+          "cause": null
+        },
+        {
+          "id": 3923,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 52,
+          "cause": 3903
+        },
+        {
+          "id": 3965,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 53,
+          "cause": null
+        },
+        {
+          "id": 3967,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 53,
+          "cause": 3947
+        },
+        {
+          "id": 4003,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "resource": "hp",
+            "delta": -470.0,
+            "value": 998435.38
+          },
+          "time": 54,
+          "cause": null
+        },
+        {
+          "id": 4005,
+          "type": "damage.accepted",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "amount": 470.0,
+            "ability": "ability/char_151_myrtle/normal_attack",
+            "resource": "hp"
+          },
+          "time": 54,
+          "cause": null
+        },
+        {
+          "id": 4006,
+          "type": "attack.accepted",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "ability": "ability/char_151_myrtle/normal_attack",
+            "cast": "cast/2/2",
+            "amount": 470.0
+          },
+          "time": 54,
+          "cause": null
+        },
+        {
+          "id": 4007,
+          "type": "ability.finished",
+          "payload": {
+            "source": 2,
+            "ability": "ability/char_151_myrtle/normal_attack",
+            "cast": "cast/2/2"
+          },
+          "time": 54,
+          "cause": null
+        },
+        {
+          "id": 4026,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 54,
+          "cause": null
+        },
+        {
+          "id": 4028,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 54,
+          "cause": 4008
+        },
+        {
+          "id": 4070,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 55,
+          "cause": null
+        },
+        {
+          "id": 4072,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 55,
+          "cause": 4052
+        },
+        {
+          "id": 4114,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1565
+          },
+          "time": 56,
+          "cause": null
+        },
+        {
+          "id": 4116,
+          "type": "regeneration.accepted",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "amount": 0
+          },
+          "time": 56,
+          "cause": 4096
+        }
+      ],
+      "random_samples": [
+        {
+          "sequence": 1,
+          "stream": "imp",
+          "index": 1,
+          "value": 0.5838338137853468,
+          "time": 0
+        }
+      ],
+      "commands": {
+        "schema": "ark-sim/replay/v2",
+        "program_fingerprint": "60b4be1e8575a45e2a0f899d56706c52ef575f278d2e6855ca8381036e973c00",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "seed": 11,
+        "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+        "until": 57,
+        "commands": [
+          {
+            "order": 1,
+            "submitted_at": 0,
+            "at": 0,
+            "action": {
+              "action": "deploy",
+              "entity": "unit/char_103_angel",
+              "alias": "angel",
+              "position": {
+                "row": 4,
+                "col": 3
+              },
+              "facing": "right"
+            }
+          },
+          {
+            "order": 2,
+            "submitted_at": 0,
+            "at": 1,
+            "action": {
+              "action": "skill",
+              "source": "probe",
+              "ability": "ability/blessing_heal"
+            }
+          },
+          {
+            "order": 3,
+            "submitted_at": 0,
+            "at": 16,
+            "action": {
+              "action": "withdraw",
+              "source": "angel"
+            }
+          }
+        ]
+      },
+      "fixture_initial_state": {
+        "id": "scenario/canonical_deployed_six",
+        "ruleset": "ruleset/ark_standard",
+        "roster": [
+          "unit/char_151_myrtle",
+          "unit/char_222_bpipe",
+          "unit/char_010_chen",
+          "unit/char_107_liskam",
+          "unit/char_202_demkni",
+          "unit/char_128_plosis",
+          "unit/char_103_angel",
+          "unit/char_180_amgoat",
+          "unit/char_003_kalts",
+          "unit/char_358_lisa",
+          "unit/char_400_weedy",
+          "unit/char_179_cgbird"
+        ],
+        "map": {
+          "rows": 9,
+          "cols": 12,
+          "tiles": [
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_wall",
+              "passableMask": 2,
+              "buildableType": 2,
+              "heightType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "passableMask": 3,
+              "buildableType": 1
+            }
+          ]
+        },
+        "waves": [],
+        "rules": {
+          "movement.speed": "rule/campaign_draft_move_speed",
+          "movement.path": "rule/m7_diagonal_path"
+        },
+        "resources": {
+          "dp": {
+            "initial": 50,
+            "capacity": 99,
+            "recovery_rate": 1.0,
+            "recovery": {
+              "mode": "periodic",
+              "interval_seconds": 1.0
+            }
+          },
+          "life": {
+            "initial": 10,
+            "capacity": 10
+          }
+        },
+        "parameters": {
+          "deploy_capacity": 8
+        },
+        "objectives": {},
+        "metadata": {
+          "runnable": true,
+          "native_level_id": "level_main_00-10",
+          "pending_conversion": [
+            "fixed_roster_talents_and_native_attack_clocks_not_fully_converted",
+            "selected_skill_models_partial_not_native_complete",
+            "native_control_actions_require_explicit_model",
+            "native_enemy_animation_scaling_and_client_hit_timing_pending"
+          ],
+          "model_validated": false,
+          "formal_mainline_approved": false,
+          "model_status": "partial_integration",
+          "native_ui_policy": {
+            "id": "headless_ack_zero_game_time_v1",
+            "dialogue_acknowledged_at_same_logical_tick": true,
+            "blocker_input_lock_observable": true,
+            "native_ui_wall_time_simulated": false
+          },
+          "m7_profiles": true
+        },
+        "scheduledEffects": [],
+        "seed": 953816614,
+        "initialEntities": [
+          {
+            "definition": "unit/char_151_myrtle",
+            "instanceAlias": "myrtle",
+            "position": {
+              "row": 4,
+              "col": 4
+            },
+            "facing": "right",
+            "deployed": false,
+            "components": {
+              "resources": {
+                "sp": {
+                  "initial": 0
+                },
+                "hp": {
+                  "initial": 1000
+                }
+              }
+            }
+          },
+          {
+            "definition": "unit/deployed_witness_enemy",
+            "instanceAlias": "enemy0",
+            "position": {
+              "row": 4,
+              "col": 5
+            }
+          },
+          {
+            "definition": "unit/blessing_healer",
+            "instanceAlias": "probe",
+            "position": {
+              "row": 0,
+              "col": 0
+            }
+          }
+        ],
+        "kind": "scenario"
+      },
+      "entity_identities": [
+        {
+          "id": 1,
+          "definition": "system/battle"
+        },
+        {
+          "id": 2,
+          "definition": "unit/char_151_myrtle"
+        },
+        {
+          "id": 3,
+          "definition": "unit/deployed_witness_enemy"
+        },
+        {
+          "id": 4,
+          "definition": "unit/blessing_healer"
+        },
+        {
+          "id": 5,
+          "definition": "unit/char_103_angel"
+        }
+      ],
+      "actor_runtime": [
+        {
+          "id": 2,
+          "definition": "unit/char_151_myrtle",
+          "resources": {
+            "hp": 1565,
+            "sp": 7.0
+          },
+          "buff_instances": [
+            {
+              "definition": "buff/talent_myrtle_parent",
+              "source": 2,
+              "target": 2,
+              "id": "buff/2/1",
+              "stacks": 1,
+              "started_at": 0,
+              "expires_at": null,
+              "interval_units": 0,
+              "generation": 1,
+              "tasks": {},
+              "blackboard": {},
+              "aura_members": {
+                "2": "buff/2/2"
+              }
+            },
+            {
+              "definition": "buff/talent_myrtle_member",
+              "source": 2,
+              "target": 2,
+              "id": "buff/2/2",
+              "stacks": 1,
+              "started_at": 0,
+              "expires_at": null,
+              "interval_units": 1,
+              "generation": 1,
+              "tasks": {
+                "periodic": 295
+              },
+              "blackboard": {},
+              "aura_parent": "buff/2/1"
+            }
+          ],
+          "attribute_base": {
+            "max_hp": 1565,
+            "atk": 520,
+            "def": 350,
+            "mres": 0.0,
+            "attack_interval": 1.3,
+            "move_speed": 1.0,
+            "block_count": 1,
+            "deploy_cost": 10,
+            "redeploy_time": 70,
+            "mass_level": 0,
+            "sp_recovery_rate": 1.0,
+            "attack_speed_ratio": 1.0,
+            "block_cost": 1
+          },
+          "attribute_modifiers": []
+        },
+        {
+          "id": 5,
+          "definition": "unit/char_103_angel",
+          "resources": {
+            "hp": 1598,
+            "mode": 0,
+            "sp": 20
+          },
+          "buff_instances": [],
+          "attribute_base": {
+            "max_hp": 1598,
+            "atk": 607,
+            "def": 155,
+            "mres": 0.0,
+            "attack_interval": 1.0,
+            "move_speed": 1.0,
+            "block_count": 1,
+            "deploy_cost": 14,
+            "redeploy_time": 70,
+            "mass_level": 0,
+            "sp_recovery_rate": 1.0,
+            "attack_speed_ratio": 1.0,
+            "block_cost": 1,
+            "attack_times": 1
+          },
+          "attribute_modifiers": []
+        }
+      ]
+    }
+  },
+  "identity_stable": true,
+  "identity_at_completion": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\mainline_models\\level_main_00-10.m12_projection.json": "0fbba3f0548d2efaef97d7c1be98a620e65b6408755bfddbd49a132ef72fddf4",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\witness_angel_blessing_damage.py": "14ad4c48f0ae7cc6616e11a648ca56f4d03abe06a92cfad598a1d96b33ad59d4",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\witness_deployed_six.py": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\witness_deployed_offensive.py": "712c80a95afc04d01620f4d7a5c5586ec01812fcdcda931b51d5cecb5167ce4e",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\operators.normalized.json": "1611fac32beb58d7aeb9e28ffb6cd4ebcfc3a5e6f955157a5dc3fab7ebb6824b",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\skills.angel.json": "724df525cda110e29763170c9044827022c8d3aa9fbf7488bd5118031d77a121",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\talents.attack.json": "bb0e679cdd1e266ee7248f728029a7ce67cb2cf5151ba378205dcff3a7186204"
+  },
+  "tests": [
+    {
+      "path": "tools/witness_angel_blessing_damage.py",
+      "source_sha256": "14ad4c48f0ae7cc6616e11a648ca56f4d03abe06a92cfad598a1d96b33ad59d4",
+      "result": "passed"
+    }
+  ]
+}

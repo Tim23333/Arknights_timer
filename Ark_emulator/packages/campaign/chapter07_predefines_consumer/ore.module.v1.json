@@ -1,0 +1,353 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/ch7/predefined/ore/v1",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "source_locks": {
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_predefines\\source.v4.reference.json": "9ab8b1049f5e0c9d34977563ccd8ac394044f77ff8da44b9cb717f52a1b9dfcb",
+        "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_tables\\range_table.reference_56a.json": "a98344d688a8933c4dd7ddaae3cb76c4347295359a18b60b918042cc2542d9d9",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter07_predefines\\build_ore_v1.py": "579cb805ccea0f5ca340afd40386d3f0ab45d122b993620b5c74c9c9db13a70d",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter07_predefines\\policies_v1.py": "250d284111b00cf543b65c0b733042456cf07df428b9b608f9d88afcfc1c5e76"
+      },
+      "source_skill": "sktok_ore",
+      "stage_export_allowed": false,
+      "reference_policy": "Ore active target Buff finish payloads emitted at fixed source preDelay, in source ore_s then ore_buff order; finish lifetime not recovered from native method body. Temporary durable payload marker performs conditional fixed packet or mode1 transition. No source-free damage or generic mine immunity.",
+      "pending": [
+        "Native active Buff finish lifetime and cancel handling calibration",
+        "considerUnhurtable=false interaction with unrelated invulnerability hooks",
+        "Separate mixed-version entity source",
+        "whole stage and independent review"
+      ]
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/ch7/predefined/ore/level1",
+      "kind": "entity",
+      "tags": [
+        "device",
+        "native_ore"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 100,
+            "atk": 0,
+            "def": 0,
+            "mres": 0,
+            "sp_recovery_rate": 1,
+            "move_speed": 1,
+            "block_count": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100,
+            "role": "health"
+          },
+          "sp": {
+            "initial": 0,
+            "capacity": 7,
+            "recovery_rate": 1,
+            "recovery": {
+              "mode": "periodic",
+              "interval_seconds": 0.03333333333333333
+            },
+            "parameters": {
+              "freeze_cast_modes": [
+                "manual"
+              ],
+              "freeze_while_cast": true,
+              "pause_at_full": true
+            }
+          }
+        },
+        "selection_state": {
+          "side": 2,
+          "category": 2,
+          "motion": 1,
+          "unit_type": 4
+        },
+        "spatial": {
+          "motion_mode": 0,
+          "blocking": false
+        },
+        "abilities": [
+          "ability/ch7/predefined/ore/pulse"
+        ],
+        "buffs": {
+          "initial": [
+            "buff/ch7/predefined/ore/passive"
+          ]
+        },
+        "terrain_overlays": [
+          {
+            "key": "native_ore_mode0",
+            "priority": 0,
+            "values": {
+              "buildableType": 0,
+              "passableMask": 2,
+              "physicalHeight": 0.4000000059604645
+            },
+            "preserve": [
+              "heightType",
+              "advancedBuildMask"
+            ]
+          }
+        ],
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    }
+  ],
+  "selectors": [],
+  "rules": [
+    {
+      "id": "rule/ch7/predefined/ore/eligibility",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.targeting.eligibility"
+      }
+    },
+    {
+      "id": "rule/ch7/predefined/ore/area",
+      "kind": "rule",
+      "contract": "area.members",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.area.qualified_cell_offsets"
+      },
+      "parameters": {
+        "offsets": [
+          [
+            2,
+            0
+          ],
+          [
+            1,
+            -1
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            -2
+          ],
+          [
+            0,
+            -1
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            -1,
+            -1
+          ],
+          [
+            -1,
+            0
+          ],
+          [
+            -1,
+            1
+          ],
+          [
+            -2,
+            0
+          ]
+        ],
+        "eligibility": {
+          "rule": "rule/ch7/predefined/ore/eligibility",
+          "parameters": {
+            "source_configuration": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -2023210780827093232
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 7080728813803358465
+              },
+              "m_Name": "",
+              "_targetSide": 3,
+              "_targetMotion": 3,
+              "_targetCategory": 1,
+              "_postFilter": 0,
+              "_ignoreTargetFree": 1,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_abnormalFlag": 46,
+              "_abnormalCombo": 2,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 0,
+              "_needProfessionMask": 0,
+              "_professionMask": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_excludeAbnormalFlag": 46,
+              "_limitTargetNum": 0,
+              "_maxTargetKey": "max_target",
+              "_maxNum": 1,
+              "_excludeOwner": 0,
+              "_sortByTauntAtLast": 0,
+              "_ignoreHitRange": 0,
+              "_checkUnitType": 0,
+              "_unitTypeMask": 0,
+              "_abilityInputTargetAsSortSource": 0
+            },
+            "side_policy": "relative_ally_enemy",
+            "neutral_policy": "absolute_mask",
+            "defaults": {
+              "can_select_camouflage": false,
+              "heal_free": false,
+              "camouflage": false,
+              "target_free": false,
+              "ally_target_free": false,
+              "motion": 0,
+              "category": 0,
+              "profession": 0,
+              "unit_type": 0,
+              "abnormal_flags": [],
+              "abnormal_combos": [],
+              "target_free_flags": [],
+              "target_free_combos": [],
+              "abnormal_immunes": [],
+              "side": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "rule/ch7/predefined/ore/finish",
+      "kind": "rule",
+      "contract": "buff.application",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c7.ore_finish"
+      },
+      "parameters": {
+        "immune": "buff/ch7/source/ore_immune",
+        "listener": "buff/ch7/source/ore_listener",
+        "damage": "buff/ch7/predefined/ore/damage_payload",
+        "switch": "buff/ch7/predefined/ore/switch_payload"
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/ch7/predefined/ore/passive",
+      "kind": "buff",
+      "selection_flags": {
+        "abnormal_flags": [
+          5,
+          7
+        ]
+      }
+    },
+    {
+      "id": "buff/ch7/predefined/ore/damage_payload",
+      "kind": "buff",
+      "effects": [
+        {
+          "op": "damage",
+          "damage_type": "true",
+          "scale": 0,
+          "additions": 500.0,
+          "damage_flags": {
+            "source_attack_type": "NONE",
+            "ignore_for_sp": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "buff/ch7/predefined/ore/switch_payload",
+      "kind": "buff",
+      "effects": [
+        {
+          "op": "transition",
+          "state": "mode1"
+        }
+      ]
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/ch7/predefined/ore/pulse",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "costs": [
+          {
+            "resource": "sp",
+            "amount": 7
+          }
+        ],
+        "parameters": {
+          "auto_only": true,
+          "auto_when_ready": true,
+          "blocks_new_activations": true
+        }
+      },
+      "duration_seconds": 1.0,
+      "timeline": [
+        {
+          "at_seconds": 0.6000000238418579,
+          "effect": {
+            "op": "area",
+            "target": "source",
+            "center": "source",
+            "membership_rule": "rule/ch7/predefined/ore/area",
+            "effects": [
+              {
+                "op": "buff_application",
+                "application_rule": "rule/ch7/predefined/ore/finish",
+                "allowed": [
+                  "buff/ch7/predefined/ore/damage_payload"
+                ],
+                "parameters": {
+                  "mode": "damage"
+                }
+              },
+              {
+                "op": "buff_application",
+                "application_rule": "rule/ch7/predefined/ore/finish",
+                "allowed": [
+                  "buff/ch7/predefined/ore/switch_payload"
+                ],
+                "parameters": {
+                  "mode": "switch"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

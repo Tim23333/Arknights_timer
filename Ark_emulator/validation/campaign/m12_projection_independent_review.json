@@ -1,0 +1,283 @@
+{
+  "passed": true,
+  "implementation_sha256": "bd60c068f0af7694e8e62c16868f4d310b6bb92681f8ebbf5d97814fba28ac11",
+  "cases": [
+    {
+      "case": "target_half",
+      "result": "passed",
+      "source": {
+        "row": 4,
+        "col": 4
+      },
+      "target": {
+        "row": 4.5,
+        "col": 5
+      },
+      "facing": "right",
+      "independent_cells": [
+        [
+          4,
+          4
+        ],
+        [
+          4,
+          5
+        ]
+      ],
+      "expected_target_cell": [
+        5,
+        5
+      ],
+      "expected_attack_count": 0,
+      "actual_attack_events": [],
+      "program_fingerprint": "ba019e2d80bcc8683db9243537701afbcc2fcae67d4635532bf4cb7651055e7d",
+      "runtime_fingerprint": "ca02b4a9fbbc2276670ac264b56661a6c88617bbd66b318f3350cc4e727907df",
+      "checkpoint_equal": true,
+      "replay_equal": true
+    },
+    {
+      "case": "target_other_half",
+      "result": "passed",
+      "source": {
+        "row": 4,
+        "col": 4
+      },
+      "target": {
+        "row": 5.5,
+        "col": 5
+      },
+      "facing": "right",
+      "independent_cells": [
+        [
+          4,
+          4
+        ],
+        [
+          4,
+          5
+        ]
+      ],
+      "expected_target_cell": [
+        6,
+        5
+      ],
+      "expected_attack_count": 0,
+      "actual_attack_events": [],
+      "program_fingerprint": "57f92c91686d187b0e415f1d3f76d660e1907e03e45140644755785f02b72c40",
+      "runtime_fingerprint": "ca02b4a9fbbc2276670ac264b56661a6c88617bbd66b318f3350cc4e727907df",
+      "checkpoint_equal": true,
+      "replay_equal": true
+    },
+    {
+      "case": "source_half",
+      "result": "passed",
+      "source": {
+        "row": 4.5,
+        "col": 4
+      },
+      "target": {
+        "row": 5,
+        "col": 5
+      },
+      "facing": "right",
+      "independent_cells": [
+        [
+          5,
+          4
+        ],
+        [
+          5,
+          5
+        ]
+      ],
+      "expected_target_cell": [
+        5,
+        5
+      ],
+      "expected_attack_count": 1,
+      "actual_attack_events": [
+        {
+          "id": 1022,
+          "type": "attack.accepted",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "ability": "ability/char_151_myrtle/normal_attack",
+            "cast": "cast/2/1",
+            "amount": 520.0
+          },
+          "time": 15,
+          "cause": null
+        }
+      ],
+      "program_fingerprint": "0455831a2ecf20e4e0bf56d3b368186fe217a757340a38754bfb64de74fbd4a7",
+      "runtime_fingerprint": "ca02b4a9fbbc2276670ac264b56661a6c88617bbd66b318f3350cc4e727907df",
+      "checkpoint_equal": true,
+      "replay_equal": true
+    },
+    {
+      "case": "rotated_source_half",
+      "result": "passed",
+      "source": {
+        "row": 4.5,
+        "col": 4.5
+      },
+      "target": {
+        "row": 4,
+        "col": 5
+      },
+      "facing": "up",
+      "independent_cells": [
+        [
+          4,
+          5
+        ],
+        [
+          5,
+          5
+        ]
+      ],
+      "expected_target_cell": [
+        4,
+        5
+      ],
+      "expected_attack_count": 1,
+      "actual_attack_events": [
+        {
+          "id": 1022,
+          "type": "attack.accepted",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "ability": "ability/char_151_myrtle/normal_attack",
+            "cast": "cast/2/1",
+            "amount": 520.0
+          },
+          "time": 15,
+          "cause": null
+        }
+      ],
+      "program_fingerprint": "a8658e1904486972f4cc41bd1f345f5daf2a49f8664386d3d3a148c7c5b63a7b",
+      "runtime_fingerprint": "ca02b4a9fbbc2276670ac264b56661a6c88617bbd66b318f3350cc4e727907df",
+      "checkpoint_equal": true,
+      "replay_equal": true
+    },
+    {
+      "case": "negative_half_border",
+      "result": "passed",
+      "source": {
+        "row": -0.5,
+        "col": 4
+      },
+      "target": {
+        "row": 0,
+        "col": 5
+      },
+      "facing": "right",
+      "independent_cells": [
+        [
+          0,
+          4
+        ],
+        [
+          0,
+          5
+        ]
+      ],
+      "expected_target_cell": [
+        0,
+        5
+      ],
+      "expected_attack_count": 1,
+      "actual_attack_events": [
+        {
+          "id": 1022,
+          "type": "attack.accepted",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "ability": "ability/char_151_myrtle/normal_attack",
+            "cast": "cast/2/1",
+            "amount": 520.0
+          },
+          "time": 15,
+          "cause": null
+        }
+      ],
+      "program_fingerprint": "194c28c1dd72485dc8d58e489a66cef677625b0af060f6d34f9466d237c96da1",
+      "runtime_fingerprint": "ca02b4a9fbbc2276670ac264b56661a6c88617bbd66b318f3350cc4e727907df",
+      "checkpoint_equal": true,
+      "replay_equal": true
+    },
+    {
+      "case": "outside_negative_border",
+      "result": "passed",
+      "independent_cell": [
+        -1,
+        4
+      ],
+      "actual_compile_error": "scenario/campaign_model/level_main_00-10/m7/m8_damage/roster1/enemy_targeting1/blocker_direction2/m10_resources1.initialEntities[0].position.row: position outside declared map"
+    },
+    {
+      "case": "continuous_circle",
+      "result": "passed",
+      "independent_distance": 0.15556349186104046,
+      "grid_cells_would_differ": true,
+      "amount": 100,
+      "replay_equal": true
+    },
+    {
+      "case": "own_blocked_cross_cell_exception",
+      "result": "passed",
+      "caster_cell": [
+        5,
+        4
+      ],
+      "enemy_cell": [
+        4,
+        4
+      ],
+      "actual_blocked_by": 2,
+      "actual_attack_event": {
+        "id": 1596,
+        "type": "attack.accepted",
+        "payload": {
+          "source": 2,
+          "target": 3,
+          "ability": "ability/char_151_myrtle/normal_attack",
+          "cast": "cast/2/1",
+          "amount": 520.0
+        },
+        "time": 16,
+        "cause": null
+      },
+      "checkpoint_equal": true,
+      "replay_equal": true
+    }
+  ],
+  "schema": "ark-sim/campaign-mechanism-test-evidence/v1",
+  "candidate_root": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m12_projection_candidate",
+  "identity_stable": true,
+  "source_at_start": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\review_m12_projection.py": "9c9f6b7f84b071007ef523faf9eb4164a06c38148fa45b1d6c29c1a6f477d0f1",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\mainline_models\\level_main_00-10.m12_projection.json": "0fbba3f0548d2efaef97d7c1be98a620e65b6408755bfddbd49a132ef72fddf4",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\probe_c0_corner_projection.py": "10eaa600be697adc4967e18f64c6c278eaee024c718020e01012acd77fbb7ad3"
+  },
+  "source_at_completion": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\review_m12_projection.py": "9c9f6b7f84b071007ef523faf9eb4164a06c38148fa45b1d6c29c1a6f477d0f1",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\mainline_models\\level_main_00-10.m12_projection.json": "0fbba3f0548d2efaef97d7c1be98a620e65b6408755bfddbd49a132ef72fddf4",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\probe_c0_corner_projection.py": "10eaa600be697adc4967e18f64c6c278eaee024c718020e01012acd77fbb7ad3"
+  },
+  "input_package": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\mainline_models\\level_main_00-10.m12_projection.json",
+  "input_package_sha256": "0fbba3f0548d2efaef97d7c1be98a620e65b6408755bfddbd49a132ef72fddf4",
+  "tests": [
+    {
+      "path": "tools/review_m12_projection.py",
+      "source_sha256": "9c9f6b7f84b071007ef523faf9eb4164a06c38148fa45b1d6c29c1a6f477d0f1",
+      "result": "passed"
+    }
+  ],
+  "primary_modified": false,
+  "formal_approval": false,
+  "review_receipt": false
+}

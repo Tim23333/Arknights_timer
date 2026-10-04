@@ -1,0 +1,19 @@
+# Chapter 06 Cold/Frozen author candidate
+
+This module implements source E2C Cold/Frozen for the selected 6-16 and 6-17 dependency scope. It is author evidence for reusable mechanisms; independent review, full-stage execution, story/NPC integration and client comparison remain separate.
+
+The source decoder preserves the 26,060-byte FlatBuffer SHA, reader SHA, field offsets, original typed values and BSON event conditions in `source.decoded.json`. Cold is flag23 and attack-speed ADDITION -30 (normalized flat -.3). Frozen is flag16. Cold's `statusResistable=1` is YES; Frozen's value2 is AUTOMATIC. Both are LIMITED with duration key `freeze`; a missing/zero literal lifetime does not override incoming blackboard5/10 seconds. The two source rows are19324/19536.
+
+The incoming Cold policy selects Frozen when an active Cold or Frozen already exists and Frozen16 is not immune. It applies the selected buff first, then removes exact old handles of the other definition across all sources, matching CreateFrozen before FinishCold in the source BSON. Identity is definition+target, maxStack1; incoming5/10 replaces the refreshed expiration. Cold23 immunity rejects application. Frozen16 immunity retains and refreshes Cold. Active/control gates dynamically honor immunity without pausing existing expiration clocks.
+
+Explicit replaceable policies: incoming duration is multiplied by the effective `one_minus_status_resistance` factor in0..1; missing factor defaults1. Incoming duration replaces existing remaining duration on refresh. The original source enum and blackboard durations are exact; the conversion of effective resistance into duration and detailed refresh calibration are reference policies pending client comparison. No source value is inferred from the FlatBuffer's zero lifetime.
+
+Frozen disables actual movement, attacks and abilities and interrupts casts through existing generic control. The module exposes `rule/ch6/cold/frozen_recovery` for SP recovery bindings, with the required `final_override` authority. HP recovery is not frozen by that SP binding. Buff expiration is half-open: typed flags and control stop contributing at `expires_at`, even before timer cleanup dispatch.
+
+TARGETFROZEN damage hooks inspect the actual projected target flag16 and apply1.5/2.5 to the attack scale before defense, preserving the original damage request. They do not alter self ATK or apply the multiplier to non-frozen targets. The fixture uses ATK100/DEF20: normal80, frozen130 or230.
+
+The isolated runtime is `../unpack_work/campaign_buff_application_v7_candidate`, based on exact frozen7a04. Python implementation SHA is recorded in author receipts; `ark_sim/rules/contracts.json` is separately locked because Python implementation identity excludes JSON. Earlier immutable v6 contains a schema recursion bug and its failed compatibility receipt is retained. Main/live/frozen baselines are never patched by this task.
+
+The only new kernel behavior is generic `buff.application`: a pure finite plan over declared Buff IDs with apply/remove, finite nonnegative duration override, strict stack/Boolean fields, and target-bound instance+generation removal. Its entire plan is validated before mutation. No-op plans do not write state, emit events or consume RNG. Every operation rechecks active/death-generation identity and resolves the current exact instance; retire/rebirth or nested removal/refresh callbacks cannot apply stale handles. Generic damage-hook input additionally exposes source/target typed selection state. No Cold/Frozen IDs or game values are embedded in the kernel.
+
+Run the author tests with `tools/run_candidate_pytest.py --runtime-root ../unpack_work/campaign_buff_application_v7_candidate -- tools/chapter06/cold/test_consumer.py -q`. Run `tools/chapter06/cold/emit_evidence.py` after author tests pass to persist actual disk checkpoint reloads, public replay records and full event journals.

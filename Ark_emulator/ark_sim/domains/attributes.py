@@ -68,7 +68,8 @@ class AttributeSystem:
              "modifier_layers": modifiers, "order": [{"layer": layer} for layer in layers]}, owner=ref,
              component=component.get("rules", {}), local=component.get("attribute_rules", {}).get(stat, {}),
              ability=ability, effect=effect,
-             extra={"owner": entity, "source": entity, "attribute": stat})
+             extra={"owner": entity, "source": entity, "attribute": stat,
+                    "attribute_sample_time": entity.get("sampled_at", now)})
         if reusable:
             self.cache[key] = (value, getattr(self.ctx, "last_calculation_event_id", None))
         return value

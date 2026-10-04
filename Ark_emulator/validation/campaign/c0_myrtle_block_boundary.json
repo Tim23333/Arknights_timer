@@ -1,0 +1,872 @@
+{
+  "schema": "ark-sim/c0-myrtle-block-boundary-review/v1",
+  "implementation_sha256": "c0b92545a714e763f3e43d4e13d25f0be99ecda912cb8479536982ac38f8216e",
+  "implementation_stable": true,
+  "original": {
+    "proposed_only_in_memory": false,
+    "held_block_before_command": false,
+    "program_fingerprint": "3081637af736446d7b6c337b780ffe2303a3eb98ea80245c78f2598620bbd284",
+    "runtime_fingerprint": "438f91513b2b8e622c78fbddcac414b19c01271e84df8074b247b69b24e76c34",
+    "enemy_attack_starts": [
+      1
+    ],
+    "final_blocked_by": null,
+    "events": [
+      {
+        "id": 155,
+        "type": "buff.applied",
+        "payload": {
+          "source": 2,
+          "target": 2,
+          "buff": "buff/talent_myrtle_parent",
+          "instance": "buff/2/1",
+          "stacks": 1
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 233,
+        "type": "buff.applied",
+        "payload": {
+          "source": 2,
+          "target": 2,
+          "buff": "buff/talent_myrtle_member",
+          "instance": "buff/2/2",
+          "stacks": 1
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 397,
+        "type": "ability.started",
+        "payload": {
+          "source": 2,
+          "ability": "ability/campaign_myrtle_s2",
+          "cast": "cast/2/1",
+          "targets": []
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 400,
+        "type": "command.accepted",
+        "payload": {
+          "action": {
+            "action": "skill",
+            "source": "myrtle",
+            "ability": "ability/campaign_myrtle_s2"
+          },
+          "result": "cast/2/1"
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 440,
+        "type": "blocking.changed",
+        "payload": {
+          "source": 2,
+          "target": 3
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 534,
+        "type": "buff.applied",
+        "payload": {
+          "source": 2,
+          "target": 2,
+          "buff": "buff/campaign_myrtle_no_block",
+          "instance": "buff/2/3",
+          "stacks": 1
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 589,
+        "type": "ability.started",
+        "payload": {
+          "source": 3,
+          "ability": "ability/enemy_1000_gopro/normal_attack",
+          "cast": "cast/3/1",
+          "targets": [
+            2
+          ]
+        },
+        "time": 1,
+        "cause": null
+      },
+      {
+        "id": 617,
+        "type": "blocking.changed",
+        "payload": {
+          "source": null,
+          "target": 3
+        },
+        "time": 1,
+        "cause": null
+      },
+      {
+        "id": 1774,
+        "type": "damage.accepted",
+        "payload": {
+          "source": 3,
+          "target": 2,
+          "amount": 9.5,
+          "ability": "ability/enemy_1000_gopro/normal_attack",
+          "resource": "hp"
+        },
+        "time": 19,
+        "cause": null
+      }
+    ],
+    "replay_inputs": {
+      "schema": "ark-sim/replay/v2",
+      "program_fingerprint": "3081637af736446d7b6c337b780ffe2303a3eb98ea80245c78f2598620bbd284",
+      "runtime_fingerprint": "438f91513b2b8e622c78fbddcac414b19c01271e84df8074b247b69b24e76c34",
+      "seed": 953816614,
+      "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+      "until": 25,
+      "commands": [
+        {
+          "order": 1,
+          "submitted_at": 0,
+          "at": 0,
+          "action": {
+            "action": "skill",
+            "source": "myrtle",
+            "ability": "ability/campaign_myrtle_s2"
+          }
+        }
+      ]
+    },
+    "fixture_scenario": {
+      "id": "scenario/c0_myrtle_block_probe",
+      "ruleset": "ruleset/ark_standard",
+      "roster": [
+        "unit/char_151_myrtle",
+        "unit/char_222_bpipe",
+        "unit/char_010_chen",
+        "unit/char_107_liskam",
+        "unit/char_202_demkni",
+        "unit/char_128_plosis",
+        "unit/char_103_angel",
+        "unit/char_180_amgoat",
+        "unit/char_003_kalts",
+        "unit/char_358_lisa",
+        "unit/char_400_weedy",
+        "unit/char_179_cgbird"
+      ],
+      "map": {
+        "rows": 9,
+        "cols": 12
+      },
+      "waves": [],
+      "rules": {
+        "movement.speed": "rule/campaign_draft_move_speed",
+        "movement.path": "rule/m7_diagonal_path"
+      },
+      "resources": {
+        "dp": {
+          "initial": 10,
+          "capacity": 99,
+          "recovery_rate": 1.0,
+          "recovery": {
+            "mode": "periodic",
+            "interval_seconds": 1.0
+          }
+        },
+        "life": {
+          "initial": 10,
+          "capacity": 10
+        }
+      },
+      "parameters": {
+        "deploy_capacity": 8
+      },
+      "objectives": {},
+      "metadata": {
+        "runnable": true,
+        "native_level_id": "level_main_00-10",
+        "pending_conversion": [
+          "fixed_roster_talents_and_native_attack_clocks_not_fully_converted",
+          "selected_skill_models_partial_not_native_complete",
+          "native_control_actions_require_explicit_model",
+          "native_enemy_animation_scaling_and_client_hit_timing_pending"
+        ],
+        "model_validated": false,
+        "formal_mainline_approved": false,
+        "model_status": "partial_integration",
+        "native_ui_policy": {
+          "id": "headless_ack_zero_game_time_v1",
+          "dialogue_acknowledged_at_same_logical_tick": true,
+          "blocker_input_lock_observable": true,
+          "native_ui_wall_time_simulated": false
+        },
+        "m7_profiles": true
+      },
+      "scheduledEffects": [],
+      "seed": 953816614,
+      "initialEntities": [
+        {
+          "definition": "unit/char_151_myrtle",
+          "instanceAlias": "myrtle",
+          "position": {
+            "row": 4,
+            "col": 4
+          },
+          "components": {
+            "resources": {
+              "sp": {
+                "initial": 24
+              }
+            }
+          }
+        },
+        {
+          "definition": "unit/enemy_1000_gopro",
+          "instanceAlias": "enemy",
+          "position": {
+            "row": 4,
+            "col": 4
+          },
+          "route": {
+            "motionMode": "WALK",
+            "endPosition": {
+              "row": 4,
+              "col": 8
+            }
+          }
+        }
+      ],
+      "kind": "scenario"
+    },
+    "original_package_sha256": "2b7fe8d63a30765614a63a9914b6c3a59248600663f85972527491390bd44de8"
+  },
+  "generic_control_hypothesis": {
+    "proposed_only_in_memory": true,
+    "held_block_before_command": false,
+    "program_fingerprint": "a2611d5286031b4a1ef76c840024450616ffa09812eb62148c65de3eec1d128c",
+    "runtime_fingerprint": "438f91513b2b8e622c78fbddcac414b19c01271e84df8074b247b69b24e76c34",
+    "enemy_attack_starts": [],
+    "final_blocked_by": null,
+    "events": [
+      {
+        "id": 155,
+        "type": "buff.applied",
+        "payload": {
+          "source": 2,
+          "target": 2,
+          "buff": "buff/talent_myrtle_parent",
+          "instance": "buff/2/1",
+          "stacks": 1
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 233,
+        "type": "buff.applied",
+        "payload": {
+          "source": 2,
+          "target": 2,
+          "buff": "buff/talent_myrtle_member",
+          "instance": "buff/2/2",
+          "stacks": 1
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 380,
+        "type": "ability.started",
+        "payload": {
+          "source": 2,
+          "ability": "ability/campaign_myrtle_s2",
+          "cast": "cast/2/1",
+          "targets": []
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 457,
+        "type": "buff.applied",
+        "payload": {
+          "source": 2,
+          "target": 2,
+          "buff": "buff/campaign_myrtle_no_block",
+          "instance": "buff/2/3",
+          "stacks": 1
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 461,
+        "type": "command.accepted",
+        "payload": {
+          "action": {
+            "action": "skill",
+            "source": "myrtle",
+            "ability": "ability/campaign_myrtle_s2"
+          },
+          "result": "cast/2/1"
+        },
+        "time": 0,
+        "cause": null
+      }
+    ],
+    "replay_inputs": {
+      "schema": "ark-sim/replay/v2",
+      "program_fingerprint": "a2611d5286031b4a1ef76c840024450616ffa09812eb62148c65de3eec1d128c",
+      "runtime_fingerprint": "438f91513b2b8e622c78fbddcac414b19c01271e84df8074b247b69b24e76c34",
+      "seed": 953816614,
+      "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+      "until": 25,
+      "commands": [
+        {
+          "order": 1,
+          "submitted_at": 0,
+          "at": 0,
+          "action": {
+            "action": "skill",
+            "source": "myrtle",
+            "ability": "ability/campaign_myrtle_s2"
+          }
+        }
+      ]
+    },
+    "fixture_scenario": {
+      "id": "scenario/c0_myrtle_block_probe",
+      "ruleset": "ruleset/ark_standard",
+      "roster": [
+        "unit/char_151_myrtle",
+        "unit/char_222_bpipe",
+        "unit/char_010_chen",
+        "unit/char_107_liskam",
+        "unit/char_202_demkni",
+        "unit/char_128_plosis",
+        "unit/char_103_angel",
+        "unit/char_180_amgoat",
+        "unit/char_003_kalts",
+        "unit/char_358_lisa",
+        "unit/char_400_weedy",
+        "unit/char_179_cgbird"
+      ],
+      "map": {
+        "rows": 9,
+        "cols": 12
+      },
+      "waves": [],
+      "rules": {
+        "movement.speed": "rule/campaign_draft_move_speed",
+        "movement.path": "rule/m7_diagonal_path"
+      },
+      "resources": {
+        "dp": {
+          "initial": 10,
+          "capacity": 99,
+          "recovery_rate": 1.0,
+          "recovery": {
+            "mode": "periodic",
+            "interval_seconds": 1.0
+          }
+        },
+        "life": {
+          "initial": 10,
+          "capacity": 10
+        }
+      },
+      "parameters": {
+        "deploy_capacity": 8
+      },
+      "objectives": {},
+      "metadata": {
+        "runnable": true,
+        "native_level_id": "level_main_00-10",
+        "pending_conversion": [
+          "fixed_roster_talents_and_native_attack_clocks_not_fully_converted",
+          "selected_skill_models_partial_not_native_complete",
+          "native_control_actions_require_explicit_model",
+          "native_enemy_animation_scaling_and_client_hit_timing_pending"
+        ],
+        "model_validated": false,
+        "formal_mainline_approved": false,
+        "model_status": "partial_integration",
+        "native_ui_policy": {
+          "id": "headless_ack_zero_game_time_v1",
+          "dialogue_acknowledged_at_same_logical_tick": true,
+          "blocker_input_lock_observable": true,
+          "native_ui_wall_time_simulated": false
+        },
+        "m7_profiles": true
+      },
+      "scheduledEffects": [],
+      "seed": 953816614,
+      "initialEntities": [
+        {
+          "definition": "unit/char_151_myrtle",
+          "instanceAlias": "myrtle",
+          "position": {
+            "row": 4,
+            "col": 4
+          },
+          "components": {
+            "resources": {
+              "sp": {
+                "initial": 24
+              }
+            }
+          }
+        },
+        {
+          "definition": "unit/enemy_1000_gopro",
+          "instanceAlias": "enemy",
+          "position": {
+            "row": 4,
+            "col": 4
+          },
+          "route": {
+            "motionMode": "WALK",
+            "endPosition": {
+              "row": 4,
+              "col": 8
+            }
+          }
+        }
+      ],
+      "kind": "scenario"
+    },
+    "original_package_sha256": "2b7fe8d63a30765614a63a9914b6c3a59248600663f85972527491390bd44de8"
+  },
+  "generic_control_existing_block_hypothesis": {
+    "proposed_only_in_memory": true,
+    "held_block_before_command": true,
+    "program_fingerprint": "a2611d5286031b4a1ef76c840024450616ffa09812eb62148c65de3eec1d128c",
+    "runtime_fingerprint": "438f91513b2b8e622c78fbddcac414b19c01271e84df8074b247b69b24e76c34",
+    "enemy_attack_starts": [
+      1
+    ],
+    "final_blocked_by": null,
+    "events": [
+      {
+        "id": 155,
+        "type": "buff.applied",
+        "payload": {
+          "source": 2,
+          "target": 2,
+          "buff": "buff/talent_myrtle_parent",
+          "instance": "buff/2/1",
+          "stacks": 1
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 233,
+        "type": "buff.applied",
+        "payload": {
+          "source": 2,
+          "target": 2,
+          "buff": "buff/talent_myrtle_member",
+          "instance": "buff/2/2",
+          "stacks": 1
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 344,
+        "type": "ability.started",
+        "payload": {
+          "source": 2,
+          "ability": "ability/char_151_myrtle/normal_attack",
+          "cast": "cast/2/1",
+          "targets": [
+            3
+          ]
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 379,
+        "type": "blocking.changed",
+        "payload": {
+          "source": 2,
+          "target": 3
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 386,
+        "type": "ability.interrupted",
+        "payload": {
+          "source": 2,
+          "ability": "ability/char_151_myrtle/normal_attack",
+          "cast": "cast/2/1",
+          "reason": "attack_mode_changed"
+        },
+        "time": 1,
+        "cause": null
+      },
+      {
+        "id": 496,
+        "type": "ability.started",
+        "payload": {
+          "source": 2,
+          "ability": "ability/campaign_myrtle_s2",
+          "cast": "cast/2/2",
+          "targets": []
+        },
+        "time": 1,
+        "cause": null
+      },
+      {
+        "id": 573,
+        "type": "buff.applied",
+        "payload": {
+          "source": 2,
+          "target": 2,
+          "buff": "buff/campaign_myrtle_no_block",
+          "instance": "buff/2/3",
+          "stacks": 1
+        },
+        "time": 1,
+        "cause": null
+      },
+      {
+        "id": 577,
+        "type": "command.accepted",
+        "payload": {
+          "action": {
+            "action": "skill",
+            "source": "myrtle",
+            "ability": "ability/campaign_myrtle_s2"
+          },
+          "result": "cast/2/2"
+        },
+        "time": 1,
+        "cause": null
+      },
+      {
+        "id": 626,
+        "type": "ability.started",
+        "payload": {
+          "source": 3,
+          "ability": "ability/enemy_1000_gopro/normal_attack",
+          "cast": "cast/3/1",
+          "targets": [
+            2
+          ]
+        },
+        "time": 1,
+        "cause": null
+      },
+      {
+        "id": 639,
+        "type": "blocking.changed",
+        "payload": {
+          "source": null,
+          "target": 3
+        },
+        "time": 1,
+        "cause": null
+      },
+      {
+        "id": 1526,
+        "type": "damage.accepted",
+        "payload": {
+          "source": 3,
+          "target": 2,
+          "amount": 9.5,
+          "ability": "ability/enemy_1000_gopro/normal_attack",
+          "resource": "hp"
+        },
+        "time": 19,
+        "cause": null
+      }
+    ],
+    "replay_inputs": {
+      "schema": "ark-sim/replay/v2",
+      "program_fingerprint": "a2611d5286031b4a1ef76c840024450616ffa09812eb62148c65de3eec1d128c",
+      "runtime_fingerprint": "438f91513b2b8e622c78fbddcac414b19c01271e84df8074b247b69b24e76c34",
+      "seed": 953816614,
+      "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+      "until": 26,
+      "commands": [
+        {
+          "order": 1,
+          "submitted_at": 1,
+          "at": 1,
+          "action": {
+            "action": "skill",
+            "source": "myrtle",
+            "ability": "ability/campaign_myrtle_s2"
+          }
+        }
+      ]
+    },
+    "fixture_scenario": {
+      "id": "scenario/c0_myrtle_block_probe",
+      "ruleset": "ruleset/ark_standard",
+      "roster": [
+        "unit/char_151_myrtle",
+        "unit/char_222_bpipe",
+        "unit/char_010_chen",
+        "unit/char_107_liskam",
+        "unit/char_202_demkni",
+        "unit/char_128_plosis",
+        "unit/char_103_angel",
+        "unit/char_180_amgoat",
+        "unit/char_003_kalts",
+        "unit/char_358_lisa",
+        "unit/char_400_weedy",
+        "unit/char_179_cgbird"
+      ],
+      "map": {
+        "rows": 9,
+        "cols": 12
+      },
+      "waves": [],
+      "rules": {
+        "movement.speed": "rule/campaign_draft_move_speed",
+        "movement.path": "rule/m7_diagonal_path"
+      },
+      "resources": {
+        "dp": {
+          "initial": 10,
+          "capacity": 99,
+          "recovery_rate": 1.0,
+          "recovery": {
+            "mode": "periodic",
+            "interval_seconds": 1.0
+          }
+        },
+        "life": {
+          "initial": 10,
+          "capacity": 10
+        }
+      },
+      "parameters": {
+        "deploy_capacity": 8
+      },
+      "objectives": {},
+      "metadata": {
+        "runnable": true,
+        "native_level_id": "level_main_00-10",
+        "pending_conversion": [
+          "fixed_roster_talents_and_native_attack_clocks_not_fully_converted",
+          "selected_skill_models_partial_not_native_complete",
+          "native_control_actions_require_explicit_model",
+          "native_enemy_animation_scaling_and_client_hit_timing_pending"
+        ],
+        "model_validated": false,
+        "formal_mainline_approved": false,
+        "model_status": "partial_integration",
+        "native_ui_policy": {
+          "id": "headless_ack_zero_game_time_v1",
+          "dialogue_acknowledged_at_same_logical_tick": true,
+          "blocker_input_lock_observable": true,
+          "native_ui_wall_time_simulated": false
+        },
+        "m7_profiles": true
+      },
+      "scheduledEffects": [],
+      "seed": 953816614,
+      "initialEntities": [
+        {
+          "definition": "unit/char_151_myrtle",
+          "instanceAlias": "myrtle",
+          "position": {
+            "row": 4,
+            "col": 4
+          },
+          "components": {
+            "resources": {
+              "sp": {
+                "initial": 24
+              }
+            }
+          }
+        },
+        {
+          "definition": "unit/enemy_1000_gopro",
+          "instanceAlias": "enemy",
+          "position": {
+            "row": 4,
+            "col": 4
+          },
+          "route": {
+            "motionMode": "WALK",
+            "endPosition": {
+              "row": 4,
+              "col": 8
+            }
+          }
+        }
+      ],
+      "kind": "scenario"
+    },
+    "original_package_sha256": "2b7fe8d63a30765614a63a9914b6c3a59248600663f85972527491390bd44de8"
+  },
+  "native_prefab_component": {
+    "cabin": "CAB-e39773c4d1462aefe0ea30134bbccdbb",
+    "class": "Ability",
+    "fields": {
+      "_attachPassiveBuffsOnDummy": 1,
+      "_buffs": [
+        {
+          "attributes": {
+            "abnormalAntis": [],
+            "abnormalComboImmunes": [],
+            "abnormalCombos": [],
+            "abnormalFlags": [],
+            "abnormalImmunes": [],
+            "attributeModifiers": [
+              {
+                "attributeType": 5,
+                "fetchBaseValueFromSourceEntity": 0,
+                "formulaItem": 3,
+                "loadFromBlackboard": 0,
+                "value": 0.0
+              }
+            ]
+          },
+          "audioSignal": "",
+          "blackboard": [
+            {
+              "key": "mode",
+              "value": 2.0,
+              "valueStr": ""
+            }
+          ],
+          "buffKey": "astersi_s_2[a]",
+          "clearAllStackCntWhenTimeUp": 0,
+          "disableOverride": 0,
+          "durationKey": "",
+          "enableInitDirectionFromSource": 0,
+          "firstTriggerInterval": -1.0,
+          "independentCharacterSource": 0,
+          "isDamageMissable": 0,
+          "isDurableBuff": 0,
+          "isFreezable": 0,
+          "isGroundBoundable": 0,
+          "isLevitatable": 0,
+          "isSilenceable": 0,
+          "isStunnable": 0,
+          "lifeTime": 0.0,
+          "lifeTimeType": 1,
+          "loadFromDB": 0,
+          "maxStackCnt": 1,
+          "maxValidStackCnt": -1,
+          "onEventPriority": 0,
+          "overrideEffectKey": "myrtle_skill_02_buff",
+          "overrideKey": "",
+          "overrideOnEventPriority": 0,
+          "overrideType": 0,
+          "priority": -1,
+          "priorityBBKeys": [],
+          "refreshRemainingTimeWhenStackMax": 0,
+          "statusResistable": 2,
+          "stripBlackboardParamsWithBuffKey": 0,
+          "takeSnapshotWhenExtend": 0,
+          "templateKey": "switch_mode_restart_fsm",
+          "triggerCnt": 0,
+          "triggerInterval": -1.0,
+          "triggerLifeType": 0,
+          "waitFirstTriggerInterval": 1
+        },
+        {
+          "attributes": {
+            "abnormalAntis": [],
+            "abnormalComboImmunes": [],
+            "abnormalCombos": [],
+            "abnormalFlags": [],
+            "abnormalImmunes": [],
+            "attributeModifiers": []
+          },
+          "audioSignal": "",
+          "blackboard": [],
+          "buffKey": "astersi_s_2[b]",
+          "clearAllStackCntWhenTimeUp": 0,
+          "disableOverride": 0,
+          "durationKey": "",
+          "enableInitDirectionFromSource": 0,
+          "firstTriggerInterval": -1.0,
+          "independentCharacterSource": 0,
+          "isDamageMissable": 0,
+          "isDurableBuff": 0,
+          "isFreezable": 0,
+          "isGroundBoundable": 0,
+          "isLevitatable": 0,
+          "isSilenceable": 0,
+          "isStunnable": 0,
+          "lifeTime": 0.0,
+          "lifeTimeType": 1,
+          "loadFromDB": 0,
+          "maxStackCnt": 1,
+          "maxValidStackCnt": -1,
+          "onEventPriority": 0,
+          "overrideEffectKey": "myrtle_skill_02_buff_02",
+          "overrideKey": "",
+          "overrideOnEventPriority": 0,
+          "overrideType": 0,
+          "priority": -1,
+          "priorityBBKeys": [],
+          "refreshRemainingTimeWhenStackMax": 0,
+          "statusResistable": 2,
+          "stripBlackboardParamsWithBuffKey": 0,
+          "takeSnapshotWhenExtend": 0,
+          "templateKey": "periodic_cost",
+          "triggerCnt": 0,
+          "triggerInterval": 1.0,
+          "triggerLifeType": 2,
+          "waitFirstTriggerInterval": 1
+        }
+      ],
+      "_checkBuffEarlyFinish": 0,
+      "_enableUpdateCooldown": 0,
+      "_escapeTime": 0.0,
+      "_forceAsDmgOrHealAbility": 0,
+      "_ignoreIfOwnerDead": 0,
+      "_ignoreInfiniteBuffCooldown": 0,
+      "_interruptAbilityOnDetach": 0,
+      "_interuptIfTargetDead": 0,
+      "_metadata": {
+        "blackboardPrefix": "",
+        "namedAsAlias": ""
+      },
+      "_passiveBuffs": [],
+      "_preDelay": 0.0,
+      "_resetCdStrategy": 1,
+      "_selector": {
+        "m_FileID": 0,
+        "m_PathID": 0
+      },
+      "_updateLifetimeWhenSpellStart": 0,
+      "_waitForAttackEvent": 0,
+      "_waitForCasting": 1
+    },
+    "gameObjectPathID": -29682396844574325,
+    "pathID": 7458720872929114507,
+    "scriptPathID": -4234909118878081699
+  },
+  "native_enum_evidence": {
+    "public const AttributeModifierData.AttributeModifier.FormulaItemType FINAL_SCALER": 3,
+    "public const AttributeType BLOCK_CNT": 5,
+    "public const FilterUtil.FilterType HP_RATIO_NOT_FULL_ASC": 3
+  },
+  "native_source_sha256": "4fd7436441b771920c7fe42c608e09034c131f66b618703b734370a499825c76",
+  "primary_or_packages_modified": false,
+  "current_model_gap": true,
+  "held_block_sync_still_required": true,
+  "formal_approval": false
+}

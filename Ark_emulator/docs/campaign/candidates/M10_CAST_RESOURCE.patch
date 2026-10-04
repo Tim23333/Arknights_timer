@@ -1,0 +1,378 @@
+--- a/ark_sim/content/capabilities.py
++++ b/ark_sim/content/capabilities.py
+@@ -28,6 +28,8 @@
+     def resources(values, path, scopes):
+         for name, spec in values.items():
+             local = [*scopes, spec.get("rules", {})]
++            if spec.get("recovery_freeze_rule") or "resource.recovery_freeze" in spec.get("rules", {}):
++                require("resource.recovery_freeze", f"{path}.{name}", local, spec.get("recovery_freeze_rule"))
+             for calculation, field in (("resource.capacity", "capacity_rule"), ("resource.bounds", "bounds_rule")):
+                 require(calculation, f"{path}.{name}", local, spec.get(field))
+             if spec.get("capacity_change_rule") or "capacity_change_mode" in spec.get("parameters", {}):
+--- a/ark_sim/content/compiler.py
++++ b/ark_sim/content/compiler.py
+@@ -353,7 +353,7 @@
+                     if key in expected and isinstance(child, str) and child in definitions:
+                         if definitions[child].get("kind") not in expected[key]:
+                             raise CompileError(f"{path}.{key}: {child} has incompatible kind {definitions[child].get('kind')}")
+-                    elif key == "abilities" and isinstance(child, (list, tuple)):
++                    elif key in {"abilities", "recovery_freeze_abilities", "interrupt_abilities"} and isinstance(child, (list, tuple)):
+                         for reference in child:
+                             if definitions[reference].get("kind") != "ability":
+                                 raise CompileError(f"{path}.abilities: {reference} is not an ability")
+@@ -366,7 +366,7 @@
+                             reference = spec.get("rule")
+                             if reference in definitions and definitions[reference].get("contract") != "attributes.growth":
+                                 raise CompileError(f"{path}.growth.{attribute}: rule {reference} is not an attributes.growth rule")
+-                    expected_contracts = {"recovery_rule": "resource.recovery", "amount_rule": "resource.recovery", "capacity_rule": "resource.capacity", "bounds_rule": "resource.bounds", "interval_rule": "buff.interval" if root_kind == "buff" else "time.interval", "duration_rule": "buff.duration" if root_kind == "buff" else "ability.duration"}
++                    expected_contracts = {"recovery_freeze_rule": "resource.recovery_freeze", "recovery_rule": "resource.recovery", "amount_rule": "resource.recovery", "capacity_rule": "resource.capacity", "bounds_rule": "resource.bounds", "interval_rule": "buff.interval" if root_kind == "buff" else "time.interval", "duration_rule": "buff.duration" if root_kind == "buff" else "ability.duration"}
+                     if key in expected_contracts and isinstance(child, str) and child in definitions:
+                         if definitions[child].get("contract") != expected_contracts[key]:
+                             raise CompileError(f"{path}.{key}: rule {child} belongs to {definitions[child].get('contract')}, expected {expected_contracts[key]}")
+@@ -385,10 +385,23 @@
+ 
+     @staticmethod
+     def _validate_entity_abilities(definitions, scenario=None):
++        from .schemas import validate_recovery
++        def check_freeze(resources, owned, path):
++            for name, spec in resources.items():
++                validate_recovery(spec, path+".resources."+name)
++                freeze_rule = spec.get("recovery_freeze_rule") or spec.get("rules", {}).get("resource.recovery_freeze")
++                if freeze_rule and definitions[freeze_rule].get("metadata", {}).get("recovery_freeze_authority") != "final_override":
++                    raise CompileError(f"{path}.resources.{name}: freeze rule must declare metadata.recovery_freeze_authority=final_override")
++                for field, entries in (("recovery_freeze_abilities", spec.get("recovery_freeze_abilities", [])),
++                                       ("interrupt_abilities", spec.get("recovery", {}).get("interrupt_abilities", []))):
++                    for identifier in entries:
++                        if identifier not in owned:
++                            raise CompileError(f"{path}.resources.{name}.{field}: actor does not own {identifier}")
+         for identifier, entity in definitions.items():
+             if entity.get("kind") != "entity":
+                 continue
+             resources = entity.get("components", {}).get("resources", {})
++            check_freeze(resources, entity.get("components", {}).get("abilities", []), identifier)
+             for ability_id in entity.get("components", {}).get("abilities", []):
+                 ability = definitions[ability_id]
+                 recovery = ability.get("activation", {}).get("parameters", {})
+@@ -428,3 +441,13 @@
+                         check_effect(effect)
+                 for effect in ability.get("activation", {}).get("on_start", []):
+                     check_effect(effect)
++        scene = scenario or {}
++        check_freeze(scene.get("resources", {}), [], scene.get("id", "scenario"))
++        instances = list(scene.get("initialEntities", []))+list(scene.get("waves", []))
++        for wave in scene.get("timeline", {}).get("waves", []):
++            for fragment in wave["fragments"]:
++                instances.extend(a["spawn"] for a in fragment["actions"] if a["kind"] == "spawn")
++        for item in instances:
++            base = definitions[item["definition"]].get("components", {})
++            actual = merge(base, item.get("components", {}))
++            check_freeze(actual.get("resources", {}), actual.get("abilities", []), item.get("instanceAlias", item["definition"]))
+--- a/ark_sim/content/dependencies.py
++++ b/ark_sim/content/dependencies.py
+@@ -5,7 +5,7 @@
+ 
+ REFERENCE_KEYS = {"definition", "ability", "buff", "selector", "machine", "policy",
+                   "rule", "ruleset", "extends", "prototype", "behavior"}
+-REFERENCE_LISTS = {"abilities", "requires", "dependencies", "externals", "allowed", "roster"}
++REFERENCE_LISTS = {"abilities", "requires", "dependencies", "externals", "allowed", "roster", "recovery_freeze_abilities", "interrupt_abilities"}
+ 
+ 
+ def references(value, path="definition", calculation_bindings=None):
+--- a/ark_sim/content/schemas.py
++++ b/ark_sim/content/schemas.py
+@@ -32,7 +32,7 @@
+     "ownership": {"owner", "on_owner_retire"},
+     "deck": {"on_create"},
+ }
+-RESOURCE_FIELDS = {"initial", "capacity", "capacity_attribute", "capacity_change_rule", "recovery_rule", "recovery_rate", "recovery", "rules", "parameters", "bounds_rule", "capacity_rule", "role", "events"}
++RESOURCE_FIELDS = {"initial", "capacity", "capacity_attribute", "capacity_change_rule", "recovery_rule", "recovery_rate", "recovery", "rules", "parameters", "bounds_rule", "capacity_rule", "role", "events", "recovery_freeze_abilities", "recovery_freeze_rule"}
+ EFFECT_FIELDS = {"op", "target", "rules", "read_mode", "damage_type", "scale", "additions", "amount", "delta", "value", "amount_rule", "resource", "buff", "definition", "position", "facing", "tags", "on_success", "on_failure", "effects", "condition", "parameters", "event", "payload", "type", "state", "machine", "distance", "offset", "direction", "kind", "at_seconds", "delay_seconds", "effect", "stacks", "selector", "lifetime_seconds", "remove_all", "metadata", "duration_seconds", "center", "radius", "filters", "owner", "ability", "force", "stream", "probability"}
+ DEFAULT_CAPABILITIES = {
+     "effects": {"damage", "heal", "regenerate", "modify_resource", "apply_buff", "remove_buff", "spawn", "emit", "move", "state", "schedule", "transition", "area", "trigger_ability", "push", "random", "input_lock"},
+@@ -515,9 +515,19 @@
+ 
+ 
+ def validate_recovery(spec, path):
++    exact_abilities(spec.get("recovery_freeze_abilities"), path+".recovery_freeze_abilities", "recovery_freeze_abilities" in spec)
++    if "recovery_freeze_rule" in spec and (not isinstance(spec["recovery_freeze_rule"], str) or not spec["recovery_freeze_rule"]):
++        raise ContentError(f"{path}.recovery_freeze_rule: exact calculation rule ID required")
+     if "recovery" in spec:
+         driver = spec["recovery"]
+-        fields(driver, {"mode", "interval_seconds", "event", "owner_role", "amount", "condition", "selector", "empty_value", "selector_interval_seconds", "interrupt_when_empty"}, f"{path}.recovery")
++        fields(driver, {"mode", "interval_seconds", "event", "owner_role", "amount", "condition", "selector", "empty_value", "selector_interval_seconds", "interrupt_when_empty", "interrupt_abilities", "interrupt_cast_modes"}, f"{path}.recovery")
++        exact_abilities(driver.get("interrupt_abilities"), path+".recovery.interrupt_abilities", "interrupt_abilities" in driver)
++        if "interrupt_cast_modes" in driver:
++            modes = driver["interrupt_cast_modes"]
++            if not isinstance(modes, (list, tuple)) or any(m not in {"manual", "passive", "automatic_attack", "on_deploy"} for m in modes):
++                raise ContentError(f"{path}.recovery.interrupt_cast_modes: explicit supported activation mode list required")
++        if ("interrupt_abilities" in driver or "interrupt_cast_modes" in driver) and (not driver.get("selector") or driver.get("interrupt_when_empty") is not True):
++            raise ContentError(f"{path}.recovery: interrupt filters require selector and interrupt_when_empty=true")
+         if "selector" in driver:
+             if not isinstance(driver["selector"], str) or not driver["selector"]:
+                 raise ContentError(f"{path}.recovery.selector: expected selector ID")
+@@ -555,3 +565,8 @@
+     for field in ("pause_at_full", "freeze_while_cast"):
+         if field in parameters and not isinstance(parameters[field], bool):
+             raise ContentError(f"{path}.parameters.{field}: expected a boolean")
++
++
++def exact_abilities(value, path, present):
++    if present and (not isinstance(value, (list, tuple)) or any(not isinstance(v, str) or not v for v in value) or len(set(value)) != len(value)):
++        raise ContentError(f"{path}: unique exact ability ID list required (may be empty)")
+--- a/ark_sim/domains/abilities.py
++++ b/ark_sim/domains/abilities.py
+@@ -261,19 +261,22 @@
+         if cast.get("finish_requested") and not cast["pending_projectiles"]:
+             self.finish(self.ctx.session, {"source": source, "cast": cast_id})
+ 
+-    def interrupt(self, source, reason):
+-        with self.ctx.session._lock:
++    def interrupt(self, source, reason, ability_ids=None, modes=None):
++        with self.ctx.session.atomic():
+             source = self.ctx.session.world.resolve(source)
+             casts = self.ctx.get(source, ("runtime", "casts"), {})
++            selected = {key: cast for key, cast in casts.items()
++                if (ability_ids is None or cast["ability"] in ability_ids) and (modes is None or
++                    cast.get("activation_mode", self._definition(cast["ability"]).get("activation", {}).get("mode")) in modes)}
+             pending = {task["id"] for task in self.ctx.session.scheduler.pending}
+-            intents = [Intent("cancel", data={"task_id": task_id}) for cast in casts.values()
++            intents = [Intent("cancel", data={"task_id": task_id}) for cast in selected.values()
+                        for task_id in cast["tasks"] if task_id in pending]
+-            intents.append(Intent("set", source, ("runtime", "casts"), {}))
++            intents.append(Intent("set", source, ("runtime", "casts"), {key: cast for key, cast in casts.items() if key not in selected}))
+             self.ctx.session.commit(intents)
+-            for cast in casts.values():
++            for cast in selected.values():
+                 self.ctx.emit("ability.interrupted", {"source": source, "ability": cast["ability"],
+                                                       "cast": cast["id"], "reason": reason})
+-            return len(casts)
++            return len(selected)
+ 
+     def tick(self, session):
+         if self.ctx.state().get("finished"):
+--- a/ark_sim/domains/buffs.py
++++ b/ark_sim/domains/buffs.py
+@@ -26,7 +26,7 @@
+     def recovery_snapshot(self, event):
+         if event not in self.recovery_events:
+             return None
+-        return [{"owner": e["id"], "resource": key, "frozen": self.ctx.resources._recovery_frozen(e, data["spec"])}
++        return [{"owner": e["id"], "resource": key, "frozen": self.ctx.resources._recovery_frozen(e, data["spec"], key)}
+             for e in self.ctx.session.world.entities() for key, data in e["components"].get("resources", {}).items()]
+ 
+     def _instances(self, target):
+--- a/ark_sim/domains/context.py
++++ b/ark_sim/domains/context.py
+@@ -156,6 +156,12 @@
+         return thaw(output)
+ 
+     def emit(self, event, payload, cause=None):
++        if self.resources is not None and self.resources.has_custom_freeze_rules:
++            with self.session.atomic():
++                return self._emit_domain(event, payload, cause)
++        return self._emit_domain(event, payload, cause)
++
++    def _emit_domain(self, event, payload, cause=None):
+         event_id = self.session.emit(event, payload, cause=cause)
+         if self.buffs is not None:
+             recipients = self.resources.event_snapshot(event, payload) if self.resources is not None else []
+--- a/ark_sim/domains/effects.py
++++ b/ark_sim/domains/effects.py
+@@ -26,7 +26,7 @@
+     def _execute(self, source, targets, effect, ability=None, cast=None, cause=None):
+         source = self.ctx.session.world.resolve(source)
+         ability, cast = ability or {}, cast or {}
+-        if (cast.get("projectile_impact") and self.ctx.route_hidden(source) and
++        if (cast.get("projectile_impact") and getattr(self.ctx, "route_hidden", lambda ref: False)(source) and
+                 self.ctx.visibility_policy(source).get("launched_source_effects", "retain") == "discard"):
+             return
+         condition = effect.get("condition")
+@@ -43,7 +43,7 @@
+             health_delta = operation == "modify_resource" and (
+                 self.ctx.get(target, ("resources", effect.get("resource"), "spec", "role")) == "health" or
+                 effect.get("resource") == self.ctx.program.ruleset.get("parameters", {}).get("health_resource"))
+-            if (health_delta or operation in {"damage", "heal", "regenerate", "apply_buff", "area", "push", "move", "displace", "trigger_ability"}) and not self.ctx.effect_target_available(target):
++            if (health_delta or operation in {"damage", "heal", "regenerate", "apply_buff", "area", "push", "move", "displace", "trigger_ability"}) and not getattr(self.ctx, "effect_target_available", lambda ref: True)(target):
+                 self.ctx.emit("effect.visibility_rejected", {"source": source, "target": target, "operation": operation}, cause)
+                 continue
+             if operation == "random":
+@@ -65,7 +65,7 @@
+                 members = []
+                 for entity in self.ctx.session.world.entities():
+                     pos = entity["components"].get("spatial", {}).get("position")
+-                    if pos is None or not self.ctx.selectable(entity["id"]):
++                    if pos is None or not getattr(self.ctx, "selectable", self.ctx.alive)(entity["id"]):
+                         continue
+                     if math.hypot(pos["row"]-position["row"], pos["col"]-position["col"]) > effect["radius"]:
+                         continue
+@@ -112,7 +112,7 @@
+                     current = self.ctx.resources.current(target, effect["resource"])
+                     gain = (value if value is not None else current+effect.get("delta", effect.get("amount", 0))) > current
+                     captured = cast.get("recovery_snapshot")
+-                    frozen = self.ctx.resources._recovery_frozen(self.ctx.entity(target), self.ctx.resources._spec(target, effect["resource"])) if captured is None else next((row["frozen"] for row in captured if row["owner"] == target and row["resource"] == effect["resource"]), True)
++                    frozen = self.ctx.resources._recovery_frozen(self.ctx.entity(target), self.ctx.resources._spec(target, effect["resource"]), effect["resource"]) if captured is None else next((row["frozen"] for row in captured if row["owner"] == target and row["resource"] == effect["resource"]), True)
+                     if gain and frozen:
+                         self.ctx.emit("resource.recovery_suppressed", {"source": source, "target": target, "resource": effect["resource"], "reason": "active_cast"}, cause)
+                         continue
+@@ -339,7 +339,7 @@
+             for allocation in settlement["allocations"]:
+                 recipient = allocation.get("target", target)
+                 recipient = self.ctx.session.world.resolve(target if recipient == "target" else source if recipient == "source" else recipient)
+-                if not self.ctx.effect_target_available(recipient):
++                if not getattr(self.ctx, "effect_target_available", lambda ref: True)(recipient):
+                     self.ctx.emit("effect.visibility_rejected", {"source": source, "target": recipient, "operation": "damage_allocation"}, cause)
+                     continue
+                 key = allocation.get("resource", resource)
+--- a/ark_sim/domains/resources.py
++++ b/ark_sim/domains/resources.py
+@@ -3,6 +3,7 @@
+ import ast
+ from collections.abc import Mapping
+ from ark_sim.contracts import Intent, digest
++from ark_sim.contracts.models import FrozenTuple
+ from ark_sim.rules import evaluate_expression
+ from ark_sim.rules import MissingRuleError
+ 
+@@ -11,6 +12,12 @@
+     def __init__(self, context):
+         self.ctx = context
+         self._capacity_parameter_rules = {}
++        def configured(value):
++            if isinstance(value, Mapping):
++                if value.get("recovery_freeze_rule") or "resource.recovery_freeze" in value.get("rules", {}): return True
++                return any(configured(v) for k, v in value.items() if k not in {"metadata", "parameters", "payload"})
++            return isinstance(value, (list, tuple, FrozenTuple)) and any(configured(v) for v in value)
++        self.has_custom_freeze_rules = configured(getattr(context.program, "definitions", {})) or configured(getattr(context.program, "scenario", {}))
+ 
+     def current(self, ref, resource):
+         value = self.ctx.get(ref, ("resources", resource))
+@@ -217,7 +224,30 @@
+             intents.extend(planned)
+         return intents
+ 
+-    def _recovery_frozen(self, entity, spec):
++    def _recovery_frozen(self, entity, spec, resource=None):
++        frozen = self._legacy_recovery_frozen(entity, spec)
++        abilities = spec.get("recovery_freeze_abilities", ())
++        rule = spec.get("recovery_freeze_rule") or spec.get("rules", {}).get("resource.recovery_freeze")
++        if not abilities and not rule:
++            return frozen
++        casts = entity["components"].get("runtime", {}).get("casts", {})
++        frozen = frozen or any(cast.get("ability") in abilities for cast in casts.values())
++        if not rule:
++            return frozen
++        if resource is None:
++            keys = [key for key, data in entity["components"].get("resources", {}).items() if data.get("spec") == spec]
++            if len(keys) != 1: raise ValueError("custom freeze evaluation requires explicit resource identity")
++            resource = keys[0]
++        # calc emits only kernel calculation records, not another domain event
++        # snapshot. This evaluation cannot recurse through RuntimeContext.emit.
++        with self.ctx.session.atomic():
++            result = self.ctx.calc("resource.recovery_freeze", {"owner": entity, "resource": resource,
++                "casts": casts, "time": self.ctx.session.time, "configured_frozen": frozen,
++                "parameters": spec.get("parameters", {})}, owner=entity["id"], local=spec.get("rules", {}), rule_id=rule)
++            if type(result) is not bool: raise ValueError("resource recovery freeze rule must return Boolean")
++            return result
++
++    def _legacy_recovery_frozen(self, entity, spec):
+         parameters = spec.get("parameters", {})
+         enabled = parameters.get("freeze_while_cast", False)
+         if not isinstance(enabled, bool):
+@@ -249,7 +279,7 @@
+             raise ValueError("recovery must be a model definition")
+         mode = configuration.get("mode", "continuous")
+         allowed = ({"mode"} if mode == "continuous" else {"mode", "interval_seconds"}) | {
+-            "selector", "empty_value", "selector_interval_seconds", "interrupt_when_empty"}
++            "selector", "empty_value", "selector_interval_seconds", "interrupt_when_empty", "interrupt_abilities", "interrupt_cast_modes"}
+         if mode not in ("continuous", "periodic"):
+             raise ValueError(f"unimplemented recovery mode: {mode}")
+         if set(configuration) - allowed:
+@@ -289,7 +319,7 @@
+                     continue
+                 if driver.get("selector") and not self.ctx.spatial.select(entity["id"], driver["selector"]):
+                     continue
+-                if not self._recovery_frozen(entity, data["spec"]):
++                if not self._recovery_frozen(entity, data["spec"], key):
+                     rows.append({"owner": entity["id"], "resource": key})
+         return rows
+ 
+@@ -339,7 +369,8 @@
+             self.ctx.set(ref, ("resources", key, "selector_state"), {"enabled": enabled, "next_check": now+interval})
+             if not enabled:
+                 if driver.get("interrupt_when_empty") and self.ctx.get(ref, ("runtime", "casts"), {}):
+-                    self.ctx.abilities.interrupt(ref, "recovery_selector_empty")
++                    self.ctx.abilities.interrupt(ref, "recovery_selector_empty",
++                        ability_ids=driver.get("interrupt_abilities"), modes=driver.get("interrupt_cast_modes"))
+                 if "empty_value" in driver and self.current(ref, key) != driver["empty_value"]:
+                     self.adjust(ref, key, value=driver["empty_value"], source=ref)
+             return enabled
+@@ -367,7 +398,7 @@
+                 if (rule is None and "resource.recovery" not in spec.get("rules", {})
+                         and "recovery_rate" not in spec and "recovery" not in spec):
+                     continue
+-                if self._recovery_frozen(entity, spec):
++                if self._recovery_frozen(entity, spec, key):
+                     continue
+                 pause = spec.get("parameters", {}).get("pause_at_full", False)
+                 if not isinstance(pause, bool):
+--- a/ark_sim/rules/contracts.json
++++ b/ark_sim/rules/contracts.json
+@@ -3141,6 +3141,58 @@
+       },
+       "contractVersion": 1,
+       "status": "declared"
++    },
++    {
++      "id": "resource.recovery_freeze",
++      "kind": "calculation",
++      "owner": "owner",
++      "inputs": [
++        {
++          "name": "owner",
++          "type": "entity_snapshot",
++          "required": true
++        },
++        {
++          "name": "resource",
++          "type": "string",
++          "required": true
++        },
++        {
++          "name": "casts",
++          "type": "value_map",
++          "required": true
++        },
++        {
++          "name": "time",
++          "type": "logic_time",
++          "required": true
++        },
++        {
++          "name": "configured_frozen",
++          "type": "boolean",
++          "required": true
++        },
++        {
++          "name": "parameters",
++          "type": "value_map",
++          "required": true
++        }
++      ],
++      "outputType": "boolean",
++      "implementations": [
++        "expression",
++        "graph",
++        "provider"
++      ],
++      "description": "Explicit final Boolean override; metadata authority may解除 legacy/ability freeze. No implicit/default binding.",
++      "pureEvaluation": true,
++      "writesStateDirectly": false,
++      "versionsRequired": true,
++      "outputSchema": {
++        "type": "boolean"
++      },
++      "contractVersion": 1,
++      "status": "declared"
+     }
+   ],
+   "types": {

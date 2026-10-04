@@ -1,0 +1,9 @@
+# M50 有限部署库存
+
+为第三章五张crate卡片新增通用可配置部署stock，不限定官方ID。候选`campaign_m50_deploy_stock_candidate`从M48a829复制，core`5bc6264ca22c03645b482c89e9081a73cf1b898af5d25222c9120a433ced6ddf`，仅schema/compiler/deployment三文件变化，原live/主目录不改。
+
+`deployable.stock`明确battle resource与positive integer amount，可引用resource.cost规则改变消费数量。编译期检查battle资源存在、规则合同与字段；prepare同时检查DP/位置/capacity/cooldown与库存，若stock与DP同资源按合计支付判断。record在同一公开deploy/owned payload spawn事务内精确扣库存，失败回滚；普通撤退不会暗中返卡，返卡需内容显式效果。初始预放置不走公开deploy，不能被偷偷扣库存。
+
+73项实际检查通过12.69秒：五次公开部署再第六次拒、stock0+源HP100未改、失败位置/DP不扣卡、不创建actor、withdraw不返、customcost2张、same DP+stock不能超支、owned部署共用stock、sourceBuffduration真实失败在付款后完整rollback；兼容Engine/owned/ability原路径一并通过。保存有序磁盘CP和完整回放相同，报告`validation/campaign/m50_stock/candidate_final.json` SHA`92b43ba5f6dbc98b62efc7aa75304356195defd2ee0903e0c91383b473715857`，源码patch另存。
+
+候选完整0-1/custom基线另执行，独立peer待安排；不是crate加权路径/障碍破坏行为或3-7整关收据。实际stock消耗由通用原语提供，crate源terrain/build/lifecycle/profile由后续内容接线。M49隐身分支可能同schema/compiler文件重叠，必须明确合并后再新身份回归，不能仅复制最后分支。

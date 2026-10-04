@@ -31,8 +31,12 @@ def damage_rules():
             formula("rule/proportional", "damage.mitigation", "inputs.power * 100 / (100 + inputs.defense)")]
 
 
-def test_catalog_has_73_contracts_and_is_immutable():
-    assert len(DEFAULT_CATALOG["contracts"]) == 73
+def test_catalog_has_98_contracts_and_is_immutable():
+    assert len(DEFAULT_CATALOG["contracts"]) == 98
+    assert {"damage.request", "random.check", "movement.transition", "movement.checkpoint_position", "resource.recovery_freeze"} <= {c["id"] for c in DEFAULT_CATALOG["contracts"]}
+    assert {"terrain.tile_options", "behavior.decision", "selector.eligibility", "targeting.eligibility",
+            "tile.contact", "area.members", "passive.toggle", "targeting.availability",
+            "blocking.obstacle", "deploy.connectivity"} <= {c["id"] for c in DEFAULT_CATALOG["contracts"]}
     with pytest.raises(TypeError):
         DEFAULT_CATALOG["types"]["number"] = {}
 

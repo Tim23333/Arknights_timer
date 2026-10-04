@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/ch6/npc/huang_talents",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "source_locks": {
+        "packages\\campaign\\chapter06_predefines\\source.reference.json": "7d27130c475a332f29d9b21a853d7b28a81785e3cf9a322f9c03c9c54089c66f",
+        "packages\\campaign\\chapter06_npcs\\inputs.reference.json": "0f00d6a763541c0f67bea1cd7acfb12a06c27b244c0021bdd1e62c63695c87a2"
+      },
+      "builder_sha": "82d5173c44cc8adc39be45ee22317ae480dae9aaa4f48f9c3a6917f9396c102f",
+      "policies": {
+        "one_shot": "Source UNDEADABLE6 keeps HP>=1 until below25% event applies 50%maxHP heal, 6s lock and removes the real parent handle.",
+        "ordering": "Full damage settlement before owner damage event; deferred reaction is explicit model policy, no native same-frame callback body claim.",
+        "resistance": "Source15s first trigger installs -0.5 one_minus_status_resistance once, independent of no selected skill.",
+        "scope": "Native E2L25 no-potential/no-skill Blaze passive effects only; ordinary attack authored separately."
+      },
+      "complete_source_policies": false,
+      "whole_stage_executed": false,
+      "client_verified": false
+    }
+  },
+  "rules": [
+    {
+      "id": "rule/ch6/npc/huang_undead",
+      "kind": "calculation_rule",
+      "contract": "damage.pipeline",
+      "implementation": {
+        "type": "expression",
+        "expression": "{'accepted':inputs.effect.settlement.accepted,'amount':min(inputs.effect.settlement.amount,max(0,inputs.target.components.resources.hp.current-1)),'allocations':[],'events':[]}"
+      }
+    },
+    {
+      "id": "rule/ch6/npc/huang_hp_lock",
+      "kind": "calculation_rule",
+      "contract": "damage.pipeline",
+      "implementation": {
+        "type": "expression",
+        "expression": "{'accepted':inputs.effect.settlement.accepted,'amount':min(inputs.effect.settlement.amount,max(0,inputs.target.components.resources.hp.current-0.5*inputs.target.components.attributes.base.max_hp)),'allocations':[],'events':[]}"
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/ch6/npc/huang_once",
+      "kind": "buff",
+      "selection_flags": {
+        "abnormal_flags": [
+          6
+        ]
+      },
+      "damage_hooks": [
+        {
+          "phase": "after",
+          "rule": "rule/ch6/npc/huang_undead"
+        }
+      ],
+      "events": [
+        {
+          "event": "damage.accepted",
+          "condition": "inputs.payload.target == context.owner.id and context.owner.components.resources.hp.current < .25 * context.owner.components.attributes.base.max_hp",
+          "effects": [
+            {
+              "op": "regenerate",
+              "parameters": {
+                "max_hp_ratio": 0.5
+              }
+            },
+            {
+              "op": "apply_buff",
+              "buff": "buff/ch6/npc/huang_lock"
+            },
+            {
+              "op": "remove_buff",
+              "buff": "buff/ch6/npc/huang_once"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "buff/ch6/npc/huang_lock",
+      "kind": "buff",
+      "duration_seconds": 6,
+      "damage_hooks": [
+        {
+          "phase": "after",
+          "rule": "rule/ch6/npc/huang_hp_lock"
+        }
+      ]
+    },
+    {
+      "id": "buff/ch6/npc/huang_resistance",
+      "kind": "buff",
+      "modifiers": [
+        {
+          "attribute": "one_minus_status_resistance",
+          "layer": "flat",
+          "value": -0.5
+        }
+      ]
+    },
+    {
+      "id": "buff/ch6/npc/huang_resistance_wait",
+      "kind": "buff",
+      "interval_seconds": 15,
+      "effects": [
+        {
+          "op": "apply_buff",
+          "buff": "buff/ch6/npc/huang_resistance"
+        },
+        {
+          "op": "remove_buff",
+          "buff": "buff/ch6/npc/huang_resistance_wait"
+        }
+      ]
+    }
+  ]
+}

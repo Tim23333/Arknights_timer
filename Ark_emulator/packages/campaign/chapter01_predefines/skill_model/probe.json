@@ -1,0 +1,350 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/campaign/chapter01_adnach_selected_skill",
+    "version": "0.1.0",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "status": "partial_predefined_NPC_normal_and_selected_skill_profile",
+      "source_identities": {
+        "native_predefined_source": "15eb6edf057af42e1c03acf441cc44852f1a3b4aefd511dd23428fcead1413e6",
+        "NPC_model": "4eb40df9ef979f54f289c099b78723da61fc49d00fc88fcdafb1ace3c77b779e",
+        "builder": "6305f205b2f8fbea51986852921248003d7287b2354a700c6520ef06bd98498d"
+      },
+      "native_inst": {
+        "position": {
+          "row": 3,
+          "col": 6
+        },
+        "direction": "RIGHT",
+        "hidden": true,
+        "alias": null,
+        "uniEquipIds": null,
+        "showSpIllust": false,
+        "masterInfos": null,
+        "inst": {
+          "characterKey": "char_211_adnach",
+          "level": 20,
+          "phase": "PHASE_0",
+          "favorPoint": 0,
+          "potentialRank": 0
+        },
+        "skillIndex": 0,
+        "mainSkillLvl": 1,
+        "skinId": null,
+        "tmplId": null,
+        "overrideSkillBlackboard": null,
+        "overrideTalents": null
+      },
+      "pending": [
+        "native_ACTIVATE_PREDEFINED_hidden_activation_and_routeIndex_semantics",
+        "native_implicit_selector_priority_air_filter_and_immunity",
+        "native_GetTimeScale_and_attack_FSM_callback_order",
+        "native_projectile_tracking_collision_lifetime_and_hit_callback",
+        "source_snapshot_vs_public_pin_alignment",
+        "fixed12_deck_override_and_native_card_semantics_require_stage_composition",
+        "native_skcom_atk_up_prefab_BSON_template_not_recovered",
+        "native_attribute_formula_rounding_and_modifier_application_pending",
+        "native_SP_recovery_freeze_and_cast_duration_FSM_body_pending",
+        "native_skill_activation_animation_and_attack_clock_reset_unknown",
+        "native_ACTIVATE_PREDEFINED_hidden_activation_and_sourceCards_composition_pending"
+      ],
+      "formal_stage_approved": false,
+      "activation": "definition only; no automatic source-hidden conversion or timeline activation",
+      "selector_profile": "one alive enemy in rotated exact range; implicit native priority and motion mask unproven",
+      "clock_profile": "unscaled authored OnAttack frame9, base interval1/ASPD100; client GetTimeScale pending",
+      "flight_profile": "launch planar distance / serialized speed10; live target HP/DEF at impact; captured target ID, no native homing proof",
+      "selected_skill_profile": {
+        "id": "adnach_level1_additive_ATK_ratio_periodic_SP_cast_window_v1",
+        "attribute": "effective ATK = base199 * (1 + native BB atk0.1); no intermediate integer rounding",
+        "SP": "periodic +increment1 each elapsed1s, initial0/cap50/payment50; explicitly freeze only selected ability while active",
+        "duration": "20 seconds; Buff half-open expiry independent of cast finish task; native ordering pending",
+        "attack": "existing NPC normal ability/range/frame/projectile preserved; no mode switch, attack clock reset, or extra packets",
+        "manual": "native skillType MANUAL; no auto_when_ready",
+        "client_verified": false
+      },
+      "skill_source_gaps": [
+        "native_skcom_atk_up_prefab_BSON_template_not_recovered",
+        "native_attribute_formula_rounding_and_modifier_application_pending",
+        "native_SP_recovery_freeze_and_cast_duration_FSM_body_pending",
+        "native_skill_activation_animation_and_attack_clock_reset_unknown",
+        "native_ACTIVATE_PREDEFINED_hidden_activation_and_sourceCards_composition_pending"
+      ],
+      "complete_NPC": false
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/ch1_predefined_adnach_e0_l20",
+      "kind": "entity",
+      "tags": [
+        "player",
+        "ground",
+        "predefined"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 677,
+            "atk": 199,
+            "def": 74,
+            "mres": 0.0,
+            "deploy_cost": 9,
+            "block_count": 1,
+            "attack_interval": 1.0,
+            "move_speed": 1.0,
+            "mass_level": 0,
+            "redeploy_time": 70,
+            "attack_speed_ratio": 1.0,
+            "block_cost": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 677,
+            "capacity_attribute": "max_hp",
+            "role": "health"
+          },
+          "sp": {
+            "initial": 50,
+            "capacity": 50,
+            "recovery_rate": 1.0,
+            "recovery": {
+              "mode": "periodic",
+              "interval_seconds": 1
+            },
+            "parameters": {
+              "pause_at_full": true
+            },
+            "recovery_freeze_abilities": [
+              "ability/chapter01_adnach_atk_up_level1"
+            ]
+          }
+        },
+        "abilities": [
+          "ability/ch1_predefined_adnach_normal",
+          "ability/chapter01_adnach_atk_up_level1"
+        ],
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "spatial": {}
+      }
+    },
+    {
+      "id": "unit/adnach_skill_probe_enemy",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 100000,
+            "atk": 100,
+            "def": 30,
+            "mres": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100000,
+            "capacity": 100000,
+            "role": "health"
+          }
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "spatial": {}
+      }
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/ch1_predefined_adnach_normal",
+      "kind": "selector",
+      "region": {
+        "type": "grid_offsets",
+        "offsets": [
+          [
+            -1,
+            0
+          ],
+          [
+            -1,
+            1
+          ],
+          [
+            -1,
+            2
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            2
+          ]
+        ]
+      },
+      "filters": [
+        {
+          "tag": "enemy"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/ch1_predefined_adnach_normal",
+      "kind": "ability",
+      "activation": {
+        "mode": "automatic_attack"
+      },
+      "target_capture": "at_cast",
+      "selector": "selector/ch1_predefined_adnach_normal",
+      "parameters": {
+        "projectile_speed": 10
+      },
+      "timeline": [
+        {
+          "at_seconds": 0.3,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1,
+            "condition": "inputs.targets[0].components.runtime.alive",
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/chapter01_adnach_atk_up_level1",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "costs": [
+          {
+            "resource": "sp",
+            "amount": 50
+          }
+        ],
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/chapter01_adnach_atk_up_level1"
+          }
+        ]
+      },
+      "parameters": {
+        "blocks_attacks": false
+      },
+      "duration_seconds": 20.0,
+      "timeline": [],
+      "metadata": {
+        "native_skill_id": "skcom_atk_up[1]",
+        "native_level_index": 0,
+        "profile": {
+          "id": "adnach_level1_additive_ATK_ratio_periodic_SP_cast_window_v1",
+          "attribute": "effective ATK = base199 * (1 + native BB atk0.1); no intermediate integer rounding",
+          "SP": "periodic +increment1 each elapsed1s, initial0/cap50/payment50; explicitly freeze only selected ability while active",
+          "duration": "20 seconds; Buff half-open expiry independent of cast finish task; native ordering pending",
+          "attack": "existing NPC normal ability/range/frame/projectile preserved; no mode switch, attack clock reset, or extra packets",
+          "manual": "native skillType MANUAL; no auto_when_ready",
+          "client_verified": false
+        },
+        "client_verified": false
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/chapter01_adnach_atk_up_level1",
+      "kind": "buff",
+      "duration_seconds": 20.0,
+      "modifiers": [
+        {
+          "attribute": "atk",
+          "layer": "direct_ratio",
+          "value": 0.1
+        }
+      ],
+      "metadata": {
+        "source_BB": [
+          {
+            "key": "atk",
+            "value": 0.1,
+            "valueStr": null
+          }
+        ],
+        "attribute_formula_is_model": true
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scenario/adnach_selected_skill_probe",
+    "ruleset": "ruleset/ark_standard",
+    "metadata": {
+      "synthetic_enemy": true,
+      "initial_SP_override_fixture_only": 50,
+      "not_native_activation": true
+    },
+    "map": {
+      "rows": 8,
+      "cols": 12
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/ch1_predefined_adnach_e0_l20",
+        "instanceAlias": "npc",
+        "position": {
+          "row": 3,
+          "col": 6
+        },
+        "facing": "right"
+      },
+      {
+        "definition": "unit/adnach_skill_probe_enemy",
+        "instanceAlias": "enemy",
+        "position": {
+          "row": 3,
+          "col": 7
+        }
+      }
+    ]
+  }
+}

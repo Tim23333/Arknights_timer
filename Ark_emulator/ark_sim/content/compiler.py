@@ -32,16 +32,19 @@ def _default_providers():
 
 def _provider_names(definition):
     result = set()
-    def walk(value):
+    def walk(value, location=()):
         if isinstance(value, Mapping):
             if isinstance(value.get("provider"), str):
                 result.add(value["provider"])
             for key, child in value.items():
-                if key not in {"metadata", "parameters", "payload", "inputs"}:
-                    walk(child)
+                if key == "origin" and (value.get("op") == "no_source_damage" or value.get("type") == "periodic_effect_field"): continue
+                if key=='blackboard' and location[-3:]==('map','tiles','[]'):
+                    continue
+                if key not in {"metadata", "parameters", "payload", "inputs", "expected_blackboard"}:
+                    walk(child,location+(key,))
         elif isinstance(value, (tuple, list)):
             for child in value:
-                walk(child)
+                walk(child,location+('[]',))
     walk(definition)
     parameters = definition.get("parameters", {})
     for name in ("aggregator", "aggregators"):
@@ -208,7 +211,25 @@ class Compiler:
         runtime = self._validate_rules(rules, definitions, selected_ruleset,
                                        {name: providers[name] for name in required_providers})
         self._validate_reference_kinds(definitions)
-        self._validate_entity_abilities(definitions)
+        self._validate_entity_abilities(definitions, selected_scene)
+        from ..domains.behavior_restart import validate_content as validate_restarts
+        validate_restarts(definitions,selected_scene)
+        from ..domains.tile_fields import validate_definitions as validate_tile_fields
+        validate_tile_fields(definitions,selected_scene)
+        from ..domains.periodic_fields import validate_content as validate_periodic_fields
+        validate_periodic_fields(definitions,selected_scene)
+        from ..domains.deploy_connectivity import validate_scenario as validate_connectivity
+        validate_connectivity(definitions,selected_scene)
+        registered = {item['registration_key'] for item in selected_scene.get('initialEntities', ()) if item.get('registration_key')}
+        def validate_activation(value):
+            if isinstance(value, dict):
+                if value.get('op') == 'activate_predefined' and value.get('parameters', {}).get('key') not in registered:
+                    raise CompileError('activate_predefined references an unknown initial registration key')
+                for key, child in value.items():
+                    if key not in {'metadata', 'payload', 'parameters', 'manifest'}: validate_activation(child)
+            elif isinstance(value, (list, tuple)):
+                for child in value: validate_activation(child)
+        validate_activation(definitions)
         required_calculations = capability_preflight(selected_scene, definitions, selected_ruleset, rules, runtime.catalog)
         origins = {repository.origins[key] for key in dependency_ids}
         package_lock = sorted([{"id": manifest.get("id", "anonymous"), "version": manifest.get("version", "0")}
@@ -252,7 +273,7 @@ class Compiler:
         def bindings(value, path):
             if isinstance(value, Mapping):
                 for key, child in value.items():
-                    if key in {"metadata", "parameters", "payload", "inputs"}:
+                    if key in {"metadata", "parameters", "payload", "inputs", "expected_blackboard"}:
                         continue
                     if key == "attribute_rules" and isinstance(child, Mapping):
                         for attribute, overrides in child.items():
@@ -278,6 +299,7 @@ class Compiler:
             if "dynamic" in value:
                 raise CompileError(f"{path}: dynamic reference execution is unsupported in this runtime; declare dependencies with dynamicReferences and use a fixed reference")
             for key, child in value.items():
+                if key == "origin" and (value.get("op") == "no_source_damage" or value.get("type") == "periodic_effect_field"): continue
                 if key not in {"dynamicReferences", "metadata", "parameters", "payload", "inputs"}:
                     Compiler._validate_implemented_references(child, f"{path}.{key}")
         elif isinstance(value, (list, tuple)):
@@ -289,6 +311,7 @@ class Compiler:
         from ..rules import Expression
         if isinstance(value, Mapping):
             for key, child in value.items():
+                if key == "origin" and (value.get("op") == "no_source_damage" or value.get("type") == "periodic_effect_field"): continue
                 if key == "condition" and isinstance(child, str):
                     Expression(child)
                 elif key not in {"metadata", "parameters", "dynamicReferences", "payload", "inputs"}:
@@ -340,20 +363,28 @@ class Compiler:
 
     @staticmethod
     def _validate_reference_kinds(definitions):
-        expected = {"definition": {"entity"}, "ability": {"ability"}, "buff": {"buff"},
+        expected = {"attachment": {"attachment"}, "target_buff": {"buff"}, "source_recovery_buff": {"buff"}, "projectile_definition": {"projectile"}, "definition": {"entity"}, "ability": {"ability"}, "buff": {"buff"},
                     "selector": {"selector"}, "machine": {"behavior"}, "policy": {"policy", "rule", "calculation_rule"},
-                    "ruleset": {"ruleset"}, "recovery_rule": {"rule", "calculation_rule"},
+                    "ruleset": {"ruleset"}, "exit_rule": {"rule", "calculation_rule"}, "recovery_rule": {"rule", "calculation_rule"},
                     "interval_rule": {"rule", "calculation_rule"}, "duration_rule": {"rule", "calculation_rule"},
-                    "rule": {"rule", "calculation_rule"}}
-        def walk(value, path, root_kind=None):
+                    "rule": {"rule", "calculation_rule"}, "amount_rule": {"rule", "calculation_rule"}}
+        def walk(value, path, root_kind=None, location=()):
             if isinstance(value, Mapping):
+                if value.get("op") == "buff_application":
+                    for ident in value["allowed"]:
+                        if definitions[ident].get("kind") != "buff": raise CompileError(path+": allowed application ID must be Buff")
+                    if definitions[value["application_rule"]].get("contract") != "buff.application": raise CompileError(path+": incompatible application contract")
                 for key, child in value.items():
-                    if key in {"metadata", "parameters", "payload", "inputs"}:
+                    if key == "origin" and (value.get("op") == "no_source_damage" or value.get("type") == "periodic_effect_field"): continue
+                    if key=='blackboard' and location[-3:]==('map','tiles','[]'):
+                        continue
+                    if key in {"metadata", "parameters", "payload", "inputs", "expected_blackboard"}:
                         continue
                     if key in expected and isinstance(child, str) and child in definitions:
-                        if definitions[child].get("kind") not in expected[key]:
+                        wanted = {"control"} if key == "definition" and value.get("kind") == "control" and "op" not in value else expected[key]
+                        if definitions[child].get("kind") not in wanted:
                             raise CompileError(f"{path}.{key}: {child} has incompatible kind {definitions[child].get('kind')}")
-                    elif key == "abilities" and isinstance(child, (list, tuple)):
+                    elif key in {"abilities", "recovery_freeze_abilities", "interrupt_abilities"} and isinstance(child, (list, tuple)):
                         for reference in child:
                             if definitions[reference].get("kind") != "ability":
                                 raise CompileError(f"{path}.abilities: {reference} is not an ability")
@@ -366,34 +397,80 @@ class Compiler:
                             reference = spec.get("rule")
                             if reference in definitions and definitions[reference].get("contract") != "attributes.growth":
                                 raise CompileError(f"{path}.growth.{attribute}: rule {reference} is not an attributes.growth rule")
-                    expected_contracts = {"recovery_rule": "resource.recovery", "capacity_rule": "resource.capacity", "bounds_rule": "resource.bounds", "interval_rule": "buff.interval" if root_kind == "buff" else "time.interval", "duration_rule": "buff.duration" if root_kind == "buff" else "ability.duration"}
+                    expected_contracts = {"exit_rule": "lifecycle.exit", "active_rule": "buff.applicability", "control_rule": "buff.applicability", "recovery_freeze_rule": "resource.recovery_freeze", "recovery_rule": "resource.recovery", "amount_rule": "resource.recovery", "capacity_rule": "resource.capacity", "bounds_rule": "resource.bounds", "interval_rule": "buff.interval" if root_kind == "buff" else "time.interval", "duration_rule": "buff.duration" if root_kind == "buff" else "ability.duration"}
                     if key in expected_contracts and isinstance(child, str) and child in definitions:
                         if definitions[child].get("contract") != expected_contracts[key]:
                             raise CompileError(f"{path}.{key}: rule {child} belongs to {definitions[child].get('contract')}, expected {expected_contracts[key]}")
-                    walk(child, f"{path}.{key}", root_kind)
+                    walk(child, f"{path}.{key}", root_kind,location+(key,))
             elif isinstance(value, (list, tuple)):
                 for child in value:
-                    walk(child, path, root_kind)
+                    walk(child, path, root_kind,location+('[]',))
         for identifier, definition in definitions.items():
             walk(definition, identifier, definition.get("kind"))
+            if definition.get("kind") == "buff" and definition.get("aura"):
+                member = definitions[definition["aura"]["buff"]]
+                if member.get("aura") or "duration_seconds" in member or member.get("duration_rule"):
+                    raise CompileError(f"{identifier}.aura: member must be a permanent non-emitter Buff")
+                if definition['aura'].get('lease_policy'):
+                    policy=member.get('stacking',{})
+                    if policy.get('mode','refresh')!='refresh' or type(policy.get('max_stacks',1)) is not int or policy.get('max_stacks',1)!=1 or policy.get('policy') or ('duration_seconds' in member.get('parameters',{}) and member['parameters']['duration_seconds']!=0):
+                        raise CompileError(f"{identifier}.aura: shared child must be nonstacking permanent refresh max1")
+                elif member.get("stacking", {}).get("mode") != "independent":
+                    raise CompileError(f"{identifier}.aura: member requires independent stacking")
 
     @staticmethod
-    def _validate_entity_abilities(definitions):
+    def _validate_entity_abilities(definitions, scenario=None):
+        from .schemas import validate_recovery
+        def check_freeze(resources, owned, path):
+            for name, spec in resources.items():
+                validate_recovery(spec, path+".resources."+name)
+                freeze_rule = spec.get("recovery_freeze_rule") or spec.get("rules", {}).get("resource.recovery_freeze")
+                if freeze_rule and definitions[freeze_rule].get("metadata", {}).get("recovery_freeze_authority") != "final_override":
+                    raise CompileError(f"{path}.resources.{name}: freeze rule must declare metadata.recovery_freeze_authority=final_override")
+                for field, entries in (("recovery_freeze_abilities", spec.get("recovery_freeze_abilities", [])),
+                                       ("interrupt_abilities", spec.get("recovery", {}).get("interrupt_abilities", []))):
+                    for identifier in entries:
+                        if identifier not in owned:
+                            raise CompileError(f"{path}.resources.{name}.{field}: actor does not own {identifier}")
         for identifier, entity in definitions.items():
             if entity.get("kind") != "entity":
                 continue
             resources = entity.get("components", {}).get("resources", {})
+            stock=entity.get("components",{}).get("deployable",{}).get("stock")
+            if stock is not None:
+                if stock["resource"] not in (scenario or {}).get("resources",{}):raise CompileError(identifier+": deployment stock resource is absent")
+                if stock.get("rule") and definitions[stock["rule"]].get("contract")!="resource.cost":raise CompileError(identifier+": stock rule must implement resource.cost")
+            check_freeze(resources, entity.get("components", {}).get("abilities", []), identifier)
+            if "rebirth" in entity.get("components",{}):
+                from ..domains.rebirth import validate
+                validate(entity["components"]["rebirth"],entity["components"],definitions)
             for ability_id in entity.get("components", {}).get("abilities", []):
                 ability = definitions[ability_id]
+                recovery = ability.get("activation", {}).get("parameters", {})
+                legacy_resource = recovery.get("sp_resource")
+                if legacy_resource and recovery.get("recovery_per_attack"):
+                    driver = resources.get(legacy_resource, {}).get("recovery", {})
+                    if (driver.get("mode") == "event" and driver.get("event") == "attack.accepted"
+                            and driver.get("owner_role", "source") in ("source", "any")):
+                        raise CompileError(f"{identifier} -> {ability_id}: duplicate legacy and event attack recovery for {legacy_resource}")
                 for cost in ability.get("activation", {}).get("costs", []):
-                    if cost["resource"] not in resources:
+                    if cost.get("owner", "source") == "source" and cost["resource"] not in resources:
                         raise CompileError(f"{identifier} -> {ability_id}: ability cost uses undefined resource {cost['resource']}")
+                    if cost.get("owner") == "battle" and cost["resource"] not in (scenario or {}).get("resources", {}):
+                        raise CompileError(f"{identifier} -> {ability_id}: battle cost uses undefined resource {cost['resource']}")
                     if "rule" in cost and definitions[cost["rule"]].get("contract") != "resource.cost":
                         raise CompileError(f"{identifier} -> {ability_id}: cost rule {cost['rule']} does not implement resource.cost")
+                visited_buffs = set()
                 def check_effect(effect):
-                    if effect.get("op") == "modify_resource" and effect.get("target", "selected") == "source":
+                    if effect.get("op") == "modify_resource" and effect.get("target", "selected") in ("source", "self"):
                         if effect["resource"] not in resources:
                             raise CompileError(f"{identifier} -> {ability_id}: source effect uses undefined resource {effect['resource']}")
+                    if effect.get("op") == "apply_buff" and effect.get("target", "selected") in ("source", "self"):
+                        buff_id = effect["buff"]
+                        if buff_id not in visited_buffs:
+                            visited_buffs.add(buff_id)
+                            for child in definitions[buff_id].get("on_remove", ()):
+                                check_effect(child)
                     for key in ("on_success", "on_failure", "effects"):
                         for child in effect.get(key, []):
                             check_effect(child)
@@ -404,3 +481,23 @@ class Compiler:
                         check_effect(entry["effect"])
                     for effect in entry.get("effects", []):
                         check_effect(effect)
+                for effect in ability.get("activation", {}).get("on_start", []):
+                    check_effect(effect)
+        scene = scenario or {}
+        check_freeze(scene.get("resources", {}), [], scene.get("id", "scenario"))
+        instances = list(scene.get("initialEntities", []))+list(scene.get("waves", []))
+        for wave in scene.get("timeline", {}).get("waves", []):
+            for fragment in wave["fragments"]:
+                instances.extend(a["spawn"] for a in fragment["actions"] if a["kind"] == "spawn")
+        for item in instances:
+            base = definitions[item["definition"]].get("components", {})
+            actual = merge(base, item.get("components", {}))
+            from ..domains.deployment import cooldown_start
+            cooldown_start(actual.get('deployable',{}))
+            if "selection_state" in actual:
+                from ..domains.selection import validate_state
+                validate_state(actual["selection_state"], (item.get("instanceAlias") or item["definition"])+".selection_state")
+            check_freeze(actual.get("resources", {}), actual.get("abilities", []), item.get("instanceAlias") or item["definition"])
+            if "rebirth" in actual:
+                from ..domains.rebirth import validate
+                validate(actual["rebirth"],actual,definitions)

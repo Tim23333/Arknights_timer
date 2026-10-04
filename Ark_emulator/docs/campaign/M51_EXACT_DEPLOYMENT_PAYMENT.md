@@ -1,0 +1,13 @@
+# M51 部署实际支付与记录一致性
+
+独立M50 peer保存两个真实反例：同actor重复record再次扣stock；customresource.bounds只把DP4扣到3（实付1），公开部署却记录paid_cost4并消费库存。后者是继承M48的旧行为，不能因来源早而忽略。本轮新core`50902adad7bd99b27b4c3c2efd2d40e97458bb181d203f5b434fcd0eaa782c1f`从5bc创建独立候选，仅deployment/api两个文件改动。
+
+record自身拥有atomic，成功记录添加World `runtime.deployment_recorded=true`，重复record拒绝而不扣库存。公开DP支付实际delta必须等于计划费用负数，部分支付由原command事务完整回滚DP/stock/创建/事件；owned部署继续使用真实cast payment分配。库存cost规则仍可替换，不把边界clamp的接受误当足额付款。
+
+79实际新反例和兼容检查通过12.90秒，原peer断言只替换runtime副本未放宽；另directrecord部分bounds失败无外atomic也完整回滚。sourceguard/candidate起止锁定，报告`validation/campaign/m51_payment/candidate_final.json` SHA`9a2117f7d598e1dc766d431a2a0370956b002f85aea52e683ea1d1fda485d36e`。独立peer/完整0-1custom基线继续，原M50完整基线11/0绿保持原范围，不能迁成新版本证明。
+
+新World标记即使普通无stock部署也存在，因此正常行为兼容需逐值报告新增状态，不宣称原World原始字节不变。新trace/回放身份绑定修订core，不用排除字段假装完全等值。底座仍通用，没有crate或官方ID分支；第三章障碍破坏/隐身机制与版本合并仍另完成。
+
+同版完整首关基线94354已真实exit0：11/0、181937事件、CP续跑/完整回放/custom850/60及sourceguards均通过。报告`validation/campaign/m51_payment/baseline_20261003.json`与`.identity.json`。新部署World标记在这个新身份下保存、恢复和重放；旧M48/M50绿收据不迁为本版。独立peer原5反例fresh已过，扩展source payment/owned/rollback最终report继续。
+
+独立peer现正式冻结12case/1.02秒，core50902与源起止同。原重复record/部分DP期望不变fresh通过；扩直接record无outeratomic部分stock失败、outer成功记录后抛错恢复marker/resource/actor、无stock旧继承部分DP拒/普通足额支付、owned实际castpayment4+stock1+owner关系、strict资源/合同，以及公开三部署/第四拒/撤退不返库存的磁盘CP/完整回放。报告`validation/campaign/m50_peer/m51/final_review.json` SHA`61ba778e2395d1d4e83524aa38930f5a39602c2a3aff84b732824919a075e25e`。待M49冻结后明确合冲突并新组合验证。

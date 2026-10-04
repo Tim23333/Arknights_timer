@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/m11_block_test",
+    "version": "1",
+    "requires": [
+      "preset/ark_standard"
+    ]
+  },
+  "abilities": [
+    {
+      "id": "ability/no_block",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/no_block"
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/less",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/less"
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/more",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/more"
+          }
+        ]
+      },
+      "timeline": []
+    }
+  ],
+  "entities": [
+    {
+      "id": "unit/blocker",
+      "kind": "entity",
+      "tags": [
+        "player",
+        "ground"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 1000,
+            "atk": 10,
+            "def": 0,
+            "mres": 0,
+            "block_count": 2,
+            "block_cost": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 1000,
+            "capacity": 1000,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "deployable": {
+          "policy": "policy/ark_ground_deploy",
+          "terrain": "ground"
+        },
+        "abilities": [
+          "ability/no_block",
+          "ability/less",
+          "ability/more"
+        ]
+      }
+    },
+    {
+      "id": "unit/mover",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 100,
+            "atk": 0,
+            "def": 0,
+            "mres": 0,
+            "move_speed": 0,
+            "block_cost": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/no_block",
+      "kind": "buff",
+      "duration_seconds": 0.1,
+      "control": {
+        "block": false
+      }
+    },
+    {
+      "id": "buff/less",
+      "kind": "buff",
+      "duration_seconds": 1,
+      "modifiers": [
+        {
+          "attribute": "block_count",
+          "layer": "flat",
+          "value": -1
+        }
+      ]
+    },
+    {
+      "id": "buff/more",
+      "kind": "buff",
+      "duration_seconds": 1,
+      "modifiers": [
+        {
+          "attribute": "block_count",
+          "layer": "flat",
+          "value": 1
+        }
+      ]
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scenario/m11_block_test",
+    "ruleset": "ruleset/ark_standard",
+    "map": {
+      "rows": 5,
+      "cols": 8
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/blocker",
+        "instanceAlias": "blocker",
+        "position": {
+          "row": 2,
+          "col": 2
+        }
+      },
+      {
+        "definition": "unit/mover",
+        "instanceAlias": "enemy0",
+        "position": {
+          "row": 2,
+          "col": 2
+        },
+        "route": {
+          "motionMode": "WALK",
+          "endPosition": {
+            "row": 2,
+            "col": 6
+          }
+        }
+      },
+      {
+        "definition": "unit/mover",
+        "instanceAlias": "enemy1",
+        "position": {
+          "row": 2,
+          "col": 2
+        },
+        "route": {
+          "motionMode": "WALK",
+          "endPosition": {
+            "row": 2,
+            "col": 6
+          }
+        }
+      },
+      {
+        "definition": "unit/mover",
+        "instanceAlias": "enemy2",
+        "position": {
+          "row": 2,
+          "col": 2
+        },
+        "route": {
+          "motionMode": "WALK",
+          "endPosition": {
+            "row": 2,
+            "col": 6
+          }
+        }
+      }
+    ]
+  }
+}

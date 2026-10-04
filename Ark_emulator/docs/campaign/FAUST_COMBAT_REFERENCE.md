@@ -1,0 +1,21 @@
+# 浮士德攻击与分支消费者
+
+实际固定变体为 `enemy_1508_faust@0/86350d42c005ccb6`，source审计 `70171c9b...` 保留HP37000／ATK1000／DEF350／RES35、普通间隔5秒、射程20、初始无敌150秒，以及普通／强化射击40帧、Skill_2召唤27帧／动画50帧。射击AdvancedSelector实际targetMotion1只选地面角色，不能从大射程推断对空。
+
+当前内容为 `packages/campaign/chapter05_boss/faust/combat.v4.reference.json` SHA `357abc09e1aa12410d36353769cf8f0c7416fcd12c1556098d01e6c0c7855ee4` 和三技能组合 `complete.v2.reference.json` SHA `a686526a89a18afdf4cbfcfb9c9066d302c859e6caee6d904ea5ce67fcf63862`。初始模型缺少critical.requires_targets，在510刻无目标仍启动，原失败与输出保存；新内容明确要求合法目标，不改数值或内核掩盖问题。
+
+四项攻击作者测试实际通过126.03秒：40刻射击＋3刻速度10飞行，对DEF37目标普通963；600刻强化射击／643命中1963。150秒无敌于4499阻止真伤，4500准确到期后接受100伤害，HP36900；无敌使用真实Buff afterhook和到期边界observer。高仇恨空中目标仍被原地面资格拒绝。公有部署的阻挡单位不能阻挡具有源BlockFree3状态的浮士德。
+
+BlockFree策略使用新通用 `model.blocking.status`，声明已知flag和可替换base blocking rule，按实际投影状态判断。应用／移除改变资格的Buff会在选用此策略时刷新阻挡关系，避免到期时Buff已移除而旧blocked_by残留一刻。旧v2动态状态反例保存：t4旗标已空但关系None、显式blocking后恢复；新v3两项实际测试和19兼容通过。它尚在独立审查，未推广到当前主底座。
+
+通用分支v4修正实际任务身份：World存seq／phase／priority，handler匹配真实Session当前调度key。取消原任务后传原payload或另建同payload任务不能执行激活。原v3两项真反例和早期夹具错误均保留；原13独立断言新v4全部通过。v5纯分支facts给技能条件／仲裁／行为规则提供available，耗尽后技能在付款和施法前拒绝。
+
+三技能组合当前core为 `f9855b69eb0a0a25828448181e24436118c4c3afbfa177615921be6e37bf87b4`，基于冻结Frostv5另合分支与状态阻挡。31项组合作者测试实际通过37.43秒，包含source召唤27帧真正激活注册对象、50帧结束、共享150刻攻击钟、CD950、耗尽后不再施法、动态BlockFree和branch typed派发及CP／回放。测试的注册对象只证明phase激活，实际弩炮攻击、运动和碰撞尚待实现，不能声称完整5-10。
+
+## 后续组合与独立结果
+
+status v5允许已经实现的计算图作为阻挡策略，并按真实内容依赖图识别包装器内部的状态投影及Buff刷新要求。独立8项通过44.64秒，graph包装／显式custombase依赖／dynamicflag免疫到期／真实射击均验证。旧graph契约不支持及参数改引用漏dependency负例保留其原身份，没有重标为新版本通过。
+
+最新三技能组合为 `campaign_faust_complete_v3_candidate` core `c6cdbc1754634628913d2e3419fd9eb5ea13f3569fe4d70c14ca20c8147c9a6f`，catalog `f193771ba2ed66bc0bb755e413003b2bfc4de06a349c4c623afee660b00cecd2`，14改动文件冻结6c894b6b...。35相关测试通过65.51秒；独立4source场景通过76.43秒，收据 `faust_complete_v3_independent_peer/verification.json` SHA `f1a5351e07e4643c1bfc83c59cd78342612d966b5a33ebb0861c2a4c2989f3c5`：实际初始450召唤、477激活原trap1、500完成／CD1400，600强化射击／643伤害1963；全部7phase10旧注册对象推进，耗尽后无空技能；召唤前摇source退出不激活，动态BlockFree免疫／恢复同刻阻挡关系与攻击时钟一致，磁盘CP／回放通过。完整测试集和标准基线正在执行，尚未推广主目录。
+
+DB射程scaled circle、排序、强化CD17从动画完成开始、召唤15／30从完成开始及共享5秒攻击钟、平面追踪点弹道等均为明确可替换参考政策。源方法／相机和collider对齐及用户后续客户端反馈仍未执行。独立审查和5-10所有关卡依赖齐备后才进行整关验收。

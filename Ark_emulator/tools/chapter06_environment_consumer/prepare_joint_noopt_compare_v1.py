@@ -1,0 +1,3 @@
+"""Compare new joint's own prefix against actual base without inherited full proof."""
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2];p=ROOT/'tools/chapter06_environment_consumer/compare_noopt_v1.py';s=p.read_text().replace("C=P.with_name('candidate.json')","C=Path('E:/ArkSimEvidence/chapter06_joint_noopt_v1/candidate.json')").replace('validation/campaign/chapter06_environment_candidate_v1/noopt.json','validation/campaign/chapter06_static_selfremove_v1/noopt.json');out=p.with_name('compare_joint_noopt_v1.py');assert not out.exists();out.write_text(s,encoding='utf8',newline='');print(out)

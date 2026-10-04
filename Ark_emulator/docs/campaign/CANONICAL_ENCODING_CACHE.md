@@ -1,0 +1,17 @@
+# 完整事件证据编码缓存
+
+`campaign_canonical_encoder.py`只改变证据导出编码方式，不改变模拟或事件内容。mutable容器不缓存；仅选定runtime的FrozenMapping/FrozenTuple按对象身份复用编码字节，LRU保对象引用避免id复用，限制8192项、8MiB编码字节、单项32KiB。超限时继续流式编码，不删字段/采样事件/合并事件，JSON对象键按原canonical顺序排序。
+
+原helper及所有live v6/v7/v9输入保持冻结。新`campaign_streaming_evidence_v2.py`用于v10，输出SHA与旧canonical字节一致；不同immutable子树是否共享仅影响性能，不改变输出。v10 actual runtime选择后才创建encoder；初次模块级导入ark_sim导致错选primary的失败已由CLI测试发现并修为懒加载，候选选择门没有放宽。
+
+18实际检查通过2.40秒：整数/浮点/bool/负零/Unicode、mutable变异、LRU/零预算、共享payload事件顺序、actual runtime完整snapshot/events/journal、终局后计划命令拒绝、真实forward异常partialjournal/checkpoint/progressfailed、磁盘CP及完整回放。原12编码检查单独报告保持。
+
+实际2-10原输入前300tick，共34797条完整事件，编码76826048字节。两版全部字节SHA均`c758843bced8bc7fc90e7ac24152e221fe41cf8f356c2579fb9ce419723a5ff3`；开tracemalloc的旧编码28.43秒、新16.23秒，约快43%。额外峰值分配旧6748B、新10939140B；cache6959项、编码8386686B。该8MiB是编码字节上限，不含Python对象开销，不宣称RSS硬限。报告`validation/campaign/encoding_cache/actual_02_10_300.json`锁helper/runtime/inputs起止字节，不代表完整关卡更快或客户端准确性。
+
+下一新整关可采用v10，独立peer和新输入身份分别记录。已有live任务不修改导出helper，不把旧绿报告迁为新工具验证。
+
+独立peer实际构造public FrozenTuple的malformed wrapper（tuple.__new__绕过深freeze），其中含mutable list；初次缓存按外层类型信任，child变异后错复用旧字节。原反例SHA606ec0已保存，此scope不说正常事件数据发生错误。新helper在每次缓存资格/命中前验证所有后代深不可变，mutable子树不缓存；原正常byte/mutation/CLIfailure tests共19项fresh通过。旧43%测速只证明旧helper，修订后实际300tick重新量化，不把旧性能数据迁成修订版结论。
+
+首次正确但每个子节点重复深验证的版本耗时45.86秒，比原28.46秒慢61%，保报告`actual_02_10_300_deep_verified.json`，未推广。随后单次顶层遍历共享有界深验证memo，最多max_entries项，超过清理仅影响遍历代价，下一次顶层调用重新检查，不能信malformed wrapper的mutable子树。20fresh测试含mutablewrapper变异/cycle/极小memo和完整CLI路径全部通过。最终真实同300tick日志旧28.40秒、新19.58秒（约快31%），峰值额外分配11,466,563B；全部字节SHA和76,826,048B相等，报告`actual_02_10_300_deep_memo.json`。独立peer继续，新2-10暂用稳定v9，不在live替换工具。
+
+进一步peer在恶构造FrozenMapping mutablebacking找到缓存错字节；MappingProxyType也可能包装外部仍可写dict。最终实验版本不按public外层类型假信：通用chunks退回原有有界流式算法，每条journal record单独own深snapshot后才编码，不能整个journal展开。23tests含yield间外部proxy变异、malformedmutable/nonfinite/cycle通过；此前31%速度属于已否定边界的历史版本，不能给当前正确实验版本宣传性能收益。v10保实验、不推广，主线新整关继续稳定v9。两peer失败原始输入/源码SHA完整保存，优化实验不替代36关正确实现与全程验收。

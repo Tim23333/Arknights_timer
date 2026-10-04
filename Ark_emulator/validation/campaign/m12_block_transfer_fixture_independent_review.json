@@ -1,0 +1,202 @@
+{
+  "passed": true,
+  "implementation_sha256": "bd60c068f0af7694e8e62c16868f4d310b6bb92681f8ebbf5d97814fba28ac11",
+  "cases": [
+    {
+      "single_blocker_isolated": false,
+      "old_blocker": 3,
+      "second_blocker": 4,
+      "blocked_after_tick": 4,
+      "source_position": {
+        "row": 0.0,
+        "col": 2.033333333333333
+      },
+      "distance_to_second": 0.9666666666666668,
+      "declared_radius": 1,
+      "remaining_path": [
+        {
+          "row": 0,
+          "col": 3
+        },
+        {
+          "row": 0,
+          "col": 4
+        }
+      ],
+      "fixture_initial_entities": [
+        {
+          "definition": "unit/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 0,
+            "col": 2
+          },
+          "route": {
+            "motionMode": "WALK",
+            "endPosition": {
+              "row": 0,
+              "col": 4
+            }
+          }
+        },
+        {
+          "definition": "unit/target",
+          "instanceAlias": "target1",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/target",
+          "instanceAlias": "target2",
+          "position": {
+            "row": 0,
+            "col": 3
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": 85,
+          "type": "blocking.changed",
+          "payload": {
+            "source": 3,
+            "target": 2
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 120,
+          "type": "blocking.changed",
+          "payload": {
+            "source": null,
+            "target": 2
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 121,
+          "type": "buff.applied",
+          "payload": {
+            "source": 3,
+            "target": 3,
+            "buff": "buff/release",
+            "instance": "buff/3/1",
+            "stacks": 1
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 141,
+          "type": "blocking.changed",
+          "payload": {
+            "source": 4,
+            "target": 2
+          },
+          "time": 0,
+          "cause": null
+        }
+      ]
+    },
+    {
+      "single_blocker_isolated": true,
+      "old_blocker": 3,
+      "second_blocker": 4,
+      "blocked_after_tick": null,
+      "source_position": {
+        "row": 0.0,
+        "col": 2.033333333333333
+      },
+      "distance_to_second": 2.033333333333333,
+      "declared_radius": 1,
+      "remaining_path": [
+        {
+          "row": 0,
+          "col": 3
+        },
+        {
+          "row": 0,
+          "col": 4
+        }
+      ],
+      "fixture_initial_entities": [
+        {
+          "definition": "unit/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 0,
+            "col": 2
+          },
+          "route": {
+            "motionMode": "WALK",
+            "endPosition": {
+              "row": 0,
+              "col": 4
+            }
+          }
+        },
+        {
+          "definition": "unit/target",
+          "instanceAlias": "target1",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/target",
+          "instanceAlias": "target2",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": 85,
+          "type": "blocking.changed",
+          "payload": {
+            "source": 3,
+            "target": 2
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 120,
+          "type": "blocking.changed",
+          "payload": {
+            "source": null,
+            "target": 2
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 121,
+          "type": "buff.applied",
+          "payload": {
+            "source": 3,
+            "target": 3,
+            "buff": "buff/release",
+            "instance": "buff/3/1",
+            "stacks": 1
+          },
+          "time": 0,
+          "cause": null
+        }
+      ]
+    }
+  ],
+  "diagnosis": "original fixture contains two player/block1/deployable instances of shared unit/target; legal transfer differs from release failure",
+  "direct_domain_api_diagnostic_only": true,
+  "command_replay_claim": false,
+  "existing_tests_modified": false,
+  "formal_approval": false,
+  "source_test_sha256": "ffd47121df2a46434affbabba2be8f7b3d90d19aa4bca55bf23b5f563067c36b"
+}

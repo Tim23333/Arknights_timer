@@ -1,0 +1,58 @@
+{
+  "schema": "ark-sim/root-terrain-independent-review/v1",
+  "passed": true,
+  "reviewer": "/root",
+  "author": "/root/campaign_roster",
+  "implementation": "669982006a81507973d8f3c3abb1f694d7ee9831de67ad2de1c0b3ea441df571",
+  "source_identity_recording": "Final source binding after the actual run; no in-process start-source capture claimed",
+  "formal_stage_approved": false,
+  "client_verified": false,
+  "execution": {
+    "path": "validation/campaign/m16_terrain/root_peer_tests_20261002.json",
+    "sha256": "b68c7630a1fec4339224e4187ef91bb3eda93cb9d063763ab2b72c058b0707a0"
+  },
+  "test_source": {
+    "path": "tools/experiments/m16_root_peer/test_terrain_review.py",
+    "sha256": "e56af263c1df7214105b7f7c3886ee316140d786f15e1fff2ca3ffaa33a1e87c"
+  },
+  "exporter_sha256": "5df6c336ae61753a0cdd3b98601b132b303e30609a14f42f7b9e160cd386a61d",
+  "bindings": {
+    "packages/campaign/chapter01_devices/emp.terrain.json": "362c2fb4a102197ff23b6ff48379c8940a98127bbfb6848b6ab4e837f673edb2",
+    "packages/campaign/chapter01_devices/emp.source.json": "7496c92a4d8772569af6a4a49802ab6fa0a9e7c7c1dc75d3890b074af63a1176",
+    "validation/campaign/m16_terrain/changed_files.json": "a9bacef244c1822c7447e0fdfe736fee451f794cc6c03658d493b5b598afea3a",
+    "validation/campaign/m16_terrain/candidate_final.json": "658cbcfcd66771c102df643f9e8e0f8d32a3c9ab0c2596395f35385ec323eee3"
+  },
+  "checks": [
+    {
+      "case": "blocking_owner_retire_preserves_second_layer_and_restored_live_grid",
+      "claims": [
+        "same owner key across two owners preserves surviving owner",
+        "retire retains HP",
+        "mask removal resumes actual walker",
+        "checkpoint and recorded commands replay states and events equal"
+      ]
+    },
+    {
+      "case": "rule_only_in_overlay_loads_and_invalid_numeric_output_rolls_back",
+      "claims": [
+        "overlay-only calculation dependency resolves",
+        "nonpositive path cost rejects",
+        "API-only atomic failure restores whole checkpoint"
+      ]
+    },
+    {
+      "case": "actual_emp_preserves_native_pass_and_advanced_then_restores_after_withdraw",
+      "claims": [
+        "real EMP wrapper preserves pass3 advanced0 HIGHLAND",
+        "source physicalHeight numeric .4 is consumed",
+        "repeated tile reads preserve whole checkpoint",
+        "withdraw restores original tile and command replay equals"
+      ]
+    }
+  ],
+  "limitations": [
+    "No chapter 1 whole-stage execution",
+    "No native method-body or client comparator claim",
+    "Catalog agent peer review still pending"
+  ]
+}

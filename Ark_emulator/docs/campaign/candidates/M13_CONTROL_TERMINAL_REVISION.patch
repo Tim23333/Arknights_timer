@@ -1,0 +1,151 @@
+--- a/ark_sim/domains/controls.py
++++ b/ark_sim/domains/controls.py
+@@ -6,6 +6,8 @@
+     def __init__(self, context):
+         self.ctx = context
+         self.handlers = {"domain.control.signal": self.signal}
++        self._settling_terminal = False
++        self._cancelling = set()
+ 
+     def _state(self):
+         return self.ctx.state().get("controls", {"next_instance": 1, "instances": {}, "aliases": {}})
+@@ -58,9 +60,28 @@
+     def track_start_task(self, reference, task):
+         instance = self.instance(reference); instance["tasks"]["start"] = task; self._put(instance)
+ 
+-    def _effects(self, reference, effects):
++    def _effects(self, reference, effects, *, cancellation=False):
++        terminal_at_entry = self.ctx.state().get("finished", False)
++        cast = {"control_instance": reference, "control_finalizer": cancellation and terminal_at_entry}
+         for effect in effects:
+-            self.ctx.effects.execute("system/battle", ["system/battle"], thaw(effect), cast={"control_instance": reference})
++            self.ctx.effects.execute("system/battle", ["system/battle"], thaw(effect), cast=cast)
++            if not self.effect_allowed(cast): return False
++        return True
++
++    def effect_allowed(self, cast):
++        reference = cast["control_instance"]
++        instance = self.instance(reference)
++        return instance["status"] in {"pending", "running"} and (not self.ctx.state().get("finished") or
++            (cast.get("control_finalizer") and reference in self._cancelling))
++
++    def settle_effect(self, cast, operation):
++        if operation != "emit" and not self._settling_terminal and not self.ctx.state().get("finished"):
++            self._settling_terminal = True
++            try:
++                self.ctx.lifecycle.tick(self.ctx.session)
++            finally:
++                self._settling_terminal = False
++        return self.effect_allowed(cast)
+ 
+     def begin(self, reference):
+         with self.ctx.session.atomic():
+@@ -70,7 +91,7 @@
+             instance.update(status="running", phase="effects", started_at=self.ctx.session.time); self._put(instance)
+             instance["tasks"].pop("start", None); self._put(instance)
+             self.ctx.emit("control.started", {"control": instance["id"], "definition": instance["definition"]})
+-            self._effects(instance["id"], self.ctx.program.definitions[instance["definition"]].get("on_start", ()))
++            if not self._effects(instance["id"], self.ctx.program.definitions[instance["definition"]].get("on_start", ())): return
+             self._advance(instance["id"])
+ 
+     def _advance(self, reference):
+@@ -82,7 +103,7 @@
+             step = definition["steps"][instance["cursor"]]
+             if step["kind"] == "effects":
+                 instance["phase"] = "effects"; self._put(instance)
+-                self._effects(reference, step["effects"])
++                if not self._effects(reference, step["effects"]): return
+                 instance = self.instance(reference); instance["cursor"] += 1; self._put(instance)
+             elif step["kind"] == "delay":
+                 ticks = self.ctx.quantize(step["seconds"])
+@@ -142,7 +163,7 @@
+ 
+     def _complete(self, reference):
+         instance = self.instance(reference)
+-        self._effects(reference, self.ctx.program.definitions[instance["definition"]].get("on_complete", ()))
++        if not self._effects(reference, self.ctx.program.definitions[instance["definition"]].get("on_complete", ())): return
+         self._cleanup(reference); instance = self.instance(reference)
+         instance.update(status="completed", phase="completed", completed_at=self.ctx.session.time); self._put(instance)
+         self.ctx.emit("control.completed", {"control": reference, "definition": instance["definition"]})
+@@ -154,12 +175,18 @@
+             if policy == "terminal" and not self.ctx.state().get("finished"): raise ValueError("terminal cancellation requires terminal result")
+             instance = self.instance(reference)
+             if instance["status"] in {"completed", "cancelled"}: return False
+-            self._effects(instance["id"], self.ctx.program.definitions[instance["definition"]].get("on_cancel", ()))
+-            self._cleanup(instance["id"]); instance = self.instance(instance["id"])
+-            instance.update(status="cancelled", phase="cancelled", cancelled_at=self.ctx.session.time, cancel_reason=reason, cancel_policy=policy)
+-            self._put(instance); self.ctx.emit("control.cancelled", {"control": instance["id"], "reason": reason, "policy": policy})
+-            self.ctx.timeline.control_released(instance["id"], "cancelled", policy=policy)
+-            return True
++            if instance["id"] in self._cancelling: return False
++            self._cancelling.add(instance["id"])
++            try:
++                self._effects(instance["id"], self.ctx.program.definitions[instance["definition"]].get("on_cancel", ()), cancellation=True)
++                self._cleanup(instance["id"]); instance = self.instance(instance["id"])
++                policy = "terminal" if self.ctx.state().get("finished") else policy
++                instance.update(status="cancelled", phase="cancelled", cancelled_at=self.ctx.session.time, cancel_reason=reason, cancel_policy=policy)
++                self._put(instance); self.ctx.emit("control.cancelled", {"control": instance["id"], "reason": reason, "policy": policy})
++                self.ctx.timeline.control_released(instance["id"], "cancelled", policy=policy)
++                return True
++            finally:
++                self._cancelling.discard(instance["id"])
+ 
+     def cancel_all_terminal(self):
+         with self.ctx.session.atomic():
+--- a/ark_sim/domains/effects.py
++++ b/ark_sim/domains/effects.py
+@@ -26,6 +26,7 @@
+     def _execute(self, source, targets, effect, ability=None, cast=None, cause=None):
+         source = self.ctx.session.world.resolve(source)
+         ability, cast = ability or {}, cast or {}
++        if cast.get("control_instance") and not self.ctx.controls.effect_allowed(cast): return
+         if (cast.get("projectile_impact") and getattr(self.ctx, "route_hidden", lambda ref: False)(source) and
+                 self.ctx.visibility_policy(source).get("launched_source_effects", "retain") == "discard"):
+             return
+@@ -38,6 +39,7 @@
+                 primary=effect.get("parameters", {}).get("primary_target"))
+         selected = self.targets(source, targets, effect.get("target", "selected"))
+         for target in selected:
++            if cast.get("control_instance") and not self.ctx.controls.effect_allowed(cast): return
+             target = self.ctx.session.world.resolve(target)
+             operation = effect["op"]
+             health_delta = operation == "modify_resource" and (
+@@ -56,6 +58,7 @@
+                     child = thaw(child)
+                     child.setdefault("parameters", {})["random_sample"] = sample
+                     self.execute(source, [target], child, ability, cast, event)
++                    if cast.get("control_instance") and not self.ctx.controls.effect_allowed(cast): return
+                 continue
+             elif operation == "area":
+                 if self._projectile(source, target, effect, ability, cast, cause):
+@@ -190,6 +193,7 @@
+                     phase=self.ctx.effect_phase)
+             else:
+                 raise ValueError(f"unimplemented effect {operation}")
++            if cast.get("control_instance") and not self.ctx.controls.settle_effect(cast, operation): return
+             for child in effect.get("effects", ()):
+                 self.execute(source, [target], child, ability, cast, cause)
+ 
+--- a/ark_sim/domains/lifecycle.py
++++ b/ark_sim/domains/lifecycle.py
+@@ -10,6 +10,8 @@
+     def create(self, definition_id, position=None, facing="right", route=None, alias=None, parameters=None,
+                deployed=False, component_overrides=None, rule_overrides=None, tags=None,
+                owner=None, lifetime_seconds=None, on_owner_retire="retain"):
++        if alias is not None and (not isinstance(alias, str) or not alias):
++            raise ValueError("entity alias must be a nonempty string or null")
+         controls = getattr(self.ctx, "controls", None)
+         if alias is not None and controls is not None and (alias.startswith("control/") or controls.alias_exists(alias)):
+             raise ValueError("actor alias collides with a control alias")
+--- a/ark_sim/domains/timeline.py
++++ b/ark_sim/domains/timeline.py
+@@ -205,7 +205,8 @@
+                 raise ValueError("unknown timeline action kind")
+             if action["kind"] != "control": state["remaining_actions"] -= 1
+             self.ctx.emit("timeline.action", {**payload, "origins": origins, "kind": action["kind"]})
+-            self._schedule(state, session.time)
++            if not (self.ctx.controls is not None and self.ctx.state().get("finished")):
++                self._schedule(state, session.time)
+             self._save(state)
+ 
+     def control_released(self, reference, reason, policy=None):

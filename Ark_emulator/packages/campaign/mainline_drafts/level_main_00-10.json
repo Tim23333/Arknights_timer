@@ -1,0 +1,4638 @@
+{
+  "schemaVersion": 2,
+  "status": "draft_unresolved_dependencies",
+  "manifest": {
+    "id": "package/campaign_draft/level_main_00-10",
+    "version": "0.1.0",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "runnable": false,
+      "dependency_plan_source": {
+        "repository": "ArknightsAssets/ArknightsGamedata",
+        "commit": "56aee3d6c5a29c3a0d192456d70d14252cbb0804",
+        "native_level_sha256": "f9dd4ac486b4dccfc4a152b86fbe698355b626df6b90a88992c85e6bb307cfe6",
+        "enemy_database_sha256": "8630fe9c4fe23d3d22f09ed430da1dc308b15b5b5d98718f00181d08c5e186af",
+        "enemy_source_lock_sha256": "3917103d46eeb8610f8c951c16510b72f1c72d0243bcd615dea9e7e6aa28c69b",
+        "operator_normalized_sha256": "1611fac32beb58d7aeb9e28ffb6cd4ebcfc3a5e6f955157a5dc3fab7ebb6824b",
+        "skill_prototype_sha256": "4fd7436441b771920c7fe42c608e09034c131f66b618703b734370a499825c76"
+      },
+      "pending": [
+        "policy/campaign_native_controls",
+        "ability/enemy_1007_slime/normal_attack",
+        "ability/enemy_1027_mob/normal_attack",
+        "ability/enemy_1030_wteeth/normal_attack",
+        "ability/enemy_1000_gopro/normal_attack",
+        "unit/char_151_myrtle",
+        "unit/char_222_bpipe",
+        "unit/char_010_chen",
+        "unit/char_107_liskam",
+        "unit/char_202_demkni",
+        "unit/char_128_plosis",
+        "unit/char_103_angel",
+        "unit/char_180_amgoat",
+        "unit/char_003_kalts",
+        "unit/char_358_lisa",
+        "unit/char_400_weedy",
+        "unit/char_179_cgbird"
+      ],
+      "native_controls": {
+        "STORY": 1,
+        "DISPLAY_ENEMY_INFO": 1
+      },
+      "native_runes": [
+        {
+          "difficultyMask": "FOUR_STAR",
+          "key": "gbuff_lifepoint",
+          "professionMask": 1023,
+          "buildableMask": "ALL",
+          "blackboard": [
+            {
+              "key": "value",
+              "value": 1.0,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "difficultyMask": "FOUR_STAR",
+          "key": "ebuff_attribute",
+          "professionMask": 1023,
+          "buildableMask": "ALL",
+          "blackboard": [
+            {
+              "key": "atk",
+              "value": 1.2,
+              "valueStr": null
+            },
+            {
+              "key": "def",
+              "value": 1.2,
+              "valueStr": null
+            },
+            {
+              "key": "max_hp",
+              "value": 1.2,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "difficultyMask": "FOUR_STAR",
+          "key": "cbuff_attribute",
+          "professionMask": 1023,
+          "buildableMask": "ALL",
+          "blackboard": [
+            {
+              "key": "def",
+              "value": 0.5,
+              "valueStr": null
+            }
+          ]
+        }
+      ],
+      "native_predefines": {
+        "characterInsts": {},
+        "tokenInsts": {},
+        "characterCards": {},
+        "tokenCards": {}
+      },
+      "native_branches": null
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/enemy_1007_slime",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 550,
+            "atk": 130,
+            "def": 0,
+            "mres": 0.0,
+            "move_speed": 1.0,
+            "attack_interval": 1.7,
+            "mass_level": 0,
+            "attack_speed_ratio": 1.0,
+            "block_cost": 1,
+            "block_count": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 550,
+            "capacity_attribute": "max_hp",
+            "role": "health"
+          }
+        },
+        "abilities": [
+          "ability/enemy_1007_slime/normal_attack"
+        ],
+        "behavior": {
+          "machine": "behavior/ground_melee"
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle",
+          "leak_loss": 1
+        },
+        "spatial": {}
+      },
+      "metadata": {
+        "native_id": "enemy_1007_slime",
+        "native_spawn_key": "enemy_1007_slime",
+        "native_level": 0,
+        "source_normal_attack_pending": true
+      }
+    },
+    {
+      "id": "unit/enemy_1027_mob",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 1700,
+            "atk": 250,
+            "def": 50,
+            "mres": 0.0,
+            "move_speed": 1.1,
+            "attack_interval": 2.0,
+            "mass_level": 0,
+            "attack_speed_ratio": 1.0,
+            "block_cost": 1,
+            "block_count": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 1700,
+            "capacity_attribute": "max_hp",
+            "role": "health"
+          }
+        },
+        "abilities": [
+          "ability/enemy_1027_mob/normal_attack"
+        ],
+        "behavior": {
+          "machine": "behavior/ground_melee"
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle",
+          "leak_loss": 1
+        },
+        "spatial": {}
+      },
+      "metadata": {
+        "native_id": "enemy_1027_mob",
+        "native_spawn_key": "enemy_1027_mob",
+        "native_level": 0,
+        "source_normal_attack_pending": true
+      }
+    },
+    {
+      "id": "unit/enemy_1030_wteeth",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 5000,
+            "atk": 500,
+            "def": 50,
+            "mres": 20.0,
+            "move_speed": 0.8,
+            "attack_interval": 3.0,
+            "mass_level": 2,
+            "attack_speed_ratio": 1.0,
+            "block_cost": 1,
+            "block_count": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 5000,
+            "capacity_attribute": "max_hp",
+            "role": "health"
+          }
+        },
+        "abilities": [
+          "ability/enemy_1030_wteeth/normal_attack"
+        ],
+        "behavior": {
+          "machine": "behavior/ground_melee"
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle",
+          "leak_loss": 1
+        },
+        "spatial": {}
+      },
+      "metadata": {
+        "native_id": "enemy_1030_wteeth",
+        "native_spawn_key": "enemy_1030_wteeth",
+        "native_level": 0,
+        "source_normal_attack_pending": true
+      }
+    },
+    {
+      "id": "unit/enemy_1000_gopro",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 820,
+            "atk": 190,
+            "def": 0,
+            "mres": 20.0,
+            "move_speed": 1.9,
+            "attack_interval": 1.4,
+            "mass_level": 0,
+            "attack_speed_ratio": 1.0,
+            "block_cost": 1,
+            "block_count": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 820,
+            "capacity_attribute": "max_hp",
+            "role": "health"
+          }
+        },
+        "abilities": [
+          "ability/enemy_1000_gopro/normal_attack"
+        ],
+        "behavior": {
+          "machine": "behavior/ground_melee"
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle",
+          "leak_loss": 1
+        },
+        "spatial": {}
+      },
+      "metadata": {
+        "native_id": "enemy_1000_gopro",
+        "native_spawn_key": "enemy_1000_gopro",
+        "native_level": 0,
+        "source_normal_attack_pending": true
+      }
+    },
+    {
+      "id": "unit/enemy_1005_yokai",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "flying"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 800,
+            "atk": 0,
+            "def": 50,
+            "mres": 0.0,
+            "move_speed": 0.9,
+            "attack_interval": 2.3,
+            "mass_level": 0,
+            "attack_speed_ratio": 1.0,
+            "block_cost": 1,
+            "block_count": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 800,
+            "capacity_attribute": "max_hp",
+            "role": "health"
+          }
+        },
+        "abilities": [],
+        "behavior": {
+          "machine": "behavior/campaign_passive"
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle",
+          "leak_loss": 1
+        },
+        "spatial": {}
+      },
+      "metadata": {
+        "native_id": "enemy_1005_yokai",
+        "native_spawn_key": "enemy_1005_yokai",
+        "native_level": 0,
+        "source_normal_attack_pending": false
+      }
+    }
+  ],
+  "behaviors": [
+    {
+      "id": "behavior/campaign_passive",
+      "kind": "behavior",
+      "initial": "active",
+      "states": {
+        "active": {}
+      },
+      "transitions": []
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/campaign_draft_move_speed",
+      "kind": "calculation_rule",
+      "contract": "movement.speed",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.movement_parameters.base_speed * params.multiplier"
+      },
+      "parameters": {
+        "multiplier": 0.5
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scenario/campaign_draft/level_main_00-10",
+    "ruleset": "ruleset/ark_standard",
+    "roster": [
+      "unit/char_151_myrtle",
+      "unit/char_222_bpipe",
+      "unit/char_010_chen",
+      "unit/char_107_liskam",
+      "unit/char_202_demkni",
+      "unit/char_128_plosis",
+      "unit/char_103_angel",
+      "unit/char_180_amgoat",
+      "unit/char_003_kalts",
+      "unit/char_358_lisa",
+      "unit/char_400_weedy",
+      "unit/char_179_cgbird"
+    ],
+    "dependencies": [
+      "policy/campaign_native_controls"
+    ],
+    "map": {
+      "rows": 9,
+      "cols": 13,
+      "tiles": [
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_flystart",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_wall",
+          "buildableType": 2,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_wall",
+          "buildableType": 2,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_wall",
+          "buildableType": 2,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_wall",
+          "buildableType": 2,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_road",
+          "buildableType": 1,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_road",
+          "buildableType": 1,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_road",
+          "buildableType": 1,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_wall",
+          "buildableType": 2,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_wall",
+          "buildableType": 2,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_wall",
+          "buildableType": 2,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_wall",
+          "buildableType": 2,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_start",
+          "buildableType": 0,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_road",
+          "buildableType": 1,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_road",
+          "buildableType": 1,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_road",
+          "buildableType": 1,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_road",
+          "buildableType": 1,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_road",
+          "buildableType": 1,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_road",
+          "buildableType": 1,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_road",
+          "buildableType": 1,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_wall",
+          "buildableType": 2,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_road",
+          "buildableType": 1,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_end",
+          "buildableType": 0,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_road",
+          "buildableType": 1,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_road",
+          "buildableType": 1,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_wall",
+          "buildableType": 2,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_wall",
+          "buildableType": 2,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_road",
+          "buildableType": 1,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_road",
+          "buildableType": 1,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_road",
+          "buildableType": 1,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_road",
+          "buildableType": 1,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_road",
+          "buildableType": 1,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_road",
+          "buildableType": 1,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_road",
+          "buildableType": 1,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_road",
+          "buildableType": 1,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_road",
+          "buildableType": 1,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_start",
+          "buildableType": 0,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_forbidden",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "HIGHLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_empty",
+          "buildableType": 0,
+          "passableMask": 2,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        }
+      ]
+    },
+    "waves": [
+      {
+        "at_seconds": 3.0,
+        "definition": "unit/enemy_1000_gopro",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/1",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 1,
+          "native_route_index": 1
+        }
+      },
+      {
+        "at_seconds": 9.0,
+        "definition": "unit/enemy_1000_gopro",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/2",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 1,
+          "native_route_index": 2
+        }
+      },
+      {
+        "at_seconds": 11.0,
+        "definition": "unit/enemy_1000_gopro",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/3",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 1,
+          "native_route_index": 2
+        }
+      },
+      {
+        "at_seconds": 14.0,
+        "definition": "unit/enemy_1000_gopro",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/4",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 2,
+          "native_route_index": 3
+        }
+      },
+      {
+        "at_seconds": 15.0,
+        "definition": "unit/enemy_1000_gopro",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/5",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 2,
+          "native_route_index": 3
+        }
+      },
+      {
+        "at_seconds": 20.0,
+        "definition": "unit/enemy_1000_gopro",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/6",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 2,
+          "native_route_index": 4
+        }
+      },
+      {
+        "at_seconds": 22.0,
+        "definition": "unit/enemy_1000_gopro",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/7",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 2,
+          "native_route_index": 4
+        }
+      },
+      {
+        "at_seconds": 27.0,
+        "definition": "unit/enemy_1000_gopro",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/8",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 2,
+          "native_route_index": 5
+        }
+      },
+      {
+        "at_seconds": 29.0,
+        "definition": "unit/enemy_1000_gopro",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/9",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 2,
+          "native_route_index": 5
+        }
+      },
+      {
+        "at_seconds": 33.0,
+        "definition": "unit/enemy_1000_gopro",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/10",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 2,
+          "native_route_index": 6
+        }
+      },
+      {
+        "at_seconds": 35.0,
+        "definition": "unit/enemy_1000_gopro",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/11",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 2,
+          "native_route_index": 6
+        }
+      },
+      {
+        "at_seconds": 48.0,
+        "definition": "unit/enemy_1000_gopro",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/12",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 3,
+          "native_route_index": 7
+        }
+      },
+      {
+        "at_seconds": 55.0,
+        "definition": "unit/enemy_1000_gopro",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/13",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 3,
+          "native_route_index": 8
+        }
+      },
+      {
+        "at_seconds": 57.0,
+        "definition": "unit/enemy_1000_gopro",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/14",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 3,
+          "native_route_index": 8
+        }
+      },
+      {
+        "at_seconds": 63.0,
+        "definition": "unit/enemy_1027_mob",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/15",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 3,
+          "native_route_index": 9
+        }
+      },
+      {
+        "at_seconds": 65.0,
+        "definition": "unit/enemy_1027_mob",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/16",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 3,
+          "native_route_index": 9
+        }
+      },
+      {
+        "at_seconds": 49.0,
+        "definition": "unit/enemy_1030_wteeth",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 7,
+            "col": 2
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 6,
+                "col": 2
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "WAIT_FOR_SECONDS",
+              "time": 12.0,
+              "position": {
+                "row": 8,
+                "col": 0
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 6,
+                "col": 6
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 6
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 7,
+          "col": 2
+        },
+        "instanceAlias": "wave/17",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 3,
+          "native_route_index": 11
+        }
+      },
+      {
+        "at_seconds": 80.0,
+        "definition": "unit/enemy_1007_slime",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/18",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 4,
+          "native_route_index": 12
+        }
+      },
+      {
+        "at_seconds": 80.8,
+        "definition": "unit/enemy_1007_slime",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/19",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 4,
+          "native_route_index": 12
+        }
+      },
+      {
+        "at_seconds": 81.6,
+        "definition": "unit/enemy_1007_slime",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/20",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 4,
+          "native_route_index": 12
+        }
+      },
+      {
+        "at_seconds": 86.0,
+        "definition": "unit/enemy_1027_mob",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/21",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 4,
+          "native_route_index": 13
+        }
+      },
+      {
+        "at_seconds": 96.0,
+        "definition": "unit/enemy_1027_mob",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/22",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 4,
+          "native_route_index": 13
+        }
+      },
+      {
+        "at_seconds": 106.0,
+        "definition": "unit/enemy_1027_mob",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/23",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 4,
+          "native_route_index": 13
+        }
+      },
+      {
+        "at_seconds": 92.0,
+        "definition": "unit/enemy_1007_slime",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/24",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 4,
+          "native_route_index": 14
+        }
+      },
+      {
+        "at_seconds": 92.8,
+        "definition": "unit/enemy_1007_slime",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/25",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 4,
+          "native_route_index": 14
+        }
+      },
+      {
+        "at_seconds": 93.6,
+        "definition": "unit/enemy_1007_slime",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/26",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 4,
+          "native_route_index": 14
+        }
+      },
+      {
+        "at_seconds": 102.0,
+        "definition": "unit/enemy_1007_slime",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/27",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 4,
+          "native_route_index": 15
+        }
+      },
+      {
+        "at_seconds": 102.8,
+        "definition": "unit/enemy_1007_slime",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/28",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 4,
+          "native_route_index": 15
+        }
+      },
+      {
+        "at_seconds": 103.6,
+        "definition": "unit/enemy_1007_slime",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/29",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 4,
+          "native_route_index": 15
+        }
+      },
+      {
+        "at_seconds": 112.0,
+        "definition": "unit/enemy_1007_slime",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/30",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 4,
+          "native_route_index": 16
+        }
+      },
+      {
+        "at_seconds": 112.8,
+        "definition": "unit/enemy_1007_slime",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/31",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 4,
+          "native_route_index": 16
+        }
+      },
+      {
+        "at_seconds": 113.6,
+        "definition": "unit/enemy_1007_slime",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 4,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 8
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 5,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 10
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 4,
+          "col": 0
+        },
+        "instanceAlias": "wave/32",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 4,
+          "native_route_index": 16
+        }
+      },
+      {
+        "at_seconds": 87.0,
+        "definition": "unit/enemy_1030_wteeth",
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 7,
+            "col": 2
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 6,
+                "col": 2
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "WAIT_FOR_SECONDS",
+              "time": 12.0,
+              "position": {
+                "row": 8,
+                "col": 0
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 6,
+                "col": 6
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 6
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 7,
+          "col": 2
+        },
+        "instanceAlias": "wave/33",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 4,
+          "native_route_index": 17
+        }
+      },
+      {
+        "at_seconds": 85.0,
+        "definition": "unit/enemy_1005_yokai",
+        "route": {
+          "motionMode": "FLY",
+          "startPosition": {
+            "row": 2,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 2,
+                "col": 1
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 11
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 2,
+          "col": 0
+        },
+        "instanceAlias": "wave/34",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 4,
+          "native_route_index": 18
+        }
+      },
+      {
+        "at_seconds": 99.0,
+        "definition": "unit/enemy_1005_yokai",
+        "route": {
+          "motionMode": "FLY",
+          "startPosition": {
+            "row": 2,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 4,
+            "col": 12
+          },
+          "spawnRandomRange": {
+            "x": 0.2,
+            "y": 0.2
+          },
+          "spawnOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "checkpoints": [
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 2,
+                "col": 1
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            },
+            {
+              "type": "MOVE",
+              "time": 0.0,
+              "position": {
+                "row": 4,
+                "col": 11
+              },
+              "reachOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "randomizeReachOffset": false,
+              "reachDistance": 0.0
+            }
+          ],
+          "allowDiagonalMove": true,
+          "visitEveryTileCenter": false,
+          "visitEveryNodeCenter": false,
+          "visitEveryCheckPoint": false
+        },
+        "position": {
+          "row": 2,
+          "col": 0
+        },
+        "instanceAlias": "wave/35",
+        "parameters": {
+          "native_wave": 0,
+          "native_fragment": 4,
+          "native_route_index": 18
+        }
+      }
+    ],
+    "rules": {
+      "movement.speed": "rule/campaign_draft_move_speed"
+    },
+    "resources": {
+      "dp": {
+        "initial": 10,
+        "capacity": 99,
+        "recovery_rate": 1.0,
+        "recovery": {
+          "mode": "periodic",
+          "interval_seconds": 1.0
+        }
+      },
+      "life": {
+        "initial": 10,
+        "capacity": 10
+      }
+    },
+    "parameters": {
+      "deploy_capacity": 8
+    },
+    "objectives": {
+      "type": "waves",
+      "life_resource": "life"
+    },
+    "metadata": {
+      "runnable": false,
+      "native_level_id": "level_main_00-10",
+      "pending_conversion": [
+        "fixed_roster_talents_and_native_attack_clocks_not_fully_converted",
+        "selected_skill_models_partial_not_native_complete",
+        "native_control_actions_require_explicit_model",
+        "native_enemy_animation_scaling_and_client_hit_timing_pending"
+      ]
+    }
+  }
+}

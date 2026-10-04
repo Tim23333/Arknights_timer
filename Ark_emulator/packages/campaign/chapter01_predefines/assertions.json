@@ -1,0 +1,71 @@
+{
+  "schema": "ark-sim/chapter01-predefines-assertions/v1",
+  "implementation_digest": "f8b99ec021be6023d5202307574030e074acdbb1ca583ae6ad7775ef7876d263",
+  "builder_sha256": "3233b03e1c52fe98233569de8b14371d6084e645cfa4b9b746811001b14de5bd",
+  "model_sha256": "4eb40df9ef979f54f289c099b78723da61fc49d00fc88fcdafb1ace3c77b779e",
+  "source_sha256": "15eb6edf057af42e1c03acf441cc44852f1a3b4aefd511dd23428fcead1413e6",
+  "probes": [
+    {
+      "probe": "normal_packet_and_HP_defense",
+      "launch_tick": 9,
+      "impact_tick": 12,
+      "expected_attack_damage": 169,
+      "expected_received_damage": 26,
+      "target_hp": 831,
+      "NPC_hp_after_damage": 651,
+      "program_fingerprint": "91106868b765247dbaaab9139b358bd7abb01d0fc7798548a3595c2e1ff1f5b6",
+      "runtime_fingerprint": "996cdfb729a171854626879646454071a6e55d8a2a9c6df4f6ebcdb0d7e58c54",
+      "checkpoint_equal": true
+    },
+    {
+      "probe": "range_facing",
+      "position": {
+        "row": 3,
+        "col": 9
+      },
+      "facing": "right",
+      "expected_hit": true,
+      "passed": true
+    },
+    {
+      "probe": "range_facing",
+      "position": {
+        "row": 2,
+        "col": 9
+      },
+      "facing": "right",
+      "expected_hit": false,
+      "passed": true
+    },
+    {
+      "probe": "range_facing",
+      "position": {
+        "row": 3,
+        "col": 5
+      },
+      "facing": "right",
+      "expected_hit": false,
+      "passed": true
+    },
+    {
+      "probe": "range_facing",
+      "position": {
+        "row": 3,
+        "col": 5
+      },
+      "facing": "left",
+      "expected_hit": true,
+      "passed": true
+    },
+    {
+      "probe": "captured_target_retired_before_impact",
+      "damage_packets": 0,
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "scope": "synthetic stationary enemy short Engine probes; manual fixture damage/retirement are not command replay",
+  "client_verified": false,
+  "full_stage_executed": false,
+  "formal_stage_approved": false
+}

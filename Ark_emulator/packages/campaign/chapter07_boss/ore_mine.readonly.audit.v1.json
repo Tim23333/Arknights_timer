@@ -1,0 +1,119 @@
+{
+  "schema": "ark-sim/ch7-ore-mine-source-order-readonly-audit/v1",
+  "source_sha256": "9ab8b1049f5e0c9d34977563ccd8ac394044f77ff8da44b9cb717f52a1b9dfcb",
+  "module_sha256": {
+    "mine_v1": "53f020aae28e81ac06010c906ac0715206a5c06b97f6e6268fa9923126897fa6",
+    "ore_v2": "426fe87b60f443009953dfb6eca0a770d6007a87350edc84bb2649263b97a6a0"
+  },
+  "native_mine_active_buff_order": [
+    "take_damage_scale_up[mine]",
+    "mine_damage"
+  ],
+  "native_mine_damage_start_node": [
+    {
+      "$type": "Torappu.Battle.Action.Nodes+FixedValueDamage, Assembly-CSharp",
+      "_damageType": "PURE",
+      "_damageKey": "damage",
+      "_atkScaleKey": "atk_scale",
+      "_ignoreForSp": false,
+      "_attackType": "NORMAL",
+      "_skipModifierEvent": false,
+      "_considerUnhurtable": false,
+      "_noSourceDamage": false,
+      "_targetType": "TARGET",
+      "_assignRealDamageToBB": false,
+      "_assignFinalDamageToBB": false,
+      "_multiplierByKey": false,
+      "_multiplierKey": "cnt",
+      "_damageSourceType": "SOURCE",
+      "_damageTargetType": "TARGET",
+      "_triggerOnCalculateDamage": false,
+      "_isEnvDamage": false,
+      "_ignoreCancelReasonMask": "NONE",
+      "_forceDisplayDamageNum": false,
+      "_undeadable": false,
+      "_modifierKey": "",
+      "_devideDamageFromAbilityCnt": false
+    }
+  ],
+  "native_fragile_damage_node": [
+    {
+      "$type": "Torappu.Battle.Action.Nodes+DamageScale, Assembly-CSharp",
+      "_filterDamageType": true,
+      "_damageMask": "ANY_ATTACK_EXCEPT_ELEMENT",
+      "_filterApplyWay": false,
+      "_applyWayFilter": "NONE",
+      "_filterModifierKey": false,
+      "_modifierKey": "",
+      "_isOneMinus": false,
+      "_isStackable": false,
+      "_isValidStackCnt": false,
+      "_cachedDeltaValueToBBKey": "",
+      "_customKey": ""
+    }
+  ],
+  "readonly_mine_abilities": [
+    {
+      "id": "ability/ch7/predefined/mine/explode",
+      "activation": {
+        "mode": "manual",
+        "costs": [
+          {
+            "resource": "sp",
+            "amount": 25
+          }
+        ],
+        "condition": "inputs.source.components.behavior.state == 'mode1'",
+        "parameters": {
+          "auto_only": true,
+          "auto_when_ready": true,
+          "requires_targets": true,
+          "blocks_new_activations": true
+        }
+      },
+      "timeline": [
+        {
+          "at": 0,
+          "effect": {
+            "op": "area",
+            "target": "source",
+            "center": "source",
+            "membership_rule": "rule/ch7/predefined/mine/area",
+            "effects": [
+              {
+                "op": "apply_buff",
+                "buff": "buff/ch7/predefined/mine/vulnerable"
+              },
+              {
+                "op": "damage",
+                "damage_type": "true",
+                "scale": 0,
+                "additions": 2000.0,
+                "damage_flags": {
+                  "source_attack_type": "NORMAL",
+                  "ignore_for_sp": false
+                }
+              }
+            ]
+          }
+        },
+        {
+          "at": 0,
+          "effect": {
+            "op": "retire",
+            "target": "source",
+            "parameters": {
+              "reason": "dead"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "finding": "NativeactiveBuffs first take_damage_scale_up[mine], thenmine_damage; latter ON_BUFF_START FixedValueDamage skipModifierEventfalse. This sourceorder supports sameburst damage scale alreadyinstalled (2000→3000 at1.5). No decodedbranch says deferfragile untilafter minehit. Bodyevent sequencing/currentassets version remainreplaceablereference; gameword2000 alone doesnot refute sourceorder.",
+  "invul_policy": "Both ore_s andmine FixedValueDamage literalconsiderUnhurtablefalse. NewPatriot consider_unhurtablefalse passes onlyinvulhook; othermodifiers inclfragile stillapply. ore_immune check belongsore_s, notmine selector/purepacket.",
+  "cancel_finish_scope": "Read-only sourceflags recorded; actualore pendingpreDelay/finish/cancel requires publiccontrolled lifecycleprobe, notasserted completeby thisaudit.",
+  "runtime_modified": false,
+  "source_modules_modified": false,
+  "whole_stage_executed": false
+}

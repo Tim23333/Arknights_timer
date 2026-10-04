@@ -1,0 +1,40 @@
+--- a/ark_sim/domains/effects.py
++++ b/ark_sim/domains/effects.py
+@@ -26,8 +26,8 @@
+     def _execute(self, source, targets, effect, ability=None, cast=None, cause=None):
+         source = self.ctx.session.world.resolve(source)
+         ability, cast = ability or {}, cast or {}
+-        if (cast.get("projectile_impact") and self.ctx.route_hidden(source) and
+-                self.ctx.visibility_policy(source).get("launched_source_effects", "retain") == "discard"):
++        if (cast.get("projectile_impact") and getattr(self.ctx, "route_hidden", lambda ref: False)(source) and
++                getattr(self.ctx, "visibility_policy", lambda ref: {})(source).get("launched_source_effects", "retain") == "discard"):
+             return
+         condition = effect.get("condition")
+         if condition and not evaluate_expression(condition, {"source": self.ctx.entity(source),
+@@ -43,7 +43,7 @@
+             health_delta = operation == "modify_resource" and (
+                 self.ctx.get(target, ("resources", effect.get("resource"), "spec", "role")) == "health" or
+                 effect.get("resource") == self.ctx.program.ruleset.get("parameters", {}).get("health_resource"))
+-            if (health_delta or operation in {"damage", "heal", "regenerate", "apply_buff", "area", "push", "move", "displace", "trigger_ability"}) and not self.ctx.effect_target_available(target):
++            if (health_delta or operation in {"damage", "heal", "regenerate", "apply_buff", "area", "push", "move", "displace", "trigger_ability"}) and not getattr(self.ctx, "effect_target_available", lambda ref: True)(target):
+                 self.ctx.emit("effect.visibility_rejected", {"source": source, "target": target, "operation": operation}, cause)
+                 continue
+             if operation == "random":
+@@ -65,7 +65,7 @@
+                 members = []
+                 for entity in self.ctx.session.world.entities():
+                     pos = entity["components"].get("spatial", {}).get("position")
+-                    if pos is None or not self.ctx.selectable(entity["id"]):
++                    if pos is None or not getattr(self.ctx, "selectable", self.ctx.alive)(entity["id"]):
+                         continue
+                     if math.hypot(pos["row"]-position["row"], pos["col"]-position["col"]) > effect["radius"]:
+                         continue
+@@ -339,7 +339,7 @@
+             for allocation in settlement["allocations"]:
+                 recipient = allocation.get("target", target)
+                 recipient = self.ctx.session.world.resolve(target if recipient == "target" else source if recipient == "source" else recipient)
+-                if not self.ctx.effect_target_available(recipient):
++                if not getattr(self.ctx, "effect_target_available", lambda ref: True)(recipient):
+                     self.ctx.emit("effect.visibility_rejected", {"source": source, "target": recipient, "operation": "damage_allocation"}, cause)
+                     continue
+                 key = allocation.get("resource", resource)

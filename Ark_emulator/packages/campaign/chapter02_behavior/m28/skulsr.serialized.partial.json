@@ -1,0 +1,1592 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "chapter02/skulsr/serialized",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "status": "partial_manual_state_interface",
+      "required_runtime": "cb0e7a97a2621aaf4b14dc942181686906733acbcc61f6a5a23ebae9448e997b",
+      "builder_sha256": "07f358b7118df75f36bb525fd23e23cdc40f1c5789da990dd8f9b05d8fa3b477",
+      "conflict_source_sha256": "363978296c3684c2ce28a4b4537b462f546d48d179c19d2aaf3b50deac92438d",
+      "parent_library_sha256": "d1b8929579a01d2a3e1cc246eccb5f1a7f05fadd9a2d627b972c27874fca979b",
+      "threshold_policy": "serialized",
+      "threshold_ratio": 0.4000000059604645,
+      "same_frame_policy": "damage_then_attachment",
+      "source_conflict_unresolved": true,
+      "source_locks": {
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter02_sources\\native.reference.json": "97447895b3edc69f0f60113ea96bc240c25c0fe980897614e93a94dd75e0d492",
+        "D:\\Arknights\\Arknights_timer\\data\\battle\\enm_pfb_17.ab_unpacked\\CAB-a4a7bee43932d4710a58df03a50dfa6f": "4855f032d0fdbb17d841ce56a4322aa06f69a420131decfa799b88afe5a7af50",
+        "D:\\Arknights\\Arknights_timer\\data\\battle\\prefabs\\[uc]projectiles.ab_unpacked\\CAB-34af01ecb5d2ad63aca01b6e0d71279d": "1a359a23771c0a32bff3269a244b145ee5a5d67bcbd55f6ee3dc973f7bd3337c",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\audit_skulsr_native_sources.py": "d678b1477e53a3f30293d60269af0f93bf136d4fd331bd1be26305504dbf3630",
+        "D:\\Arknights\\Arknights_timer\\Ark_data\\dump.cs": "d25fb9fb7ec81253f112d9090e4550cd37a273ace56085d37610bb67c1e3a88f",
+        "D:\\Arknights\\Arknights_timer\\Ark_data\\Il2CppDumper_current\\dump.cs": "18c43dde9466317c45a786a0e4fa35cd8894d128592adda4394704bf99ea477b",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter02_behavior\\skulsr.managed_bodies.reference.json": "b6d081fd2ea6e89f197ef34efe1d762e0aaa90cb005c6ce0c7d396a49eb4fd92",
+        "D:\\Arknights\\Arknights_timer\\Ark_data\\DummyDll\\Assembly-CSharp.dll": "044730598e5a757cad83749daad73d5851c1b555286a01b8a74d390044c7034c",
+        "D:\\Arknights\\Arknights_timer\\Ark_data\\Cpp2IL_DummyDll\\Assembly-CSharp.dll": "adc1ceff7c662c0c52fcc5b8e854e55617f20a9f6f80d40858525db4611c0674"
+      },
+      "profiles": {
+        "HP": "event reaction; 0<hp<=source_base_max_hp*explicit ratio; heal above restores",
+        "sampling": "source/target at_hit",
+        "restartFSM": "cancel pending automatic attacks/reset clock; manual probe/in-flight projectiles retained; native dispatch unknown",
+        "dispatch": "manual public ATTACK or COMBAT, explicit mode guard, not native enemy AI",
+        "family": "role _attack=>ATTACK1/_combat=>COMBAT2 declared options adapter, native wrapper assignment pending",
+        "attachment": "ATTACK only, successful damage then DEF buff, native ordering unknown",
+        "collision": "trace-only declared math, source 3x3 box/multi-target physics NOT consumed"
+      },
+      "model_gaps": [
+        "native auto dispatch/FSM not reconstructed",
+        "source BoxCollider3x3 at-target overlap adapter not authored",
+        "source effective_max_hp threshold driver vs static source max_hp unknown"
+      ],
+      "source_gap": [
+        "serialized_.4_vs_DB_.5_LoadData unresolved"
+      ],
+      "client_pending": [
+        "native family options/attachment timing",
+        "animation speed/native callbacks",
+        "source version/physical axes correspondence"
+      ],
+      "actual_game_correct": false,
+      "formal_approved": false
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/skulsr_partial",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground"
+      ],
+      "metadata": {
+        "native_id": "enemy_1500_skulsr",
+        "native_category": 1
+      },
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 10500,
+            "atk": 1000,
+            "def": 150,
+            "mres": 30.0,
+            "attack_interval": 3.0,
+            "attack_speed_ratio": 1.0,
+            "move_speed": 0.6,
+            "block_cost": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 10500,
+            "capacity": 10500,
+            "role": "health"
+          },
+          "mode": {
+            "initial": 0,
+            "capacity": 1
+          }
+        },
+        "spatial": {},
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "selection_state": {
+          "side": 1,
+          "motion": 1,
+          "category": 1,
+          "profession": 0,
+          "unit_type": 1,
+          "abnormal_flags": [],
+          "abnormal_combos": [],
+          "target_free_flags": [],
+          "target_free_combos": [],
+          "target_free": false,
+          "ally_target_free": false,
+          "heal_free": false,
+          "camouflage": false,
+          "can_select_camouflage": false
+        },
+        "abilities": [
+          "ability/skulsr_attack_0",
+          "ability/skulsr_combat_0",
+          "ability/skulsr_attack_1",
+          "ability/skulsr_combat_1",
+          "ability/skulsr_enter",
+          "ability/skulsr_leave"
+        ]
+      }
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/skulsr_attack_0",
+      "kind": "ability",
+      "selector": "selector/skulsr_attack_0",
+      "activation": {
+        "mode": "manual",
+        "condition": "inputs.resources.mode.current == 0",
+        "parameters": {
+          "counts_as_attack": true,
+          "requires_targets": true
+        }
+      },
+      "timeline": [
+        {
+          "at_seconds": 0.4666666666666667,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 0.25999999046325684,
+            "projectile_definition": "projectile/skulsr",
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            },
+            "on_success": [
+              {
+                "op": "apply_buff",
+                "buff": "buff/chapter02/skulsr_defdown"
+              }
+            ]
+          }
+        },
+        {
+          "at_seconds": 0.5666666666666667,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 0.25999999046325684,
+            "projectile_definition": "projectile/skulsr",
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            },
+            "on_success": [
+              {
+                "op": "apply_buff",
+                "buff": "buff/chapter02/skulsr_defdown"
+              }
+            ]
+          }
+        }
+      ],
+      "metadata": {
+        "native_family_mask": 1,
+        "role_family_profile": "ATTACK",
+        "native": {
+          "path_id": -2057117317113278968,
+          "native_class": "RangedAttack",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 6412848895030627848
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 4156651312234227407
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_waitForAttackEvent": 1,
+            "_interuptIfTargetDead": 0,
+            "_resetCdStrategy": 1,
+            "_selectTargetSource": 2,
+            "_selectTargetTiming": 0,
+            "_timeMode": 0,
+            "_alwaysIncludeTarget": 1,
+            "_allowNoTarget": 0,
+            "_animKey": "Attack",
+            "_endAnimKey": "Move",
+            "_downAnimKey": "",
+            "_downEndAnimKey": "",
+            "_upAnimKey": "",
+            "_upEndAnimKey": "",
+            "_cooldown": 0.0,
+            "_cooldownKey": "duration",
+            "_preDelay": 0.0,
+            "_escapeTime": 0.0,
+            "_faceToTarget": 1,
+            "_faceToDefault": 0,
+            "_faceToFront": 0,
+            "_faceToFirstCastTarget": 0,
+            "_checkFaceToFirstCastTargetDownAttack": 0,
+            "_forceFaceToDirection": 0,
+            "_activeBuffs": [],
+            "_maxAnimScale": 1.0,
+            "_onlyPlayEndAnimWhenIsLastAbility": 0,
+            "_ignorePalsyInterrupt": 0,
+            "_affectedBySlowDown": 1,
+            "_atkScale": 0.25999999046325684,
+            "_atkScaleKey": "atk_scale",
+            "_attackType": 0,
+            "_elementDamageType": 0,
+            "_epDamageRatio": 0.0,
+            "_useDynamicAttackType": 1,
+            "_deliveryParaWhenReplaceActionNode": 0,
+            "_projectileKey": "projectile_skulsr",
+            "_mountPointType": 2,
+            "_useMountGroup": 0,
+            "_mountGroup": {
+              "loopType": 0,
+              "mountPoints": []
+            },
+            "_damageType": 1,
+            "_waitForProjectileInvalid": 0,
+            "_notClearProjectileWhenCastEnd": 0,
+            "_fireAttackFinishWhenProjectileInvalid": 0,
+            "_minPostDelayWhenProjectileInvalid": 0.0,
+            "_waitForAnimEndWhenProjectileInvalid": 0,
+            "_projectileDestination": 0,
+            "_extraDamageType": 0,
+            "_emitToInputPosWhenTargetIsInvalid": 0,
+            "_emitToInputRootTileWhenTargetIsInvalid": 0,
+            "_useCachedAtkOnly": 0,
+            "_transferSource": 0,
+            "_extraProjectileKeys": [],
+            "_fireCreateProjectileEvent": 0
+          },
+          "animation_binding": {
+            "key": "Attack",
+            "animation_name": "Attack",
+            "mapping": {
+              "animKey": "Attack",
+              "animName": "Attack",
+              "loop": 0,
+              "speed": 1.0,
+              "ignoreMissing": 0
+            },
+            "duration": {
+              "source_seconds_float32": 1.100000023841858,
+              "seconds": 1.1,
+              "frame": 33,
+              "exact_authored_frame": true
+            },
+            "events": [
+              {
+                "name": "OnAttack",
+                "source_seconds_float32": 0.46666666865348816,
+                "seconds": 0.4666666666666667,
+                "frame": 14,
+                "exact_authored_frame": true
+              },
+              {
+                "name": "OnAttack",
+                "source_seconds_float32": 0.5666666626930237,
+                "seconds": 0.5666666666666667,
+                "frame": 17,
+                "exact_authored_frame": true
+              }
+            ],
+            "status": "native_binding_resolved"
+          }
+        }
+      }
+    },
+    {
+      "id": "ability/skulsr_combat_0",
+      "kind": "ability",
+      "selector": "selector/skulsr_combat_0",
+      "activation": {
+        "mode": "manual",
+        "condition": "inputs.resources.mode.current == 0",
+        "parameters": {
+          "requires_targets": true
+        }
+      },
+      "timeline": [
+        {
+          "at_seconds": 1.7666666666666666,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1.0,
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            }
+          }
+        }
+      ],
+      "metadata": {
+        "role_family_profile": "COMBAT",
+        "attachment_excluded_by_declared_family_mask": true,
+        "native": {
+          "path_id": 7431460225460899336,
+          "native_class": "MeleeAttack",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 3126231638069906952
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 4381884627089348317
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_waitForAttackEvent": 1,
+            "_interuptIfTargetDead": 0,
+            "_resetCdStrategy": 1,
+            "_selectTargetSource": 1,
+            "_selectTargetTiming": 0,
+            "_timeMode": 0,
+            "_alwaysIncludeTarget": 1,
+            "_allowNoTarget": 0,
+            "_animKey": "Combat",
+            "_endAnimKey": "Combat_End",
+            "_downAnimKey": "",
+            "_downEndAnimKey": "",
+            "_upAnimKey": "",
+            "_upEndAnimKey": "",
+            "_cooldown": 0.0,
+            "_cooldownKey": "duration",
+            "_preDelay": 0.0,
+            "_escapeTime": 0.3333300054073334,
+            "_faceToTarget": 1,
+            "_faceToDefault": 0,
+            "_faceToFront": 0,
+            "_faceToFirstCastTarget": 0,
+            "_checkFaceToFirstCastTargetDownAttack": 0,
+            "_forceFaceToDirection": 0,
+            "_activeBuffs": [],
+            "_maxAnimScale": -1.0,
+            "_onlyPlayEndAnimWhenIsLastAbility": 0,
+            "_ignorePalsyInterrupt": 0,
+            "_affectedBySlowDown": 1,
+            "_atkScale": 1.0,
+            "_atkScaleKey": "atk_scale",
+            "_attackType": 1,
+            "_elementDamageType": 0,
+            "_epDamageRatio": 0.0,
+            "_useDynamicAttackType": 0,
+            "_deliveryParaWhenReplaceActionNode": 0,
+            "_damageType": 1,
+            "_extraDamageType": 0,
+            "_alwaysPutIncludeTargetFirst": 0
+          },
+          "animation_binding": {
+            "key": "Combat",
+            "animation_name": "Combat_NoPre",
+            "mapping": {
+              "animKey": "Combat",
+              "animName": "Combat_NoPre",
+              "loop": 0,
+              "speed": 1.0,
+              "ignoreMissing": 0
+            },
+            "duration": {
+              "source_seconds_float32": 2.566666603088379,
+              "seconds": 2.566666666666667,
+              "frame": 77,
+              "exact_authored_frame": true
+            },
+            "events": [
+              {
+                "name": "OnAttack",
+                "source_seconds_float32": 1.7666666507720947,
+                "seconds": 1.7666666666666666,
+                "frame": 53,
+                "exact_authored_frame": true
+              }
+            ],
+            "status": "native_binding_resolved"
+          }
+        }
+      }
+    },
+    {
+      "id": "ability/skulsr_attack_1",
+      "kind": "ability",
+      "selector": "selector/skulsr_attack_1",
+      "activation": {
+        "mode": "manual",
+        "condition": "inputs.resources.mode.current == 1",
+        "parameters": {
+          "counts_as_attack": true,
+          "requires_targets": true
+        }
+      },
+      "timeline": [
+        {
+          "at_seconds": 0.4666666666666667,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 0.25999999046325684,
+            "projectile_definition": "projectile/skulsr",
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            },
+            "on_success": [
+              {
+                "op": "apply_buff",
+                "buff": "buff/chapter02/skulsr_defdown"
+              }
+            ]
+          }
+        },
+        {
+          "at_seconds": 0.5666666666666667,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 0.25999999046325684,
+            "projectile_definition": "projectile/skulsr",
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            },
+            "on_success": [
+              {
+                "op": "apply_buff",
+                "buff": "buff/chapter02/skulsr_defdown"
+              }
+            ]
+          }
+        }
+      ],
+      "metadata": {
+        "native_family_mask": 1,
+        "role_family_profile": "ATTACK",
+        "native": {
+          "path_id": -4196912037026361848,
+          "native_class": "RangedAttack",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -7278546931472953848
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 4156651312234227407
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_waitForAttackEvent": 1,
+            "_interuptIfTargetDead": 0,
+            "_resetCdStrategy": 1,
+            "_selectTargetSource": 2,
+            "_selectTargetTiming": 0,
+            "_timeMode": 0,
+            "_alwaysIncludeTarget": 1,
+            "_allowNoTarget": 0,
+            "_animKey": "Attack",
+            "_endAnimKey": "Move",
+            "_downAnimKey": "",
+            "_downEndAnimKey": "",
+            "_upAnimKey": "",
+            "_upEndAnimKey": "",
+            "_cooldown": 0.0,
+            "_cooldownKey": "duration",
+            "_preDelay": 0.0,
+            "_escapeTime": 0.0,
+            "_faceToTarget": 1,
+            "_faceToDefault": 0,
+            "_faceToFront": 0,
+            "_faceToFirstCastTarget": 0,
+            "_checkFaceToFirstCastTargetDownAttack": 0,
+            "_forceFaceToDirection": 0,
+            "_activeBuffs": [],
+            "_maxAnimScale": 1.0,
+            "_onlyPlayEndAnimWhenIsLastAbility": 0,
+            "_ignorePalsyInterrupt": 0,
+            "_affectedBySlowDown": 1,
+            "_atkScale": 0.25999999046325684,
+            "_atkScaleKey": "atk_scale",
+            "_attackType": 0,
+            "_elementDamageType": 0,
+            "_epDamageRatio": 0.0,
+            "_useDynamicAttackType": 1,
+            "_deliveryParaWhenReplaceActionNode": 0,
+            "_projectileKey": "projectile_skulsr",
+            "_mountPointType": 2,
+            "_useMountGroup": 0,
+            "_mountGroup": {
+              "loopType": 0,
+              "mountPoints": []
+            },
+            "_damageType": 1,
+            "_waitForProjectileInvalid": 0,
+            "_notClearProjectileWhenCastEnd": 0,
+            "_fireAttackFinishWhenProjectileInvalid": 0,
+            "_minPostDelayWhenProjectileInvalid": 0.0,
+            "_waitForAnimEndWhenProjectileInvalid": 0,
+            "_projectileDestination": 0,
+            "_extraDamageType": 0,
+            "_emitToInputPosWhenTargetIsInvalid": 0,
+            "_emitToInputRootTileWhenTargetIsInvalid": 0,
+            "_useCachedAtkOnly": 0,
+            "_transferSource": 0,
+            "_extraProjectileKeys": [],
+            "_fireCreateProjectileEvent": 0
+          },
+          "animation_binding": {
+            "key": "Attack",
+            "animation_name": "Attack",
+            "mapping": {
+              "animKey": "Attack",
+              "animName": "Attack",
+              "loop": 0,
+              "speed": 1.0,
+              "ignoreMissing": 0
+            },
+            "duration": {
+              "source_seconds_float32": 1.100000023841858,
+              "seconds": 1.1,
+              "frame": 33,
+              "exact_authored_frame": true
+            },
+            "events": [
+              {
+                "name": "OnAttack",
+                "source_seconds_float32": 0.46666666865348816,
+                "seconds": 0.4666666666666667,
+                "frame": 14,
+                "exact_authored_frame": true
+              },
+              {
+                "name": "OnAttack",
+                "source_seconds_float32": 0.5666666626930237,
+                "seconds": 0.5666666666666667,
+                "frame": 17,
+                "exact_authored_frame": true
+              }
+            ],
+            "status": "native_binding_resolved"
+          }
+        }
+      }
+    },
+    {
+      "id": "ability/skulsr_combat_1",
+      "kind": "ability",
+      "selector": "selector/skulsr_combat_1",
+      "activation": {
+        "mode": "manual",
+        "condition": "inputs.resources.mode.current == 1",
+        "parameters": {
+          "requires_targets": true
+        }
+      },
+      "timeline": [
+        {
+          "at_seconds": 1.7666666666666666,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1.0,
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            }
+          }
+        }
+      ],
+      "metadata": {
+        "role_family_profile": "COMBAT",
+        "attachment_excluded_by_declared_family_mask": true,
+        "native": {
+          "path_id": 4778892924209761800,
+          "native_class": "MeleeAttack",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -4104736233428185592
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 4381884627089348317
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_waitForAttackEvent": 1,
+            "_interuptIfTargetDead": 0,
+            "_resetCdStrategy": 1,
+            "_selectTargetSource": 1,
+            "_selectTargetTiming": 0,
+            "_timeMode": 0,
+            "_alwaysIncludeTarget": 1,
+            "_allowNoTarget": 0,
+            "_animKey": "Combat",
+            "_endAnimKey": "Combat_End",
+            "_downAnimKey": "",
+            "_downEndAnimKey": "",
+            "_upAnimKey": "",
+            "_upEndAnimKey": "",
+            "_cooldown": 0.0,
+            "_cooldownKey": "duration",
+            "_preDelay": 0.0,
+            "_escapeTime": 0.3333300054073334,
+            "_faceToTarget": 1,
+            "_faceToDefault": 0,
+            "_faceToFront": 0,
+            "_faceToFirstCastTarget": 0,
+            "_checkFaceToFirstCastTargetDownAttack": 0,
+            "_forceFaceToDirection": 0,
+            "_activeBuffs": [],
+            "_maxAnimScale": -1.0,
+            "_onlyPlayEndAnimWhenIsLastAbility": 0,
+            "_ignorePalsyInterrupt": 0,
+            "_affectedBySlowDown": 1,
+            "_atkScale": 1.0,
+            "_atkScaleKey": "atk_scale",
+            "_attackType": 1,
+            "_elementDamageType": 0,
+            "_epDamageRatio": 0.0,
+            "_useDynamicAttackType": 0,
+            "_deliveryParaWhenReplaceActionNode": 0,
+            "_damageType": 1,
+            "_extraDamageType": 0,
+            "_alwaysPutIncludeTargetFirst": 0
+          },
+          "animation_binding": {
+            "key": "Combat",
+            "animation_name": "Combat_NoPre",
+            "mapping": {
+              "animKey": "Combat",
+              "animName": "Combat_NoPre",
+              "loop": 0,
+              "speed": 1.0,
+              "ignoreMissing": 0
+            },
+            "duration": {
+              "source_seconds_float32": 2.566666603088379,
+              "seconds": 2.566666666666667,
+              "frame": 77,
+              "exact_authored_frame": true
+            },
+            "events": [
+              {
+                "name": "OnAttack",
+                "source_seconds_float32": 1.7666666507720947,
+                "seconds": 1.7666666666666666,
+                "frame": 53,
+                "exact_authored_frame": true
+              }
+            ],
+            "status": "native_binding_resolved"
+          }
+        }
+      }
+    },
+    {
+      "id": "ability/skulsr_enter",
+      "kind": "ability",
+      "activation": {
+        "mode": "passive",
+        "event": "resource.changed",
+        "condition": "inputs.payload.target == inputs.source.id and inputs.payload.resource == 'hp' and 0 < inputs.resources.hp.current <= params.hp_threshold and inputs.resources.mode.current == 0",
+        "parameters": {
+          "hp_threshold": 4200.000062584877,
+          "cancel_pending_attacks": true,
+          "reset_attack_clock": true
+        },
+        "on_start": [
+          {
+            "op": "modify_resource",
+            "target": "source",
+            "resource": "mode",
+            "value": 1
+          },
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/skulsr_mode1"
+          }
+        ]
+      },
+      "parameters": {
+        "blocks_attacks": false
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/skulsr_leave",
+      "kind": "ability",
+      "activation": {
+        "mode": "passive",
+        "event": "resource.changed",
+        "condition": "inputs.payload.target == inputs.source.id and inputs.payload.resource == 'hp' and inputs.resources.hp.current > params.hp_threshold and inputs.resources.mode.current == 1",
+        "parameters": {
+          "hp_threshold": 4200.000062584877,
+          "cancel_pending_attacks": true,
+          "reset_attack_clock": true
+        },
+        "on_start": [
+          {
+            "op": "remove_buff",
+            "target": "source",
+            "buff": "buff/skulsr_mode1"
+          }
+        ]
+      },
+      "parameters": {
+        "blocks_attacks": false
+      },
+      "timeline": []
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/skulsr_attack_0",
+      "kind": "selector",
+      "region": {
+        "type": "radius",
+        "radius": 2.25
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1,
+      "eligibility": {
+        "rule": "rule/chapter02/qualification",
+        "parameters": {
+          "source_configuration": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 6287866476139482632
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 7080728813803358465
+            },
+            "m_Name": "",
+            "_targetSide": 2,
+            "_targetMotion": 1,
+            "_targetCategory": 1,
+            "_postFilter": 4,
+            "_ignoreTargetFree": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_abnormalFlag": 44,
+            "_abnormalCombo": 2,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_needProfessionMask": 0,
+            "_professionMask": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_excludeAbnormalFlag": 46,
+            "_limitTargetNum": 1,
+            "_maxTargetKey": "max_target",
+            "_maxNum": 1,
+            "_excludeOwner": 0,
+            "_sortByTauntAtLast": 0,
+            "_ignoreHitRange": 0,
+            "_checkUnitType": 0,
+            "_unitTypeMask": 0,
+            "_abilityInputTargetAsSortSource": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject",
+          "defaults": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "profession": 0,
+            "unit_type": 1,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "target_free": false,
+            "ally_target_free": false,
+            "heal_free": false,
+            "camouflage": false,
+            "can_select_camouflage": false
+          }
+        }
+      },
+      "metadata": {
+        "native_mode_pointer": 5440288812044488200,
+        "native_selector": {
+          "script_path_id": 7080728813803358465,
+          "gameobject_path_id": 6287866476139482632,
+          "gameobject_name": "Trigger",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 6287866476139482632
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 7080728813803358465
+            },
+            "m_Name": "",
+            "_targetSide": 2,
+            "_targetMotion": 1,
+            "_targetCategory": 1,
+            "_postFilter": 4,
+            "_ignoreTargetFree": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_abnormalFlag": 44,
+            "_abnormalCombo": 2,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_needProfessionMask": 0,
+            "_professionMask": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_excludeAbnormalFlag": 46,
+            "_limitTargetNum": 1,
+            "_maxTargetKey": "max_target",
+            "_maxNum": 1,
+            "_excludeOwner": 0,
+            "_sortByTauntAtLast": 0,
+            "_ignoreHitRange": 0,
+            "_checkUnitType": 0,
+            "_unitTypeMask": 0,
+            "_abilityInputTargetAsSortSource": 0
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:7080728813803358465",
+          "native_class": "AdvancedSelector",
+          "mode_index": 0,
+          "hierarchy_branch": [
+            "Trigger",
+            "Attack",
+            "Body",
+            "Default"
+          ]
+        },
+        "native_collider": {
+          "path_id": 6572056471133326856,
+          "gameobject_path_id": 6287866476139482632,
+          "gameobject_name": "Trigger",
+          "unity_type": "CircleCollider2D",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 6287866476139482632
+            },
+            "m_Enabled": 1,
+            "m_Density": 1.0,
+            "m_Material": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "m_IsTrigger": true,
+            "m_UsedByEffector": false,
+            "m_UsedByComposite": false,
+            "m_Offset": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "m_Radius": 2.25
+          }
+        }
+      }
+    },
+    {
+      "id": "selector/skulsr_combat_0",
+      "kind": "selector",
+      "region": {
+        "type": "all",
+        "blocked_only": true
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1
+    },
+    {
+      "id": "selector/skulsr_attack_1",
+      "kind": "selector",
+      "region": {
+        "type": "radius",
+        "radius": 2.25
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1,
+      "eligibility": {
+        "rule": "rule/chapter02/qualification",
+        "parameters": {
+          "source_configuration": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 7070924999596609032
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 7080728813803358465
+            },
+            "m_Name": "",
+            "_targetSide": 2,
+            "_targetMotion": 1,
+            "_targetCategory": 1,
+            "_postFilter": 4,
+            "_ignoreTargetFree": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_abnormalFlag": 44,
+            "_abnormalCombo": 2,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_needProfessionMask": 0,
+            "_professionMask": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_excludeAbnormalFlag": 46,
+            "_limitTargetNum": 1,
+            "_maxTargetKey": "max_target",
+            "_maxNum": 1,
+            "_excludeOwner": 0,
+            "_sortByTauntAtLast": 0,
+            "_ignoreHitRange": 0,
+            "_checkUnitType": 0,
+            "_unitTypeMask": 0,
+            "_abilityInputTargetAsSortSource": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject",
+          "defaults": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "profession": 0,
+            "unit_type": 1,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "target_free": false,
+            "ally_target_free": false,
+            "heal_free": false,
+            "camouflage": false,
+            "can_select_camouflage": false
+          }
+        }
+      },
+      "metadata": {
+        "native_mode_pointer": -6168839252199436792,
+        "native_selector": {
+          "script_path_id": 7080728813803358465,
+          "gameobject_path_id": 7070924999596609032,
+          "gameobject_name": "Trigger",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 7070924999596609032
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 7080728813803358465
+            },
+            "m_Name": "",
+            "_targetSide": 2,
+            "_targetMotion": 1,
+            "_targetCategory": 1,
+            "_postFilter": 4,
+            "_ignoreTargetFree": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_abnormalFlag": 44,
+            "_abnormalCombo": 2,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_needProfessionMask": 0,
+            "_professionMask": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_excludeAbnormalFlag": 46,
+            "_limitTargetNum": 1,
+            "_maxTargetKey": "max_target",
+            "_maxNum": 1,
+            "_excludeOwner": 0,
+            "_sortByTauntAtLast": 0,
+            "_ignoreHitRange": 0,
+            "_checkUnitType": 0,
+            "_unitTypeMask": 0,
+            "_abilityInputTargetAsSortSource": 0
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:7080728813803358465",
+          "native_class": "AdvancedSelector",
+          "mode_index": 1,
+          "hierarchy_branch": [
+            "Trigger",
+            "Attack",
+            "Body",
+            "Ignite"
+          ]
+        },
+        "native_collider": {
+          "path_id": -5758279969214853624,
+          "gameobject_path_id": 7070924999596609032,
+          "gameobject_name": "Trigger",
+          "unity_type": "CircleCollider2D",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 7070924999596609032
+            },
+            "m_Enabled": 1,
+            "m_Density": 1.0,
+            "m_Material": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "m_IsTrigger": true,
+            "m_UsedByEffector": false,
+            "m_UsedByComposite": false,
+            "m_Offset": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "m_Radius": 2.25
+          }
+        }
+      }
+    },
+    {
+      "id": "selector/skulsr_combat_1",
+      "kind": "selector",
+      "region": {
+        "type": "all",
+        "blocked_only": true
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/chapter02/skulsr_defdown",
+      "kind": "buff",
+      "duration_seconds": 5,
+      "stacking": {
+        "mode": "refresh"
+      },
+      "modifiers": [
+        {
+          "attribute": "def",
+          "layer": "direct_ratio",
+          "value": -0.5
+        }
+      ],
+      "metadata": {
+        "source_component": {
+          "script_path_id": -8004000125733044417,
+          "gameobject_path_id": 1838095490925366792,
+          "gameobject_name": "DefDown",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 1838095490925366792
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": -8004000125733044417
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_buffs": [],
+            "_additiveActiveBuffs": [
+              {
+                "attributes": {
+                  "abnormalFlags": [],
+                  "abnormalImmunes": [],
+                  "abnormalAntis": [],
+                  "abnormalCombos": [],
+                  "abnormalComboImmunes": [],
+                  "attributeModifiers": [
+                    {
+                      "attributeType": 2,
+                      "formulaItem": 1,
+                      "value": -0.5,
+                      "loadFromBlackboard": 0,
+                      "fetchBaseValueFromSourceEntity": 0
+                    }
+                  ]
+                },
+                "buffKey": "skulsr_attack",
+                "loadFromDB": 0,
+                "isDurableBuff": 0,
+                "isDamageMissable": 0,
+                "isSilenceable": 0,
+                "isStunnable": 0,
+                "isFreezable": 0,
+                "isLevitatable": 0,
+                "isGroundBoundable": 0,
+                "statusResistable": 2,
+                "templateKey": "empty",
+                "disableOverride": 0,
+                "overrideKey": "",
+                "overrideType": 0,
+                "maxStackCnt": 1,
+                "refreshRemainingTimeWhenStackMax": 0,
+                "clearAllStackCntWhenTimeUp": 0,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": 0,
+                "overrideEffectKey": "buff_defdown",
+                "overrideOnEventPriority": 0,
+                "onEventPriority": 0,
+                "audioSignal": "",
+                "lifeTimeType": 1,
+                "takeSnapshotWhenExtend": 0,
+                "durationKey": "",
+                "lifeTime": 5.0,
+                "triggerLifeType": 0,
+                "triggerCnt": 0,
+                "triggerInterval": -1.0,
+                "waitFirstTriggerInterval": 1,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": 0,
+                "blackboard": [],
+                "enableInitDirectionFromSource": 0
+              }
+            ],
+            "_targetFamilyMask": 1,
+            "_targetValidator": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_probKey": ""
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:-8004000125733044417",
+          "native_class": "PassiveAttachmentAbility",
+          "hierarchy_branch": [
+            "DefDown",
+            "Talent",
+            "enemy_1500_skulsr"
+          ]
+        },
+        "attachment_driver_pending": true
+      }
+    },
+    {
+      "id": "buff/skulsr_mode1",
+      "kind": "buff",
+      "modifiers": [
+        {
+          "attribute": "atk",
+          "layer": "direct_ratio",
+          "value": 0.5
+        }
+      ],
+      "on_remove": [
+        {
+          "op": "modify_resource",
+          "target": "source",
+          "resource": "mode",
+          "value": 0
+        }
+      ]
+    }
+  ],
+  "projectiles": [
+    {
+      "id": "projectile/skulsr",
+      "kind": "projectile",
+      "motion": {
+        "rule": "rule/projectile/trajectory",
+        "parameters": {
+          "mode": "homing",
+          "speed": 5.0,
+          "raise_height": 0.30000001192092896,
+          "height_threshold": 1.2999999523162842
+        }
+      },
+      "collision": {
+        "rule": "rule/projectile/collision",
+        "parameters": {
+          "enabled": true,
+          "radius": 0
+        }
+      },
+      "lifetime_seconds": 10,
+      "max_hits": null,
+      "can_hit_same_target": false,
+      "stop_after_max": true,
+      "stop_after_first": false,
+      "attach_at_launch": false,
+      "lifecycle": {
+        "source_invalid": "retain",
+        "source_hidden": "retain",
+        "target_invalid": "cancel",
+        "target_hidden": "cancel",
+        "finish_on_reach": true,
+        "hit_on_reach": true,
+        "force_reach_on_expire": true,
+        "hit_on_expire": true
+      },
+      "on_invalid": [],
+      "metadata": {
+        "raw_hit_type": 2,
+        "LifeType": "INFINITY",
+        "inactive_maxHitNum": 1,
+        "native_simple": {
+          "script_path_id": -8797129986015012478,
+          "gameobject_path_id": 2290882678845801273,
+          "gameobject_name": "projectile_skulsr",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 2290882678845801273
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": -8797129986015012478
+            },
+            "m_Name": "",
+            "_randomDelayToBorn": 0.0,
+            "_bodyTransform": {
+              "m_FileID": 0,
+              "m_PathID": 8457519535494726457
+            },
+            "_keepAlreadyHitTime": -1.0,
+            "_mainEffect": "skulsr_attack_02_trail",
+            "_clearMainEffectWhenReached": 1,
+            "_actionController": {
+              "_detachBuffsWhenTargetLeave": 0,
+              "_detachAllBuffsWhenStopped": 0,
+              "_onlyAddBuffsToTraceTarget": 0,
+              "_onlyAddBuffsToTargetOnce": 0,
+              "_dontAddBuffs": 0,
+              "_excludeAttachments": 0,
+              "_useSelfBlackboard": 0,
+              "_extraBuffsInTheEnd": [],
+              "_useExtraBuffsWhenStopHit": 0,
+              "_addExtraBuffsWhenReached": 0,
+              "_detachAllExtraBuffsWhenStopped": 0
+            },
+            "_fixDealHitTargetLeft": 0,
+            "_stopGraphicProjectileWhenClearMainEffect": 0,
+            "_overrideAudioSignal": "",
+            "_fireProjectileReachedEvent": 0,
+            "_eliminatableStatus": 0,
+            "_movementAdjustableStatus": 0,
+            "_managedBySource": 0,
+            "_projectileType": 0,
+            "_containsChildrenBehaviours": 0,
+            "_canHitSameTargetMultipleTimes": 0,
+            "_lifeTimeType": 1,
+            "_lifeTime": 10.0,
+            "_getLifeTimeFromBB": 0,
+            "_hitNumType": 2,
+            "_maxHitNum": 1,
+            "_getMaxHitNumFromBB": 0,
+            "_maxHitNumBBKey": "",
+            "_stopAfterMaxHit": 1,
+            "_stopAfterFirstHit": 0,
+            "_stopWhenSourceInvalid": 0,
+            "_alwaysHitTraceTargetInTheEnd": 1,
+            "_alwaysHitTraceTargetWhenReached": 0,
+            "_alwaysReachInTheEnd": 0,
+            "_limitedMaxHitNumToSourceBlockedCnt": 0,
+            "_allowZeroBlockCntLimit": 0
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:-8797129986015012478",
+          "native_class": "SimpleProjectile"
+        },
+        "native_movement": {
+          "script_path_id": 5247176549481151122,
+          "gameobject_path_id": 2290882678845801273,
+          "gameobject_name": "projectile_skulsr",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 2290882678845801273
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 5247176549481151122
+            },
+            "m_Name": "",
+            "_rotateToTarget": 1,
+            "_forceReachedWhenTimeup": 1,
+            "_useSourceDirection": 0,
+            "_useTargetDirection": 0,
+            "_useStartToTarget": 0,
+            "_awayFromSourceAsDirection": 0,
+            "_flyToTargetLocationOnly": 0,
+            "_useSourceDirectionRandomArcAngleStart": 0,
+            "_useSourceToTargetRandomArcAngleStart": 0,
+            "_useSourceDirectionArcAngleWithRatio": 0,
+            "_useSourceToTargetArcAngleWithRatio": 0,
+            "_sourceDirectionArcAngleRatio": 0.0,
+            "_flyToPredefinedLocation": 0,
+            "_predefinedLocation": 0,
+            "_freezeRotationZ": 0,
+            "_freezeRotationXY": 0,
+            "_exactMatchCameraForward": 0,
+            "_resetToTargetPosWhenReached": 0,
+            "_resetToTracetargetMapPosV3": 0,
+            "_handleWithIBuildableTarget": 0,
+            "_forceResetToTargetPosWhenReached": 0,
+            "_fixOnProjectileReached": 0,
+            "_onlyReachedInTime": 0.0,
+            "_speed": 5.0,
+            "_raiseHeight": 0.30000001192092896,
+            "_delayAfterReached": 0,
+            "_delayTime": 0.0,
+            "_updateDelayTimeOnlyOnce": 0,
+            "_noRaiseHeightThreshold": 1.2999999523162842,
+            "_comeBack": 0,
+            "_comeBackSpeedScale": 0.25,
+            "_inverseParacurve": 0,
+            "_useRandomHeight": 0,
+            "_randomHeightRange": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "_randomInverseParacurve": 0
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:5247176549481151122",
+          "native_class": "ParacurveMovement"
+        },
+        "native_hit_geometry": [
+          {
+            "path_id": 8457519535494726457,
+            "gameobject_path_id": -7520635534683667655,
+            "gameobject_name": "Body",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -7520635534683667655
+              },
+              "m_LocalRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "m_LocalPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "m_LocalScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              },
+              "m_Children": [],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": -3269649552507731143
+              }
+            }
+          },
+          {
+            "path_id": -3269649552507731143,
+            "gameobject_path_id": 2290882678845801273,
+            "gameobject_name": "projectile_skulsr",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 2290882678845801273
+              },
+              "m_LocalRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "m_LocalPosition": {
+                "x": -21.969999313354492,
+                "y": -3.7151455879211426,
+                "z": -9.2802734375
+              },
+              "m_LocalScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              },
+              "m_Children": [
+                {
+                  "m_FileID": 0,
+                  "m_PathID": 8457519535494726457
+                }
+              ],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": 0
+              }
+            }
+          },
+          {
+            "path_id": 8684298115885826873,
+            "gameobject_path_id": 2290882678845801273,
+            "gameobject_name": "projectile_skulsr",
+            "unity_type": "BoxCollider2D",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 2290882678845801273
+              },
+              "m_Enabled": 1,
+              "m_Density": 1.0,
+              "m_Material": {
+                "m_FileID": 0,
+                "m_PathID": 0
+              },
+              "m_IsTrigger": true,
+              "m_UsedByEffector": false,
+              "m_UsedByComposite": false,
+              "m_Offset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "m_SpriteTilingProperty": {
+                "border": {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "z": 0.0,
+                  "w": 0.0
+                },
+                "pivot": {
+                  "x": 0.0,
+                  "y": 0.0
+                },
+                "oldSize": {
+                  "x": 0.0,
+                  "y": 0.0
+                },
+                "newSize": {
+                  "x": 0.0,
+                  "y": 0.0
+                },
+                "adaptiveTilingThreshold": 0.0,
+                "drawMode": 0,
+                "adaptiveTiling": false
+              },
+              "m_AutoTiling": false,
+              "m_Size": {
+                "x": 3.0,
+                "y": 3.0
+              },
+              "m_EdgeRadius": 0.0
+            }
+          }
+        ],
+        "model_gap": "trace-only placeholder policy, source3x3 physical overlap unconsumed; not full projectile"
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/chapter02/qualification",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.targeting.eligibility"
+      }
+    },
+    {
+      "id": "rule/projectile/trajectory",
+      "kind": "calculation_rule",
+      "contract": "projectile.trajectory",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.projectile.trajectory"
+      }
+    },
+    {
+      "id": "rule/projectile/collision",
+      "kind": "calculation_rule",
+      "contract": "projectile.collision",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.projectile.collision"
+      }
+    }
+  ]
+}

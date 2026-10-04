@@ -1,0 +1,764 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/ch7/demons/enemy_1085_sotiwz/v1",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "native_variant_id": "enemy_1085_sotiwz@0/e124b5c8af77c515",
+      "source_locks": {
+        "packages\\campaign\\chapter07_boss\\demons\\enemy_1085_sotiwz.source.json": "f8edc79ec4a70ac4d45e7908fdf4d96efd3a922359b408c8668c75a0b3d48d2e"
+      },
+      "builder_sha256": "8c5073dd7e17d4e13f95c0f50a5b19d92649b0b74138883f4f239130ac549b60",
+      "reference_policies": {
+        "ore_switch": "ExactsourceBSON, actualore producer separateRoot task; controlledpublictransition usedauthorprobe",
+        "clock": "NaturalCD5 fromacceptedfinish, mode-specific clocks; FSMrestart preservesaccrued mainattack/cooldown exceptcaster newlyenabledmode init0 reference",
+        "timing": "Melee mode0 rawAttack16/full35; mode1 hookAttack_2 actual29/full49. TimeMode0 windup+duration ASPD,min.01reference",
+        "empty_visuals": "No gamecombat action inferred from emptytemplate/visualeffectkeys"
+      },
+      "mode_interface": "Sameactor behavior.mode0/mode1 viaactualtransition, sourceindices0/1",
+      "native_never_trigger": true,
+      "independent_reviewed": false,
+      "whole_stage_executed": false,
+      "client_verified": false,
+      "radius_probe_static_center": true
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground",
+        "ore_responsive"
+      ],
+      "metadata": {
+        "native_variant_id": "enemy_1085_sotiwz@0/e124b5c8af77c515",
+        "shared_listener": "buff/ch7/source/ore_listener",
+        "shared_immune": "buff/ch7/source/ore_immune"
+      },
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 7000,
+            "atk": 350,
+            "def": 400,
+            "mres": 50.0,
+            "move_speed": 0.75,
+            "attack_interval": 5.0,
+            "attack_speed_ratio": 1,
+            "mass_level": 2,
+            "block_cost": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 7000,
+            "capacity_attribute": "max_hp",
+            "role": "health"
+          }
+        },
+        "selection_state": {
+          "side": 1,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 1,
+          "abnormal_immunes": [
+            12
+          ]
+        },
+        "spatial": {},
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle",
+          "leak_loss": 1
+        },
+        "buffs": {
+          "initial": [
+            "buff/ch7/source/ore_listener",
+            "buff/ch7/source/ore_immune",
+            "buff/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/internal_interval"
+          ]
+        },
+        "abilities": [
+          "ability/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/immo0",
+          "ability/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/immo1"
+        ],
+        "ability_arbitration": {
+          "priority_order": "higher_first",
+          "busy": "all_casts",
+          "entries": [
+            {
+              "ability": "ability/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/immo0",
+              "priority": 0,
+              "attack_clock": false,
+              "require_attack_control": false,
+              "condition": "(inputs.source.components.behavior.state if 'state' in inputs.source.components.behavior else 'mode0') == 'mode0'",
+              "parameters": {}
+            },
+            {
+              "ability": "ability/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/immo1",
+              "priority": 0,
+              "attack_clock": false,
+              "require_attack_control": false,
+              "condition": "(inputs.source.components.behavior.state if 'state' in inputs.source.components.behavior else 'mode0') == 'mode1'",
+              "parameters": {}
+            }
+          ]
+        },
+        "behavior": {
+          "machine": "behavior/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515"
+        }
+      }
+    },
+    {
+      "id": "unit/test/demon/player",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 1000000,
+            "atk": 0,
+            "def": 100,
+            "mres": 25,
+            "block_count": 3
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 1000000,
+            "capacity": 1000000,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "side": 0,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 1
+        },
+        "deployable": {
+          "base_cost": 7,
+          "capacity": 1,
+          "cooldown_seconds": 0,
+          "terrain": "ground"
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    },
+    {
+      "id": "unit/test/demon/controller",
+      "kind": "entity",
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 100,
+            "atk": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "abilities": [
+          "ability/test/demon/mode0",
+          "ability/test/demon/mode1"
+        ]
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/eligibility",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.targeting.eligibility"
+      }
+    },
+    {
+      "id": "rule/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/blocked",
+      "kind": "calculation_rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "expression",
+        "expression": "{'accepted':'blocked_by' in inputs.source.components.runtime and inputs.source.components.runtime.blocked_by == inputs.candidate.id,'reason':'nativeINPUT_TARGET2'}"
+      }
+    },
+    {
+      "id": "rule/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/windup",
+      "kind": "rule",
+      "contract": "ability.windup",
+      "parameters": {
+        "minimum_speed": 0.01
+      },
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.timing_parameters.seconds / max(inputs.attributes.attack_speed_ratio, params.minimum_speed)"
+      }
+    },
+    {
+      "id": "rule/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/duration",
+      "kind": "rule",
+      "contract": "ability.duration",
+      "parameters": {
+        "minimum_speed": 0.01
+      },
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.duration_parameters.seconds / max(inputs.attributes.attack_speed_ratio, params.minimum_speed)"
+      }
+    },
+    {
+      "id": "rule/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/members0",
+      "kind": "rule",
+      "contract": "area.members",
+      "dependencies": [
+        "rule/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/eligibility"
+      ],
+      "parameters": {
+        "radius": 1.5,
+        "eligibility": {
+          "rule": "rule/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/eligibility",
+          "parameters": {
+            "source_configuration": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -1592401993119621377
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 7080728813803358465
+              },
+              "m_Name": "",
+              "_targetSide": 2,
+              "_targetMotion": 1,
+              "_targetCategory": 1,
+              "_postFilter": 0,
+              "_ignoreTargetFree": 0,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_abnormalFlag": 42,
+              "_abnormalCombo": 2,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 0,
+              "_needProfessionMask": 0,
+              "_professionMask": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_excludeAbnormalFlag": 46,
+              "_limitTargetNum": 0,
+              "_maxTargetKey": "max_target",
+              "_maxNum": 1,
+              "_excludeOwner": 0,
+              "_sortByTauntAtLast": 0,
+              "_ignoreHitRange": 0,
+              "_checkUnitType": 0,
+              "_unitTypeMask": 0,
+              "_abilityInputTargetAsSortSource": 0
+            },
+            "side_policy": "relative_ally_enemy",
+            "neutral_policy": "reject",
+            "defaults": {
+              "side": 0,
+              "motion": 1,
+              "category": 1,
+              "profession": 0,
+              "unit_type": 1,
+              "abnormal_flags": [],
+              "abnormal_combos": [],
+              "target_free_flags": [],
+              "target_free_combos": [],
+              "target_free": false,
+              "ally_target_free": false,
+              "heal_free": false,
+              "camouflage": false,
+              "can_select_camouflage": false,
+              "abnormal_immunes": []
+            }
+          }
+        }
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "model.area.qualified_radius"
+      }
+    },
+    {
+      "id": "rule/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/members1",
+      "kind": "rule",
+      "contract": "area.members",
+      "dependencies": [
+        "rule/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/eligibility"
+      ],
+      "parameters": {
+        "radius": 2.5,
+        "eligibility": {
+          "rule": "rule/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/eligibility",
+          "parameters": {
+            "source_configuration": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -1293730450875670785
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 7080728813803358465
+              },
+              "m_Name": "",
+              "_targetSide": 2,
+              "_targetMotion": 1,
+              "_targetCategory": 1,
+              "_postFilter": 0,
+              "_ignoreTargetFree": 0,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_abnormalFlag": 42,
+              "_abnormalCombo": 2,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 0,
+              "_needProfessionMask": 0,
+              "_professionMask": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_excludeAbnormalFlag": 46,
+              "_limitTargetNum": 0,
+              "_maxTargetKey": "max_target",
+              "_maxNum": 1,
+              "_excludeOwner": 0,
+              "_sortByTauntAtLast": 0,
+              "_ignoreHitRange": 0,
+              "_checkUnitType": 0,
+              "_unitTypeMask": 0,
+              "_abilityInputTargetAsSortSource": 0
+            },
+            "side_policy": "relative_ally_enemy",
+            "neutral_policy": "reject",
+            "defaults": {
+              "side": 0,
+              "motion": 1,
+              "category": 1,
+              "profession": 0,
+              "unit_type": 1,
+              "abnormal_flags": [],
+              "abnormal_combos": [],
+              "target_free_flags": [],
+              "target_free_combos": [],
+              "target_free": false,
+              "ally_target_free": false,
+              "heal_free": false,
+              "camouflage": false,
+              "can_select_camouflage": false,
+              "abnormal_immunes": []
+            }
+          }
+        }
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "model.area.qualified_radius"
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/ch7/source/ore_listener",
+      "kind": "buff"
+    },
+    {
+      "id": "buff/ch7/source/ore_immune",
+      "kind": "buff"
+    },
+    {
+      "id": "buff/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/fsm_interrupt",
+      "kind": "buff",
+      "duration_seconds": 1e-08,
+      "control": {
+        "attack": false,
+        "abilities": false,
+        "interrupt": true
+      }
+    },
+    {
+      "id": "buff/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/sotiwz_effect",
+      "kind": "buff",
+      "metadata": {
+        "native_template": "empty",
+        "source_visual_only": "buff_curse_01"
+      }
+    },
+    {
+      "id": "buff/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/sotiwz_effect[eye]",
+      "kind": "buff",
+      "metadata": {
+        "native_template": "empty",
+        "source_visual_only": "sotidp_buff_01_start"
+      }
+    },
+    {
+      "id": "buff/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/internal_interval",
+      "kind": "buff",
+      "modifiers": [
+        {
+          "attribute": "attack_interval",
+          "layer": "flat",
+          "value": -4.900000095367432
+        }
+      ]
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/immo0",
+      "kind": "ability",
+      "initial_cooldown_seconds": 0.0,
+      "cooldown_seconds": 5.0,
+      "duration_seconds": 0,
+      "metadata": {
+        "native_skill_pointer": null,
+        "native_skill_fields": {
+          "m_GameObject": {
+            "m_FileID": 0,
+            "m_PathID": 5597957207869693695
+          },
+          "m_Enabled": 1,
+          "m_Script": {
+            "m_FileID": 1,
+            "m_PathID": -5087399121287503180
+          },
+          "m_Name": "",
+          "_familyMask": 3,
+          "_trigger": {
+            "m_FileID": 0,
+            "m_PathID": -7679893269067915521
+          },
+          "_checkParentActive": 0,
+          "_maxTriggerTime": -1,
+          "_resetMainAbilityCdWhenCastEnd": 0,
+          "_resetCdWaitFirstPeriod": 1,
+          "_overwriteInitCooldown": -1,
+          "_ignoreSilence": 1,
+          "_immuneStunWhenAffecting": 0,
+          "_addEnemyIdToSignalId": 1,
+          "_castLikeAttack": 0
+        },
+        "native_sp_cost": 0,
+        "native_nevertrigger_normal_retained": true
+      },
+      "activation": {
+        "mode": "manual",
+        "forbidden_source_flags": [
+          0
+        ],
+        "parameters": {
+          "auto_only": true,
+          "auto_when_ready": true,
+          "blocks_attacks": false
+        }
+      },
+      "timeline": [
+        {
+          "at": 0,
+          "effect": {
+            "op": "area",
+            "target": "source",
+            "center": "source",
+            "membership_rule": "rule/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/members0",
+            "filters": [
+              {
+                "tag": "player"
+              }
+            ],
+            "effects": [
+              {
+                "op": "damage",
+                "damage_type": "arts",
+                "scale": 1,
+                "damage_flags": {
+                  "source_attack_type": "SPLASH",
+                  "ignore_for_sp": false
+                },
+                "read_mode": {
+                  "source_attributes": "at_hit",
+                  "target_attributes": "at_hit"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/immo1",
+      "kind": "ability",
+      "initial_cooldown_seconds": 0.0,
+      "cooldown_seconds": 5.0,
+      "duration_seconds": 0,
+      "metadata": {
+        "native_skill_pointer": null,
+        "native_skill_fields": {
+          "m_GameObject": {
+            "m_FileID": 0,
+            "m_PathID": -5925642238658732289
+          },
+          "m_Enabled": 1,
+          "m_Script": {
+            "m_FileID": 1,
+            "m_PathID": -5087399121287503180
+          },
+          "m_Name": "",
+          "_familyMask": 3,
+          "_trigger": {
+            "m_FileID": 0,
+            "m_PathID": -5135194650266755329
+          },
+          "_checkParentActive": 0,
+          "_maxTriggerTime": -1,
+          "_resetMainAbilityCdWhenCastEnd": 0,
+          "_resetCdWaitFirstPeriod": 1,
+          "_overwriteInitCooldown": -1,
+          "_ignoreSilence": 0,
+          "_immuneStunWhenAffecting": 0,
+          "_addEnemyIdToSignalId": 0,
+          "_castLikeAttack": 0
+        },
+        "native_sp_cost": 0,
+        "native_nevertrigger_normal_retained": true
+      },
+      "activation": {
+        "mode": "manual",
+        "forbidden_source_flags": [
+          0,
+          12
+        ],
+        "parameters": {
+          "auto_only": true,
+          "auto_when_ready": true,
+          "blocks_attacks": false
+        }
+      },
+      "timeline": [
+        {
+          "at": 0,
+          "effect": {
+            "op": "area",
+            "target": "source",
+            "center": "source",
+            "membership_rule": "rule/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/members1",
+            "filters": [
+              {
+                "tag": "player"
+              }
+            ],
+            "effects": [
+              {
+                "op": "damage",
+                "damage_type": "arts",
+                "scale": 1,
+                "damage_flags": {
+                  "source_attack_type": "SPLASH",
+                  "ignore_for_sp": false
+                },
+                "read_mode": {
+                  "source_attributes": "at_hit",
+                  "target_attributes": "at_hit"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/test/demon/mode0",
+      "kind": "ability",
+      "selector": "selector/test/demon/enemy",
+      "activation": {
+        "mode": "manual"
+      },
+      "timeline": [
+        {
+          "at": 0,
+          "effect": {
+            "op": "transition",
+            "state": "mode0"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/test/demon/mode1",
+      "kind": "ability",
+      "selector": "selector/test/demon/enemy",
+      "activation": {
+        "mode": "manual"
+      },
+      "timeline": [
+        {
+          "at": 0,
+          "effect": {
+            "op": "transition",
+            "state": "mode1"
+          }
+        }
+      ]
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/test/demon/enemy",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "ore_responsive"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "behaviors": [
+    {
+      "id": "behavior/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515",
+      "kind": "behavior",
+      "initial": "mode0",
+      "states": {
+        "mode0": {
+          "on_enter": [
+            {
+              "op": "apply_buff",
+              "target": "source",
+              "buff": "buff/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/fsm_interrupt"
+            },
+            {
+              "op": "remove_buff",
+              "target": "source",
+              "buff": "buff/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/fsm_interrupt"
+            }
+          ],
+          "on_exit": []
+        },
+        "mode1": {
+          "on_enter": [
+            {
+              "op": "apply_buff",
+              "target": "source",
+              "buff": "buff/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/fsm_interrupt"
+            },
+            {
+              "op": "remove_buff",
+              "target": "source",
+              "buff": "buff/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/fsm_interrupt"
+            },
+            {
+              "op": "apply_buff",
+              "target": "source",
+              "buff": "buff/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/sotiwz_effect"
+            },
+            {
+              "op": "apply_buff",
+              "target": "source",
+              "buff": "buff/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/sotiwz_effect[eye]"
+            }
+          ],
+          "on_exit": [
+            {
+              "op": "remove_buff",
+              "target": "source",
+              "buff": "buff/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/sotiwz_effect"
+            },
+            {
+              "op": "remove_buff",
+              "target": "source",
+              "buff": "buff/unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515/sotiwz_effect[eye]"
+            }
+          ]
+        }
+      },
+      "transitions": []
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/ch7/demons/enemy_1085_sotiwz",
+    "ruleset": "ruleset/ark_standard",
+    "objectives": {},
+    "map": {
+      "rows": 5,
+      "cols": 7
+    },
+    "resources": {
+      "dp": {
+        "initial": 20,
+        "capacity": 99
+      },
+      "life": {
+        "initial": 99999,
+        "capacity": 99999
+      }
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/ch7/enemy_1085_sotiwz/e124b5c8af77c515",
+        "instanceAlias": "enemy",
+        "position": {
+          "row": 2,
+          "col": 2
+        }
+      },
+      {
+        "definition": "unit/test/demon/controller",
+        "instanceAlias": "controller",
+        "position": {
+          "row": 4,
+          "col": 6
+        }
+      },
+      {
+        "definition": "unit/test/demon/player",
+        "instanceAlias": "a",
+        "position": {
+          "row": 2,
+          "col": 3
+        }
+      },
+      {
+        "definition": "unit/test/demon/player",
+        "instanceAlias": "b",
+        "position": {
+          "row": 3,
+          "col": 2
+        }
+      },
+      {
+        "definition": "unit/test/demon/player",
+        "instanceAlias": "outer",
+        "position": {
+          "row": 2,
+          "col": 4
+        }
+      }
+    ],
+    "roster": [
+      "unit/test/demon/player"
+    ]
+  }
+}

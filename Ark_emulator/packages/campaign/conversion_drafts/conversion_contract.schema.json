@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ark-sim/first-model-conversion-contract/v1",
+  "title": "Unapproved0-10 source/model conversion draft",
+  "type": "object",
+  "required": [
+    "selected_skill_definitions",
+    "mechanic_tests",
+    "typed_gaps",
+    "source_audit",
+    "original_pending_preserved",
+    "roster_frozen_sha256",
+    "implementation_sha256",
+    "model_source_sha256",
+    "commands_source_sha256",
+    "planned_content",
+    "planned_commands",
+    "schema",
+    "status",
+    "native_level_id",
+    "native_id",
+    "difficulty",
+    "native_spawn_count",
+    "native_enemy_count",
+    "native_fields_verified",
+    "formal_approval",
+    "review_receipt",
+    "fixed_roster",
+    "required_mechanics",
+    "pending_mechanics",
+    "source_locks"
+  ],
+  "properties": {
+    "selected_skill_definitions": {
+      "type": "object"
+    },
+    "mechanic_tests": {
+      "type": "object"
+    },
+    "typed_gaps": {
+      "type": "object"
+    },
+    "source_audit": {
+      "type": "object"
+    },
+    "original_pending_preserved": {
+      "type": "object"
+    },
+    "roster_frozen_sha256": {
+      "type": "string",
+      "minLength": 1
+    },
+    "implementation_sha256": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_source_sha256": {
+      "type": "string",
+      "minLength": 1
+    },
+    "commands_source_sha256": {
+      "type": "string",
+      "minLength": 1
+    },
+    "planned_content": {
+      "type": "string",
+      "minLength": 1
+    },
+    "planned_commands": {
+      "type": "string",
+      "minLength": 1
+    },
+    "schema": {
+      "const": "ark-sim/first-model-conversion-contract/v1"
+    },
+    "status": {
+      "const": "conversion_draft_not_approved"
+    },
+    "native_level_id": {
+      "const": "level_main_00-10"
+    },
+    "native_id": {
+      "const": "main_00-10"
+    },
+    "difficulty": {
+      "const": 1
+    },
+    "native_spawn_count": {
+      "const": 35
+    },
+    "native_enemy_count": {
+      "const": 5
+    },
+    "native_fields_verified": {
+      "const": false
+    },
+    "formal_approval": {
+      "const": false
+    },
+    "review_receipt": {
+      "const": false
+    },
+    "fixed_roster": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "required": [
+          "character_id",
+          "config",
+          "selected_ability"
+        ]
+      }
+    },
+    "required_mechanics": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "pending_mechanics": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "source_locks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,492 @@
+{
+  "schema": "ark-sim/m32-static-effective-instance-peer/v1",
+  "passed": false,
+  "core_start": "5acf1c0e36d6d41b04fc2fdf4ec1677eeed6e93949a0d97f5776088f38404456",
+  "core_end": "5acf1c0e36d6d41b04fc2fdf4ec1677eeed6e93949a0d97f5776088f38404456",
+  "actual_module": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m32_static_tile_field_candidate\\ark_sim\\__init__.py",
+  "source_sha256": "2eaa6d297917fed033c917184ba1da911839f88a2c6b1fd80fbd54c72c6873ca",
+  "cases": [
+    {
+      "case": "initial_abilities",
+      "expected": "compile_rejected",
+      "actual_compile_rejected": false,
+      "fixture": {
+        "entities": [
+          {
+            "id": "unit/owner",
+            "kind": "entity",
+            "tags": [
+              "tile_field_owner"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 1,
+                  "atk": 0
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 1,
+                  "capacity": 1
+                }
+              },
+              "buffs": {
+                "initial": [
+                  "buff/parent"
+                ]
+              }
+            }
+          },
+          {
+            "id": "unit/target",
+            "kind": "entity",
+            "tags": [
+              "player"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 100,
+                  "def": 0
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 100,
+                  "capacity": 100,
+                  "role": "health"
+                }
+              }
+            }
+          }
+        ],
+        "buffs": [
+          {
+            "id": "buff/parent",
+            "kind": "buff",
+            "aura": {
+              "selector": "selector/cell",
+              "buff": "buff/member"
+            }
+          },
+          {
+            "id": "buff/member",
+            "kind": "buff",
+            "stacking": {
+              "mode": "independent"
+            },
+            "modifiers": []
+          }
+        ],
+        "selectors": [
+          {
+            "id": "selector/cell",
+            "kind": "selector",
+            "region": {
+              "type": "grid_offsets",
+              "offsets": [
+                [
+                  0,
+                  0
+                ]
+              ],
+              "rotate_with_facing": false
+            },
+            "filters": [
+              {
+                "tag": "player"
+              }
+            ]
+          },
+          {
+            "id": "selector/target",
+            "kind": "selector",
+            "region": {
+              "type": "all"
+            },
+            "filters": [
+              {
+                "tag": "player"
+              },
+              {
+                "state": "alive"
+              }
+            ],
+            "limit": 1
+          }
+        ],
+        "abilities": [
+          {
+            "id": "ability/illegal_owner",
+            "kind": "ability",
+            "selector": "selector/target",
+            "activation": {
+              "mode": "manual",
+              "on_start": [
+                {
+                  "op": "damage",
+                  "damage_type": "physical"
+                }
+              ]
+            },
+            "timeline": []
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scenario/static_override_counter",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 1,
+            "cols": 4,
+            "tiles": [
+              {
+                "tileKey": "tile_floor",
+                "buildableType": 1,
+                "passableMask": 1
+              },
+              {
+                "tileKey": "custom_field",
+                "buildableType": 1,
+                "passableMask": 1,
+                "blackboard": []
+              },
+              {
+                "tileKey": "tile_floor",
+                "buildableType": 1,
+                "passableMask": 1
+              },
+              {
+                "tileKey": "tile_floor",
+                "buildableType": 1,
+                "passableMask": 1
+              }
+            ],
+            "tile_mechanics": {
+              "custom_field": {
+                "type": "occupancy_buff_field",
+                "definition": "unit/owner",
+                "expected_blackboard": {}
+              }
+            }
+          },
+          "objectives": {},
+          "initialEntities": [
+            {
+              "definition": "unit/target",
+              "instanceAlias": "target",
+              "position": {
+                "row": 0,
+                "col": 2
+              }
+            },
+            {
+              "definition": "unit/owner",
+              "instanceAlias": "clone",
+              "position": {
+                "row": 0,
+                "col": 0
+              },
+              "components": {
+                "abilities": [
+                  "ability/illegal_owner"
+                ],
+                "attributes": {
+                  "base": {
+                    "atk": 50
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "commands": {
+        "schema": "ark-sim/replay/v2",
+        "program_fingerprint": "5dce19c895e04e92b8e7ae19858cd5d3b61be2c5b1b77bc8af5134822cde7644",
+        "runtime_fingerprint": "0e6511892a813059dcc7f99a72c9fd0aeb68b484e51973d1b3fadd0b79bcb0cb",
+        "seed": 3201,
+        "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+        "until": 3,
+        "commands": [
+          {
+            "order": 1,
+            "submitted_at": 0,
+            "at": 0,
+            "action": {
+              "action": "skill",
+              "source": "clone",
+              "ability": "ability/illegal_owner"
+            }
+          }
+        ]
+      },
+      "clone_position": {
+        "row": 0,
+        "col": 0
+      },
+      "target_hp": 50,
+      "events": [
+        {
+          "id": 92,
+          "type": "damage.accepted",
+          "payload": {
+            "source": 3,
+            "target": 2,
+            "amount": 50,
+            "ability": "ability/illegal_owner",
+            "resource": "hp"
+          },
+          "time": 0,
+          "cause": 83
+        },
+        {
+          "id": 93,
+          "type": "command.accepted",
+          "payload": {
+            "action": {
+              "action": "skill",
+              "source": "clone",
+              "ability": "ability/illegal_owner"
+            },
+            "result": "cast/3/1"
+          },
+          "time": 0,
+          "cause": null
+        }
+      ],
+      "program": "5dce19c895e04e92b8e7ae19858cd5d3b61be2c5b1b77bc8af5134822cde7644",
+      "runtime": "0e6511892a813059dcc7f99a72c9fd0aeb68b484e51973d1b3fadd0b79bcb0cb"
+    },
+    {
+      "case": "initial_route",
+      "expected": "compile_rejected",
+      "actual_compile_rejected": false,
+      "fixture": {
+        "entities": [
+          {
+            "id": "unit/owner",
+            "kind": "entity",
+            "tags": [
+              "tile_field_owner"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 1,
+                  "atk": 0
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 1,
+                  "capacity": 1
+                }
+              },
+              "buffs": {
+                "initial": [
+                  "buff/parent"
+                ]
+              }
+            }
+          },
+          {
+            "id": "unit/target",
+            "kind": "entity",
+            "tags": [
+              "player"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 100,
+                  "def": 0
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 100,
+                  "capacity": 100,
+                  "role": "health"
+                }
+              }
+            }
+          }
+        ],
+        "buffs": [
+          {
+            "id": "buff/parent",
+            "kind": "buff",
+            "aura": {
+              "selector": "selector/cell",
+              "buff": "buff/member"
+            }
+          },
+          {
+            "id": "buff/member",
+            "kind": "buff",
+            "stacking": {
+              "mode": "independent"
+            },
+            "modifiers": []
+          }
+        ],
+        "selectors": [
+          {
+            "id": "selector/cell",
+            "kind": "selector",
+            "region": {
+              "type": "grid_offsets",
+              "offsets": [
+                [
+                  0,
+                  0
+                ]
+              ],
+              "rotate_with_facing": false
+            },
+            "filters": [
+              {
+                "tag": "player"
+              }
+            ]
+          },
+          {
+            "id": "selector/target",
+            "kind": "selector",
+            "region": {
+              "type": "all"
+            },
+            "filters": [
+              {
+                "tag": "player"
+              },
+              {
+                "state": "alive"
+              }
+            ],
+            "limit": 1
+          }
+        ],
+        "abilities": [
+          {
+            "id": "ability/illegal_owner",
+            "kind": "ability",
+            "selector": "selector/target",
+            "activation": {
+              "mode": "manual",
+              "on_start": [
+                {
+                  "op": "damage",
+                  "damage_type": "physical"
+                }
+              ]
+            },
+            "timeline": []
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scenario/static_override_counter",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 1,
+            "cols": 4,
+            "tiles": [
+              {
+                "tileKey": "tile_floor",
+                "buildableType": 1,
+                "passableMask": 1
+              },
+              {
+                "tileKey": "custom_field",
+                "buildableType": 1,
+                "passableMask": 1,
+                "blackboard": []
+              },
+              {
+                "tileKey": "tile_floor",
+                "buildableType": 1,
+                "passableMask": 1
+              },
+              {
+                "tileKey": "tile_floor",
+                "buildableType": 1,
+                "passableMask": 1
+              }
+            ],
+            "tile_mechanics": {
+              "custom_field": {
+                "type": "occupancy_buff_field",
+                "definition": "unit/owner",
+                "expected_blackboard": {}
+              }
+            }
+          },
+          "objectives": {},
+          "initialEntities": [
+            {
+              "definition": "unit/target",
+              "instanceAlias": "target",
+              "position": {
+                "row": 0,
+                "col": 2
+              }
+            },
+            {
+              "definition": "unit/owner",
+              "instanceAlias": "clone",
+              "position": {
+                "row": 0,
+                "col": 0
+              },
+              "components": {
+                "attributes": {
+                  "base": {
+                    "move_speed": 3
+                  }
+                },
+                "spatial": {
+                  "route": {
+                    "motionMode": 0,
+                    "startPosition": {
+                      "row": 0,
+                      "col": 0
+                    },
+                    "endPosition": {
+                      "row": 0,
+                      "col": 3
+                    },
+                    "checkpoints": []
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "commands": {
+        "schema": "ark-sim/replay/v2",
+        "program_fingerprint": "e0f69d3bf23c449ec5549cd151526050e75e0306a04b16de0151a4063682f2c0",
+        "runtime_fingerprint": "0e6511892a813059dcc7f99a72c9fd0aeb68b484e51973d1b3fadd0b79bcb0cb",
+        "seed": 3201,
+        "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+        "until": 3,
+        "commands": []
+      },
+      "clone_position": {
+        "row": 0.0,
+        "col": 0.30000000000000004
+      },
+      "target_hp": 100,
+      "events": [],
+      "program": "e0f69d3bf23c449ec5549cd151526050e75e0306a04b16de0151a4063682f2c0",
+      "runtime": "0e6511892a813059dcc7f99a72c9fd0aeb68b484e51973d1b3fadd0b79bcb0cb"
+    }
+  ],
+  "scope": "authored static role must hold for effective instance components, not just base map owner definition",
+  "formal_approval": false
+}

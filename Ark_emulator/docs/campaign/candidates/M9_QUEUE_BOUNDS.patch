@@ -1,0 +1,17 @@
+--- a/ark_sim/kernel/scheduler.py
++++ b/ark_sim/kernel/scheduler.py
+@@ -102,6 +102,14 @@
+             if task_id not in self._tasks:
+                 raise KeyError(f"Unknown or completed task ID: {task_id}")
+             del self._tasks[task_id]
++            if not self._tasks:
++                self._heap.clear()
++            elif len(self._heap) > max(64, 2*len(self._tasks)):
++                # Forked transactions retain the heap instead of rebuilding it
++                # on every commit. Bound cancelled records with amortized
++                # compaction; ordering still uses the complete stable task key.
++                self._heap = [(self.key(task), key) for key, task in self._tasks.items()]
++                heapq.heapify(self._heap)
+ 
+     def _discard_cancelled(self):
+         while self._heap and self._heap[0][1] not in self._tasks:

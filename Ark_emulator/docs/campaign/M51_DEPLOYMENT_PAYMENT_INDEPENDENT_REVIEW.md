@@ -1,0 +1,11 @@
+# M51 independent deployment payment review
+
+The frozen candidate is `../unpack_work/campaign_m51_deploy_payment_candidate`, core `50902adad7bd99b27b4c3c2efd2d40e97458bb181d203f5b434fcd0eaa782c1f`. Twelve independent cases passed in1.02 seconds. Author code/tests and old M50 source/evidence remain unchanged.
+
+The original M50 counterexamples are retained at `validation/campaign/m50_peer/original_failures.json`, SHA256 `05331d699414484b2b541253a01a861da65c5027af4db003210aa5b4d0310169`. A second internal record call deducted another ticket from the same actor. Separately, a valid custom bounds provider kept DP above3, so a public cost4 deployment paid only1 while recording paid_cost4. The latter was inherited from the prior public deployment path and does not claim ordinary default bounds were affected. Initial illegal expression/graph implementations and missing overflow output were fixture mistakes, preserved separately before the valid provider observations.
+
+The same independent assertions now pass. Additional cases verify shared DP+stock totals, refusal of partial stock settlement, record's own atomic boundary without an outer transaction, restoration of the persistent marker after outer failure, ordinary no-stock exact payment and no-stock partial payment refusal, strict missing resource/wrong resource.cost references, and owned spawn's actual cast payment claim4 plus one shared ticket with correct owner.
+
+The quota witness publicly deploys three actors, rejects the fourth, then withdraws one without replenishing stock. Its actual input/commands, ordered disk checkpoint, resumed final snapshot and full replay are identical under the same core. World `runtime.deployment_recorded` is an intentional new persistent bookkeeping field, including no-stock paths. This review does not erase it to falsely claim raw old/new World/event equality.
+
+Final report is `validation/campaign/m50_peer/m51/final_review.json`, SHA256 `61ba778e2395d1d4e83524aa38930f5a39602c2a3aff84b732824919a075e25e`. It locks actual candidate modules, fixtures, helper/source hashes and original failures. Source/core remain stable before/after. This is bounded model/API correctness evidence; no full-stage execution, client verification, promotion or formal receipt was created.

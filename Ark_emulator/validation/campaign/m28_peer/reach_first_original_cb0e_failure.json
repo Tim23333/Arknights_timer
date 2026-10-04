@@ -1,0 +1,396 @@
+{
+  "schema": "ark-sim/m28-reach-stop-first-counterexample/v1",
+  "core": "cb0e7a97a2621aaf4b14dc942181686906733acbcc61f6a5a23ebae9448e997b",
+  "actual_module": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m28_unlimited_projectile_candidate\\ark_sim\\__init__.py",
+  "source": {
+    "path": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m28_peer\\test_independent.py",
+    "sha256": "a6187b649d108b02ca0b9f3677b60166d232517d6d43e1d4b218ba24f733f1a5"
+  },
+  "fixture": {
+    "entities": [
+      {
+        "id": "unit/source",
+        "kind": "entity",
+        "tags": [
+          "source"
+        ],
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "atk": 40,
+              "max_hp": 200,
+              "def": 0,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 200,
+              "capacity": 200,
+              "role": "health"
+            }
+          },
+          "abilities": [
+            "ability/fire"
+          ]
+        }
+      },
+      {
+        "id": "unit/target",
+        "kind": "entity",
+        "tags": [
+          "primary",
+          "player"
+        ],
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "atk": 40,
+              "max_hp": 200,
+              "def": 0,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 200,
+              "capacity": 200,
+              "role": "health"
+            }
+          },
+          "abilities": []
+        }
+      },
+      {
+        "id": "unit/second",
+        "kind": "entity",
+        "tags": [
+          "secondary",
+          "player"
+        ],
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "atk": 40,
+              "max_hp": 200,
+              "def": 0,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 200,
+              "capacity": 200,
+              "role": "health"
+            }
+          },
+          "abilities": []
+        }
+      }
+    ],
+    "selectors": [
+      {
+        "id": "selector/primary",
+        "kind": "selector",
+        "region": {
+          "type": "all"
+        },
+        "filters": [
+          {
+            "tag": "primary"
+          },
+          {
+            "state": "alive"
+          }
+        ],
+        "limit": 1
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/motion",
+        "kind": "rule",
+        "contract": "projectile.trajectory",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.reach"
+        }
+      },
+      {
+        "id": "rule/collision",
+        "kind": "rule",
+        "contract": "projectile.collision",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.second"
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/fire",
+        "kind": "ability",
+        "selector": "selector/primary",
+        "activation": {
+          "mode": "manual"
+        },
+        "parameters": {
+          "wait_for_projectiles": true
+        },
+        "timeline": [
+          {
+            "at_seconds": 0,
+            "effect": {
+              "op": "damage",
+              "damage_type": "true",
+              "projectile_definition": "projectile/probe"
+            }
+          }
+        ]
+      }
+    ],
+    "projectiles": [
+      {
+        "id": "projectile/probe",
+        "kind": "projectile",
+        "motion": {
+          "rule": "rule/motion"
+        },
+        "collision": {
+          "rule": "rule/collision",
+          "allow_other_targets": true
+        },
+        "lifetime_seconds": 0.1,
+        "max_hits": null,
+        "can_hit_same_target": true,
+        "stop_after_max": true,
+        "stop_after_first": true,
+        "attach_at_launch": false,
+        "lifecycle": {
+          "source_invalid": "retain",
+          "source_hidden": "retain",
+          "target_invalid": "retain_position",
+          "target_hidden": "retain_position",
+          "finish_on_reach": false,
+          "hit_on_reach": true,
+          "force_reach_on_expire": false,
+          "hit_on_expire": true
+        },
+        "on_invalid": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scenario/independent_unlimited",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 4
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/target",
+          "instanceAlias": "a",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        },
+        {
+          "definition": "unit/second",
+          "instanceAlias": "b",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        }
+      ]
+    }
+  },
+  "commands": {
+    "schema": "ark-sim/replay/v2",
+    "program_fingerprint": "23e9ad989abb33775eb3af9d77774dfc053d05ed7d484984b36c61e1afb24fed",
+    "runtime_fingerprint": "bda2e5e5b50b149e40299a7b9a27a5e2ae8596a9ea6a76a74186f7800e9d61a5",
+    "seed": 2802,
+    "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+    "until": 4,
+    "commands": [
+      {
+        "order": 1,
+        "submitted_at": 0,
+        "at": 0,
+        "action": {
+          "action": "skill",
+          "source": "source",
+          "ability": "ability/fire"
+        }
+      }
+    ]
+  },
+  "actual_packets": [
+    [
+      1,
+      40
+    ],
+    [
+      2,
+      40
+    ]
+  ],
+  "expected_packets": [
+    [
+      1,
+      40
+    ]
+  ],
+  "initial_hp": {
+    "a": 200,
+    "b": 200
+  },
+  "actual_hp": {
+    "a": 160,
+    "b": 160
+  },
+  "expected_hp": {
+    "a": 160,
+    "b": 200
+  },
+  "actual_finished_ticks": [
+    2
+  ],
+  "expected_finished_ticks": [
+    1
+  ],
+  "observed_events": [
+    {
+      "id": 68,
+      "type": "projectile.launched",
+      "payload": {
+        "projectile": "projectile/1",
+        "definition": "projectile/probe",
+        "source": 2,
+        "target": 3,
+        "attachment_target": 3,
+        "ability": "ability/fire",
+        "position": {
+          "row": 0,
+          "col": 0
+        },
+        "expires": 3
+      },
+      "time": 0,
+      "cause": null
+    },
+    {
+      "id": 71,
+      "type": "projectile.reached",
+      "payload": {
+        "projectile": "projectile/1",
+        "position": {
+          "row": 0,
+          "col": 0
+        }
+      },
+      "time": 1,
+      "cause": null
+    },
+    {
+      "id": 83,
+      "type": "damage.accepted",
+      "payload": {
+        "source": 2,
+        "target": 3,
+        "amount": 40,
+        "ability": "ability/fire",
+        "resource": "hp"
+      },
+      "time": 1,
+      "cause": null
+    },
+    {
+      "id": 84,
+      "type": "projectile.hit",
+      "payload": {
+        "projectile": "projectile/1",
+        "source": 2,
+        "target": 3,
+        "position": {
+          "row": 0,
+          "col": 0
+        },
+        "hit_count": 1
+      },
+      "time": 1,
+      "cause": null
+    },
+    {
+      "id": 98,
+      "type": "damage.accepted",
+      "payload": {
+        "source": 2,
+        "target": 4,
+        "amount": 40,
+        "ability": "ability/fire",
+        "resource": "hp"
+      },
+      "time": 2,
+      "cause": null
+    },
+    {
+      "id": 99,
+      "type": "projectile.hit",
+      "payload": {
+        "projectile": "projectile/1",
+        "source": 2,
+        "target": 4,
+        "position": {
+          "row": 0,
+          "col": 0
+        },
+        "hit_count": 2
+      },
+      "time": 2,
+      "cause": null
+    },
+    {
+      "id": 100,
+      "type": "projectile.invalid",
+      "payload": {
+        "projectile": "projectile/1",
+        "source": 2,
+        "target": 3,
+        "reason": "max_hit",
+        "position": {
+          "row": 0,
+          "col": 0
+        }
+      },
+      "time": 2,
+      "cause": null
+    },
+    {
+      "id": 101,
+      "type": "ability.finished",
+      "payload": {
+        "source": 2,
+        "ability": "ability/fire",
+        "cast": "cast/2/1"
+      },
+      "time": 2,
+      "cause": null
+    }
+  ],
+  "source_body_scope": "declared stop_after_first model contract; not native projectile callback evidence",
+  "passed": false
+}

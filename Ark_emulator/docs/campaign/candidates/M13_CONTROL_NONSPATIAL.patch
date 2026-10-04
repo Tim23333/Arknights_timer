@@ -1,0 +1,85 @@
+--- a/ark_sim/content/capabilities.py
++++ b/ark_sim/content/capabilities.py
+@@ -69,6 +69,28 @@
+         for key in ("on_success", "on_failure", "effects"):
+             for index, child in enumerate(item.get(key, [])):
+                 effect(child, f"{path}.{key}[{index}]", local)
++
++    def control_effect(item, path):
++        """Controls use the nonspatial battle source, without fabricated stats."""
++        if item.get("selector"):
++            selected = definitions[item["selector"]]
++            if selected.get("region", {}).get("type") != "all":
++                raise ContentError(f"{path}.selector: control effect requires explicit spatial origin; only nonspatial all is supported")
++        op = item.get("op")
++        if op in {"heal", "regenerate", "push"}:
++            raise ContentError(f"{path}: control {op} requires actor source attributes/origin")
++        if op in {"move", "area"} and (item.get("target") in {"source", "battle"} or not item.get("selector") or item.get("center") == "source"):
++            raise ContentError(f"{path}: control {op} requires explicit actor spatial origin/target")
++        if op == "damage":
++            chosen = None
++            for scope in [*global_scopes, item.get("rules", {})]:
++                chosen = scope.get("damage.pipeline", chosen)
++            if chosen is not None:
++                bindings = rules[chosen].get("metadata", {}).get("input_bindings", {})
++                if any(binding.get("entity") == "source" for binding in bindings.values()):
++                    raise ContentError(f"{path}: control damage pipeline requires actor source attributes; bind an explicit source-independent pipeline")
++        for key in ("on_success", "on_failure", "effects"):
++            for index, child in enumerate(item.get(key, [])): control_effect(child, f"{path}.{key}[{index}]")
+         if "effect" in item:
+             effect(item["effect"], f"{path}.effect", local)
+ 
+@@ -209,9 +231,11 @@
+         elif kind == "control":
+             require("time.quantize", identifier)
+             for name in ("on_start", "on_complete", "on_cancel"):
+-                for index, item in enumerate(definition.get(name, [])): effect(item, f"{identifier}.{name}[{index}]", scopes)
++                for index, item in enumerate(definition.get(name, [])):
++                    effect(item, f"{identifier}.{name}[{index}]", scopes); control_effect(item, f"{identifier}.{name}[{index}]")
+             for index, step in enumerate(definition["steps"]):
+-                for item in step.get("effects", []): effect(item, f"{identifier}.steps[{index}]", scopes)
++                for item in step.get("effects", []):
++                    effect(item, f"{identifier}.steps[{index}]", scopes); control_effect(item, f"{identifier}.steps[{index}]")
+         elif kind == "behavior" and definition.get("states"):
+             for name, state in definition["states"].items():
+                 for key in ("on_enter", "on_exit"):
+--- a/ark_sim/domains/movement.py
++++ b/ark_sim/domains/movement.py
+@@ -40,10 +40,13 @@
+             raise ValueError("selector returned an undeclared candidate")
+         healing = bool((ability or {}).get("parameters", {}).get("healing"))
+         rows = []
+-        position = entity["components"]["spatial"]["position"]
++        position = entity.get("components", {}).get("spatial", {}).get("position")
++        if position is None and definition.get("region", {}).get("type") != "all":
++            raise ValueError("spatial selector requires an explicit source position")
+         for ref in ids:
+             candidate = self.ctx.entity(ref)
+-            target_pos = candidate["components"]["spatial"]["position"]
++            target_pos = candidate.get("components", {}).get("spatial", {}).get("position")
++            distance = math.hypot(position["row"]-target_pos["row"], position["col"]-target_pos["col"]) if position is not None and target_pos is not None else 0
+             ratio = 1.0
+             if healing:
+                 resource = self.ctx.health_resource(ref)
+@@ -57,7 +60,7 @@
+                     continue
+                 ratio = current / capacity
+             score = self.ctx.calc("targeting.score", {"candidate": candidate, "source": entity,
+-                    "distance": math.hypot(position["row"]-target_pos["row"], position["col"]-target_pos["col"]),
++                    "distance": distance,
+                     "tags": [{"tag": tag} for tag in candidate["tags"]], "states": {}},
+                     source=source, target=ref, ability=ability, effect=effect,
+                     extra={"healing": healing, "health_ratio": ratio})
+--- a/ark_sim/presets/providers.py
++++ b/ark_sim/presets/providers.py
+@@ -194,7 +194,9 @@
+     from ark_sim.domains.spatial import project_cell
+     source = inputs["source"]
+     region = inputs["region"]
+-    position = source["components"]["spatial"]["position"]
++    if region.get("type") == "all": return [entity["id"] for entity in inputs["candidates"]]
++    position = source.get("components", {}).get("spatial", {}).get("position")
++    if position is None: raise ValueError("spatial selector requires an explicit source position")
+     facing = source["components"]["spatial"].get("facing", "right")
+     cells = set()
+     for row, col in region.get("offsets", ()):

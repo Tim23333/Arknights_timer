@@ -1,0 +1,98 @@
+{
+  "status": "failed",
+  "actual_exit": 1,
+  "runtime_sha256": "3992a0e6726dd7128b9ee36e542be38376f7488d2d8165af33bdc9c662a79000",
+  "cases": [
+    {
+      "case": "tools/chapter08_special/test_author_v2.py::test_emppnt_one_same_pointer_payload_one_delayed_circle_all_eligible_members",
+      "outcome": "failed",
+      "error": "tools\\chapter08_special\\test_author_v2.py:30: in test_emppnt_one_same_pointer_payload_one_delayed_circle_all_eligible_members\n    s=make(package('emppnt'));s.session.advance(105);hits=packets(s);assert [(e['time'],e['payload']['amount']) for e in hits]==[(100,900),(100,880),(100,860),(100,820)]\n                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE   assert [(100, 900.0)] == [(100, 900), ...), (100, 820)]\nE     \nE     Right contains 3 more items, first extra item: (100, 880)\nE     Use -v to get more diff"
+    },
+    {
+      "case": "tools/chapter08_special/test_author_v2.py::test_emppnt_static_target_point_does_not_follow_target_after_launch",
+      "outcome": "failed",
+      "error": "tools\\chapter08_special\\test_author_v2.py:38: in test_emppnt_static_target_point_does_not_follow_target_after_launch\n    assert not packets(s,'near') and len(packets(s))==3 and all(e['time']==100 for e in packets(s))\nE   AssertionError: assert (not [] and 0 == 3)\nE    +  where [] = packets(<ark_sim.adapters.api.Simulation object at 0x0000018D77AE5550>, 'near')\nE    +  and   0 = len([])\nE    +    where [] = packets(<ark_sim.adapters.api.Simulation object at 0x0000018D77AE5550>)"
+    },
+    {
+      "case": "tools/chapter08_special/test_author_v2.py::test_emppnt_dead_source_existing_projectile_still_actual_area_damage",
+      "outcome": "failed",
+      "error": "tools\\chapter08_special\\test_author_v2.py:41: in test_emppnt_dead_source_existing_projectile_still_actual_area_damage\n    assert not s.ctx.alive('enemy') and len(packets(s))==4 and all(e['time']==100 for e in packets(s))\nE   AssertionError: assert (not False and 1 == 4)\nE    +  where False = alive('enemy')\nE    +    where alive = <ark_sim.domains.context.RuntimeContext object at 0x0000018D77B7DA00>.alive\nE    +      where <ark_sim.domains.context.RuntimeContext object at 0x0000018D77B7DA00> = <ark_sim.adapters.api.Simulation object at 0x0000018D77B7C980>.ctx\nE    +  and   1 = len([<ark_sim.contracts.models.FrozenMapping object at 0x0000018D779D16C0>])\nE    +    where [<ark_sim.contracts.models.FrozenMapping object at 0x0000018D779D16C0>] = packets(<ark_sim.adapters.api.Simulation object at 0x0000018D77B7C980>)"
+    },
+    {
+      "case": "tools/chapter08_special/test_author_v2.py::test_emppnt_live_marker_preference_and_onattack_refresh_no_finite_taunt_constant",
+      "outcome": "failed",
+      "error": "tools\\chapter08_special\\test_author_v2.py:45: in test_emppnt_live_marker_preference_and_onattack_refresh_no_finite_taunt_constant\n    launch=[e for e in s.session.events if e['type']=='projectile.launched'];assert len(launch)==1 and launch[0]['payload']['target']==s.session.world.resolve('near')\n                                                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE   AssertionError: assert (1 == 1 and 2 == 3)\nE    +  where 1 = len([<ark_sim.contracts.models.FrozenMapping object at 0x0000018D77C31C90>])\nE    +  and   3 = resolve('near')\nE    +    where resolve = <ark_sim.kernel.world.World object at 0x0000018D7430E300>.resolve\nE    +      where <ark_sim.kernel.world.World object at 0x0000018D7430E300> = <ark_sim.kernel.session.Session object at 0x0000018D76BE59A0>.world\nE    +        where <ark_sim.kernel.session.Session object at 0x0000018D76BE59A0> = <ark_sim.adapters.api.Simulation object at 0x0000018D742D4290>.session"
+    },
+    {
+      "case": "tools/chapter08_special/test_author_v2.py::test_empace_real_blocked_melee_numeric_frames_and_attack_exclusion",
+      "outcome": "failed",
+      "error": "tools\\chapter08_special\\test_author_v2.py:47: in test_empace_real_blocked_melee_numeric_frames_and_attack_exclusion\n    s=make(package('empace',True));s.session.advance(20);hits=packets(s,'near');assert [(e['time'],e['payload']['amount']) for e in hits]==[(15,800)]\n                                                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE   assert [(16, 800.0)] == [(15, 800)]\nE     \nE     At index 0 diff: (16, 800.0) != (15, 800)\nE     Use -v to get more diff"
+    },
+    {
+      "case": "tools/chapter08_special/test_author_v2.py::test_empace_unblocked_halfscale_homing_ground_only_actual_frame",
+      "outcome": "passed",
+      "error": null
+    },
+    {
+      "case": "tools/chapter08_special/test_author_v2.py::test_empace_inclusive_half_damage_at_hit_then_heal_above_and_retrigger",
+      "outcome": "failed",
+      "error": "tools\\chapter08_special\\test_author_v2.py:55: in test_empace_inclusive_half_damage_at_hit_then_heal_above_and_retrigger\n    hits=packets(s,'near');assert [(e['time'],e['payload']['amount']) for e in hits]==[(15,1700),(150,800),(285,1700)]\n                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE   assert [(16, 1700.0)...(286, 1700.0)] == [(15, 1700), ..., (285, 1700)]\nE     \nE     At index 0 diff: (16, 1700.0) != (15, 1700)\nE     Use -v to get more diff"
+    },
+    {
+      "case": "tools/chapter08_special/test_author_v2.py::test_empace_half_passive_not_silenced_and_dynamic_effective_maxhp",
+      "outcome": "failed",
+      "error": "tools\\chapter08_special\\test_author_v2.py:59: in test_empace_half_passive_not_silenced_and_dynamic_effective_maxhp\n    assert packets(s,'near')[0]['payload']['amount']==1700\n           ^^^^^^^^^^^^^^^^^^^^\nE   IndexError: list index out of range"
+    },
+    {
+      "case": "tools/chapter08_special/test_author_v2.py::test_disk_inflight_or_half_threshold_cp_and_all_public_head[emppnt-11-105]",
+      "outcome": "passed",
+      "error": null
+    },
+    {
+      "case": "tools/chapter08_special/test_author_v2.py::test_disk_inflight_or_half_threshold_cp_and_all_public_head[empace-32-40]",
+      "outcome": "passed",
+      "error": null
+    },
+    {
+      "case": "tools/chapter08_special/test_author_v2.py::test_disk_inflight_or_half_threshold_cp_and_all_public_head[empace-6-20]",
+      "outcome": "passed",
+      "error": null
+    }
+  ],
+  "guards_before": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\special\\source.closure.v1.json": "df0bc779fab22a6cdb8156c2ea639f8a52a803609a26f3c01cf4548bfd694289",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\special\\emppnt.module.v2.json": "016b14513aead8d436533bcaf7c8878605180ee24da6bdf18a17408f504b4efa",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\special\\empace.module.v2.json": "dc1e93bbdb7eb6330dd10881076b4daec909aaafa51772cf0cb7d2739d28d729",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_special\\build_closure_v1.py": "f0bbfae2b999f7ff204342e4196935e0f6037f7ea0fa34bc6fd75b4c4aecbaa2",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_special\\build_modules_v1.py": "210d6fc9712b470d1ff2e2c881a63572ab52842ebc326959134b08a5a3787eaa",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_special\\note_dragon_fire_raw_v1.py": "d657258c5b2c24069c9c2d1997e4157d7fecdf1b31a5903690d12e5a6da827c4",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_special\\policies_v1.py": "38bf12d3e3edbd89a21f83ff460bd08effe09a227f4b940eed5761cf32b4a6ce",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_special\\policies_v2.py": "b191374f6f90c0d1c4bf1f7157d54beaca106fb605903c96261a89473ce9a3d8",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_special\\prepare_v2.py": "f9bc476de1ab41a26a6260804a1c648f091da78a009ea6c391d3056506f13005",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_special\\recursive_source_v1.py": "c8bacd7aaebc4c03ed8343840aa2e88f8113ae313fd5c5df057d0c7fb08b8762",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_special\\test_author_v1.py": "be120fefd03c21244d1792a527c29dd9c0f8012dadb5b5d868e439e410e42f42",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_special\\test_author_v2.py": "c10e8605a1469879251a17618a6d46ad25e5794cbcfa74caf4ec3e66f2aba3a3",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_special\\verify_author_v1.py": "29e0944a91c293fc7ab4b28b5d38928b486a2c31f8692de2f9049aa4e3dc8ad7",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_special\\verify_author_v2.py": "6fb7d6bff81a5b6f76decadfb79a0dd3329f2dc8260e7b94ea4ef3fc82f2bbc8"
+  },
+  "guards_after": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\special\\source.closure.v1.json": "df0bc779fab22a6cdb8156c2ea639f8a52a803609a26f3c01cf4548bfd694289",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\special\\emppnt.module.v2.json": "016b14513aead8d436533bcaf7c8878605180ee24da6bdf18a17408f504b4efa",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\special\\empace.module.v2.json": "dc1e93bbdb7eb6330dd10881076b4daec909aaafa51772cf0cb7d2739d28d729",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_special\\build_closure_v1.py": "f0bbfae2b999f7ff204342e4196935e0f6037f7ea0fa34bc6fd75b4c4aecbaa2",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_special\\build_modules_v1.py": "210d6fc9712b470d1ff2e2c881a63572ab52842ebc326959134b08a5a3787eaa",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_special\\note_dragon_fire_raw_v1.py": "d657258c5b2c24069c9c2d1997e4157d7fecdf1b31a5903690d12e5a6da827c4",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_special\\policies_v1.py": "38bf12d3e3edbd89a21f83ff460bd08effe09a227f4b940eed5761cf32b4a6ce",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_special\\policies_v2.py": "b191374f6f90c0d1c4bf1f7157d54beaca106fb605903c96261a89473ce9a3d8",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_special\\prepare_v2.py": "f9bc476de1ab41a26a6260804a1c648f091da78a009ea6c391d3056506f13005",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_special\\recursive_source_v1.py": "c8bacd7aaebc4c03ed8343840aa2e88f8113ae313fd5c5df057d0c7fb08b8762",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_special\\test_author_v1.py": "be120fefd03c21244d1792a527c29dd9c0f8012dadb5b5d868e439e410e42f42",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_special\\test_author_v2.py": "c10e8605a1469879251a17618a6d46ad25e5794cbcfa74caf4ec3e66f2aba3a3",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_special\\verify_author_v1.py": "29e0944a91c293fc7ab4b28b5d38928b486a2c31f8692de2f9049aa4e3dc8ad7",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_special\\verify_author_v2.py": "6fb7d6bff81a5b6f76decadfb79a0dd3329f2dc8260e7b94ea4ef3fc82f2bbc8"
+  },
+  "guards_equal": true,
+  "whole_stage_executed": false,
+  "client_verified": false,
+  "independent_reviewed": false
+}

@@ -52,6 +52,29 @@ class Scheduler:
             self._next_seq += 1
             return sequence
 
+    @property
+    def next_task_id(self):
+        """Read the allocator without serializing every pending payload."""
+        with self._lock:
+            return self._next_id
+
+    def fork(self):
+        """Internal isolated queue for a transaction or nested savepoint.
+
+        Stored task records are owned here and never edited after schedule or
+        restore. Public peek/pop/pending/snapshot return detached read views.
+        Copying the task index and heap therefore isolates all supported writes
+        while retaining already-validated payloads. New schedule payloads still
+        cross the complete JSON clone/validation boundary.
+        """
+        with self._lock:
+            candidate = Scheduler(self.phase_order)
+            candidate._tasks = dict(self._tasks)
+            candidate._heap = list(self._heap)
+            candidate._next_id = self._next_id
+            candidate._next_seq = self._next_seq
+            return candidate
+
     def key(self, task):
         return (task["at"], self.rank(task["phase"]), task["priority"], task["seq"])
 
@@ -79,6 +102,14 @@ class Scheduler:
             if task_id not in self._tasks:
                 raise KeyError(f"Unknown or completed task ID: {task_id}")
             del self._tasks[task_id]
+            if not self._tasks:
+                self._heap.clear()
+            elif len(self._heap) > max(64, 2*len(self._tasks)):
+                # Forked transactions retain the heap instead of rebuilding it
+                # on every commit. Bound cancelled records with amortized
+                # compaction; ordering still uses the complete stable task key.
+                self._heap = [(self.key(task), key) for key, task in self._tasks.items()]
+                heapq.heapify(self._heap)
 
     def _discard_cancelled(self):
         while self._heap and self._heap[0][1] not in self._tasks:
@@ -104,7 +135,7 @@ class Scheduler:
 
     def snapshot(self):
         with self._lock:
-            return clone({"phase_order": self.phase_order, "tasks": list(self.pending),
+            return clone({"phase_order": self.phase_order, "tasks": sorted(self._tasks.values(), key=self.key),
                           "next_id": self._next_id, "next_seq": self._next_seq})
 
     def restore(self, data):

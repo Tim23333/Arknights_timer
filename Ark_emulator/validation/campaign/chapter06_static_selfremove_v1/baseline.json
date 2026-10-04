@@ -1,0 +1,102 @@
+{
+  "schema": "ark-sim/model-validation/v2",
+  "date": "2026-10-02",
+  "scope": "Independent model expectations and deterministic continuation; no client frame oracle",
+  "passed": true,
+  "custom_rulesets": {
+    "ruleset/ark_standard": {
+      "damage": 850.0,
+      "expected": 850,
+      "replay_equal": true,
+      "program_fingerprint": "3bf53bfa3d82361fbb2a5a0e09c09088f0960bd9cc41fbbc7f6079269ef16f87",
+      "state_sha256": "8e69dc933a7d67e2fa96d9e9ac43ab3a644e9222b366abd4395a6c0a1124d9cb",
+      "events_sha256": "2450cf334a62427fc1656c50f7c40611fa29f98166cdb19bfb3ee50a21b1affa",
+      "event_count": 646
+    },
+    "ruleset/custom_balance": {
+      "damage": 60.0,
+      "expected": 60,
+      "replay_equal": true,
+      "program_fingerprint": "37ef3ea79edf4b6e99828314c5e29706f833604c9e8fba74cd052648a1caa8a1",
+      "state_sha256": "2fcdd566d6040a286feae3ee82a428e5b1f627f217f85d087a1a134416a459dc",
+      "events_sha256": "8ed008f831ee566767df71de2abf3eac1c5b74c4001ce41d044a0db398d390e4",
+      "event_count": 642
+    }
+  },
+  "level_00_01": {
+    "status": "model_validated",
+    "client_frame_validation": "pending",
+    "content_sha256": "74f1bf9a2721694bc732cf51e09696ab552a27a5c66a07a3ba75537083054584",
+    "commands_sha256": "f4aee6f7fd1673d96c908b2c22c8fa63f10c9365e2e9ca5b27f650dee4c59de5",
+    "program_fingerprint": "b5c35c438a25660d151782ac8aa33a631077bd13a91f12daa99d032b7a97a58d",
+    "runtime_fingerprint": "6169cfb413619bd385aa6d6bf483851f47a6ad25665f398e5a28cbae56122b26",
+    "quantum": 0.03333333333333333,
+    "final_state": {
+      "finished": true,
+      "result": "victory",
+      "pending_waves": 0,
+      "kills": 11,
+      "leaks": 0,
+      "damage_dealt": 7160.0,
+      "deployments": {
+        "unit/char_502_nblade": {
+          "count": 1,
+          "ready_at": 0
+        },
+        "unit/char_124_kroos": {
+          "count": 1,
+          "ready_at": 0
+        }
+      },
+      "command_results": {},
+      "finished_at": 2408
+    },
+    "end_time": 2550,
+    "finished_seconds": 80.26666666666667,
+    "commands_observed": [
+      {
+        "id": 47,
+        "type": "command.accepted",
+        "payload": {
+          "action": {
+            "action": "deploy",
+            "entity": "unit/char_502_nblade",
+            "row": 3,
+            "col": 3,
+            "facing": "right",
+            "alias": "nblade"
+          },
+          "result": 2
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 1635,
+        "type": "command.accepted",
+        "payload": {
+          "action": {
+            "action": "deploy",
+            "entity": "unit/char_124_kroos",
+            "row": 1,
+            "col": 3,
+            "facing": "down",
+            "alias": "kroos"
+          },
+          "result": 4
+        },
+        "time": 180,
+        "cause": null
+      }
+    ],
+    "observations": {
+      "state_sha256": "cc9033d2d91ad49e143647fccf526a4ad9b0f28d3dd3f2736c68bea8f1e7b8f5",
+      "events_sha256": "3577d376cd8149bf2f6ca7a261cd312fcf3b18c138969e98501bbaa571fa114f",
+      "event_count": 181937
+    },
+    "checkpoint_at": 300,
+    "checkpoint_resume_equal": true,
+    "replay_equal": true,
+    "replay_file": "validation/campaign/chapter06_static_selfremove_v1/baseline.replay.json"
+  }
+}

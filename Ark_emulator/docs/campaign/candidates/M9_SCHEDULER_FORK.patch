@@ -1,0 +1,115 @@
+--- a/ark_sim/kernel/scheduler.py
++++ b/ark_sim/kernel/scheduler.py
+@@ -52,6 +52,29 @@
+             self._next_seq += 1
+             return sequence
+ 
++    @property
++    def next_task_id(self):
++        """Read the allocator without serializing every pending payload."""
++        with self._lock:
++            return self._next_id
++
++    def fork(self):
++        """Internal isolated queue for a transaction or nested savepoint.
++
++        Stored task records are owned here and never edited after schedule or
++        restore. Public peek/pop/pending/snapshot return detached read views.
++        Copying the task index and heap therefore isolates all supported writes
++        while retaining already-validated payloads. New schedule payloads still
++        cross the complete JSON clone/validation boundary.
++        """
++        with self._lock:
++            candidate = Scheduler(self.phase_order)
++            candidate._tasks = dict(self._tasks)
++            candidate._heap = list(self._heap)
++            candidate._next_id = self._next_id
++            candidate._next_seq = self._next_seq
++            return candidate
++
+     def key(self, task):
+         return (task["at"], self.rank(task["phase"]), task["priority"], task["seq"])
+ 
+@@ -104,7 +127,7 @@
+ 
+     def snapshot(self):
+         with self._lock:
+-            return clone({"phase_order": self.phase_order, "tasks": list(self.pending),
++            return clone({"phase_order": self.phase_order, "tasks": sorted(self._tasks.values(), key=self.key),
+                           "next_id": self._next_id, "next_seq": self._next_seq})
+ 
+     def restore(self, data):
+--- a/ark_sim/kernel/transaction.py
++++ b/ark_sim/kernel/transaction.py
+@@ -4,7 +4,6 @@
+ from ark_sim.contracts.models import Intent
+ 
+ from .events import EventLog
+-from .scheduler import Scheduler
+ from .world import World
+ 
+ 
+@@ -13,8 +12,7 @@
+     intents = tuple(intents)
+     world = World()
+     world.restore(session.world.snapshot())
+-    scheduler = Scheduler(session.scheduler.phase_order)
+-    scheduler.restore(session.scheduler.snapshot())
++    scheduler = session.scheduler.fork()
+     events = EventLog()
+     # Stage only new records. Cause validation needs the contiguous next ID,
+     # and no intent can rewrite historical events. Commit appends this batch
+--- a/ark_sim/kernel/session.py
++++ b/ark_sim/kernel/session.py
+@@ -129,7 +129,7 @@
+                 self._atomic_depth -= 1
+ 
+     def _capture_atomic(self):
+-        return {"world": self.world.snapshot(), "scheduler": self.scheduler.snapshot(),
++        return {"world": self.world.snapshot(), "scheduler": self.scheduler.fork(),
+                 "events": self._events._records, "event_length": len(self._events._records),
+                 "event_next_id": self._events._next_id,
+                 "random_streams": dict(self.random._streams),
+@@ -143,7 +143,10 @@
+         # Captured world/queue records were already validated; no boundary
+         # checkpoint API is called, so this also works within an active handler.
+         self.world.restore(saved["world"])
+-        self.scheduler.restore(saved["scheduler"])
++        queue = saved["scheduler"]
++        self.scheduler.phase_order, self.scheduler._phase_ranks = queue.phase_order, queue._phase_ranks
++        self.scheduler._tasks, self.scheduler._heap = queue._tasks, queue._heap
++        self.scheduler._next_id, self.scheduler._next_seq = queue._next_id, queue._next_seq
+         del saved["events"][saved["event_length"]:]
+         self._events._records, self._events._next_id = saved["events"], saved["event_next_id"]
+         for key, backend in saved["random_streams"].items():
+--- a/ark_sim/domains/abilities.py
++++ b/ark_sim/domains/abilities.py
+@@ -148,7 +148,7 @@
+                 raise ValueError("Ability recovery cannot be negative")
+             sequence = runtime.get("next_cast_id", 1)
+             cast_id = f"cast/{source}/{sequence}"
+-            next_task = self.ctx.session.scheduler.snapshot()["next_id"]
++            next_task = self.ctx.session.scheduler.next_task_id
+             cast = {"id": cast_id, "source": source, "ability": ability_id, "targets": targets,
+                     "activation_mode": mode,
+                     "source_snapshot": getattr(self.ctx, "capture_view", self.ctx.entity)(source),
+--- a/ark_sim/domains/buffs.py
++++ b/ark_sim/domains/buffs.py
+@@ -128,7 +128,7 @@
+                 instance["blackboard"]["distance_cursor"] = self.ctx.get(target, ("spatial", "distance_travelled"), 0)
+             if definition.get("aura"):
+                 instance["aura_members"] = thaw(existing.get("aura_members", {})) if existing else {}
+-            next_task = self.ctx.session.scheduler.snapshot()["next_id"]
++            next_task = self.ctx.session.scheduler.next_task_id
+             scheduled = []
+             for kind, at in (("expire", expires), ("periodic", self.ctx.session.time + interval_units if interval_units else None)):
+                 if at is None or (kind == "periodic" and expires is not None and at >= expires):
+@@ -310,7 +310,7 @@
+         instances = self._instances(instance["target"])
+         for item in instances:
+             if item["id"] == instance["id"]:
+-                item["tasks"]["periodic"] = session.scheduler.snapshot()["next_id"]
++                item["tasks"]["periodic"] = session.scheduler.next_task_id
+         session.commit([Intent("set", instance["target"], ("buffs", "instances"), instances),
+                         Intent("schedule", data={"kind": "domain.buff.periodic", "at": at,
+                             "phase": self.ctx.effect_phase, "payload": payload})])

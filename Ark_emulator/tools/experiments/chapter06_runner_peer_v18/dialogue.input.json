@@ -1,0 +1,409 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/peer/provider_runner",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "pending_model_gaps": []
+    }
+  },
+  "rules": [
+    {
+      "id": "rule/ch6/cold/application",
+      "kind": "rule",
+      "contract": "buff.application",
+      "dependencies": [
+        "rule/ch6/cold/status_duration"
+      ],
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c6.cold_application"
+      },
+      "parameters": {
+        "cold": "buff/ch6/cold/e2c_cold",
+        "frozen": "buff/ch6/cold/e2c_freeze",
+        "duration_rule": "rule/ch6/cold/status_duration"
+      }
+    },
+    {
+      "id": "rule/ch6/cold/status_duration",
+      "kind": "calculation_rule",
+      "contract": "buff.duration",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.buff_parameters.duration_seconds * inputs.buff_parameters.status_duration_factor"
+      }
+    },
+    {
+      "id": "rule/ch6/cold/frozen_recovery",
+      "kind": "rule",
+      "contract": "resource.recovery_freeze",
+      "metadata": {
+        "recovery_freeze_authority": "final_override"
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c6.frozen_recovery"
+      },
+      "parameters": {
+        "frozen": "buff/ch6/cold/e2c_freeze"
+      }
+    },
+    {
+      "id": "rule/ch6/cold/cold_active",
+      "kind": "rule",
+      "contract": "buff.applicability",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.owner.components.runtime.alive and 23 not in inputs.status.abnormal_immunes"
+      }
+    },
+    {
+      "id": "rule/ch6/cold/frozen_active",
+      "kind": "rule",
+      "contract": "buff.applicability",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.owner.components.runtime.alive and 16 not in inputs.status.abnormal_immunes"
+      }
+    },
+    {
+      "id": "rule/ch6/cold/frozen_atkscale1.5",
+      "kind": "rule",
+      "contract": "damage.request",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c6.frozen_atkscale"
+      },
+      "parameters": {
+        "atk_scale": 1.5
+      }
+    },
+    {
+      "id": "rule/ch6/cold/frozen_atkscale2.5",
+      "kind": "rule",
+      "contract": "damage.request",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c6.frozen_atkscale"
+      },
+      "parameters": {
+        "atk_scale": 2.5
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/ch6/cold/e2c_cold",
+      "kind": "buff",
+      "duration_seconds": 10,
+      "active_rule": "rule/ch6/cold/cold_active",
+      "stacking": {
+        "mode": "refresh",
+        "identity": [
+          "definition",
+          "target"
+        ],
+        "max_stacks": 1
+      },
+      "selection_flags": {
+        "abnormal_flags": [
+          23
+        ]
+      },
+      "modifiers": [
+        {
+          "attribute": "attack_speed_ratio",
+          "layer": "flat",
+          "value": -0.3
+        }
+      ]
+    },
+    {
+      "id": "buff/ch6/cold/e2c_freeze",
+      "kind": "buff",
+      "duration_seconds": 10,
+      "active_rule": "rule/ch6/cold/frozen_active",
+      "control_rule": "rule/ch6/cold/frozen_active",
+      "stacking": {
+        "mode": "refresh",
+        "identity": [
+          "definition",
+          "target"
+        ],
+        "max_stacks": 1
+      },
+      "selection_flags": {
+        "abnormal_flags": [
+          16
+        ]
+      },
+      "control": {
+        "move": false,
+        "attack": false,
+        "abilities": false,
+        "interrupt": true
+      }
+    },
+    {
+      "id": "buff/ch6/cold/frozen_atkscale1.5",
+      "kind": "buff",
+      "damage_hooks": [
+        {
+          "phase": "before",
+          "rule": "rule/ch6/cold/frozen_atkscale1.5"
+        }
+      ]
+    },
+    {
+      "id": "buff/ch6/cold/frozen_atkscale2.5",
+      "kind": "buff",
+      "damage_hooks": [
+        {
+          "phase": "before",
+          "rule": "rule/ch6/cold/frozen_atkscale2.5"
+        }
+      ]
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/ch6/cold/apply5",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual"
+      },
+      "selector": "selector/ch6/cold/receiver",
+      "timeline": [
+        {
+          "at": 0,
+          "effect": {
+            "op": "buff_application",
+            "application_rule": "rule/ch6/cold/application",
+            "allowed": [
+              "buff/ch6/cold/e2c_cold",
+              "buff/ch6/cold/e2c_freeze"
+            ],
+            "parameters": {
+              "duration_seconds": 5
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/ch6/cold/apply10",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual"
+      },
+      "selector": "selector/ch6/cold/receiver",
+      "timeline": [
+        {
+          "at": 0,
+          "effect": {
+            "op": "buff_application",
+            "application_rule": "rule/ch6/cold/application",
+            "allowed": [
+              "buff/ch6/cold/e2c_cold",
+              "buff/ch6/cold/e2c_freeze"
+            ],
+            "parameters": {
+              "duration_seconds": 10
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/peer/cold",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "buff_application",
+            "target": "source",
+            "application_rule": "rule/ch6/cold/application",
+            "allowed": [
+              "buff/ch6/cold/e2c_cold",
+              "buff/ch6/cold/e2c_freeze"
+            ],
+            "parameters": {
+              "duration_seconds": 10
+            }
+          }
+        ]
+      },
+      "timeline": []
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/ch6/cold/receiver",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "cold_receiver"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "entities": [
+    {
+      "id": "unit/peer/one",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 777,
+            "move_speed": 3
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 777,
+            "capacity": 777,
+            "role": "health"
+          }
+        },
+        "spatial": {
+          "radius": 0
+        },
+        "abilities": [
+          "ability/peer/cold"
+        ],
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/peer/provider_dialogue_runner",
+    "ruleset": "ruleset/ark_standard",
+    "seed": 61783,
+    "map": {
+      "rows": 2,
+      "cols": 3
+    },
+    "resources": {
+      "life": {
+        "initial": 99999,
+        "capacity": 99999
+      }
+    },
+    "objectives": {
+      "type": "waves",
+      "life_resource": "life"
+    },
+    "metadata": {
+      "runthrough_profile": {
+        "base_life_resource": "life",
+        "scope": "Independent one-enemy three public-ack controls fixture; no native campaign whole"
+      }
+    },
+    "timeline": {
+      "policy": "managed_clear",
+      "negative_timeout_policy": "wait_for_clear",
+      "waves": [
+        {
+          "fragments": [
+            {
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "count": 1,
+                  "managed": true,
+                  "blocks_wave": true,
+                  "blocks_fragment": true,
+                  "spawn": {
+                    "definition": "unit/peer/one",
+                    "instanceAlias": "one",
+                    "position": {
+                      "row": 1,
+                      "col": 0
+                    },
+                    "route": {
+                      "motionMode": 0,
+                      "startPosition": {
+                        "row": 1,
+                        "col": 0
+                      },
+                      "endPosition": {
+                        "row": 1,
+                        "col": 2
+                      },
+                      "checkpoints": []
+                    }
+                  }
+                },
+                {
+                  "kind": "control",
+                  "definition": "control/peer/three",
+                  "instanceAlias": "three",
+                  "managed": true,
+                  "blocks_wave": true,
+                  "blocks_fragment": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "controls": [
+    {
+      "id": "control/peer/three",
+      "kind": "control",
+      "clock_policy": "logical",
+      "ack_policy": "external",
+      "steps": [
+        {
+          "kind": "ack",
+          "key": "peer/first"
+        },
+        {
+          "kind": "delay",
+          "seconds": 0.2
+        },
+        {
+          "kind": "ack",
+          "key": "peer/second"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "peer.dialogue.second"
+            }
+          ]
+        },
+        {
+          "kind": "delay",
+          "seconds": 0.2
+        },
+        {
+          "kind": "ack",
+          "key": "peer/third"
+        }
+      ]
+    }
+  ]
+}

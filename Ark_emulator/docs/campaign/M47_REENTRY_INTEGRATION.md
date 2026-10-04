@@ -1,0 +1,11 @@
+# M47 第二章光环修复合并
+
+M45正式冻结后，Root以M44 core81d为基底，用M42共同父逐字节验证Buffs未分歧，只替换M45 `domains/buffs.py`。M41接触、M43完整请求、既有事件共享等源码保持原字节。新核心为 `c7060a32668265e661c5a2e75f9361a693dca669239e6f883deac5b80fdae25b`，候选`campaign_m47_chapter02_reentry_integrated_candidate`。原M44/274602及live输入不改。
+
+M45 twelve-case作者反例与原M44组合断言保留源字节，仅替换候选导入路径，实际187项通过38.92秒。另5项stage composition／源字节/typed state审计／终局后计划命令检查通过2.32秒。相同候选的完整0-1/custom850/60基线15619已真实exit0：11/0、181937事件、完整CP/replay及850/60回放通过，core c706和source guards前后一致，报告`validation/campaign/m47_integration/baseline_20261003.json`与`.identity.json`。
+
+M45独立5项fresh复核通过2.17秒，core181eb及源/合同前后不变：同cast裸DEF10应90、另一源DEF7保持应83、remote source退出而center存活、两个public orderedCP/replay、真实退场后RNG/tasks异常完整回滚与合法retry、随机Aura显式reconcile只有1draw/1child。报告`validation/campaign/m45_roster_peer/review.json` SHA `91d53828e4bdf9f305ef26fb66d7197a09a3a6763a54c13d1530fa3dc0ef1256`。这支持M47合入的具体源失效时点，仍不替代整关执行收据。
+
+2-9在该核心重新编译产生新输入SHA `89df88be9549eda813677764b4e9bdf0ee4676f933e99012e03bb24332927e3e`，99999派生SHA `fa2bb1a3ec0d7e4cc9d70ccb3a35533a8ee987699831209e5fe251313a0cd855`。包含209author定义、固定12人、五敌精确source steering/typed状态、52出生/7控制、32hole/2gazebo、原管理标记和NORMAL1声明策略。40条公开轮换/释放脚本不改敌我数值，原API拒绝结果完整保留。完整run44645已启动v7，另保M44探索85067；不将原M44数值收据迁为新core通过。
+
+修订输入里继承的source50%/40%或native callback/几何精度等差异仍逐定义保存；M42重入问题由新代码解决但尚待peer完整签scope。当前source_closed_v3生成器的状态说明保留其开发历史，实际执行身份由runtime-root/core前后锁定，包内metadata不自批通过。整个36关目标继续，未完成整关及客户端反馈均不伪称完成。

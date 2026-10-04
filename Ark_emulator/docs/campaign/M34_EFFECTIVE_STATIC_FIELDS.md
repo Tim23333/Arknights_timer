@@ -1,0 +1,11 @@
+# 静态地板实例边界修复
+
+M31原始候选772045已完整基线通过，但独立复核暴露静态owner可携带spatial.route而走离地图格。M32/5acf在新候选禁止基准定义的spatial驱动，43项通过；进一步两路独立peer确认initialEntities覆盖组件仍能注入路线/技能，实际公开攻击造成50伤害。原定义门不能代替实际实例门。
+
+Root新M34 `campaign_m34_effective_static_field_candidate`，core `937983fdab0a7e897f16f139a75f9d4c985a3049c026ec44682c4351c9da1c3e`，只新增修订tile_fields/lifecycle/abilities三个文件，未改M31/M32/M33和live输入。
+
+Compiler对场景实例、wave/timeline引用的field定义合并实际component overrides、route参数及tags，并拒绝owner参数。Lifecycle在实际组件合并和owner解析后再次核对静态角色/驱动/abilities/ownership，route实参也拒绝。Ability.start最终按原型field角色拒绝启动技能，防止低层注入后变成公共攻击者；已有Aura/周期Buff直接效果作为环境源仍可使用。
+
+实际50项新／既有spatial/aura检查通过7.81秒，涵盖基准spatial负例、initial覆盖、route实参、tag换player、owner参数、runtime create无状态污染及最终ability入口失败回滚。首次route_id负例被既有route resolver提前拒绝，改为核对正确阶段的同一拒绝原因，保原失败report，不放宽驱动门。独立peer继续，不能以作者测试自批完整地板或原生回调。
+
+已知旧候选问题仍保留在 `validation/campaign/m31_roster_peer/`、`m32_peer/`；M33的159组合检查和M29的1182完整套件均不覆盖本实例旁路，不迁移为修复通过。后续Root以新合并身份重新验证。

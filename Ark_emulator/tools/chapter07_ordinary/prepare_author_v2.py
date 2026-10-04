@@ -1,0 +1,4 @@
+"""Source frame is relative cast start, public actualblock established tick1; preserve v1 fail."""
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2];p=ROOT/'tools/chapter07_ordinary/test_sotihd_v1.py';s=p.read_text().replace('chapter07_ordinary_v1','chapter07_ordinary_v2').replace('s.session.advance(16);assert','s.session.advance(17);assert').replace("hits[0]['time']==18","hits[0]['time']==19 and hits[0]['time']-next(e['time'] for e in s.session.events if e['type']=='ability.started')==18").replace("hits[1]['time']-hits[0]['time']==43","hits[1]['time']-hits[0]['time']==42").replace('test_current_target_DEF_at_hit_and_public_ordered_CP_head','test_public_ordered_CP_head_on_source18_frame_cast')
+out=p.with_name('test_sotihd_v2.py');assert not out.exists();out.write_text(s,encoding='utf8',newline='');print(out)

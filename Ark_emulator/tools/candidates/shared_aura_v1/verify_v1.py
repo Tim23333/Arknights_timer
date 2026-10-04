@@ -1,0 +1,11 @@
+"""Fixed shared Aura candidate authors and unmodified legacy Aura/lifecycle assertions."""
+import hashlib,json,sys,time
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[3];CAND=ROOT.parent/'unpack_work/campaign_shared_aura_v6_candidate';sys.path.insert(0,str(CAND));sys.path.insert(1,str(ROOT))
+import pytest,ark_sim
+from ark_sim.adapters.api import implementation_digest
+CORE='f519c82f652b2662f7f5f4a9009bb19a650a266ea009f98ca9301b200374c3fb'
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def main():
+ assert implementation_digest()==CORE;tests=[Path(__file__).with_name('test_shared_guarded_v8.py')]+[ROOT/'tests_v2'/name for name in ('test_buff_mode_lifecycle.py','test_scenario_effects.py')];paths=list(Path(__file__).parent.glob('*.py'))+list((CAND/'ark_sim').rglob('*.py'))+list((CAND/'ark_sim').rglob('*.json'))+tests+[ROOT/'tests_v2/conftest.py',ROOT/'tools/campaign_ordered_checkpoint.py',ROOT/'packages/campaign/chapter07_strength_melee/module.enemy_1078_sotisc.v5.json',ROOT/'packages/campaign/chapter07_boss/patrt/source.closure.json',ROOT/'packages/campaign/chapter07_boss/patrt/required_waiting_counters/report.json'];before={str(p):sha(p) for p in paths};start=time.monotonic();code=pytest.main([str(p) for p in tests]+['-q']);after={str(p):sha(p) for p in paths};assert before==after and implementation_digest()==CORE;out=ROOT/'validation/campaign/shared_aura_guarded_v1/verification.json';out.parent.mkdir(parents=True,exist_ok=True);assert not out.exists();r={'passed':code==0,'actual_exit':code,'core':CORE,'runtime':ark_sim.__file__,'source_before':before,'source_after':after,'elapsed':time.monotonic()-start,'tests':[str(p) for p in tests],'source_marker_ID_definition_unchanged':True,'own_source_waiting_reference_policy':True,'legacy_aura_without_policy_unchanged_assertions':True,'actor_cast_projectile_permission_not_shared':True,'primary_modified':False,'full_suite_passed':False,'independent_reviewed':False,'wholeC7_executed':False,'client_verified':False};out.write_text(json.dumps(r,indent=2)+'\n',encoding='utf8',newline='');print(json.dumps({'sha':sha(out),'actual_exit':code,'elapsed':r['elapsed']}));raise SystemExit(code)
+if __name__=='__main__':main()

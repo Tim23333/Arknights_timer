@@ -1,0 +1,382 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/campaign/chapter01_w_model",
+    "version": "0.1.0",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "source": "packages/campaign/chapter01_sources/native.reference.json",
+      "source_sha256": "a242f94040c7f96d175056e6ceffa285ea10f60bec00db1ab7f354fe0739b0cd",
+      "builder_sha256": "99df32f439d3a48826ab3cd33e9a3d95b0ba13d5531b9418abfda31efd16592e",
+      "profiles": {
+        "hp_mode": "resource-change event; 0 < hp/max_hp <= .5 activates reversible mode1; no ATK modifier",
+        "FSM_restart": "cancel pending automatic attacks and reset next_attack; active C4 survives mode change",
+        "C4_clock": "named timer, not native SP; recovery includes tick0: Default first readiness tick269/period600ticks; T1 ready on entry; reset Default9s on restore",
+        "C4_target": "Default stable one in radius2.5; T1 stable three; cast captures actor identity",
+        "C4_bomb": "fixed 1x launch .6s plus attached lifetime3.2s; target current position at explosion; overlapping bombs settle separately",
+        "sampling": "source ATK at cast, target DEF at explosion; no target-death cancellation; dead source cancels remaining cast"
+      },
+      "status": "partial_source_backed_replaceable_model",
+      "client_pending": [
+        "native_C4_projectile_attach_callbacks_and_expiry_not_recovered",
+        "native_Default_C4_null_selector_inheritance",
+        "native_C4_cooldown_restart_and_mode_transition_driver_semantics",
+        "native_HP_checker_event_order_and_comparison_algorithm",
+        "native_normal_attack_two_event_packets_and_parabolic_motion_not_authored",
+        "native_target_sorting_and_projectile_invalid_FSM"
+      ],
+      "model_gaps": [
+        "normal_attack_not_authored",
+        "native_C4_projectile_lifetime_and_invalid_callback_adapter"
+      ],
+      "full_enemy_implemented": false,
+      "formal_stage_approved": false
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/chapter01_w",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground",
+        "boss"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 10000,
+            "atk": 470,
+            "def": 100,
+            "mres": 50.0,
+            "attack_interval": 4.0,
+            "attack_speed_ratio": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 10000,
+            "capacity": 10000,
+            "role": "health"
+          },
+          "mode": {
+            "initial": 0,
+            "capacity": 1
+          },
+          "c4_clock_0": {
+            "initial": 11.0,
+            "capacity": 20.0,
+            "recovery_rate": 1,
+            "parameters": {
+              "pause_at_full": true
+            }
+          },
+          "c4_clock_1": {
+            "initial": 0,
+            "capacity": 20.0,
+            "recovery_rate": 1,
+            "parameters": {
+              "pause_at_full": true
+            }
+          }
+        },
+        "spatial": {},
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "abilities": [
+          "ability/chapter01_w_c4_0",
+          "ability/chapter01_w_c4_1",
+          "ability/chapter01_w_enter_mode1",
+          "ability/chapter01_w_leave_mode1"
+        ]
+      }
+    },
+    {
+      "id": "unit/chapter01_w_target",
+      "kind": "entity",
+      "tags": [
+        "player",
+        "ground"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 5000,
+            "def": 100,
+            "mres": 0
+          }
+        },
+        "spatial": {},
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "resources": {
+          "hp": {
+            "initial": 5000,
+            "capacity": 5000,
+            "role": "health"
+          }
+        }
+      }
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/chapter01_w_c4_0",
+      "kind": "ability",
+      "metadata": {
+        "native_enemy_id": "enemy_1504_cqbw",
+        "native_skill_key": "C4",
+        "mode": 0,
+        "client_verified": false
+      },
+      "activation": {
+        "mode": "manual",
+        "condition": "inputs.resources.mode.current == 0",
+        "costs": [
+          {
+            "resource": "c4_clock_0",
+            "amount": 20.0
+          }
+        ],
+        "parameters": {
+          "auto_when_ready": true,
+          "auto_only": true,
+          "requires_targets": true
+        }
+      },
+      "selector": "selector/chapter01_w_c4_0",
+      "target_capture": "at_cast",
+      "parameters": {
+        "blocks_attacks": true
+      },
+      "timeline": [
+        {
+          "at_seconds": 3.8000000000000003,
+          "effect": {
+            "op": "area",
+            "center": "target",
+            "radius": 2.5,
+            "filters": [
+              {
+                "tag": "player"
+              }
+            ],
+            "effects": [
+              {
+                "op": "damage",
+                "damage_type": "physical",
+                "scale": 1.8,
+                "read_mode": {
+                  "source_attributes": "at_cast"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/chapter01_w_c4_1",
+      "kind": "ability",
+      "metadata": {
+        "native_enemy_id": "enemy_1504_cqbw",
+        "native_skill_key": "C4",
+        "mode": 1,
+        "client_verified": false
+      },
+      "activation": {
+        "mode": "manual",
+        "condition": "inputs.resources.mode.current == 1",
+        "costs": [
+          {
+            "resource": "c4_clock_1",
+            "amount": 20.0
+          }
+        ],
+        "parameters": {
+          "auto_when_ready": true,
+          "auto_only": true,
+          "requires_targets": true
+        }
+      },
+      "selector": "selector/chapter01_w_c4_1",
+      "target_capture": "at_cast",
+      "parameters": {
+        "blocks_attacks": true
+      },
+      "timeline": [
+        {
+          "at_seconds": 3.8000000000000003,
+          "effect": {
+            "op": "area",
+            "center": "target",
+            "radius": 2.5,
+            "filters": [
+              {
+                "tag": "player"
+              }
+            ],
+            "effects": [
+              {
+                "op": "damage",
+                "damage_type": "physical",
+                "scale": 1.8,
+                "read_mode": {
+                  "source_attributes": "at_cast"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/chapter01_w_enter_mode1",
+      "kind": "ability",
+      "activation": {
+        "mode": "passive",
+        "event": "resource.changed",
+        "condition": "inputs.payload.target == inputs.source.id and inputs.payload.resource == 'hp' and 0 < inputs.resources.hp.current <= 5000 and inputs.resources.mode.current == 0",
+        "parameters": {
+          "cancel_pending_attacks": true,
+          "reset_attack_clock": true
+        },
+        "on_start": [
+          {
+            "op": "modify_resource",
+            "target": "source",
+            "resource": "mode",
+            "value": 1
+          },
+          {
+            "op": "modify_resource",
+            "target": "source",
+            "resource": "c4_clock_1",
+            "value": 20.0
+          },
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/chapter01_w_mode1"
+          }
+        ]
+      },
+      "parameters": {
+        "blocks_attacks": false
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/chapter01_w_leave_mode1",
+      "kind": "ability",
+      "activation": {
+        "mode": "passive",
+        "event": "resource.changed",
+        "condition": "inputs.payload.target == inputs.source.id and inputs.payload.resource == 'hp' and inputs.resources.hp.current > 5000 and inputs.resources.mode.current == 1",
+        "parameters": {
+          "cancel_pending_attacks": true,
+          "reset_attack_clock": true
+        },
+        "on_start": [
+          {
+            "op": "remove_buff",
+            "target": "source",
+            "buff": "buff/chapter01_w_mode1"
+          },
+          {
+            "op": "modify_resource",
+            "target": "source",
+            "resource": "c4_clock_0",
+            "value": 11.0
+          }
+        ]
+      },
+      "parameters": {
+        "blocks_attacks": false
+      },
+      "timeline": []
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/chapter01_w_c4_0",
+      "kind": "selector",
+      "region": {
+        "type": "radius",
+        "radius": 2.5
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "ordering": "stable",
+      "limit": 1
+    },
+    {
+      "id": "selector/chapter01_w_c4_1",
+      "kind": "selector",
+      "region": {
+        "type": "radius",
+        "radius": 2.5
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "ordering": "stable",
+      "limit": 3
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/chapter01_w_mode1",
+      "kind": "buff",
+      "on_remove": [
+        {
+          "op": "modify_resource",
+          "target": "source",
+          "resource": "mode",
+          "value": 0
+        }
+      ]
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scenario/chapter01_w_probe",
+    "ruleset": "ruleset/ark_standard",
+    "map": {
+      "rows": 9,
+      "cols": 9
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/chapter01_w",
+        "instanceAlias": "w",
+        "position": {
+          "row": 3,
+          "col": 3
+        }
+      },
+      {
+        "definition": "unit/chapter01_w_target",
+        "instanceAlias": "target0",
+        "position": {
+          "row": 3,
+          "col": 4
+        }
+      }
+    ]
+  }
+}

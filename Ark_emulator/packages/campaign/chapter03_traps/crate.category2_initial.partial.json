@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/chapter03/crate_partial",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "source_locks": {
+        "packages/campaign/chapter03_plans/source.plan.json": "d7f1f3037ccbc47b7c41346ca6b73b0e653257d479a7ea5261c6c1c1ba97c5c6",
+        "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_external\\battle_prefabs_tokens.20250327.ab": "b9f16db4bfc8e8c880a0f90a1a7a74eda3b47c2188d0a151e5239d154716d475"
+      },
+      "builder_sha256": "ef710784c1b5eead7f2a59a9ee91ebc8801503d931855dc8634d4de195e4d34e",
+      "native_cards": {
+        "initialCnt": 5,
+        "hidden": false,
+        "alias": null,
+        "uniEquipIds": null,
+        "showSpIllust": false,
+        "masterInfos": null,
+        "inst": {
+          "characterKey": "trap_001_crate",
+          "level": 1,
+          "phase": "PHASE_0",
+          "favorPoint": 0,
+          "potentialRank": 0
+        },
+        "skillIndex": 0,
+        "mainSkillLvl": 1,
+        "skinId": null,
+        "tmplId": null,
+        "overrideSkillBlackboard": null,
+        "overrideTalents": null
+      },
+      "required_battle_resources": {
+        "crate_cards": {
+          "initial": 5,
+          "capacity": 5
+        }
+      },
+      "native_runtime_ready": false,
+      "model_gaps": [
+        "Weighted obstacle route selection with keepCurrentPassableMask and obstacle attack/destruction",
+        "Exact native trap passive Buff/abnormal states and class category permission"
+      ],
+      "client_feedback": [
+        "Source2025asset/currenttable correspondence",
+        "Native path obstacle cost comparator"
+      ],
+      "scope": "Actual stats, finite card requirement, cost/refund/terrain ownership; no complete crate claim"
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/ch3/crate",
+      "kind": "entity",
+      "tags": [
+        "player",
+        "token",
+        "ground",
+        "route_obstacle"
+      ],
+      "metadata": {
+        "native_id": "trap_001_crate",
+        "native_config": {
+          "initialCnt": 5,
+          "hidden": false,
+          "alias": null,
+          "uniEquipIds": null,
+          "showSpIllust": false,
+          "masterInfos": null,
+          "inst": {
+            "characterKey": "trap_001_crate",
+            "level": 1,
+            "phase": "PHASE_0",
+            "favorPoint": 0,
+            "potentialRank": 0
+          },
+          "skillIndex": 0,
+          "mainSkillLvl": 1,
+          "skinId": null,
+          "tmplId": null,
+          "overrideSkillBlackboard": null,
+          "overrideTalents": null
+        },
+        "native_block_count_table": 3,
+        "declared_model_blocking": "Ordinary character blocking disabled until obstacle contact/destruction policy supplied"
+      },
+      "components": {
+        "spatial": {},
+        "attributes": {
+          "base": {
+            "max_hp": 100,
+            "atk": 0,
+            "def": 0,
+            "mres": 0.0,
+            "block_count": 0,
+            "deploy_cost": 5,
+            "redeploy_time": 5,
+            "mass_level": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100,
+            "role": "health"
+          }
+        },
+        "abilities": [],
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "deployable": {
+          "base_cost": 5,
+          "cooldown_seconds": 5,
+          "refund_ratio": 0.5,
+          "capacity": 0,
+          "terrain": "ground",
+          "stock": {
+            "resource": "crate_cards",
+            "amount": 1
+          },
+          "parameters": {
+            "max_instances": 5,
+            "refund_cap_raw_ratio": 1.0
+          }
+        },
+        "selection_state": {
+          "side": 0,
+          "motion": 1,
+          "category": 2,
+          "unit_type": 4
+        },
+        "terrain_overlays": [
+          {
+            "key": "native_crate",
+            "priority": 0,
+            "values": {
+              "buildableType": 0,
+              "obstacleLikeMoveCost": true,
+              "physicalHeight": 0.4000000059604645
+            },
+            "preserve": [
+              "passableMask"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

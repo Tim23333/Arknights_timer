@@ -1,0 +1,1040 @@
+{
+  "schema": "ark-sim/deployed-case-coverage/v1",
+  "implementation_sha256": "bd60c068f0af7694e8e62c16868f4d310b6bb92681f8ebbf5d97814fba28ac11",
+  "input_package": "packages/campaign/mainline_models/level_main_00-10.m12_projection.json",
+  "input_package_sha256": "0fbba3f0548d2efaef97d7c1be98a620e65b6408755bfddbd49a132ef72fddf4",
+  "required_case_count": 23,
+  "resolved_case_count": 23,
+  "actor_count": 6,
+  "requirements": {
+    "myrtle/myrtle_dp_heal_window": [
+      {
+        "path": "validation/campaign/deployed_six_m12_final_20261002.json",
+        "sha256": "7bc690988034172badcc38ad4314e2efdae6c597786dc289604c3f21620475aa",
+        "case": "myrtle_dp_heal_window",
+        "required_event_types": [
+          "healing.accepted",
+          "resource.changed"
+        ]
+      }
+    ],
+    "myrtle/myrtle_vanguard_regen_and_source_exit": [
+      {
+        "path": "validation/campaign/deployed_support_m12_extended.json",
+        "sha256": "185448793dfb650dc846483062bad34887a85e6a6583b19013ec74165aa66ba4",
+        "case": "myrtle_vanguard_regen_and_source_exit",
+        "required_event_types": [
+          "regeneration.accepted",
+          "command.accepted"
+        ]
+      }
+    ],
+    "bpipe/bpipe_triple_rng": [
+      {
+        "path": "validation/campaign/deployed_six_m12_final_20261002.json",
+        "sha256": "7bc690988034172badcc38ad4314e2efdae6c597786dc289604c3f21620475aa",
+        "case": "bpipe_triple_rng",
+        "required_event_types": [
+          "damage.accepted"
+        ]
+      }
+    ],
+    "bpipe/bpipe_kill_dp": [
+      {
+        "path": "validation/campaign/deployed_six_m12_final_20261002.json",
+        "sha256": "7bc690988034172badcc38ad4314e2efdae6c597786dc289604c3f21620475aa",
+        "case": "bpipe_kill_dp",
+        "required_event_types": [
+          "combat.kill",
+          "resource.changed"
+        ]
+      }
+    ],
+    "bpipe/bpipe_splash_excludes_primary": [
+      {
+        "path": "validation/campaign/deployed_offensive_m12_final_20261002.json",
+        "sha256": "8a4bd4ce7e91689044e46526f7eacbbb0d5cf75ca6767b4940001f4c50373bf3",
+        "case": "bpipe_splash_excludes_primary",
+        "required_event_types": [
+          "damage.accepted"
+        ]
+      }
+    ],
+    "bpipe/bpipe_defense_block_and_expiry": [
+      {
+        "path": "validation/campaign/deployed_offensive_m12_final_20261002.json",
+        "sha256": "8a4bd4ce7e91689044e46526f7eacbbb0d5cf75ca6767b4940001f4c50373bf3",
+        "case": "bpipe_defense_block_and_expiry",
+        "required_event_types": [
+          "damage.accepted",
+          "buff.removed"
+        ]
+      }
+    ],
+    "bpipe/bpipe_deck_sp_and_refund_cap": [
+      {
+        "path": "validation/campaign/deployed_offensive_m12_final_20261002.json",
+        "sha256": "8a4bd4ce7e91689044e46526f7eacbbb0d5cf75ca6767b4940001f4c50373bf3",
+        "case": "bpipe_deck_sp_and_refund_cap",
+        "required_event_types": [
+          "command.accepted",
+          "resource.changed"
+        ]
+      }
+    ],
+    "angel/angel_auto_burst": [
+      {
+        "path": "validation/campaign/deployed_six_m12_final_20261002.json",
+        "sha256": "7bc690988034172badcc38ad4314e2efdae6c597786dc289604c3f21620475aa",
+        "case": "angel_auto_burst",
+        "required_event_types": [
+          "attack.accepted",
+          "damage.accepted"
+        ]
+      }
+    ],
+    "angel/angel_force_and_empty_auto": [
+      {
+        "path": "validation/campaign/deployed_offensive_m12_final_20261002.json",
+        "sha256": "8a4bd4ce7e91689044e46526f7eacbbb0d5cf75ca6767b4940001f4c50373bf3",
+        "case": "angel_force_and_empty_auto",
+        "required_event_types": [
+          "command.rejected",
+          "ability.started"
+        ]
+      }
+    ],
+    "angel/angel_retargets_after_first_death": [
+      {
+        "path": "validation/campaign/deployed_offensive_m12_final_20261002.json",
+        "sha256": "8a4bd4ce7e91689044e46526f7eacbbb0d5cf75ca6767b4940001f4c50373bf3",
+        "case": "angel_retargets_after_first_death",
+        "required_event_types": [
+          "combat.kill",
+          "damage.accepted"
+        ]
+      }
+    ],
+    "angel/angel_blessing_deploy_and_retire": [
+      {
+        "path": "validation/campaign/deployed_offensive_m12_final_20261002.json",
+        "sha256": "8a4bd4ce7e91689044e46526f7eacbbb0d5cf75ca6767b4940001f4c50373bf3",
+        "case": "angel_blessing_deploy_and_retire",
+        "required_event_types": [
+          "command.accepted",
+          "buff.applied",
+          "buff.removed"
+        ]
+      }
+    ],
+    "amgoat/eyja_random_targets": [
+      {
+        "path": "validation/campaign/deployed_six_m12_final_20261002.json",
+        "sha256": "7bc690988034172badcc38ad4314e2efdae6c597786dc289604c3f21620475aa",
+        "case": "eyja_random_targets",
+        "required_event_types": [
+          "projectile.launched",
+          "damage.accepted"
+        ]
+      }
+    ],
+    "amgoat/eyja_six_limit_and_filter": [
+      {
+        "path": "validation/campaign/deployed_offensive_m12_final_20261002.json",
+        "sha256": "8a4bd4ce7e91689044e46526f7eacbbb0d5cf75ca6767b4940001f4c50373bf3",
+        "case": "eyja_six_limit_and_filter",
+        "required_event_types": [
+          "projectile.launched",
+          "damage.accepted"
+        ]
+      }
+    ],
+    "amgoat/eyja_empty_half_open": [
+      {
+        "path": "validation/campaign/deployed_offensive_m12_final_20261002.json",
+        "sha256": "8a4bd4ce7e91689044e46526f7eacbbb0d5cf75ca6767b4940001f4c50373bf3",
+        "case": "eyja_empty_half_open",
+        "required_event_types": [
+          "ability.started",
+          "ability.finished",
+          "resource.changed"
+        ]
+      }
+    ],
+    "amgoat/eyja_deploy_float_and_caster_aura_retire": [
+      {
+        "path": "validation/campaign/deployed_offensive_m12_final_20261002.json",
+        "sha256": "8a4bd4ce7e91689044e46526f7eacbbb0d5cf75ca6767b4940001f4c50373bf3",
+        "case": "eyja_deploy_float_and_caster_aura_retire",
+        "required_event_types": [
+          "command.accepted",
+          "damage.accepted",
+          "resource.changed"
+        ]
+      }
+    ],
+    "plosis/plosis_three_heals": [
+      {
+        "path": "validation/campaign/deployed_six_m12_final_20261002.json",
+        "sha256": "7bc690988034172badcc38ad4314e2efdae6c597786dc289604c3f21620475aa",
+        "case": "plosis_three_heals",
+        "required_event_types": [
+          "healing.accepted"
+        ]
+      }
+    ],
+    "plosis/plosis_time_event_highest_and_source_exit": [
+      {
+        "path": "validation/campaign/deployed_support_m12_extended.json",
+        "sha256": "185448793dfb650dc846483062bad34887a85e6a6583b19013ec74165aa66ba4",
+        "case": "plosis_time_event_highest_and_source_exit",
+        "required_event_types": [
+          "command.accepted",
+          "resource.changed"
+        ]
+      }
+    ],
+    "plosis/plosis_forty_second_mode_and_late_packet_gate": [
+      {
+        "path": "validation/campaign/deployed_support_m12_extended.json",
+        "sha256": "185448793dfb650dc846483062bad34887a85e6a6583b19013ec74165aa66ba4",
+        "case": "plosis_forty_second_mode_and_late_packet_gate",
+        "required_event_types": [
+          "healing.accepted",
+          "resource.changed"
+        ]
+      }
+    ],
+    "demkni/saria_heal_sp": [
+      {
+        "path": "validation/campaign/deployed_six_m12_final_20261002.json",
+        "sha256": "7bc690988034172badcc38ad4314e2efdae6c597786dc289604c3f21620475aa",
+        "case": "saria_heal_sp",
+        "required_event_types": [
+          "healing.accepted",
+          "resource.changed"
+        ]
+      }
+    ],
+    "demkni/saria_five_layers_atk_and_actual_defense": [
+      {
+        "path": "validation/campaign/deployed_support_m12_extended.json",
+        "sha256": "185448793dfb650dc846483062bad34887a85e6a6583b19013ec74165aa66ba4",
+        "case": "saria_five_layers_atk_and_actual_defense",
+        "required_event_types": [
+          "damage.accepted"
+        ]
+      }
+    ],
+    "demkni/saria_arts_only_and_source_exit": [
+      {
+        "path": "validation/campaign/deployed_support_m12_extended.json",
+        "sha256": "185448793dfb650dc846483062bad34887a85e6a6583b19013ec74165aa66ba4",
+        "case": "saria_arts_only_and_source_exit",
+        "required_event_types": [
+          "command.accepted",
+          "damage.accepted"
+        ]
+      }
+    ],
+    "demkni/saria_recipient_emission_freeze_same_frame_finish": [
+      {
+        "path": "validation/campaign/deployed_support_m12_extended.json",
+        "sha256": "185448793dfb650dc846483062bad34887a85e6a6583b19013ec74165aa66ba4",
+        "case": "saria_recipient_emission_freeze_same_frame_finish",
+        "required_event_types": [
+          "healing.accepted",
+          "ability.finished"
+        ]
+      }
+    ],
+    "demkni/canonical_regeneration_does_not_return_saria_sp": [
+      {
+        "path": "validation/campaign/deployed_support_m12_extended.json",
+        "sha256": "185448793dfb650dc846483062bad34887a85e6a6583b19013ec74165aa66ba4",
+        "case": "canonical_regeneration_does_not_return_saria_sp",
+        "required_event_types": [
+          "regeneration.accepted",
+          "resource.changed"
+        ]
+      }
+    ]
+  },
+  "resolved": {
+    "myrtle/myrtle_dp_heal_window": [
+      {
+        "path": "validation/campaign/deployed_six_m12_final_20261002.json",
+        "sha256": "7bc690988034172badcc38ad4314e2efdae6c597786dc289604c3f21620475aa",
+        "case": "myrtle_dp_heal_window",
+        "program_fingerprint": "6293254ecc1ac00397d71433bdb5aacac81db0352984a91b0948105dfbe26961",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.finished",
+          "ability.started",
+          "buff.applied",
+          "buff.removed",
+          "command.accepted",
+          "healing.accepted",
+          "regeneration.accepted",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed",
+            "cases": [
+              "myrtle_dp_heal_window",
+              "bpipe_triple_rng",
+              "bpipe_kill_dp",
+              "angel_auto_burst",
+              "plosis_three_heals",
+              "eyja_random_targets",
+              "saria_heal_sp"
+            ]
+          }
+        ],
+        "formal_approval": false
+      }
+    ],
+    "myrtle/myrtle_vanguard_regen_and_source_exit": [
+      {
+        "path": "validation/campaign/deployed_support_m12_extended.json",
+        "sha256": "185448793dfb650dc846483062bad34887a85e6a6583b19013ec74165aa66ba4",
+        "case": "myrtle_vanguard_regen_and_source_exit",
+        "program_fingerprint": "3a3e8ecad122f14e25f7af9d80f8be45ab13ffe79cc68050d4e7a2ad9bddb08e",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "buff.applied",
+          "buff.removed",
+          "command.accepted",
+          "regeneration.accepted",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/experiments/deployed_support/tests/test_canonical_support.py",
+            "source_sha256": "a5ec41e624d2f120c7884291c065151003b1d04f4944311cd0bfb3e8a2be5553",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_support.py",
+            "source_sha256": "86330e4a3026f309eca64a1faaa7d7eb03db5d1703d683176564f3b628f5d60f",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed"
+          }
+        ],
+        "formal_approval": false
+      }
+    ],
+    "bpipe/bpipe_triple_rng": [
+      {
+        "path": "validation/campaign/deployed_six_m12_final_20261002.json",
+        "sha256": "7bc690988034172badcc38ad4314e2efdae6c597786dc289604c3f21620475aa",
+        "case": "bpipe_triple_rng",
+        "program_fingerprint": "9a0f05415006abaf8134eed528e077e440b2477c2c07f0c0d443e8b6e7161108",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.finished",
+          "ability.started",
+          "attack.accepted",
+          "buff.applied",
+          "command.accepted",
+          "damage.accepted",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed",
+            "cases": [
+              "myrtle_dp_heal_window",
+              "bpipe_triple_rng",
+              "bpipe_kill_dp",
+              "angel_auto_burst",
+              "plosis_three_heals",
+              "eyja_random_targets",
+              "saria_heal_sp"
+            ]
+          }
+        ],
+        "formal_approval": false
+      }
+    ],
+    "bpipe/bpipe_kill_dp": [
+      {
+        "path": "validation/campaign/deployed_six_m12_final_20261002.json",
+        "sha256": "7bc690988034172badcc38ad4314e2efdae6c597786dc289604c3f21620475aa",
+        "case": "bpipe_kill_dp",
+        "program_fingerprint": "5a25d84aa8d964a8f4a917d15efaf7f8a31d8c0c06db2a5e9e243c4532f40a5f",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.finished",
+          "ability.started",
+          "attack.accepted",
+          "buff.applied",
+          "combat.kill",
+          "command.accepted",
+          "damage.accepted",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed",
+            "cases": [
+              "myrtle_dp_heal_window",
+              "bpipe_triple_rng",
+              "bpipe_kill_dp",
+              "angel_auto_burst",
+              "plosis_three_heals",
+              "eyja_random_targets",
+              "saria_heal_sp"
+            ]
+          }
+        ],
+        "formal_approval": false
+      }
+    ],
+    "bpipe/bpipe_splash_excludes_primary": [
+      {
+        "path": "validation/campaign/deployed_offensive_m12_final_20261002.json",
+        "sha256": "8a4bd4ce7e91689044e46526f7eacbbb0d5cf75ca6767b4940001f4c50373bf3",
+        "case": "bpipe_splash_excludes_primary",
+        "program_fingerprint": "7fb130aa9774f5f468fe01e10bd30cabce1372c742b56db72c176cffd3bb7335",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.finished",
+          "ability.started",
+          "attack.accepted",
+          "buff.applied",
+          "command.accepted",
+          "damage.accepted",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/witness_deployed_offensive.py",
+            "source_sha256": "712c80a95afc04d01620f4d7a5c5586ec01812fcdcda931b51d5cecb5167ce4e",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed"
+          }
+        ],
+        "formal_approval": false
+      }
+    ],
+    "bpipe/bpipe_defense_block_and_expiry": [
+      {
+        "path": "validation/campaign/deployed_offensive_m12_final_20261002.json",
+        "sha256": "8a4bd4ce7e91689044e46526f7eacbbb0d5cf75ca6767b4940001f4c50373bf3",
+        "case": "bpipe_defense_block_and_expiry",
+        "program_fingerprint": "3f8e4a3cba6c7ba32e00bbc8b6ea5a10d3c8dcb3d670e20f05cdccc8d5b13dec",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.finished",
+          "ability.started",
+          "attack.accepted",
+          "buff.applied",
+          "buff.removed",
+          "command.accepted",
+          "damage.accepted",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/witness_deployed_offensive.py",
+            "source_sha256": "712c80a95afc04d01620f4d7a5c5586ec01812fcdcda931b51d5cecb5167ce4e",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed"
+          }
+        ],
+        "formal_approval": false
+      }
+    ],
+    "bpipe/bpipe_deck_sp_and_refund_cap": [
+      {
+        "path": "validation/campaign/deployed_offensive_m12_final_20261002.json",
+        "sha256": "8a4bd4ce7e91689044e46526f7eacbbb0d5cf75ca6767b4940001f4c50373bf3",
+        "case": "bpipe_deck_sp_and_refund_cap",
+        "program_fingerprint": "3bdff1210db549a517373db5b49a0450fd5375830beeb6951e0b9caea909ab6c",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "buff.applied",
+          "buff.removed",
+          "command.accepted",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/witness_deployed_offensive.py",
+            "source_sha256": "712c80a95afc04d01620f4d7a5c5586ec01812fcdcda931b51d5cecb5167ce4e",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed"
+          }
+        ],
+        "formal_approval": false
+      }
+    ],
+    "angel/angel_auto_burst": [
+      {
+        "path": "validation/campaign/deployed_six_m12_final_20261002.json",
+        "sha256": "7bc690988034172badcc38ad4314e2efdae6c597786dc289604c3f21620475aa",
+        "case": "angel_auto_burst",
+        "program_fingerprint": "b897c24b995ea30f640a9080a743ab410749a7febff8dcf534eee4e066513802",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.finished",
+          "ability.started",
+          "attack.accepted",
+          "buff.applied",
+          "damage.accepted",
+          "projectile.launched",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed",
+            "cases": [
+              "myrtle_dp_heal_window",
+              "bpipe_triple_rng",
+              "bpipe_kill_dp",
+              "angel_auto_burst",
+              "plosis_three_heals",
+              "eyja_random_targets",
+              "saria_heal_sp"
+            ]
+          }
+        ],
+        "formal_approval": false
+      }
+    ],
+    "angel/angel_force_and_empty_auto": [
+      {
+        "path": "validation/campaign/deployed_offensive_m12_final_20261002.json",
+        "sha256": "8a4bd4ce7e91689044e46526f7eacbbb0d5cf75ca6767b4940001f4c50373bf3",
+        "case": "angel_force_and_empty_auto",
+        "program_fingerprint": "eb2163283f9d9930705e3ebb344c4aa789edd824d99f6d7525f29c5b6b3b23c6",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.started",
+          "buff.applied",
+          "command.rejected",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/witness_deployed_offensive.py",
+            "source_sha256": "712c80a95afc04d01620f4d7a5c5586ec01812fcdcda931b51d5cecb5167ce4e",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed"
+          }
+        ],
+        "formal_approval": false
+      }
+    ],
+    "angel/angel_retargets_after_first_death": [
+      {
+        "path": "validation/campaign/deployed_offensive_m12_final_20261002.json",
+        "sha256": "8a4bd4ce7e91689044e46526f7eacbbb0d5cf75ca6767b4940001f4c50373bf3",
+        "case": "angel_retargets_after_first_death",
+        "program_fingerprint": "956794a1e72d24b5cb4538cd0954fc7edaec84ac5d65daafc7b00e8e8fa5a4e4",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.finished",
+          "ability.started",
+          "attack.accepted",
+          "buff.applied",
+          "combat.kill",
+          "damage.accepted",
+          "projectile.launched",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/witness_deployed_offensive.py",
+            "source_sha256": "712c80a95afc04d01620f4d7a5c5586ec01812fcdcda931b51d5cecb5167ce4e",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed"
+          }
+        ],
+        "formal_approval": false
+      }
+    ],
+    "angel/angel_blessing_deploy_and_retire": [
+      {
+        "path": "validation/campaign/deployed_offensive_m12_final_20261002.json",
+        "sha256": "8a4bd4ce7e91689044e46526f7eacbbb0d5cf75ca6767b4940001f4c50373bf3",
+        "case": "angel_blessing_deploy_and_retire",
+        "program_fingerprint": "3ec308cac3e5b88a0a0028ba5e4c8a9e0252a566424e62bafab9f19be7bb0a1c",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.finished",
+          "ability.started",
+          "buff.applied",
+          "buff.removed",
+          "command.accepted",
+          "regeneration.accepted",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/witness_deployed_offensive.py",
+            "source_sha256": "712c80a95afc04d01620f4d7a5c5586ec01812fcdcda931b51d5cecb5167ce4e",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed"
+          }
+        ],
+        "formal_approval": false
+      }
+    ],
+    "amgoat/eyja_random_targets": [
+      {
+        "path": "validation/campaign/deployed_six_m12_final_20261002.json",
+        "sha256": "7bc690988034172badcc38ad4314e2efdae6c597786dc289604c3f21620475aa",
+        "case": "eyja_random_targets",
+        "program_fingerprint": "26e3fc25b8bc3d883599a813283d760ad1f6752564eae5408a6bc52bdb782242",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.finished",
+          "ability.started",
+          "attack.accepted",
+          "buff.applied",
+          "command.accepted",
+          "damage.accepted",
+          "projectile.launched",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed",
+            "cases": [
+              "myrtle_dp_heal_window",
+              "bpipe_triple_rng",
+              "bpipe_kill_dp",
+              "angel_auto_burst",
+              "plosis_three_heals",
+              "eyja_random_targets",
+              "saria_heal_sp"
+            ]
+          }
+        ],
+        "formal_approval": false
+      }
+    ],
+    "amgoat/eyja_six_limit_and_filter": [
+      {
+        "path": "validation/campaign/deployed_offensive_m12_final_20261002.json",
+        "sha256": "8a4bd4ce7e91689044e46526f7eacbbb0d5cf75ca6767b4940001f4c50373bf3",
+        "case": "eyja_six_limit_and_filter",
+        "program_fingerprint": "139a698799bdc6b50ce5b8da032c8bf3f6adcfba1dc705534f18e03b1bf8d8e3",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.finished",
+          "ability.started",
+          "attack.accepted",
+          "buff.applied",
+          "command.accepted",
+          "damage.accepted",
+          "projectile.launched",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/witness_deployed_offensive.py",
+            "source_sha256": "712c80a95afc04d01620f4d7a5c5586ec01812fcdcda931b51d5cecb5167ce4e",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed"
+          }
+        ],
+        "formal_approval": false
+      }
+    ],
+    "amgoat/eyja_empty_half_open": [
+      {
+        "path": "validation/campaign/deployed_offensive_m12_final_20261002.json",
+        "sha256": "8a4bd4ce7e91689044e46526f7eacbbb0d5cf75ca6767b4940001f4c50373bf3",
+        "case": "eyja_empty_half_open",
+        "program_fingerprint": "eb5b1edc89eb39cdc2a046e17eda295541aa0c8f5ab61ec0aed7ce6899fa9aff",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.finished",
+          "ability.started",
+          "buff.applied",
+          "buff.removed",
+          "command.accepted",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/witness_deployed_offensive.py",
+            "source_sha256": "712c80a95afc04d01620f4d7a5c5586ec01812fcdcda931b51d5cecb5167ce4e",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed"
+          }
+        ],
+        "formal_approval": false
+      }
+    ],
+    "amgoat/eyja_deploy_float_and_caster_aura_retire": [
+      {
+        "path": "validation/campaign/deployed_offensive_m12_final_20261002.json",
+        "sha256": "8a4bd4ce7e91689044e46526f7eacbbb0d5cf75ca6767b4940001f4c50373bf3",
+        "case": "eyja_deploy_float_and_caster_aura_retire",
+        "program_fingerprint": "04a59a71df166754139b0f132cb5e59d6b9cda860ce20c426cace9b1d3caf64b",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.finished",
+          "ability.started",
+          "buff.applied",
+          "buff.removed",
+          "command.accepted",
+          "damage.accepted",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/witness_deployed_offensive.py",
+            "source_sha256": "712c80a95afc04d01620f4d7a5c5586ec01812fcdcda931b51d5cecb5167ce4e",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed"
+          }
+        ],
+        "formal_approval": false
+      }
+    ],
+    "plosis/plosis_three_heals": [
+      {
+        "path": "validation/campaign/deployed_six_m12_final_20261002.json",
+        "sha256": "7bc690988034172badcc38ad4314e2efdae6c597786dc289604c3f21620475aa",
+        "case": "plosis_three_heals",
+        "program_fingerprint": "13e9a4776759025524532cc501926600ea4c2a724b08a853832c753f8c6aa601",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.finished",
+          "ability.started",
+          "buff.applied",
+          "command.accepted",
+          "healing.accepted",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed",
+            "cases": [
+              "myrtle_dp_heal_window",
+              "bpipe_triple_rng",
+              "bpipe_kill_dp",
+              "angel_auto_burst",
+              "plosis_three_heals",
+              "eyja_random_targets",
+              "saria_heal_sp"
+            ]
+          }
+        ],
+        "formal_approval": false
+      }
+    ],
+    "plosis/plosis_time_event_highest_and_source_exit": [
+      {
+        "path": "validation/campaign/deployed_support_m12_extended.json",
+        "sha256": "185448793dfb650dc846483062bad34887a85e6a6583b19013ec74165aa66ba4",
+        "case": "plosis_time_event_highest_and_source_exit",
+        "program_fingerprint": "223a107c294ffe74c07b1a90fcb9ab3b1427de8eefd3839cc2795d09fe5c385f",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "buff.applied",
+          "buff.removed",
+          "command.accepted",
+          "regeneration.accepted",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/experiments/deployed_support/tests/test_canonical_support.py",
+            "source_sha256": "a5ec41e624d2f120c7884291c065151003b1d04f4944311cd0bfb3e8a2be5553",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_support.py",
+            "source_sha256": "86330e4a3026f309eca64a1faaa7d7eb03db5d1703d683176564f3b628f5d60f",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed"
+          }
+        ],
+        "formal_approval": false
+      }
+    ],
+    "plosis/plosis_forty_second_mode_and_late_packet_gate": [
+      {
+        "path": "validation/campaign/deployed_support_m12_extended.json",
+        "sha256": "185448793dfb650dc846483062bad34887a85e6a6583b19013ec74165aa66ba4",
+        "case": "plosis_forty_second_mode_and_late_packet_gate",
+        "program_fingerprint": "fa8e2912b090c01b5c02145c27d64da178b2e18505df01c85da9d10ae7dfc0f7",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.finished",
+          "ability.started",
+          "buff.applied",
+          "buff.removed",
+          "command.accepted",
+          "healing.accepted",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/experiments/deployed_support/tests/test_canonical_support.py",
+            "source_sha256": "a5ec41e624d2f120c7884291c065151003b1d04f4944311cd0bfb3e8a2be5553",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_support.py",
+            "source_sha256": "86330e4a3026f309eca64a1faaa7d7eb03db5d1703d683176564f3b628f5d60f",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed"
+          }
+        ],
+        "formal_approval": false
+      }
+    ],
+    "demkni/saria_heal_sp": [
+      {
+        "path": "validation/campaign/deployed_six_m12_final_20261002.json",
+        "sha256": "7bc690988034172badcc38ad4314e2efdae6c597786dc289604c3f21620475aa",
+        "case": "saria_heal_sp",
+        "program_fingerprint": "000cb82161f7f70e1daf845cca4cfe60e7ad59c4fbc3a97dd93dfeab28cfa7a8",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.started",
+          "buff.applied",
+          "command.accepted",
+          "healing.accepted",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed",
+            "cases": [
+              "myrtle_dp_heal_window",
+              "bpipe_triple_rng",
+              "bpipe_kill_dp",
+              "angel_auto_burst",
+              "plosis_three_heals",
+              "eyja_random_targets",
+              "saria_heal_sp"
+            ]
+          }
+        ],
+        "formal_approval": false
+      }
+    ],
+    "demkni/saria_five_layers_atk_and_actual_defense": [
+      {
+        "path": "validation/campaign/deployed_support_m12_extended.json",
+        "sha256": "185448793dfb650dc846483062bad34887a85e6a6583b19013ec74165aa66ba4",
+        "case": "saria_five_layers_atk_and_actual_defense",
+        "program_fingerprint": "9e0f7d7978cded1b39635873c24a48b848a265027242b13820ef7fd4e9826fde",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.finished",
+          "ability.started",
+          "attack.accepted",
+          "buff.applied",
+          "command.accepted",
+          "damage.accepted",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/experiments/deployed_support/tests/test_canonical_support.py",
+            "source_sha256": "a5ec41e624d2f120c7884291c065151003b1d04f4944311cd0bfb3e8a2be5553",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_support.py",
+            "source_sha256": "86330e4a3026f309eca64a1faaa7d7eb03db5d1703d683176564f3b628f5d60f",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed"
+          }
+        ],
+        "formal_approval": false
+      }
+    ],
+    "demkni/saria_arts_only_and_source_exit": [
+      {
+        "path": "validation/campaign/deployed_support_m12_extended.json",
+        "sha256": "185448793dfb650dc846483062bad34887a85e6a6583b19013ec74165aa66ba4",
+        "case": "saria_arts_only_and_source_exit",
+        "program_fingerprint": "b78ba9288cec4abc8e54dcc7129de5b9b0485ca4ca337daa318c519fca7806e3",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.finished",
+          "ability.started",
+          "buff.applied",
+          "buff.removed",
+          "command.accepted",
+          "damage.accepted",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/experiments/deployed_support/tests/test_canonical_support.py",
+            "source_sha256": "a5ec41e624d2f120c7884291c065151003b1d04f4944311cd0bfb3e8a2be5553",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_support.py",
+            "source_sha256": "86330e4a3026f309eca64a1faaa7d7eb03db5d1703d683176564f3b628f5d60f",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed"
+          }
+        ],
+        "formal_approval": false
+      }
+    ],
+    "demkni/saria_recipient_emission_freeze_same_frame_finish": [
+      {
+        "path": "validation/campaign/deployed_support_m12_extended.json",
+        "sha256": "185448793dfb650dc846483062bad34887a85e6a6583b19013ec74165aa66ba4",
+        "case": "saria_recipient_emission_freeze_same_frame_finish",
+        "program_fingerprint": "a27705f268bf2d866d65eb02897a6175a6b659c32a7f164f4f67268b4abe3dbc",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.finished",
+          "ability.started",
+          "buff.applied",
+          "command.accepted",
+          "healing.accepted",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/experiments/deployed_support/tests/test_canonical_support.py",
+            "source_sha256": "a5ec41e624d2f120c7884291c065151003b1d04f4944311cd0bfb3e8a2be5553",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_support.py",
+            "source_sha256": "86330e4a3026f309eca64a1faaa7d7eb03db5d1703d683176564f3b628f5d60f",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed"
+          }
+        ],
+        "formal_approval": false
+      }
+    ],
+    "demkni/canonical_regeneration_does_not_return_saria_sp": [
+      {
+        "path": "validation/campaign/deployed_support_m12_extended.json",
+        "sha256": "185448793dfb650dc846483062bad34887a85e6a6583b19013ec74165aa66ba4",
+        "case": "canonical_regeneration_does_not_return_saria_sp",
+        "program_fingerprint": "53d7a65bf2987f3ce4a0b772108364a26ed16efc33e998f7877e7eef5b716457",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "observed_event_types": [
+          "ability.started",
+          "buff.applied",
+          "command.accepted",
+          "regeneration.accepted",
+          "resource.changed"
+        ],
+        "source_tests": [
+          {
+            "path": "tools/experiments/deployed_support/tests/test_canonical_support.py",
+            "source_sha256": "a5ec41e624d2f120c7884291c065151003b1d04f4944311cd0bfb3e8a2be5553",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_support.py",
+            "source_sha256": "86330e4a3026f309eca64a1faaa7d7eb03db5d1703d683176564f3b628f5d60f",
+            "result": "passed"
+          },
+          {
+            "path": "tools/witness_deployed_six.py",
+            "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+            "result": "passed"
+          }
+        ],
+        "formal_approval": false
+      }
+    ]
+  },
+  "missing": [],
+  "complete_listed_cases": true,
+  "scope": "Only the 23 listed endpoint/extension checks; other six operators and whole-stage review remain separate",
+  "client_pending": [
+    "Native clocks/FSM/RNG/comparators and source version alignment"
+  ],
+  "source_audit_still_required": true,
+  "formal_approval": false,
+  "resolver_sha256": "4c6b8822096bf432a4259d6b2e19a38ddec09adea26fee73b485874791af42e2",
+  "auditor_sha256": "f92118bc55115b077ca8ab6ec217d1bd7f51693d77597d032195771db3c0e9f0"
+}

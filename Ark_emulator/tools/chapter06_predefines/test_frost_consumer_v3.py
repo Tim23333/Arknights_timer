@@ -1,0 +1,27 @@
+"""Real dormant/SP/25-frame Cold13cell source probes, no dummy actor or live core edits."""
+import hashlib,json,sys
+from copy import deepcopy
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2];RUNTIME=ROOT.parent/'unpack_work/campaign_chapter06_complete_base_v5_candidate';OUT=ROOT/'validation/campaign/chapter06_predefined_consumer_v3';sys.path.insert(0,str(RUNTIME));sys.path.insert(1,str(ROOT))
+from ark_sim import Compiler,Engine
+from ark_sim.adapters.api import implementation_digest
+from ark_sim.contracts import thaw
+from ark_sim.domains.selection import DEFAULT_STATE
+from ark_sim.tools.replay import replay
+from tools.chapter06.cold.policies import providers
+from tools.campaign_ordered_checkpoint import write_ordered,load_bound
+CORE='a7059989b9db7f4bc0de954b32cb5c5ba10e6b92ce040c57ea0a193549b9709a';MODULE=ROOT/'packages/campaign/chapter06_predefines_consumer/module.reference.json'
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def package(*,two=False,immune=(),free=False,camo=False):
+ p=json.loads(MODULE.read_bytes());target={'id':'unit/frost_probe_target','kind':'entity','tags':['player'],'components':{'attributes':{'base':{'max_hp':2000,'atk':0,'def':0,'mres':0,'move_speed':0,'one_minus_status_resistance':1}},'resources':{'hp':{'initial':2000,'capacity':2000,'role':'health'},'sp':{'initial':0,'capacity':100,'recovery_rate':1,'recovery_freeze_rule':'rule/ch6/cold/frozen_recovery'}},'spatial':{},'selection_state':{**deepcopy(DEFAULT_STATE),'side':0,'motion':1,'category':1,'unit_type':1,'abnormal_immunes':list(immune),'target_free':free,'camouflage':camo},'lifecycle':{'policy':'policy/ark_lifecycle'}}};p['entities'].append(target);uid=p['entities'][0]['id'];initial=[{'definition':uid,'instanceAlias':'trap_010_frosts#1','active':False,'registration_key':'trap_010_frosts#1','position':{'row':3,'col':3},'facing':'up'},{'definition':target['id'],'instanceAlias':'inside_edge','position':{'row':3,'col':5}},{'definition':target['id'],'instanceAlias':'outside_diagonal','position':{'row':5,'col':5}}]
+ if two:initial.append({'definition':uid,'instanceAlias':'trap_010_frosts#2','active':False,'registration_key':'trap_010_frosts#2','position':{'row':3,'col':8},'facing':'up'})
+ branch=[{'op':'activate_predefined','target':'battle','parameters':{'key':a}} for a in (['trap_010_frosts#1','trap_010_frosts#2'] if two else ['trap_010_frosts#1'])];p['scenarioDraft']={'id':'scene/c6/frosts/source_probe','ruleset':'ruleset/ark_standard','seed':616,'map':{'rows':7,'cols':11,'tiles':[{'tileKey':'tile_floor','buildableType':3,'passableMask':3,'heightType':1,'advancedBuildMask':3} for _ in range(77)]},'objectives':{},'initialEntities':initial,'scheduledEffects':[{'at':100,'effect':e} for e in branch]};return p
+def flags(s,alias):return s.ctx.spatial.selection_state(alias,DEFAULT_STATE)['abnormal_flags']
+def events(s,kind):return [thaw(e) for e in s.session.events if e['type']==kind]
+def test_source_dormant_then_realSP_cost25frame_native_cells_CP_head():
+ assert implementation_digest()==CORE;OUT.mkdir(parents=True,exist_ok=True);p=package();reg=providers();program=Compiler(providers=reg).compile(p);s=Engine.create(program,providers=reg);s.session.advance(100);assert not events(s,'ability.started') and s.ctx.resources.current('trap_010_frosts#1','sp')==0 and s.ctx.spatial.grid.tile(3,3)['buildableType']==3;s.session.advance(470);started=[e for e in events(s,'ability.started') if e['payload']['ability']=='ability/ch6/predefined/frosts/source_cold'];assert len(started)==1;assert not flags(s,'inside_edge');cp=OUT/'actual_midcast.cp.json';assert not cp.exists();h=write_ordered(cp,s.checkpoint());r=Engine.restore(program,load_bound(cp,h),providers=reg);s.session.advance(20);r.session.advance(20);assert 23 in flags(s,'inside_edge') and not flags(s,'outside_diagonal');areas=events(s,'area.resolved');assert areas and areas[0]['time']-started[0]['time']==25;assert s.ctx.resources.current('trap_010_frosts#1','hp')==100;tile=s.ctx.spatial.grid.tile(3,3);assert tile['buildableType']==0 and tile['passableMask']==2 and tile['physicalHeight']==.4000000059604645 and tile['heightType']==1 and tile['advancedBuildMask']==3;assert s.snapshot()==r.snapshot()==replay(program,s.export_replay(),providers=reg).snapshot();(OUT/'source_input.json').write_text(json.dumps(p,indent=2)+'\n',encoding='utf8',newline='');(OUT/'actual_source_trace.json').write_text(json.dumps({'checkpoint_sha':h,'snapshot':s.snapshot(),'casts':started,'areas':areas},indent=2)+'\n',encoding='utf8',newline='')
+def test_two_native_aliases_activate_same_instances_no_spawn_and_restore_tile_on_retire():
+ p=package(two=True);reg=providers();s=Engine.create(Compiler(providers=reg).compile(p),providers=reg);before=[e['id'] for e in s.session.world.entities() if e['definition_id']==p['entities'][0]['id']];s.session.advance(120);assert before==[e['id'] for e in s.session.world.entities() if e['definition_id']==p['entities'][0]['id']];assert len(events(s,'entity.activated'))==2;s.ctx.lifecycle.retire('trap_010_frosts#1','withdrawn');assert s.ctx.spatial.grid.tile(3,3)['buildableType']==3 and s.ctx.spatial.grid.tile(3,8)['buildableType']==0
+def test_actual_range_selector_targetfree_camouflage_and_Cold_immunity_reject():
+ for kwargs in ({'free':True},{'camo':True},{'immune':[23]}):
+  p=package(**kwargs);reg=providers();s=Engine.create(Compiler(providers=reg).compile(p),providers=reg);s.session.advance(600);assert not flags(s,'inside_edge')

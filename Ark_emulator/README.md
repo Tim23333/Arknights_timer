@@ -9,6 +9,7 @@ V2 已有可运行的内容编译器、通用内核、领域系统、规则运�
 - [V2 实际实现与运行](docs/V2_IMPLEMENTATION.md)
 - [内容、规则、Builder 与 CLI 作者指南](docs/V2_AUTHORING.md)
 - [当前需求](docs/REQUIREMENTS.md)
+- [固定十二人主线回归持续目标](docs/campaign/GOAL.md)
 - [V2 架构设计](docs/ARCHITECTURE_V2.md)
 - [全部文档索引](docs/README.md)
 
@@ -102,10 +103,38 @@ Ark_emulator/
 运行时代码使用 Python 标准库，测试使用 `pytest`：
 
 ```powershell
-..\.venv\Scripts\python.exe -m pytest tests_v2 -q
+..\.venv\Scripts\python.exe tools/run_primary_v2_suite.py
 ```
 
-当前明确的边界包括完整装备、天赋与养成流程、动态引用执行、嵌套状态子图、自定义 Buff 叠层策略、中断退款或继续执行、力学位移和其他数值后端。已实现的属性层、资源、效果与整条管线仍可替换，详见 [作者指南](docs/V2_AUTHORING.md)。
+当前明确的边界包括完整装备与全角色养成转换、动态引用执行、嵌套状态子图、自定义 Buff 叠层策略、中断退款或继续执行、连续刚体碰撞和其他数值后端。已实现的属性层、资源、效果、力学位移与整条管线可替换，详见 [作者指南](docs/V2_AUTHORING.md)。
+
+## 当前主线回归目标
+
+已启动固定十二人、标准主线各章末两关的持续目标，本地冻结范围为第0–17章、36关。
+编队、选择规则、数据恢复和验收门见 [目标说明](docs/campaign/GOAL.md)，
+机器进度见 [progress.json](validation/campaign/progress.json)。
+当前36关核心原生数据已恢复并精确对照；固定十二人的实际配置、选技、天赋与召唤已部分整合到V2。
+正式关卡与完整原生干员通过数仍为0；源、数学模型、整合见证与客户端准确性分别记录。
+
+历史冻结M8核心通过1002项完整测试，0-1保持11击杀零漏怪及检查点/命令回放一致。
+0-10原模型已35出生/35击杀/零漏怪，顺序恢复与回放仍在执行；0-11原模型探索已37出生/37击杀/零漏怪，
+该次no-replay探索未作正式验收。独立审查发现并修复Saria增伤与Liskam护盾的整合绑定遗漏，
+修订内容另有输入身份、定向机制测试和长程运行，旧胜利不迁移成新内容通过。
+当前进展见 [M8](docs/campaign/M8_PROGRESS.md)、[整合修复](docs/campaign/M8_DAMAGE_AND_ROSTER_REPAIRS.md)、
+[首关验收范围](docs/campaign/FIRST_MODEL_ACCEPTANCE_SCOPE.md) 及 [第1章来源](docs/campaign/CHAPTER01_SOURCE_AUDIT.md)。
+
+当前主目录已推广到M68，源码身份为1761a06d，计算契约92项。新增显隐与资格、地块接触、领域范围、
+障碍与原路线连通性、部署／退场冷却策略、库存及精确支付等通用接口，公式和政策均由内容绑定。
+冻结候选完整回归1565项及独立部署21项通过；推广前后源码字节与三个编译内容包身份一致。
+推广及主目录运行证据见 `validation/campaign/m68_primary/`；旧M10及其他版本记录保留历史身份。
+实时状态、各版本输入与已完成/进行中证据见 [CURRENT_STATUS](docs/campaign/CURRENT_STATUS.md)。
+
+基础阶段（M1）修复后的V2测试441项通过，0-1在该实现身份下重新通过完整模型与回放，
+当前证据见 [foundation_baseline_20261002.json](validation/campaign/foundation_baseline_20261002.json)。
+上文首轮332项/172,804事件记录对应首次V2实现身份，保留为历史版本证据。
+
+历史M2新增标准单位规范化、桃金娘S2原型、事件资源与飞行，530项测试通过，0-1在该身份下保持清场和精确回放。
+进展和未完成范围见 [M2_PROGRESS.md](docs/campaign/M2_PROGRESS.md)。
 
 ## 历史实现
 

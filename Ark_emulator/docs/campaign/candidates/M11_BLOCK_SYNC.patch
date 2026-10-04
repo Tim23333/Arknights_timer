@@ -1,0 +1,113 @@
+--- a/ark_sim/domains/buffs.py
++++ b/ark_sim/domains/buffs.py
+@@ -61,6 +61,23 @@
+                 modifiers.append({**thaw(modifier), "buff_instance": instance["id"],
+                                   "stacks": instance["stacks"], "source": instance["source"]})
+         return modifiers
++
++    def _sync_blocking(self, definitions):
++        """Reconcile spatial membership when a declared Buff can change it.
++
++        Lightweight isolated contexts need not implement a spatial domain.
++        The caller's transaction owns every calculation/event/state change.
++        """
++        callback = getattr(getattr(self.ctx, "spatial", None), "blocking", None)
++        if callback is None:
++            return
++        role = getattr(self.ctx, "attribute_role", None)
++        attributes = {role("block_capacity") if role else "block_count",
++                      role("block_occupancy") if role else "block_cost"}
++        if any("block" in definition.get("control", {}) or any(
++                item.get("attribute") in attributes for item in definition.get("modifiers", ()))
++                for definition in definitions):
++            callback()
+ 
+     def apply(self, source, target, buff_id, stacks=1, *, aura_parent=None):
+         with self.ctx.session.atomic():
+@@ -146,6 +163,7 @@
+                 intents.append(Intent("set", target, ("buffs", "next_instance_id"), next_instance + 1))
+             self.ctx.session.commit(intents + scheduled)
+             self.ctx.resources.sync_capacities(target, capacities_before, "buff_applied")
++            self._sync_blocking([definition])
+             if definition.get("control", {}).get("interrupt"):
+                 self.ctx.abilities.interrupt(target, "control_buff")
+             self.ctx.emit("buff.applied", {"source": source, "target": target, "buff": buff_id,
+@@ -179,6 +197,7 @@
+                 Intent("set", target, ("attributes", "modifiers"), self._modifiers(target, remaining))]
+             self.ctx.session.commit(intents)
+             self.ctx.resources.sync_capacities(target, capacities_before, "buff_removed")
++            self._sync_blocking([self.ctx.program.definitions[item["definition"]] for item in removed])
+             for item in removed:
+                 cause = self.ctx.emit("buff.removed", {"source": item["source"], "target": target,
+                     "buff": item["definition"], "instance": item["id"]})
+--- a/ark_sim/domains/movement.py
++++ b/ark_sim/domains/movement.py
+@@ -9,6 +9,7 @@
+         self.ctx = context
+         self.map_definition = thaw(context.program.scenario.get("map", {"rows": 1, "cols": 1}))
+         self.grid = GridTopology(self.map_definition)
++        self._blocking_reconciling = False
+ 
+     def blocked_by(self, ref):
+         return self.ctx.get(ref, ("runtime", "blocked_by"))
+@@ -82,6 +83,16 @@
+               source=source, ability=ability, effect=effect, extra={"ordering": definition.get("ordering")})
+ 
+     def blocking(self):
++        if self._blocking_reconciling:
++            return
++        self._blocking_reconciling = True
++        try:
++            with self.ctx.session.atomic():
++                self._blocking()
++        finally:
++            self._blocking_reconciling = False
++
++    def _blocking(self):
+         entities = [thaw(e) for e in self.ctx.session.world.entities() if self.ctx.alive(e["id"])]
+         movers = [e for e in entities if e["components"].get("spatial", {}).get("route")]
+         if not movers:
+@@ -100,13 +111,13 @@
+             if value > 0:
+                 blockers.append((entity["id"], value))
+         used = {ref: 0 for ref, _ in blockers}
+-        alive_ids = {e["id"] for e in entities}
+         for entity in movers:
+             ref = entity["id"]
+             spatial = entity["components"].get("spatial", {})
+             if not spatial.get("route"):
+                 continue
+-            current = self.blocked_by(ref)
++            previous = self.blocked_by(ref)
++            current = previous
+             if self.ctx.route_hidden(ref):
+                 if current is not None:
+                     self.ctx.set(ref, ("runtime", "blocked_by"), None)
+@@ -123,12 +134,13 @@
+                 continue
+             volume = self.ctx.calc("blocking.occupancy", {"attributes": self.ctx.attributes.values(ref),
+                 "states": {}, "occupancy_parameters": {"number": self.ctx.role_value(ref, "block_occupancy")}}, target=ref)
+-            if current not in used or current not in alive_ids:
+-                current = None
+             position = spatial["position"]
+-            for blocker, capacity in blockers:
+-                if current is not None:
+-                    break
++            # Re-evaluate the old relation with the same eligibility, path and
++            # remaining-capacity contracts as new membership. Stable prior
++            # preference remains, but cannot bypass a reduced capacity.
++            ordered = sorted(blockers, key=lambda item: item[0] != previous)
++            current = None
++            for blocker, capacity in ordered:
+                 other = self.ctx.get(blocker, ("spatial", "position"))
+                 plan = self.ctx.calc("blocking.eligibility", {"blocker": self.ctx.entity(blocker),
+                     "target": entity, "positions": [{"blocker": other}, {"target": position}],
+@@ -139,8 +151,6 @@
+                     current = blocker
+                     used[blocker] += volume
+                     break
+-            if current is not None and current == self.blocked_by(ref):
+-                used[current] += volume
+             if current != self.blocked_by(ref):
+                 self.ctx.set(ref, ("runtime", "blocked_by"), current)
+                 self.ctx.emit("blocking.changed", {"source": current, "target": ref})

@@ -1,0 +1,97 @@
+{
+  "core": "20e8126120668fece832e8b6e23fd53a68fb013656a4476b5ad8e53850f6dd30",
+  "source": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\bsnake\\source.closure.v1.json",
+  "source_sha": "742d78443641451c8b54bdf75281c33cd04c198eaee373ca95991e380f05469d",
+  "template_document_sha": "9ec897d69cc86ca08860a12a20d844f89300d002e86a9e2b667ac0bd3870ab8e",
+  "native_node": {
+    "$type": "Torappu.Battle.Action.Nodes+FinishCurrentWave, Assembly-CSharp",
+    "_finishAndSkip": false,
+    "_trackSourceAtNextWave": true,
+    "_trackSourceAtWaveDelta": 0,
+    "_trackAllManagedEnemiesAtNextWave": false,
+    "_sourceType": "BUFF_OWNER"
+  },
+  "input": {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/track/source_counter",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/track/source",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "buffs": {
+            "initial": [
+              "buff/track/native"
+            ]
+          }
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/track/native",
+        "kind": "buff",
+        "on_remove": [
+          {
+            "op": "finish_timeline_wave",
+            "target": "source",
+            "parameters": {
+              "finish_and_skip": false,
+              "track_source_at_next_wave": true,
+              "track_source_wave_delta": 0,
+              "track_all_managed_at_next_wave": false
+            }
+          }
+        ]
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/track/source_counter",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 1
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/track/source",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  "literal_request": {
+    "op": "finish_timeline_wave",
+    "target": "source",
+    "parameters": {
+      "finish_and_skip": false,
+      "track_source_at_next_wave": true,
+      "track_source_wave_delta": 0,
+      "track_all_managed_at_next_wave": false
+    }
+  },
+  "actual_errors": [
+    {
+      "action": "native_request_validation",
+      "type": "ValueError",
+      "message": "Unimplemented timeline finish flag combination"
+    },
+    {
+      "action": "actual_compilation",
+      "type": "CompileError",
+      "message": "buff/track/native.on_remove: Unimplemented timeline finish flag combination"
+    }
+  ],
+  "source_required_generic_gap": true,
+  "whole_stage_approved": false,
+  "scope": "Literal tracking=true rejects before runtime; no dropped source flag or fabricated execution"
+}

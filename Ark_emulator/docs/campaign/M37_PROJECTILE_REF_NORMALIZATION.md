@@ -1,0 +1,13 @@
+# M37弹体引用归一与独立quota peer
+
+新候选campaign_m37_projectile_refs_candidate从冻结M30/517290复制，core `c77ce7a46101cf903fd9c6c56dcabddf5775008d091365cd7486ddeb47b8d740`。只在projectiles.py `_hit` fallback target确定后新增world.resolve(target)，在latest读取、quota/dedup/reservation之前归一。没有改517、M35、field版本或任意正式输入。
+
+原反例是在同步内部_hit API instrumentation：outer target是actor ID3、nested是同实体alias a，can_hit_same_target=false/null/stopfirst=false。旧逻辑把3和a作为不同reservation/历史hit，numeric控制仅37伤害/HP463，alias却两次37/HP426。普通step本来已归一collision refs，因此此反例不冒称正式阶段已触发。旧source、独立test与fixture/full events/snapshots封在validation/campaign/m30_roster_peer/alias_failure/。
+
+新19项独立tests fresh2.55秒通过，20次实际构造输入在decode前存字节SHA/seed3001。Alias→numeric与numeric→alias两种同步重入只命中同实体一次；hit_targets和reservations只保存canonical ID。9个badref（bool、0/负数、未知ID/alias、float、list、dict）按World resolver拒绝，完整checkpoint/RNG/jobs/quota无改变；None保留原fallback到trace_target语义，不是非法引用。
+
+can_hit_same_target=true时mixed-ref同实体在finite2下合法两次37、总count2；nested effect真实造成伤害后取RNG再抛异常，outer atomic完整回滚且slots清空；on_invalid随机/资源变更后规则失败同样不留quota/jobs。公开命令路径独立测reach首hit tick1立即释放cast、null/finite2、expiry0、跨collision/reach/expiry去重，实际CP和commands replay相等。API instrumentation单列，没有将非记录ctx调用声称为命令回放。
+
+独立报告validation/campaign/m37_projectile_refs/final.json SHA `521a5a6b51948a235cb975c8dd97c59e373c243307c89d7be9f3b530bc6e2c88`，source/helper/core前后相等。兼容报告compatibility_final.json SHA `04428fe0ce4cb1507f4aa37494b22c02a808748d37b9303d0dfde9c1e57cd057`：17个M30断言相同copy（只path/core字面替换，reverse bytes equality核对）、14个冻M28以及29个V2 ability共60passed7.91秒。兼容copy未计为独立peer，原作者文件未改。
+
+此修订不更改native skulsr阈值/Box碰撞/family/clock来源未解状态、不签任何整关或native正确收据。Root须新合并版本与新baseline/fullsuite，不能搬旧517/772/M35身份通过。

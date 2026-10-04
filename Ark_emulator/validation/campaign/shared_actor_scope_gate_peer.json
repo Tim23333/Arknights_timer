@@ -1,0 +1,108 @@
+{
+  "passed": true,
+  "gate_source_sha256": "2bf27f0ffde3a89e81614b7a18cfe87281322077f0d52381aa5b17ef4e253cd8",
+  "tests": [
+    {
+      "path": "tools/experiments/campaign_conversion_peer/verify_shared_gate.py",
+      "source_sha256": "7e18555ab16e89aa5537b7985c85e1964804a239323c3b1a4618518c122468fe",
+      "result": "passed"
+    }
+  ],
+  "cases": [
+    {
+      "target": "m14",
+      "accepted_bindings": 86,
+      "review_sha256": "160e74ec18548874752f63ce34facd1252191be190e62b36f6a20717f79751a1",
+      "negative_cases": [
+        {
+          "case": "wrong_target",
+          "rejected": true,
+          "reason": "Shared scope review is unapproved or belongs to different content/core"
+        },
+        {
+          "case": "wrong_helper",
+          "rejected": true,
+          "reason": "Mechanism case was not independently approved for this shared scope"
+        },
+        {
+          "case": "missing_receipt_scope",
+          "rejected": true,
+          "reason": "Cross-content mechanism requires an independent shared scope review"
+        },
+        {
+          "case": "first_fixture_only",
+          "rejected": true,
+          "reason": "Shared mechanism scope is incomplete; first fixture or zero-tick equality alone is insufficient"
+        },
+        {
+          "case": "changed_reachable_definition",
+          "rejected": true,
+          "reason": "Shared mechanism scope is incomplete; first fixture or zero-tick equality alone is insufficient"
+        },
+        {
+          "case": "metadata_unreviewed",
+          "rejected": true,
+          "reason": "Shared mechanism scope is incomplete; first fixture or zero-tick equality alone is insufficient"
+        },
+        {
+          "case": "changed_source_artifact",
+          "rejected": true,
+          "reason": "Mechanism case was not independently approved for this shared scope"
+        },
+        {
+          "case": "static_fake_execution",
+          "rejected": true,
+          "reason": "Static scope proof must not claim target battle execution"
+        }
+      ]
+    },
+    {
+      "target": "00_11",
+      "accepted_bindings": 86,
+      "review_sha256": "33870c9c2bf496bc0dca207cb7452d6d51c52797c983c92ad71a1be026c5760a",
+      "negative_cases": [
+        {
+          "case": "wrong_target",
+          "rejected": true,
+          "reason": "Shared scope review is unapproved or belongs to different content/core"
+        },
+        {
+          "case": "wrong_helper",
+          "rejected": true,
+          "reason": "Mechanism case was not independently approved for this shared scope"
+        },
+        {
+          "case": "missing_receipt_scope",
+          "rejected": true,
+          "reason": "Cross-content mechanism requires an independent shared scope review"
+        },
+        {
+          "case": "first_fixture_only",
+          "rejected": true,
+          "reason": "Shared mechanism scope is incomplete; first fixture or zero-tick equality alone is insufficient"
+        },
+        {
+          "case": "changed_reachable_definition",
+          "rejected": true,
+          "reason": "Shared mechanism scope is incomplete; first fixture or zero-tick equality alone is insufficient"
+        },
+        {
+          "case": "metadata_unreviewed",
+          "rejected": true,
+          "reason": "Shared mechanism scope is incomplete; first fixture or zero-tick equality alone is insufficient"
+        },
+        {
+          "case": "changed_source_artifact",
+          "rejected": true,
+          "reason": "Mechanism case was not independently approved for this shared scope"
+        },
+        {
+          "case": "static_fake_execution",
+          "rejected": true,
+          "reason": "Static scope proof must not claim target battle execution"
+        }
+      ]
+    }
+  ],
+  "scope": "Actual shared_witness_gate calls; not a whole receipt or native validation"
+}

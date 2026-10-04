@@ -1,0 +1,16 @@
+# M31独立field peer与静态实例反例
+
+实际core冻结7720452f53f4e8b1e0c3e2ba77ab03e0b0b8e8e3b2cdfabf79fe9499f967e96d。独立工具不导入作者test fixture，不改M31/M32/primary或live。9项有界接口检查通过1.51秒，输入在decode前存SHA/seed/初态，core/helper/contract/preset前后等。
+
+正/负门覆盖：真实相同格member恢复HP400→415再公开move离开；实际ordered磁盘CP和commands replay相等；作者自定义circle.75按连续距离允许target1.6（没有强行改grid）；未知/重复BB、非空effects和未使用profile错kind引用compile拒绝；BB key为definition仍是数据，未误建依赖；virtualowner active可当source，但不是all/pure query目标；第二格selector故障使整个initialize atomic回滚，首个field和child也清掉，原player/世界ID/事件保留；相邻field与portal entry/exit类型独立，隐藏时member清理，appear后HP不继续恢复，CP/replay相等。
+
+报告validation/campaign/m31_roster_peer/final.json SHA `4fcebe54f99999707cbe4daab0c96701e72f457e9b5cfc8d7c17e8e45b1ad093`。source tile文件只作字节来源锁，synthetic机制夹具未作为native BuffTile执行证据，也未证明源BSON/target getter准确。
+
+两个真实反例另列，绝不把9项通过称M31完整通过：
+
+1. static owner definition含components.spatial.route、move_speed3可编译，出生(0,1)，10tick移动到(0,2)，registry还写0:1；原格target仅400→405，而真正静态应410。static_route.fixture/counterexample包含原始route/位置/全events/source。
+2. 合法base静态definition没有abilities；initialEntities实际components override添加manual攻击和ATK50，仍可public skill accepted并damage50。首probe缺target DEF触发pipeline错误，补明确DEF0后才复现实际伤害；最终工具probe_static_override.py与static_override.fixture/counterexample.final.json保存预decodeSHA、core/source、accepted command、全部damage/events。
+
+Root分别新M32/M34处理这些静态定义/effective实例不变量，旧772和本报告未重标新版本通过。本peer未代catalog审M34，只把旧实际失败交付。
+
+BB预期literal匹配的通用契约仍只是作者声明的输入约束，不自动证明owner Buff/rule数学使用了所有原生字段；正式source converter必须另对照值和公式，native callback、覆盖/层叠、precision、动态TileMode/Hole仍pending。没有formal receipt或promotion。

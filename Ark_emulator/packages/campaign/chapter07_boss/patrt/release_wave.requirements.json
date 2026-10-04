@@ -1,0 +1,52 @@
+{
+  "schema": "ark-sim/patrt-release-wave-source-requirement/v1",
+  "source_closure_sha256": "acf57f6a07a5e141f9f1ddb0d37ee09fce1e25fc6555bda0504bf99e2b44b54c",
+  "native_buff": "patrt_t_state_1[release_wave]",
+  "native_component_pointer": "-5689363940968044342",
+  "native_event_node": {
+    "$type": "Torappu.Battle.Action.Nodes+FinishCurrentWave, Assembly-CSharp",
+    "_finishAndSkip": false,
+    "_trackSourceAtNextWave": false,
+    "_trackSourceAtWaveDelta": 0,
+    "_trackAllManagedEnemiesAtNextWave": false,
+    "_sourceType": "BUFF_OWNER"
+  },
+  "native_stage_wave_context": [
+    {
+      "native_wave_index": 0,
+      "native_wave_parameters": {
+        "preDelay": 0.0,
+        "postDelay": 0.0,
+        "maxTimeWaitingForNextWave": -1.0
+      },
+      "native_source_birth": [
+        {
+          "actionType": "SPAWN",
+          "managedByScheduler": true,
+          "key": "enemy_1506_patrt",
+          "count": 1,
+          "preDelay": 1.0,
+          "interval": 1.0,
+          "routeIndex": 1,
+          "blockFragment": false,
+          "autoPreviewRoute": false,
+          "autoDisplayEnemyInfo": false,
+          "isUnharmfulAndAlwaysCountAsKilled": false,
+          "hiddenGroup": null,
+          "randomSpawnGroupKey": null,
+          "randomSpawnGroupPackKey": null,
+          "randomType": "ALWAYS",
+          "refreshType": "ALWAYS",
+          "weight": 0,
+          "dontBlockWave": false,
+          "forceBlockWaveInBranch": false
+        }
+      ]
+    }
+  ],
+  "required_effect_semantics": "Actual bufffinish when phase0 detaches onfirstdown must finish current managedwave sourcedfromBUFF_OWNER; do not retire/kill/rebirthshortcut. finishAndSkipfalse preservespending action scheduling underdeclaredreference, no carrytrackSource/allManaged atnextwave.",
+  "existing_interface_assessment": "Timeline holds members/wave gates; entity_retired removesmember onlyonactualretirement. advance_branch operates namedbranch cursor, notcurrentwave membership/currentwave gates. emit/state-only cannothonestly satisfy wavecompletion. No declared finish_current_wave effect currently.",
+  "proposed_generic_plan": "Explicitfinish_current_wave effect with source_typebuff_owner +strict sourceflags; bindactualmanaged source/currentwave identity, finitewave indices. Idempotentownedrequest, atomicwake/postdelayprogress, no forgeddeath/counters/no canceledbirths for finishAndSkipfalse; mixedcontrols/latewakes/terminal/CP/head negativecases. Exactnativebody semantics reference policy must remainvisible.",
+  "runtime_modified": false,
+  "whole_stage_executed": false
+}

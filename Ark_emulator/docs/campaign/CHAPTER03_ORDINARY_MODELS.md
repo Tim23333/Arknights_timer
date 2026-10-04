@@ -1,0 +1,15 @@
+# 第三章八个普通敌人内容模型
+
+Root消费catalog冻结source d6a1d529，逐实际variant、Enemy根、MoveController及combat→Spine节点建立八个单位依赖。新module`chapter03_units/ordinary.reference_model.json` SHA`daa790f1c89da896a34003197b71815643408fad44ad7fec2ceb4e45a59db0c7` build/--check通过，source-backed stats/mass/block/leak/motion/steering绑定，born0/regen0/stunImmuneFalse逐项检查，不因普通名称省略未知技能。
+
+包含gopro_2、gopro_3、shield_2、handax、handax_2、katar、rogue_2与level1yokai；lurker/jshoot/jmage隐身、mortar远程和碎骨phase另模块明确排除。普通Melee INPUT_TARGET2用实际blocker候选，捕获当前目标；MultiMelee rogue_2 actualflags additional1/splitDamage1/waitAll1、f12/f23，沿现声明equal total ATKsplit .5/.5后分别防御模型，源正文校准反馈不删。
+
+八实际检查通过9.32秒，在M51同身份公开部署形成真实blocked_by后攻击：各源frame+1（首帧建立block）、源ATK/DEF100手算伤害；rogue2两包f13/f24按sourcef12/f23分别结算。ordered磁盘CP、完整回放相同。飞行yokai源level1 HP1870，没有攻击；stage override1450 m_definedFalse不生效。报告`validation/campaign/chapter03_units/ordinary_final.json` SHA`a8110f71a0d3bd270f95cdaceb22de8b93176b2a4342bf2e299b89b32bcc6db2`。
+
+最初fixture没有deployable导致普通演员不构成blocker，已改成公开deploy而不手写blocked状态；独立伤害/时点预期未放宽。该module待peer，不签61/63出生整关或全部第三章敌人。源版本/动画时缩、MultiMelee split正文及普通getter默认仍标可替换声明；未知必要消费者仍报错。
+
+下一远程消费者由catalog独立开发：Mortar actualFROM_OWNER1而非INPUT_TARGET2、f16/源Paracurve速度4/raise1.5/3×3命中Box与参考九宫格、ground主目标与飞行旁伤、wall/camouflage许可及source退出/targetinvalid锚点策略分别实现；不能给它强套blocked候选。碎骨level1用exactVID6fab、HP30000/ATK1300、phase15000来源重绑定，保原level0源包不改。roster通用M49后给lurker/jshoot/jmage的INVISIBLE9源状态与侦测免疫绑定，完整13variant需合这些真正执行依赖而非source文件条数。
+
+实际Mortar HitBehaviour的TargetOptions需要逐area候选消费；现M48area.members只有位置/标签可选集合，不能把category/free/运动/camouflage字段只写metadata。catalog另建M53通用qualified_cell_offsets provider，把九格与已实现纯targeting.eligibility组合、参数显式源选项/默认/17许可，不在kernel写敌ID或把17当9。现合同area.members不变，rule/提供器版本明示，M52显隐/库存合成后另合该pureprovider再验收所有Hit候选。原普通8实体模块不依赖此新增provider。
+
+新level1碎骨内容现已source-bound短冻`chapter03_models/skulsr.level1.reference.json` SHAc09cc02578055091f1ae465954ecfa484a6cafe21ab5b5b84f3c2deab8380092：HP30000/ATK1300/DEF240/RES30，七实际测试3.64秒与sourceguards过。HPphase用.5×observed effectiveHPcapacity，默认15000、MaxHP40000时20000；容量变化与HP0反例覆盖，不抄level0的5250或固定15000算法。源normalgrenade338/low507及每包防御顺序、level1漏2/实体1、公开orderedCP/完整回放均通过，报告`validation/campaign/chapter03_boss/final_review.json` SHA10692b895aa4e4e54e50fbacdba4b65d50d8a5531a06c0ad22519478b8f0f4f0。原模块7cdd不改，此包独立第三章命名域；仍不签3-8整关或客户端算法精度。
