@@ -1,0 +1,15 @@
+{
+  "schema": "ark-sim/c9-flame-reference-policy/v1",
+  "reference_url": "https://prts.wiki/w/深池焚毁者",
+  "reference_read_date": "2026-10-05",
+  "fixed_native_source": "packages/campaign/chapter09_source_prepare/enemies.native.v1.json",
+  "policy_summary": {
+    "activation": "When not channeling, begin a 10.6-second casting state. Retriggering Flame during that state clears cooldown. At 6 seconds set the 10-second cooldown; exiting or being silenced or stunned cancels effects and starts cooldown.",
+    "payload": "Select one eligible player ground unit; each half-second packet contains normal arts health damage at 12% ATK and independent FIRE damage at 6% ATK.",
+    "death": "Unsilenced prezero enters a 3-second dead-like state. The explosion damages player ground targets, other qualified flame enemies and pillars through separate source selectors, then force-kills its owner with no actor source."
+  },
+  "native_mapping_status": "Independent packet and movement clocks implemented in isolated prototype; cast state and cooldown ownership plus the five-child death chain remain required.",
+  "first_hit_offset": "The prose does not prove the first hit offset; explicit replaceable motion/contact policy must be bound separately.",
+  "client_verified": false,
+  "whole_enemy_complete": false
+}

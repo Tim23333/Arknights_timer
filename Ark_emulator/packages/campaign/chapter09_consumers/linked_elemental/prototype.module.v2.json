@@ -1,0 +1,280 @@
+{
+  "schemaVersion": 2,
+  "rules": [
+    {
+      "id": "rule/linked/capacity",
+      "kind": "rule",
+      "contract": "elemental.capacity",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.parameters.capacity"
+      }
+    },
+    {
+      "id": "rule/linked/loss",
+      "kind": "rule",
+      "contract": "elemental.loss",
+      "implementation": {
+        "type": "expression",
+        "expression": "max(0, inputs.request.raw_amount*(1-inputs.parameters.resistance*.01))"
+      }
+    },
+    {
+      "id": "rule/linked/recovery",
+      "kind": "rule",
+      "contract": "elemental.recovery",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.current"
+      }
+    },
+    {
+      "id": "rule/linked/duration",
+      "kind": "rule",
+      "contract": "elemental.break_duration",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.parameters.break_duration_seconds"
+      }
+    },
+    {
+      "id": "rule/linked/eligible",
+      "kind": "rule",
+      "contract": "elemental.eligibility",
+      "implementation": {
+        "type": "expression",
+        "expression": "'neutral' not in inputs.target.tags"
+      }
+    },
+    {
+      "id": "rule/linked/packet",
+      "kind": "rule",
+      "contract": "elemental.packet",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.source_attributes.atk * inputs.request.parameters.ep_ratio"
+      }
+    },
+    {
+      "id": "rule/linked/motion",
+      "kind": "rule",
+      "contract": "projectile.trajectory",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.linked.homing"
+      }
+    }
+  ],
+  "definitions": [
+    {
+      "id": "attachment/linked/fire",
+      "kind": "attachment",
+      "duration_seconds": 1.5,
+      "flight_lifetime_seconds": 5,
+      "step_interval_seconds": 0.03333333333333333,
+      "hit_interval_seconds": 0.5,
+      "refresh_interval_seconds": 1,
+      "motion": {
+        "rule": "rule/linked/motion",
+        "parameters": {
+          "mode": "homing",
+          "speed": 10
+        }
+      },
+      "target_buff": "buff/linked/marker",
+      "effect": {
+        "op": "elemental_attack",
+        "health_effect": {
+          "op": "damage",
+          "damage_type": "arts",
+          "scale": 0.12,
+          "read_mode": {
+            "source_attributes": "at_hit",
+            "target_attributes": "at_hit"
+          }
+        },
+        "element_effect": {
+          "op": "elemental_damage",
+          "element": "FIRE",
+          "amount_rule": "rule/linked/packet",
+          "parameters": {
+            "ep_ratio": 0.06
+          }
+        }
+      },
+      "damage_integral": false,
+      "source_cancel_flags": [
+        0,
+        12
+      ],
+      "ignored_owned_source_flags": [],
+      "force_reach_on_timeout": true,
+      "lifecycle": {
+        "source_invalid": "cancel",
+        "target_invalid": "cancel",
+        "source_hidden": "cancel",
+        "target_hidden": "cancel"
+      },
+      "max_packets": null,
+      "completion_blocking": false,
+      "source_recovery_buff": null,
+      "recovery_on": []
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/linked/marker",
+      "kind": "buff",
+      "stacking": {
+        "mode": "independent"
+      }
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/linked/target",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/linked/fire",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual"
+      },
+      "wait_for_channels": true,
+      "selector": "selector/linked/target",
+      "timeline": [
+        {
+          "at": 0,
+          "effect": {
+            "op": "begin_attachment",
+            "attachment": "attachment/linked/fire"
+          }
+        }
+      ]
+    }
+  ],
+  "entities": [
+    {
+      "id": "unit/linked/source",
+      "kind": "entity",
+      "tags": [
+        "enemy"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 8000,
+            "atk": 500,
+            "def": 400,
+            "mres": 0,
+            "attack_interval": 2,
+            "attack_speed_ratio": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "role": "health",
+            "initial": 8000,
+            "capacity": 8000
+          }
+        },
+        "selection_state": {
+          "side": 1,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 2,
+          "abnormal_flags": []
+        },
+        "abilities": [
+          "ability/linked/fire"
+        ],
+        "spatial": {},
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    },
+    {
+      "id": "unit/linked/target",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 5000,
+            "atk": 0,
+            "def": 137,
+            "mres": 20
+          }
+        },
+        "resources": {
+          "hp": {
+            "role": "health",
+            "initial": 5000,
+            "capacity": 5000
+          }
+        },
+        "spatial": {},
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "elemental": {
+          "eligibility_rule": "rule/linked/eligible",
+          "elements": {
+            "FIRE": {
+              "capacity": 1000,
+              "resistance": 0,
+              "recovery_rate": 0,
+              "break_duration_seconds": 10,
+              "rules": {
+                "elemental.capacity": "rule/linked/capacity",
+                "elemental.loss": "rule/linked/loss",
+                "elemental.recovery": "rule/linked/recovery",
+                "elemental.break_duration": "rule/linked/duration"
+              },
+              "on_break": [
+                {
+                  "op": "emit",
+                  "event": "linked.break"
+                }
+              ],
+              "on_end": []
+            }
+          }
+        }
+      }
+    }
+  ],
+  "manifest": {
+    "id": "package/ch9/linked_elemental_prototype/v2",
+    "metadata": {
+      "scope": "Native500/.12/.06/.5 payload prototype with typed independent motion/hit clocks; not full duspfr or chapter9 admission",
+      "required_core": "5ba742c2868c45eb37a14c720001a307e77e30434da6743ee5e4c98a483c8736",
+      "native_source_sha": "592afac29cc32d1aeaba3ea739eb6da5a218055e255a42f53315f4a2ca0962ff",
+      "remaining": [
+        "actual harpoon target-motion/stop semantics source mapping",
+        "Flame10.6 duration vs buff6/10 cooldown ownership",
+        "before-zero3s DeadBoom five action branches",
+        "pillar collapse and ruin terrain consumers"
+      ],
+      "whole_enemy_complete": false
+    }
+  }
+}

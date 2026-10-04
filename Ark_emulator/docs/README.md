@@ -14,6 +14,8 @@
 | [V2_AUTHORING.md](V2_AUTHORING.md) | 实际内容字段、局部规则、周期恢复、技能、Buff、状态图、计算图、提供器、Builder 与 CLI |
 | [campaign/GOAL.md](campaign/GOAL.md) | 当前持续目标：固定12人覆盖模块，第0–17章末两关共36个目标，阶段与验收条件 |
 | [campaign/CURRENT_STATUS.md](campaign/CURRENT_STATUS.md) | 当前生产/候选身份、真实完成与进行中运行、canonical见证及下一章执行范围 |
+| [campaign/CHAPTER09_LINKED_PACKETS.md](campaign/CHAPTER09_LINKED_PACKETS.md) | 持续连接的独立生命/元素包、移动与命中两时钟及候选验证范围 |
+| [campaign/CHAPTER09_BATCH_PROGRESS.md](campaign/CHAPTER09_BATCH_PROGRESS.md) | 第9章必需机制的实际证据、隔离候选和完整关卡剩余依赖 |
 | [campaign/CHAPTER08_FOUNDATION_V5.md](campaign/CHAPTER08_FOUNDATION_V5.md) | 通用事务副本、波次追踪与原子反应联合底座，JT8-2／JT8-3新整关输入和独立证据 |
 | [campaign/CHAPTER07_FOUNDATION.md](campaign/CHAPTER07_FOUNDATION.md) | 第七章所需地形资格、共享光环与复活等待动作的隔离候选接口和验证边界 |
 | [campaign/CHAPTER07_PREDEFINES.md](campaign/CHAPTER07_PREDEFINES.md) | 源石祭坛、地雷库存／费用及教程控制的局部消费者与待核对参考规则 |

@@ -1,0 +1,2 @@
+from tools.chapter09_rock_gargoyle.test_v1 import *
+p=fixture(KEYS[1]);p['scenarioDraft']['commands']=[{'at':2,'action':'skill','source':'source','ability':'ability/fixture/strike'}];s=proof(p,'native_flight_arts_numeric',300,450);hits=[(e['time'],e['payload']['amount']) for e in s.session.events if e['type']=='damage.accepted' and e['payload']['source']==s.session.world.resolve('enemy')];print(hits);assert hits==[(328,423.5),(448,423.5)]

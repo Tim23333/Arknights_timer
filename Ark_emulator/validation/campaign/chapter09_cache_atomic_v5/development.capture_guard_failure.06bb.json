@@ -1,0 +1,155 @@
+{
+  "candidate_core": "06bb43768bb1edcf89bd9f71bd9e5303226d77760265d4593afe3df7e57f952a",
+  "expected_core": "06bb43768bb1edcf89bd9f71bd9e5303226d77760265d4593afe3df7e57f952a",
+  "candidate_import_path": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_foundation_v5_candidate\\ark_sim\\__init__.py",
+  "candidate_guard_before_after_equal": true,
+  "fixture_sha256": "eb0cfe8f29887a68c5594e0043c93630832a5fc10751bd459b986808f4f5c194",
+  "results": [
+    {
+      "case": "two_element_threshold_order_and_reset",
+      "passed": true
+    },
+    {
+      "case": "locked_and_zero_exact_noop",
+      "passed": true
+    },
+    {
+      "case": "custom_capacity_dirty_sync",
+      "passed": true
+    },
+    {
+      "case": "replace_all_pure_rules",
+      "passed": true
+    },
+    {
+      "case": "forged_expiry_task",
+      "passed": true
+    },
+    {
+      "case": "death_retire_recreate",
+      "passed": true
+    },
+    {
+      "case": "owner_generation_change",
+      "passed": true
+    },
+    {
+      "case": "late_callback_rng_tasks_world_events_rollback",
+      "passed": false,
+      "error": "Atomic capture callback mutated kernel state",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_cache_atomic\\review_v5.py\", line 35, in test\n    try:fn();RESULTS.append({'case':name,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_cache_atomic\\review_v5.py\", line 81, in callback_fault\n    try:ep(s,amount=19)\n        ^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_cache_atomic\\review_v5.py\", line 31, in ep\n    a,b=refs(s);return s.ctx.elemental.apply(a,b,{'op':'elemental_damage','element':k,'amount':amount},**kw)\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_foundation_v5_candidate\\ark_sim\\domains\\elemental.py\", line 191, in apply\n    self.callbacks(ref,key,lease,'on_break',event)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_foundation_v5_candidate\\ark_sim\\domains\\elemental.py\", line 134, in callbacks\n    self.ctx.effects.execute(ref,[ref],child,cause=cause)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_foundation_v5_candidate\\ark_sim\\domains\\effects.py\", line 25, in execute\n    return self._execute(source, targets, effect, ability, cast, cause)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_foundation_v5_candidate\\ark_sim\\domains\\effects.py\", line 126, in _execute\n    self.execute(source, [target], child, ability, cast, event)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_foundation_v5_candidate\\ark_sim\\domains\\effects.py\", line 24, in execute\n    with self.ctx.session.atomic():\n         ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\python3.12.10\\Lib\\contextlib.py\", line 137, in __enter__\n    return next(self.gen)\n           ^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_foundation_v5_candidate\\ark_sim\\kernel\\session.py\", line 165, in atomic\n    saved = self._capture_atomic()\n            ^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_foundation_v5_candidate\\ark_sim\\kernel\\session.py\", line 198, in _capture_atomic\n    raise RuntimeError('Atomic capture callback mutated kernel state')\nRuntimeError: Atomic capture callback mutated kernel state\n"
+    },
+    {
+      "case": "durable_checkpoint_head",
+      "passed": true
+    },
+    {
+      "case": "strict_types_finite",
+      "passed": true
+    },
+    {
+      "case": "real_retained_cancel_compound_projectile_health_before_ep",
+      "passed": true
+    },
+    {
+      "case": "rebirth_cancels_lease_and_restores_qualification",
+      "passed": true
+    },
+    {
+      "case": "invalid_profiles_and_calculation_results",
+      "passed": true
+    },
+    {
+      "case": "fresh_joint_fire_res_order_sp_multi_lock_cpp_head",
+      "passed": true
+    },
+    {
+      "case": "fresh_joint_lethal_cancels_lease_and_callbacks",
+      "passed": true
+    },
+    {
+      "case": "fresh_joint_late_fault_full_rollback",
+      "passed": false,
+      "error": "Atomic capture callback mutated kernel state",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_cache_atomic\\review_v5.py\", line 35, in test\n    try:fn();RESULTS.append({'case':name,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_cache_atomic\\review_v5.py\", line 184, in joint_fault\n    try:ep(s,amount=19)\n        ^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_cache_atomic\\review_v5.py\", line 31, in ep\n    a,b=refs(s);return s.ctx.elemental.apply(a,b,{'op':'elemental_damage','element':k,'amount':amount},**kw)\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_foundation_v5_candidate\\ark_sim\\domains\\elemental.py\", line 191, in apply\n    self.callbacks(ref,key,lease,'on_break',event)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_foundation_v5_candidate\\ark_sim\\domains\\elemental.py\", line 134, in callbacks\n    self.ctx.effects.execute(ref,[ref],child,cause=cause)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_foundation_v5_candidate\\ark_sim\\domains\\effects.py\", line 25, in execute\n    return self._execute(source, targets, effect, ability, cast, cause)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_foundation_v5_candidate\\ark_sim\\domains\\effects.py\", line 126, in _execute\n    self.execute(source, [target], child, ability, cast, event)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_foundation_v5_candidate\\ark_sim\\domains\\effects.py\", line 24, in execute\n    with self.ctx.session.atomic():\n         ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\python3.12.10\\Lib\\contextlib.py\", line 137, in __enter__\n    return next(self.gen)\n           ^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_foundation_v5_candidate\\ark_sim\\kernel\\session.py\", line 165, in atomic\n    saved = self._capture_atomic()\n            ^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_foundation_v5_candidate\\ark_sim\\kernel\\session.py\", line 198, in _capture_atomic\n    raise RuntimeError('Atomic capture callback mutated kernel state')\nRuntimeError: Atomic capture callback mutated kernel state\n"
+    },
+    {
+      "case": "joint_no_source_strict_protocol",
+      "passed": true
+    }
+  ],
+  "passed": false,
+  "actual_exit": 1,
+  "fixture_imports_author_or_root": false,
+  "scope": "fresh independent mechanisms; no full-suite reuse",
+  "checkpoint_head_kind": "continued checkpoint equality; direct effect and attribute queries are not automatically recorded in exportReplay",
+  "public_replay_claim_for_low_level_queries": false,
+  "artifacts": [
+    {
+      "path": "E:\\ArkSimLogs\\runs\\chapter09_cache_atomic_v5\\peer.checkpoint.json",
+      "bytes": 138659,
+      "sha256": "adbc8c957b614d3c7dc38b05e989bcf53d141fbd597170cef9f29ddafb205074",
+      "checkpoint_equal": true,
+      "head_sha256": "c4d4c5b49e005fcc04c07bdf56e1b178999fbbff13fc7f8440483d1a9262b6c3"
+    },
+    {
+      "path": "E:\\ArkSimLogs\\runs\\chapter09_cache_atomic_v5\\fresh_fire_55.checkpoint.json",
+      "sha256": "ecede660179cc2e6b6df616524fc54a3d11e8d115d1e0000c77d2b7ae61de127",
+      "head_sha256": "0eda888027f69618d73d114cdbae67c46bb18c8973aef35a29e012081f6545ee",
+      "restored_head_sha256": "0eda888027f69618d73d114cdbae67c46bb18c8973aef35a29e012081f6545ee",
+      "checkpoint_equal": true
+    },
+    {
+      "path": "E:\\ArkSimLogs\\runs\\chapter09_cache_atomic_v5\\fresh_fire_17.checkpoint.json",
+      "sha256": "b253fafba4d0bc9dfcd454b2bdd789fcf8574a0bdb56a60ef924f8b4ad5a79f5",
+      "head_sha256": "92179a7c3882ff507f74fd6a14b97c4437908fb416c76c8a2081a18b0645d96a",
+      "restored_head_sha256": "92179a7c3882ff507f74fd6a14b97c4437908fb416c76c8a2081a18b0645d96a",
+      "checkpoint_equal": true
+    }
+  ],
+  "cleanup": [
+    {
+      "apply": true,
+      "eligible_files": 1,
+      "eligible_bytes": 138659,
+      "log_root": "E:\\ArkSimLogs",
+      "deleted_files": 1,
+      "reclaimed_bytes": 138659,
+      "protected_files": 0,
+      "remaining_files": 0,
+      "error_count": 0,
+      "fully_cleaned": true,
+      "actual_exit": 0,
+      "report": "E:\\ArkSimLogs\\cleanup\\20261004T200009941641Z.deleted.json"
+    },
+    {
+      "apply": true,
+      "eligible_files": 1,
+      "eligible_bytes": 236400,
+      "log_root": "E:\\ArkSimLogs",
+      "deleted_files": 1,
+      "reclaimed_bytes": 236400,
+      "protected_files": 0,
+      "remaining_files": 0,
+      "error_count": 0,
+      "fully_cleaned": true,
+      "actual_exit": 0,
+      "report": "E:\\ArkSimLogs\\cleanup\\20261004T200013935992Z.deleted.json"
+    },
+    {
+      "apply": true,
+      "eligible_files": 1,
+      "eligible_bytes": 236166,
+      "log_root": "E:\\ArkSimLogs",
+      "deleted_files": 1,
+      "reclaimed_bytes": 236166,
+      "protected_files": 0,
+      "remaining_files": 0,
+      "error_count": 0,
+      "fully_cleaned": true,
+      "actual_exit": 0,
+      "report": "E:\\ArkSimLogs\\cleanup\\20261004T200015882113Z.deleted.json"
+    }
+  ],
+  "raw_payload_deleted": true
+}
