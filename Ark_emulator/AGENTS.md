@@ -23,6 +23,16 @@
 V2 运行时不得导入或委托 V1 的战斗、地图、波次、属性、伤害、技能、Buff 或随机数实现，
 也不得在缺失能力时自动切回 V1。历史覆盖数字和扫描结果不能作为 V2 的通过证据。
 
+## 模拟日志保留政策
+
+用户要求大日志只在执行期间保留。所有后续事件、检查点、回放与测试捕获写入
+`E:\ArkSimLogs\runs`；源数据、关卡包与精简收据不属于日志。
+整关统一使用 `tools/run_campaign_disk_runthrough_v19.py`，完成仿真和CP/head验证后自动执行
+`tools/cleanup_simulation_logs.py`。其他机制工具在验证结束后也调用该清理脚本。
+禁止继续在 packages/validation/unpack_work 写大体量事件捕获；已结束失败场景也保小结果后清理。
+历史证据删除是用户授权的保留政策，精简收据保原身份，不能声称原日志仍可读取。
+详情见 [SIMULATION_LOGS.md](docs/SIMULATION_LOGS.md)。
+
 ## 验证
 
 当前生产底座增加 `buff.lifetime_rate` 后，旧数量测试仍保留历史 98 契约断言字节，

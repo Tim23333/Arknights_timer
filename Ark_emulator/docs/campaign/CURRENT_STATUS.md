@@ -1,5 +1,13 @@
 # 当前持续目标状态
 
+用户要求清理日志并固定目录已执行：首轮1948files/451354160985B、第二轮275files/10010865464B、
+小checkpoint/replay追加717files/113016436B，合计2940files/461478042885B（约461.48GB／429.79GiB）。
+原12完成关卡已封精简归档receipt **c2026d44…**，v6进度12/36保持历史验证身份，raw日志不可再读。
+五份误判source已从HEAD13add恢复，12sourcepins实际再核相同；清理规则现限定packages证据目录+输出名。
+固定大日志目录 `E:/ArkSimLogs/runs`，小结果receipts、清理记录cleanup；新V19实际完整smoke/CP/head全部pass并自动清7file。
+旧在跑5-10/7-18/JT82旧与新/JT83仍自动保护，watcher60520观察其worker退出后再清；Boss34423显式保护至源审计完成。
+模拟底座82db及4891files源码批次13add已实际推到origin/main；清理工具与策略另批提交中。
+
 JT82 V7新source独立4门actual0／113.97s，冻 **dfef9f4b…** Root核21pins，
 原32出生/全波延迟/actions/routes/5variant/DP10life3slots9seed/onlylife均typedexact，
 真实原图180prefix CPP47/head、controlledinfection120→180/AS1→1.5与火山1000 CPP113/head，
