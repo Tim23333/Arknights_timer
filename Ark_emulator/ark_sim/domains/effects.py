@@ -34,7 +34,7 @@ class EffectSystem:
         if effect.get('op') == 'no_source_damage':
             from .no_source_damage import execute
             return execute(self, source, targets, effect, ability, cast, cause)
-        if effect.get("op") == "begin_attachment" or "damage_flags" in effect or "bind_to_cast" in effect or "selection_projection" in effect:
+        if effect.get("op") in {"begin_attachment", "set_ability_cooldown", "interrupt_ability"} or "damage_flags" in effect or "bind_to_cast" in effect or "selection_projection" in effect:
             from ark_sim.content.schemas import validate_effect, DEFAULT_CAPABILITIES
             validate_effect(effect, "runtime.explicit_owned_effect", DEFAULT_CAPABILITIES)
         source = self.ctx.session.world.resolve(source)
@@ -203,6 +203,28 @@ class EffectSystem:
                             self.ctx.emit("attack.accepted", {"source": source, "target": target,
                                 "ability": ability.get("id"), "cast": cast.get("id"), "amount": actual}, cause)
                             cast["attack_recovery_claimed"] = True
+            elif operation in {'set_ability_cooldown', 'interrupt_ability'}:
+                aid = effect.get('ability')
+                if not isinstance(aid, str) or aid not in self.ctx.get(target, ('abilities',), []):
+                    raise ValueError('Ability lifecycle effect requires an actual possessed ability')
+                controlled = thaw(self.ctx.program.definitions[aid])
+                if controlled.get('kind') != 'ability':
+                    raise ValueError('Ability lifecycle target reference is not an ability')
+                if operation == 'interrupt_ability':
+                    self.ctx.abilities.interrupt(target, 'content_interrupt', ability_ids=[aid])
+                else:
+                    seconds = effect.get('duration_seconds')
+                    if type(seconds) not in (int, float) or not math.isfinite(seconds) or seconds < 0:
+                        raise ValueError('Ability cooldown duration must be finite nonnegative')
+                    resolved = self.ctx.calc('ability.recovery', {'attributes': self.ctx.attributes.values(target),
+                        'animation': {}, 'recovery_parameters': {'seconds': seconds}}, source=source, target=target,
+                        owner=target, ability=controlled, effect=effect)
+                    if type(resolved) not in (int, float) or not math.isfinite(resolved) or resolved < 0:
+                        raise ValueError('Ability recovery rule returned invalid duration')
+                    ready = self.ctx.session.time + self.ctx.quantize(resolved)
+                    self.ctx.set(target, ('runtime', 'cooldowns', aid), ready)
+                    self.ctx.emit('ability.cooldown.updated', {'source': source, 'target': target, 'ability': aid,
+                        'ready_at': ready, 'duration_seconds': resolved}, cause)
             elif operation == "modify_resource":
                 if effect.get("parameters", {}).get("if_resource_present") and effect["resource"] not in self.ctx.get(target, ("resources",), {}):
                     continue

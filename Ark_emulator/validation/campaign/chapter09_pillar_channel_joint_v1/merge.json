@@ -1,0 +1,106 @@
+{
+  "schema": "ark-sim/c9-pillar-channel-merge/v1",
+  "core": "53ee67c10a664707d8b23bd1191bd5995085ed20cd92837bb8ab64c63f93ff7c",
+  "candidate": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_pillar_channel_joint_v1_candidate",
+  "parents": {
+    "pillar": "f48b7fcfd0f0bfd673e9ea2d55333b96707c8b45645b2861610e72052b3cadac",
+    "channel": "f0c2944cc89788b9277cbafe55ba1d9dcbdfe1e2f29c3619ce3fd1da9a6b7e9c",
+    "base": "56f380fab9715b8edcb589b2c3fc3863d740cb149ab31e19b3f6fe3a1720fcf6"
+  },
+  "merged_files": [
+    {
+      "path": "ark_sim/content/capabilities.py",
+      "base_sha": "db2913d8081da7c1f3f85d14c7edede757301492c2ccfd787c2f3702c4c3d644",
+      "pillar_sha": "9b28b364df10d64ae4e2c8d46d94a90df8272cf68bce0dc9fbc94ff402dde13e",
+      "channel_sha": "bce67e691a5b6277c1ccd79d49f952573174563b59f07d8884dd9fabb7966743",
+      "joint_sha": "7d9a3e867edfc010d5717e6562dbc2c45c5704e5b30a91ef2ac550dec54d6054",
+      "method": "independent_empty_side_insertions",
+      "insertions_reviewed": [
+        {
+          "left": "    for ident,definition in definitions.items():\r\n        spec=definition.get('components',{}).get('depletion')\r\n        if spec is not None:\r\n            require('resource.depletion',ident+'.depletion',explicit=spec['rule'])\r\n            if spec.get('damage_gate_rule'):require('resource.depletion',ident+'.depletion.damage_gate',explicit=spec['damage_gate_rule'])\r\n",
+          "right": "",
+          "resolution": "Keep the nonempty independent insertion"
+        },
+        {
+          "left": "",
+          "right": "        if item.get('op')=='set_ability_cooldown':\r\n            require('ability.recovery',path+'.duration_seconds',local)\r\n            require('time.quantize',path+'.clock')\r\n",
+          "resolution": "Keep the nonempty independent insertion"
+        }
+      ]
+    },
+    {
+      "path": "ark_sim/content/compiler.py",
+      "base_sha": "fa241b6621b40f551dd72f1abe9b2db8fa0559d9a4b6fee108d23e51f3701296",
+      "pillar_sha": "fa241b6621b40f551dd72f1abe9b2db8fa0559d9a4b6fee108d23e51f3701296",
+      "channel_sha": "3b5b0ecf6b5e5d69615bc2cdf45f9dbc8a6c33fe5e9fb20c9c7c7a8da1230f28",
+      "joint_sha": "3b5b0ecf6b5e5d69615bc2cdf45f9dbc8a6c33fe5e9fb20c9c7c7a8da1230f28",
+      "method": "nonoverlap_copy",
+      "insertions_reviewed": []
+    },
+    {
+      "path": "ark_sim/content/dependencies.py",
+      "base_sha": "5dcee9792dfb88bcb502100d963c47ba5323f34ae484c9ff3e97c6307d0f4c55",
+      "pillar_sha": "5dcee9792dfb88bcb502100d963c47ba5323f34ae484c9ff3e97c6307d0f4c55",
+      "channel_sha": "9706124c8984c273d5b391399326dc23d1b37d857a524ccddb8b77ca20f4e5d8",
+      "joint_sha": "9706124c8984c273d5b391399326dc23d1b37d857a524ccddb8b77ca20f4e5d8",
+      "method": "nonoverlap_copy",
+      "insertions_reviewed": []
+    },
+    {
+      "path": "ark_sim/content/schemas.py",
+      "base_sha": "323eff195df28c0ba2c32e3850a262cdc9b668244d293e5c0a3b5398993d8f23",
+      "pillar_sha": "9a7e296ec87fb2895f8888c34968442d9015a8385d52bafd9fac47610d6953d6",
+      "channel_sha": "375f76d03d756b4509cbcaee995ea191bc14a64f89dad03699ec8420191a31f0",
+      "joint_sha": "4c1631c0da32e42ba24b1e8ed61e7e2e0a6c399c56bb5e002395ea2ce0dee3fa",
+      "method": "three_way_clean",
+      "insertions_reviewed": []
+    },
+    {
+      "path": "ark_sim/content/spatial_validation.py",
+      "base_sha": "e10e777cd3b43ec4f39017b3a016030c51456503b3486133d1ccc05f23d7cba4",
+      "pillar_sha": "e10e777cd3b43ec4f39017b3a016030c51456503b3486133d1ccc05f23d7cba4",
+      "channel_sha": "6c951f27002889c98f6442e01226386186ff68bcf52fe6ad74f60950d1dbcfa5",
+      "joint_sha": "6c951f27002889c98f6442e01226386186ff68bcf52fe6ad74f60950d1dbcfa5",
+      "method": "nonoverlap_copy",
+      "insertions_reviewed": []
+    },
+    {
+      "path": "ark_sim/domains/effects.py",
+      "base_sha": "f46567642b285c53f4c74b451a5aef5b55b47c068bb79aafdc67094bb6ac8e1c",
+      "pillar_sha": "60ddb625b7d66b0475602fa6a0d49d70c7b3cac92985c472e0bcc118ad946d0b",
+      "channel_sha": "befc9f5c035e2db028643fa7ac1f3a61aa4a740724e34f2d85d6edc0595f9a08",
+      "joint_sha": "39235b3bf3f3d986bd7259bb20cfe0af3498a002da7a8b7992bd9fd7dc425170",
+      "method": "three_way_clean",
+      "insertions_reviewed": []
+    },
+    {
+      "path": "ark_sim/domains/spatial.py",
+      "base_sha": "9d577cb47f214bc8f8431bf0ac450e518c81afbb942edcdb32c7a962ee62dbf5",
+      "pillar_sha": "9d577cb47f214bc8f8431bf0ac450e518c81afbb942edcdb32c7a962ee62dbf5",
+      "channel_sha": "5158286fa3a04e6977172d6799d9134e84443cbc4ea8b3aa5a7fd8df3ce829a8",
+      "joint_sha": "5158286fa3a04e6977172d6799d9134e84443cbc4ea8b3aa5a7fd8df3ce829a8",
+      "method": "nonoverlap_copy",
+      "insertions_reviewed": []
+    },
+    {
+      "path": "ark_sim/domains/tile_fields.py",
+      "base_sha": "115a23bdd990d625fdcff88a6619e2e488ab5670760f6e463cd8b3e4f7721ec1",
+      "pillar_sha": "115a23bdd990d625fdcff88a6619e2e488ab5670760f6e463cd8b3e4f7721ec1",
+      "channel_sha": "4a28e117288dd265a2afa1da639161ac9a55370ffd786f6dd9f02abbdc456e9b",
+      "joint_sha": "4a28e117288dd265a2afa1da639161ac9a55370ffd786f6dd9f02abbdc456e9b",
+      "method": "nonoverlap_copy",
+      "insertions_reviewed": []
+    },
+    {
+      "path": "ark_sim/domains/tile_mechanics.py",
+      "base_sha": "8b84d827dc6b8c98ade65e80ea9b6bbaba0ec872bb676c0dd8fcece8c8d912e8",
+      "pillar_sha": "8b84d827dc6b8c98ade65e80ea9b6bbaba0ec872bb676c0dd8fcece8c8d912e8",
+      "channel_sha": "13174412617fb4491d1fd8567b6d386bbdf56226b55bd84d676fdb7fab84df88",
+      "joint_sha": "13174412617fb4491d1fd8567b6d386bbdf56226b55bd84d676fdb7fab84df88",
+      "method": "nonoverlap_copy",
+      "insertions_reviewed": []
+    }
+  ],
+  "promoted": false,
+  "scope": "Exact-zero owned pillar cast/restore closure merged with production per-cell map and owned clock protocols; all own and fresh independent gates still required"
+}

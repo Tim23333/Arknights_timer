@@ -370,6 +370,10 @@ class Compiler:
                     "rule": {"rule", "calculation_rule"}, "amount_rule": {"rule", "calculation_rule"}}
         def walk(value, path, root_kind=None, location=()):
             if isinstance(value, Mapping):
+                if value.get("op") in {"set_ability_cooldown", "interrupt_ability"}:
+                    ident = value.get("ability")
+                    if ident not in definitions or definitions[ident].get("kind") != "ability":
+                        raise CompileError(path+": lifecycle relation requires an already reachable possessed ability")
                 if value.get("op") == "buff_application":
                     for ident in value["allowed"]:
                         if definitions[ident].get("kind") != "buff": raise CompileError(path+": allowed application ID must be Buff")

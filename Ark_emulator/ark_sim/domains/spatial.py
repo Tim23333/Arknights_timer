@@ -69,6 +69,8 @@ class GridTopology:
             raise ValueError("map definition must be an object")
         self.tile_reader = None
         self.tile_mechanics = thaw(map_definition.get("tile_mechanics", {}))
+        from .tile_mechanics import validate_cell_profiles
+        self.tile_cell_mechanics = thaw(validate_cell_profiles(map_definition))
         self.rows, self.cols = map_definition.get("rows"), map_definition.get("cols")
         for field, value in (("rows", self.rows), ("cols", self.cols)):
             if type(value) is not int or value <= 0:

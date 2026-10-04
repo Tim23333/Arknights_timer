@@ -54,3 +54,24 @@ def validate_pair(entry,exit):
     if not entry or not exit or entry['role']!='entry' or exit['role']!='exit':
         raise ValueError('route portal requires paired entry and exit tile profiles')
     return True
+
+
+def validate_cell_profiles(map_definition):
+    profiles = map_definition.get('tile_cell_mechanics', {})
+    validate_profiles(profiles)
+    for key, profile in profiles.items():
+        parts = key.split(':')
+        if len(parts) != 2 or any(not p.isascii() or not p.isdigit() or str(int(p)) != p for p in parts):
+            raise ValueError('Cell field identity must be canonical row:col')
+        row, col = map(int, parts)
+        if row >= map_definition['rows'] or col >= map_definition['cols']:
+            raise ValueError('Cell field outside map')
+        if profile['type'] != 'occupancy_buff_field':
+            raise ValueError('Only implemented occupancy fields may use a cell override')
+    return profiles
+
+
+def cell_profile(map_definition, index, tile):
+    profiles = map_definition.get('tile_cell_mechanics', {})
+    row, col = divmod(index, map_definition['cols'])
+    return profiles.get(str(row)+':'+str(col), map_definition.get('tile_mechanics', {}).get(tile.get('tileKey'), {}))

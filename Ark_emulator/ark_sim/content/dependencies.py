@@ -43,6 +43,10 @@ def references(value, path="definition", calculation_bindings=None):
                         raise ContentError(f"{location}.metadata.calculation_dependencies: missing default rule binding for {calculation}")
                     result.add(binding)
             for name, child in item.items():
+                if name=='ability' and item.get('op') in {'set_ability_cooldown','interrupt_ability'}:
+                    # Lifecycle relation requires an already possessed ability,
+                    # not a recursive content dependency through its own Buff.
+                    continue
                 if name=='blackboard' and key=='tiles' and '.map.tiles[' in location:
                     continue
                 if key == "timeline" and name == "policy":

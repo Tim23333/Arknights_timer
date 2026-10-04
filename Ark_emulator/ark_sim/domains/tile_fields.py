@@ -37,7 +37,11 @@ def validate_data(tile,profile):
 
 
 def validate_definitions(definitions,scene):
-    for key,profile in scene.get('map',{}).get('tile_mechanics',{}).items():
+    map_definition = scene.get('map', {})
+    from .tile_mechanics import validate_cell_profiles, cell_profile
+    cell_profiles = validate_cell_profiles(map_definition)
+    profiles = {**map_definition.get('tile_mechanics', {}), **{'cell/'+key: value for key, value in cell_profiles.items()}}
+    for key,profile in profiles.items():
         if profile['type']!='occupancy_buff_field':continue
         definition=definitions[profile['definition']]
         if definition['kind']!='entity':raise ValueError('tile field definition must be an entity')
@@ -89,12 +93,13 @@ def validate_effective_owner(definitions,definition,components,tags):
 
 
 def initialize(ctx):
-    map_definition=ctx.program.scenario.get('map',{});profiles=map_definition.get('tile_mechanics',{})
+    map_definition=ctx.program.scenario.get('map',{});profiles={**map_definition.get('tile_mechanics',{}), **map_definition.get('tile_cell_mechanics',{})}
     if not any(p['type']=='occupancy_buff_field' for p in profiles.values()):return
     fields={}
     with ctx.session.atomic():
         for index,tile in enumerate(map_definition['tiles']):
-            profile=profiles.get(tile.get('tileKey'))
+            from .tile_mechanics import cell_profile
+            profile=cell_profile(map_definition,index,tile)
             if not profile or profile['type']!='occupancy_buff_field':continue
             validate_data(tile,profile);row,col=divmod(index,map_definition['cols'])
             ref=ctx.lifecycle.create(profile['definition'],{'row':row,'col':col},deployed=False)

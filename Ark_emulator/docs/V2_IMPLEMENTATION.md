@@ -1,6 +1,13 @@
 # V2 通用底座实现与运行
 
-最新主底座为 **71d33f**，在20e通用机制基础上增加只读子树与当前弹道记录读写。它自己的1219项完整回归、0-1基线及独立四项／三组精确配对比较全部通过，主目录101个源码与catalog文件和固定候选字节相同。收据见 [弹道子记录推广](../validation/campaign/chapter08_projectile_leaf_v1_primary/promotion.json)，性能与逐值范围见 [验证说明](campaign/PROJECTILE_LEAF_CANDIDATE.md)。WaveTrack与可信World内部fork的合并版仍在隔离验证；下面20e及更早段落保留历史身份。
+2026-10-05 当前生产底座为 **f0c294**，包含逐格地图场域与拥有能力的冷却／中断协议，共106项计算契约。
+同版本1219项完整回归、0-1／自定义公式基线、25项作者检查和17项联合独立门已实际通过后推广九文件。
+接口与身份比较限定见 [逐格地图与技能时钟](campaign/CHAPTER09_CHANNEL_MAP.md)，全程进度见 [当前状态](campaign/CURRENT_STATUS.md)。
+
+以下71d33f及更早段落保留历史身份。71d33f在20e通用机制基础上增加只读子树与当前弹道记录读写。
+它自己的1219项完整回归、0-1基线及独立四项／三组精确配对比较全部通过。
+收据见 [弹道子记录推广](../validation/campaign/chapter08_projectile_leaf_v1_primary/promotion.json)，
+性能与逐值范围见 [验证说明](campaign/PROJECTILE_LEAF_CANDIDATE.md)。
 
 2026-10-04 最新主底座为 **20e812**，已新增可替换动态 Buff 寿命、真实复活自持 Buff、有界预定义实例复用、零HP有限终末阶段与当前回调资格隔离。它自己的1219项完整回归、标准0-1／自定义公式基线和25项独立联动检查全部实际通过，精确14文件推广；101个源码与catalog文件和固定候选字节相同。收据见 [联合源码推广](../validation/campaign/chapter08_joint_v4_primary/promotion.json)，配置见 [联合机制](campaign/CHAPTER08_JOINT_V2.md) 和 [终末权限修复](campaign/CHAPTER08_TERMINAL_JOINT_V4.md)。旧9ad完整备份保留，下面9ad段落为当时历史状态。
 

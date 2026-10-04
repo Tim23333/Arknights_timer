@@ -26,7 +26,7 @@ COMPONENT_FIELDS = {"elemental": None,"tile_occupancy": {"blocks_deployment", "e
 }
 RESOURCE_FIELDS = {"initial", "capacity", "capacity_attribute", "capacity_change_rule", "recovery_rule", "recovery_rate", "recovery", "rules", "parameters", "bounds_rule", "capacity_rule", "role", "events", "recovery_freeze_abilities", "recovery_freeze_rule"}
 EFFECT_FIELDS = {'element','health_effect','element_effect','selection_projection','event', 'force', 'radius', 'additions', 'stream', 'facing', 'target', 'parameters', 'tags', 'center', 'type', 'definition', 'on_failure', 'state', 'machine', 'ignore_for_sp', 'rules', 'allowed', 'offset', 'position', 'distance', 'direction', 'remove_all', 'op', 'duration_seconds', 'projectile_definition', 'resource', 'fixed_amount', 'effects', 'on_success', 'damage_without_modify', 'delta', 'amount', 'attachment', 'kind', 'stacks', 'buff', 'read_mode', 'effect', 'delay_seconds', 'application_rule', 'ability', 'env_blackboard_injected', 'condition', 'probability', 'damage_flags', 'attack_type', 'node_is_env_damage', 'damage_type', 'owner', 'at_seconds', 'lifetime_seconds', 'metadata', 'selector', 'value', 'membership_rule', 'filters', 'scale', 'payload', 'center_position', 'bind_to_cast', 'origin', 'amount_rule', 'environmental'}
-DEFAULT_CAPABILITIES = {'activations': {'manual', 'on_deploy', 'automatic_attack', 'passive'}, 'damage_types': {'arts', 'physical', 'true'}, 'effects': {'elemental_damage','elemental_attack','restart_behavior','finish_timeline_wave','regenerate', 'schedule', 'remove_buff', 'random', 'retire', 'apply_terrain_overlay', 'area', 'trigger_ability', 'advance_branch', 'heal', 'begin_attachment', 'no_source_damage', 'instant_kill', 'transition', 'activate_predefined', 'state', 'push', 'emit', 'apply_buff', 'set_motion_mode', 'move', 'damage', 'input_lock', 'modify_resource', 'spawn_on_tiles', 'spawn', 'buff_application', 'remove_terrain_overlay'}, 'read_modes': {'at_launch', 'at_hit', 'at_cast'}, 'stacking': {'extend', 'refresh', 'max', 'independent', 'add'}}
+DEFAULT_CAPABILITIES = {'activations': {'manual', 'on_deploy', 'automatic_attack', 'passive'}, 'damage_types': {'arts', 'physical', 'true'}, 'effects': {'set_ability_cooldown','interrupt_ability','elemental_damage','elemental_attack','restart_behavior','finish_timeline_wave','regenerate', 'schedule', 'remove_buff', 'random', 'retire', 'apply_terrain_overlay', 'area', 'trigger_ability', 'advance_branch', 'heal', 'begin_attachment', 'no_source_damage', 'instant_kill', 'transition', 'activate_predefined', 'state', 'push', 'emit', 'apply_buff', 'set_motion_mode', 'move', 'damage', 'input_lock', 'modify_resource', 'spawn_on_tiles', 'spawn', 'buff_application', 'remove_terrain_overlay'}, 'read_modes': {'at_launch', 'at_hit', 'at_cast'}, 'stacking': {'extend', 'refresh', 'max', 'independent', 'add'}}
 
 
 def fields(value, allowed, path):
@@ -55,6 +55,11 @@ def validate_timing(value, path):
 
 def validate_effect(effect, path, capabilities):
     fields(effect, EFFECT_FIELDS, path)
+    if effect.get('op') in {'set_ability_cooldown', 'interrupt_ability'}:
+        if set(effect)-{'op','target','ability','duration_seconds','parameters','metadata','rules','condition'} or not isinstance(effect.get('ability'),str) or not effect['ability']:
+            raise ContentError(path+': owned ability effect requires exact reference and supported fields')
+        if effect['op']=='set_ability_cooldown':number(effect.get('duration_seconds'),path+'.duration_seconds',0)
+        elif 'duration_seconds' in effect:raise ContentError(path+': interrupt cannot specify a cooldown duration')
     if effect.get('op') in {'elemental_damage','elemental_attack'}:
         from ..domains.elemental import validate_effect as elemental_effect
         try:elemental_effect(effect)

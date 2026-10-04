@@ -78,6 +78,9 @@ def capability_preflight(scenario, definitions, ruleset, rules, catalog=None):
 
     def effect(item, path, scopes):
         local = [*scopes, item.get("rules", {})]
+        if item.get('op')=='set_ability_cooldown':
+            require('ability.recovery',path+'.duration_seconds',local)
+            require('time.quantize',path+'.clock')
         if item.get('op')=='elemental_damage' and item.get('amount_rule'):
             require('elemental.packet',path+'.amount_rule',local,item['amount_rule'])
         if item.get('op')=='elemental_attack':

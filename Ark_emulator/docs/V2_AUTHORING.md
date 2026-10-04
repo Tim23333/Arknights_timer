@@ -376,7 +376,7 @@ velocity保存在World并参与检查点；停止、阻挡和WAIT清除模型速
 目前随机checkpoint offset和非零reachDistance仍要求额外模型，编译会拒绝未支持输入。
 可运行例子与边界见 [路线接口](campaign/candidates/M9_ROUTE_REVIEW.md)。
 
-当前主目录第6章联合底座的计算契约总数为98。以下M10首章综合内容保留历史身份，位于 `packages/campaign/mainline_models/level_main_00-10.m10.json`
+历史第6章联合底座的计算契约总数为98，当前106项底座及新增接口见 [逐格地图与技能时钟](campaign/CHAPTER09_CHANNEL_MAP.md)。以下M10首章综合内容保留历史身份，位于 `packages/campaign/mainline_models/level_main_00-10.m10.json`
 和 `level_main_00-11.m10.json`，模型与客户端待对齐项保留；不要把partial场景的获胜解释为原生完整干员已实现。
 
 ## 部署、显隐与地块接口
@@ -486,3 +486,5 @@ Buff的每次周期回调现在是一个完整事务，包括全部效果、同�
 ```
 
 能力列表须唯一、有限且由实际目标拥有，state必须存在于目标状态图，冷却秒数须有限非负，reset选项为严格bool。取消声明cast、状态退出／进入回调与时钟建立在同一事务中；回调使目标退场时停止后续写入，异常完整回滚。已发射弹道继续遵守原声明生命周期，未列cast不被取消。没有该效果的普通transition保持默认行为。纯目标资格和可用性规则可读当前逻辑time／seconds／quantum；提供器仍不能修改World或RNG。来源和独立边界见 [状态机重启](campaign/BEHAVIOR_RESTART_DESIGN.md)。
+
+逐格地图场域与拥有能力的冷却／中断已经进入生产底座。内容字段、局部数值规则和精确依赖校验见 [逐格地图与技能时钟](campaign/CHAPTER09_CHANNEL_MAP.md)。

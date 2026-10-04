@@ -1,0 +1,35 @@
+{
+  "core_before": "f48b7fcfd0f0bfd673e9ea2d55333b96707c8b45645b2861610e72052b3cadac",
+  "core_after": "f48b7fcfd0f0bfd673e9ea2d55333b96707c8b45645b2861610e72052b3cadac",
+  "actual_exit": 1,
+  "results": [
+    {
+      "case": "missing_lease",
+      "passed": true
+    },
+    {
+      "case": "generation_zero_normal_no_lease",
+      "passed": true
+    },
+    {
+      "case": "orphan_extra_task",
+      "passed": false,
+      "error": "'next_task_id'",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_pillar_lifecycle_v2\\test_restore.py\", line 26, in main\n    task=next(t for t in changed['kernel']['scheduler']['tasks'] if t['kind']=='domain.depletion.action');extra=copy.deepcopy(task);extra['id']=changed['kernel']['scheduler']['next_task_id'];changed['kernel']['scheduler']['next_task_id']+=1;extra['seq']=changed['kernel']['scheduler']['next_seq'];changed['kernel']['scheduler']['next_seq']+=1;changed['kernel']['scheduler']['tasks'].append(extra);errors[case]=reject(s,changed)\n                                                                                                                                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^\nKeyError: 'next_task_id'\n"
+    },
+    {
+      "case": "coherent_wrong_generation",
+      "passed": true
+    },
+    {
+      "case": "legitimate_withdraw_finish_dead",
+      "passed": true
+    }
+  ],
+  "rejections": {
+    "missing_lease": "Living exhausted owner requires its original finite lease",
+    "generation_zero_normal_no_lease": "Living exhausted owner requires its original finite lease",
+    "coherent_wrong_generation": "Restored depletion generation differs from original transition"
+  },
+  "counter_method": "Public damage at7, checkpoint at8 with natural attribute_cache.entries==[]; no cache edits"
+}

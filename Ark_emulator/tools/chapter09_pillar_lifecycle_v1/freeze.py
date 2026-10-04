@@ -1,0 +1,22 @@
+import sys,json,hashlib,shutil
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2];CAND=(ROOT/'../unpack_work/campaign_c9_pillar_lifecycle_v1_candidate').resolve();PARENT=(ROOT/'../unpack_work/campaign_c9_depletion_v2_candidate').resolve();sys.path.insert(0,str(CAND));sys.path.insert(1,str(ROOT))
+from ark_sim.adapters.api import implementation_digest
+from tools.chapter09_pillar_lifecycle_v1.build import build
+OUT=ROOT/'validation/campaign/chapter09_pillar_lifecycle_v1';TOOLS=ROOT/'tools/chapter09_pillar_lifecycle_v1'
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+before=implementation_digest();report=json.loads((OUT/'author.initial.json').read_bytes());reg=json.loads((OUT/'author.regression.json').read_bytes())
+assert report['actual_exit']==reg['actual_exit']==0 and report['source_guard_equal']
+assert report['core_before']==report['core_after']==reg['core_before']==reg['core_after']==before
+module=build();canonical=hashlib.sha256(json.dumps(module,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest();assert report['module_before']==report['module_after']==canonical
+path=ROOT/'packages/campaign/chapter09_consumers/pillar_lifecycle_v1/module.v1.json';path.parent.mkdir(parents=True,exist_ok=True);assert not path.exists();path.write_text(json.dumps(module,ensure_ascii=False,indent=2)+'\n',encoding='utf8')
+delta=[]
+for p in sorted((CAND/'ark_sim').rglob('*')):
+    if not p.is_file() or '__pycache__' in p.parts or p.suffix=='.pyc':continue
+    rel=p.relative_to(CAND);old=PARENT/rel
+    if not old.exists() or p.read_bytes()!=old.read_bytes():
+        target=TOOLS/'source_delta'/rel;target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(p,target)
+        delta.append({'path':rel.as_posix(),'parent_sha256':sha(old) if old.exists() else None,'candidate_sha256':sha(p),'saved_delta_sha256':sha(target)})
+assert before==implementation_digest()
+receipt={'schema':'ark-sim/compact-freeze-receipt/v1','candidate':str(CAND),'parent':str(PARENT),'parent_core':'aae51de3eef5fcce08eff7b5d18b2dca1cc4b52e8594106091634806dd9d4814','core_before':before,'core_after':implementation_digest(),'author_groups':12,'own_primitive_regression_groups':10,'independent_review_passed':False,'promoted':False,'reports':[{'path':str(p.relative_to(ROOT)).replace('\\','/'),'sha256':sha(p)} for p in [OUT/'author.initial.json',OUT/'author.regression.json',OUT/'parent.counter.json',OUT/'development.cpp_and_fixture_failure.bdbf.json']], 'module_path':str(path.relative_to(ROOT)).replace('\\','/'),'module_sha256':sha(path),'module_canonical_sha256':canonical,'source_before':report['source_before'],'source_after':report['source_after'],'delta':delta,'helpers':[{'path':str(p.relative_to(ROOT)).replace('\\','/'),'sha256':sha(p)} for p in sorted(TOOLS.glob('*.py'))],'actual_scope':'Exact HP0 -> Damaged2s -> candead -> next canonical in-range attack/source-direction -> real owned manual tile-target cast -> 12000 true/stun10/withdraw/trap kill/2 ruins/block3/retire. Finite source-owned gate handles pillar-tag candead/cancel and environment rejection. Owned cast pure timing re-evaluation and original scheduler identity/context binding.','native_vs_reference':module['manifest']['metadata']['reference_policy'],'pending':module['manifest']['metadata']['pending']+['fresh independent review and merged full/baseline gates','whole native stage execution, DeadBoom and other consumers'],'legacy_payload_metadata_note':'Imported payload retains its original partial-scope marker in manifest; current tested lifecycle component and this receipt define new author scope. No whole-client or whole-stage claim.','raw_deleted':report['raw_deleted'] and reg['raw_deleted'],'cleanup_deleted_bytes':sum(x['reclaimed_bytes'] for x in report['cleanup'])+sum(x['reclaimed_bytes'] for x in reg['cleanup']),'cleanup_remaining':sum(x['remaining_files'] for x in report['cleanup'])+sum(x['remaining_files'] for x in reg['cleanup']),'cleanup_errors':sum(x['error_count'] for x in report['cleanup'])+sum(x['error_count'] for x in reg['cleanup'])}
+(OUT/'freeze.v1.json').write_text(json.dumps(receipt,ensure_ascii=False,indent=2),encoding='utf8');print(json.dumps({'core':before,'delta_files':len(delta),'module_sha256':sha(path),'freeze_sha256':sha(OUT/'freeze.v1.json'),'cleanup_deleted_bytes':receipt['cleanup_deleted_bytes'],'cleanup_remaining':receipt['cleanup_remaining'],'cleanup_errors':receipt['cleanup_errors']}))

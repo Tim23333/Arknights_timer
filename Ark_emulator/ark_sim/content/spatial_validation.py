@@ -191,9 +191,12 @@ def validate_map(value, path):
     profiles=value.get('tile_mechanics',{})
     try:validate_profiles(profiles)
     except ValueError as error:fail(path,str(error))
+    from ..domains.tile_mechanics import validate_cell_profiles, cell_profile
+    try:cell_profiles = validate_cell_profiles(value)
+    except ValueError as error:fail(path, str(error))
     tiles = value.get("tiles")
     if tiles is None:
-        if any(p.get('type')=='occupancy_buff_field' for p in profiles.values()):
+        if cell_profiles or any(p.get('type')=='occupancy_buff_field' for p in profiles.values()):
             fail(path+'.tiles','tile field profiles require explicit row-major tiles')
         return
     if not isinstance(tiles, (list, tuple)) or len(tiles) != value["rows"] * value["cols"]:
@@ -222,7 +225,7 @@ def validate_map(value, path):
             number = tile.get(field)
             if number is not None and (type(number) is not int or not 0 <= number <= 3):
                 fail(f"{location}.{field}", "expected a normalized integer mask in [0, 3] or null")
-        field_profile=profiles.get(key,{}) if key in profiles else {}
+        field_profile=cell_profile(value,index,tile)
         if field_profile.get('type')=='periodic_effect_field':
             from ..domains.tile_fields import board,same_data
             if not same_data(board(tile),field_profile['expected_blackboard']):fail(location,'periodic field blackboard not exactly bound')

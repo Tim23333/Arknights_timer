@@ -1,0 +1,74 @@
+{
+  "schema": "ark-sim/ch9-rock-source-audit/v2",
+  "source_sha": "592afac29cc32d1aeaba3ea739eb6da5a218055e255a42f53315f4a2ca0962ff",
+  "durokt_recover": {
+    "exact_native_frames": 28,
+    "recover_go_parent_chain": [
+      "RecoverAnim",
+      "Skills",
+      "Normal",
+      "Modes",
+      "enemy_1171_durokt"
+    ],
+    "normal_mode_only_scope": true
+  },
+  "gargoyle_start": {
+    "duration": {
+      "source_seconds_float32": 0.6666666865348816,
+      "seconds": 0.6666666666666666,
+      "frame": 20,
+      "exact_authored_frame": true
+    },
+    "events": [
+      {
+        "name": "OnStart",
+        "source_seconds_float32": 0.6666666865348816,
+        "seconds": 0.6666666666666666,
+        "frame": 20,
+        "exact_authored_frame": true
+      }
+    ]
+  },
+  "native_fly_bson_actions": [
+    {
+      "$type": "Torappu.Battle.Action.Nodes+SwitchMode, Assembly-CSharp",
+      "_modeIndex": 2,
+      "_loadModeFromBlackboard": false,
+      "_restoreDefault": false,
+      "_restartFSM": true,
+      "_targetType": "TARGET"
+    },
+    {
+      "$type": "Torappu.Battle.Action.Nodes+ChangeMotionMode, Assembly-CSharp",
+      "_target": "BUFF_OWNER",
+      "_resetToDefault": false,
+      "_motionMode": "WALK"
+    },
+    {
+      "$type": "Torappu.Battle.Action.Nodes+ChangeEnemyRouteMotionMode, Assembly-CSharp",
+      "_target": "BUFF_OWNER",
+      "_motionMode": "WALK"
+    }
+  ],
+  "native_fly_bson_sha": "7ae7b0151aa01eb01bbae5082336a9ec64ad0f8aca70da4528e557c6778a316e",
+  "native_hp_ratio": 0.20000000298023224,
+  "existing_consumer_policy": {
+    "native_reference": "native HP ratio20%; airborne FLY motion1 inherited reference, source WALK discrepancy pending",
+    "prts_reference": "HP100%; FLY motion1"
+  },
+  "reference_url": "https://prts.wiki/w/守墓石像",
+  "reference_checked_utc": "2026-10-04",
+  "reference_observed": {
+    "rebirth_hp_ratio": 1.0,
+    "stone_seconds": 10,
+    "airborne_after_stone": true,
+    "pillar_break_mark_seconds": 1
+  },
+  "pending": [
+    "Exact source-owned RecoverAnim and Born2Fly occupied intervals, OnStart and visual-only buffs",
+    "Explicit motion-version policy: frozen BSON WALK0 vs current reference FLY1",
+    "Review 1-second pillar-break mark across later different-source lethal hit; existing actual same-hit source check alone does not establish lingering policy"
+  ],
+  "whole_enemy": false,
+  "client_verified": false
+}
