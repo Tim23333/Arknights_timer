@@ -1,0 +1,504 @@
+{
+  "schemaVersion": 2,
+  "rules": [
+    {
+      "id": "rule/linked/capacity",
+      "kind": "rule",
+      "contract": "elemental.capacity",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.parameters.capacity"
+      }
+    },
+    {
+      "id": "rule/linked/loss",
+      "kind": "rule",
+      "contract": "elemental.loss",
+      "implementation": {
+        "type": "expression",
+        "expression": "max(0, inputs.request.raw_amount*(1-inputs.parameters.resistance*.01))"
+      }
+    },
+    {
+      "id": "rule/linked/recovery",
+      "kind": "rule",
+      "contract": "elemental.recovery",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.current"
+      }
+    },
+    {
+      "id": "rule/linked/duration",
+      "kind": "rule",
+      "contract": "elemental.break_duration",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.parameters.break_duration_seconds"
+      }
+    },
+    {
+      "id": "rule/linked/eligible",
+      "kind": "rule",
+      "contract": "elemental.eligibility",
+      "implementation": {
+        "type": "expression",
+        "expression": "'neutral' not in inputs.target.tags"
+      }
+    },
+    {
+      "id": "rule/linked/packet",
+      "kind": "rule",
+      "contract": "elemental.packet",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.source_attributes.atk * inputs.request.parameters.ep_ratio"
+      }
+    },
+    {
+      "id": "rule/linked/motion",
+      "kind": "rule",
+      "contract": "projectile.trajectory",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.linked.homing"
+      }
+    }
+  ],
+  "definitions": [
+    {
+      "id": "attachment/linked/fire",
+      "kind": "attachment",
+      "duration_seconds": 10.6,
+      "flight_lifetime_seconds": 5,
+      "step_interval_seconds": 0.03333333333333333,
+      "hit_interval_seconds": 0.5,
+      "refresh_interval_seconds": 1,
+      "motion": {
+        "rule": "rule/linked/motion",
+        "parameters": {
+          "mode": "homing",
+          "speed": 10
+        }
+      },
+      "target_buff": "buff/linked/marker",
+      "effect": {
+        "op": "elemental_attack",
+        "health_effect": {
+          "op": "damage",
+          "damage_type": "arts",
+          "scale": 0.12,
+          "read_mode": {
+            "source_attributes": "at_hit",
+            "target_attributes": "at_hit"
+          }
+        },
+        "element_effect": {
+          "op": "elemental_damage",
+          "element": "FIRE",
+          "amount_rule": "rule/linked/packet",
+          "parameters": {
+            "ep_ratio": 0.06
+          }
+        }
+      },
+      "damage_integral": false,
+      "source_cancel_flags": [
+        0,
+        12
+      ],
+      "ignored_owned_source_flags": [],
+      "force_reach_on_timeout": true,
+      "lifecycle": {
+        "source_invalid": "cancel",
+        "target_invalid": "cancel",
+        "source_hidden": "cancel",
+        "target_hidden": "cancel"
+      },
+      "max_packets": null,
+      "completion_blocking": false,
+      "source_recovery_buff": null,
+      "recovery_on": []
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/linked/marker",
+      "kind": "buff",
+      "stacking": {
+        "mode": "independent"
+      }
+    },
+    {
+      "id": "buff/ch9/flame/casting_state",
+      "kind": "buff",
+      "duration_seconds": 10.6,
+      "interval_seconds": 6,
+      "control": {
+        "move": false,
+        "attack": false
+      },
+      "effects": [
+        {
+          "op": "set_ability_cooldown",
+          "ability": "ability/linked/fire",
+          "duration_seconds": 10
+        }
+      ],
+      "on_remove": [
+        {
+          "op": "interrupt_ability",
+          "ability": "ability/linked/fire"
+        },
+        {
+          "op": "set_ability_cooldown",
+          "ability": "ability/linked/fire",
+          "duration_seconds": 10
+        }
+      ],
+      "events": [
+        {
+          "event": "attachment.finished",
+          "condition": "inputs.payload.source == context.owner.id and inputs.payload.reason in ['source_flags','cast_interrupted','target_invalid']",
+          "effects": [
+            {
+              "op": "interrupt_ability",
+              "ability": "ability/linked/fire"
+            },
+            {
+              "op": "remove_buff",
+              "buff": "buff/ch9/flame/casting_state"
+            }
+          ]
+        }
+      ],
+      "metadata": {
+        "native_buff_key": "duspfr_flame[cd]",
+        "native_template": "enemy_duspfr_flame[cd]",
+        "source_BB": {
+          "duspfr_flame[cd].duration": 10.6,
+          "duspfr_flame[cd].cooldown": 10.0,
+          "atk_scale": 0.12,
+          "ep_damage_ratio": 0.06,
+          "hit_interval": 0.5,
+          "duspfr_flame[cd].interval": 6.0
+        },
+        "source_BSON": {
+          "parsed": {
+            "templateKey": "enemy_duspfr_flame[cd]",
+            "effectKey": "",
+            "onEventPriority": "DEFAULT",
+            "eventToActions": {
+              "ON_BUFF_FINISH": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+InterruptEnemyAbility, Assembly-CSharp",
+                  "_enemyFrom": "BUFF_OWNER",
+                  "_resetCooldown": false,
+                  "_checkBuffAbility": false
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+AlwaysNext, Assembly-CSharp"
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+UpdateAbilityCoolDown, Assembly-CSharp",
+                  "_ownerType": "BUFF_OWNER",
+                  "_abilityName": "Flame",
+                  "_loadFromBlackboard": true,
+                  "_coolDownKey": "",
+                  "_useNewPeriod": true,
+                  "_newPeriod": 0.0,
+                  "_loadAbilityFromBlackboard": false,
+                  "_waitFirstPeriod": true,
+                  "_useAbilityBlackboard": false,
+                  "_keepPassedTime": false,
+                  "_useOriginalCooldown": false
+                }
+              ],
+              "ON_BUFF_DISABLE": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+FinishBuff, Assembly-CSharp",
+                  "_decCntIfStack": false,
+                  "_updateOverrideMap": true
+                }
+              ],
+              "ON_BUFF_START": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+UpdateAbilityCoolDown, Assembly-CSharp",
+                  "_ownerType": "BUFF_OWNER",
+                  "_abilityName": "Flame",
+                  "_loadFromBlackboard": false,
+                  "_coolDownKey": "",
+                  "_useNewPeriod": true,
+                  "_newPeriod": 0.0,
+                  "_loadAbilityFromBlackboard": false,
+                  "_waitFirstPeriod": true,
+                  "_useAbilityBlackboard": false,
+                  "_keepPassedTime": false,
+                  "_useOriginalCooldown": false
+                }
+              ],
+              "ON_BUFF_TRIGGER": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+UpdateAbilityCoolDown, Assembly-CSharp",
+                  "_ownerType": "BUFF_OWNER",
+                  "_abilityName": "Flame",
+                  "_loadFromBlackboard": true,
+                  "_coolDownKey": "",
+                  "_useNewPeriod": true,
+                  "_newPeriod": 0.0,
+                  "_loadAbilityFromBlackboard": false,
+                  "_waitFirstPeriod": true,
+                  "_useAbilityBlackboard": false,
+                  "_keepPassedTime": false,
+                  "_useOriginalCooldown": false
+                }
+              ]
+            }
+          },
+          "payload_offset": 1370223,
+          "document_base64": "6wUAAAJ0ZW1wbGF0ZUtleQAXAAAAZW5lbXlfZHVzcGZyX2ZsYW1lW2NkXQACZWZmZWN0S2V5AAEAAAAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAADZXZlbnRUb0FjdGlvbnMAgQUAAARPTl9CVUZGX0ZJTklTSAAtAgAAAzAAkwAAAAIkdHlwZQBDAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0ludGVycnVwdEVuZW15QWJpbGl0eSwgQXNzZW1ibHktQ1NoYXJwAAJfZW5lbXlGcm9tAAsAAABCVUZGX09XTkVSAAhfcmVzZXRDb29sZG93bgAACF9jaGVja0J1ZmZBYmlsaXR5AAAAAzEASAAAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0Fsd2F5c05leHQsIEFzc2VtYmx5LUNTaGFycAAAAzIARAEAAAIkdHlwZQBDAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK1VwZGF0ZUFiaWxpdHlDb29sRG93biwgQXNzZW1ibHktQ1NoYXJwAAJfb3duZXJUeXBlAAsAAABCVUZGX09XTkVSAAJfYWJpbGl0eU5hbWUABgAAAEZsYW1lAAhfbG9hZEZyb21CbGFja2JvYXJkAAECX2Nvb2xEb3duS2V5AAEAAAAACF91c2VOZXdQZXJpb2QAAQFfbmV3UGVyaW9kAAAAAAAAAAAACF9sb2FkQWJpbGl0eUZyb21CbGFja2JvYXJkAAAIX3dhaXRGaXJzdFBlcmlvZAABCF91c2VBYmlsaXR5QmxhY2tib2FyZAAACF9rZWVwUGFzc2VkVGltZQAACF91c2VPcmlnaW5hbENvb2xkb3duAAAAAARPTl9CVUZGX0RJU0FCTEUAdgAAAAMwAG4AAAACJHR5cGUAOAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytGaW5pc2hCdWZmLCBBc3NlbWJseS1DU2hhcnAACF9kZWNDbnRJZlN0YWNrAAAIX3VwZGF0ZU92ZXJyaWRlTWFwAAEAAARPTl9CVUZGX1NUQVJUAEwBAAADMABEAQAAAiR0eXBlAEMAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrVXBkYXRlQWJpbGl0eUNvb2xEb3duLCBBc3NlbWJseS1DU2hhcnAAAl9vd25lclR5cGUACwAAAEJVRkZfT1dORVIAAl9hYmlsaXR5TmFtZQAGAAAARmxhbWUACF9sb2FkRnJvbUJsYWNrYm9hcmQAAAJfY29vbERvd25LZXkAAQAAAAAIX3VzZU5ld1BlcmlvZAABAV9uZXdQZXJpb2QAAAAAAAAAAAAIX2xvYWRBYmlsaXR5RnJvbUJsYWNrYm9hcmQAAAhfd2FpdEZpcnN0UGVyaW9kAAEIX3VzZUFiaWxpdHlCbGFja2JvYXJkAAAIX2tlZXBQYXNzZWRUaW1lAAAIX3VzZU9yaWdpbmFsQ29vbGRvd24AAAAABE9OX0JVRkZfVFJJR0dFUgBMAQAAAzAARAEAAAIkdHlwZQBDAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK1VwZGF0ZUFiaWxpdHlDb29sRG93biwgQXNzZW1ibHktQ1NoYXJwAAJfb3duZXJUeXBlAAsAAABCVUZGX09XTkVSAAJfYWJpbGl0eU5hbWUABgAAAEZsYW1lAAhfbG9hZEZyb21CbGFja2JvYXJkAAECX2Nvb2xEb3duS2V5AAEAAAAACF91c2VOZXdQZXJpb2QAAQFfbmV3UGVyaW9kAAAAAAAAAAAACF9sb2FkQWJpbGl0eUZyb21CbGFja2JvYXJkAAAIX3dhaXRGaXJzdFBlcmlvZAABCF91c2VBYmlsaXR5QmxhY2tib2FyZAAACF9rZWVwUGFzc2VkVGltZQAACF91c2VPcmlnaW5hbENvb2xkb3duAAAAAAAA",
+          "document_sha256": "e83b799f84b226a9f0e6f79ea140a3485bf1b67bb4613b947b82c34fa3062388"
+        }
+      }
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/linked/target",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/linked/fire",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "forbidden_source_flags": [
+          0,
+          12
+        ],
+        "parameters": {
+          "auto_only": true,
+          "auto_when_ready": true,
+          "requires_targets": true
+        },
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/ch9/flame/casting_state",
+            "bind_to_cast": true
+          },
+          {
+            "op": "set_ability_cooldown",
+            "target": "source",
+            "ability": "ability/linked/fire",
+            "duration_seconds": 0
+          }
+        ]
+      },
+      "wait_for_channels": true,
+      "selector": "selector/linked/target",
+      "timeline": [
+        {
+          "at_seconds": 0.5,
+          "effect": {
+            "op": "begin_attachment",
+            "attachment": "attachment/linked/fire"
+          }
+        }
+      ],
+      "duration_seconds": 10.6
+    }
+  ],
+  "entities": [
+    {
+      "id": "unit/linked/source",
+      "kind": "entity",
+      "tags": [
+        "enemy"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 8000,
+            "atk": 500,
+            "def": 400,
+            "mres": 0,
+            "attack_interval": 2,
+            "attack_speed_ratio": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "role": "health",
+            "initial": 8000,
+            "capacity": 8000
+          }
+        },
+        "selection_state": {
+          "side": 1,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 2,
+          "abnormal_flags": []
+        },
+        "abilities": [
+          "ability/linked/fire"
+        ],
+        "spatial": {},
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "buffs": {
+          "initial": []
+        }
+      }
+    },
+    {
+      "id": "unit/linked/target",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 20000,
+            "atk": 0,
+            "def": 137,
+            "mres": 20
+          }
+        },
+        "resources": {
+          "hp": {
+            "role": "health",
+            "initial": 20000,
+            "capacity": 20000
+          }
+        },
+        "spatial": {},
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "elemental": {
+          "eligibility_rule": "rule/linked/eligible",
+          "elements": {
+            "FIRE": {
+              "capacity": 1000,
+              "resistance": 0,
+              "recovery_rate": 0,
+              "break_duration_seconds": 10,
+              "rules": {
+                "elemental.capacity": "rule/linked/capacity",
+                "elemental.loss": "rule/linked/loss",
+                "elemental.recovery": "rule/linked/recovery",
+                "elemental.break_duration": "rule/linked/duration"
+              },
+              "on_break": [
+                {
+                  "op": "emit",
+                  "event": "linked.break"
+                }
+              ],
+              "on_end": []
+            }
+          }
+        }
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/linked",
+    "ruleset": "ruleset/ark_standard",
+    "map": {
+      "rows": 1,
+      "cols": 4
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/linked/source",
+        "instanceAlias": "source",
+        "position": {
+          "row": 0,
+          "col": 0
+        }
+      },
+      {
+        "definition": "unit/linked/target",
+        "instanceAlias": "target",
+        "position": {
+          "row": 0,
+          "col": 1
+        }
+      }
+    ],
+    "commands": []
+  },
+  "manifest": {
+    "id": "package/ch9/flame_channel/prototype",
+    "metadata": {
+      "source_variant": {
+        "useDb": true,
+        "id": "enemy_1173_duspfr",
+        "level": 0,
+        "overwrittenData": null
+      },
+      "source_skill": {
+        "prefabKey": "Flame",
+        "priority": 1,
+        "cooldown": 0.0,
+        "initCooldown": 0.0,
+        "spCost": 0,
+        "blackboard": [
+          {
+            "key": "duspfr_flame[cd].duration",
+            "value": 10.6,
+            "valueStr": null
+          },
+          {
+            "key": "duspfr_flame[cd].cooldown",
+            "value": 10.0,
+            "valueStr": null
+          },
+          {
+            "key": "atk_scale",
+            "value": 0.12,
+            "valueStr": null
+          },
+          {
+            "key": "ep_damage_ratio",
+            "value": 0.06,
+            "valueStr": null
+          },
+          {
+            "key": "hit_interval",
+            "value": 0.5,
+            "valueStr": null
+          },
+          {
+            "key": "duspfr_flame[cd].interval",
+            "value": 6.0,
+            "valueStr": null
+          }
+        ]
+      },
+      "scope": "Casting state and continuous payload; target loss source-owned cancellation, normal skill repeat state semantics and DeadBoom still require full consumer review",
+      "reference_policy": "Fixed native10.6/6/10/.5; planar harpoon flight10, first packet at contact, packets each.5. The10.6 cast state deadline cancels remaining link; its duration is not extended by flight.",
+      "whole_enemy_complete": false
+    }
+  }
+}

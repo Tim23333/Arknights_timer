@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/peer/no_optin",
+    "requires": [
+      "preset/ark_standard"
+    ]
+  },
+  "entities": [
+    {
+      "id": "unit/peer/plain",
+      "kind": "entity",
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 54321,
+            "atk": 517,
+            "def": 913,
+            "mres": 61,
+            "base_force_level": 5.25
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 54321,
+            "capacity": 54321,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/peer/no_optin",
+    "ruleset": "ruleset/ark_standard",
+    "map": {
+      "rows": 2,
+      "cols": 4
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/peer/plain",
+        "instanceAlias": "plain",
+        "position": {
+          "row": 1,
+          "col": 2
+        }
+      }
+    ]
+  }
+}
