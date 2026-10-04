@@ -26,6 +26,25 @@ def test_second_process_scan_blocks_new_live_run(tmp_path):
     p=old_log(tmp_path/'events.jsonl');cand,_=c.plan({},[tmp_path],[],0);deleted,errors=c.execute(cand,[tmp_path],{},[],row_supplier=lambda:[{'CommandLine':f'python runner --run-dir "{tmp_path}"'}]);assert not deleted and errors and p.exists()
 def test_source_and_logs_actual_deletion(tmp_path):
     source=file(tmp_path/'events.json',{'schemaVersion':2,'scenarioDraft':{}});log=old_log(tmp_path/'events.jsonl');cand,_=c.plan({},[tmp_path],[],0);deleted,errors=c.execute(cand,[tmp_path],{},[]);assert len(deleted)==1 and not errors and source.exists() and not log.exists()
+def test_copied_validation_roots_exclude_native_extraction(tmp_path):
+    root=tmp_path/'unpack_work';capture=old_log(root/'candidate/ark_sim/validation/run.log')
+    history=old_log(root/'candidate_history/identity/ark_sim/validation/run.log')
+    native=old_log(root/'native_extract/reference.log')
+    source=file(root/'candidate/ark_sim/rules/source.json',{'schemaVersion':2})
+    roots=c.legacy_roots({'legacy_roots':[],'legacy_copied_validation_root':str(root)})
+    assert set(roots)=={capture.parent.resolve(),history.parent.resolve()}
+    candidates,_=c.plan({},roots,[],0);deleted,errors=c.execute(candidates,roots,{},[])
+    assert len(deleted)==2 and not errors and not capture.exists() and not history.exists()
+    assert native.exists() and source.exists()
+
+def test_canonical_allowed_roots_preserve_sibling_boundary(tmp_path):
+    allowed=tmp_path/'run';inside=old_log(allowed/'nested/events.jsonl')
+    outside=old_log(tmp_path/'run_extra/events.jsonl')
+    roots=c.ResolvedRoots([allowed])
+    assert c.within(inside,roots) and not c.within(outside,roots)
+    candidates,_=c.plan({},roots,[],0);deleted,errors=c.execute(candidates,roots,{},[])
+    assert len(deleted)==1 and not errors and not inside.exists() and outside.exists()
+
 def test_changed_file_and_outside_rejected(tmp_path):
     x=old_log(tmp_path/'events.jsonl');cand,_=c.plan({},[tmp_path],[],0);x.write_text('changed');deleted,errors=c.execute(cand,[tmp_path],{},[]);assert not deleted and errors
     cand[0]['path']=str(tmp_path.parent/'outside.log');deleted,errors=c.execute(cand,[tmp_path],{},[]);assert not deleted and errors

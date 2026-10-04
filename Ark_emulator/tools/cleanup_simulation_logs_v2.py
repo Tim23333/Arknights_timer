@@ -21,8 +21,16 @@ ARTIFACT_KEYS = {'checkpoint', 'events', 'snapshot', 'scheduler', 'world', 'kern
                  'observations', 'replay', 'restored', 'forward', 'head', 'continued'}
 
 
+class ResolvedRoots(tuple):
+    """Freeze canonical allowed directories once per cleanup operation."""
+    def __new__(cls, roots):
+        return super().__new__(cls, (Path(root).resolve() for root in roots))
+
+
 def within(path, roots):
     path = Path(path).resolve()
+    if isinstance(roots, ResolvedRoots):
+        return any(path.is_relative_to(root) for root in roots)
     return any(path.is_relative_to(Path(root).resolve()) for root in roots)
 
 
@@ -209,7 +217,24 @@ def walk(roots):
                     yield path
 
 
+def legacy_roots(policy):
+    roots = [Path(path).resolve() for path in policy.get('legacy_roots', [])]
+    # Candidates and backups copied runtime validation logs along with code.
+    # Only scan that known output subtree, never the native extraction tree.
+    copied = policy.get('legacy_copied_validation_root')
+    if copied:
+        base = Path(copied).absolute()
+        if linked(base):
+            raise ValueError('Copied validation root must not be linked')
+        for pattern in ('*/ark_sim/validation', '*/*/ark_sim/validation'):
+            for path in base.glob(pattern):
+                if path.is_dir() and not linked(path) and within(path, [base]):
+                    roots.append(path.resolve())
+    return roots
+
+
 def plan(policy, roots, rows, age):
+    roots = roots if isinstance(roots, ResolvedRoots) else ResolvedRoots(roots)
     folders, stems = protections(policy, rows)
     folders+=lease_folders(roots)
     candidates, retained = [], []
@@ -234,6 +259,7 @@ def plan(policy, roots, rows, age):
 
 
 def execute(candidates, roots, policy=None, rows=None, row_supplier=None):
+    roots = roots if isinstance(roots, ResolvedRoots) else ResolvedRoots(roots)
     deleted, errors = [], []
     # No recursive directory deletion. Revalidate each exact absolute file.
     folders,stems=protections(policy or {},processes() if rows is None else rows)
@@ -306,7 +332,7 @@ def main():
         raise ValueError('Cleanup log root must be the fixed E:/ArkSimLogs directory')
     roots = [log_root / 'runs']
     if args.legacy:
-        roots += [Path(path).resolve() for path in policy['legacy_roots']]
+        roots += legacy_roots(policy)
     if args.run_dir:
         if not args.run_dir.resolve().is_relative_to(log_root / 'runs'):
             raise ValueError('Run must be inside configured log_root/runs')
@@ -324,6 +350,7 @@ def main():
                 or not any(result.resolve().is_relative_to(log_root/name) for name in ('receipts','cleanup'))):
             raise ValueError('Result JSON must be a new unlinked JSON file inside fixed receipts/cleanup directories')
         policy={**policy,'protected_paths':[*policy.get('protected_paths',[]),str(args.result_json.resolve())]}
+    roots = ResolvedRoots(roots)
     candidates, retained = plan(policy, roots, rows, age)
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
     report_root = log_root / 'cleanup'
