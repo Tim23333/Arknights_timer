@@ -1,0 +1,156 @@
+{
+  "core_before": "0c9e2cc0777b6c7f81ef885681e43337137639099b69adde7564ad7873111887",
+  "core_after": "0c9e2cc0777b6c7f81ef885681e43337137639099b69adde7564ad7873111887",
+  "actual_exit": 1,
+  "results": [
+    {
+      "case": "shield_and_actual_recovery_memory",
+      "passed": false,
+      "error": "Ability source is controlled",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 64, in main\n    try:fn();RESULTS.append({'case':fn.__name__,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 18, in shield_and_actual_recovery_memory\n    hit(s,19);assert state(s)=='ground_open';hit(s,2);s.advance(1);assert state(s)=='ground_stone'\n                                                      ^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\adapters\\api.py\", line 285, in advance\n    self.session.advance(ticks)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\kernel\\session.py\", line 294, in advance\n    handler(self, clone(task[\"payload\"]))\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\domains\\context.py\", line 225, in react\n    return self._react(session, payload)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\domains\\context.py\", line 230, in _react\n    self.buffs.notify(payload[\"event\"], payload[\"payload\"], payload[\"cause\"], payload.get(\"buff_recovery_snapshot\"))\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\domains\\buffs.py\", line 595, in notify\n    self.ctx.effects.execute(instance[\"source\"], [recipient], thaw(effect), cast=cast, cause=cause)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\domains\\effects.py\", line 25, in execute\n    return self._execute(source, targets, effect, ability, cast, cause)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\domains\\effects.py\", line 272, in _execute\n    self.ctx.buffs.remove(target, effect.get(\"buff\"))\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\domains\\buffs.py\", line 231, in remove\n    removed = self._remove(target, buff_or_instance)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\domains\\buffs.py\", line 273, in _remove\n    self.ctx.effects.execute(item[\"source\"], [target], thaw(effect), cause=cause)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\domains\\effects.py\", line 25, in execute\n    return self._execute(source, targets, effect, ability, cast, cause)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\domains\\effects.py\", line 352, in _execute\n    self.ctx.abilities.start(target, effect[\"ability\"], automatic=True,event_payload=forwarded,cause=cause)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\domains\\abilities.py\", line 93, in start\n    raise ActivationRejected(\"Ability source is controlled\")\nark_sim.domains.abilities.ActivationRejected: Ability source is controlled\n"
+    },
+    {
+      "case": "two_life_profiles_and_modes",
+      "passed": true
+    },
+    {
+      "case": "ray_current_target_and_slow",
+      "passed": true
+    },
+    {
+      "case": "summon_real_and_auto5",
+      "passed": true
+    },
+    {
+      "case": "public_cpp_head",
+      "passed": true
+    },
+    {
+      "case": "actual_four_mode_animations",
+      "passed": true
+    },
+    {
+      "case": "whole_two_life_public_cpp",
+      "passed": true
+    }
+  ],
+  "facts": {
+    "ray": {
+      "packet_health": 512,
+      "slow_ratio": 0.3,
+      "source047_spawned": true,
+      "position": {
+        "row": 3,
+        "col": 4
+      }
+    }
+  },
+  "artifacts": [
+    {
+      "path": "E:\\ArkSimLogs\\runs\\chapter09_mandra_author_v2\\ray.public.checkpoint.json",
+      "sha256": "af1225cbda81b5dbba098af224491912c7aa8e3ecf423ea5e9cc03cdbadfa396",
+      "bytes": 384797
+    }
+  ],
+  "cleanup": [
+    {
+      "apply": true,
+      "eligible_files": 0,
+      "eligible_bytes": 0,
+      "log_root": "E:\\ArkSimLogs",
+      "deleted_files": 0,
+      "reclaimed_bytes": 0,
+      "protected_files": 2,
+      "remaining_files": 0,
+      "error_count": 0,
+      "fully_cleaned": false,
+      "actual_exit": 0,
+      "report": "E:\\ArkSimLogs\\cleanup\\20261005T020555567077Z.deleted.json"
+    },
+    {
+      "apply": true,
+      "eligible_files": 0,
+      "eligible_bytes": 0,
+      "log_root": "E:\\ArkSimLogs",
+      "deleted_files": 0,
+      "reclaimed_bytes": 0,
+      "protected_files": 2,
+      "remaining_files": 0,
+      "error_count": 0,
+      "fully_cleaned": false,
+      "actual_exit": 0,
+      "report": "E:\\ArkSimLogs\\cleanup\\20261005T020558421755Z.deleted.json"
+    },
+    {
+      "apply": true,
+      "eligible_files": 0,
+      "eligible_bytes": 0,
+      "log_root": "E:\\ArkSimLogs",
+      "deleted_files": 0,
+      "reclaimed_bytes": 0,
+      "protected_files": 2,
+      "remaining_files": 0,
+      "error_count": 0,
+      "fully_cleaned": false,
+      "actual_exit": 0,
+      "report": "E:\\ArkSimLogs\\cleanup\\20261005T020600707978Z.deleted.json"
+    },
+    {
+      "apply": true,
+      "eligible_files": 0,
+      "eligible_bytes": 0,
+      "log_root": "E:\\ArkSimLogs",
+      "deleted_files": 0,
+      "reclaimed_bytes": 0,
+      "protected_files": 2,
+      "remaining_files": 0,
+      "error_count": 0,
+      "fully_cleaned": false,
+      "actual_exit": 0,
+      "report": "E:\\ArkSimLogs\\cleanup\\20261005T020606189981Z.deleted.json"
+    },
+    {
+      "apply": true,
+      "eligible_files": 0,
+      "eligible_bytes": 0,
+      "log_root": "E:\\ArkSimLogs",
+      "deleted_files": 0,
+      "reclaimed_bytes": 0,
+      "protected_files": 3,
+      "remaining_files": 0,
+      "error_count": 0,
+      "fully_cleaned": false,
+      "actual_exit": 0,
+      "report": "E:\\ArkSimLogs\\cleanup\\20261005T020610386556Z.deleted.json"
+    },
+    {
+      "apply": true,
+      "eligible_files": 0,
+      "eligible_bytes": 0,
+      "log_root": "E:\\ArkSimLogs",
+      "deleted_files": 0,
+      "reclaimed_bytes": 0,
+      "protected_files": 3,
+      "remaining_files": 0,
+      "error_count": 0,
+      "fully_cleaned": false,
+      "actual_exit": 0,
+      "report": "E:\\ArkSimLogs\\cleanup\\20261005T020613362933Z.deleted.json"
+    },
+    {
+      "apply": true,
+      "eligible_files": 0,
+      "eligible_bytes": 0,
+      "log_root": "E:\\ArkSimLogs",
+      "deleted_files": 0,
+      "reclaimed_bytes": 0,
+      "protected_files": 3,
+      "remaining_files": 0,
+      "error_count": 0,
+      "fully_cleaned": false,
+      "actual_exit": 0,
+      "report": "E:\\ArkSimLogs\\cleanup\\20261005T020616425307Z.deleted.json"
+    }
+  ],
+  "raw_deleted": false
+}

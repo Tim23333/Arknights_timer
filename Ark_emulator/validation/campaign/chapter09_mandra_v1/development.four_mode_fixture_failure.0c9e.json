@@ -1,0 +1,72 @@
+{
+  "core_before": "0c9e2cc0777b6c7f81ef885681e43337137639099b69adde7564ad7873111887",
+  "core_after": "0c9e2cc0777b6c7f81ef885681e43337137639099b69adde7564ad7873111887",
+  "actual_exit": 1,
+  "results": [
+    {
+      "case": "shield_and_actual_recovery_memory",
+      "passed": true
+    },
+    {
+      "case": "two_life_profiles_and_modes",
+      "passed": true
+    },
+    {
+      "case": "ray_current_target_and_slow",
+      "passed": true
+    },
+    {
+      "case": "summon_real_and_auto5",
+      "passed": true
+    },
+    {
+      "case": "public_cpp_head",
+      "passed": true
+    },
+    {
+      "case": "actual_four_mode_animations",
+      "passed": false,
+      "error": "buff/ch9/mandra/ray_state.effects: lifecycle relation requires an already reachable possessed ability",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 57, in main\n    try:fn();RESULTS.append({'case':fn.__name__,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 46, in actual_four_mode_animations\n    s=sim(p);s.advance(25);assert s.ctx.resources.current('player','hp')==30000;s.advance(1);assert s.ctx.resources.current('player','hp')==29488\n      ^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 11, in sim\n    def sim(p=None):return Engine.create(Compiler(providers=providers()).compile(p or fixture()),providers=providers(),seed=1523)\n                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 82, in compile\n    return self._compile(scenario, packages, ruleset, overrides)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 213, in _compile\n    self._validate_reference_kinds(definitions)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 414, in _validate_reference_kinds\n    walk(definition, identifier, definition.get(\"kind\"))\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 409, in walk\n    walk(child, f\"{path}.{key}\", root_kind,location+(key,))\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 412, in walk\n    walk(child, path, root_kind,location+('[]',))\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 376, in walk\n    raise CompileError(path+\": lifecycle relation requires an already reachable possessed ability\")\nark_sim.content.compiler.CompileError: buff/ch9/mandra/ray_state.effects: lifecycle relation requires an already reachable possessed ability\n"
+    },
+    {
+      "case": "whole_two_life_public_cpp",
+      "passed": true
+    }
+  ],
+  "facts": {
+    "ray": {
+      "packet_health": 512,
+      "slow_ratio": 0.3,
+      "source047_spawned": true,
+      "position": {
+        "row": 3,
+        "col": 4
+      }
+    }
+  },
+  "artifacts": [
+    {
+      "path": "E:\\ArkSimLogs\\runs\\chapter09_mandra_author_v1\\ray.public.checkpoint.json",
+      "sha256": "33baa7bdb38ac4d0d5cf76892deab62436a9a76c39847db87bed2d71480375bf",
+      "bytes": 382601
+    }
+  ],
+  "cleanup": [
+    {
+      "apply": true,
+      "eligible_files": 1,
+      "eligible_bytes": 382601,
+      "log_root": "E:\\ArkSimLogs",
+      "deleted_files": 1,
+      "reclaimed_bytes": 382601,
+      "protected_files": 0,
+      "remaining_files": 0,
+      "error_count": 0,
+      "fully_cleaned": true,
+      "actual_exit": 0,
+      "report": "E:\\ArkSimLogs\\cleanup\\20261005T014342357584Z.deleted.json"
+    }
+  ],
+  "raw_deleted": true
+}

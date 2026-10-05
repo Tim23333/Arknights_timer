@@ -1,0 +1,212 @@
+{
+  "core_before": "06b9114b16965a43ab349ab019ee8ba2ae68c394c1955b9c1409639fc09cf323",
+  "core_after": "06b9114b16965a43ab349ab019ee8ba2ae68c394c1955b9c1409639fc09cf323",
+  "actual_exit": 1,
+  "results": [
+    {
+      "case": "shield_and_actual_recovery_memory",
+      "passed": false,
+      "error": "Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 82, in compile\n    return self._compile(scenario, packages, ruleset, overrides)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 184, in _compile\n    dependency_ids, edges = closure([scenario_id, identifier], resolve, calculation_bindings)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 126, in closure\n    walk(identifier)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  [Previous line repeated 1 more time]\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 111, in walk\n    raise ContentError(\"Dependency cycle: \" + \" -> \".join(active[index:] + [identifier]))\nark_sim.content.repository.ContentError: Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 97, in main\n    try:fn();RESULTS.append({'case':fn.__name__,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 16, in shield_and_actual_recovery_memory\n    p=fixture();p['scenarioDraft']['initialEntities'].append({'definition':'unit/ch9/pillar/body','instanceAlias':'pillar','position':{'row':3,'col':2}});s=sim(p);hit(s);assert s.ctx.resources.current('boss','hp')==49600\n                                                                                                                                                            ^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 11, in sim\n    def sim(p=None):return Engine.create(Compiler(providers=providers()).compile(p or fixture()),providers=providers(),seed=1523)\n                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 86, in compile\n    raise CompileError(str(exc)) from exc\nark_sim.content.compiler.CompileError: Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin\n"
+    },
+    {
+      "case": "two_life_profiles_and_modes",
+      "passed": false,
+      "error": "Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 82, in compile\n    return self._compile(scenario, packages, ruleset, overrides)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 184, in _compile\n    dependency_ids, edges = closure([scenario_id, identifier], resolve, calculation_bindings)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 126, in closure\n    walk(identifier)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  [Previous line repeated 1 more time]\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 111, in walk\n    raise ContentError(\"Dependency cycle: \" + \" -> \".join(active[index:] + [identifier]))\nark_sim.content.repository.ContentError: Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 97, in main\n    try:fn();RESULTS.append({'case':fn.__name__,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 21, in two_life_profiles_and_modes\n    s=sim(fixture(profile));hit(s,130);assert s.ctx.resources.current('boss','hp')==0 and state(s)=='fly_stone' and not s.ctx.active('boss')\n      ^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 11, in sim\n    def sim(p=None):return Engine.create(Compiler(providers=providers()).compile(p or fixture()),providers=providers(),seed=1523)\n                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 86, in compile\n    raise CompileError(str(exc)) from exc\nark_sim.content.compiler.CompileError: Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin\n"
+    },
+    {
+      "case": "ray_current_target_and_slow",
+      "passed": false,
+      "error": "Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 82, in compile\n    return self._compile(scenario, packages, ruleset, overrides)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 184, in _compile\n    dependency_ids, edges = closure([scenario_id, identifier], resolve, calculation_bindings)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 126, in closure\n    walk(identifier)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  [Previous line repeated 1 more time]\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 111, in walk\n    raise ContentError(\"Dependency cycle: \" + \" -> \".join(active[index:] + [identifier]))\nark_sim.content.repository.ContentError: Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 97, in main\n    try:fn();RESULTS.append({'case':fn.__name__,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 27, in ray_current_target_and_slow\n    s=sim();s.advance(150);assert not [e for e in s.session.events if e['type']=='attachment.packet'];s.advance(12)\n      ^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 11, in sim\n    def sim(p=None):return Engine.create(Compiler(providers=providers()).compile(p or fixture()),providers=providers(),seed=1523)\n                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 86, in compile\n    raise CompileError(str(exc)) from exc\nark_sim.content.compiler.CompileError: Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin\n"
+    },
+    {
+      "case": "summon_real_and_auto5",
+      "passed": false,
+      "error": "Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 82, in compile\n    return self._compile(scenario, packages, ruleset, overrides)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 184, in _compile\n    dependency_ids, edges = closure([scenario_id, identifier], resolve, calculation_bindings)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 126, in closure\n    walk(identifier)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  [Previous line repeated 1 more time]\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 111, in walk\n    raise ContentError(\"Dependency cycle: \" + \" -> \".join(active[index:] + [identifier]))\nark_sim.content.repository.ContentError: Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 97, in main\n    try:fn();RESULTS.append({'case':fn.__name__,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 34, in summon_real_and_auto5\n    s=sim();hit(s,130);s.advance(650);tokens=[e for e in s.session.world.entities() if e['definition_id']=='unit/'+PREFIX+'auto_pillar'];assert tokens\n      ^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 11, in sim\n    def sim(p=None):return Engine.create(Compiler(providers=providers()).compile(p or fixture()),providers=providers(),seed=1523)\n                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 86, in compile\n    raise CompileError(str(exc)) from exc\nark_sim.content.compiler.CompileError: Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin\n"
+    },
+    {
+      "case": "public_cpp_head",
+      "passed": false,
+      "error": "Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 82, in compile\n    return self._compile(scenario, packages, ruleset, overrides)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 184, in _compile\n    dependency_ids, edges = closure([scenario_id, identifier], resolve, calculation_bindings)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 126, in closure\n    walk(identifier)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  [Previous line repeated 1 more time]\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 111, in walk\n    raise ContentError(\"Dependency cycle: \" + \" -> \".join(active[index:] + [identifier]))\nark_sim.content.repository.ContentError: Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 97, in main\n    try:fn();RESULTS.append({'case':fn.__name__,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 40, in public_cpp_head\n    p=fixture();p['scenarioDraft']['commands']=[{'at':0,'action':'skill','source':'player','ability':'ability/m/test/hit'}];s=sim(p);s.advance(160);LOG.mkdir(parents=True,exist_ok=True);path=LOG/'ray.public.checkpoint.json';path.write_text(json.dumps(s.checkpoint()),encoding='utf8');ARTIFACTS.append({'path':str(path),'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'bytes':path.stat().st_size});r=Engine.restore(s.program,json.loads(path.read_bytes()),providers=providers());s.advance(65);r.advance(65);assert cp(s)==cp(r);h=replay(s.program,s.export_replay(),providers=providers());assert cp(h)==cp(s)\n                                                                                                                              ^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 11, in sim\n    def sim(p=None):return Engine.create(Compiler(providers=providers()).compile(p or fixture()),providers=providers(),seed=1523)\n                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 86, in compile\n    raise CompileError(str(exc)) from exc\nark_sim.content.compiler.CompileError: Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin\n"
+    },
+    {
+      "case": "actual_four_mode_animations",
+      "passed": false,
+      "error": "Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 82, in compile\n    return self._compile(scenario, packages, ruleset, overrides)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 184, in _compile\n    dependency_ids, edges = closure([scenario_id, identifier], resolve, calculation_bindings)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 126, in closure\n    walk(identifier)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  [Previous line repeated 1 more time]\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 111, in walk\n    raise ContentError(\"Dependency cycle: \" + \" -> \".join(active[index:] + [identifier]))\nark_sim.content.repository.ContentError: Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 97, in main\n    try:fn();RESULTS.append({'case':fn.__name__,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 48, in actual_four_mode_animations\n    s=sim(p)\n      ^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 11, in sim\n    def sim(p=None):return Engine.create(Compiler(providers=providers()).compile(p or fixture()),providers=providers(),seed=1523)\n                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 86, in compile\n    raise CompileError(str(exc)) from exc\nark_sim.content.compiler.CompileError: Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin\n"
+    },
+    {
+      "case": "whole_two_life_public_cpp",
+      "passed": false,
+      "error": "Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 82, in compile\n    return self._compile(scenario, packages, ruleset, overrides)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 184, in _compile\n    dependency_ids, edges = closure([scenario_id, identifier], resolve, calculation_bindings)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 126, in closure\n    walk(identifier)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  [Previous line repeated 1 more time]\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 111, in walk\n    raise ContentError(\"Dependency cycle: \" + \" -> \".join(active[index:] + [identifier]))\nark_sim.content.repository.ContentError: Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 97, in main\n    try:fn();RESULTS.append({'case':fn.__name__,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 57, in whole_two_life_public_cpp\n    s=sim(p);s.advance(8);checkpoint=cp(s);r=Engine.restore(s.program,checkpoint,providers=providers());s.advance(220);r.advance(220);assert cp(s)==cp(r) and not s.ctx.alive('boss');h=replay(s.program,s.export_replay(),providers=providers());assert cp(h)==cp(s)\n      ^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 11, in sim\n    def sim(p=None):return Engine.create(Compiler(providers=providers()).compile(p or fixture()),providers=providers(),seed=1523)\n                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 86, in compile\n    raise CompileError(str(exc)) from exc\nark_sim.content.compiler.CompileError: Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin\n"
+    },
+    {
+      "case": "recovery_native_25_and_pending_cancel",
+      "passed": false,
+      "error": "Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 82, in compile\n    return self._compile(scenario, packages, ruleset, overrides)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 184, in _compile\n    dependency_ids, edges = closure([scenario_id, identifier], resolve, calculation_bindings)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 126, in closure\n    walk(identifier)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  [Previous line repeated 1 more time]\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 111, in walk\n    raise ContentError(\"Dependency cycle: \" + \" -> \".join(active[index:] + [identifier]))\nark_sim.content.repository.ContentError: Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 97, in main\n    try:fn();RESULTS.append({'case':fn.__name__,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 60, in recovery_native_25_and_pending_cancel\n    p=fixture();p['scenarioDraft']['initialEntities'].append({'definition':'unit/ch9/pillar/body','instanceAlias':'pillar','position':{'row':3,'col':2}});s=sim(p);s.ctx.abilities.start('pillar','ability/ch9/pillar/collapse_right');s.advance(46);assert state(s)=='ground_open';s.advance(749);assert state(s)=='ground_open';s.advance(1);assert state(s)=='ground_stone';s.advance(60)\n                                                                                                                                                            ^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 11, in sim\n    def sim(p=None):return Engine.create(Compiler(providers=providers()).compile(p or fixture()),providers=providers(),seed=1523)\n                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 86, in compile\n    raise CompileError(str(exc)) from exc\nark_sim.content.compiler.CompileError: Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin\n"
+    },
+    {
+      "case": "actual_highest_modified_atk_and_cancel",
+      "passed": false,
+      "error": "Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 82, in compile\n    return self._compile(scenario, packages, ruleset, overrides)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 184, in _compile\n    dependency_ids, edges = closure([scenario_id, identifier], resolve, calculation_bindings)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 126, in closure\n    walk(identifier)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  [Previous line repeated 1 more time]\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 111, in walk\n    raise ContentError(\"Dependency cycle: \" + \" -> \".join(active[index:] + [identifier]))\nark_sim.content.repository.ContentError: Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 97, in main\n    try:fn();RESULTS.append({'case':fn.__name__,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 65, in actual_highest_modified_atk_and_cancel\n    p=fixture();p['buffs'].append({'id':'buff/m/test/atk','kind':'buff','modifiers':[{'attribute':'atk','layer':'flat','value':3000}]});second=copy.deepcopy(p['entities'][-1]);second['id']='unit/m/test/second';second['components']['attributes']['base']['atk']=50;second['components']['buffs']={'initial':['buff/m/test/atk']};p['entities'].append(second);p['scenarioDraft']['initialEntities'].append({'definition':second['id'],'instanceAlias':'second','position':{'row':4,'col':3}});s=sim(p);s.advance(162);assert s.ctx.resources.current('second','hp')==29488 and s.ctx.resources.current('player','hp')==30000\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 11, in sim\n    def sim(p=None):return Engine.create(Compiler(providers=providers()).compile(p or fixture()),providers=providers(),seed=1523)\n                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 86, in compile\n    raise CompileError(str(exc)) from exc\nark_sim.content.compiler.CompileError: Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin\n"
+    },
+    {
+      "case": "strict_tile_and_trigger_rejection",
+      "passed": false,
+      "error": "Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 82, in compile\n    return self._compile(scenario, packages, ruleset, overrides)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 184, in _compile\n    dependency_ids, edges = closure([scenario_id, identifier], resolve, calculation_bindings)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 126, in closure\n    walk(identifier)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 122, in walk\n    walk(dependency)\n  [Previous line repeated 1 more time]\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\dependencies.py\", line 111, in walk\n    raise ContentError(\"Dependency cycle: \" + \" -> \".join(active[index:] + [identifier]))\nark_sim.content.repository.ContentError: Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 97, in main\n    try:fn();RESULTS.append({'case':fn.__name__,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 70, in strict_tile_and_trigger_rejection\n    s=sim();s.ctx.buffs.apply('boss','boss','buff/ch9/pillar/stun10');before=cp(s)\n      ^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\test_author.py\", line 11, in sim\n    def sim(p=None):return Engine.create(Compiler(providers=providers()).compile(p or fixture()),providers=providers(),seed=1523)\n                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_mandra_v1_candidate\\ark_sim\\content\\compiler.py\", line 86, in compile\n    raise CompileError(str(exc)) from exc\nark_sim.content.compiler.CompileError: Dependency cycle: ability/ch9/mandra/restore_skin -> buff/ch9/mandra/pending_skin -> ability/ch9/mandra/restore_skin\n"
+    }
+  ],
+  "facts": {},
+  "artifacts": [],
+  "cleanup": [
+    {
+      "apply": true,
+      "eligible_files": 0,
+      "eligible_bytes": 0,
+      "log_root": "E:\\ArkSimLogs",
+      "deleted_files": 0,
+      "reclaimed_bytes": 0,
+      "protected_files": 2,
+      "remaining_files": 0,
+      "error_count": 0,
+      "fully_cleaned": false,
+      "actual_exit": 0,
+      "report": "E:\\ArkSimLogs\\cleanup\\20261005T021049723276Z.deleted.json"
+    },
+    {
+      "apply": true,
+      "eligible_files": 0,
+      "eligible_bytes": 0,
+      "log_root": "E:\\ArkSimLogs",
+      "deleted_files": 0,
+      "reclaimed_bytes": 0,
+      "protected_files": 2,
+      "remaining_files": 0,
+      "error_count": 0,
+      "fully_cleaned": false,
+      "actual_exit": 0,
+      "report": "E:\\ArkSimLogs\\cleanup\\20261005T021050925208Z.deleted.json"
+    },
+    {
+      "apply": true,
+      "eligible_files": 0,
+      "eligible_bytes": 0,
+      "log_root": "E:\\ArkSimLogs",
+      "deleted_files": 0,
+      "reclaimed_bytes": 0,
+      "protected_files": 2,
+      "remaining_files": 0,
+      "error_count": 0,
+      "fully_cleaned": false,
+      "actual_exit": 0,
+      "report": "E:\\ArkSimLogs\\cleanup\\20261005T021052206469Z.deleted.json"
+    },
+    {
+      "apply": true,
+      "eligible_files": 0,
+      "eligible_bytes": 0,
+      "log_root": "E:\\ArkSimLogs",
+      "deleted_files": 0,
+      "reclaimed_bytes": 0,
+      "protected_files": 2,
+      "remaining_files": 0,
+      "error_count": 0,
+      "fully_cleaned": false,
+      "actual_exit": 0,
+      "report": "E:\\ArkSimLogs\\cleanup\\20261005T021053463323Z.deleted.json"
+    },
+    {
+      "apply": true,
+      "eligible_files": 0,
+      "eligible_bytes": 0,
+      "log_root": "E:\\ArkSimLogs",
+      "deleted_files": 0,
+      "reclaimed_bytes": 0,
+      "protected_files": 2,
+      "remaining_files": 0,
+      "error_count": 0,
+      "fully_cleaned": false,
+      "actual_exit": 0,
+      "report": "E:\\ArkSimLogs\\cleanup\\20261005T021054717719Z.deleted.json"
+    },
+    {
+      "apply": true,
+      "eligible_files": 0,
+      "eligible_bytes": 0,
+      "log_root": "E:\\ArkSimLogs",
+      "deleted_files": 0,
+      "reclaimed_bytes": 0,
+      "protected_files": 2,
+      "remaining_files": 0,
+      "error_count": 0,
+      "fully_cleaned": false,
+      "actual_exit": 0,
+      "report": "E:\\ArkSimLogs\\cleanup\\20261005T021056015305Z.deleted.json"
+    },
+    {
+      "apply": true,
+      "eligible_files": 0,
+      "eligible_bytes": 0,
+      "log_root": "E:\\ArkSimLogs",
+      "deleted_files": 0,
+      "reclaimed_bytes": 0,
+      "protected_files": 2,
+      "remaining_files": 0,
+      "error_count": 0,
+      "fully_cleaned": false,
+      "actual_exit": 0,
+      "report": "E:\\ArkSimLogs\\cleanup\\20261005T021057263794Z.deleted.json"
+    },
+    {
+      "apply": true,
+      "eligible_files": 0,
+      "eligible_bytes": 0,
+      "log_root": "E:\\ArkSimLogs",
+      "deleted_files": 0,
+      "reclaimed_bytes": 0,
+      "protected_files": 2,
+      "remaining_files": 0,
+      "error_count": 0,
+      "fully_cleaned": false,
+      "actual_exit": 0,
+      "report": "E:\\ArkSimLogs\\cleanup\\20261005T021058522105Z.deleted.json"
+    },
+    {
+      "apply": true,
+      "eligible_files": 0,
+      "eligible_bytes": 0,
+      "log_root": "E:\\ArkSimLogs",
+      "deleted_files": 0,
+      "reclaimed_bytes": 0,
+      "protected_files": 2,
+      "remaining_files": 0,
+      "error_count": 0,
+      "fully_cleaned": false,
+      "actual_exit": 0,
+      "report": "E:\\ArkSimLogs\\cleanup\\20261005T021059827822Z.deleted.json"
+    },
+    {
+      "apply": true,
+      "eligible_files": 0,
+      "eligible_bytes": 0,
+      "log_root": "E:\\ArkSimLogs",
+      "deleted_files": 0,
+      "reclaimed_bytes": 0,
+      "protected_files": 2,
+      "remaining_files": 0,
+      "error_count": 0,
+      "fully_cleaned": false,
+      "actual_exit": 0,
+      "report": "E:\\ArkSimLogs\\cleanup\\20261005T021101091573Z.deleted.json"
+    }
+  ],
+  "raw_deleted": true
+}
