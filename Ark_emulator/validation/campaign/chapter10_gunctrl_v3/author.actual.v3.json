@@ -1,0 +1,356 @@
+{
+  "core": "cd873dbff6ef66d9a17605ab6b02b6cc5a427090156577bd87dedd5bab428e18",
+  "actual_exit": 1,
+  "results": [
+    {
+      "case": "public_physical_arts_true_lethal_inputs_zero_CPP",
+      "passed": false,
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_gunctrl_v3\\test_author.py\", line 47, in <module>\n    try:fn();RESULT.append({'case':name,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_gunctrl_v3\\test_author.py\", line 30, in incoming\n    p['scenarioDraft']['commands']=commands;s=cpp(p,'incoming');hp=s.ctx.resources.current('cannon','hp');hits=[thaw(e) for e in s.session.events if e['type']=='damage.accepted'];FACT['incoming']={'HP':hp,'hits':hits,'alive':s.ctx.alive('cannon'),'kills':s.ctx.state().get('kills'),'flags':s.ctx.spatial.selection_state('cannon')['abnormal_flags']};assert hp==10000 and s.ctx.alive('cannon') and len(hits)==3 and all(e['payload']['amount']==0 for e in hits);assert s.ctx.state()['kills']==0\n                                                                                                                                                                                                                                                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_sim\\domains\\movement.py\", line 32, in selection_state\n    return project_state(self.ctx, ref, defaults or {})\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_sim\\domains\\selection.py\", line 59, in project_state\n    validate_state(defaults, \"projection.defaults\", complete=True)\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_sim\\domains\\selection.py\", line 23, in validate_state\n    raise ValueError(path+\": explicit complete typed defaults required\")\nValueError: projection.defaults: explicit complete typed defaults required\n"
+    },
+    {
+      "case": "HP_amount_delta_allocations_zero_nonHP_events_preserved_CPP",
+      "passed": true
+    },
+    {
+      "case": "own_cannon_output_true3000_not_suppressed_CPP",
+      "passed": true
+    },
+    {
+      "case": "NoSource_modify_and_bypass_zeroHP_boundary_CPP",
+      "passed": false,
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_sim\\content\\compiler.py\", line 82, in compile\n    return self._compile(scenario, packages, ruleset, overrides)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_sim\\content\\compiler.py\", line 211, in _compile\n    runtime = self._validate_rules(rules, definitions, selected_ruleset,\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_sim\\content\\compiler.py\", line 268, in _validate_rules\n    runtime = RuleRuntime(rules, bindings=ruleset.get(\"bindings\", {}), catalog=self.catalog,\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_sim\\rules\\runtime.py\", line 92, in __init__\n    self.compiled = {key: validate_rule(value, self.catalog) for key, value in self.rules.items()}\n                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_sim\\rules\\runtime.py\", line 32, in validate_rule\n    raise RuleError(f\"{contract_id} does not allow implementation {kind!r}\")\nark_sim.rules.errors.RuleError: damage.pipeline does not allow implementation 'expression'\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_gunctrl_v3\\test_author.py\", line 47, in <module>\n    try:fn();RESULT.append({'case':name,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_gunctrl_v3\\test_author.py\", line 41, in no_source\n    p['scenarioDraft']['scheduledEffects']=[{'at':3,'effect':effect(False,15001)},{'at':7,'effect':effect(True,73)}];s=cpp(p,'nosource');hp=s.ctx.resources.current('cannon','hp');events=[thaw(e) for e in s.session.events if e['type'].startswith('damage.')];FACT['NoSource']={'HP':hp,'events':events,'native_boundary':'damage_without_modify=False receives hook; True bypasses it in existing kernel'};assert hp==9927 and s.ctx.alive('cannon');assert any(e['type']=='damage.modification_bypassed' for e in events)\n                                                                                                                       ^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_gunctrl_v3\\test_author.py\", line 21, in cpp\n    a=create();a.advance(end);b=create()\n      ^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_gunctrl_v3\\test_author.py\", line 20, in create\n    def create():return Engine.create(Compiler(providers=REG).compile(p),providers=REG,seed=2347123191)\n                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_sim\\content\\compiler.py\", line 86, in compile\n    raise CompileError(str(exc)) from exc\nark_sim.content.compiler.CompileError: damage.pipeline does not allow implementation 'expression'\n"
+    }
+  ],
+  "facts": {
+    "allocations": {
+      "HP": 10000,
+      "SP": 11.433333333333332,
+      "events": [
+        {
+          "id": 8,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 10000
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 17,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 2,
+            "resource": "sp",
+            "delta": 0,
+            "value": 0
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 152,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 3,
+            "resource": "hp",
+            "delta": 0,
+            "value": 23471
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 204,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "sp",
+            "delta": 0.03333333333333333,
+            "value": 0.03333333333333333
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 301,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "sp",
+            "delta": 0.03333333333333333,
+            "value": 0.06666666666666667
+          },
+          "time": 1,
+          "cause": null
+        },
+        {
+          "id": 323,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "sp",
+            "delta": 0.03333333333333334,
+            "value": 0.1
+          },
+          "time": 2,
+          "cause": null
+        },
+        {
+          "id": 345,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "sp",
+            "delta": 0.033333333333333326,
+            "value": 0.13333333333333333
+          },
+          "time": 3,
+          "cause": null
+        },
+        {
+          "id": 367,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "sp",
+            "delta": 0.033333333333333326,
+            "value": 0.16666666666666666
+          },
+          "time": 4,
+          "cause": null
+        },
+        {
+          "id": 417,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "sp",
+            "delta": 0.033333333333333326,
+            "value": 0.19999999999999998
+          },
+          "time": 5,
+          "cause": null
+        },
+        {
+          "id": 439,
+          "type": "resource.changed",
+          "payload": {
+            "source": 3,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0
+          },
+          "time": 5,
+          "cause": null
+        },
+        {
+          "id": 441,
+          "type": "resource.changed",
+          "payload": {
+            "source": 3,
+            "target": 2,
+            "resource": "sp",
+            "delta": 11.0
+          },
+          "time": 5,
+          "cause": null
+        },
+        {
+          "id": 443,
+          "type": "damage.accepted",
+          "payload": {
+            "source": 3,
+            "target": 2,
+            "amount": 0,
+            "ability": "ability/peer/input/allocations",
+            "resource": "hp"
+          },
+          "time": 5,
+          "cause": null
+        },
+        {
+          "id": 444,
+          "type": "peer.pipeline_marker",
+          "payload": {
+            "target": 2
+          },
+          "time": 5,
+          "cause": null
+        },
+        {
+          "id": 462,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "sp",
+            "delta": 0.033333333333333215,
+            "value": 11.233333333333333
+          },
+          "time": 6,
+          "cause": null
+        },
+        {
+          "id": 484,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "sp",
+            "delta": 0.033333333333333215,
+            "value": 11.266666666666666
+          },
+          "time": 7,
+          "cause": null
+        },
+        {
+          "id": 506,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "sp",
+            "delta": 0.033333333333333215,
+            "value": 11.299999999999999
+          },
+          "time": 8,
+          "cause": null
+        },
+        {
+          "id": 528,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "sp",
+            "delta": 0.033333333333333215,
+            "value": 11.333333333333332
+          },
+          "time": 9,
+          "cause": null
+        },
+        {
+          "id": 550,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "sp",
+            "delta": 0.033333333333333215,
+            "value": 11.366666666666665
+          },
+          "time": 10,
+          "cause": null
+        },
+        {
+          "id": 572,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "sp",
+            "delta": 0.033333333333333215,
+            "value": 11.399999999999999
+          },
+          "time": 11,
+          "cause": null
+        },
+        {
+          "id": 594,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "sp",
+            "delta": 0.033333333333333215,
+            "value": 11.433333333333332
+          },
+          "time": 12,
+          "cause": null
+        }
+      ]
+    },
+    "output": {
+      "recipient_HP": 20471,
+      "cannon_HP": 10000,
+      "hits": [
+        {
+          "id": 620,
+          "type": "damage.accepted",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "amount": 3000,
+            "ability": "ability/ch10/gunctrl/shot",
+            "resource": "hp"
+          },
+          "time": 7,
+          "cause": 606
+        }
+      ]
+    }
+  },
+  "artifacts": [
+    {
+      "path": "E:\\ArkSimLogs\\runs\\chapter10_gunctrl_v3_author_20261005\\incoming4.checkpoint.json",
+      "sha256": "475a5f191dcba30a2f77effbe40d231679ff0232f358b689b555e4a785474e73",
+      "bytes": 565736
+    },
+    {
+      "path": "E:\\ArkSimLogs\\runs\\chapter10_gunctrl_v3_author_20261005\\incoming8.checkpoint.json",
+      "sha256": "c92797a8352f4a2f82c73b25e4d4cfb2884f5bcabf032443a4ef8ffe73ab288d",
+      "bytes": 819495
+    },
+    {
+      "path": "E:\\ArkSimLogs\\runs\\chapter10_gunctrl_v3_author_20261005\\allocated4.checkpoint.json",
+      "sha256": "f003963673001113d7e33ed3b45247531ca7f0373904afbce01ee5aca6dc388b",
+      "bytes": 498584
+    },
+    {
+      "path": "E:\\ArkSimLogs\\runs\\chapter10_gunctrl_v3_author_20261005\\allocated8.checkpoint.json",
+      "sha256": "05b890ac3e69d442edda96fc6b85313c566bbd949608872ba061e7b7d6c37a98",
+      "bytes": 753935
+    },
+    {
+      "path": "E:\\ArkSimLogs\\runs\\chapter10_gunctrl_v3_author_20261005\\output4.checkpoint.json",
+      "sha256": "fc2194025d6301b73e4f0922551dc27ed36f3dfe7f056094d0cc9d8116fd6d0c",
+      "bytes": 497515
+    },
+    {
+      "path": "E:\\ArkSimLogs\\runs\\chapter10_gunctrl_v3_author_20261005\\output8.checkpoint.json",
+      "sha256": "dec32cd6a67caa7f02dae44e85280e12a9f448a057c24171bcef08e004132425",
+      "bytes": 978259
+    }
+  ],
+  "source_before": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter10_source_prepare\\predefines.native.v3.json": "be3c283765877b9503c99722e618c5e816d9edcc41e3546cebdae73262785281",
+    "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_tables\\range_table.reference_56a.json": "a98344d688a8933c4dd7ddaae3cb76c4347295359a18b60b918042cc2542d9d9",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_gunctrl_v3\\test_author.py": "f86497e36040ef294286ad01f0758cbbe43fc01d53234f73eba074a73a346542",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_gunctrl_v1\\build.py": "3736d9ba112a02d6765615922d0764e06dfecedf23d37404cc793a9e2a4f5167",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_gunctrl_v2\\build.py": "045204eb1ebfd6e03e10a8a8809899ff9be0fe9c24de14098ce14912732b2063",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_gunctrl_v3\\build.py": "e948113c58dc6267e885424b00d60ed4f94364fa1174ba456c0b9e1b7e2d2d1b"
+  },
+  "source_after": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter10_source_prepare\\predefines.native.v3.json": "be3c283765877b9503c99722e618c5e816d9edcc41e3546cebdae73262785281",
+    "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_tables\\range_table.reference_56a.json": "a98344d688a8933c4dd7ddaae3cb76c4347295359a18b60b918042cc2542d9d9",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_gunctrl_v3\\test_author.py": "f86497e36040ef294286ad01f0758cbbe43fc01d53234f73eba074a73a346542",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_gunctrl_v1\\build.py": "3736d9ba112a02d6765615922d0764e06dfecedf23d37404cc793a9e2a4f5167",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_gunctrl_v2\\build.py": "045204eb1ebfd6e03e10a8a8809899ff9be0fe9c24de14098ce14912732b2063",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_gunctrl_v3\\build.py": "e948113c58dc6267e885424b00d60ed4f94364fa1174ba456c0b9e1b7e2d2d1b"
+  },
+  "source_guard_equal": true,
+  "comparison_exclusions": [],
+  "whole_stage": false
+}
