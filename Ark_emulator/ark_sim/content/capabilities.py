@@ -52,6 +52,11 @@ def capability_preflight(scenario, definitions, ruleset, rules, catalog=None):
             if spec.get("recovery", {}).get("mode") == "periodic":
                 require("time.quantize", f"{path}.{name}.recovery")
 
+    for ident,definition in definitions.items():
+        spec=definition.get('components',{}).get('depletion')
+        if spec is not None:
+            require('resource.depletion',ident+'.depletion',explicit=spec['rule'])
+            if spec.get('damage_gate_rule'):require('resource.depletion',ident+'.depletion.damage_gate',explicit=spec['damage_gate_rule'])
     for _id, _definition in definitions.items():
         if _definition.get("kind") == "buff" and _definition.get("toggle"):
             spec=_definition["toggle"];require("passive.toggle",_id+".toggle",explicit=spec["rule"])

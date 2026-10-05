@@ -39,6 +39,12 @@ class EffectSystem:
             validate_effect(effect, "runtime.explicit_owned_effect", DEFAULT_CAPABILITIES)
         source = self.ctx.session.world.resolve(source)
         ability, cast = ability or {}, cast or {}
+        if (cast.get("depletion_action") or cast.get("depletion_owned")) and getattr(self.ctx, "depletion", None) is None:
+            raise ValueError("Depletion callback tags require an actual enabled subsystem")
+        if getattr(self.ctx, "depletion", None) is not None:
+            if cast.get("depletion_action") and not self.ctx.depletion.callback_cast_allowed(source,cast):raise ValueError("Depletion cast data does not grant callback authority")
+            if cast.get('depletion_owned') and not self.ctx.depletion.callback_cast_allowed(source,cast):raise ValueError('Depletion owned cast requires actual scheduled scope')
+            if not self.ctx.depletion.source_allowed(source,cast):return
         if cast.get('terminal_lifecycle'):
             from .terminal_lifecycle import cast_valid
             if not cast_valid(self.ctx,source,cast):
@@ -258,7 +264,10 @@ class EffectSystem:
                     self.ctx.buffs.apply(source, target, effect["buff"], effect.get("stacks", 1))
             elif operation == "remove_buff":
                 if effect.get("remove_all"):
+                    retained=effect.get('parameters',{}).get('retain_definitions',[])
+                    if not isinstance(retained,(list,tuple)) or any(not isinstance(x,str) or not x for x in retained) or len(set(retained))!=len(retained):raise ValueError('Retained buff definitions must be a finite unique ID list')
                     for item in self.ctx.get(target, ("buffs", "instances"), []):
+                        if item['definition'] in retained:continue
                         self.ctx.buffs.remove(target, item["id"])
                 else:
                     self.ctx.buffs.remove(target, effect.get("buff"))
@@ -432,6 +441,11 @@ class EffectSystem:
         return True
 
     def _settle(self, source, target, effect, ability, cast, cause):
+        if getattr(self.ctx, "depletion", None) is not None and effect["op"]=="damage":
+            with self.ctx.depletion.attack(source,target,effect,ability,cast):return self._settle_actual(source,target,effect,ability,cast,cause)
+        return self._settle_actual(source,target,effect,ability,cast,cause)
+
+    def _settle_actual(self, source, target, effect, ability, cast, cause):
         was_alive = self.ctx.alive(target)
         death_generation = self.ctx.get(target,('runtime','death_generation'),0)
         mode = effect.get("read_mode", {}).get("source_attributes", "at_hit")
@@ -492,6 +506,7 @@ class EffectSystem:
         post_request = {**request, "settlement": settlement}
         post_request, _, accepted = self._damage_hooks("after", target, source, target, post_request, ability, cast, snapshot)
         settlement = post_request["settlement"]
+        if settlement['accepted'] and getattr(self.ctx, "depletion", None) is not None and not self.ctx.depletion.damage_gate(source,target,effect,settlement['amount'],ability,cast):accepted=False
         if not accepted:
             settlement = {**settlement, "accepted": False}
         if not settlement["accepted"]:
@@ -521,7 +536,11 @@ class EffectSystem:
             self.ctx.session.commit(intents)
             for recipient, key, delta in notifications:
                 self.ctx.emit("resource.changed", {"source": source, "target": recipient, "resource": key, "delta": delta})
-                self.ctx.lifecycle.check(recipient, {"operation":"damage","source":source,"target":recipient,"resource":key,"delta":delta,"ability":ability.get("id"),"cast":cast.get("id")})
+                event={"operation":"damage","source":source,"target":recipient,"resource":key,"delta":delta,"ability":ability.get("id"),"cast":cast.get("id")}
+                if getattr(self.ctx, "depletion", None) is not None:
+                    with self.ctx.depletion.attack(source,recipient,effect,ability,cast,resource=key):
+                        with self.ctx.depletion.delivery(recipient,event,delta):self.ctx.lifecycle.check(recipient,event)
+                else:self.ctx.lifecycle.check(recipient,event)
         else:
             actual = -self.ctx.resources.adjust(target, resource, -settlement["amount"], source=source, ability=ability, effect=effect, settlement_context={"operation":"damage","source":source,"target":target,"resource":resource,"ability":ability.get("id"),"cast":cast.get("id")})
         state = self.ctx.state()

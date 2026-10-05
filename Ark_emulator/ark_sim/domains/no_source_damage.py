@@ -106,6 +106,9 @@ def settle(system, target, effect, cause):
         post, _, accepted = system._damage_hooks('after', target, None, target,
             {**request, 'settlement': initial}, {}, {}, None)
         settlement = post['settlement']
+    if accepted and settlement['accepted'] and getattr(ctx, "depletion", None) is not None:
+        with ctx.depletion.attack(None,target,effect,resource=resource):
+            if not ctx.depletion.damage_gate(None,target,effect,settlement['amount']):accepted=False
     if not accepted or not settlement['accepted']:
         ctx.emit('damage.rejected', {**tag, 'target': target, 'reason': 'pipeline_or_target_hook',
                                    'pipeline_amount': pipeline_amount}, cause)
@@ -163,8 +166,12 @@ def settle(system, target, effect, cause):
         if row['target'] not in lifecycle_rows or row['is_health']:
             lifecycle_rows[row['target']] = row
     for row in lifecycle_rows.values():
-        ctx.lifecycle.check(row['target'], {**tag, 'resource': row['resource'],
-            'delta': row['actual_delta'], 'cause': damage_event})
+        event={**tag,'resource':row['resource'],'delta':row['actual_delta'],'cause':damage_event}
+        if getattr(ctx, "depletion", None) is not None and ctx.depletion.spec(row['target']) is not None:
+            event['operation']='damage'
+            with ctx.depletion.attack(None,row['target'],effect,resource=row['resource']):
+                with ctx.depletion.delivery(row['target'],event,row['requested_delta']):ctx.lifecycle.check(row['target'],event)
+        else:ctx.lifecycle.check(row['target'],event)
     for recipient, was_alive in living.items():
         if was_alive and not ctx.alive(recipient) and ctx.get(recipient, ('runtime', 'state')) == 'dead':
             ctx.lifecycle.claim_combat_kill(recipient, {**tag, 'target': recipient, 'ability': None, 'cast': None,

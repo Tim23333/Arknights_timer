@@ -149,6 +149,7 @@ class LifecycleSystem:
         elemental=getattr(self.ctx, 'elemental', None)
         if elemental is not None:elemental.initialize(ref)
         elif 'elemental' in components:raise ValueError('Elemental component requires its compiled runtime feature')
+        if getattr(self.ctx, "depletion", None) is not None:self.ctx.depletion.initialize(ref)
         for roster_id in self.ctx.program.scenario.get("roster", []):
             for effect in self.ctx.program.definitions[roster_id].get("components", {}).get("deck", {}).get("on_create", []):
                 cause = self.ctx.emit("deck.effect", {"source": ref, "target": ref, "definition": roster_id})
@@ -225,6 +226,8 @@ class LifecycleSystem:
             self.retire(payload["target"], "expired")
 
     def check(self, ref, event):
+        ref=self.ctx.session.world.resolve(ref)
+        if getattr(self.ctx, "depletion", None) is not None and self.ctx.depletion.consume(ref,event):return
         if not self.ctx.get(ref, ('runtime', 'active'), True) and self.ctx.get(ref, ('runtime', 'state')) == 'dormant':
             return
         rebirth=getattr(self.ctx,"rebirth",None)
@@ -269,6 +272,7 @@ class LifecycleSystem:
             try:emit(self.ctx,ref)
             finally:self.ctx.set(ref,('runtime','death_emission_in_progress'),False)
             if not self.ctx.alive(ref):return
+        if getattr(self.ctx, "depletion", None) is not None:self.ctx.depletion.cancel(ref,reason)
         rebirth=getattr(self.ctx,"rebirth",None)
         if rebirth is not None:rebirth.cancel(ref,reason)
         elemental=getattr(self.ctx, 'elemental', None)

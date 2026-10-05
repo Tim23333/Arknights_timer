@@ -38,6 +38,8 @@ class Simulation:
         self.ctx.resources = ResourceSystem(self.ctx)
         from ark_sim.domains.elemental import ElementalSystem
         self.ctx.elemental = ElementalSystem(self.ctx)
+        from ark_sim.domains.depletion import DepletionSystem
+        self.ctx.depletion = DepletionSystem(self.ctx) if any("depletion" in d.get("components",{}) for d in program.definitions.values()) or any("depletion" in i.get("components",{}) for i in program.scenario.get("initialEntities",())) else None
         self.ctx.effects = EffectSystem(self.ctx)
         self.ctx.buffs = BuffSystem(self.ctx)
         self.ctx.abilities = AbilitySystem(self.ctx)
@@ -150,6 +152,7 @@ class Simulation:
         if uses_elemental(self.program.definitions) or uses_elemental(self.program.scenario):
             handlers["domain.elemental.expire"] = self.ctx.elemental.expire
             self.session.add_system(self.ctx.elemental.tick, phase=0)
+        if self.ctx.depletion is not None:handlers["domain.depletion.action"] = self.ctx.depletion.action
         for name, handler in handlers.items():
             self.session.register_handler(name, handler)
         if self.ctx.attachments is not None:
@@ -321,4 +324,5 @@ class Engine:
         simulation.session.restore(checkpoint["kernel"])
         simulation._commands = copy.deepcopy(checkpoint.get("commands", []))
         simulation.ctx.attributes.restore_cache(checkpoint.get("attribute_cache"))
+        if simulation.ctx.depletion is not None:simulation.ctx.depletion.validate_restored()
         return simulation

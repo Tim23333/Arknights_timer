@@ -7,7 +7,7 @@ from .spatial_validation import validate_map, validate_route, position as valida
 
 COMMON = {"id", "kind", "version", "extends", "metadata", "rules", "dependencies", "dynamicReferences"}
 FIELDS = {'ability': {'tile_selector','initial_cooldown_seconds','timeline', 'activation', 'success_definition', 'duration_seconds', 'selector', 'events', 'wait_for_channels', 'interrupt_policy', 'target_capture', 'parameters', 'cooldown_seconds'}, 'attachment': {'hit_interval_seconds', 'recovery_on', 'step_interval_seconds', 'effect', 'source_cancel_flags', 'lifecycle', 'max_packets', 'completion_blocking', 'flight_lifetime_seconds', 'motion', 'refresh_interval_seconds', 'duration_seconds', 'ignored_owned_source_flags', 'force_reach_on_timeout', 'damage_integral', 'source_recovery_buff', 'target_buff'}, 'behavior': {'initial_state', 'transitions', 'states', 'provider', 'implementation', 'parameters', 'initial', 'decision'}, 'buff': {'lifetime','removal', 'duration_seconds', 'modifiers', 'events', 'control_rule', 'stacking', 'interval_seconds', 'damage_hooks', 'control', 'contact_flags', 'effects', 'aura', 'duration_rule', 'active_rule', 'interval_rule', 'on_remove', 'movement_damage', 'parameters', 'selection_flags', 'toggle'}, 'calculation_rule': {'contractVersion', 'numeric', 'contract', 'implementation', 'parameters'}, 'control': {'on_cancel', 'ack_policy', 'clock_policy', 'on_complete', 'on_start', 'steps'}, 'entity': {'progression', 'talents', 'equipment', 'tags', 'components', 'growth'}, 'policy': {'contract', 'implementation', 'provider', 'parameters'}, 'preset': {'ruleset', 'provides', 'parameters', 'requires'}, 'projectile': {'completion_blocking', 'on_invalid', 'motion', 'max_hits', 'stop_after_max', 'can_hit_same_target', 'collision', 'lifetime_seconds', 'stop_after_first', 'attach_at_launch', 'lifecycle'}, 'rule': {'contractVersion', 'numeric', 'contract', 'implementation', 'parameters'}, 'ruleset': {'reaction_budget', 'attribute_layers', 'numeric_profile', 'phase_order', 'bindings', 'parameters', 'quantum', 'system_order'}, 'scenario': {'cards','branches','timeline', 'seed', 'objectives', 'roster', 'commands', 'scheduledEffects', 'map', 'aliases', 'description', 'duration_seconds', 'waves', 'resources', 'initialEntities', 'ruleset', 'parameters', 'packages', 'routes'}, 'selector': {'limit', 'eligibility', 'ordering', 'provider', 'limit_attribute', 'eligible_rule', 'filters', 'exclude_abnormal_flags', 'parameters', 'region'}}
-COMPONENT_FIELDS = {"elemental": None,"tile_occupancy": {"blocks_deployment", "exclusive", "targetable", "withdrawable"},"ability_arbitration": None,"ability_timing": {"initial_cooldowns"},
+COMPONENT_FIELDS = {"depletion":None,"elemental": None,"tile_occupancy": {"blocks_deployment", "exclusive", "targetable", "withdrawable"},"ability_arbitration": None,"ability_timing": {"initial_cooldowns"},
     "selection_state": None,
     "rebirth": None,
     "attributes": {"base", "modifiers", "rules", "growth", "parameters", "layers", "attribute_rules"},
@@ -344,6 +344,10 @@ def validate_definition(definition, capabilities=None):
                 try:validate(spec)
                 except (ValueError,TypeError) as error:raise ContentError(identifier+': '+str(error)) from error
                 validate_effect(spec['effect'],identifier+'.death_projectiles['+str(index)+'].effect',capabilities)
+        if 'depletion' in components:
+            from ..domains.depletion import validate as validate_depletion
+            try:validate_depletion(components['depletion'],components)
+            except ValueError as error:raise ContentError(identifier+': '+str(error))
         if "rebirth" in components:
             from ..domains.rebirth import validate
             validate(components["rebirth"],components)

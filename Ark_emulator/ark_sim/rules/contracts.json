@@ -4407,6 +4407,58 @@
       },
       "contractVersion": 1,
       "status": "declared"
+    },
+    {
+      "id": "resource.depletion",
+      "kind": "policy",
+      "owner": "owner",
+      "inputs": [
+        {
+          "name": "source",
+          "type": "entity_snapshot",
+          "required": true
+        },
+        {
+          "name": "target",
+          "type": "entity_snapshot",
+          "required": true
+        },
+        {
+          "name": "request",
+          "type": "record",
+          "required": true
+        },
+        {
+          "name": "state",
+          "type": "record",
+          "required": true
+        },
+        {
+          "name": "clock",
+          "type": "record",
+          "required": true
+        },
+        {
+          "name": "parameters",
+          "type": "value_map",
+          "required": true
+        }
+      ],
+      "outputType": "record",
+      "implementations": [
+        "expression",
+        "graph",
+        "provider"
+      ],
+      "description": "Pure exact-zero owner health defer/finish/none plan selecting finite declared stages and action keys; actual health/source delivery only.",
+      "pureEvaluation": true,
+      "writesStateDirectly": false,
+      "versionsRequired": true,
+      "outputSchema": {
+        "type": "record"
+      },
+      "contractVersion": 1,
+      "status": "declared"
     }
   ],
   "types": {

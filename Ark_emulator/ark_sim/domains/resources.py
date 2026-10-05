@@ -170,6 +170,7 @@ class ResourceSystem:
         if value is not None and delta is not None:
             raise ValueError("resource change must specify only value or delta")
         candidate = value if value is not None else current + delta
+        if getattr(self.ctx, "depletion", None) is not None:self.ctx.depletion.health_update(ref,resource,candidate)
         spec = self._spec(ref, resource)
         settlement = self.ctx.calc("resource.bounds", {"candidate": candidate,
                     "capacity": self.capacity(ref, resource, source=source, ability=ability, effect=effect),
@@ -190,7 +191,7 @@ class ResourceSystem:
     def _adjust_applicability(self, ref, resource, delta=None, *, value=None, source=None, ability=None, effect=None, settlement_context=None):
         canonical=self.ctx.session.world.resolve(ref)
         rebirth=getattr(self.ctx,"rebirth",None)
-        if self.ctx.get(canonical,("lifecycle","death_projectiles")) or (rebirth is not None and (self.ctx.get(canonical,("rebirth",)) is not None or canonical in rebirth._requests)):
+        if (getattr(self.ctx, "depletion", None) is not None and self.ctx.depletion.spec(canonical) is not None) or self.ctx.get(canonical,("lifecycle","death_projectiles")) or (rebirth is not None and (self.ctx.get(canonical,("rebirth",)) is not None or canonical in rebirth._requests)):
             with self.ctx.session.atomic():return self._adjust(canonical,resource,delta,value=value,source=source,ability=ability,effect=effect,settlement_context=settlement_context)
         return self._adjust(canonical,resource,delta,value=value,source=source,ability=ability,effect=effect,settlement_context=settlement_context)
 
@@ -198,10 +199,11 @@ class ResourceSystem:
         ref = self.ctx.session.world.resolve(ref)
         source = self.ctx.session.world.resolve(source) if source is not None else None
         intents, actual = self.change_plan(ref, resource, delta, value=value, source=source, ability=ability, effect=effect)
-        self._commit_change(ref, resource, intents, actual, source, settlement_context)
+        requested = delta if value is None else value-self.current(ref,resource)
+        self._commit_change(ref, resource, intents, actual, source, settlement_context,requested)
         return actual
 
-    def _commit_change(self, ref, resource, intents, actual, source, settlement_context=None):
+    def _commit_change(self, ref, resource, intents, actual, source, settlement_context=None,requested=None):
         ref = self.ctx.session.world.resolve(ref)
         source = self.ctx.session.world.resolve(source) if source is not None else None
         event={"operation":"resource_change","source":source,"target":ref,"resource":resource,"delta":actual}
@@ -216,7 +218,10 @@ class ResourceSystem:
         self.ctx.session.commit(intents)
         self.ctx.emit("resource.changed", {"source": source, "target": ref, "resource": resource,
                                          "delta": actual, "value": self.current(ref, resource)})
-        if self.ctx.lifecycle:self.ctx.lifecycle.check(ref,event)
+        if self.ctx.lifecycle:
+            if getattr(self.ctx, "depletion", None) is not None:
+                with self.ctx.depletion.delivery(ref,event,requested):self.ctx.lifecycle.check(ref,event)
+            else:self.ctx.lifecycle.check(ref,event)
 
     def payment_plan(self, ref, costs, *, ability=None, effect=None, source=None):
         costs = tuple(costs)

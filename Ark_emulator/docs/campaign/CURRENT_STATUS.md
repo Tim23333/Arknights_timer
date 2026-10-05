@@ -2,13 +2,14 @@
 
 2026-10-05 当前正式全程为 **15/36**，客户端核对为0；最新固定收据为 `archived_logs.receipts.v4.json`，
 进度入口为 `tools/campaign_runthrough_progress_v9.py`。
-生产核心已推广为 **f0c2944cc89788b9277cbafe55ba1d9dcbdfe1e2f29c3619ce3fd1da9a6b7e9c**：
-自己的1219项完整回归、0-1/CPP/head/850与60公式基线、25项作者检查及17项联合独立门均实际通过，
-Root核对全部guards后复制九文件，保留56f380完整备份，promotion收据6ad7df49…。
-能力冷却/中断与按格场域已进入通用底座，契约数量仍为106。
-联合独立门还保存no-opt-in的原严格身份失败，并证实仅program/runtime两顶层身份随新增capabilities改变；
-整个kernel、任务、RNG、事件与attribute cache全部逐值相等，未过滤cached/context/value/cause。
-接口与来源见 [逐格地图与技能时钟](CHAPTER09_CHANNEL_MAP.md)。
+生产核心已推广为 **4d42e2b6cf646ebe2291d695f82d968e5d4669217069a37bcc8b2babb850f7a4**：
+自己的1219项完整回归、0-1/CPP/head/850与60公式基线、100短门和独立40门均实际通过，
+Root核对源码/报告后复制11文件并保留f0c完整备份，推广收据a0c563d5…。
+有限零血量状态、实际拥有的回调/施法和严格恢复lineage已进入生产，计算契约数量107。
+旧53ee完整1198通过/21隔离上下文失败保留，修复只在新候选验收后推广。
+跨106/107契约目录的完整身份等价失败保留；catalog派生FP影响缓存与trace，未过滤字段授绿。
+历史整关收据不迁移新核心。正HP受击/完整Duspfr/独立路线和Buff采样各候选继续验收。
+接口与来源见 [逐格地图与技能时钟](CHAPTER09_CHANNEL_MAP.md) 与最新推广收据。
 
 精确HP0延期 aae51de3 候选作者同核12项通过，Root另用37HP/65ATK、tick7起3秒due97与自定义due187的
 七项独立检查通过，包括两个CPP/公有head全字段相等。随后新增单字段丢失lease真实反例：restore接受，
@@ -17,7 +18,7 @@ Root核对全部guards后复制九文件，保留56f380完整备份，promotion�
 四方向完整链路与来源取消、真实tile选择/任务归属/非法回调均实际运行；f48已修lease缺口并实际同核29组通过，独立复核继续。
 新53ee联合候选fresh54短门实际全0，自己的0-1/CPP/head/850与60公式基线已实际退出0并清日志，
 107契约完整回归已实际1198通过/21失败，都是隔离DomainContext缺可选depletion；原报告保留，不推广53ee。
-新4d42候选保默认及真实owned权限，原46DomainRules+2absent权限+54机制作者与独立40门均实际通过；自己的baseline已实际退出0并清理，full107仍由原新候选进程运行。
+新4d42候选保默认及真实owned权限，原46DomainRules+2absent权限+54机制作者与独立40门均实际通过；自己的baseline和full107已实际退出0且全部清日志，已按新身份推广生产。
 DeadBoom源PullDupilr又证明5000→4500仍应倒塌，原zero-only桥未消费正HP受击；该源分支已在2c38以显式真实damage trigger补齐并独立通过，未把HP改1或伤害改大。
 爆破装置8作者/8独立组、16/19CPP/head场景已通过，严格库存2/1、SPtype8被动、DP5/slot0、环境免疫及柱体SP10。
 完整Duspfr2c38已冻结26作者组、原Domain46及因果快照性能改进：实际两轮Flame（原距离1为20包，近距离.6首接触17则deadline318前可21包，独立边界已确认）、5并发死亡、正HP柱体4500与sourceNone suicide34，独立16门及13场景28CPP/head已通过，首次10pass2预期失败保留。

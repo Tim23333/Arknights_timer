@@ -38,8 +38,8 @@ V2 运行时不得导入或委托 V1 的战斗、地图、波次、属性、伤�
 
 ## 验证
 
-当前生产底座含 `buff.lifetime_rate`、六项元素契约和复生来源判定，共106项。
-2026-10-05 已合入逐格地图场域与明确拥有能力的冷却／中断协议，当前核心f0c294；
+当前生产底座含 `buff.lifetime_rate`、六项元素契约、复生来源判定及有限零血量生命周期，共107项。
+2026-10-05 已合入逐格地图场域、明确拥有能力的冷却／中断和有限零血量实际回调，当前核心4d42e2；
 接口和同版本推广证据见 [CHAPTER09_CHANNEL_MAP.md](docs/campaign/CHAPTER09_CHANNEL_MAP.md)。
 旧数量测试仍保留历史 98 契约断言字节，
 当前完整回归入口为 `..\.venv\Scripts\python.exe tools/run_primary_v2_suite.py`。

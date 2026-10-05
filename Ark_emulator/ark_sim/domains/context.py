@@ -62,6 +62,7 @@ class RuntimeContext:
         self.waiting_actions=WaitingActions(self)
         self._notifying = 0
         self.last_calculation_event_id = None
+        self.depletion = None
         self.projectiles = None
         self.tile_contacts = None
         self.periodic_fields = None
@@ -117,14 +118,25 @@ class RuntimeContext:
         return self.get(ref, ("spatial", "route", "transition_policy", "parameters"), {})
 
     def active(self, ref):
-        return self.alive(ref) and bool(self.get(ref, ('runtime', 'active'), True))
+        result = self.alive(ref) and bool(self.get(ref, ('runtime', 'active'), True))
+        if self.depletion is not None:
+            flags=self.depletion.flags(ref)
+            if flags is not None:result=result and flags['active']
+            if self.depletion.target_allowed(ref):return self.alive(ref)
+        return result
 
     def selectable(self, ref):
+        if self.depletion is not None:
+            flags=self.depletion.flags(ref)
+            if flags is not None and not flags["selectable"] and not self.depletion.target_allowed(ref):return False
         if 'tile_field_owner' in self.entity(ref)['tags'] or self.get(ref,("tile_occupancy","targetable"),True) is False:
             return False
         return self.active(ref) and not self.route_hidden(ref)
 
     def effect_target_available(self, ref):
+        if self.depletion is not None:
+            flags=self.depletion.flags(ref)
+            if flags is not None and not flags["selectable"] and not self.depletion.target_allowed(ref):return False
         if 'tile_field_owner' in self.entity(ref)['tags'] or self.get(ref,("tile_occupancy","targetable"),True) is False:
             return False
         return bool(self.get(ref, ('runtime', 'active'), True)) and (not self.route_hidden(ref) or self.visibility_policy(ref).get("hidden_effects", "reject") == "allow")
