@@ -364,7 +364,7 @@ class Compiler:
     @staticmethod
     def _validate_reference_kinds(definitions):
         expected = {"attachment": {"attachment"}, "target_buff": {"buff"}, "source_recovery_buff": {"buff"}, "projectile_definition": {"projectile"}, "definition": {"entity"}, "ability": {"ability"}, "buff": {"buff"},
-                    "selector": {"selector"}, "machine": {"behavior"}, "policy": {"policy", "rule", "calculation_rule"},
+                    "trigger_selector": {"selector"}, "selector": {"selector"}, "machine": {"behavior"}, "policy": {"policy", "rule", "calculation_rule"},
                     "ruleset": {"ruleset"}, "exit_rule": {"rule", "calculation_rule"}, "recovery_rule": {"rule", "calculation_rule"},
                     "interval_rule": {"rule", "calculation_rule"}, "duration_rule": {"rule", "calculation_rule"},
                     "rule": {"rule", "calculation_rule"}, "amount_rule": {"rule", "calculation_rule"}}

@@ -8,7 +8,9 @@ def number(value):
     if type(value) not in (int,float) or not math.isfinite(value):raise ValueError('Depletion values must be finite numbers')
     return value
 def validate(spec,components=None):
-    if not isinstance(spec,Mapping) or set(spec)-{'resource','rule','initial_stage','stages','actions','parameters','damage_gate_rule'} or not {'resource','rule','initial_stage','stages','actions','parameters'}<=set(spec):raise ValueError('Depletion requires exact resource/rule/stage/actions/parameters')
+    if not isinstance(spec,Mapping) or set(spec)-{'resource','rule','initial_stage','stages','actions','parameters','damage_gate_rule','selection_context','trigger'} or not {'resource','rule','initial_stage','stages','actions','parameters'}<=set(spec):raise ValueError('Depletion requires exact resource/rule/stage/actions/parameters')
+    if spec.get('trigger','health_zero') not in {'health_zero','health_zero_or_damage'}:raise ValueError('Resource lifecycle trigger must be explicitly supported')
+    if 'selection_context' in spec and type(spec['selection_context']) is not bool:raise ValueError('Depletion selection context opt-in must be strict bool')
     if 'damage_gate_rule' in spec and (not isinstance(spec['damage_gate_rule'],str) or not spec['damage_gate_rule']):raise ValueError('Damage gate requires an explicit pure rule')
     if any(not isinstance(spec[k],str) or not spec[k] for k in ('resource','rule','initial_stage')):raise ValueError('Depletion IDs must be nonempty strings')
     stages=spec['stages'];actions=spec['actions']
@@ -37,7 +39,7 @@ def validate(spec,components=None):
         if number(resource.get('initial',0))<=0:raise ValueError('Depletion owner requires positive initial health')
 
 class DepletionSystem:
-    def __init__(self,ctx):self.ctx=ctx;self._attacks=[];self._deliveries=[];self._callbacks=[];self._entries=[]
+    def __init__(self,ctx):self.ctx=ctx;self._attacks=[];self._deliveries=[];self._callbacks=[];self._entries=[];self._damage_token=object()
     def spec(self,ref):return self.ctx.get(ref,('depletion',))
     def state(self,ref):return self.ctx.get(ref,('runtime','depletion'))
     def stamp(self,ref):
@@ -46,6 +48,20 @@ class DepletionSystem:
     def snapshot(self,ref):
         if ref is None:return {}
         e=self.ctx.capture_view(ref);e['components'].get('runtime',{}).pop('depletion',None);return e
+    def selection_context(self,source,target,time):
+        from types import SimpleNamespace
+        from .selection import DEFAULT_STATE,project_state
+        def project(snapshot):
+            if not snapshot:return {}
+            def get(ref,path,default=None):
+                value=snapshot['components']
+                for key in path:
+                    if not isinstance(value,Mapping) or key not in value:return default
+                    value=value[key]
+                return value
+            reader=SimpleNamespace(program=self.ctx.program,session=SimpleNamespace(time=time),entity=lambda ref:snapshot,get=get)
+            return project_state(reader,snapshot['id'],DEFAULT_STATE)
+        return {'source':project(source),'target':project(target)}
     def initialize(self,ref):
         spec=self.spec(ref)
         if spec is None:return
@@ -70,7 +86,7 @@ class DepletionSystem:
         if spec is None or not spec.get('damage_gate_rule'):return True
         source=self.ctx.session.world.resolve(source) if source is not None else None
         attack=self._attacks[-1] if self._attacks else None
-        if attack is None or attack['source']!=source or attack['target']!=ref or attack['resource']!=spec['resource'] or attack['effect'] is not effect or attack['delivered']:raise ValueError('Damage gate requires actual canonical health attack scope')
+        if attack is None or not attack['canonical'] or attack['source']!=source or attack['target']!=ref or attack['resource']!=spec['resource'] or attack['effect'] is not effect or attack['delivered']:raise ValueError('Damage gate requires actual canonical health attack scope')
         inputs={'source':self.snapshot(source),'target':self.snapshot(ref),'request':{'operation':'damage','resource':spec['resource'],'requested_amount':amount,'effect':thaw(effect)},'state':self.state(ref),'clock':{'time':self.ctx.session.time,'quantum':self.ctx.session.quantum},'parameters':spec['parameters']}
         result=self.ctx.calc('resource.depletion',inputs,target=ref,owner=ref,rule_id=spec['damage_gate_rule'],scope_extra={'source':{},'target':{},'owner':{}},extra={'source':inputs['source'],'target':inputs['target'],'owner':inputs['target']});cause=self.ctx.last_calculation_event_id
         if not isinstance(result,Mapping) or set(result)!={'accepted','actions'} or type(result['accepted']) is not bool or not isinstance(result['actions'],(list,tuple)) or len(result['actions'])>32 or len(set(result['actions']))!=len(result['actions']) or any(k not in spec['actions'] for k in result['actions']):raise ValueError('Damage gate requires a finite declared plan')
@@ -114,12 +130,12 @@ class DepletionSystem:
         if state is None or state['generation']==0:return None
         return self.spec(ref)['stages'][state['stage']]
     def health_update(self,ref,resource,candidate):
-        if self.depleted(ref) and resource==self.spec(ref)['resource'] and candidate>0:raise ValueError('Owned depletion cannot restore positive health')
+        if self.depleted(ref) and resource==self.spec(ref)['resource'] and candidate>self.ctx.resources.current(ref,resource):raise ValueError('Owned resource lifecycle cannot restore positive health')
     @contextmanager
-    def attack(self,source,target,effect,ability=None,cast=None,resource=None):
+    def attack(self,source,target,effect,ability=None,cast=None,resource=None,_capability=None):
         source=self.ctx.session.world.resolve(source) if source is not None else None
         target=self.ctx.session.world.resolve(target)
-        row={'source':source,'target':target,'resource':resource or effect.get('resource') or self.ctx.health_resource(target),'effect':effect,'ability':ability or {},'cast':cast or {},'delivered':False};self._attacks.append(row)
+        row={'source':source,'target':target,'resource':resource or effect.get('resource') or self.ctx.health_resource(target),'effect':effect,'ability':ability or {},'cast':cast or {},'delivered':False,'canonical':_capability is self._damage_token};self._attacks.append(row)
         try:yield
         finally:assert self._attacks.pop() is row
     @contextmanager
@@ -129,11 +145,11 @@ class DepletionSystem:
         attack=self._attacks[-1] if self._attacks else None
         after=self.ctx.resources.current(ref,spec['resource']);delta=event.get('delta',0)
         source=event.get('source');source=self.ctx.session.world.resolve(source) if source is not None else None
-        if (attack is None or attack['delivered'] or event.get('operation')!='damage'
+        if (attack is None or not attack['canonical'] or attack['delivered'] or event.get('operation')!='damage'
                 or attack['source']!=source or attack['target']!=self.ctx.session.world.resolve(ref)
                 or attack['resource']!=event.get('resource')):attack=None
         if attack is not None:attack['delivered']=True
-        request={'operation':'damage' if attack else 'resource_change','source':source,'target':self.ctx.session.world.resolve(ref),'resource':event['resource'],'health_before':after-delta,'health_after':after,'requested_change':requested if requested is not None else delta,'actual_change':delta,'actual_health_loss':max(-delta,0),'source_snapshot':self.snapshot(source),'source_stamp':self.stamp(source) if source is not None else None,'target_stamp':self.stamp(ref),'attack_type':(attack['effect'].get('attack_type') or attack['effect'].get('damage_flags',{}).get('source_attack_type','NORMAL')) if attack else None,'damage_type':attack['effect'].get('damage_type') if attack else None,'ability':event.get('ability'),'cast':event.get('cast')}
+        request={'resource_event':event.get('resource_event'),'operation':'damage' if attack else 'resource_change','source':source,'target':self.ctx.session.world.resolve(ref),'resource':event['resource'],'health_before':after-delta,'health_after':after,'requested_change':requested if requested is not None else delta,'actual_change':delta,'actual_health_loss':max(-delta,0),'source_snapshot':self.snapshot(source),'source_stamp':self.stamp(source) if source is not None else None,'target_stamp':self.stamp(ref),'attack_type':(attack['effect'].get('attack_type') or attack['effect'].get('damage_flags',{}).get('source_attack_type','NORMAL')) if attack else None,'damage_type':attack['effect'].get('damage_type') if attack else None,'ability':event.get('ability'),'cast':event.get('cast')}
         row={'owner':self.ctx.session.world.resolve(ref),'event':event,'request':request};self._deliveries.append(row)
         try:yield
         finally:assert self._deliveries.pop() is row
@@ -141,12 +157,16 @@ class DepletionSystem:
         spec=self.spec(ref)
         if spec is None:return False
         state=self.state(ref);health=self.ctx.resources.current(ref,spec['resource'])
-        if health>0:return False
+        if state is None:return False
+        if health>0 and spec.get('trigger','health_zero')!='health_zero_or_damage':return False
         delivery=self._deliveries[-1] if self._deliveries else None
         if delivery is None or delivery['owner']!=ref or delivery['event'] is not event:return state['generation']>0
+        if health>0 and delivery['request']['operation']!='damage':return state['generation']>0
         if event.get('resource')!=spec['resource']:return state['generation']>0
         inputs={'source':delivery['request']['source_snapshot'],'target':self.snapshot(ref),'request':delivery['request'],'state':state,'clock':{'time':self.ctx.session.time,'quantum':self.ctx.session.quantum},'parameters':spec['parameters']}
-        plan=self.ctx.calc('resource.depletion',inputs,target=ref,owner=ref,rule_id=spec['rule'],scope_extra={'source':{},'target':{},'owner':{}},extra={'source':inputs['source'],'target':inputs['target'],'owner':inputs['target']});event_id=self.ctx.last_calculation_event_id
+        plan_extra={'source':inputs['source'],'target':inputs['target'],'owner':inputs['target']}
+        if spec.get('selection_context'):plan_extra['selection_states']=self.selection_context(inputs['source'],inputs['target'],self.ctx.session.time)
+        plan=self.ctx.calc('resource.depletion',inputs,target=ref,owner=ref,rule_id=spec['rule'],scope_extra={'source':{},'target':{},'owner':{}},extra=plan_extra);event_id=self.ctx.last_calculation_event_id
         if not isinstance(plan,Mapping) or set(plan)!={'action','stage','actions'} or plan['action'] not in {'none','defer','finish'} or plan['stage'] not in spec['stages'] or not isinstance(plan['actions'],list) or len(plan['actions'])>32 or len(set(plan['actions']))!=len(plan['actions']) or any(key not in spec['actions'] for key in plan['actions']):raise ValueError('Invalid finite depletion plan')
         if plan['action']=='none':
             if plan['actions'] or plan['stage']!=state['stage']:raise ValueError('No-op depletion plan must preserve stage and actions')
@@ -233,21 +253,35 @@ class DepletionSystem:
     def validate_restored(self):
         for entity in self.ctx.session.world.entities():
             ref=entity['id'];state=self.state(ref)
-            if state is None:continue
+            if state is None:
+                if self.spec(ref) is not None:raise ValueError('Declared resource lifecycle state is missing')
+                continue
             spec=self.spec(ref);validate(spec)
             if set(state)!={'generation','stage','lease'} or type(state['generation']) is not int or state['generation']<0 or state['stage'] not in spec['stages']:raise ValueError('Invalid restored depletion state')
             lease=state['lease']
-            alive=self.ctx.alive(ref);health=self.ctx.resources.current(ref,spec['resource'])
+            alive=self.ctx.alive(ref);health=number(self.ctx.resources.current(ref,spec['resource']))
             if alive and (health==0 or state['generation']>0) and lease is None:raise ValueError('Living exhausted owner requires its original finite lease')
             if state['generation']==0 and (state['stage']!=spec['initial_stage'] or lease is not None):raise ValueError('Unstarted depletion owner must retain its initial state')
+            if alive and lease is None:
+                for historical_event in self.ctx.session._events._records:
+                    if historical_event['type']=='depletion.started' and historical_event['payload']['target']==ref and thaw(historical_event['payload']['provenance']['target_stamp'])==self.stamp(ref):raise ValueError('Current incarnation cannot erase its actual lifecycle transition')
             if lease is None and any(c.get('depletion_owned') for c in self.ctx.get(ref,('runtime','casts'),{}).values()):raise ValueError('Owned depleted cast has no finite lifecycle lease')
             if lease is None:continue
             if not isinstance(lease,dict) or set(lease)!={'generation','stamp','spec_digest','plan_event','started_event','plan','provenance','started','actions'}:raise ValueError('Invalid restored depletion lease shape')
-            if lease['generation']!=state['generation'] or lease['stamp']!=self.stamp(ref) or lease['spec_digest']!=digest(spec) or self.ctx.resources.current(ref,spec['resource'])!=0:raise ValueError('Invalid restored depletion owner')
+            positive_allowed=spec.get('trigger')=='health_zero_or_damage' and lease['provenance']['operation']=='damage' and 0<=health<=lease['provenance']['health_after']
+            if lease['generation']!=state['generation'] or lease['stamp']!=self.stamp(ref) or lease['spec_digest']!=digest(spec) or (health!=0 and not positive_allowed):raise ValueError('Invalid restored depletion owner')
             event=self.ctx.session._events._records[lease['plan_event']-1]
             if event['id']!=lease['plan_event'] or event['payload'].get('calculation_id')!='resource.depletion' or event['payload'].get('rule_id')!=spec['rule'] or thaw(event['payload']['value'])!=lease['plan'] or event['payload']['trace']['rule_fingerprint']!=self.ctx.rules.rule_fingerprints[spec['rule']]:raise ValueError('Restored depletion lineage differs')
             started=self.ctx.session._events._records[lease['started_event']-1]
             if started['type']!='depletion.started' or started['id']!=lease['started_event'] or started['time']!=lease['started'] or started['cause']!=lease['plan_event'] or started['payload']['target']!=ref or started['payload']['generation']!=state['generation'] or thaw(started['payload']['provenance'])!=lease['provenance']:raise ValueError('Restored depletion provenance differs')
+            provenance=lease['provenance']
+            if type(provenance['resource_event']) is not int or not 1<=provenance['resource_event']<=len(self.ctx.session._events._records):raise ValueError('Resource lifecycle requires original positive event ID')
+            for key in ['health_before','health_after','requested_change','actual_change','actual_health_loss']:number(provenance[key])
+            resource_event=self.ctx.session._events._records[provenance['resource_event']-1]
+            payload=resource_event['payload']
+            if resource_event['id']!=provenance['resource_event'] or resource_event['type']!='resource.changed' or resource_event['time']!=lease['started'] or payload.get('source')!=provenance['source'] or payload['target']!=ref or payload['resource']!=spec['resource'] or payload['delta']!=provenance['actual_change'] or payload['value']!=provenance['health_after'] or provenance['health_before']+provenance['actual_change']!=provenance['health_after'] or provenance['actual_health_loss']!=max(-provenance['actual_change'],0):raise ValueError('Resource lifecycle lost actual settlement event/value')
+            latest=next((e for e in reversed(self.ctx.session._events._records) if e['type']=='resource.changed' and e['payload'].get('target')==ref and e['payload'].get('resource')==spec['resource']),None)
+            if latest is None or latest['payload'].get('value')!=health:raise ValueError('Resource lifecycle current health differs from latest actual settlement')
             expected={'request':lease['provenance'],'source':lease['provenance']['source_snapshot']}
             if self.ctx.program.ruleset.get('parameters',{}).get('trace_mode','compact')!='full':
                 from .context import compact_trace
@@ -264,6 +298,7 @@ class DepletionSystem:
             if type(prior['generation']) is not int or prior['generation']<0 or prior['stage'] not in spec['stages'] or lease['generation']!=expected_generation:raise ValueError('Restored depletion generation differs from original transition')
             plan_scope={'scenario':self.ctx.program.scenario.get('rules',{}),'source':{},'target':{},'owner':{},'component':{},'attribute_or_resource':{},'ability':{},'effect':{}}
             plan_context={'time':lease['started'],'seconds':lease['started']*self.ctx.session.quantum,'quantum':self.ctx.session.quantum,'source':original_inputs['source'],'target':original_inputs['target'],'owner':original_inputs['target']}
+            if spec.get('selection_context'):plan_context['selection_states']=self.selection_context(original_inputs['source'],original_inputs['target'],lease['started'])
             recalculated=self.ctx.rules.evaluate('resource.depletion',original_inputs,scope=plan_scope,rule_id=spec['rule'],context=plan_context)
             trace=thaw(compact_trace(recalculated.trace)) if compact else thaw(recalculated.trace)
             if digest(trace)!=digest(event['payload']['trace']) or digest(recalculated.value)!=digest(lease['plan']):raise ValueError('Restored original pure depletion plan cannot be reproduced')
@@ -304,6 +339,12 @@ class DepletionSystem:
                 if not self.cast_valid(ref,cast):raise ValueError('Restored depletion cast ownership differs')
                 self.validate_cast_record(ref,cast)
         for task in self.ctx.session.scheduler.pending:
+            if task['kind'] in {'domain.ability.effect','domain.ability.finish'}:
+                for issued in self.ctx.session._events._records:
+                    if issued['type']!='depletion.cast.issued' or not any(t['id']==task['id'] for t in issued['payload']['tasks']):continue
+                    cast=self.ctx.get(task['payload']['source'],('runtime','casts',task['payload']['cast']))
+                    if cast is None or not self.cast_valid(task['payload']['source'],cast):raise ValueError('Orphaned owned resource lifecycle cast task')
+                    break
             if task['kind']!='domain.depletion.action':continue
             payload=task['payload']
             if set(payload)!={'target','generation','slot'} or any(type(payload[k]) is not int for k in payload):raise ValueError('Orphaned depletion task payload is invalid')
@@ -315,6 +356,11 @@ class DepletionSystem:
         events=self.ctx.session._events._records
         proof=events[cast['depletion_schedule_event']-1]
         data=proof['payload'];permit=cast['depletion_owned']
+        source_event=events[cast['depletion_timing_source_event']-1]
+        if source_event['id']!=cast['depletion_timing_source_event'] or source_event['type']!='depletion.cast.timing_source' or source_event['time']!=cast['started_at'] or source_event['cause']!=permit['plan_event'] or source_event['payload']['source']!=ref or source_event['payload']['ability']!=cast['ability'] or source_event['payload']['cast']!=cast['id'] or source_event['payload']['cast_generation']!=cast['generation'] or thaw(source_event['payload']['permit'])!=thaw(permit):raise ValueError('Owned cast full timing source event differs')
+        timing_source=thaw(source_event['payload']['view'])
+        historical=timing_source['components']['runtime']
+        if timing_source['id']!=ref or timing_source['definition_id']!=permit['stamp']['definition'] or historical.get('lifecycle_generation',0)!=permit['stamp']['life'] or historical.get('death_generation',0)!=permit['stamp']['death'] or historical['depletion']['generation']!=permit['generation'] or historical['depletion']['lease']['plan_event']!=permit['plan_event'] or digest(timing_source)!=source_event['payload']['view_fingerprint'] or digest(timing_source)!=cast['depletion_timing_source_fingerprint']:raise ValueError('Owned cast timing source actor/lease/fingerprint differs')
         if (proof['type']!='depletion.cast.issued' or proof['cause']!=permit['plan_event'] or proof['time']!=cast['started_at'] or data['source']!=ref or data['cast']!=cast['id'] or thaw(data['permit'])!=thaw(permit) or data['generation']!=cast['generation'] or data['started_at']!=cast['started_at'] or data['finish_at']!=cast['finish_at'] or thaw(data['tile_targets'])!=cast.get('tile_targets',[]) or thaw(data['timing_events'])!=cast['depletion_timing_events']):raise ValueError('Restored issued owned cast differs')
         tasks=thaw(data['tasks'])
         if [t['id'] for t in tasks]!=cast['tasks'] or len(set(cast['tasks']))!=len(cast['tasks']):raise ValueError('Owned cast task identity differs')
@@ -336,7 +382,7 @@ class DepletionSystem:
             if event['type']!='calculation' or event['time']!=cast['started_at'] or payload['calculation_id'] not in {'ability.windup','ability.repeat','ability.duration','ability.recovery','time.quantize'}:raise ValueError('Owned cast timing event differs')
             if compact:
                 for role in ['source','target','owner']:
-                    actor=context.pop(role+'_id',None);context[role]=cast['depletion_timing_source'] if actor==ref else {}
+                    actor=context.pop(role+'_id',None);context[role]=timing_source if actor==ref else {}
             result=self.ctx.rules.evaluate(payload['calculation_id'],trace['inputs'],scope=context['rule_scope'],context=context)
             actual=thaw(compact_trace(result.trace)) if compact else thaw(result.trace)
             if digest(actual)!=digest(payload['trace']) or digest(result.value)!=digest(payload['value']):raise ValueError('Owned cast timing pure rule cannot be reproduced')

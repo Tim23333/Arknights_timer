@@ -101,7 +101,9 @@ class LifecycleSystem:
             spatial["route"] = thaw(route)
         if "motion_mode" in spatial:
             if type(spatial["motion_mode"]) is not int or spatial["motion_mode"] not in (0,1):raise ValueError("explicit spatial motion mode WALK0/FLY1 required")
-            if spatial.get("route"):spatial["route"]["motionMode"]=spatial["motion_mode"]
+            route_mode = spatial.get("route_motion_mode", spatial["motion_mode"])
+            if type(route_mode) is not int or route_mode not in (0,1):raise ValueError("explicit route motion mode WALK0/FLY1 required")
+            if spatial.get("route"):spatial["route"]["motionMode"]=route_mode
         if parameters.get("timing_origins") is not None:
             origins = parameters["timing_origins"]
             if not isinstance(origins, Mapping) or any(type(value) is not int or value < 0 for value in origins.values()):
@@ -149,7 +151,7 @@ class LifecycleSystem:
         elemental=getattr(self.ctx, 'elemental', None)
         if elemental is not None:elemental.initialize(ref)
         elif 'elemental' in components:raise ValueError('Elemental component requires its compiled runtime feature')
-        if getattr(self.ctx, "depletion", None) is not None:self.ctx.depletion.initialize(ref)
+        if getattr(self.ctx,'depletion',None) is not None:self.ctx.depletion.initialize(ref)
         for roster_id in self.ctx.program.scenario.get("roster", []):
             for effect in self.ctx.program.definitions[roster_id].get("components", {}).get("deck", {}).get("on_create", []):
                 cause = self.ctx.emit("deck.effect", {"source": ref, "target": ref, "definition": roster_id})
@@ -227,7 +229,7 @@ class LifecycleSystem:
 
     def check(self, ref, event):
         ref=self.ctx.session.world.resolve(ref)
-        if getattr(self.ctx, "depletion", None) is not None and self.ctx.depletion.consume(ref,event):return
+        if getattr(self.ctx,'depletion',None) is not None and self.ctx.depletion.consume(ref,event):return
         if not self.ctx.get(ref, ('runtime', 'active'), True) and self.ctx.get(ref, ('runtime', 'state')) == 'dormant':
             return
         rebirth=getattr(self.ctx,"rebirth",None)
@@ -272,7 +274,7 @@ class LifecycleSystem:
             try:emit(self.ctx,ref)
             finally:self.ctx.set(ref,('runtime','death_emission_in_progress'),False)
             if not self.ctx.alive(ref):return
-        if getattr(self.ctx, "depletion", None) is not None:self.ctx.depletion.cancel(ref,reason)
+        if getattr(self.ctx,'depletion',None) is not None:self.ctx.depletion.cancel(ref,reason)
         rebirth=getattr(self.ctx,"rebirth",None)
         if rebirth is not None:rebirth.cancel(ref,reason)
         elemental=getattr(self.ctx, 'elemental', None)

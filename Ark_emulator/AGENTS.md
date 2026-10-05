@@ -42,9 +42,10 @@ V2 运行时不得导入或委托 V1 的战斗、地图、波次、属性、伤�
 
 ## 验证
 
-当前生产底座含 `buff.lifetime_rate`、六项元素契约、复生来源判定及有限零血量生命周期，共107项。
-2026-10-05 已合入逐格地图场域、明确拥有能力的冷却／中断和有限零血量实际回调，当前核心4d42e2；
-接口和同版本推广证据见 [CHAPTER09_CHANNEL_MAP.md](docs/campaign/CHAPTER09_CHANNEL_MAP.md)。
+当前生产底座含 Buff采样、逐格场域、元素契约、有限零血量生命周期、独立路线运动模式、
+接收者请求钩子和拥有任务权限，共108项。2026-10-05 已推广实际完成1219项完整回归与0-1基线的
+核心cd873db；来源修复与集成说明见 [CHAPTER09_MANDRA.md](docs/campaign/CHAPTER09_MANDRA.md)。
+原4d42及旧验收收据保持各自版本身份，当前推广收据位于 validation/campaign/chapter09_finale_primary_v1。
 旧数量测试仍保留历史 98 契约断言字节，
 当前完整回归入口为 `..\.venv\Scripts\python.exe tools/run_primary_v2_suite.py`。
 它仅替换该历史测试为精确旧98项加已验证新契约的逐字段及不可变性验证，其余1218项保持不变，

@@ -19,7 +19,7 @@ def main():
     output = args.output or ROOT / f'validation/reports/primary_v2_{timestamp}.json'
     run_dir = Path('E:/ArkSimLogs/runs') / ('primary_v2_' + timestamp)
     command = [sys.executable, str(ROOT / 'tools/run_with_log_cleanup.py'), '--run-dir', str(run_dir), '--',
-               sys.executable, str(ROOT / 'tools/chapter09_pillar_channel_joint_v3/run_full_suite107.py'),
+               sys.executable, str(ROOT / 'tools/chapter09_mandra_full_v1/run_full108.py'),
                '--runtime-root', str(ROOT), '--expected-core', core, '--output', str(output)]
     raise SystemExit(subprocess.call(command, cwd=ROOT))
 

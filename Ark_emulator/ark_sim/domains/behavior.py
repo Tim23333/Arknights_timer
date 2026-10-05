@@ -7,7 +7,7 @@ class BehaviorSystem:
         self.ctx = context
 
     def transition(self, ref, state, cause=None):
-        if not self.ctx.get(ref, ('runtime', 'active'), True):
+        if not self.ctx.get(ref, ('runtime', 'active'), True) and not (getattr(self.ctx,'rebirth',None) is not None and self.ctx.rebirth.effect_allowed(self.ctx.session.world.resolve(ref))):
             raise ValueError('dormant instance cannot enter behavior states before activation')
         component = self.ctx.get(ref, ("behavior",), {})
         definition = self.ctx.program.definitions.get(component.get("machine"), {})

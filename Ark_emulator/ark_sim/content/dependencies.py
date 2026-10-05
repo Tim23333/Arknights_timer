@@ -3,7 +3,7 @@ from collections.abc import Mapping
 from .repository import ContentError
 
 
-REFERENCE_KEYS = {"attachment", "target_buff", "source_recovery_buff","projectile_definition", "definition", "ability", "buff", "selector", "machine", "policy",
+REFERENCE_KEYS = {"trigger_selector","attachment", "target_buff", "source_recovery_buff","projectile_definition", "definition", "ability", "buff", "selector", "machine", "policy",
                   "rule", "ruleset", "extends", "prototype", "behavior"}
 REFERENCE_LISTS = {"cards","abilities", "requires", "dependencies", "externals", "allowed", "roster", "recovery_freeze_abilities", "interrupt_abilities", "retain_buffs"}
 

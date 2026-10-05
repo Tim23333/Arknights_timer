@@ -4459,6 +4459,53 @@
       },
       "contractVersion": 1,
       "status": "declared"
+    },
+    {
+      "id": "buff.capture",
+      "kind": "policy",
+      "owner": "owner",
+      "inputs": [
+        {
+          "name": "source",
+          "type": "entity_snapshot",
+          "required": true
+        },
+        {
+          "name": "target",
+          "type": "entity_snapshot",
+          "required": true
+        },
+        {
+          "name": "instance",
+          "type": "record",
+          "required": true
+        },
+        {
+          "name": "clock",
+          "type": "record",
+          "required": true
+        },
+        {
+          "name": "parameters",
+          "type": "value_map",
+          "required": true
+        }
+      ],
+      "description": "Pure finite Buff blackboard sample from original source/target snapshots and instance generation, persisted by owned Buff application only.",
+      "pureEvaluation": true,
+      "writesStateDirectly": false,
+      "versionsRequired": true,
+      "outputSchema": {
+        "type": "record"
+      },
+      "contractVersion": 1,
+      "status": "declared",
+      "outputType": "record",
+      "implementations": [
+        "expression",
+        "graph",
+        "provider"
+      ]
     }
   ],
   "types": {

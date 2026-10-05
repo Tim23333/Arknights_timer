@@ -420,12 +420,15 @@ def capability_preflight(scenario, definitions, ruleset, rules, catalog=None):
             if definition.get('lifetime'):
                 require('buff.lifetime_rate',identifier+'.lifetime',scopes,definition['lifetime']['rule'])
             for hook in definition.get("damage_hooks", []):
-                require("damage.request" if hook["phase"] == "before" else "damage.pipeline",
+                require("damage.request" if hook["phase"] in {"before", "receiver_request"} else "damage.pipeline",
                     f"{identifier}.damage_hooks", scopes, hook["rule"])
+                for child in hook.get('after_effects', ()):
+                    effect(child, identifier+'.damage_hooks.after_effects', scopes)
             for calculation, explicit in (("buff.duration", definition.get("duration_rule")),
                                            ("buff.interval", definition.get("interval_rule")),
                                            ("buff.stack_amount", definition.get("stacking", {}).get("rule")), ("time.quantize", None)):
                 require(calculation, identifier, scopes, explicit)
+            if definition.get('capture') is not None:require('buff.capture',identifier+'.capture',scopes,definition['capture']['rule'])
             if definition.get("modifiers"):
                 for modifier in definition["modifiers"]:
                     candidates = [entity for entity in definitions.values() if entity.get("kind") == "entity"

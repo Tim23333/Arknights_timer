@@ -1,5 +1,5 @@
 """Definition-driven abilities and atomic resource/timeline activation."""
-from ark_sim.contracts import Intent, thaw
+from ark_sim.contracts import Intent, thaw, digest
 from ark_sim.rules.expressions import evaluate_expression
 
 
@@ -44,13 +44,13 @@ class AbilitySystem:
     def start(self, source, ability_id, automatic=False, event_payload=None, cause=None):
         with self.ctx.session.atomic():
             source = self.ctx.session.world.resolve(source)
-            depletion_permit=self.ctx.depletion.authorize_start(source,ability_id) if getattr(self.ctx, "depletion", None) is not None else None
-            if getattr(self.ctx, "depletion", None) is not None and self.ctx.depletion.depleted(source) and depletion_permit is None:raise ActivationRejected('Depleted actors require an actual finite owned-cast callback')
+            depletion_permit=self.ctx.depletion.authorize_start(source,ability_id) if getattr(self.ctx,'depletion',None) is not None else None
+            if getattr(self.ctx,'depletion',None) is not None and self.ctx.depletion.depleted(source) and depletion_permit is None:raise ActivationRejected('Depleted actors require an actual finite owned-cast callback')
             if 'tile_field_owner' in self.ctx.definition(source).get('tags',[]):
                 raise ActivationRejected('Static tile field is not an ability source')
             self.ctx.buffs.prune_expired()
             ability = self._definition(ability_id)
-            if depletion_permit is not None and (ability.get('activation',{}).get('mode','manual')!='manual' or 'tile_selector' not in ability or ability.get('wait_for_channels') or self._params(ability).get('wait_for_projectiles')):raise ValueError('Depletion bridge requires a finite manual tile-target ability without external channels')
+            if depletion_permit is not None and (ability.get('activation',{}).get('mode','manual')!='manual' or ability.get('wait_for_channels') or self._params(ability).get('wait_for_projectiles')):raise ValueError('Depletion bridge requires a finite manual ability without external channels')
             if ability_id not in self.ctx.get(source, ("abilities",), []):
                 raise ValueError(f"Entity does not possess ability: {ability_id}")
             from .terminal_lifecycle import authorize as terminal_authorize
@@ -131,11 +131,12 @@ class AbilitySystem:
                         raise ActivationRejected("Blocking cast started during blocking settlement")
                     if any(item["ability"] == ability_id for item in casts.values()):
                         raise ActivationRejected("Ability started during blocking settlement")
+            if ability.get('trigger_selector') and not self.ctx.spatial.eligible(source,ability['trigger_selector'],ability=ability):raise ActivationRejected('Independent ability trigger has no qualified candidate')
             targets = self.ctx.spatial.select(source, ability["selector"], ability=ability) if ability.get("selector") else [source]
             tile_candidates = None
             if ability.get("tile_selector"):
                 from .tile_targets import query
-                tile_candidates = query(self.ctx, source, ability["tile_selector"])
+                tile_candidates = query(self.ctx, source, ability["tile_selector"],event_payload)
             requires_targets = mode == "automatic_attack" or params.get("replace_attack") or params.get("requires_targets", False)
             if requires_targets and not (tile_candidates[:ability["tile_selector"]["limit"]] if tile_candidates is not None else targets):
                 raise ActivationRejected("No legal ability target")
@@ -154,6 +155,9 @@ class AbilitySystem:
             prepared = []
             depletion_timing_start=len(self.ctx.session._events._records)
             depletion_timing_source=thaw(self.ctx.entity(source)) if depletion_permit is not None else None
+            depletion_timing_source_event=None
+            if depletion_permit is not None:
+                depletion_timing_source_event=self.ctx.emit('depletion.cast.timing_source',{'source':source,'ability':ability_id,'cast':f"cast/{source}/{runtime.get('next_cast_id',1)}",'cast_generation':runtime.get('next_cast_id',1),'permit':depletion_permit,'view':depletion_timing_source,'view_fingerprint':digest(depletion_timing_source)},cause)
             pre_delay = activation.get("parameters", {}).get("windup_seconds", params.get("pre_delay_seconds", 0))
             last_delay = 0
             for entry in ability.get("timeline", ()):
@@ -256,7 +260,7 @@ class AbilitySystem:
                 timing=[e['id'] for e in self.ctx.session._events._records[depletion_timing_start:] if e['type']=='calculation' and e['payload']['calculation_id'] in {'ability.windup','ability.repeat','ability.duration','ability.recovery','time.quantize'}]
                 task_rows=[thaw(t) for t in self.ctx.session.scheduler.pending if t['id'] in cast['tasks']]
                 issued=self.ctx.emit('depletion.cast.issued',{'source':source,'cast':cast_id,'permit':depletion_permit,'generation':sequence,'started_at':now,'finish_at':finish_at,'tile_targets':cast.get('tile_targets',[]),'tasks':task_rows,'timing_events':timing},cause)
-                cast['depletion_timing_source']=depletion_timing_source;cast['depletion_timing_events']=timing;cast['depletion_schedule_event']=issued;cast['depletion_schedule_clock']=depletion_schedule_clock
+                cast['depletion_timing_source_event']=depletion_timing_source_event;cast['depletion_timing_source_fingerprint']=digest(depletion_timing_source);cast['depletion_timing_events']=timing;cast['depletion_schedule_event']=issued;cast['depletion_schedule_clock']=depletion_schedule_clock
                 self.ctx.set(source,('runtime','casts',cast_id),cast)
             started_event = self.ctx.emit("ability.started", {"source": source, "ability": ability_id, "cast": cast_id, "targets": targets}, cause=cause)
             if ability.get("wait_for_channels"):
@@ -293,8 +297,9 @@ class AbilitySystem:
         source, cast_id = payload["source"], payload["cast"]
         cast = self._active(source, cast_id)
         if cast and cast.get('depletion_owned'):
+            if getattr(self.ctx,'depletion',None) is None:return
             task=session.current_task
-            if not (getattr(self.ctx, "depletion", None) is not None and self.ctx.depletion.cast_valid(source,cast) and task and task['kind']=='domain.ability.effect' and task['id'] in cast['tasks'] and task['at']==session.time and task['phase']==session.scheduler.rank(self.ctx.effect_phase) and task['payload']==payload):return
+            if not (self.ctx.depletion.cast_valid(source,cast) and task and task['kind']=='domain.ability.effect' and task['id'] in cast['tasks'] and task['at']==session.time and task['phase']==session.scheduler.rank(self.ctx.effect_phase) and task['payload']==payload):return
         if cast and cast.get('waiting_action'):
             task=session.current_task
             if not (task and task['kind']=='domain.ability.effect' and task['id'] in cast['tasks']
@@ -302,7 +307,7 @@ class AbilitySystem:
         if cast and cast.get('waiting_action') and not self.ctx.waiting_actions.cast_allowed(source,cast):
             self.ctx.waiting_actions.cancel_casts(source,'waiting_lease_invalid')
             return
-        if not cast or (not getattr(self.ctx, 'active', self.ctx.alive)(source) and not (getattr(self.ctx,'waiting_actions',None) is not None and self.ctx.waiting_actions.cast_allowed(source,cast))):
+        if not cast or (not getattr(self.ctx, 'active', self.ctx.alive)(source) and not (cast.get('depletion_owned') and self.ctx.depletion.cast_valid(source,cast)) and not (getattr(self.ctx,'waiting_actions',None) is not None and self.ctx.waiting_actions.cast_allowed(source,cast))):
             return
         ability = self._definition(cast["ability"])
         if not self._condition(payload.get("condition"), source, ability):
@@ -396,8 +401,9 @@ class AbilitySystem:
         if not cast:
             return
         if cast.get('depletion_owned'):
+            if getattr(self.ctx,'depletion',None) is None:return
             task=session.current_task
-            if not (getattr(self.ctx, "depletion", None) is not None and self.ctx.depletion.cast_valid(source,cast) and task and task['kind']=='domain.ability.finish' and task['id'] in cast['tasks'] and task['at']==session.time==cast['finish_at'] and task['phase']==session.scheduler.rank(self.ctx.effect_phase) and task['payload']==payload):return
+            if not (self.ctx.depletion.cast_valid(source,cast) and task and task['kind']=='domain.ability.finish' and task['id'] in cast['tasks'] and task['at']==session.time==cast['finish_at'] and task['phase']==session.scheduler.rank(self.ctx.effect_phase) and task['payload']==payload):return
         if cast.get("pending_projectiles", 0) or cast.get("pending_channels", 0):
             cast["finish_requested"] = True
             self.ctx.set(source, ("runtime", "casts", cast_id), cast)

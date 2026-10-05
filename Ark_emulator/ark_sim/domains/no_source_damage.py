@@ -106,8 +106,8 @@ def settle(system, target, effect, cause):
         post, _, accepted = system._damage_hooks('after', target, None, target,
             {**request, 'settlement': initial}, {}, {}, None)
         settlement = post['settlement']
-    if accepted and settlement['accepted'] and getattr(ctx, "depletion", None) is not None:
-        with ctx.depletion.attack(None,target,effect,resource=resource):
+    if accepted and settlement['accepted'] and getattr(ctx,'depletion',None) is not None:
+        with ctx.depletion.attack(None,target,effect,resource=resource,_capability=ctx.depletion._damage_token):
             if not ctx.depletion.damage_gate(None,target,effect,settlement['amount']):accepted=False
     if not accepted or not settlement['accepted']:
         ctx.emit('damage.rejected', {**tag, 'target': target, 'reason': 'pipeline_or_target_hook',
@@ -152,8 +152,9 @@ def settle(system, target, effect, cause):
     total = sum(row['health_loss'] for row in rows)
     for row in rows:
         recipient, key, delta = row['target'], row['resource'], row['actual_delta']
-        ctx.emit('resource.changed', {**tag, 'target': recipient, 'resource': key, 'delta': delta,
+        resource_event=ctx.emit('resource.changed', {**tag, 'target': recipient, 'resource': key, 'delta': delta,
                                     'value': ctx.resources.current(recipient, key)}, cause)
+        if getattr(ctx,'depletion',None) is not None and ctx.depletion.spec(recipient) is not None:row['resource_event']=resource_event
     # Settlement and its accepted event are visible before lethal cleanup;
     # target SP capture uses the original emission-time freeze mechanism.
     ctx.state_update(damage_dealt=ctx.state().get('damage_dealt', 0) + total)
@@ -167,9 +168,10 @@ def settle(system, target, effect, cause):
             lifecycle_rows[row['target']] = row
     for row in lifecycle_rows.values():
         event={**tag,'resource':row['resource'],'delta':row['actual_delta'],'cause':damage_event}
-        if getattr(ctx, "depletion", None) is not None and ctx.depletion.spec(row['target']) is not None:
+        if 'resource_event' in row:event['resource_event']=row['resource_event']
+        if getattr(ctx,'depletion',None) is not None and ctx.depletion.spec(row['target']) is not None:
             event['operation']='damage'
-            with ctx.depletion.attack(None,row['target'],effect,resource=row['resource']):
+            with ctx.depletion.attack(None,row['target'],effect,resource=row['resource'],_capability=ctx.depletion._damage_token):
                 with ctx.depletion.delivery(row['target'],event,row['requested_delta']):ctx.lifecycle.check(row['target'],event)
         else:ctx.lifecycle.check(row['target'],event)
     for recipient, was_alive in living.items():

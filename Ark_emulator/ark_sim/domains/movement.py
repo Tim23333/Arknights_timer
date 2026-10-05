@@ -304,7 +304,7 @@ class SpatialSystem:
                 if current is not None:
                     self.ctx.set(ref, ("runtime", "blocked_by"), None)
                 continue
-            if route_motion_mode(spatial["route"]) == 1:
+            if spatial.get("motion_mode",route_motion_mode(spatial["route"])) == 1:
                 if current is not None:
                     self.ctx.set(ref, ("runtime", "blocked_by"), None)
                     self._emit_blocking( {"source": None, "target": ref, "reason": "flying"})
@@ -649,13 +649,15 @@ class MovementSystem:
             self.travel(ref, destination, "route", spatial)
         self.ctx.spatial.blocking()
 
-    def set_motion_mode(self,source,target,mode):
+    def set_motion_mode(self,source,target,mode,route_mode=None):
         if type(mode) is not int or mode not in (0,1):raise ValueError("motion mode must be WALK0/FLY1")
+        if route_mode is not None and (type(route_mode) is not int or route_mode not in (0,1)):raise ValueError("route motion mode must be WALK0/FLY1")
         with self.ctx.session.atomic():
             spatial=self.ctx.get(target,("spatial",),{})
             spatial["motion_mode"]=mode
+            if route_mode is not None:spatial["route_motion_mode"]=route_mode
             if spatial.get("route"):
-                spatial["route"]["motionMode"]=mode
+                spatial["route"]["motionMode"]=spatial.get("route_motion_mode",mode)
             spatial.pop("movement_path",None);spatial.pop("velocity",None)
             selection=self.ctx.get(target,('selection_state',),{})
             selection['motion']=1 << mode

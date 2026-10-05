@@ -6,7 +6,8 @@ from .rebirth_self_buffs import finish_scope
 
 FIELDS={'on_skip','skip_rule','zero_restore_lifecycle','waiting_actions','resource','max_count','delay_seconds','restore_ratio','restore_rule','parameters','retain_buffs','on_begin','on_finish','reset_cooldowns','reset_attack_clock'}
 def validate_kill(options):
- if not isinstance(options,Mapping) or set(options)!={'cause','skip_rebirth'} or not isinstance(options['cause'],str) or not options['cause'] or not options['cause'].replace('_','').replace('-','').isalnum() or type(options['skip_rebirth']) is not bool:raise ValueError('instant kill requires event-safe cause/explicit skip_rebirth bool')
+ if not isinstance(options,Mapping) or set(options) not in ({'cause','skip_rebirth'},{'cause','skip_rebirth','source_policy','origin'}) or not isinstance(options['cause'],str) or not options['cause'] or not options['cause'].replace('_','').replace('-','').isalnum() or type(options['skip_rebirth']) is not bool:raise ValueError('instant kill requires event-safe cause/explicit skip_rebirth bool')
+ if 'source_policy' in options and (options['source_policy']!='none' or not isinstance(options['origin'],Mapping) or not options['origin']):raise ValueError('No-source instant kill requires explicit none policy and origin')
 def validate(spec,components=None,definitions=None):
  if not isinstance(spec,Mapping) or set(spec)-FIELDS or not {'resource','max_count','delay_seconds','restore_ratio','restore_rule'}<=set(spec):raise ValueError('rebirth requires exact resource/count/delay/ratio/restore_rule')
  for key in ('resource','restore_rule'):
@@ -217,6 +218,12 @@ class RebirthSystem:
  def instant_kill(self,source,target,options,ability=None,cast=None,cause=None):
   validate_kill(options)
   source=self.ctx.session.world.resolve(source);target=self.ctx.session.world.resolve(target)
+  owner_source=source
+  if options.get('source_policy')=='none':source=None
+  if getattr(self.ctx,'depletion',None) is not None and self.ctx.depletion.depleted(target) and self.ctx.depletion.callback_cast_allowed(target,cast):
+   if owner_source!=target:raise ValueError('Owned depleted finish must target its callback owner')
+   self.ctx.depletion.cancel(target,'owned_finish');self.ctx.lifecycle.retire(target,'dead')
+   self.ctx.emit('instant_kill.executed',{'source':source,'target':target,'cause':options['cause'],'skip_rebirth':options['skip_rebirth'],'origin':thaw(options.get('origin',{})),'alive':False,'ability':(ability or {}).get('id')},cause);return
   from .terminal_lifecycle import source_finish_kill
   if source_finish_kill(self,source,target,options):return
   if target==self.ctx.session.world.resolve('system/battle'):raise ValueError('instant kill cannot target battle')

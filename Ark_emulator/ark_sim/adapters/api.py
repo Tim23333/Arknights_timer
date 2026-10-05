@@ -325,4 +325,6 @@ class Engine:
         simulation._commands = copy.deepcopy(checkpoint.get("commands", []))
         simulation.ctx.attributes.restore_cache(checkpoint.get("attribute_cache"))
         if simulation.ctx.depletion is not None:simulation.ctx.depletion.validate_restored()
+        from ..domains.buff_capture import validate_restored as validate_buff_capture
+        validate_buff_capture(simulation.ctx.buffs)
         return simulation

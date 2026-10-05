@@ -39,9 +39,8 @@ class EffectSystem:
             validate_effect(effect, "runtime.explicit_owned_effect", DEFAULT_CAPABILITIES)
         source = self.ctx.session.world.resolve(source)
         ability, cast = ability or {}, cast or {}
-        if (cast.get("depletion_action") or cast.get("depletion_owned")) and getattr(self.ctx, "depletion", None) is None:
-            raise ValueError("Depletion callback tags require an actual enabled subsystem")
-        if getattr(self.ctx, "depletion", None) is not None:
+        if (cast.get('depletion_action') or cast.get('depletion_owned')) and getattr(self.ctx,'depletion',None) is None:raise ValueError('Resource lifecycle cast requires an enabled typed subsystem')
+        if getattr(self.ctx,'depletion',None) is not None:
             if cast.get("depletion_action") and not self.ctx.depletion.callback_cast_allowed(source,cast):raise ValueError("Depletion cast data does not grant callback authority")
             if cast.get('depletion_owned') and not self.ctx.depletion.callback_cast_allowed(source,cast):raise ValueError('Depletion owned cast requires actual scheduled scope')
             if not self.ctx.depletion.source_allowed(source,cast):return
@@ -306,7 +305,7 @@ class EffectSystem:
                 from .behavior_restart import execute
                 execute(self.ctx, source, target, effect, cause)
             elif operation == "set_motion_mode":
-                self.ctx.movement.set_motion_mode(source,target,effect["value"])
+                self.ctx.movement.set_motion_mode(source,target,effect["value"],effect.get("parameters",{}).get("route_motion_mode"))
             elif operation in ("move", "displace"):
                 self.ctx.movement.displace(source, target, effect, ability)
             elif operation == "push":
@@ -344,7 +343,19 @@ class EffectSystem:
                     paid = self._claim_deployment_payment(source, cast, effect, deployment["resource"])
                     record(self.ctx, ref, deployment, paid_cost=paid)
             elif operation == "trigger_ability":
-                self.ctx.abilities.start(target, effect["ability"], automatic=True, cause=cause)
+                forwarded=None
+                if effect.get('parameters',{}).get('forward_input'):
+                    if type(effect['parameters']['forward_input']) is not bool or len(targets)!=1:raise ValueError('Forwarded ability input requires one actual effect target')
+                    original=self.ctx.session.world.resolve(targets[0]);position=self.ctx.get(original,('spatial','position'))
+                    if position is None:raise ValueError('Forwarded ability input requires actual target position')
+                    forwarded={'target':original,'position':position}
+                rejection=effect.get('parameters',{}).get('on_rejection','raise')
+                if rejection not in ('raise','skip'):raise ValueError('Ability rejection policy requires raise or skip')
+                from .abilities import ActivationRejected
+                try:self.ctx.abilities.start(target, effect["ability"], automatic=True,event_payload=forwarded,cause=cause)
+                except ActivationRejected as error:
+                    if rejection!='skip':raise
+                    self.ctx.emit('ability.request_rejected',{'source':target,'ability':effect['ability'],'reason':str(error),'policy':'skip'},cause)
             elif operation == "schedule":
                 self.ctx.session.schedule("domain.effect", {"source": source, "targets": [target],
                     "effect": thaw(effect["effect"]), "ability": thaw(ability), "cast": thaw(cast), "cause": cause},
@@ -441,8 +452,8 @@ class EffectSystem:
         return True
 
     def _settle(self, source, target, effect, ability, cast, cause):
-        if getattr(self.ctx, "depletion", None) is not None and effect["op"]=="damage":
-            with self.ctx.depletion.attack(source,target,effect,ability,cast):return self._settle_actual(source,target,effect,ability,cast,cause)
+        if getattr(self.ctx,'depletion',None) is not None and effect["op"]=="damage":
+            with self.ctx.depletion.attack(source,target,effect,ability,cast,_capability=self.ctx.depletion._damage_token):return self._settle_actual(source,target,effect,ability,cast,cause)
         return self._settle_actual(source,target,effect,ability,cast,cause)
 
     def _settle_actual(self, source, target, effect, ability, cast, cause):
@@ -499,6 +510,15 @@ class EffectSystem:
         if not accepted:
             self.ctx.emit("damage.rejected", {"source": source, "target": target, "reason": "source_hook"}, cause)
             return None
+        request, receiver_pre, receiver_post, receiver_accepted = self._receiver_request(
+            source, target, request, ability, cast, cause)
+        if not receiver_accepted:
+            self.ctx.emit('damage.rejected', {'source': source, 'target': target, 'reason': 'receiver_request'}, cause)
+            return None
+        for child in receiver_pre:
+            self.execute(target, [target], child, cause=cause)
+        if not self.ctx.alive(target):
+            return None
         settlement = self.ctx.calc("damage.pipeline", {"source": self.ctx.entity(source) if source is not None else {},
              "target": self.ctx.entity(target), "effect": request, "samples": [], "states": {}},
              source=source, target=target, ability=ability, effect=effect)
@@ -506,13 +526,15 @@ class EffectSystem:
         post_request = {**request, "settlement": settlement}
         post_request, _, accepted = self._damage_hooks("after", target, source, target, post_request, ability, cast, snapshot)
         settlement = post_request["settlement"]
-        if settlement['accepted'] and getattr(self.ctx, "depletion", None) is not None and not self.ctx.depletion.damage_gate(source,target,effect,settlement['amount'],ability,cast):accepted=False
+        if settlement['accepted'] and getattr(self.ctx,'depletion',None) is not None and not self.ctx.depletion.damage_gate(source,target,effect,settlement['amount'],ability,cast):accepted=False
         if not accepted:
             settlement = {**settlement, "accepted": False}
         if not settlement["accepted"]:
             self.ctx.emit("damage.rejected", {"source": source, "target": target, "reason": "pipeline_or_target_hook"}, cause)
             for child in effect.get("on_failure", ()):
                 self.execute(source, [target], child, ability, cast, cause)
+            for child in receiver_post:
+                self.execute(target, [target], child, cause=cause)
             return None
         if settlement.get("allocations"):
             intents, notifications, actual = [], [], 0
@@ -535,10 +557,11 @@ class EffectSystem:
                     actual -= delta
             self.ctx.session.commit(intents)
             for recipient, key, delta in notifications:
-                self.ctx.emit("resource.changed", {"source": source, "target": recipient, "resource": key, "delta": delta})
+                resource_event=self.ctx.emit("resource.changed", {"source": source, "target": recipient, "resource": key, "delta": delta,'value':self.ctx.resources.current(recipient,key)}) if getattr(self.ctx,'depletion',None) is not None and self.ctx.depletion.spec(recipient) is not None else self.ctx.emit("resource.changed", {"source": source, "target": recipient, "resource": key, "delta": delta})
                 event={"operation":"damage","source":source,"target":recipient,"resource":key,"delta":delta,"ability":ability.get("id"),"cast":cast.get("id")}
-                if getattr(self.ctx, "depletion", None) is not None:
-                    with self.ctx.depletion.attack(source,recipient,effect,ability,cast,resource=key):
+                if getattr(self.ctx,'depletion',None) is not None and self.ctx.depletion.spec(recipient) is not None:event['resource_event']=resource_event
+                if getattr(self.ctx,'depletion',None) is not None:
+                    with self.ctx.depletion.attack(source,recipient,effect,ability,cast,resource=key,_capability=self.ctx.depletion._damage_token):
                         with self.ctx.depletion.delivery(recipient,event,delta):self.ctx.lifecycle.check(recipient,event)
                 else:self.ctx.lifecycle.check(recipient,event)
         else:
@@ -556,7 +579,54 @@ class EffectSystem:
             self.ctx.emit(event["type"], event.get("payload", {}), cause)
         for extra in extras:
             self.execute(source, [target], extra, ability, cast, cause)
+        for child in receiver_post:
+            self.execute(target, [target], child, cause=cause)
         return actual
+
+    def _receiver_request(self, source, target, request, ability, cast, cause):
+        """Explicit receiver-before-modifier hooks, preserving legacy phases."""
+        before, after, groups = [], [], set()
+        now = self.ctx.session.time
+        hooks = []
+        for instance in self.ctx.get(target, ('buffs', 'instances'), []):
+            if instance['expires_at'] is not None and now >= instance['expires_at']: continue
+            applicability = getattr(getattr(self.ctx, 'buffs', None), 'applicability', None)
+            if applicability is not None and not applicability.active(instance): continue
+            definition = self.ctx.program.definitions[instance['definition']]
+            for hook in definition.get('damage_hooks', ()):
+                if hook['phase'] == 'receiver_request': hooks.append((hook, instance))
+        hooks.sort(key=lambda pair: -pair[0].get('priority', 0))
+        for hook, instance in hooks:
+            if hook.get('group') in groups: continue
+            context = {'owner': self.ctx.entity(target), 'source': self.ctx.entity(source) if source is not None else {},
+                       'target': self.ctx.entity(target), 'time': now, 'buff': instance}
+            if hook.get('condition') and not evaluate_expression(hook['condition'], {
+                    'effect': request, 'source': context['source'], 'target': context['target']}, {}, context): continue
+            sampling = hook.get('samples', {})
+            samples = [{'value': self.ctx.session.random.sample(sampling['stream'])}
+                       for _ in range(sampling.get('count', 1))] if sampling else []
+            result = self.ctx.calc('damage.request', {'source': context['source'], 'target': context['target'],
+                'effect': request, 'samples': samples, 'states': {'buff': instance}}, source=source, target=target,
+                owner=target, ability=ability, effect=request, rule_id=hook['rule'], extra={'buff': instance})
+            if not isinstance(result, dict) or set(result) != {'accepted', 'effect', 'effects'} or type(result['accepted']) is not bool:
+                raise ValueError('Receiver request must return exact accepted/effect/effects')
+            if not isinstance(result['effect'], dict) or result['effect'].get('op') != 'damage' or not isinstance(result['effects'], list) or len(result['effects']) > 32:
+                raise ValueError('Receiver request requires finite declared actor damage effects')
+            from ark_sim.content.schemas import validate_effect, DEFAULT_CAPABILITIES
+            from ark_sim.rules.numeric import validate_data
+            validate_data(result['effect'], 'receiver_request.resolved_damage_request')
+            if result['effect'].get('damage_type', 'physical') not in DEFAULT_CAPABILITIES['damage_types']:
+                raise ValueError('Receiver request returned an unsupported damage type')
+            for child in result['effects']:
+                validate_effect(child, 'receiver_request.effects', DEFAULT_CAPABILITIES)
+                if child.get('op') not in {'apply_buff', 'remove_buff', 'emit'}:
+                    raise ValueError('Receiver hook permits only finite holder Buff/emit writes')
+                if child.get('target', 'selected') not in ('selected', 'target', 'source', 'self'):
+                    raise ValueError('Receiver hook writes are restricted to the actual holder')
+            if not result['accepted']: return request, [], [], False
+            request = result['effect']; before.extend(result['effects']); after.extend(thaw(hook.get('after_effects', [])))
+            if hook.get('group') is not None: groups.add(hook['group'])
+        return request, before, after, True
 
     def _canonical_settlement(self, settlement, source, target):
         settlement = thaw(settlement)

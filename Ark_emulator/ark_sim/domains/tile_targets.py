@@ -12,9 +12,10 @@ from .spatial import project_cell
 
 
 def validate_selector(spec):
-    if not isinstance(spec, Mapping) or set(spec) != {
-            'eligibility_expression', 'parameters', 'limit', 'selection', 'stream'}:
+    if not isinstance(spec, Mapping) or set(spec)-{'eligibility_expression','parameters','limit','selection','stream','accept_input','require_owned_task'} or not {'eligibility_expression','parameters','limit','selection','stream'}<=set(spec):
         raise ValueError('tile_selector requires explicit expression/parameters/limit/selection/stream')
+    if 'accept_input' in spec and type(spec['accept_input']) is not bool:raise ValueError('Tile selector input opt-in must be strict bool')
+    if 'require_owned_task' in spec and type(spec['require_owned_task']) is not bool:raise ValueError('Tile task opt-in must be strict bool')
     Expression(spec['eligibility_expression'])
     if not isinstance(spec['parameters'], Mapping):
         raise ValueError('tile selector parameters must be data')
@@ -64,7 +65,7 @@ def validate_placement(ctx, spec, position, exclude=None):
         raise ValueError('tile already contains an active tile occupancy token')
 
 
-def query(ctx, source, spec):
+def query(ctx, source, spec, input_payload=None):
     """Read-only row-major candidate list; no RNG, events, tasks or World writes."""
     validate_selector(spec)
     source = ctx.session.world.resolve(source)
@@ -87,6 +88,9 @@ def query(ctx, source, spec):
                       'deployment_blocked': any(a['components'].get('deployable') or
                           a['components'].get('tile_occupancy', {}).get('blocks_deployment', False)
                           for a in actors)}
+            if spec.get('accept_input'):
+                if not isinstance(input_payload,Mapping) or set(input_payload)!={'target','position'} or type(input_payload['target']) is not int or input_payload['target']<1 or not isinstance(input_payload['position'],Mapping) or set(input_payload['position'])!={'row','col'} or any(type(v) not in (int,float) or not math.isfinite(v) for v in input_payload['position'].values()):raise ValueError('Input tile selector requires captured actor/root position')
+                inputs['input']=thaw(input_payload)
             accepted = evaluate_expression(spec['eligibility_expression'], inputs,
                 spec['parameters'], {'time': ctx.session.time, 'quantum': ctx.session.quantum})
             if type(accepted) is not bool:
@@ -146,13 +150,20 @@ def spawn_on_tiles(ctx, source, effect, ability, cast, cause=None):
             active.get('source')!=source or active.get('ability')!=ability.get('id') or active.get('generation')!=cast.get('generation') or
             active.get('tile_targets')!=thaw(cast['tile_targets'])):
         raise ValueError('spawn_on_tiles requires an active owned cast with original captured tile targets')
+    if ability['tile_selector'].get('require_owned_task'):
+        task=ctx.session.current_task
+        if (not task or task['kind']!='domain.ability.effect' or task['id'] not in active.get('tasks',[]) or
+                task['at']!=ctx.session.time or task['phase']!=ctx.session.scheduler.rank(ctx.effect_phase) or
+                task['payload'].get('source')!=source or task['payload'].get('cast')!=active.get('id') or
+                active.get('source')!=source or active.get('ability')!=ability.get('id')):
+            raise ValueError('Tile effect requires current scheduled task of actual owned cast')
     options = effect['parameters']
     def lease_active():
         current=ctx.get(source,('runtime','casts',cast['id']),None)
         return (ctx.active(source) and not ctx.state().get('finished') and isinstance(current,Mapping)
             and current.get('ability')==active['ability'] and current.get('generation')==active['generation']
             and current.get('tile_targets')==active['tile_targets'])
-    eligible = query(ctx, source, ability['tile_selector']) if options['recheck'] else None
+    eligible = query(ctx, source, ability['tile_selector'],cast.get('event_payload')) if options['recheck'] else None
     for cell in active['tile_targets']:
         if not lease_active():
             return

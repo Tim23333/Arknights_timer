@@ -162,6 +162,9 @@ class BuffSystem:
             instance = {**incoming, "id": uid, "stacks": int(amount), "started_at": self.ctx.session.time,
                         "expires_at": expires, "interval_units": interval_units, "generation": generation,
                         "tasks": {}, "blackboard": thaw(existing.get("blackboard", {})) if existing else {}}
+            if definition.get('capture') is not None:
+                from .buff_capture import prepare as prepare_capture
+                prepare_capture(self,instance,existing)
             from .rebirth_self_buffs import issue as issue_rebirth_self
             issue_rebirth_self(self.ctx, instance)
             if aura_parent is not None:

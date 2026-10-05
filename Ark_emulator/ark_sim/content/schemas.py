@@ -6,7 +6,7 @@ from .spatial_validation import validate_map, validate_route, position as valida
 
 
 COMMON = {"id", "kind", "version", "extends", "metadata", "rules", "dependencies", "dynamicReferences"}
-FIELDS = {'ability': {'tile_selector','initial_cooldown_seconds','timeline', 'activation', 'success_definition', 'duration_seconds', 'selector', 'events', 'wait_for_channels', 'interrupt_policy', 'target_capture', 'parameters', 'cooldown_seconds'}, 'attachment': {'hit_interval_seconds', 'recovery_on', 'step_interval_seconds', 'effect', 'source_cancel_flags', 'lifecycle', 'max_packets', 'completion_blocking', 'flight_lifetime_seconds', 'motion', 'refresh_interval_seconds', 'duration_seconds', 'ignored_owned_source_flags', 'force_reach_on_timeout', 'damage_integral', 'source_recovery_buff', 'target_buff'}, 'behavior': {'initial_state', 'transitions', 'states', 'provider', 'implementation', 'parameters', 'initial', 'decision'}, 'buff': {'lifetime','removal', 'duration_seconds', 'modifiers', 'events', 'control_rule', 'stacking', 'interval_seconds', 'damage_hooks', 'control', 'contact_flags', 'effects', 'aura', 'duration_rule', 'active_rule', 'interval_rule', 'on_remove', 'movement_damage', 'parameters', 'selection_flags', 'toggle'}, 'calculation_rule': {'contractVersion', 'numeric', 'contract', 'implementation', 'parameters'}, 'control': {'on_cancel', 'ack_policy', 'clock_policy', 'on_complete', 'on_start', 'steps'}, 'entity': {'progression', 'talents', 'equipment', 'tags', 'components', 'growth'}, 'policy': {'contract', 'implementation', 'provider', 'parameters'}, 'preset': {'ruleset', 'provides', 'parameters', 'requires'}, 'projectile': {'completion_blocking', 'on_invalid', 'motion', 'max_hits', 'stop_after_max', 'can_hit_same_target', 'collision', 'lifetime_seconds', 'stop_after_first', 'attach_at_launch', 'lifecycle'}, 'rule': {'contractVersion', 'numeric', 'contract', 'implementation', 'parameters'}, 'ruleset': {'reaction_budget', 'attribute_layers', 'numeric_profile', 'phase_order', 'bindings', 'parameters', 'quantum', 'system_order'}, 'scenario': {'cards','branches','timeline', 'seed', 'objectives', 'roster', 'commands', 'scheduledEffects', 'map', 'aliases', 'description', 'duration_seconds', 'waves', 'resources', 'initialEntities', 'ruleset', 'parameters', 'packages', 'routes'}, 'selector': {'limit', 'eligibility', 'ordering', 'provider', 'limit_attribute', 'eligible_rule', 'filters', 'exclude_abnormal_flags', 'parameters', 'region'}}
+FIELDS = {'ability': {'trigger_selector','tile_selector','initial_cooldown_seconds','timeline', 'activation', 'success_definition', 'duration_seconds', 'selector', 'events', 'wait_for_channels', 'interrupt_policy', 'target_capture', 'parameters', 'cooldown_seconds'}, 'attachment': {'hit_interval_seconds', 'recovery_on', 'step_interval_seconds', 'effect', 'source_cancel_flags', 'lifecycle', 'max_packets', 'completion_blocking', 'flight_lifetime_seconds', 'motion', 'refresh_interval_seconds', 'duration_seconds', 'ignored_owned_source_flags', 'force_reach_on_timeout', 'damage_integral', 'source_recovery_buff', 'target_buff'}, 'behavior': {'initial_state', 'transitions', 'states', 'provider', 'implementation', 'parameters', 'initial', 'decision'}, 'buff': {'capture','lifetime','removal', 'duration_seconds', 'modifiers', 'events', 'control_rule', 'stacking', 'interval_seconds', 'damage_hooks', 'control', 'contact_flags', 'effects', 'aura', 'duration_rule', 'active_rule', 'interval_rule', 'on_remove', 'movement_damage', 'parameters', 'selection_flags', 'toggle'}, 'calculation_rule': {'contractVersion', 'numeric', 'contract', 'implementation', 'parameters'}, 'control': {'on_cancel', 'ack_policy', 'clock_policy', 'on_complete', 'on_start', 'steps'}, 'entity': {'progression', 'talents', 'equipment', 'tags', 'components', 'growth'}, 'policy': {'contract', 'implementation', 'provider', 'parameters'}, 'preset': {'ruleset', 'provides', 'parameters', 'requires'}, 'projectile': {'completion_blocking', 'on_invalid', 'motion', 'max_hits', 'stop_after_max', 'can_hit_same_target', 'collision', 'lifetime_seconds', 'stop_after_first', 'attach_at_launch', 'lifecycle'}, 'rule': {'contractVersion', 'numeric', 'contract', 'implementation', 'parameters'}, 'ruleset': {'reaction_budget', 'attribute_layers', 'numeric_profile', 'phase_order', 'bindings', 'parameters', 'quantum', 'system_order'}, 'scenario': {'cards','branches','timeline', 'seed', 'objectives', 'roster', 'commands', 'scheduledEffects', 'map', 'aliases', 'description', 'duration_seconds', 'waves', 'resources', 'initialEntities', 'ruleset', 'parameters', 'packages', 'routes'}, 'selector': {'limit', 'eligibility', 'ordering', 'provider', 'limit_attribute', 'eligible_rule', 'filters', 'exclude_abnormal_flags', 'parameters', 'region'}}
 COMPONENT_FIELDS = {"depletion":None,"elemental": None,"tile_occupancy": {"blocks_deployment", "exclusive", "targetable", "withdrawable"},"ability_arbitration": None,"ability_timing": {"initial_cooldowns"},
     "selection_state": None,
     "rebirth": None,
@@ -18,7 +18,7 @@ COMPONENT_FIELDS = {"depletion":None,"elemental": None,"tile_occupancy": {"block
     "deployable": {"connectivity", "cooldown_start", "stock", "policy", "cost", "base_cost", "cooldown_seconds", "refund_ratio", "terrain", "capacity", "rules", "parameters", "deployed", "initial_state"},
     "behavior": {"machine", "state", "rules", "parameters"},
     "lifecycle": {"exit_rule", "exit_parameters", "policy", "initial_state", "rules", "parameters", "leak_loss", "revive", "death_projectiles"},
-    "spatial": {"motion_mode", "coordinate_space", "position", "facing", "route", "route_id", "speed", "blocking", "occupancy", "radius", "projectile", "rules", "parameters", "wait_seconds", "movement", "steering", "timing_origins", "terrain", "block_capacity", "block_cost"},
+    "spatial": {"route_motion_mode", "motion_mode", "coordinate_space", "position", "facing", "route", "route_id", "speed", "blocking", "occupancy", "radius", "projectile", "rules", "parameters", "wait_seconds", "movement", "steering", "timing_origins", "terrain", "block_capacity", "block_cost"},
     "buffs": {"initial", "policy", "rules", "parameters"},
     "buff_container": {"initial", "policy", "rules", "parameters"},
     "ownership": {"owner", "on_owner_retire"},
@@ -103,6 +103,8 @@ def validate_effect(effect, path, capabilities):
     if effect.get("op") == "advance_branch":
         if set(effect)!={"op","parameters"} or not isinstance(effect["parameters"],Mapping) or set(effect["parameters"])!={"branch"} or not isinstance(effect["parameters"]["branch"],str) or not effect["parameters"]["branch"]:
             raise ContentError(path+": advance_branch requires one explicit named program")
+    if effect.get('op') == 'trigger_ability' and effect.get('parameters',{}).get('on_rejection','raise') not in ('raise','skip'):
+        raise ContentError(path+': ability rejection policy requires raise or skip')
     if effect.get("op") == "buff_application":
         from ..domains.buff_application import validate_effect as validate_application_effect
         try: validate_application_effect(effect)
@@ -158,12 +160,14 @@ def validate_effect(effect, path, capabilities):
                 raise ValueError("terrain overlay requires actor ownership")
         except (ValueError, TypeError) as error:
             raise ContentError(f"{path}: {error}") from error
+    if effect["op"] == "set_motion_mode" and "route_motion_mode" in effect.get("parameters", {}) and (type(effect["parameters"]["route_motion_mode"]) is not int or effect["parameters"]["route_motion_mode"] not in (0,1)):
+        raise ContentError(path+": route motion mode must be WALK0/FLY1")
     if effect["op"] == "set_motion_mode" and (type(effect.get("value")) is not int or effect["value"] not in (0,1)):
         raise ContentError(path+": explicit WALK0/FLY1 motion mode required")
     if effect["op"] == "instant_kill":
-        options=effect.get("parameters")
-        if not isinstance(options,Mapping) or set(options)!={"cause","skip_rebirth"} or not isinstance(options["cause"],str) or not options["cause"] or not options["cause"].replace("_","").replace("-","").isalnum() or type(options["skip_rebirth"]) is not bool:
-            raise ContentError(path+": instant_kill requires event-safe cause and explicit skip_rebirth bool")
+        from ..domains.rebirth import validate_kill
+        try:validate_kill(effect.get('parameters'))
+        except ValueError as error:raise ContentError(path+': '+str(error)) from error
         if effect.get("target","selected") in {"battle","scenario"}:raise ContentError(path+": instant_kill cannot target battle")
     if effect["op"] == "retire":
         parameters = effect.get("parameters", {})
@@ -404,6 +408,8 @@ def validate_definition(definition, capabilities=None):
         if "route_id" in components.get("spatial", {}):
             raise ContentError(f"{identifier}.spatial.route_id: route ID resolution is unsupported; use an inline route")
         spatial = components.get("spatial", {})
+        if "route_motion_mode" in spatial and ("motion_mode" not in spatial or type(spatial["route_motion_mode"]) is not int or spatial["route_motion_mode"] not in (0,1)):
+            raise ContentError("route_motion_mode requires explicit valid motion_mode and WALK0/FLY1 route mode")
         if "motion_mode" in spatial and (type(spatial["motion_mode"]) is not int or spatial["motion_mode"] not in (0,1)):
             raise ContentError(identifier+": explicit spatial motion mode WALK0/FLY1 required")
         if "capacity" in components.get("deployable", {}):
@@ -459,6 +465,7 @@ def validate_definition(definition, capabilities=None):
         if not isinstance(abilities, (list, tuple)) or not all(isinstance(v, str) for v in abilities):
             raise ContentError(f"{identifier}.abilities must be an ID list")
     elif kind == "ability":
+        if 'trigger_selector' in definition and (not isinstance(definition['trigger_selector'],str) or not definition['trigger_selector']):raise ContentError(identifier+': trigger_selector requires an explicit selector ID')
         if "initial_cooldown_seconds" in definition:
             number(definition["initial_cooldown_seconds"], identifier+".initial_cooldown_seconds", 0)
         if "tile_selector" in definition:
@@ -521,6 +528,10 @@ def validate_definition(definition, capabilities=None):
             for effect in entry.get("effects", []):
                 validate_effect(effect, f"{path}.effects", capabilities)
     elif kind == "buff":
+        if definition.get('capture') is not None:
+            from ..domains.buff_capture import validate as validate_capture
+            try:validate_capture(definition['capture'])
+            except ValueError as error:raise ContentError(identifier+': '+str(error)) from error
         if definition.get('lifetime') is not None:
             from ..domains.buff_lifetime import validate
             try:validate(definition['lifetime'])
@@ -533,13 +544,20 @@ def validate_definition(definition, capabilities=None):
             validate_state(definition["selection_flags"], identifier+".selection_flags", contribution=True)
         for index, hook in enumerate(definition.get("damage_hooks", [])):
             location = f"{identifier}.damage_hooks[{index}]"
-            fields(hook, {"phase", "rule", "condition", "samples", "group", "priority"}, location)
+            fields(hook, {"phase", "rule", "condition", "samples", "group", "priority", "after_effects"}, location)
             if "group" in hook and (not isinstance(hook["group"], str) or not hook["group"]):
                 raise ContentError(f"{location}.group: expected nonempty group name")
             if "priority" in hook:
                 number(hook["priority"], f"{location}.priority")
-            if hook.get("phase") not in {"before", "after"} or not isinstance(hook.get("rule"), str):
+            if hook.get("phase") not in {"before", "after", "receiver_request"} or not isinstance(hook.get("rule"), str):
                 raise ContentError(f"{location}: phase and rule required")
+            if 'after_effects' in hook:
+                if hook['phase'] != 'receiver_request' or not isinstance(hook['after_effects'], (list, tuple)) or len(hook['after_effects']) > 32:
+                    raise ContentError(location+': finite after_effects belong only to receiver_request')
+                for child_index, child in enumerate(hook['after_effects']):
+                    validate_effect(child, location+'.after_effects['+str(child_index)+']', capabilities)
+                    if child.get('op') not in {'apply_buff', 'remove_buff', 'emit'} or child.get('target', 'selected') not in {'selected', 'target', 'source', 'self'}:
+                        raise ContentError(location+': postmodifier effects are finite holder Buff/emit writes')
             if "condition" in hook and not isinstance(hook["condition"], str):
                 raise ContentError(f"{location}.condition: expected expression")
             if "samples" in hook:
@@ -761,6 +779,8 @@ def validate_definition(definition, capabilities=None):
             if "position" in entity:
                 validate_position(entity["position"], f"{path}.position", map_definition)
             spatial = entity.get("components", {}).get("spatial", {})
+            if "route_motion_mode" in spatial and ("motion_mode" not in spatial or type(spatial["route_motion_mode"]) is not int or spatial["route_motion_mode"] not in (0,1)):
+                raise ContentError("route_motion_mode requires explicit valid motion_mode and WALK0/FLY1 route mode")
             if "motion_mode" in spatial and (type(spatial["motion_mode"]) is not int or spatial["motion_mode"] not in (0,1)):
                 raise ContentError(path+": explicit spatial motion mode WALK0/FLY1 required")
             if "route" in spatial:
@@ -815,6 +835,8 @@ def validate_definition(definition, capabilities=None):
             if "position" in wave:
                 validate_position(wave["position"], f"{path}.position", map_definition)
             spatial = wave.get("components", {}).get("spatial", {})
+            if "route_motion_mode" in spatial and ("motion_mode" not in spatial or type(spatial["route_motion_mode"]) is not int or spatial["route_motion_mode"] not in (0,1)):
+                raise ContentError("route_motion_mode requires explicit valid motion_mode and WALK0/FLY1 route mode")
             if "motion_mode" in spatial and (type(spatial["motion_mode"]) is not int or spatial["motion_mode"] not in (0,1)):
                 raise ContentError(path+": explicit spatial motion mode WALK0/FLY1 required")
             if "route" in spatial:
