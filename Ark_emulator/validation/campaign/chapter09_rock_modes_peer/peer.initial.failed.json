@@ -1,0 +1,42 @@
+{
+  "core": "ed5ad49acb134bf00b90b758d7cad0e95f4ec20125f70765ed591f90fef58af4",
+  "actual_exit": 1,
+  "passed": 4,
+  "failed": 5,
+  "seconds": 127.45,
+  "failures": [
+    {
+      "count": 3,
+      "reason": "Durokt controller wrongly possessed Dugago clear_stone leading real missingref rejection",
+      "fix": "do not declare/possess unrelated skill, no fake Buff"
+    },
+    {
+      "count": 1,
+      "reason": "AIR Grid.path is compressed terminal waypoint, not each traversed cell",
+      "actual_route_mode": 1,
+      "actual_path": [
+        {
+          "row": 2,
+          "col": 7
+        }
+      ],
+      "fix": "assert direct compressed segment semantics"
+    },
+    {
+      "count": 1,
+      "reason": "land tick8 mover no longer in blocker contact range",
+      "actual_position_tick9": {
+        "row": 1.4900000000000002,
+        "col": 1.0
+      },
+      "blocker_position": {
+        "row": 2,
+        "col": 1
+      },
+      "physical_ground_route0_already_verified": true,
+      "CPP_head_equal": true,
+      "fix": "retain original moving land8 actual no-block fixture, add explicit publicland0 same-cell block"
+    }
+  ],
+  "source_math_and_frozen_helpers_unchanged": true
+}

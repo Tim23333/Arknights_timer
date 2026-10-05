@@ -22,9 +22,11 @@ Root核对源码/报告后复制11文件并保留f0c完整备份，推广收据a
 DeadBoom源PullDupilr又证明5000→4500仍应倒塌，原zero-only桥未消费正HP受击；该源分支已在2c38以显式真实damage trigger补齐并独立通过，未把HP改1或伤害改大。
 爆破装置8作者/8独立组、16/19CPP/head场景已通过，严格库存2/1、SPtype8被动、DP5/slot0、环境免疫及柱体SP10。
 完整Duspfr2c38已冻结26作者组、原Domain46及因果快照性能改进：实际两轮Flame（原距离1为20包，近距离.6首接触17则deadline318前可21包，独立边界已确认）、5并发死亡、正HP柱体4500与sourceNone suicide34，独立16门及13场景28CPP/head已通过，首次10pass2预期失败保留。
-该2c38自己的107完整回归和基线已按冻结身份实际启动，fullsession3244、baselinesession36024，未推广。
+该2c38自己的107基线已实际退出0并清理，完整回归保持3244/actualPID201120运行，未推广。
+9-18源完整输入308definitions+固定12+34birth/25routes/8slotsDP12+重复alias实际3注册与2卡库存已compile，62tickCP/head全值通过，42公开有限计划已写；wholeRun/admission仍pending。
 爆破装置v1另发现真实动态Buff失衡免疫8仍被推动的counter；newv2完整状态投影9作者组及10独立门已通过，17/18场景CPP/head严格比较，旧冻结收据保持原scope。
-岩石敌人新ed5路线/空中资格分离、Recover28/Start20动作占用8作者门通过，独立执行；来源profile与柱体破碎mark差异明确未闭合。
+岩石敌人新ed5路线/空中资格分离、Recover28/Start20动作占用8作者门通过，独立11门/10场景23CP已passed；source来源profile保留。
+新770接收者前置marker已表达固定native同次修正create/check/clear，作者4+协议4+Domain46+oldhooks33通过，独立继续；旧原型的无效latefault证据明确保局限。
 Mandra四mode/9BSON/当前HP与前缀要求已固定，新消费者开发中，不计第九章整关通过。
 
 7-18 保持唯一冻结82db/finite_v3进程。正向已实际45出生=31击杀+14漏怪，terminal15198/end15200；
