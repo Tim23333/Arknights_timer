@@ -17,6 +17,14 @@
 参考位移表只通过 AST 读取历史常量，没有执行V1战斗代码；原生减速曲线和碰撞校准仍单独记录。
 环境伤害免疫按原生 `immu_environment_damage` 的共享环境标记执行，普通伤害不免疫。
 
+后续真实反例发现v1推力规则只读base状态，目标通过当前Buff获得失衡免疫8时仍被推动。
+旧v1的作者和独立通过保留其实际范围，不能由base flag门推导全部Buff状态都正确。
+新v2使用已有纯状态投影，核对当前Buff有效期、applicability与免疫差集；
+完整内容组装后调用 `tools.chapter09_demolition_v2.build.bind_status_definitions(package)`，
+将全部已编译Buff的选择标志定义放入明确规则参数，随program身份与计算trace保存。
+缺少外部Buff定义时不能默认为无状态；当前v2作者9组和17CPP/head已通过，独立新增边界门待执行。
+反例及新版本冻结见 `validation/campaign/chapter09_demolition_v2`，原v1冻结文件保持原样。
+
 柱体分支要求调用者提供四个实际编译的倒塌能力ID，进入正常依赖闭包。
 装置按方向调用前方柱体实际拥有的能力，柱体支付10SP并保持原5000HP，随后走真实倒塌载荷。
 该分支与普通2000伤害分开建模；缺失能力依赖不能静默退化。
