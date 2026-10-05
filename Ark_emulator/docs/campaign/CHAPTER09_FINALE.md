@@ -34,3 +34,7 @@ Mandragora路线的非零reachOffset x=-0.49完整保留，额外声明坐标方
 两份冻结候选的0-1基线已分别完整通过；组合候选证据见
 `chapter09_finale_full_v1/baseline/verification.identity.json`。
 所有大捕获使用 `E:\ArkSimLogs\runs`，任务结束后保存精简收据并自动清理。
+
+独立Mandragora复核发现第二生命恢复后丢失石肤、石化范围和无敌效果的真实缺陷。
+因此当前组合核心的通用基线及9-19公开操作前缀通过，不等于Boss来源消费者或整关通过。
+新内容修复与同一反例的独立复核完成前，当前9-19输入只作为来源与集成测试产物保留。

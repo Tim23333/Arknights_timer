@@ -1,0 +1,351 @@
+{
+  "core": "06b9114b16965a43ab349ab019ee8ba2ae68c394c1955b9c1409639fc09cf323",
+  "counter_reproduced": true,
+  "cause": "on_begin applies flight SHIELD/stone_area/invul at HP0; same transaction removes them; on_finish empty does not re-enter state",
+  "facts": [
+    {
+      "profile": "talent_prefix",
+      "time": 165,
+      "HP_before_actual1400_packet": 41737,
+      "HP_after_actual1400_packet": 40337.0,
+      "actual_loss": 1400.0,
+      "expected_shielded_loss_if_fly_stone_SHIELD": 560,
+      "state": "fly_stone",
+      "active": true,
+      "buffs_after_restore165": [],
+      "selection_state": {
+        "side": 1,
+        "motion": 2,
+        "category": 1,
+        "unit_type": 2
+      },
+      "actual_stonearea_resolved": [],
+      "rebirth_events": [
+        {
+          "id": 267,
+          "type": "entity.rebirth.started",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "generation": 1,
+            "count": 1,
+            "due_at": 161,
+            "health": 0,
+            "cause": {
+              "operation": "damage",
+              "source": 4,
+              "target": 2,
+              "resource": "hp",
+              "delta": -41737,
+              "ability": "ability/peer/m/lethal",
+              "cast": "cast/4/1"
+            }
+          },
+          "time": 11,
+          "cause": null
+        },
+        {
+          "id": 497,
+          "type": "entity.rebirth.completed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "generation": 1,
+            "count": 1,
+            "health": 41737
+          },
+          "time": 161,
+          "cause": null
+        }
+      ],
+      "buff_events": [
+        {
+          "id": 60,
+          "type": "buff.applied",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/ch9/mandra/shield",
+            "instance": "buff/2/1",
+            "stacks": 1
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 95,
+          "type": "buff.applied",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/ch9/mandra/shield",
+            "instance": "buff/2/1",
+            "stacks": 1
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 266,
+          "type": "buff.removed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/ch9/mandra/shield",
+            "instance": "buff/2/1"
+          },
+          "time": 11,
+          "cause": null
+        },
+        {
+          "id": 303,
+          "type": "buff.applied",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/ch9/mandra/shield",
+            "instance": "buff/2/2",
+            "stacks": 1
+          },
+          "time": 11,
+          "cause": null
+        },
+        {
+          "id": 338,
+          "type": "buff.applied",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/ch9/mandra/stone_area",
+            "instance": "buff/2/3",
+            "stacks": 1
+          },
+          "time": 11,
+          "cause": null
+        },
+        {
+          "id": 374,
+          "type": "buff.applied",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/ch9/mandra/invulnerable",
+            "instance": "buff/2/4",
+            "stacks": 1
+          },
+          "time": 11,
+          "cause": null
+        },
+        {
+          "id": 421,
+          "type": "buff.removed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/ch9/mandra/shield",
+            "instance": "buff/2/2"
+          },
+          "time": 11,
+          "cause": null
+        },
+        {
+          "id": 442,
+          "type": "buff.removed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/ch9/mandra/stone_area",
+            "instance": "buff/2/3"
+          },
+          "time": 11,
+          "cause": null
+        },
+        {
+          "id": 463,
+          "type": "buff.removed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/ch9/mandra/invulnerable",
+            "instance": "buff/2/4"
+          },
+          "time": 11,
+          "cause": null
+        }
+      ]
+    },
+    {
+      "profile": "skill_prefix",
+      "time": 165,
+      "HP_before_actual1400_packet": 41737,
+      "HP_after_actual1400_packet": 40337.0,
+      "actual_loss": 1400.0,
+      "expected_shielded_loss_if_fly_stone_SHIELD": 560,
+      "state": "fly_stone",
+      "active": true,
+      "buffs_after_restore165": [],
+      "selection_state": {
+        "side": 1,
+        "motion": 2,
+        "category": 1,
+        "unit_type": 2
+      },
+      "actual_stonearea_resolved": [],
+      "rebirth_events": [
+        {
+          "id": 267,
+          "type": "entity.rebirth.started",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "generation": 1,
+            "count": 1,
+            "due_at": 161,
+            "health": 0,
+            "cause": {
+              "operation": "damage",
+              "source": 4,
+              "target": 2,
+              "resource": "hp",
+              "delta": -41737,
+              "ability": "ability/peer/m/lethal",
+              "cast": "cast/4/1"
+            }
+          },
+          "time": 11,
+          "cause": null
+        },
+        {
+          "id": 497,
+          "type": "entity.rebirth.completed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "generation": 1,
+            "count": 1,
+            "health": 41737
+          },
+          "time": 161,
+          "cause": null
+        }
+      ],
+      "buff_events": [
+        {
+          "id": 60,
+          "type": "buff.applied",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/ch9/mandra/shield",
+            "instance": "buff/2/1",
+            "stacks": 1
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 95,
+          "type": "buff.applied",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/ch9/mandra/shield",
+            "instance": "buff/2/1",
+            "stacks": 1
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 266,
+          "type": "buff.removed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/ch9/mandra/shield",
+            "instance": "buff/2/1"
+          },
+          "time": 11,
+          "cause": null
+        },
+        {
+          "id": 303,
+          "type": "buff.applied",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/ch9/mandra/shield",
+            "instance": "buff/2/2",
+            "stacks": 1
+          },
+          "time": 11,
+          "cause": null
+        },
+        {
+          "id": 338,
+          "type": "buff.applied",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/ch9/mandra/stone_area",
+            "instance": "buff/2/3",
+            "stacks": 1
+          },
+          "time": 11,
+          "cause": null
+        },
+        {
+          "id": 374,
+          "type": "buff.applied",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/ch9/mandra/invulnerable",
+            "instance": "buff/2/4",
+            "stacks": 1
+          },
+          "time": 11,
+          "cause": null
+        },
+        {
+          "id": 421,
+          "type": "buff.removed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/ch9/mandra/shield",
+            "instance": "buff/2/2"
+          },
+          "time": 11,
+          "cause": null
+        },
+        {
+          "id": 442,
+          "type": "buff.removed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/ch9/mandra/stone_area",
+            "instance": "buff/2/3"
+          },
+          "time": 11,
+          "cause": null
+        },
+        {
+          "id": 463,
+          "type": "buff.removed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/ch9/mandra/invulnerable",
+            "instance": "buff/2/4"
+          },
+          "time": 11,
+          "cause": null
+        }
+      ]
+    }
+  ],
+  "source_guard_equal": true,
+  "whole_stage": false
+}
