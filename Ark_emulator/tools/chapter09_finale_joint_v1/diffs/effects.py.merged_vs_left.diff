@@ -1,0 +1,82 @@
+--- D:\Arknights\Arknights_timer\unpack_work\campaign_c9_mandra_v1_candidate\ark_sim\domains\effects.py
++++ D:\Arknights\Arknights_timer\unpack_work\campaign_c9_finale_joint_v1_candidate\ark_sim\domains\effects.py
+@@ -510,6 +510,15 @@
+         if not accepted:
+             self.ctx.emit("damage.rejected", {"source": source, "target": target, "reason": "source_hook"}, cause)
+             return None
++        request, receiver_pre, receiver_post, receiver_accepted = self._receiver_request(
++            source, target, request, ability, cast, cause)
++        if not receiver_accepted:
++            self.ctx.emit('damage.rejected', {'source': source, 'target': target, 'reason': 'receiver_request'}, cause)
++            return None
++        for child in receiver_pre:
++            self.execute(target, [target], child, cause=cause)
++        if not self.ctx.alive(target):
++            return None
+         settlement = self.ctx.calc("damage.pipeline", {"source": self.ctx.entity(source) if source is not None else {},
+              "target": self.ctx.entity(target), "effect": request, "samples": [], "states": {}},
+              source=source, target=target, ability=ability, effect=effect)
+@@ -524,6 +533,8 @@
+             self.ctx.emit("damage.rejected", {"source": source, "target": target, "reason": "pipeline_or_target_hook"}, cause)
+             for child in effect.get("on_failure", ()):
+                 self.execute(source, [target], child, ability, cast, cause)
++            for child in receiver_post:
++                self.execute(target, [target], child, cause=cause)
+             return None
+         if settlement.get("allocations"):
+             intents, notifications, actual = [], [], 0
+@@ -568,7 +579,54 @@
+             self.ctx.emit(event["type"], event.get("payload", {}), cause)
+         for extra in extras:
+             self.execute(source, [target], extra, ability, cast, cause)
++        for child in receiver_post:
++            self.execute(target, [target], child, cause=cause)
+         return actual
++
++    def _receiver_request(self, source, target, request, ability, cast, cause):
++        """Explicit receiver-before-modifier hooks, preserving legacy phases."""
++        before, after, groups = [], [], set()
++        now = self.ctx.session.time
++        hooks = []
++        for instance in self.ctx.get(target, ('buffs', 'instances'), []):
++            if instance['expires_at'] is not None and now >= instance['expires_at']: continue
++            applicability = getattr(getattr(self.ctx, 'buffs', None), 'applicability', None)
++            if applicability is not None and not applicability.active(instance): continue
++            definition = self.ctx.program.definitions[instance['definition']]
++            for hook in definition.get('damage_hooks', ()):
++                if hook['phase'] == 'receiver_request': hooks.append((hook, instance))
++        hooks.sort(key=lambda pair: -pair[0].get('priority', 0))
++        for hook, instance in hooks:
++            if hook.get('group') in groups: continue
++            context = {'owner': self.ctx.entity(target), 'source': self.ctx.entity(source) if source is not None else {},
++                       'target': self.ctx.entity(target), 'time': now, 'buff': instance}
++            if hook.get('condition') and not evaluate_expression(hook['condition'], {
++                    'effect': request, 'source': context['source'], 'target': context['target']}, {}, context): continue
++            sampling = hook.get('samples', {})
++            samples = [{'value': self.ctx.session.random.sample(sampling['stream'])}
++                       for _ in range(sampling.get('count', 1))] if sampling else []
++            result = self.ctx.calc('damage.request', {'source': context['source'], 'target': context['target'],
++                'effect': request, 'samples': samples, 'states': {'buff': instance}}, source=source, target=target,
++                owner=target, ability=ability, effect=request, rule_id=hook['rule'], extra={'buff': instance})
++            if not isinstance(result, dict) or set(result) != {'accepted', 'effect', 'effects'} or type(result['accepted']) is not bool:
++                raise ValueError('Receiver request must return exact accepted/effect/effects')
++            if not isinstance(result['effect'], dict) or result['effect'].get('op') != 'damage' or not isinstance(result['effects'], list) or len(result['effects']) > 32:
++                raise ValueError('Receiver request requires finite declared actor damage effects')
++            from ark_sim.content.schemas import validate_effect, DEFAULT_CAPABILITIES
++            from ark_sim.rules.numeric import validate_data
++            validate_data(result['effect'], 'receiver_request.resolved_damage_request')
++            if result['effect'].get('damage_type', 'physical') not in DEFAULT_CAPABILITIES['damage_types']:
++                raise ValueError('Receiver request returned an unsupported damage type')
++            for child in result['effects']:
++                validate_effect(child, 'receiver_request.effects', DEFAULT_CAPABILITIES)
++                if child.get('op') not in {'apply_buff', 'remove_buff', 'emit'}:
++                    raise ValueError('Receiver hook permits only finite holder Buff/emit writes')
++                if child.get('target', 'selected') not in ('selected', 'target', 'source', 'self'):
++                    raise ValueError('Receiver hook writes are restricted to the actual holder')
++            if not result['accepted']: return request, [], [], False
++            request = result['effect']; before.extend(result['effects']); after.extend(thaw(hook.get('after_effects', [])))
++            if hook.get('group') is not None: groups.add(hook['group'])
++        return request, before, after, True
+ 
+     def _canonical_settlement(self, settlement, source, target):
+         settlement = thaw(settlement)

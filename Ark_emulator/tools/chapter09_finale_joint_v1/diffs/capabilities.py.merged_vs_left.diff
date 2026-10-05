@@ -1,0 +1,14 @@
+--- D:\Arknights\Arknights_timer\unpack_work\campaign_c9_mandra_v1_candidate\ark_sim\content\capabilities.py
++++ D:\Arknights\Arknights_timer\unpack_work\campaign_c9_finale_joint_v1_candidate\ark_sim\content\capabilities.py
+@@ -420,8 +420,10 @@
+             if definition.get('lifetime'):
+                 require('buff.lifetime_rate',identifier+'.lifetime',scopes,definition['lifetime']['rule'])
+             for hook in definition.get("damage_hooks", []):
+-                require("damage.request" if hook["phase"] == "before" else "damage.pipeline",
++                require("damage.request" if hook["phase"] in {"before", "receiver_request"} else "damage.pipeline",
+                     f"{identifier}.damage_hooks", scopes, hook["rule"])
++                for child in hook.get('after_effects', ()):
++                    effect(child, identifier+'.damage_hooks.after_effects', scopes)
+             for calculation, explicit in (("buff.duration", definition.get("duration_rule")),
+                                            ("buff.interval", definition.get("interval_rule")),
+                                            ("buff.stack_amount", definition.get("stacking", {}).get("rule")), ("time.quantize", None)):

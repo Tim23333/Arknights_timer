@@ -1,0 +1,25 @@
+--- D:\Arknights\Arknights_timer\unpack_work\campaign_c9_rock_modes_v2_candidate\ark_sim\content\schemas.py
++++ D:\Arknights\Arknights_timer\unpack_work\campaign_c9_receiver_hooks_v2_candidate\ark_sim\content\schemas.py
+@@ -538,13 +538,20 @@
+             validate_state(definition["selection_flags"], identifier+".selection_flags", contribution=True)
+         for index, hook in enumerate(definition.get("damage_hooks", [])):
+             location = f"{identifier}.damage_hooks[{index}]"
+-            fields(hook, {"phase", "rule", "condition", "samples", "group", "priority"}, location)
++            fields(hook, {"phase", "rule", "condition", "samples", "group", "priority", "after_effects"}, location)
+             if "group" in hook and (not isinstance(hook["group"], str) or not hook["group"]):
+                 raise ContentError(f"{location}.group: expected nonempty group name")
+             if "priority" in hook:
+                 number(hook["priority"], f"{location}.priority")
+-            if hook.get("phase") not in {"before", "after"} or not isinstance(hook.get("rule"), str):
++            if hook.get("phase") not in {"before", "after", "receiver_request"} or not isinstance(hook.get("rule"), str):
+                 raise ContentError(f"{location}: phase and rule required")
++            if 'after_effects' in hook:
++                if hook['phase'] != 'receiver_request' or not isinstance(hook['after_effects'], (list, tuple)) or len(hook['after_effects']) > 32:
++                    raise ContentError(location+': finite after_effects belong only to receiver_request')
++                for child_index, child in enumerate(hook['after_effects']):
++                    validate_effect(child, location+'.after_effects['+str(child_index)+']', capabilities)
++                    if child.get('op') not in {'apply_buff', 'remove_buff', 'emit'} or child.get('target', 'selected') not in {'selected', 'target', 'source', 'self'}:
++                        raise ContentError(location+': postmodifier effects are finite holder Buff/emit writes')
+             if "condition" in hook and not isinstance(hook["condition"], str):
+                 raise ContentError(f"{location}.condition: expected expression")
+             if "samples" in hook:
