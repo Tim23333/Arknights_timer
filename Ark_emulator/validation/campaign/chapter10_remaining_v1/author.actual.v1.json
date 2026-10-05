@@ -1,0 +1,63 @@
+{
+  "core": "cd873dbff6ef66d9a17605ab6b02b6cc5a427090156577bd87dedd5bab428e18",
+  "actual_exit": 1,
+  "results": [
+    {
+      "case": "lord_reverse_attack_cap6_CPP",
+      "passed": true
+    },
+    {
+      "case": "supply_stack_cap5_and_silence",
+      "passed": true
+    },
+    {
+      "case": "actual_native_aura_masks",
+      "passed": true
+    },
+    {
+      "case": "native_ranged_hitframe13_CPP",
+      "passed": false,
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_remaining_v1\\test_author.py\", line 56, in <module>\n    try:fn();RESULT.append({'case':name,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_remaining_v1\\test_author.py\", line 44, in normal\n    p=fixture('enemy_1224_dsuply_2',normal=True);p['entities'].append({'id':'unit/peer/target','kind':'entity','tags':['player'],'components':{'attributes':{'base':{'max_hp':17771,'atk':0,'def':137,'mres':35}},'resources':{'hp':{'role':'health','initial':17771,'capacity':17771}},'selection_state':{'side':0,'category':1,'motion':1,'unit_type':1},'spatial':{},'lifecycle':{'policy':'policy/ark_lifecycle'}}});p['scenarioDraft']['initialEntities'].append({'definition':'unit/peer/target','instanceAlias':'target','position':{'row':2,'col':3}});s=cpp(p,38,[12,14],'normal');events=[thaw(x) for x in s.session.events if x['type'] in ['ability.started','projectile.launched','damage.accepted']];FACT['normal_probe']={'events':events,'HP':s.ctx.resources.current('target','hp')};hit=next(e for e in events if e['type']=='damage.accepted');start=next(e for e in events if e['type']=='ability.started');launch=next(e for e in events if e['type']=='projectile.launched');assert launch['time']-start['time']==13;assert hit['payload']['amount']==283 and s.ctx.resources.current('target','hp')==17488;FACT['source_frame13_speed10_physical420_DEF137_CPP']=True\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_remaining_v1\\test_author.py\", line 23, in cpp\n    a=create(p);a.advance(end);b=create(p)\n                ^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_sim\\adapters\\api.py\", line 285, in advance\n    self.session.advance(ticks)\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_sim\\kernel\\session.py\", line 301, in advance\n    system[\"callback\"](self)\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_sim\\domains\\abilities.py\", line 502, in tick\n    cast_id = self.start(source, selected[\"id\"], automatic=True)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_sim\\domains\\abilities.py\", line 248, in start\n    self.ctx.role_value(source, \"attack_interval\")), \"speed\": self.ctx.role_value(source, \"attack_speed_ratio\"),\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_sim\\domains\\context.py\", line 245, in role_value\n    raise DomainError(f\"{ref} has no attribute for {role}: {key}\")\nark_sim.domains.context.DomainError: 2 has no attribute for attack_interval: attack_interval\n"
+    },
+    {
+      "case": "strict_missing_source_dependencies",
+      "passed": true
+    }
+  ],
+  "facts": {
+    "lord7_probe": 3000.0,
+    "lord4_probe": 2400.0,
+    "lord_source_reverse_cap6_global_range_CPP": true,
+    "supply6_probe": 1500.0,
+    "supply_cap5_actual_silence_detach_restore": true,
+    "eligibility_probe": 1500.0,
+    "global_aura_ground_ally_actual_mark_only": true,
+    "missing_chain_mark_deathrattle_refused": true
+  },
+  "artifacts": [
+    {
+      "path": "E:\\ArkSimLogs\\runs\\chapter10_remaining_v1_author_20261005\\lord2.checkpoint.json",
+      "sha256": "56f21d2fdf898f7a085302254201b5dd3b35a09c41ee40017c8003ca238473d9",
+      "bytes": 1426066
+    },
+    {
+      "path": "E:\\ArkSimLogs\\runs\\chapter10_remaining_v1_author_20261005\\lord4.checkpoint.json",
+      "sha256": "948dd05c043211ed9892af0ede20e38364802b8fe98d736f473496955d3a8fbb",
+      "bytes": 1750676
+    }
+  ],
+  "source_before": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter10_consumers\\remaining\\source.closure.v1.json": "5403e262120802e55723521b1d65ed80d6734ca23e815a0dc7ca8dae30a08d5e",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter10_source_prepare\\enemies.native.v1.json": "6ae0b642a56ee316aa22062634b81366b207f484ec3775bc5957362c077a09d5",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_remaining_v1\\test_author.py": "d3b7c2dbd2861a2367cb1fef91dc13853e0d94d6dae7477ef8480f40324d4eec",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_remaining_v1\\build.py": "91ad72d8e7a4183d232cfb36ee181eb6fb466d9014ff331b61dd306852901f6b"
+  },
+  "source_after": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter10_consumers\\remaining\\source.closure.v1.json": "5403e262120802e55723521b1d65ed80d6734ca23e815a0dc7ca8dae30a08d5e",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter10_source_prepare\\enemies.native.v1.json": "6ae0b642a56ee316aa22062634b81366b207f484ec3775bc5957362c077a09d5",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_remaining_v1\\test_author.py": "d3b7c2dbd2861a2367cb1fef91dc13853e0d94d6dae7477ef8480f40324d4eec",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_remaining_v1\\build.py": "91ad72d8e7a4183d232cfb36ee181eb6fb466d9014ff331b61dd306852901f6b"
+  },
+  "source_guard_equal": true,
+  "whole_stage": false
+}

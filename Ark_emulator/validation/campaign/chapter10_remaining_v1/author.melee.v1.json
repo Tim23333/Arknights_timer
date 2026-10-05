@@ -1,0 +1,44 @@
+{
+  "core": "cd873dbff6ef66d9a17605ab6b02b6cc5a427090156577bd87dedd5bab428e18",
+  "actual_exit": 1,
+  "results": [
+    {
+      "case": "source_owned_melee_frame31_actual_blocker_CPP",
+      "passed": false,
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_remaining_v1\\test_melee.py\", line 65, in <module>\n    try:melee();RESULT.append({'case':'source_owned_melee_frame31_actual_blocker_CPP','passed':True})\n        ^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_remaining_v1\\test_melee.py\", line 63, in melee\n    p=fixture('enemy_1226_dklord_2',normal=True);p['entities'].append({'id':'unit/peer/blocker','kind':'entity','tags':['player'],'components':{'attributes':{'base':{'max_hp':17771,'atk':0,'def':683,'mres':39,'block_count':3}},'resources':{'hp':{'role':'health','initial':17771,'capacity':17771}},'selection_state':{'side':0,'category':1,'motion':1,'unit_type':1},'spatial':{'blocking':True},'lifecycle':{'policy':'policy/ark_lifecycle'}}});p['scenarioDraft']['initialEntities'].append({'definition':'unit/peer/blocker','instanceAlias':'blocker','position':{'row':2,'col':2}});s=cpp(p,50,[30,33],'melee');events=[thaw(x) for x in s.session.events if x['type'] in ['ability.started','damage.accepted']];FACT['melee_probe']={'events':events,'HP':s.ctx.resources.current('blocker','hp'),'blocked_by':s.ctx.get('owner0',('runtime','blocked_by'))};start=next(x for x in events if x['type']=='ability.started');hit=next(x for x in events if x['type']=='damage.accepted');assert hit['time']-start['time']==31 and hit['payload']['amount']==517 and s.ctx.resources.current('blocker','hp')==17254;FACT['actual_blocker_source_combat1200_frame31_CPP']=True\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nStopIteration\n"
+    }
+  ],
+  "facts": {
+    "melee_probe": {
+      "events": [],
+      "HP": 17771,
+      "blocked_by": null
+    }
+  },
+  "artifacts": [
+    {
+      "path": "E:\\ArkSimLogs\\runs\\chapter10_remaining_v1_melee_20261005\\melee30.checkpoint.json",
+      "sha256": "f1740426aeb7717c154183d9a4757fbe584f80f3a5171c1c4767440cded11709",
+      "bytes": 449825
+    },
+    {
+      "path": "E:\\ArkSimLogs\\runs\\chapter10_remaining_v1_melee_20261005\\melee33.checkpoint.json",
+      "sha256": "58416a7c731a5439b6f9ad9d82c68deb3e0069b6d21b7a99967d2e592e0ca935",
+      "bytes": 479771
+    }
+  ],
+  "source_before": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter10_consumers\\remaining\\source.closure.v1.json": "5403e262120802e55723521b1d65ed80d6734ca23e815a0dc7ca8dae30a08d5e",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter10_source_prepare\\enemies.native.v1.json": "6ae0b642a56ee316aa22062634b81366b207f484ec3775bc5957362c077a09d5",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_remaining_v1\\test_melee.py": "7281cb10c7df2e1cdb51b7e3544e66e55d3a42a4a8c5945b78437726482b48c3",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_remaining_v1\\build.py": "617efd8e092782b71d309cbdcb73f65942887a8ff012523574a66b72c5035504"
+  },
+  "source_after": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter10_consumers\\remaining\\source.closure.v1.json": "5403e262120802e55723521b1d65ed80d6734ca23e815a0dc7ca8dae30a08d5e",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter10_source_prepare\\enemies.native.v1.json": "6ae0b642a56ee316aa22062634b81366b207f484ec3775bc5957362c077a09d5",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_remaining_v1\\test_melee.py": "7281cb10c7df2e1cdb51b7e3544e66e55d3a42a4a8c5945b78437726482b48c3",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_remaining_v1\\build.py": "617efd8e092782b71d309cbdcb73f65942887a8ff012523574a66b72c5035504"
+  },
+  "source_guard_equal": true,
+  "whole_stage": false
+}
