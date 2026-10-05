@@ -1,0 +1,182 @@
+{
+  "schema": "ark-sim/finite-chain-author/v1",
+  "passed": false,
+  "implementation": "357d1e0b411600ca4be6ddfba4e2b15e17da3fcab40b0a6a6fa020d5cbc12a7b",
+  "identity_stable": true,
+  "actual_cases": [
+    {
+      "case": "public_four_actual_health_EP",
+      "passed": true
+    },
+    {
+      "case": "current_move_outside_radius",
+      "passed": false,
+      "error": "",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_chain_v1\\test_author.py\", line 48, in case\n    try:fn();ROWS.append({'case':name,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_chain_v1\\test_author.py\", line 79, in move\n    assert s.ctx.resources.current('target1','hp')==10000\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n"
+    },
+    {
+      "case": "current_target_death",
+      "passed": false,
+      "error": "",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_chain_v1\\test_author.py\", line 48, in case\n    try:fn();ROWS.append({'case':name,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_chain_v1\\test_author.py\", line 84, in death\n    assert not s.ctx.alive('target1')\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n"
+    },
+    {
+      "case": "health_death_before_EP",
+      "passed": true
+    },
+    {
+      "case": "current_target_free_rejected",
+      "passed": true
+    },
+    {
+      "case": "source_invalid_retain",
+      "passed": false,
+      "error": "",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_chain_v1\\test_author.py\", line 48, in case\n    try:fn();ROWS.append({'case':name,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_chain_v1\\test_author.py\", line 147, in <lambda>\n    ('current_target_free_rejected',current_flags),('source_invalid_retain',lambda:source_retirement('retain')),\n                                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_chain_v1\\test_author.py\", line 112, in source_retirement\n    assert not s.ctx.active('source')\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n"
+    },
+    {
+      "case": "source_invalid_cancel",
+      "passed": false,
+      "error": "",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_chain_v1\\test_author.py\", line 48, in case\n    try:fn();ROWS.append({'case':name,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_chain_v1\\test_author.py\", line 148, in <lambda>\n    ('source_invalid_cancel',lambda:source_retirement('cancel')),('restore_tamper_rejected',reject_tamper),\n                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_chain_v1\\test_author.py\", line 112, in source_retirement\n    assert not s.ctx.active('source')\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n"
+    },
+    {
+      "case": "restore_tamper_rejected",
+      "passed": true
+    },
+    {
+      "case": "unowned_callbacks_rejected_atomic",
+      "passed": true
+    }
+  ],
+  "actual_CP_head_proofs": [
+    {
+      "checkpoint_sha256": "fa46e4a179cac958079f011705ed3b37035469a5dea6a749e8a9aa66cd91a229",
+      "checkpoint_event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\chapter10_chain_author_v2\\four.active.jsonl.checkpoint-34d0e6d1740e42cd9a6b12b4bff472d8",
+        "sha256": "c80e5bedb5347b17fafb342d41faed7201a4dad4818c305aafebbdeaa598badc",
+        "bytes": 2779399,
+        "count": 1896
+      },
+      "observations": {
+        "snapshot": "ef644af218011c358a197d1c80f4a63b4342e0ce3dff86388857e43bd563f66a",
+        "events": "796cc14cd8b6ef5b36d7f723ff1856e9159ab8c4a741f8071268c83f6b1b5c5c",
+        "event_count": 4388,
+        "continuation_state": "018b333e6cb5690f52a49105b14150be57937a643d9a1ddc4a1a25a8d6cb0681"
+      },
+      "actual_CP_equal": true,
+      "actual_head_equal": true
+    },
+    {
+      "checkpoint_sha256": "1371a35c736ffbf052c76fee2938fb66e97a4b0ab6bc7423d22b1c701eb43347",
+      "checkpoint_event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\chapter10_chain_author_v2\\move.active.jsonl.checkpoint-847ccfc55ebc421085527b690d5725cd",
+        "sha256": "a06c2047cf43945e14d2e0b7c5849b82fb5427345316ea2c5c7d58628420c8b5",
+        "bytes": 2361759,
+        "count": 1658
+      },
+      "observations": {
+        "snapshot": "c3f1c1bc4c9392b30499bb1d3e384fcbac06e2b7721b1ff4c8cdaabb3738879f",
+        "events": "a335a79ba52e84ffd48ae131464edaa4dbdd7cb9e5407cfedb9a8d9e98d8db4f",
+        "event_count": 4389,
+        "continuation_state": "cd2d3bb1683fda347ce1b0eb4472e82e3afc39a8b44d1881c8aa3e68b3878865"
+      },
+      "actual_CP_equal": true,
+      "actual_head_equal": true
+    },
+    {
+      "checkpoint_sha256": "d7bf302d7e6aeeb122d1e9ff77fd70d2eb8f2023074d150cf84583143add61dc",
+      "checkpoint_event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\chapter10_chain_author_v2\\death.active.jsonl.checkpoint-91b7772bc62c47faa0f7aa80bd27ccab",
+        "sha256": "0bf0a7f5128c4f9a0e94a5aaef04f7dc3a35cae83df1bffcff48601816b6c3bb",
+        "bytes": 2361759,
+        "count": 1658
+      },
+      "observations": {
+        "snapshot": "505f79f30b50cea1b4eb892aac6cddfb5e438aa8f9154581c89bc54527afc155",
+        "events": "8f2c4ef853c167ea76e416fde8c90dae30843f33419db717df719184ddeb39b3",
+        "event_count": 4389,
+        "continuation_state": "1cb0b67c0f356f4867a21e3fb603873f54ef1c4f12f93f053dc1cd8b66d92552"
+      },
+      "actual_CP_equal": true,
+      "actual_head_equal": true
+    },
+    {
+      "checkpoint_sha256": "6fe0d50a3558e511520277b0233dc22f5f99d19664484a3cb01c93975d0e45c6",
+      "checkpoint_event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\chapter10_chain_author_v2\\deadfirst.active.jsonl.checkpoint-d4ab97d78c7b4b8b990451ef8815dfc4",
+        "sha256": "0231f79d02ff816cb22bfd574a3138877e678f06cc66e2fbbd6a9833afdfefe1",
+        "bytes": 2267772,
+        "count": 1611
+      },
+      "observations": {
+        "snapshot": "40f4a5a80f1a725d4b48980007e26db0f70cd3df3be4d6548ad1776df886115b",
+        "events": "eb973b0eba9abd1df264f15e235a089d20c09bfb80092faa7ed9d5a840ce633b",
+        "event_count": 2472,
+        "continuation_state": "91c6433ae877ad865758f4e0362af362e6260973c3cfd32de9b44df62a749e5c"
+      },
+      "actual_CP_equal": true,
+      "actual_head_equal": true
+    },
+    {
+      "checkpoint_sha256": "05ee9a1c8a04d2de3f24b0c20265244c4effa242eae8470492c51a846ee2fb83",
+      "checkpoint_event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\chapter10_chain_author_v2\\free.active.jsonl.checkpoint-afb50825c58e415d869940c7955cd0bc",
+        "sha256": "2faf95ef428b3424ad8351d948928f7a808f99fc73fab5b6becb76f0003d346a",
+        "bytes": 2266062,
+        "count": 1610
+      },
+      "observations": {
+        "snapshot": "18b3d56782fe5e4c59e15617a0fb4d4046f9eaac5bee376167b598a9c421f21c",
+        "events": "6d87b5d4262c535f1061994806035f7ef6b24b53a62a26e19f6bc66feb772a7e",
+        "event_count": 4172,
+        "continuation_state": "edb65ba292aa1bb582ae6528282e8bff94bc5d9640b33b7b2107fc8a4ad6cda3"
+      },
+      "actual_CP_equal": true,
+      "actual_head_equal": true
+    },
+    {
+      "checkpoint_sha256": "a8a0de137189d9c83d5c2b076393b81d9e01865b1f49253ff323ca18bc54ce5b",
+      "checkpoint_event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\chapter10_chain_author_v2\\source_retain.active.jsonl.checkpoint-3f358656da6348a69bd1e623f14bf5a2",
+        "sha256": "ec36562b6f65d14e15097064e578ae8343713dff3a21287a8d6280ae8449e76c",
+        "bytes": 2357285,
+        "count": 1658
+      },
+      "observations": {
+        "snapshot": "3532072a0366fecc898f5f04640de57b79188ddcd18ff35140532921f7fb329b",
+        "events": "8b01b2765bcf5d011008720022cc3a232adde62390a3f82687a9630becf0a40f",
+        "event_count": 4389,
+        "continuation_state": "ef74df110b31fc795153e9403ee01fdfed8facffd4e5d426fd8da3a581deba9d"
+      },
+      "actual_CP_equal": true,
+      "actual_head_equal": true
+    },
+    {
+      "checkpoint_sha256": "8359471ee067c7edfc4ea260bcfec0e03950136c5f4cb30672b20b74b145116d",
+      "checkpoint_event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\chapter10_chain_author_v2\\source_cancel.active.jsonl.checkpoint-8abebf2e01dd4d74917d8ecc0f7de2c4",
+        "sha256": "a57c569f23c43e30d5ae1ee56f3bd4d1e41db4d9498a188d3f800fe36b0feceb",
+        "bytes": 2357285,
+        "count": 1658
+      },
+      "observations": {
+        "snapshot": "78ebd08470b6dd6b5676d8e8d328f2539ccbd0a5b766c319fdfdb2ef76bbc868",
+        "events": "d10710d0e6b6e27b2f1bf168e8f4861fe09a7627c8e7474167dd3e1c034ebcb2",
+        "event_count": 4389,
+        "continuation_state": "e00f587ae79868f4d267d3bec55998a66a57e569c3923249d4bc9f85a2199251"
+      },
+      "actual_CP_equal": true,
+      "actual_head_equal": true
+    }
+  ],
+  "actual_game_accuracy_verified": false,
+  "primary_modified": false
+}

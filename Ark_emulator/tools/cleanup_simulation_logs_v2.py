@@ -199,6 +199,13 @@ def classify(path, roots):
         return 'checkpoint_or_event_capture' if 'checkpoint' in schema else 'replay_operation_log'
     if {'time','seconds','scenario','program_fingerprint','runtime_fingerprint','entities'} <= top_keys:
         return 'runtime_snapshot'
+    # Status-only receipts can have historical capture names. A filename alone
+    # must not delete their small proof or cleanup summary. Raw schema/snapshot
+    # recognition above still takes precedence over this guard.
+    receipt_keys={'passed','actual_exit','core','core_before','implementation',
+                  'actual_full_CPP_head_equal','cleanup_exit','reclaimed_bytes','eligible_files'}
+    if path.stat().st_size<=1024*1024 and receipt_keys & top_keys and not ARTIFACT_KEYS & top_keys:
+        return None
     if re.search(r'(?:^|[._-])(source|native|module|plan|requirements|catalog)(?:[._-]|$)',name):
         return None
     if any(part == 'packages' for part in path.parts):

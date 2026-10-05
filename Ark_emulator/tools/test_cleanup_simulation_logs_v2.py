@@ -18,6 +18,15 @@ def test_small_raw_schema_beats_report_and_package_guards(tmp_path):
         x=file(tmp_path/name,{'schema':'ark-sim/replay/v2' if 'replay' in name else 'ark-sim/session-checkpoint/v2','kernel':{}});assert c.classify(x,[tmp_path]) is not None
     x=file(tmp_path/'result.json',{'time':0,'seconds':0,'scenario':'s','program_fingerprint':'p','runtime_fingerprint':'r','entities':[],'state':{},'events':[]});assert c.classify(x,[tmp_path])=='runtime_snapshot'
     x=file(tmp_path/'verification.report.json',{'passed':True,'implementation':'x'});assert c.classify(x,[tmp_path]) is None
+
+def test_status_only_capture_named_receipts_are_kept(tmp_path):
+    for name,value in [('capture.focused.v1.json',{'core_before':'p','core_after':'p','actual_exit':0,'result':{'passed':True}}),
+                       ('capture_original.json',{'core':'p','actual_full_CPP_head_equal':True,'CPs':[{'sha256':'hash'}]}),
+                       ('cleanup.capture.final.json',{'apply':True,'eligible_files':2,'reclaimed_bytes':512})]:
+        path=file(tmp_path/name,value)
+        assert c.classify(path,[tmp_path]) is None
+    raw=file(tmp_path/'capture.core.checkpoint.json',{'core':'p','schema':'ark-sim/session-checkpoint/v2','kernel':{}})
+    assert c.classify(raw,[tmp_path])=='checkpoint_or_event_capture'
 def test_process_flags_spaces_equals_and_prior(tmp_path):
     paths=[tmp_path/'run one',tmp_path/'tests',tmp_path/'prior'];[old_log(p/'events.jsonl') for p in paths]
     command=f'python test --run-dir="{paths[0]}" --basetemp {paths[1]} --prior \'{paths[2]/"report.json"}\''

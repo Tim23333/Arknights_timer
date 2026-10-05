@@ -1,0 +1,30 @@
+{
+  "schema": "ark-sim/chapter10-environment-actual/v1",
+  "core": "cd873dbff6ef66d9a17605ab6b02b6cc5a427090156577bd87dedd5bab428e18",
+  "source_before": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter10_source_prepare\\source.plan.v1.json": "08fa62a25e4c42658e2377ebdbd701c9690820c6d964f701df1d418d6b3b9d60",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter10_source_prepare\\environment.native.v1.json": "fc38ac3cc4c70cdb3f3af9ac995a81503b43b72f303e3e8722257459270a69bd",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_environment_v1\\verify.py": "30a3bfe2aec8da06f4303c0ef8f0fc8502fc361f94fc5772443b0af7f813cbd4",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_environment_v1\\build.py": "8f333d1a7482ae47ff0148b7bcde942feabb9b844110d44cfa6d318deae649fe"
+  },
+  "scope": "Actual native environment operands, isolated route probes",
+  "whole_stage": false,
+  "native_enemy_behavior_verified": false,
+  "client_verified": false,
+  "cases": [
+    {
+      "case": "all_native_map_cells_and_fence_options",
+      "passed": true
+    }
+  ],
+  "passed": false,
+  "error": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_sim\\content\\compiler.py\", line 82, in compile\n    return self._compile(scenario, packages, ruleset, overrides)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_sim\\content\\compiler.py\", line 211, in _compile\n    runtime = self._validate_rules(rules, definitions, selected_ruleset,\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_sim\\content\\compiler.py\", line 268, in _validate_rules\n    runtime = RuleRuntime(rules, bindings=ruleset.get(\"bindings\", {}), catalog=self.catalog,\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_sim\\rules\\runtime.py\", line 92, in __init__\n    self.compiled = {key: validate_rule(value, self.catalog) for key, value in self.rules.items()}\n                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_sim\\rules\\runtime.py\", line 39, in validate_rule\n    return Expression(implementation.get(\"expression\"))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_sim\\rules\\expressions.py\", line 49, in __init__\n    raise ExpressionError(f\"Unknown expression name: {node.id}\")\nark_sim.rules.errors.ExpressionError: Unknown expression name: parameters\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_environment_v1\\verify.py\", line 100, in main\n    report['cases'].append({'case': stage + '_unshortened_route', 'passed': True, 'facts': route_case(stage, index)})\n                                                                                           ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_environment_v1\\verify.py\", line 48, in route_case\n    sim = create(package)\n          ^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_environment_v1\\verify.py\", line 43, in create\n    return Engine.create(Compiler().compile(package), providers=BUILTIN_PROVIDERS, seed=10317)\n                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_sim\\content\\compiler.py\", line 86, in compile\n    raise CompileError(str(exc)) from exc\nark_sim.content.compiler.CompileError: Unknown expression name: parameters\n",
+  "source_after": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter10_source_prepare\\source.plan.v1.json": "08fa62a25e4c42658e2377ebdbd701c9690820c6d964f701df1d418d6b3b9d60",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter10_source_prepare\\environment.native.v1.json": "fc38ac3cc4c70cdb3f3af9ac995a81503b43b72f303e3e8722257459270a69bd",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_environment_v1\\verify.py": "30a3bfe2aec8da06f4303c0ef8f0fc8502fc361f94fc5772443b0af7f813cbd4",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter10_environment_v1\\build.py": "8f333d1a7482ae47ff0148b7bcde942feabb9b844110d44cfa6d318deae649fe"
+  },
+  "source_guard_equal": true,
+  "actual_exit": 1
+}
