@@ -33,6 +33,9 @@ V2 运行时不得导入或委托 V1 的战斗、地图、波次、属性、伤�
 立即清理全部已结束日志使用 `./Clean-SimulationLogs.ps1 -AllCompleted -Apply`，仍保护活跃任务。
 已经启动的旧工具保持冻结源码，由任务结束后的同一清理脚本补清。
 禁止继续在 packages/validation/unpack_work 写大体量事件捕获；已结束失败场景也保小结果后清理。
+固定 runs 子目录中的 temp/tests/pytest-of-* 临时数据副本也在结束后清理；仓库原始源数据继续保留。
+独立测试通过通用自动清理入口执行；直接启动时必须先写绑定真实 PID/创建时间的 run.lease.json，
+避免路径只存在于源码而全局清理无法识别其活跃状态。
 历史证据删除是用户授权的保留政策，精简收据保原身份，不能声称原日志仍可读取。
 详情见 [SIMULATION_LOGS.md](docs/SIMULATION_LOGS.md)。
 

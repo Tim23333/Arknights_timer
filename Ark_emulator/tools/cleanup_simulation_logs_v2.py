@@ -145,10 +145,30 @@ def root_fields(prefix):
         i+=1
 
 
+def temporary_run_artifact(path, roots):
+    """Disposable test copies under the fixed run root, never repository sources."""
+    path = Path(path).resolve()
+    runs = FIXED_LOG_ROOT / 'runs'
+    if not path.is_relative_to(runs):
+        return False
+    parts = path.relative_to(runs).parts
+    # First component is the individual run. Restrict broad file cleanup to
+    # explicitly temporary descendants; inputs elsewhere retain source guards.
+    run = runs / parts[0] if parts else runs
+    allowed = isinstance(roots, ResolvedRoots) and roots or ResolvedRoots(roots)
+    explicitly_scoped_run = any(run.is_relative_to(root) for root in allowed)
+    return explicitly_scoped_run and len(parts) >= 3 and any(
+        part in {'temp', 'tmp', 'tests', 'test-tmp'} or part.startswith('pytest-of-')
+        for part in parts[1:-1]
+    )
+
+
 def classify(path, roots):
     name = path.name.lower()
     if linked(path) or not within(path, roots):
         return None
+    if temporary_run_artifact(path, roots):
+        return 'temporary_run_artifact'
     if name.endswith(('.jsonl', '.log')) or '.jsonl.' in name:
         return 'event_or_terminal_log'
     if path.suffix.lower() != '.json':

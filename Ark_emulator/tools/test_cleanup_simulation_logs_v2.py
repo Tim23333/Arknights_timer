@@ -45,6 +45,44 @@ def test_canonical_allowed_roots_preserve_sibling_boundary(tmp_path):
     candidates,_=c.plan({},roots,[],0);deleted,errors=c.execute(candidates,roots,{},[])
     assert len(deleted)==1 and not errors and not inside.exists() and outside.exists()
 
+
+def test_temporary_copies_only_inside_fixed_run_subtrees(tmp_path, monkeypatch):
+    fixed = tmp_path / 'fixed'
+    monkeypatch.setattr(c, 'FIXED_LOG_ROOT', fixed.resolve())
+    copied = file(fixed / 'runs/completed/temp/test_case/input.json',
+                  {'schemaVersion': 2, 'definitions': []})
+    copied_code = file(fixed / 'runs/completed/pytest-of-user/pytest-0/test_case/copy.py',
+                       b'# disposable test copy\n')
+    original = file(tmp_path / 'workspace/tests/input.json',
+                    {'schemaVersion': 2, 'definitions': []})
+    authored = file(fixed / 'runs/completed/input.json',
+                    {'schemaVersion': 2, 'definitions': []})
+    assert c.classify(copied, [tmp_path]) == 'temporary_run_artifact'
+    assert c.classify(copied_code, [tmp_path]) == 'temporary_run_artifact'
+    assert c.classify(original, [tmp_path]) is None
+    assert c.classify(authored, [tmp_path]) is None
+    candidates, _ = c.plan({}, [tmp_path], [], 0)
+    deleted, errors = c.execute(candidates, [tmp_path], {}, [])
+    assert len(deleted) == 2 and not errors
+    assert original.exists() and authored.exists()
+
+
+def test_live_lease_still_protects_temporary_test_copies(tmp_path, monkeypatch):
+    fixed = tmp_path / 'fixed'
+    monkeypatch.setattr(c, 'FIXED_LOG_ROOT', fixed.resolve())
+    run = fixed / 'runs/live'
+    copied = file(run / 'temp/test_case/input.json', {'schemaVersion': 2})
+    lease = run / 'run.lease.json'
+    lease.write_text(json.dumps({'worker_pid': os.getpid(),
+                                'worker_stamp': c.pid_stamp(os.getpid()),
+                                'completed': False}))
+    candidates, retained = c.plan({}, [run], [], 0)
+    assert not candidates and len(retained) == 1 and copied.exists()
+    lease.write_text('{"completed":true}')
+    candidates, _ = c.plan({}, [run], [], 0)
+    deleted, errors = c.execute(candidates, [run], {}, [])
+    assert len(deleted) == 1 and not errors and not copied.exists()
+
 def test_changed_file_and_outside_rejected(tmp_path):
     x=old_log(tmp_path/'events.jsonl');cand,_=c.plan({},[tmp_path],[],0);x.write_text('changed');deleted,errors=c.execute(cand,[tmp_path],{},[]);assert not deleted and errors
     cand[0]['path']=str(tmp_path.parent/'outside.log');deleted,errors=c.execute(cand,[tmp_path],{},[]);assert not deleted and errors
