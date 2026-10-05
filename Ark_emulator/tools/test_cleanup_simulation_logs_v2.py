@@ -95,6 +95,35 @@ def test_internal_link_target_never_deleted(tmp_path):
 def test_active_lease_protects_and_completion_releases(tmp_path):
     old_log(tmp_path/'events.jsonl');lease=tmp_path/'run.lease.json';lease.write_text(json.dumps({'worker_pid':os.getpid(),'worker_stamp':c.pid_stamp(os.getpid()),'completed':False}));cand,retained=c.plan({},[tmp_path],[],0);assert not cand and len(retained)==1
     lease.write_text('{"completed":true}');cand,retained=c.plan({},[tmp_path],[],0);assert len(cand)==1 and not retained
+
+def test_invalid_unfinished_lease_and_actual_descendant_remain_protected(tmp_path,monkeypatch):
+    old_log(tmp_path/'events.jsonl');lease=tmp_path/'run.lease.json'
+    monkeypatch.setattr(c,'pid_stamp',lambda pid:555 if pid==11 else None)
+    for record in ({'completed':False},{'completed':False,'worker_stamp':None},
+                   {'completed':False,'workers':[{'pid':10,'stamp':444},{'pid':11,'stamp':555}]}):
+        lease.write_text(json.dumps(record));cand,retained=c.plan({},[tmp_path],[],0)
+        assert not cand and len(retained)==1
+    lease.write_text(json.dumps({'completed':False,'workers':[{'pid':10,'stamp':444}]}))
+    cand,retained=c.plan({},[tmp_path],[],0);assert len(cand)==1 and not retained
+
+def test_interrupted_launcher_keeps_live_descendant_lease(tmp_path,monkeypatch):
+    alive={10:444,11:555,12:666};monkeypatch.setattr(w,'pid_stamp',lambda pid:alive.get(pid))
+    monkeypatch.setattr(w,'processes',lambda:[{'ProcessId':11,'ParentProcessId':10},{'ProcessId':12,'ParentProcessId':99}])
+    class Launcher:
+        pid=10
+        def poll(self):return None if 10 in alive else 1
+        def terminate(self):alive.pop(10)
+        def wait(self):return 1
+    assert w.stop_owned_processes(tmp_path,Launcher())==[{'pid':11,'stamp':555}]
+    assert w.live_lease(tmp_path)
+    record=json.loads((tmp_path/'run.lease.json').read_bytes())
+    assert {worker['pid'] for worker in record['workers']}=={10,11}
+    alive.pop(11);assert not w.live_lease(tmp_path)
+
+def test_finished_process_is_not_live_while_parent_still_holds_handle():
+    process=subprocess.Popen([sys.executable,'-c','pass'])
+    assert process.wait()==0
+    assert c.pid_stamp(process.pid) is None
 def test_receipt_extraction_is_bounded(tmp_path,monkeypatch):
     x=file(tmp_path/'report.json',{'schema':'report','passed':True,'events':[],'padding':'x'*2000000});cand,_=c.plan({},[tmp_path],[],0)
     original=Path.read_bytes

@@ -3,7 +3,7 @@ import argparse,hashlib,json,os,subprocess,sys
 from datetime import datetime,timezone
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT))
-from tools.cleanup_simulation_logs_v2 import FIXED_LOG_ROOT,linked,root_fields,pid_stamp
+from tools.cleanup_simulation_logs_v2 import FIXED_LOG_ROOT,linked,root_fields,pid_stamp,processes
 def sha(path):
     h=hashlib.sha256()
     with Path(path).open('rb') as f:
@@ -32,11 +32,40 @@ def compact_worker(source,destination):
         if isinstance(value,(str,int,float,bool,type(None))):result[key]=value
     result.update(original_bytes=source.stat().st_size,original_sha256=sha(source),bounded_summary=True);save(destination,result)
 def start_lease(run_dir,process):save(run_dir/'run.lease.json',{'worker_pid':process.pid,'worker_stamp':pid_stamp(process.pid),'completed':False})
+
+def stop_owned_processes(run_dir,process):
+    """Retain actual Python descendants before stopping a Windows venv launcher."""
+    owned={process.pid}
+    rows=processes()
+    while True:
+        expanded=owned|{row['ProcessId'] for row in rows if row.get('ParentProcessId') in owned}
+        if expanded==owned:break
+        owned=expanded
+    workers=[{'pid':pid,'stamp':pid_stamp(pid)} for pid in owned]
+    # Save before termination, since descendants can become orphaned afterward.
+    save(run_dir/'run.lease.json',{'completed':False,'workers':workers})
+    if process.poll() is None:process.terminate();process.wait()
+    return [worker for worker in workers if worker['stamp'] is not None
+            and pid_stamp(worker['pid'])==worker['stamp']]
+
+def live_lease(run_dir):
+    lease=run_dir/'run.lease.json'
+    if not lease.exists():return False
+    try:
+        record=json.loads(lease.read_bytes())
+        if record.get('completed') is True:return False
+        workers=record.get('workers',[{'pid':record.get('worker_pid'),'stamp':record.get('worker_stamp')}])
+        if not isinstance(workers,list) or not workers:return True
+        for worker in workers:
+            if not isinstance(worker,dict) or type(worker.get('pid')) is not int or worker['pid']<1 or type(worker.get('stamp')) is not int or worker['stamp']<1:return True
+            if pid_stamp(worker['pid'])==worker['stamp']:return True
+        return False
+    except (OSError,ValueError,AttributeError):return True
 def finish(run_dir,worker_exit,metadata=None,process=None):
     receipts=FIXED_LOG_ROOT/'receipts'/run_dir.name;receipts.mkdir(parents=True,exist_ok=True);marker=receipts/'completion.json';result_path=receipts/'cleanup.result.json'
     record={'schema':'ark-sim/run-completion/v2','worker_exit':worker_exit,'run_directory':str(run_dir),'updated_utc':datetime.now(timezone.utc).isoformat(),'raw_logs_removed_after_validation':False,**(metadata or {})};save(marker,record)
     cleanup_exit=2
-    if process is not None and process.poll() is None:
+    if (process is not None and process.poll() is None) or live_lease(run_dir):
         record.update(cleanup_exit=3,cleanup_error='Worker still alive: cleanup deferred');cleanup_exit=3
     else:
         lease=run_dir/'run.lease.json'
@@ -59,7 +88,7 @@ def main():
             process=subprocess.Popen(command,cwd=ROOT,env=environment(run_dir),stdout=output,stderr=errors);start_lease(run_dir,process)
             try:code=process.wait()
             except BaseException:
-                if process.poll() is None:process.terminate();process.wait()
+                stop_owned_processes(run_dir,process)
                 raise
     except BaseException as caught:error={'type':type(caught).__name__,'message':str(caught)}
     return finish(run_dir,code,{'command':command,'worker_error':error,'source_inputs_preserved':True},process)

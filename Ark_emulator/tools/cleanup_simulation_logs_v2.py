@@ -112,8 +112,12 @@ def pid_stamp(pid):
     if not handle:return None
     values=[ctypes.c_ulonglong() for _ in range(4)]
     kernel.GetProcessTimes.argtypes=[ctypes.c_void_p,*([ctypes.POINTER(ctypes.c_ulonglong)]*4)]
+    kernel.GetExitCodeProcess.argtypes=[ctypes.c_void_p,ctypes.POINTER(ctypes.c_ulong)]
     kernel.CloseHandle.argtypes=[ctypes.c_void_p]
-    try:return values[0].value if kernel.GetProcessTimes(handle,*[ctypes.byref(v) for v in values]) else None
+    try:
+        exit_code=ctypes.c_ulong()
+        if not kernel.GetExitCodeProcess(handle,ctypes.byref(exit_code)) or exit_code.value!=259:return None
+        return values[0].value if kernel.GetProcessTimes(handle,*[ctypes.byref(v) for v in values]) else None
     finally:kernel.CloseHandle(handle)
 
 def lease_folders(roots):
@@ -123,7 +127,14 @@ def lease_folders(roots):
         try:
             if path.stat().st_size>65536:folders.append(path.parent);continue
             lease=json.loads(path.read_bytes())
-            if lease.get('completed') is not True and lease.get('worker_stamp') is not None and pid_stamp(lease.get('worker_pid'))==lease['worker_stamp']:folders.append(path.parent)
+            if lease.get('completed') is True:continue
+            workers=lease.get('workers',[{'pid':lease.get('worker_pid'),'stamp':lease.get('worker_stamp')}])
+            if not isinstance(workers,list) or not workers or any(
+                    not isinstance(worker,dict) or type(worker.get('pid')) is not int
+                    or worker['pid']<1 or type(worker.get('stamp')) is not int
+                    or worker['stamp']<1 for worker in workers):
+                folders.append(path.parent);continue
+            if any(pid_stamp(worker['pid'])==worker['stamp'] for worker in workers):folders.append(path.parent)
         except (OSError,ValueError,AttributeError):folders.append(path.parent)
     return folders
 

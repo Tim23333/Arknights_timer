@@ -20,7 +20,6 @@ V2 已有可运行的内容编译器、通用内核、领域系统、规则运�
 
 ```powershell
 cd D:\Arknights\Arknights_timer\Ark_emulator
-New-Item -ItemType Directory -Force E:\ArkSimLogs\runs\manual | Out-Null
 
 # 检查内容、规则、引用、提供器与实际需要的计算接口
 ..\.venv\Scripts\python.exe -m ark_sim validate packages/custom/custom_guard.json
@@ -28,17 +27,14 @@ New-Item -ItemType Directory -Force E:\ArkSimLogs\runs\manual | Out-Null
 # 查看加载的依赖与全局、场景和局部规则
 ..\.venv\Scripts\python.exe -m ark_sim explain packages/custom/custom_guard.json --output dependencies.json
 
-# 运行同一内容，并导出快照与输入回放
-..\.venv\Scripts\python.exe -m ark_sim run packages/custom/custom_guard.json --seconds 1 --output E:/ArkSimLogs/runs/manual/sandbox_standard.json --replay-output E:/ArkSimLogs/runs/manual/sandbox_replay.json
+# 运行内容；日志写入 E:\ArkSimLogs，每次结束自动清理
+.\Run-Simulation.ps1 -Content packages/custom/custom_guard.json -Ticks 30
 
 # 切换整条伤害计算管线，继续使用相同单位、技能与场景
-..\.venv\Scripts\python.exe -m ark_sim run packages/custom/custom_guard.json --ruleset ruleset/custom_balance --seconds 1 --output E:/ArkSimLogs/runs/manual/sandbox_balanced.json
+.\Run-Simulation.ps1 -Content packages/custom/custom_guard.json -Ruleset ruleset/custom_balance -Ticks 30
 
-# 使用记录里的种子、时间、命令和身份重放
-..\.venv\Scripts\python.exe -m ark_sim replay packages/custom/custom_guard.json --record E:/ArkSimLogs/runs/manual/sandbox_replay.json --output E:/ArkSimLogs/runs/manual/sandbox_replayed.json
-
-# 完成数值核对和回放验证后，清理手工运行产生的大日志
-.\Clean-SimulationLogs.ps1 -RunDirectory E:/ArkSimLogs/runs/manual -Apply
+# 清理所有已结束的历史日志；活跃任务自动保留
+.\Clean-SimulationLogs.ps1 -AllCompleted -Apply
 ```
 
 CLI 提供 `validate`、`explain`、`preview`、`run`、`replay`。`--output` 保存 JSON，省略时打印结果。`run --ticks` 推进整数逻辑时间，`--seconds` 通过所选 `time.quantize` 计算规则换算；规则集的 `quantum` 决定逻辑时间单位。`replay` 必须提供 `--record`，不能额外更改种子或终点。参数详情可用 `python -m ark_sim --help` 和各子命令的 `--help` 查看。
@@ -57,7 +53,7 @@ CLI 提供 `validate`、`explain`、`preview`、`run`、`replay`。`--output` �
 
 ```powershell
 ..\.venv\Scripts\python.exe -m ark_sim validate packages/ark_content/level_main_00_01.json
-..\.venv\Scripts\python.exe -m ark_sim run packages/ark_content/level_main_00_01.json --commands scenarios/level_main_00_01/commands.json --ticks 300 --output E:/ArkSimLogs/runs/manual/ark_00_01_preview.json
+.\Run-Simulation.ps1 -Content packages/ark_content/level_main_00_01.json -Commands scenarios/level_main_00_01/commands.json -Ticks 300
 ```
 
 首关的模型验收结果和待校准项以 [V2 实现说明](docs/V2_IMPLEMENTATION.md) 及对应证据为准。运行到某个时间点本身不表示首关完整验收通过。
