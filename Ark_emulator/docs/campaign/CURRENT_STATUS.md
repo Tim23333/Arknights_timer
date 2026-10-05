@@ -21,10 +21,13 @@ Mandra V2已修复真实复生Buff/伤害类别/控制免疫与波次释放，�
 炮控V1作者8个有界门通过后，独立真实场景发现同方ally_target_free筛选遗漏；
 V1原冻结与反例保留，新V2使用通用qualified area完整消费原生AdvancedSelector。
 V2 area实际四组Root门、两个场景八个磁盘CP及从头head全字段相等，无比较排除字段。
-随后独立agent确认area／retained资格两门，但原生无敌5仍真实受971伤害，V3消费者修复中。
+随后独立agent确认area／retained资格两门，但发现原生无敌5仍真实受971伤害。
+新V3接收者钩子已作者4门和Root三类输入0／输出3000、真实CP/head独立通过，旧失败保留。
 10-17额外Funnel充能仍明确待绑定，完整或占位绑定请求会拒绝。
 血裔真实counter另确认共享Buff多来源只算一层和死亡延迟出生丢失路线/波次、提前终局；
-通用death-spawn候选与剩余敌人源消费者正在并行开发，未推广、未授整关通过。
+新72fdd通用death-spawn候选已真实kill7／born37／kill50、CP19／head及完整出生账通过，
+继续非零路线／恢复篡改与完整回归，未推广；剩余两光环7作者门及Root八CP独立通过，
+链弹丸草稿已实际四跳和DARK递减包，均未授整关通过。
 详细来源、边界和下一步见 [第十章当前开发](CHAPTER10_SOURCE_CONSUMERS.md)。
 
 日志统一 `E:/ArkSimLogs/runs`，完成数值、CP和head验证后自动清理，保留来源与精简收据。
