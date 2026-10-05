@@ -1,0 +1,1527 @@
+{
+  "facts": [
+    {
+      "epsilon": -1e-05,
+      "actual_blocked": true,
+      "actual_position": {
+        "row": 3.2258053532792372,
+        "col": 4.499
+      },
+      "actual_route": {
+        "motionMode": 0,
+        "startPosition": {
+          "row": 3.2258053532792372,
+          "col": 4.499
+        },
+        "endPosition": {
+          "row": 6,
+          "col": 4
+        },
+        "checkpoints": []
+      },
+      "runtime": {
+        "alive": true,
+        "state": "alive",
+        "deployed": false,
+        "initializing": false,
+        "casts": {},
+        "cooldowns": {},
+        "next_attack": 0,
+        "blocked_by": 2,
+        "rule_bindings": {}
+      },
+      "actual_rule_ids": [
+        "rule/ch9/scenario_blocking"
+      ],
+      "calculations": [
+        {
+          "id": 128,
+          "type": "calculation",
+          "payload": {
+            "calculation_id": "blocking.eligibility",
+            "rule_id": "rule/ch9/scenario_blocking",
+            "source": 2,
+            "target": 3,
+            "value": {
+              "accepted": true,
+              "reason": "source_ruin_block_radius_squared"
+            },
+            "trace": {
+              "calculation_id": "blocking.eligibility",
+              "rule_id": "rule/ch9/scenario_blocking",
+              "contract_version": 1,
+              "rule_fingerprint": "af1a63dec1dcf761850379f16e596b52603dc3d8edc8ff6aa7df6600ac582b69",
+              "runtime_fingerprint": "b06aca3c23cc4df7a8ed77a4a9b9ec23da39c820c26396e50158cff8de9844da",
+              "inputs": {
+                "blocker": {
+                  "id": 2,
+                  "definition_id": "unit/ch9/pillar/ruin",
+                  "tags": [
+                    "ground",
+                    "player",
+                    "ruin",
+                    "terrain_mechanism"
+                  ],
+                  "components": {
+                    "attributes": {
+                      "base": {
+                        "max_hp": 100,
+                        "atk": 0,
+                        "def": 0,
+                        "mres": 0,
+                        "block_count": 3
+                      },
+                      "modifiers": []
+                    },
+                    "resources": {
+                      "hp": {
+                        "current": 100,
+                        "spec": {
+                          "role": "health",
+                          "capacity": 100,
+                          "initial": 100
+                        },
+                        "observed_capacity": 100,
+                        "capacity_signature": "68631c385b0ad396a7562e14466d662afe934c509b3496d6e9332d625474abad"
+                      }
+                    },
+                    "spatial": {
+                      "position": {
+                        "row": 3,
+                        "col": 4
+                      },
+                      "facing": "right"
+                    },
+                    "selection_state": {
+                      "side": 0,
+                      "motion": 1,
+                      "category": 4,
+                      "unit_type": 4
+                    },
+                    "tile_occupancy": {
+                      "blocks_deployment": true,
+                      "exclusive": false,
+                      "targetable": true,
+                      "withdrawable": true
+                    },
+                    "terrain_overlays": [
+                      {
+                        "key": "ruin",
+                        "priority": 0,
+                        "values": {
+                          "buildableType": 0,
+                          "physicalHeight": 0.4000000059604645,
+                          "obstacleLikeMoveCost": true
+                        },
+                        "preserve": [
+                          "passableMask",
+                          "heightType"
+                        ]
+                      }
+                    ],
+                    "deployable": {
+                      "base_cost": 5,
+                      "terrain": "ground",
+                      "capacity": 0,
+                      "cooldown_seconds": 5,
+                      "refund_ratio": 0.5,
+                      "parameters": {
+                        "max_instances": 100
+                      }
+                    },
+                    "lifecycle": {
+                      "policy": "policy/ark_lifecycle"
+                    },
+                    "buffs": {
+                      "initial": [
+                        "buff/ch9/ruin/immunity"
+                      ],
+                      "instances": [
+                        {
+                          "definition": "buff/ch9/ruin/immunity",
+                          "source": 2,
+                          "target": 2,
+                          "id": "buff/2/1",
+                          "stacks": 1,
+                          "started_at": 0,
+                          "expires_at": null,
+                          "interval_units": 0,
+                          "generation": 1,
+                          "tasks": {},
+                          "blackboard": {}
+                        }
+                      ],
+                      "next_instance_id": 2
+                    },
+                    "runtime": {
+                      "alive": true,
+                      "state": "alive",
+                      "deployed": true,
+                      "initializing": false,
+                      "casts": {},
+                      "cooldowns": {},
+                      "next_attack": 0,
+                      "blocked_by": null,
+                      "rule_bindings": {}
+                    }
+                  },
+                  "version": 8
+                },
+                "target": {
+                  "id": 3,
+                  "definition_id": "unit/ch9/duhond/c3aa41fce7557727",
+                  "tags": [
+                    "enemy",
+                    "ground"
+                  ],
+                  "components": {
+                    "attributes": {
+                      "base": {
+                        "max_hp": 2800,
+                        "atk": 300,
+                        "def": 0,
+                        "mres": 0.0,
+                        "move_speed": 0,
+                        "attack_interval": 1.4,
+                        "attack_speed_ratio": 1.0,
+                        "mass_level": 0,
+                        "block_cost": 1
+                      },
+                      "modifiers": [
+                        {
+                          "attribute": "mres",
+                          "layer": "flat",
+                          "value": 70.0,
+                          "buff_instance": "buff/3/1",
+                          "stacks": 1,
+                          "source": 3
+                        }
+                      ]
+                    },
+                    "resources": {
+                      "hp": {
+                        "current": 2800,
+                        "spec": {
+                          "initial": 2800,
+                          "capacity_attribute": "max_hp",
+                          "role": "health"
+                        },
+                        "observed_capacity": 2800,
+                        "capacity_signature": "9112fe5819674eb959837e535d33ef11941cd35ed41aababf843c210f895d64f"
+                      }
+                    },
+                    "selection_state": {
+                      "side": 1,
+                      "motion": 1,
+                      "category": 1,
+                      "unit_type": 2,
+                      "abnormal_immunes": []
+                    },
+                    "spatial": {
+                      "motion_mode": 0,
+                      "steering": {
+                        "rule": "rule/ch9/duhond/steering",
+                        "parameters": {
+                          "response_factor": 8.0,
+                          "max_acceleration": 10.0,
+                          "arrival_radius": 0.05
+                        }
+                      },
+                      "position": {
+                        "row": 3.2258053532792372,
+                        "col": 4.499
+                      },
+                      "facing": "right",
+                      "route": {
+                        "motionMode": 0,
+                        "startPosition": {
+                          "row": 3.2258053532792372,
+                          "col": 4.499
+                        },
+                        "endPosition": {
+                          "row": 6,
+                          "col": 4
+                        },
+                        "checkpoints": []
+                      }
+                    },
+                    "lifecycle": {
+                      "policy": "policy/ark_lifecycle",
+                      "leak_loss": 1
+                    },
+                    "abilities": [],
+                    "buffs": {
+                      "initial": [
+                        "buff/ch9/duhond/refracting"
+                      ],
+                      "instances": [
+                        {
+                          "definition": "buff/ch9/duhond/refracting",
+                          "source": 3,
+                          "target": 3,
+                          "id": "buff/3/1",
+                          "stacks": 1,
+                          "started_at": 0,
+                          "expires_at": null,
+                          "interval_units": 0,
+                          "generation": 1,
+                          "tasks": {},
+                          "blackboard": {},
+                          "applicability": {
+                            "active": true,
+                            "control": true
+                          }
+                        }
+                      ],
+                      "next_instance_id": 2
+                    },
+                    "runtime": {
+                      "alive": true,
+                      "state": "alive",
+                      "deployed": false,
+                      "initializing": true,
+                      "casts": {},
+                      "cooldowns": {},
+                      "next_attack": 0,
+                      "blocked_by": null,
+                      "rule_bindings": {}
+                    }
+                  },
+                  "version": 9
+                },
+                "positions": [
+                  {
+                    "blocker": {
+                      "row": 3,
+                      "col": 4
+                    }
+                  },
+                  {
+                    "target": {
+                      "row": 3.2258053532792372,
+                      "col": 4.499
+                    }
+                  }
+                ],
+                "paths": {
+                  "remaining": []
+                },
+                "states": {}
+              },
+              "parameters": {
+                "base_rule": "rule/ark_block_eligibility",
+                "ruin": {
+                  "definition": "unit/ch9/pillar/ruin",
+                  "radius_squared": 0.30000001192092896
+                }
+              },
+              "context": {
+                "time": 0,
+                "seconds": 0.0,
+                "quantum": 0.03333333333333333,
+                "rule_scope": {
+                  "scenario": {
+                    "movement.speed": "rule/campaign_draft_move_speed",
+                    "movement.path": "rule/m7_diagonal_path",
+                    "blocking.eligibility": "rule/ch9/scenario_blocking"
+                  },
+                  "source": {},
+                  "target": {},
+                  "owner": {},
+                  "component": {},
+                  "attribute_or_resource": {},
+                  "ability": {},
+                  "effect": {}
+                },
+                "source_id": 2,
+                "target_id": 3,
+                "owner_id": null
+              },
+              "stages": [
+                {
+                  "id": "provider",
+                  "provider": "reference.ch9.scenario_blocking",
+                  "raw": {
+                    "accepted": true,
+                    "reason": "source_ruin_block_radius_squared"
+                  }
+                }
+              ],
+              "raw": {
+                "accepted": true,
+                "reason": "source_ruin_block_radius_squared"
+              },
+              "value": {
+                "accepted": true,
+                "reason": "source_ruin_block_radius_squared"
+              },
+              "numeric": {
+                "backend": "float",
+                "rounding": "half_even"
+              },
+              "provider": {
+                "name": "reference.ch9.scenario_blocking",
+                "module": "tools.chapter09_stage_assembly_v1.providers_v6",
+                "qualname": "blocking",
+                "version": "scenario-owned-native-obstacle-radius-v1",
+                "source_sha256": "7bdde728f1dd3b917404c25e816dff812d122d6388fa64b3cfe53136fdf316c5",
+                "descriptor": {
+                  "version": "scenario-owned-native-obstacle-radius-v1"
+                }
+              },
+              "binding": {
+                "owner": "scenario",
+                "origin": "scenario",
+                "overrides": [
+                  {
+                    "scope": "preset",
+                    "rule_id": "rule/ark_block_eligibility"
+                  },
+                  {
+                    "scope": "scenario",
+                    "rule_id": "rule/ch9/scenario_blocking"
+                  }
+                ]
+              }
+            }
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 167,
+          "type": "calculation",
+          "payload": {
+            "calculation_id": "blocking.eligibility",
+            "rule_id": "rule/ch9/scenario_blocking",
+            "source": 2,
+            "target": 3,
+            "value": {
+              "accepted": true,
+              "reason": "source_ruin_block_radius_squared"
+            },
+            "trace": {
+              "calculation_id": "blocking.eligibility",
+              "rule_id": "rule/ch9/scenario_blocking",
+              "contract_version": 1,
+              "rule_fingerprint": "af1a63dec1dcf761850379f16e596b52603dc3d8edc8ff6aa7df6600ac582b69",
+              "runtime_fingerprint": "b06aca3c23cc4df7a8ed77a4a9b9ec23da39c820c26396e50158cff8de9844da",
+              "inputs": {
+                "blocker": {
+                  "id": 2,
+                  "definition_id": "unit/ch9/pillar/ruin",
+                  "tags": [
+                    "ground",
+                    "player",
+                    "ruin",
+                    "terrain_mechanism"
+                  ],
+                  "components": {
+                    "attributes": {
+                      "base": {
+                        "max_hp": 100,
+                        "atk": 0,
+                        "def": 0,
+                        "mres": 0,
+                        "block_count": 3
+                      },
+                      "modifiers": []
+                    },
+                    "resources": {
+                      "hp": {
+                        "current": 100,
+                        "spec": {
+                          "role": "health",
+                          "capacity": 100,
+                          "initial": 100
+                        },
+                        "observed_capacity": 100,
+                        "capacity_signature": "68631c385b0ad396a7562e14466d662afe934c509b3496d6e9332d625474abad"
+                      }
+                    },
+                    "spatial": {
+                      "position": {
+                        "row": 3,
+                        "col": 4
+                      },
+                      "facing": "right"
+                    },
+                    "selection_state": {
+                      "side": 0,
+                      "motion": 1,
+                      "category": 4,
+                      "unit_type": 4
+                    },
+                    "tile_occupancy": {
+                      "blocks_deployment": true,
+                      "exclusive": false,
+                      "targetable": true,
+                      "withdrawable": true
+                    },
+                    "terrain_overlays": [
+                      {
+                        "key": "ruin",
+                        "priority": 0,
+                        "values": {
+                          "buildableType": 0,
+                          "physicalHeight": 0.4000000059604645,
+                          "obstacleLikeMoveCost": true
+                        },
+                        "preserve": [
+                          "passableMask",
+                          "heightType"
+                        ]
+                      }
+                    ],
+                    "deployable": {
+                      "base_cost": 5,
+                      "terrain": "ground",
+                      "capacity": 0,
+                      "cooldown_seconds": 5,
+                      "refund_ratio": 0.5,
+                      "parameters": {
+                        "max_instances": 100
+                      }
+                    },
+                    "lifecycle": {
+                      "policy": "policy/ark_lifecycle"
+                    },
+                    "buffs": {
+                      "initial": [
+                        "buff/ch9/ruin/immunity"
+                      ],
+                      "instances": [
+                        {
+                          "definition": "buff/ch9/ruin/immunity",
+                          "source": 2,
+                          "target": 2,
+                          "id": "buff/2/1",
+                          "stacks": 1,
+                          "started_at": 0,
+                          "expires_at": null,
+                          "interval_units": 0,
+                          "generation": 1,
+                          "tasks": {},
+                          "blackboard": {}
+                        }
+                      ],
+                      "next_instance_id": 2
+                    },
+                    "runtime": {
+                      "alive": true,
+                      "state": "alive",
+                      "deployed": true,
+                      "initializing": false,
+                      "casts": {},
+                      "cooldowns": {},
+                      "next_attack": 0,
+                      "blocked_by": null,
+                      "rule_bindings": {}
+                    }
+                  },
+                  "version": 8
+                },
+                "target": {
+                  "id": 3,
+                  "definition_id": "unit/ch9/duhond/c3aa41fce7557727",
+                  "tags": [
+                    "enemy",
+                    "ground"
+                  ],
+                  "components": {
+                    "attributes": {
+                      "base": {
+                        "max_hp": 2800,
+                        "atk": 300,
+                        "def": 0,
+                        "mres": 0.0,
+                        "move_speed": 0,
+                        "attack_interval": 1.4,
+                        "attack_speed_ratio": 1.0,
+                        "mass_level": 0,
+                        "block_cost": 1
+                      },
+                      "modifiers": [
+                        {
+                          "attribute": "mres",
+                          "layer": "flat",
+                          "value": 70.0,
+                          "buff_instance": "buff/3/1",
+                          "stacks": 1,
+                          "source": 3
+                        }
+                      ]
+                    },
+                    "resources": {
+                      "hp": {
+                        "current": 2800,
+                        "spec": {
+                          "initial": 2800,
+                          "capacity_attribute": "max_hp",
+                          "role": "health"
+                        },
+                        "observed_capacity": 2800,
+                        "capacity_signature": "9112fe5819674eb959837e535d33ef11941cd35ed41aababf843c210f895d64f"
+                      }
+                    },
+                    "selection_state": {
+                      "side": 1,
+                      "motion": 1,
+                      "category": 1,
+                      "unit_type": 2,
+                      "abnormal_immunes": []
+                    },
+                    "spatial": {
+                      "motion_mode": 0,
+                      "steering": {
+                        "rule": "rule/ch9/duhond/steering",
+                        "parameters": {
+                          "response_factor": 8.0,
+                          "max_acceleration": 10.0,
+                          "arrival_radius": 0.05
+                        }
+                      },
+                      "position": {
+                        "row": 3.2258053532792372,
+                        "col": 4.499
+                      },
+                      "facing": "right",
+                      "route": {
+                        "motionMode": 0,
+                        "startPosition": {
+                          "row": 3.2258053532792372,
+                          "col": 4.499
+                        },
+                        "endPosition": {
+                          "row": 6,
+                          "col": 4
+                        },
+                        "checkpoints": []
+                      }
+                    },
+                    "lifecycle": {
+                      "policy": "policy/ark_lifecycle",
+                      "leak_loss": 1
+                    },
+                    "abilities": [],
+                    "buffs": {
+                      "initial": [
+                        "buff/ch9/duhond/refracting"
+                      ],
+                      "instances": [
+                        {
+                          "definition": "buff/ch9/duhond/refracting",
+                          "source": 3,
+                          "target": 3,
+                          "id": "buff/3/1",
+                          "stacks": 1,
+                          "started_at": 0,
+                          "expires_at": null,
+                          "interval_units": 0,
+                          "generation": 1,
+                          "tasks": {},
+                          "blackboard": {},
+                          "applicability": {
+                            "active": true,
+                            "control": true
+                          }
+                        }
+                      ],
+                      "next_instance_id": 2
+                    },
+                    "runtime": {
+                      "alive": true,
+                      "state": "alive",
+                      "deployed": false,
+                      "initializing": false,
+                      "casts": {},
+                      "cooldowns": {},
+                      "next_attack": 0,
+                      "blocked_by": 2,
+                      "rule_bindings": {}
+                    }
+                  },
+                  "version": 11
+                },
+                "positions": [
+                  {
+                    "blocker": {
+                      "row": 3,
+                      "col": 4
+                    }
+                  },
+                  {
+                    "target": {
+                      "row": 3.2258053532792372,
+                      "col": 4.499
+                    }
+                  }
+                ],
+                "paths": {
+                  "remaining": []
+                },
+                "states": {}
+              },
+              "parameters": {
+                "base_rule": "rule/ark_block_eligibility",
+                "ruin": {
+                  "definition": "unit/ch9/pillar/ruin",
+                  "radius_squared": 0.30000001192092896
+                }
+              },
+              "context": {
+                "time": 0,
+                "seconds": 0.0,
+                "quantum": 0.03333333333333333,
+                "rule_scope": {
+                  "scenario": {
+                    "movement.speed": "rule/campaign_draft_move_speed",
+                    "movement.path": "rule/m7_diagonal_path",
+                    "blocking.eligibility": "rule/ch9/scenario_blocking"
+                  },
+                  "source": {},
+                  "target": {},
+                  "owner": {},
+                  "component": {},
+                  "attribute_or_resource": {},
+                  "ability": {},
+                  "effect": {}
+                },
+                "source_id": 2,
+                "target_id": 3,
+                "owner_id": null
+              },
+              "stages": [
+                {
+                  "id": "provider",
+                  "provider": "reference.ch9.scenario_blocking",
+                  "raw": {
+                    "accepted": true,
+                    "reason": "source_ruin_block_radius_squared"
+                  }
+                }
+              ],
+              "raw": {
+                "accepted": true,
+                "reason": "source_ruin_block_radius_squared"
+              },
+              "value": {
+                "accepted": true,
+                "reason": "source_ruin_block_radius_squared"
+              },
+              "numeric": {
+                "backend": "float",
+                "rounding": "half_even"
+              },
+              "provider": {
+                "name": "reference.ch9.scenario_blocking",
+                "module": "tools.chapter09_stage_assembly_v1.providers_v6",
+                "qualname": "blocking",
+                "version": "scenario-owned-native-obstacle-radius-v1",
+                "source_sha256": "7bdde728f1dd3b917404c25e816dff812d122d6388fa64b3cfe53136fdf316c5",
+                "descriptor": {
+                  "version": "scenario-owned-native-obstacle-radius-v1"
+                }
+              },
+              "binding": {
+                "owner": "scenario",
+                "origin": "scenario",
+                "overrides": [
+                  {
+                    "scope": "preset",
+                    "rule_id": "rule/ark_block_eligibility"
+                  },
+                  {
+                    "scope": "scenario",
+                    "rule_id": "rule/ch9/scenario_blocking"
+                  }
+                ]
+              }
+            }
+          },
+          "time": 0,
+          "cause": null
+        }
+      ]
+    },
+    {
+      "epsilon": 1e-05,
+      "actual_blocked": false,
+      "actual_position": {
+        "row": 3.2258538608753384,
+        "col": 4.499
+      },
+      "actual_route": {
+        "motionMode": 0,
+        "startPosition": {
+          "row": 3.2258538608753384,
+          "col": 4.499
+        },
+        "endPosition": {
+          "row": 6,
+          "col": 4
+        },
+        "checkpoints": []
+      },
+      "runtime": {
+        "alive": true,
+        "state": "alive",
+        "deployed": false,
+        "initializing": false,
+        "casts": {},
+        "cooldowns": {},
+        "next_attack": 0,
+        "blocked_by": null,
+        "rule_bindings": {}
+      },
+      "actual_rule_ids": [
+        "rule/ch9/scenario_blocking"
+      ],
+      "calculations": [
+        {
+          "id": 128,
+          "type": "calculation",
+          "payload": {
+            "calculation_id": "blocking.eligibility",
+            "rule_id": "rule/ch9/scenario_blocking",
+            "source": 2,
+            "target": 3,
+            "value": {
+              "accepted": false,
+              "reason": "source_ruin_block_radius_squared"
+            },
+            "trace": {
+              "calculation_id": "blocking.eligibility",
+              "rule_id": "rule/ch9/scenario_blocking",
+              "contract_version": 1,
+              "rule_fingerprint": "af1a63dec1dcf761850379f16e596b52603dc3d8edc8ff6aa7df6600ac582b69",
+              "runtime_fingerprint": "b06aca3c23cc4df7a8ed77a4a9b9ec23da39c820c26396e50158cff8de9844da",
+              "inputs": {
+                "blocker": {
+                  "id": 2,
+                  "definition_id": "unit/ch9/pillar/ruin",
+                  "tags": [
+                    "ground",
+                    "player",
+                    "ruin",
+                    "terrain_mechanism"
+                  ],
+                  "components": {
+                    "attributes": {
+                      "base": {
+                        "max_hp": 100,
+                        "atk": 0,
+                        "def": 0,
+                        "mres": 0,
+                        "block_count": 3
+                      },
+                      "modifiers": []
+                    },
+                    "resources": {
+                      "hp": {
+                        "current": 100,
+                        "spec": {
+                          "role": "health",
+                          "capacity": 100,
+                          "initial": 100
+                        },
+                        "observed_capacity": 100,
+                        "capacity_signature": "68631c385b0ad396a7562e14466d662afe934c509b3496d6e9332d625474abad"
+                      }
+                    },
+                    "spatial": {
+                      "position": {
+                        "row": 3,
+                        "col": 4
+                      },
+                      "facing": "right"
+                    },
+                    "selection_state": {
+                      "side": 0,
+                      "motion": 1,
+                      "category": 4,
+                      "unit_type": 4
+                    },
+                    "tile_occupancy": {
+                      "blocks_deployment": true,
+                      "exclusive": false,
+                      "targetable": true,
+                      "withdrawable": true
+                    },
+                    "terrain_overlays": [
+                      {
+                        "key": "ruin",
+                        "priority": 0,
+                        "values": {
+                          "buildableType": 0,
+                          "physicalHeight": 0.4000000059604645,
+                          "obstacleLikeMoveCost": true
+                        },
+                        "preserve": [
+                          "passableMask",
+                          "heightType"
+                        ]
+                      }
+                    ],
+                    "deployable": {
+                      "base_cost": 5,
+                      "terrain": "ground",
+                      "capacity": 0,
+                      "cooldown_seconds": 5,
+                      "refund_ratio": 0.5,
+                      "parameters": {
+                        "max_instances": 100
+                      }
+                    },
+                    "lifecycle": {
+                      "policy": "policy/ark_lifecycle"
+                    },
+                    "buffs": {
+                      "initial": [
+                        "buff/ch9/ruin/immunity"
+                      ],
+                      "instances": [
+                        {
+                          "definition": "buff/ch9/ruin/immunity",
+                          "source": 2,
+                          "target": 2,
+                          "id": "buff/2/1",
+                          "stacks": 1,
+                          "started_at": 0,
+                          "expires_at": null,
+                          "interval_units": 0,
+                          "generation": 1,
+                          "tasks": {},
+                          "blackboard": {}
+                        }
+                      ],
+                      "next_instance_id": 2
+                    },
+                    "runtime": {
+                      "alive": true,
+                      "state": "alive",
+                      "deployed": true,
+                      "initializing": false,
+                      "casts": {},
+                      "cooldowns": {},
+                      "next_attack": 0,
+                      "blocked_by": null,
+                      "rule_bindings": {}
+                    }
+                  },
+                  "version": 8
+                },
+                "target": {
+                  "id": 3,
+                  "definition_id": "unit/ch9/duhond/c3aa41fce7557727",
+                  "tags": [
+                    "enemy",
+                    "ground"
+                  ],
+                  "components": {
+                    "attributes": {
+                      "base": {
+                        "max_hp": 2800,
+                        "atk": 300,
+                        "def": 0,
+                        "mres": 0.0,
+                        "move_speed": 0,
+                        "attack_interval": 1.4,
+                        "attack_speed_ratio": 1.0,
+                        "mass_level": 0,
+                        "block_cost": 1
+                      },
+                      "modifiers": [
+                        {
+                          "attribute": "mres",
+                          "layer": "flat",
+                          "value": 70.0,
+                          "buff_instance": "buff/3/1",
+                          "stacks": 1,
+                          "source": 3
+                        }
+                      ]
+                    },
+                    "resources": {
+                      "hp": {
+                        "current": 2800,
+                        "spec": {
+                          "initial": 2800,
+                          "capacity_attribute": "max_hp",
+                          "role": "health"
+                        },
+                        "observed_capacity": 2800,
+                        "capacity_signature": "9112fe5819674eb959837e535d33ef11941cd35ed41aababf843c210f895d64f"
+                      }
+                    },
+                    "selection_state": {
+                      "side": 1,
+                      "motion": 1,
+                      "category": 1,
+                      "unit_type": 2,
+                      "abnormal_immunes": []
+                    },
+                    "spatial": {
+                      "motion_mode": 0,
+                      "steering": {
+                        "rule": "rule/ch9/duhond/steering",
+                        "parameters": {
+                          "response_factor": 8.0,
+                          "max_acceleration": 10.0,
+                          "arrival_radius": 0.05
+                        }
+                      },
+                      "position": {
+                        "row": 3.2258538608753384,
+                        "col": 4.499
+                      },
+                      "facing": "right",
+                      "route": {
+                        "motionMode": 0,
+                        "startPosition": {
+                          "row": 3.2258538608753384,
+                          "col": 4.499
+                        },
+                        "endPosition": {
+                          "row": 6,
+                          "col": 4
+                        },
+                        "checkpoints": []
+                      }
+                    },
+                    "lifecycle": {
+                      "policy": "policy/ark_lifecycle",
+                      "leak_loss": 1
+                    },
+                    "abilities": [],
+                    "buffs": {
+                      "initial": [
+                        "buff/ch9/duhond/refracting"
+                      ],
+                      "instances": [
+                        {
+                          "definition": "buff/ch9/duhond/refracting",
+                          "source": 3,
+                          "target": 3,
+                          "id": "buff/3/1",
+                          "stacks": 1,
+                          "started_at": 0,
+                          "expires_at": null,
+                          "interval_units": 0,
+                          "generation": 1,
+                          "tasks": {},
+                          "blackboard": {},
+                          "applicability": {
+                            "active": true,
+                            "control": true
+                          }
+                        }
+                      ],
+                      "next_instance_id": 2
+                    },
+                    "runtime": {
+                      "alive": true,
+                      "state": "alive",
+                      "deployed": false,
+                      "initializing": true,
+                      "casts": {},
+                      "cooldowns": {},
+                      "next_attack": 0,
+                      "blocked_by": null,
+                      "rule_bindings": {}
+                    }
+                  },
+                  "version": 9
+                },
+                "positions": [
+                  {
+                    "blocker": {
+                      "row": 3,
+                      "col": 4
+                    }
+                  },
+                  {
+                    "target": {
+                      "row": 3.2258538608753384,
+                      "col": 4.499
+                    }
+                  }
+                ],
+                "paths": {
+                  "remaining": []
+                },
+                "states": {}
+              },
+              "parameters": {
+                "base_rule": "rule/ark_block_eligibility",
+                "ruin": {
+                  "definition": "unit/ch9/pillar/ruin",
+                  "radius_squared": 0.30000001192092896
+                }
+              },
+              "context": {
+                "time": 0,
+                "seconds": 0.0,
+                "quantum": 0.03333333333333333,
+                "rule_scope": {
+                  "scenario": {
+                    "movement.speed": "rule/campaign_draft_move_speed",
+                    "movement.path": "rule/m7_diagonal_path",
+                    "blocking.eligibility": "rule/ch9/scenario_blocking"
+                  },
+                  "source": {},
+                  "target": {},
+                  "owner": {},
+                  "component": {},
+                  "attribute_or_resource": {},
+                  "ability": {},
+                  "effect": {}
+                },
+                "source_id": 2,
+                "target_id": 3,
+                "owner_id": null
+              },
+              "stages": [
+                {
+                  "id": "provider",
+                  "provider": "reference.ch9.scenario_blocking",
+                  "raw": {
+                    "accepted": false,
+                    "reason": "source_ruin_block_radius_squared"
+                  }
+                }
+              ],
+              "raw": {
+                "accepted": false,
+                "reason": "source_ruin_block_radius_squared"
+              },
+              "value": {
+                "accepted": false,
+                "reason": "source_ruin_block_radius_squared"
+              },
+              "numeric": {
+                "backend": "float",
+                "rounding": "half_even"
+              },
+              "provider": {
+                "name": "reference.ch9.scenario_blocking",
+                "module": "tools.chapter09_stage_assembly_v1.providers_v6",
+                "qualname": "blocking",
+                "version": "scenario-owned-native-obstacle-radius-v1",
+                "source_sha256": "7bdde728f1dd3b917404c25e816dff812d122d6388fa64b3cfe53136fdf316c5",
+                "descriptor": {
+                  "version": "scenario-owned-native-obstacle-radius-v1"
+                }
+              },
+              "binding": {
+                "owner": "scenario",
+                "origin": "scenario",
+                "overrides": [
+                  {
+                    "scope": "preset",
+                    "rule_id": "rule/ark_block_eligibility"
+                  },
+                  {
+                    "scope": "scenario",
+                    "rule_id": "rule/ch9/scenario_blocking"
+                  }
+                ]
+              }
+            }
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 171,
+          "type": "calculation",
+          "payload": {
+            "calculation_id": "blocking.eligibility",
+            "rule_id": "rule/ch9/scenario_blocking",
+            "source": 2,
+            "target": 3,
+            "value": {
+              "accepted": false,
+              "reason": "source_ruin_block_radius_squared"
+            },
+            "trace": {
+              "calculation_id": "blocking.eligibility",
+              "rule_id": "rule/ch9/scenario_blocking",
+              "contract_version": 1,
+              "rule_fingerprint": "af1a63dec1dcf761850379f16e596b52603dc3d8edc8ff6aa7df6600ac582b69",
+              "runtime_fingerprint": "b06aca3c23cc4df7a8ed77a4a9b9ec23da39c820c26396e50158cff8de9844da",
+              "inputs": {
+                "blocker": {
+                  "id": 2,
+                  "definition_id": "unit/ch9/pillar/ruin",
+                  "tags": [
+                    "ground",
+                    "player",
+                    "ruin",
+                    "terrain_mechanism"
+                  ],
+                  "components": {
+                    "attributes": {
+                      "base": {
+                        "max_hp": 100,
+                        "atk": 0,
+                        "def": 0,
+                        "mres": 0,
+                        "block_count": 3
+                      },
+                      "modifiers": []
+                    },
+                    "resources": {
+                      "hp": {
+                        "current": 100,
+                        "spec": {
+                          "role": "health",
+                          "capacity": 100,
+                          "initial": 100
+                        },
+                        "observed_capacity": 100,
+                        "capacity_signature": "68631c385b0ad396a7562e14466d662afe934c509b3496d6e9332d625474abad"
+                      }
+                    },
+                    "spatial": {
+                      "position": {
+                        "row": 3,
+                        "col": 4
+                      },
+                      "facing": "right"
+                    },
+                    "selection_state": {
+                      "side": 0,
+                      "motion": 1,
+                      "category": 4,
+                      "unit_type": 4
+                    },
+                    "tile_occupancy": {
+                      "blocks_deployment": true,
+                      "exclusive": false,
+                      "targetable": true,
+                      "withdrawable": true
+                    },
+                    "terrain_overlays": [
+                      {
+                        "key": "ruin",
+                        "priority": 0,
+                        "values": {
+                          "buildableType": 0,
+                          "physicalHeight": 0.4000000059604645,
+                          "obstacleLikeMoveCost": true
+                        },
+                        "preserve": [
+                          "passableMask",
+                          "heightType"
+                        ]
+                      }
+                    ],
+                    "deployable": {
+                      "base_cost": 5,
+                      "terrain": "ground",
+                      "capacity": 0,
+                      "cooldown_seconds": 5,
+                      "refund_ratio": 0.5,
+                      "parameters": {
+                        "max_instances": 100
+                      }
+                    },
+                    "lifecycle": {
+                      "policy": "policy/ark_lifecycle"
+                    },
+                    "buffs": {
+                      "initial": [
+                        "buff/ch9/ruin/immunity"
+                      ],
+                      "instances": [
+                        {
+                          "definition": "buff/ch9/ruin/immunity",
+                          "source": 2,
+                          "target": 2,
+                          "id": "buff/2/1",
+                          "stacks": 1,
+                          "started_at": 0,
+                          "expires_at": null,
+                          "interval_units": 0,
+                          "generation": 1,
+                          "tasks": {},
+                          "blackboard": {}
+                        }
+                      ],
+                      "next_instance_id": 2
+                    },
+                    "runtime": {
+                      "alive": true,
+                      "state": "alive",
+                      "deployed": true,
+                      "initializing": false,
+                      "casts": {},
+                      "cooldowns": {},
+                      "next_attack": 0,
+                      "blocked_by": null,
+                      "rule_bindings": {}
+                    }
+                  },
+                  "version": 8
+                },
+                "target": {
+                  "id": 3,
+                  "definition_id": "unit/ch9/duhond/c3aa41fce7557727",
+                  "tags": [
+                    "enemy",
+                    "ground"
+                  ],
+                  "components": {
+                    "attributes": {
+                      "base": {
+                        "max_hp": 2800,
+                        "atk": 300,
+                        "def": 0,
+                        "mres": 0.0,
+                        "move_speed": 0,
+                        "attack_interval": 1.4,
+                        "attack_speed_ratio": 1.0,
+                        "mass_level": 0,
+                        "block_cost": 1
+                      },
+                      "modifiers": [
+                        {
+                          "attribute": "mres",
+                          "layer": "flat",
+                          "value": 70.0,
+                          "buff_instance": "buff/3/1",
+                          "stacks": 1,
+                          "source": 3
+                        }
+                      ]
+                    },
+                    "resources": {
+                      "hp": {
+                        "current": 2800,
+                        "spec": {
+                          "initial": 2800,
+                          "capacity_attribute": "max_hp",
+                          "role": "health"
+                        },
+                        "observed_capacity": 2800,
+                        "capacity_signature": "9112fe5819674eb959837e535d33ef11941cd35ed41aababf843c210f895d64f"
+                      }
+                    },
+                    "selection_state": {
+                      "side": 1,
+                      "motion": 1,
+                      "category": 1,
+                      "unit_type": 2,
+                      "abnormal_immunes": []
+                    },
+                    "spatial": {
+                      "motion_mode": 0,
+                      "steering": {
+                        "rule": "rule/ch9/duhond/steering",
+                        "parameters": {
+                          "response_factor": 8.0,
+                          "max_acceleration": 10.0,
+                          "arrival_radius": 0.05
+                        }
+                      },
+                      "position": {
+                        "row": 3.2258538608753384,
+                        "col": 4.499
+                      },
+                      "facing": "right",
+                      "route": {
+                        "motionMode": 0,
+                        "startPosition": {
+                          "row": 3.2258538608753384,
+                          "col": 4.499
+                        },
+                        "endPosition": {
+                          "row": 6,
+                          "col": 4
+                        },
+                        "checkpoints": []
+                      },
+                      "movement": {
+                        "checkpoint": 0,
+                        "path_index": 0
+                      },
+                      "movement_path": [
+                        {
+                          "row": 4,
+                          "col": 4
+                        },
+                        {
+                          "row": 5,
+                          "col": 4
+                        },
+                        {
+                          "row": 6,
+                          "col": 4
+                        }
+                      ],
+                      "velocity": {
+                        "row": 0.0,
+                        "col": 0.0
+                      }
+                    },
+                    "lifecycle": {
+                      "policy": "policy/ark_lifecycle",
+                      "leak_loss": 1
+                    },
+                    "abilities": [],
+                    "buffs": {
+                      "initial": [
+                        "buff/ch9/duhond/refracting"
+                      ],
+                      "instances": [
+                        {
+                          "definition": "buff/ch9/duhond/refracting",
+                          "source": 3,
+                          "target": 3,
+                          "id": "buff/3/1",
+                          "stacks": 1,
+                          "started_at": 0,
+                          "expires_at": null,
+                          "interval_units": 0,
+                          "generation": 1,
+                          "tasks": {},
+                          "blackboard": {},
+                          "applicability": {
+                            "active": true,
+                            "control": true
+                          }
+                        }
+                      ],
+                      "next_instance_id": 2
+                    },
+                    "runtime": {
+                      "alive": true,
+                      "state": "alive",
+                      "deployed": false,
+                      "initializing": false,
+                      "casts": {},
+                      "cooldowns": {},
+                      "next_attack": 0,
+                      "blocked_by": null,
+                      "rule_bindings": {}
+                    }
+                  },
+                  "version": 11
+                },
+                "positions": [
+                  {
+                    "blocker": {
+                      "row": 3,
+                      "col": 4
+                    }
+                  },
+                  {
+                    "target": {
+                      "row": 3.2258538608753384,
+                      "col": 4.499
+                    }
+                  }
+                ],
+                "paths": {
+                  "remaining": [
+                    {
+                      "row": 4,
+                      "col": 4
+                    },
+                    {
+                      "row": 5,
+                      "col": 4
+                    },
+                    {
+                      "row": 6,
+                      "col": 4
+                    }
+                  ]
+                },
+                "states": {}
+              },
+              "parameters": {
+                "base_rule": "rule/ark_block_eligibility",
+                "ruin": {
+                  "definition": "unit/ch9/pillar/ruin",
+                  "radius_squared": 0.30000001192092896
+                }
+              },
+              "context": {
+                "time": 0,
+                "seconds": 0.0,
+                "quantum": 0.03333333333333333,
+                "rule_scope": {
+                  "scenario": {
+                    "movement.speed": "rule/campaign_draft_move_speed",
+                    "movement.path": "rule/m7_diagonal_path",
+                    "blocking.eligibility": "rule/ch9/scenario_blocking"
+                  },
+                  "source": {},
+                  "target": {},
+                  "owner": {},
+                  "component": {},
+                  "attribute_or_resource": {},
+                  "ability": {},
+                  "effect": {}
+                },
+                "source_id": 2,
+                "target_id": 3,
+                "owner_id": null
+              },
+              "stages": [
+                {
+                  "id": "provider",
+                  "provider": "reference.ch9.scenario_blocking",
+                  "raw": {
+                    "accepted": false,
+                    "reason": "source_ruin_block_radius_squared"
+                  }
+                }
+              ],
+              "raw": {
+                "accepted": false,
+                "reason": "source_ruin_block_radius_squared"
+              },
+              "value": {
+                "accepted": false,
+                "reason": "source_ruin_block_radius_squared"
+              },
+              "numeric": {
+                "backend": "float",
+                "rounding": "half_even"
+              },
+              "provider": {
+                "name": "reference.ch9.scenario_blocking",
+                "module": "tools.chapter09_stage_assembly_v1.providers_v6",
+                "qualname": "blocking",
+                "version": "scenario-owned-native-obstacle-radius-v1",
+                "source_sha256": "7bdde728f1dd3b917404c25e816dff812d122d6388fa64b3cfe53136fdf316c5",
+                "descriptor": {
+                  "version": "scenario-owned-native-obstacle-radius-v1"
+                }
+              },
+              "binding": {
+                "owner": "scenario",
+                "origin": "scenario",
+                "overrides": [
+                  {
+                    "scope": "preset",
+                    "rule_id": "rule/ark_block_eligibility"
+                  },
+                  {
+                    "scope": "scenario",
+                    "rule_id": "rule/ch9/scenario_blocking"
+                  }
+                ]
+              }
+            }
+          },
+          "time": 0,
+          "cause": null
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "core": "2c385c9c4a9e383988a3ff8d8d96827f0e473dde0630a3d6d92aa35c5f0dccb0",
+  "actual_exit": 1,
+  "results": [
+    {
+      "case": "corrected_radius_actual_on_path",
+      "passed": false,
+      "error": "",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_ruin_peer\\followup.py\", line 27, in <module>\n    try:fn();RESULTS.append({'case':name,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_ruin_peer\\followup.py\", line 17, in radius\n    radial=r+epsilon;dr=math.sqrt(radial*radial-col*col);p=scene(position=(3+dr,4+col));uid=p['scenarioDraft']['initialEntities'][1]['definition'];a=next(d for d in p['definitions'] if d['id']==uid);a['components'].pop('behavior',None);a['components']['abilities']=[];a['components']['attributes']['base']['move_speed']=0;s=create(p);s.advance(1);actual=s.ctx.spatial.blocked_by('enemy') is not None;assert actual==want;values.append({'epsilon':epsilon,'position':s.ctx.get('enemy',('spatial','position')),'runtime':s.ctx.get('enemy',('runtime',)),'actual_blocked':actual,'squared_distance':dr*dr+col*col,'native_threshold':root['_blockRadiusSquare']})\n                                                                                                                                                                                                                                                                                                                                                                                                                       ^^^^^^^^^^^^\nAssertionError\n"
+    },
+    {
+      "case": "v5_dushdo_different_ATK_actual_CPPhead",
+      "passed": true
+    },
+    {
+      "case": "foreign_and_same_side_exception_rejected",
+      "passed": true
+    }
+  ],
+  "facts": {
+    "v5coupled": {
+      "actual_destroyed": true,
+      "raw_ATK": 431,
+      "actual_hit_tick": 17,
+      "actual_clamped_health_loss": 100,
+      "route_released": true,
+      "nativekills": 0
+    },
+    "foreign": {
+      "non_actual_blocker_obstacle_rejected": true,
+      "same_enemy_side_obstacle_rejected": true,
+      "original_masks_used": true
+    }
+  },
+  "v5_source_sha": "add7e97527cdcb5985844aa90188d2665bdcda2f72842e9c9051dc978c1b8f70",
+  "source_guard": true,
+  "artifacts": [
+    {
+      "name": "v5coupled",
+      "path": "E:\\ArkSimLogs\\runs\\chapter09_ruin_peer_followup3_20261005\\v5coupled.checkpoint.json",
+      "sha256": "fbdb74a66a27dc969f5a609f0af8bdcc41dfeba93719c6fad328eb7ba39bfab8",
+      "bytes": 1374495,
+      "CPP_head_full_equal": true
+    }
+  ],
+  "first_4pass1_radius_fixture_failure_retained": true,
+  "whole_stage": false
+}

@@ -1,0 +1,55 @@
+"""Require actual current-source author and independent gates before 9-18 on scenario-owned blocking V6."""
+import hashlib,json
+from pathlib import Path
+
+ROOT=Path(__file__).resolve().parents[2]
+
+
+def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def main():
+    proof_paths=[
+        'validation/campaign/chapter09_duspfr_full_v1/full.107.json',
+        'validation/campaign/chapter09_duspfr_full_v1/baseline/verification.identity.json',
+        'validation/campaign/chapter09_ruin_v2/final.v2.json',
+        'validation/campaign/chapter09_stage_assembly/blocked.input.v5.json',
+        'validation/campaign/chapter09_stage_assembly/public.prefix.v6.json']
+    proofs=[]
+    for name in proof_paths:
+        path=ROOT/name;d=json.loads(path.read_bytes());assert d.get('passed') is True,name
+        for key in ['guards_start','guards_end','source_at_start','source_at_completion','source_guard_start','source_guard_end']:
+            if key in d:assert all(Path(p).exists() and sha(p)==pin for p,pin in d[key].items()),name+' '+key
+        proofs.append({'path':name,'sha256':sha(path),'actual_passed':True,'current_consumed_source_equal':True})
+    peer_path=ROOT/'validation/campaign/chapter09_ruin_peer/actual.v2.json';peer=json.loads(peer_path.read_bytes())
+    required={'old_source_counter','different_native_combat_CPP','environment_NoSource_and_ranged_obstacle','real_dushdo_blocked_counter'}
+    actual={r['case'] for r in peer['results'] if r['passed'] is True};assert required<=actual
+    # Preserve the first fixture failure; the fresh geometrical gate must pass.
+    follow_path=ROOT/'validation/campaign/chapter09_ruin_peer/followup.actual.json';follow=json.loads(follow_path.read_bytes())
+    # Two V5 input-target gates passed; its radius failure is preserved.
+    required_follow={'v5_dushdo_different_ATK_actual_CPPhead','foreign_and_same_side_exception_rejected'}
+    assert required_follow <= {r['case'] for r in follow['results'] if r['passed'] is True}
+    radius_path=ROOT/'validation/campaign/chapter09_ruin_peer/radius.v6.actual.json'
+    radius=json.loads(radius_path.read_bytes())
+    assert radius['actual_exit']==0 and radius['source_guard_equal'] is True
+    assert radius['scenario_rule_binding_actual'] is True
+    assert [(r['epsilon']<0,r['actual_blocked']) for r in radius['facts']]==[(True,True),(False,False)]
+    assert all(r['actual_rule_ids']==['rule/ch9/scenario_blocking'] for r in radius['facts'])
+    assert len(radius['artifacts'])==2 and all(r['full_CPP_head_equal'] is True for r in radius['artifacts'])
+    stage=ROOT/'packages/campaign/chapter09_stage_models/level_main_09-16.native_draft.v6.life99999.json'
+    assert radius['v6_sha']==sha(stage)
+    assert all(Path(p).exists() and sha(p)==pin for p,pin in peer['source_after'].items())
+    fixed=ROOT/'validation/campaign/chapter09_stage_assembly/scenario.blocking.freeze.v6.json';freeze=json.loads(fixed.read_bytes())
+    assert all(sha(ROOT/p)==pin for p,pin in freeze['files'].items())
+    receipt={'schema':'ark-sim/c9-918-admission/v6','author_proofs':proofs,
+        'independent_first_batch':{'path':str(peer_path),'sha256':sha(peer_path),'actual_exit':peer['actual_exit'],'accepted_gates':sorted(required),'original_radius_failure_preserved':True,'later_actual_scope_bug_confirmed':True},
+        'independent_fresh_batch':{'path':str(follow_path),'sha256':sha(follow_path),'actual_exit':follow['actual_exit'],'accepted_gates':sorted(required_follow),'old_radius_failure_preserved':True},
+        'independent_new_radius':{'path':str(radius_path),'sha256':sha(radius_path),'actual_exit':0,'source_guard':True},
+        'native_births':34,'squad12':True,'deploy_capacity':8,'initialDP':12,'base_life99999':True,
+        'client_accuracy_verified':False,'whole_stage_passed':False,'ready_to_execute':True,
+        'run_entry':'tools/chapter09_stage_assembly_v1/run_918_v6.ps1'}
+    out=ROOT/'validation/campaign/chapter09_stage_assembly/whole.admission.v6.json'
+    assert not out.exists();out.write_text(json.dumps(receipt,indent=2)+'\n',encoding='utf8');print(json.dumps({'ready_to_execute':True,'independent_effective_gates':7}))
+
+
+if __name__=='__main__':main()

@@ -27,10 +27,14 @@
 来源与当前参考存在差异，模块明确提供两个profile：`native_literal`保留20%复生与WALK字面路径解释；
 `prts_reference`采用100%复生和空中目标资格，同时仍走地面路线。
 四份JSON分别位于 `packages/campaign/chapter09_consumers/rock_modes_v2`。
-旧same-hit来源柱体trait判定继续保留；固定BSON的临时mark create/clear与PRTS描述的1秒破碎效果
-需要另一个明确消费者政策，尚未合并成全敌人完成声明。
+旧same-hit来源柱体trait判定作为历史保留；固定BSON的临时mark create/check/clear已由
+[接收者请求钩子消费者](CHAPTER09_RECEIVER_HOOKS.md) 在新候选77049实现。
+PRTS描述的1秒持有破碎效果仍作为明确版本差异保留，没有混入原生同包清除时序。
 
 冻结作者证据共8组：3个通用路线／非法输入门和5个真实模式场景，6个CPP/head严格全字段相等。
 冻结收据见 [freeze.v2.json](../../validation/campaign/chapter09_rock_modes_v2/freeze.v2.json)。
-独立数值与路线复核、当前核心完整回归／基线、客户端Collider和技能启动对应关系仍待验收。
+独立数值与路线复核已完成11个有效门、10场景23CPP/head，证据见
+[peer.result.v2.json](../../validation/campaign/chapter09_rock_modes_peer/peer.result.v2.json)。
+首批9项中的5个测试场景错误及其真实失败保留，修正后只重新执行必要项，未声称单次全11项exit0。
+候选完整核心回归／基线、整关及客户端Collider和技能启动对应关系仍待验收。
 已完成原始捕获保存精简收据后清理，不保留大日志。
