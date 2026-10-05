@@ -1,0 +1,45 @@
+{
+  "schema": "ark-sim/source919-wave-hook-patch/v4",
+  "parent_sha256": "1a25e4d3597f1b081e83a4f5fac43b5d97fc6d4473377c855685bb9e196c5a5f",
+  "output_sha256": "2543569405d85808a2edc825cfa927b59a24a77b6aba92bb070efa0adea9ba92",
+  "source_sha256": "82cd532c07e770d54167e9a3d0a55b4cd30e7a5827218a679688b40840087295",
+  "helper_sha256": "7624acb38165e3b19407b404af9ee59a38093a18f09d06a52071195ec38c6cc6",
+  "before": [
+    {
+      "op": "transition",
+      "state": "fly_stone"
+    },
+    {
+      "op": "apply_buff",
+      "buff": "buff/ch9/mandra/invulnerable",
+      "target": "source"
+    },
+    {
+      "op": "set_ability_cooldown",
+      "target": "source",
+      "ability": "ability/ch9/mandra/ray",
+      "duration_seconds": 10
+    },
+    {
+      "op": "set_ability_cooldown",
+      "target": "source",
+      "ability": "ability/ch9/mandra/summon",
+      "duration_seconds": 20
+    }
+  ],
+  "appended": {
+    "op": "finish_timeline_wave",
+    "target": "source",
+    "parameters": {
+      "finish_and_skip": false,
+      "track_source_at_next_wave": false,
+      "track_source_wave_delta": 0,
+      "track_all_managed_at_next_wave": false
+    }
+  },
+  "only_selected_hook_diff": true,
+  "native_input_births": 63,
+  "wave_tracking_flags_all_false": true,
+  "source_birth_count_reduced": false,
+  "runtime_changed": false
+}
