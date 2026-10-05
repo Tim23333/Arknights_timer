@@ -5,6 +5,16 @@
 `runs` 存放执行期间的大体量事件、检查点和回放，`receipts` 保存精简结果，
 `cleanup` 保存删除清单、字节数和仍在运行的文件。
 
+日常运行内容包使用 `Run-Simulation.ps1`；它生成独立运行目录，将快照、回放、
+标准输出和错误输出放入固定目录，并在成功或失败退出后自动清理。退出摘要保留在 `receipts`。
+
+```powershell
+.\Run-Simulation.ps1 -Content packages/custom/custom_guard.json -Ticks 30
+.\Run-Simulation.ps1 -Content packages/ark_content/level_main_00_01.json -Commands scenarios/level_main_00_01/commands.json -Ticks 3000
+```
+
+需要检查点续跑与全程数值核对的整关验证继续使用下文的 V20 入口。
+
 在模拟器目录手工预览：
 
 ```powershell

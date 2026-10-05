@@ -13,17 +13,20 @@
 ```powershell
 ..\.venv\Scripts\python.exe -m ark_sim validate packages/custom/custom_guard.json
 ..\.venv\Scripts\python.exe -m ark_sim explain packages/custom/custom_guard.json --output dependencies.json
-..\.venv\Scripts\python.exe -m ark_sim run packages/custom/custom_guard.json --seconds 1 --output snapshot.json --replay-output replay.json
-..\.venv\Scripts\python.exe -m ark_sim replay packages/custom/custom_guard.json --record replay.json --output replayed.json
+.\Run-Simulation.ps1 -Content packages/custom/custom_guard.json -Ticks 30
 
 # 同一内容采用另一整条伤害管线
-..\.venv\Scripts\python.exe -m ark_sim run packages/custom/custom_guard.json --ruleset ruleset/custom_balance --seconds 1 --output balanced.json
+.\Run-Simulation.ps1 -Content packages/custom/custom_guard.json -Ruleset ruleset/custom_balance -Ticks 30
 
 # 从固定 JSON 提取产物离线转换 0-1，不导入旧模拟运行时
 ..\.venv\Scripts\python.exe -m ark_sim validate --scenario ark-00-01
 ```
 
 `validate` 检查结构、引用、传递依赖、继承、循环、计算规则、提供器和实际内容需要的计算接口。错误返回非零退出码，并显示定义 ID 或字段路径。`explain` 输出依赖关系、提供器版本、规则预设、场景和嵌套作用域。`preview` 给出试算值与计算轨迹。`run` 使用真实 Engine，输出快照，可同时导出回放。`replay` 必须提供 `--record`，按记录里的种子、时间、命令与身份重放，不接受额外的种子或时间参数。
+
+`Run-Simulation.ps1` 将此次运行的快照、回放和终端输出统一放入 `E:\ArkSimLogs\runs`，
+退出后自动清理并保留精简退出摘要。需要续跑、重放和数值核对时，使用
+[受控验证入口](SIMULATION_LOGS.md)，在同一受控任务内完成比较后再清理。
 
 公式试算可以用文件，避免终端的 JSON 引号差异：
 

@@ -30,6 +30,7 @@ V2 运行时不得导入或委托 V1 的战斗、地图、波次、属性、伤�
 后续整关统一使用 `tools/run_campaign_disk_runthrough_v20.py`，完成仿真和CP/head验证后自动执行
 `tools/cleanup_simulation_logs_v2.py`。其他机制工具通过 `tools/run_with_log_cleanup.py`
 执行，或在验证结束后调用同一清理脚本。手工入口为 `Clean-SimulationLogs.ps1`。
+日常运行内容包使用 `Run-Simulation.ps1`，避免直接把 CLI 快照和回放输出到仓库根目录。
 立即清理全部已结束日志使用 `./Clean-SimulationLogs.ps1 -AllCompleted -Apply`，仍保护活跃任务。
 已经启动的旧工具保持冻结源码，由任务结束后的同一清理脚本补清。
 禁止继续在 packages/validation/unpack_work 写大体量事件捕获；已结束失败场景也保小结果后清理。
