@@ -18,10 +18,11 @@ Root核对全部guards后复制九文件，保留56f380完整备份，promotion�
 新53ee联合候选fresh54短门实际全0，自己的0-1/CPP/head/850与60公式基线已实际退出0并清日志，
 107契约完整回归已实际1198通过/21失败，都是隔离DomainContext缺可选depletion；原报告保留，不推广53ee。
 新4d42候选保默认及真实owned权限，原46DomainRules+2absent权限+54机制作者与独立40门均实际通过；自己的baseline已实际退出0并清理，full107仍由原新候选进程运行。
-DeadBoom源PullDupilr又证明5000→4500仍应倒塌，原zero-only桥未消费正HP受击；该源分支将以显式trigger在新候选补齐，未把HP改1或伤害改大。
+DeadBoom源PullDupilr又证明5000→4500仍应倒塌，原zero-only桥未消费正HP受击；该源分支已在2c38以显式真实damage trigger补齐并独立通过，未把HP改1或伤害改大。
 爆破装置8作者/8独立组、16/19CPP/head场景已通过，严格库存2/1、SPtype8被动、DP5/slot0、环境免疫及柱体SP10。
-完整Duspfr2c38已冻结26作者组、原Domain46及因果快照性能改进：实际两轮Flame（原距离1为20包，近距离.6首接触17则deadline318前可21包，独立边界复核中）、5并发死亡、正HP柱体4500与sourceNone suicide34，独立复核正在执行。
-爆破装置v1另发现真实动态Buff失衡免疫8仍被推动的counter；newv2完整状态投影修复正在自有/独立门，旧冻结收据保持原scope。
+完整Duspfr2c38已冻结26作者组、原Domain46及因果快照性能改进：实际两轮Flame（原距离1为20包，近距离.6首接触17则deadline318前可21包，独立边界已确认）、5并发死亡、正HP柱体4500与sourceNone suicide34，独立16门及13场景28CPP/head已通过，首次10pass2预期失败保留。
+爆破装置v1另发现真实动态Buff失衡免疫8仍被推动的counter；newv2完整状态投影9作者组及10独立门已通过，17/18场景CPP/head严格比较，旧冻结收据保持原scope。
+岩石敌人新ed5路线/空中资格分离、Recover28/Start20动作占用8作者门通过，独立执行；来源profile与柱体破碎mark差异明确未闭合。
 Mandra四mode/9BSON/当前HP与前缀要求已固定，新消费者开发中，不计第九章整关通过。
 
 7-18 保持唯一冻结82db/finite_v3进程。正向已实际45出生=31击杀+14漏怪，terminal15198/end15200；

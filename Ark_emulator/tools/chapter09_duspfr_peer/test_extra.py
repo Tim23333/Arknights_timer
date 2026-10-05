@@ -1,0 +1,26 @@
+from tools.chapter09_duspfr_peer.test_v1 import create,proof,events,ep
+from tools.chapter09_duspfr_peer.fixture import *
+import pytest
+
+def test_live_source_ATK_and_target_RES_Buffs_at_hit_actual_CPP():
+ p=scene();p['buffs'] += [{'id':'buff/peer/live_atk','kind':'buff','modifiers':[{'attribute':'atk','layer':'flat','value':100}]},{'id':'buff/peer/live_res','kind':'buff','modifiers':[{'attribute':'mres','layer':'flat','value':10}]}];p['scenarioDraft']['scheduledEffects']=[{'at':16,'effect':{'op':'apply_buff','target':2,'buff':'buff/peer/live_atk'}},{'at':16,'effect':{'op':'apply_buff','target':3,'buff':'buff/peer/live_res'}}];s=proof(p,'live_packet_stats',[16,18],34);assert len(events(s,'damage.accepted'))==2;assert abs(s.ctx.resources.current('player','hp')-(HP-105.6))<1e-8;assert ep(s)==9904
+
+def test_FIRE_actual_NoSource_1200_RES_minus20_break_lock_and_end_reset():
+ p=scene();profile=p['entities'][-1]['components']['elemental']['elements']['FIRE'];profile['capacity']=40;p['buffs'].append({'id':'buff/peer/fire_res','kind':'buff','modifiers':[{'attribute':'mres','layer':'flat','value':-20}]});p['rules'].append({'id':'rule/peer/fire_no_source','kind':'rule','contract':'damage.pipeline','metadata':{'input_bindings':{'resistance':{'entity':'target','attribute':'mres'}}},'implementation':{'type':'graph','nodes':[{'id':'packet','expression':"{'accepted': True, 'amount': inputs.effect.fixed_amount * (1-inputs.effect.resistance*.01), 'allocations': [], 'events': []}"}],'output':'nodes.packet'}});profile['on_break']=[{'op':'apply_buff','buff':'buff/peer/fire_res'},{'op':'no_source_damage','fixed_amount':1200,'damage_type':'arts','attack_type':'NONE','damage_without_modify':False,'ignore_for_sp':True,'node_is_env_damage':False,'env_blackboard_injected':False,'environmental':False,'origin':{'native':'FIRE_break'},'rules':{'damage.pipeline':'rule/peer/fire_no_source'}}];profile['on_end']=[{'op':'remove_buff','buff':'buff/peer/fire_res'}];p['scenarioDraft']['commands']=[{'at':180,'action':'skill','source':'player','ability':'ability/peer/control_source'}];s=create(p);s.advance(18);assert abs(s.ctx.resources.current('player','hp')-(HP-54.6-1020))<1e-8;assert s.ctx.attributes.value('player','mres')==15;assert ep(s)==0;no_source=[(t,x) for t,x in events(s,'damage.accepted') if x['source'] is None];assert len(no_source)==1 and no_source[0][0]==17 and no_source[0][1]['amount']==1020
+ s=proof(p,'FIRE_break_end',[18,181],229);assert s.ctx.attributes.value('player','mres')==35;assert ep(s)==40;assert s.ctx.get('player',('runtime','elemental'))['break'] is None;assert len([x for _,x in events(s,'damage.accepted') if x['source'] is None])==1;assert abs(s.ctx.resources.current('player','hp')-(HP-54.6-1020-10*71.4))<1e-8
+
+def test_actual_EP_break_late_random_fault_rolls_entire_packet_cache_cursor():
+ p=scene();profile=p['entities'][-1]['components']['elemental']['elements']['FIRE'];profile['capacity']=42;profile['on_break']=[{'op':'random','stream':'peer.ep_fault','probability':1,'on_success':[{'op':'emit','event':'peer.before_ep_fault'}]},{'op':'modify_resource','resource':'missing','amount':1}];s=create(p);kind='domain.attachment.step';old=s.session._handlers[kind];checked=[]
+ def wrapped(session,payload):
+  before=session.snapshot();cache=s.ctx.attributes.checkpoint_cache();cursor=s.ctx.last_calculation_event_id
+  try:return old(session,payload)
+  except ValueError:
+   assert session.snapshot()==before;assert s.ctx.attributes.checkpoint_cache()==cache;assert s.ctx.last_calculation_event_id==cursor;checked.append(True);raise
+ s.session._handlers[kind]=wrapped
+ with pytest.raises(ValueError):s.advance(20)
+ assert checked==[True];assert s.ctx.resources.current('player','hp')==HP;assert ep(s)==42;assert not events(s,'peer.before_ep_fault');assert s.session.random.samples==();assert guard()==START
+
+
+def test_raw_positive_resource_change_no_permission_actual_damage_then_owned_CPP():
+ p=scene(atk=500,pos=(6.4,5),pillar=True);p['entities'][0]['components']['abilities'].append('ability/peer/pillar_hit');p['selectors'].append({'id':'selector/peer/pillar','kind':'selector','region':{'type':'all'},'filters':[{'tag':'dupilr'}],'limit':1});p['abilities'].append({'id':'ability/peer/pillar_hit','kind':'ability','activation':{'mode':'manual'},'selector':'selector/peer/pillar','timeline':[{'at':0,'effect':{'op':'damage','damage_type':'true','scale':1}}]});p['scenarioDraft']['scheduledEffects']=[{'at':9,'effect':{'op':'apply_buff','target':4,'buff':'buff/ch9/pillar/candead'}},{'at':10,'effect':{'op':'modify_resource','target':4,'resource':'hp','amount':-500}}];p['scenarioDraft']['commands']=[{'at':12,'action':'skill','source':'source','ability':'ability/peer/pillar_hit'}];s=create(p);s.advance(11);assert s.session.world.resolve('pillar')==4;assert s.ctx.resources.current('pillar','hp')==4500;assert s.ctx.depletion.state('pillar')['generation']==0;assert s.ctx.get('pillar',('runtime','casts'),{})=={};s.advance(2);assert s.ctx.resources.current('pillar','hp')==4000;assert s.ctx.depletion.state('pillar')['stage']=='collapsing'
+ s=proof(p,'raw_then_real_positive',[11,13],65);assert not s.ctx.alive('pillar');assert s.ctx.resources.current('pillar','hp')==4000;assert len(events(s,'tile.token_created'))==2;assert guard()==START
