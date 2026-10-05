@@ -1,0 +1,282 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/ch9/ruin/native_v2",
+    "metadata": {
+      "source_locks": {
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter09_source_prepare\\duruin.transitive.source.v1.json": "d2c0e3c5b766b2238f9c747f51a4128fb5b886d0752099b35f549f8350277422",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter09_consumers\\pillars\\source.closure.v1.json": "0208629f38fd5c9582ed00595a04b2786c75bc9bba2116e030adbdb49f924434",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter09_stage_models\\level_main_09-16.native_draft.v2.life99999.json": "06d04d1afa1947a0076d0a93aa9521389bc04c73344552cf5b39a7935b6857bc",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_ruin_v2\\build.py": "2dd843044dd2db1c50b348b8e808a57cca65b2ef46b557324d3b87f4e41e63a2"
+      },
+      "side_mapping": "Native SideType ALLY1 bitmask -> absolute SideTypeIndex ALLY0, never copy enum integer",
+      "block_combat": "Existing enemy combat selectors acquire actual player-tagged blocker; obstacle category4 prevents ordinary ranged selector acquisition",
+      "source_native_stats": {
+        "maxHp": 100,
+        "atk": 0,
+        "def": 0,
+        "magicResistance": 0.0,
+        "cost": 5,
+        "blockCnt": 3,
+        "moveSpeed": 1.0,
+        "attackSpeed": 100.0,
+        "baseAttackTime": 1.0,
+        "respawnTime": 5,
+        "hpRecoveryPerSec": 0.0,
+        "spRecoveryPerSec": 1.0,
+        "maxDeployCount": 1,
+        "maxDeckStackCnt": 0,
+        "tauntLevel": 0,
+        "massLevel": 0,
+        "baseForceLevel": 0,
+        "stunImmune": false,
+        "silenceImmune": false,
+        "sleepImmune": false,
+        "frozenImmune": false,
+        "levitateImmune": false,
+        "disarmedCombatImmune": false,
+        "fearedImmune": false,
+        "palsyImmune": false,
+        "attractImmune": false,
+        "teleportImmune": false,
+        "groundBoundImmune": false
+      },
+      "reference_url": "https://prts.wiki/w/战场废墟",
+      "visual_spawned_buff": "Source 0.5s renderer changes have no gameplay effect; no lifetime fabricated",
+      "client_verified": false
+    }
+  },
+  "definitions": [
+    {
+      "id": "unit/ch9/pillar/ruin",
+      "kind": "entity",
+      "tags": [
+        "player",
+        "ground",
+        "ruin",
+        "terrain_mechanism"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 100,
+            "atk": 0,
+            "def": 0,
+            "mres": 0,
+            "block_count": 3
+          }
+        },
+        "resources": {
+          "hp": {
+            "role": "health",
+            "capacity": 100,
+            "initial": 100
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "side": 0,
+          "motion": 1,
+          "category": 4,
+          "unit_type": 4
+        },
+        "tile_occupancy": {
+          "blocks_deployment": true,
+          "exclusive": false,
+          "targetable": true,
+          "withdrawable": true
+        },
+        "terrain_overlays": [
+          {
+            "key": "ruin",
+            "priority": 0,
+            "values": {
+              "buildableType": 0,
+              "physicalHeight": 0.4000000059604645,
+              "obstacleLikeMoveCost": true
+            },
+            "preserve": [
+              "passableMask",
+              "heightType"
+            ]
+          }
+        ],
+        "deployable": {
+          "base_cost": 5,
+          "terrain": "ground",
+          "capacity": 0,
+          "cooldown_seconds": 5,
+          "refund_ratio": 0.5,
+          "parameters": {
+            "max_instances": 100
+          }
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "buffs": {
+          "initial": [
+            "buff/ch9/ruin/immunity"
+          ]
+        }
+      },
+      "rules": {
+        "blocking.eligibility": "rule/ch9/ruin/blocking"
+      },
+      "metadata": {
+        "native_character": "trap_044_duruin",
+        "native_side_mask": 1,
+        "absolute_side_index": 0,
+        "entity_category": 4,
+        "source_block_radius_squared": 0.30000001192092896
+      }
+    },
+    {
+      "id": "buff/ch9/ruin/immunity",
+      "kind": "buff",
+      "selection_flags": {
+        "abnormal_flags": [],
+        "abnormal_immunes": [
+          0,
+          16,
+          12
+        ],
+        "abnormal_combo_immunes": [
+          0
+        ]
+      },
+      "damage_hooks": [
+        {
+          "phase": "after",
+          "rule": "rule/ch9/ruin/environment"
+        }
+      ],
+      "metadata": {
+        "native_inline": {
+          "attributes": {
+            "abnormalFlags": [],
+            "abnormalImmunes": [
+              0,
+              16,
+              12
+            ],
+            "abnormalAntis": [],
+            "abnormalCombos": [],
+            "abnormalComboImmunes": [
+              0
+            ],
+            "attributeModifiers": []
+          },
+          "buffKey": "duruin_abnormalimmunes",
+          "loadFromDB": 0,
+          "isDurableBuff": 0,
+          "isDamageMissable": 0,
+          "isSilenceable": 0,
+          "isStunnable": 0,
+          "isFreezable": 0,
+          "isLevitatable": 0,
+          "statusResistable": 2,
+          "templateKey": "immu_environment_damage",
+          "disableOverride": 1,
+          "overrideKey": "",
+          "overrideType": 0,
+          "maxStackCnt": 1,
+          "refreshRemainingTimeWhenStackMax": 0,
+          "clearAllStackCntWhenTimeUp": 0,
+          "maxValidStackCnt": -1,
+          "independentCharacterSource": 0,
+          "overrideEffectKey": "",
+          "overrideOnEventPriority": 0,
+          "onEventPriority": 0,
+          "audioSignal": "",
+          "lifeTimeType": 2,
+          "takeSnapshotWhenExtend": 0,
+          "durationKey": "",
+          "lifeTime": 0.0,
+          "triggerLifeType": 0,
+          "triggerCnt": 0,
+          "triggerInterval": -1.0,
+          "waitFirstTriggerInterval": 1,
+          "firstTriggerInterval": -1.0,
+          "priority": -1,
+          "priorityBBKeys": [],
+          "stripBlackboardParamsWithBuffKey": 0,
+          "blackboard": [
+            {
+              "key": "damage_scale",
+              "value": 0.0,
+              "valueStr": ""
+            }
+          ]
+        },
+        "native_template": {
+          "parsed": {
+            "templateKey": "immu_environment_damage",
+            "effectKey": "",
+            "onEventPriority": "DEFAULT",
+            "eventToActions": {
+              "ON_TAKE_DAMAGE": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+FilterDamageModifer, Assembly-CSharp",
+                  "_filterAttackType": false,
+                  "_attackTypeFilter": "NONE",
+                  "_filterDamageType": false,
+                  "_damageMask": "NONE",
+                  "_filterSharedMask": true,
+                  "_sharedFlag": "IS_ENVIRONMENT_DAMAGE",
+                  "_filterModifierSource": false,
+                  "_source": "BUFF_OWNER",
+                  "_filterBySourceId": false,
+                  "_sourceId": null,
+                  "_checkHasScource": false,
+                  "_isNoSource": false,
+                  "_filterModifierCancelled": false,
+                  "_filterApplyWay": false,
+                  "_applyWay": "NONE"
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+DamageScale, Assembly-CSharp",
+                  "_filterDamageType": false,
+                  "_damageMask": "NONE",
+                  "_filterApplyWay": false,
+                  "_applyWayFilter": "NONE",
+                  "_filterModifierKey": false,
+                  "_modifierKey": "",
+                  "_isOneMinus": false,
+                  "_isStackable": false,
+                  "_isValidStackCnt": false,
+                  "_cachedDeltaValueToBBKey": "",
+                  "_customKey": ""
+                }
+              ]
+            }
+          },
+          "payload_offset": 411086,
+          "document_base64": "SQMAAAJ0ZW1wbGF0ZUtleQAYAAAAaW1tdV9lbnZpcm9ubWVudF9kYW1hZ2UAAmVmZmVjdEtleQABAAAAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQAA2V2ZW50VG9BY3Rpb25zAN4CAAAET05fVEFLRV9EQU1BR0UAyQIAAAMwAJcBAAACJHR5cGUAQQAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytGaWx0ZXJEYW1hZ2VNb2RpZmVyLCBBc3NlbWJseS1DU2hhcnAACF9maWx0ZXJBdHRhY2tUeXBlAAACX2F0dGFja1R5cGVGaWx0ZXIABQAAAE5PTkUACF9maWx0ZXJEYW1hZ2VUeXBlAAACX2RhbWFnZU1hc2sABQAAAE5PTkUACF9maWx0ZXJTaGFyZWRNYXNrAAECX3NoYXJlZEZsYWcAFgAAAElTX0VOVklST05NRU5UX0RBTUFHRQAIX2ZpbHRlck1vZGlmaWVyU291cmNlAAACX3NvdXJjZQALAAAAQlVGRl9PV05FUgAIX2ZpbHRlckJ5U291cmNlSWQAAApfc291cmNlSWQACF9jaGVja0hhc1Njb3VyY2UAAAhfaXNOb1NvdXJjZQAACF9maWx0ZXJNb2RpZmllckNhbmNlbGxlZAAACF9maWx0ZXJBcHBseVdheQAAAl9hcHBseVdheQAFAAAATk9ORQAAAzEAJwEAAAIkdHlwZQA5AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0RhbWFnZVNjYWxlLCBBc3NlbWJseS1DU2hhcnAACF9maWx0ZXJEYW1hZ2VUeXBlAAACX2RhbWFnZU1hc2sABQAAAE5PTkUACF9maWx0ZXJBcHBseVdheQAAAl9hcHBseVdheUZpbHRlcgAFAAAATk9ORQAIX2ZpbHRlck1vZGlmaWVyS2V5AAACX21vZGlmaWVyS2V5AAEAAAAACF9pc09uZU1pbnVzAAAIX2lzU3RhY2thYmxlAAAIX2lzVmFsaWRTdGFja0NudAAAAl9jYWNoZWREZWx0YVZhbHVlVG9CQktleQABAAAAAAJfY3VzdG9tS2V5AAEAAAAAAAAAAA==",
+          "document_sha256": "de08d6d8b3c34021580cb5df59e7fc43d37cec9c6f709948dff952209c859daa"
+        }
+      }
+    },
+    {
+      "id": "rule/ch9/ruin/blocking",
+      "kind": "rule",
+      "contract": "blocking.eligibility",
+      "parameters": {
+        "radius_squared": 0.30000001192092896
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.ch9.ruin_blocking"
+      }
+    },
+    {
+      "id": "rule/ch9/ruin/environment",
+      "kind": "rule",
+      "contract": "damage.pipeline",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.ch9.demolition_environment"
+      }
+    }
+  ]
+}
