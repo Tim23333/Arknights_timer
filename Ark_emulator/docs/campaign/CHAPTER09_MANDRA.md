@@ -47,3 +47,12 @@ on_begin在零HP等待时施加的石肤、范围与无敌Buff随后被移除，
 原作者12组没有核对这项恢复后的持有效果，不能用其通过或通用核心回归覆盖该反例。
 两来源前缀反例保存在 `chapter09_mandra_peer/post_rebirth.source.counter.json`，
 源码与旧模块保持冻结，已派发新来源v2内容修复；第二生命效果闭合前不启动9-19整关。
+
+来源复核同时发现旧内容没有配置Boss的 `lifePointReduce=2`，并遗漏了原生
+`mandra_immune`：失衡标记8、异常免疫0/12/16/11/18和组合免疫0。
+RebornTalent明确保留该被动。v2会以来源内容声明初始被动、复生保留和漏怪扣血2，
+分别验证真实状态免疫与路线退出扣血，避免基地99999掩盖生命周期数值错误。
+恢复完成后进入第二形态、获得石肤与3秒无敌的时序来自
+[PRTS蔓德拉级别0资料](https://prts.wiki/w/%E8%94%93%E5%BE%B7%E6%8B%89)。
+原生RebornTalent的0.5回充参数、EmptyAnimatedAbility的4.5秒参数与所选参考5秒／100%恢复
+分别记录，`useAbilityToHandle=1`的方法体尚未取得，不能把这些字段强行视为等价。
