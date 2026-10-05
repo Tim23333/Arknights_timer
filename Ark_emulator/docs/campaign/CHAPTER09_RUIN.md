@@ -44,4 +44,13 @@ CP4续跑到8与回放完整一致，未排除状态、调度、随机数、事�
 `validation/campaign/chapter09_stage_assembly/blocked.input.v5.json` 分别保留旧100帧仍受阻的反例，
 及新Holy/Shadow真实18帧命中、废墟死亡后解除阻挡、原生击杀数0、CP8续跑至120与完整回放一致的结果。
 当前整关候选使用 `level_main_09-16.native_draft.v5.life99999.finite_run_v1.json`。
+
+独立实际边界探针随后发现，`blocking.eligibility` 契约归场景所有，实体上的同名绑定不会被解析器选中。
+v2废墟模块虽包含源半径提供器，旧v5实际计算仍使用默认 `rule/ark_block_eligibility`；
+距离略大于源半径的敌人仍被阻挡。这是实际规则绑定错误，早期把两次半径失败归为测试几何问题的判断已纠正。
+独立反例为 `chapter09_ruin_peer/radius.scope.actual.counter.json`，保留实际规则ID、输入、值、上下文和事件。
+新v6在场景声明 `rule/ch9/scenario_blocking`，只为废墟使用源平方半径，其他阻挡者显式调用原规则。
+实体上无效的绑定移除，内核和契约不变。实际内外边界±0.0001分别阻挡／不阻挡，
+事件显示新场景规则确实被选中，CP1至2与完整回放一致。
+收据为 `chapter09_stage_assembly/scenario.blocking.v6.json`；当前整关候选更新为v6输入与对应纯提供器。
 所有大捕获均在 `E:\ArkSimLogs\runs` 执行期间使用，结束后自动清理，精简收据继续保留。
