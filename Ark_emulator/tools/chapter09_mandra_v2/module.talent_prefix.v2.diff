@@ -1,0 +1,946 @@
+--- D:\Arknights\Arknights_timer\Ark_emulator\packages\campaign\chapter09_consumers\mandra\module.v1.json
++++ D:\Arknights\Arknights_timer\Ark_emulator\packages\campaign\chapter09_consumers\mandra_v2\module.talent_prefix.v2.json
+@@ -1,14 +1,17 @@
+ {
+   "schemaVersion": 2,
+   "manifest": {
+-    "id": "package/ch9/mandra/source_v1/talent_prefix",
++    "id": "package/ch9/mandra/source_v2/talent_prefix",
+     "metadata": {
+       "source_locks": {
+         "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter09_consumers\\mandra\\consumer.requirements.v1.json": "5307d66bed0a4df4b286cce83c407831b99979311b0e304c3f793f9559a98c75",
+         "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter09_source_prepare\\enemies.native.v1.json": "592afac29cc32d1aeaba3ea739eb6da5a218055e255a42f53315f4a2ca0962ff",
+         "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter09_source_prepare\\source.detail.v1.json": "984c309553cd8eb205274257c50a07f32e9d1397265d06d578e045e0f841387e",
+         "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter09_consumers\\mandra\\source.token047.v1.json": "8388f9337edf105813f2eab1798617fff960169d5d98de3f13686b5c05268dc4",
+-        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\build.py": "6515dc1304901749278fcb00dbed5b99cbfaa8223de317dd378df6c8309c9740"
++        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v1\\build.py": "6515dc1304901749278fcb00dbed5b99cbfaa8223de317dd378df6c8309c9740",
++        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter09_consumers\\mandra_v2\\source.reborn.callgraph.v2.json": "ac4ad91523303db8cdeef983fc4feb8606dfd2fa815c06ad7020aae5ce963a57",
++        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter09_consumers\\mandra_v2\\damage_resistance.source.v1.json": "73e5e4550f605e8286b3500ea665c355e1332f662ae3c603e9538dc3398e3cba",
++        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_mandra_v2\\build.py": "238a3ed0ec5470053e954ccac985de2f41e8c4f987f4f135bf11ecb00d12af60"
+       },
+       "source_requirements": {
+         "schema": "ark-sim/ch9-mandra-consumer-requirements/v1",
+@@ -5327,16 +5330,572 @@
+         "target": "raw postfilter17 modeled as highest live ATK per PRTS; source masks retained",
+         "geometry": "native Collider centers, no recovered ValidateTarget body",
+         "beam": "homing10/contact-first/1s packets;7.1 source state,6pulse,15CD; current target HP for availability",
+-        "pillar_break": "source native ON_TAKE_DAMAGE modeled after accepted same hit; that hit retains60% reduction, later hits no reduction",
++        "pillar_break": "Native PHYSICAL_AND_MAGICAL-only shield leaves TRUE unchanged; source pillar PURE12000 is never reduced4800; accepted actual source trait hit still breaks shield",
+         "summon_null_branch": "Native named stage branch is null: explicitly declared real tile spawn reference, no fabricated empty branch; cell/direction policy row-major ahead of source",
+         "recovery_animation": "Source empty-actions skin animation is a finite25s pending owned request while stunned/busy; only ActivationRejected skips, actual ability.started/current owned cast clears request; shield and HP memory change once at actual finish, never each retry",
+         "selfstun_animation": "Empty-action C2_Stun20frames modeled as20/30 timed control; source raw ability remains in requirements",
+         "near_ground_flight": "target air in fly_stone, land in fly_open; locomotion remainsWALK",
+-        "source047": "actual native static TrapMode, no health in prefab and fixed table key missing; no invented HP"
++        "source047": "actual native static TrapMode, no health in prefab and fixed table key missing; no invented HP",
++        "rebirth_application": "HP0 waiting has only source-listed retained immunity. Actual completing callback restores HP, enters mode2 and installs shield/area/invulnerability and cooldowns. Invulnerability3/5 and Ray10/Summon20/10 begin at actual completion;5s/100% restoration is explicit level0 PRTS reference versus preserved native0.5/preDelay4.5 values.",
++        "retained_immunity_bridge": "Infinite source-listed immunity is rebound by real consume callback using existing generic self-Buff lease; no action/cast grant.",
++        "leak_loss": "Native resolved.lifePointReduce2; only base99999 policy may override stage life."
+       },
+       "reference_url": "https://prts.wiki/w/%E8%94%93%E5%BE%B7%E6%8B%89",
+       "whole_enemy_complete": true,
+-      "completion_scope": "All source-declared consumer entrypoints are implemented with explicit reference policies; native method-body and client fidelity remain unverified"
++      "completion_scope": "All source-declared consumer entrypoints are implemented with explicit reference policies; native method-body and client fidelity remain unverified",
++      "reborn_source_callgraph": {
++        "schema": "ark-sim/mandra-reborn-source-callgraph/v2",
++        "native_variant_id": "enemy_1523_mandra@0/1821d9ad3a30248f",
++        "source_locks": {
++          "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter09_source_prepare\\enemies.native.v1.json": "592afac29cc32d1aeaba3ea739eb6da5a218055e255a42f53315f4a2ca0962ff",
++          "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter09_consumers\\mandra\\consumer.requirements.v1.json": "5307d66bed0a4df4b286cce83c407831b99979311b0e304c3f793f9559a98c75"
++        },
++        "RebornTalent": {
++          "path_id": "-4229711969501467855",
++          "component": {
++            "script_path_id": -4458530021321694031,
++            "gameobject_path_id": 6485472363750730545,
++            "gameobject_name": "Reborn",
++            "raw": {
++              "m_GameObject": {
++                "m_FileID": 0,
++                "m_PathID": 6485472363750730545
++              },
++              "m_Enabled": 1,
++              "m_Script": {
++                "m_FileID": 1,
++                "m_PathID": -4458530021321694031
++              },
++              "m_Name": "",
++              "_overwriteTalentKey": "",
++              "_overwriteParentRangeId": 0,
++              "_checkValidBySkillIndex": [],
++              "_attachInDummy": 0,
++              "_defaultModeIndex": -1,
++              "_attackBlackboardModeIndex": -1,
++              "_extraAttackBlackboardModeIndices": [],
++              "_overrideDefaultRangeId": 0,
++              "_applyTalentScale": 0,
++              "_influenceSkillBlackboard": 0,
++              "_fromRawDataToSkill": 0,
++              "_applyTalentRange": 0,
++              "_applyBlackboardBySkill": 0,
++              "_applyStrBlackboardBySkill": 0,
++              "_writeRangeIdToProjectileBlackboard": 0,
++              "_affectWhenNotRootTalent": 0,
++              "_scaleCertainKeyFlag": 0,
++              "_scaleCertainKeyList": [],
++              "_scaleCertainMode": 0,
++              "_scaleModeIndices": [],
++              "_maxRespawnCnt": 1,
++              "_modeIndex": -1,
++              "_keepAlive": 0,
++              "_buffs": [
++                {
++                  "attributes": {
++                    "abnormalFlags": [],
++                    "abnormalImmunes": [],
++                    "abnormalAntis": [],
++                    "abnormalCombos": [],
++                    "abnormalComboImmunes": [],
++                    "attributeModifiers": []
++                  },
++                  "buffKey": "mandra_reborn",
++                  "loadFromDB": 0,
++                  "isDurableBuff": 0,
++                  "isDamageMissable": 0,
++                  "isSilenceable": 0,
++                  "isStunnable": 0,
++                  "isFreezable": 0,
++                  "isLevitatable": 0,
++                  "isGroundBoundable": 0,
++                  "statusResistable": 2,
++                  "templateKey": "enemy_mandra_reborn",
++                  "disableOverride": 0,
++                  "overrideKey": "",
++                  "overrideType": 0,
++                  "maxStackCnt": 1,
++                  "refreshRemainingTimeWhenStackMax": 0,
++                  "clearAllStackCntWhenTimeUp": 0,
++                  "maxValidStackCnt": -1,
++                  "independentCharacterSource": 0,
++                  "overrideEffectKey": "",
++                  "overrideOnEventPriority": 0,
++                  "onEventPriority": 0,
++                  "audioSignal": "",
++                  "lifeTimeType": 0,
++                  "takeSnapshotWhenExtend": 0,
++                  "durationKey": "",
++                  "lifeTime": 0.0,
++                  "triggerLifeType": 0,
++                  "triggerCnt": 0,
++                  "triggerInterval": -1.0,
++                  "waitFirstTriggerInterval": 1,
++                  "firstTriggerInterval": -1.0,
++                  "priority": -1,
++                  "priorityBBKeys": [],
++                  "stripBlackboardParamsWithBuffKey": 0,
++                  "blackboard": [],
++                  "enableInitDirectionFromSource": 0
++                },
++                {
++                  "attributes": {
++                    "abnormalFlags": [
++                      15,
++                      5
++                    ],
++                    "abnormalImmunes": [],
++                    "abnormalAntis": [],
++                    "abnormalCombos": [],
++                    "abnormalComboImmunes": [],
++                    "attributeModifiers": []
++                  },
++                  "buffKey": "mandra_p2_invinsible",
++                  "loadFromDB": 0,
++                  "isDurableBuff": 0,
++                  "isDamageMissable": 0,
++                  "isSilenceable": 0,
++                  "isStunnable": 0,
++                  "isFreezable": 0,
++                  "isLevitatable": 0,
++                  "isGroundBoundable": 0,
++                  "statusResistable": 2,
++                  "templateKey": "empty",
++                  "disableOverride": 0,
++                  "overrideKey": "",
++                  "overrideType": 0,
++                  "maxStackCnt": 1,
++                  "refreshRemainingTimeWhenStackMax": 0,
++                  "clearAllStackCntWhenTimeUp": 0,
++                  "maxValidStackCnt": -1,
++                  "independentCharacterSource": 0,
++                  "overrideEffectKey": "common_invincible_01",
++                  "overrideOnEventPriority": 0,
++                  "onEventPriority": 0,
++                  "audioSignal": "",
++                  "lifeTimeType": 1,
++                  "takeSnapshotWhenExtend": 0,
++                  "durationKey": "",
++                  "lifeTime": 0.0,
++                  "triggerLifeType": 0,
++                  "triggerCnt": 0,
++                  "triggerInterval": -1.0,
++                  "waitFirstTriggerInterval": 1,
++                  "firstTriggerInterval": -1.0,
++                  "priority": -1,
++                  "priorityBBKeys": [],
++                  "stripBlackboardParamsWithBuffKey": 1,
++                  "blackboard": [],
++                  "enableInitDirectionFromSource": 0
++                },
++                {
++                  "attributes": {
++                    "abnormalFlags": [],
++                    "abnormalImmunes": [],
++                    "abnormalAntis": [],
++                    "abnormalCombos": [],
++                    "abnormalComboImmunes": [],
++                    "attributeModifiers": []
++                  },
++                  "buffKey": "mandra_p2_mask",
++                  "loadFromDB": 0,
++                  "isDurableBuff": 0,
++                  "isDamageMissable": 0,
++                  "isSilenceable": 0,
++                  "isStunnable": 0,
++                  "isFreezable": 0,
++                  "isLevitatable": 0,
++                  "isGroundBoundable": 0,
++                  "statusResistable": 2,
++                  "templateKey": "empty",
++                  "disableOverride": 0,
++                  "overrideKey": "",
++                  "overrideType": 0,
++                  "maxStackCnt": 1,
++                  "refreshRemainingTimeWhenStackMax": 0,
++                  "clearAllStackCntWhenTimeUp": 0,
++                  "maxValidStackCnt": -1,
++                  "independentCharacterSource": 0,
++                  "overrideEffectKey": "",
++                  "overrideOnEventPriority": 0,
++                  "onEventPriority": 0,
++                  "audioSignal": "",
++                  "lifeTimeType": 2,
++                  "takeSnapshotWhenExtend": 0,
++                  "durationKey": "",
++                  "lifeTime": 0.0,
++                  "triggerLifeType": 0,
++                  "triggerCnt": 0,
++                  "triggerInterval": -1.0,
++                  "waitFirstTriggerInterval": 1,
++                  "firstTriggerInterval": -1.0,
++                  "priority": -1,
++                  "priorityBBKeys": [],
++                  "stripBlackboardParamsWithBuffKey": 0,
++                  "blackboard": [],
++                  "enableInitDirectionFromSource": 0
++                },
++                {
++                  "attributes": {
++                    "abnormalFlags": [],
++                    "abnormalImmunes": [],
++                    "abnormalAntis": [],
++                    "abnormalCombos": [],
++                    "abnormalComboImmunes": [],
++                    "attributeModifiers": []
++                  },
++                  "buffKey": "mandra_stone_skin[effect]",
++                  "loadFromDB": 0,
++                  "isDurableBuff": 0,
++                  "isDamageMissable": 0,
++                  "isSilenceable": 0,
++                  "isStunnable": 0,
++                  "isFreezable": 0,
++                  "isLevitatable": 0,
++                  "isGroundBoundable": 0,
++                  "statusResistable": 2,
++                  "templateKey": "enemy_mandra_stone_skin[effect]",
++                  "disableOverride": 0,
++                  "overrideKey": "",
++                  "overrideType": 0,
++                  "maxStackCnt": 1,
++                  "refreshRemainingTimeWhenStackMax": 0,
++                  "clearAllStackCntWhenTimeUp": 0,
++                  "maxValidStackCnt": -1,
++                  "independentCharacterSource": 0,
++                  "overrideEffectKey": "",
++                  "overrideOnEventPriority": 0,
++                  "onEventPriority": 0,
++                  "audioSignal": "",
++                  "lifeTimeType": 2,
++                  "takeSnapshotWhenExtend": 0,
++                  "durationKey": "",
++                  "lifeTime": 0.0,
++                  "triggerLifeType": 0,
++                  "triggerCnt": 0,
++                  "triggerInterval": -1.0,
++                  "waitFirstTriggerInterval": 1,
++                  "firstTriggerInterval": -1.0,
++                  "priority": -1,
++                  "priorityBBKeys": [],
++                  "stripBlackboardParamsWithBuffKey": 0,
++                  "blackboard": [],
++                  "enableInitDirectionFromSource": 0
++                },
++                {
++                  "attributes": {
++                    "abnormalFlags": [],
++                    "abnormalImmunes": [],
++                    "abnormalAntis": [],
++                    "abnormalCombos": [],
++                    "abnormalComboImmunes": [],
++                    "attributeModifiers": []
++                  },
++                  "buffKey": "mandra_next_wave",
++                  "loadFromDB": 0,
++                  "isDurableBuff": 0,
++                  "isDamageMissable": 0,
++                  "isSilenceable": 0,
++                  "isStunnable": 0,
++                  "isFreezable": 0,
++                  "isLevitatable": 0,
++                  "isGroundBoundable": 0,
++                  "statusResistable": 2,
++                  "templateKey": "finish_current_wave_when_buff_finish",
++                  "disableOverride": 0,
++                  "overrideKey": "",
++                  "overrideType": 0,
++                  "maxStackCnt": 1,
++                  "refreshRemainingTimeWhenStackMax": 0,
++                  "clearAllStackCntWhenTimeUp": 0,
++                  "maxValidStackCnt": -1,
++                  "independentCharacterSource": 0,
++                  "overrideEffectKey": "",
++                  "overrideOnEventPriority": 0,
++                  "onEventPriority": 0,
++                  "audioSignal": "",
++                  "lifeTimeType": 0,
++                  "takeSnapshotWhenExtend": 0,
++                  "durationKey": "",
++                  "lifeTime": 0.0,
++                  "triggerLifeType": 0,
++                  "triggerCnt": 0,
++                  "triggerInterval": -1.0,
++                  "waitFirstTriggerInterval": 1,
++                  "firstTriggerInterval": -1.0,
++                  "priority": -1,
++                  "priorityBBKeys": [],
++                  "stripBlackboardParamsWithBuffKey": 0,
++                  "blackboard": [],
++                  "enableInitDirectionFromSource": 0
++                }
++              ],
++              "_effects": [],
++              "_clearEffectsAfterReborn": 0,
++              "_useAbilityToHandle": 1,
++              "_abilityName": "Reborn",
++              "_finishHandleAbilityAfterReborn": 0,
++              "_hpRechargeRatio": 0.5,
++              "_buffsRetainedWhenReborn": [
++                "mandra_immune"
++              ],
++              "_detachAbilityWhenReborn": 0,
++              "_rebornAfterWave": 0,
++              "_rebornAfterWaveCnt": 0,
++              "_validWhenContainsBuff": "",
++              "_extraRebornDataPresets": []
++            },
++            "script_key": "CAB-658d74aab777086fc32b93f385be999a:-4458530021321694031",
++            "native_class": "RebornTalent"
++          }
++        },
++        "RebornAbility": {
++          "path_id": "805290636904344369",
++          "component": {
++            "script_path_id": 8145049199648393782,
++            "gameobject_path_id": 6485472363750730545,
++            "gameobject_name": "Reborn",
++            "raw": {
++              "m_GameObject": {
++                "m_FileID": 0,
++                "m_PathID": 6485472363750730545
++              },
++              "m_Enabled": 1,
++              "m_Script": {
++                "m_FileID": 1,
++                "m_PathID": 8145049199648393782
++              },
++              "m_Name": "",
++              "_selector": {
++                "m_FileID": 0,
++                "m_PathID": 0
++              },
++              "_metadata": {
++                "namedAsAlias": "",
++                "blackboardPrefix": ""
++              },
++              "_interruptAbilityOnDetach": 0,
++              "_attachPassiveBuffsOnDummy": 1,
++              "_ignoreIfOwnerDead": 0,
++              "_forceAsDmgOrHealAbility": 0,
++              "_waitForAttackEvent": 0,
++              "_interuptIfTargetDead": 0,
++              "_resetCdStrategy": 1,
++              "_selectTargetSource": 1,
++              "_selectTargetTiming": 0,
++              "_timeMode": 2,
++              "_alwaysIncludeTarget": 0,
++              "_allowNoTarget": 1,
++              "_animKey": "",
++              "_endAnimKey": "",
++              "_downAnimKey": "",
++              "_downEndAnimKey": "",
++              "_upAnimKey": "",
++              "_upEndAnimKey": "",
++              "_cooldown": 4.5,
++              "_cooldownKey": "duration",
++              "_preDelay": 4.5,
++              "_escapeTime": 0.0,
++              "_faceToTarget": 0,
++              "_faceToDefault": 0,
++              "_faceToFront": 0,
++              "_faceToFirstCastTarget": 0,
++              "_checkFaceToFirstCastTargetDownAttack": 0,
++              "_forceFaceToDirection": 0,
++              "_activeBuffs": [],
++              "_maxAnimScale": -1.0,
++              "_onlyPlayEndAnimWhenIsLastAbility": 0,
++              "_ignorePalsyInterrupt": 0,
++              "_affectedBySlowDown": 0
++            },
++            "script_key": "CAB-658d74aab777086fc32b93f385be999a:8145049199648393782",
++            "native_class": "EmptyAnimatedAbility"
++          }
++        },
++        "PassiveImmunity": {
++          "component_path_id": "4830213052029315889",
++          "buff": {
++            "attributes": {
++              "abnormalFlags": [
++                8
++              ],
++              "abnormalImmunes": [
++                0,
++                12,
++                16,
++                11,
++                18
++              ],
++              "abnormalAntis": [],
++              "abnormalCombos": [],
++              "abnormalComboImmunes": [
++                0
++              ],
++              "attributeModifiers": []
++            },
++            "buffKey": "mandra_immune",
++            "loadFromDB": 0,
++            "isDurableBuff": 0,
++            "isDamageMissable": 0,
++            "isSilenceable": 0,
++            "isStunnable": 0,
++            "isFreezable": 0,
++            "isLevitatable": 0,
++            "isGroundBoundable": 0,
++            "statusResistable": 2,
++            "templateKey": "empty",
++            "disableOverride": 0,
++            "overrideKey": "",
++            "overrideType": 0,
++            "maxStackCnt": 1,
++            "refreshRemainingTimeWhenStackMax": 0,
++            "clearAllStackCntWhenTimeUp": 0,
++            "maxValidStackCnt": -1,
++            "independentCharacterSource": 0,
++            "overrideEffectKey": "",
++            "overrideOnEventPriority": 0,
++            "onEventPriority": 0,
++            "audioSignal": "",
++            "lifeTimeType": 2,
++            "takeSnapshotWhenExtend": 0,
++            "durationKey": "",
++            "lifeTime": 0.0,
++            "triggerLifeType": 0,
++            "triggerCnt": 0,
++            "triggerInterval": -1.0,
++            "waitFirstTriggerInterval": 1,
++            "firstTriggerInterval": -1.0,
++            "priority": -1,
++            "priorityBBKeys": [],
++            "stripBlackboardParamsWithBuffKey": 0,
++            "blackboard": [],
++            "enableInitDirectionFromSource": 0
++          }
++        },
++        "native_lifePointReduce": 2,
++        "prefix_profiles": {
++          "talent_prefix": {
++            "invul_duration": 3,
++            "ray_cd": 10,
++            "summon_cd": 20
++          },
++          "skill_prefix": {
++            "invul_duration": 5,
++            "ray_cd": 10,
++            "summon_cd": 10
++          }
++        },
++        "enemy_mandra_reborn_BSON": {
++          "document_sha256": "e6737be5e8feeca8e21df5f690068e42a34f8e3db71989981cc24c4ca2bea86e",
++          "parsed": {
++            "templateKey": "enemy_mandra_reborn",
++            "effectKey": "",
++            "onEventPriority": "DEFAULT",
++            "eventToActions": {
++              "ON_BUFF_START": [
++                {
++                  "$type": "Torappu.Battle.Action.Nodes+SwitchMode, Assembly-CSharp",
++                  "_modeIndex": 2,
++                  "_loadModeFromBlackboard": false,
++                  "_restoreDefault": false,
++                  "_restartFSM": false,
++                  "_targetType": "TARGET"
++                },
++                {
++                  "$type": "Torappu.Battle.Action.Nodes+UpdateAbilityCoolDown, Assembly-CSharp",
++                  "_ownerType": "BUFF_OWNER",
++                  "_abilityName": "PetrifiedRay",
++                  "_loadFromBlackboard": true,
++                  "_coolDownKey": "mandra_ray_p2[cd]",
++                  "_useNewPeriod": true,
++                  "_newPeriod": 0.0,
++                  "_loadAbilityFromBlackboard": false,
++                  "_waitFirstPeriod": true,
++                  "_useAbilityBlackboard": false,
++                  "_keepPassedTime": false,
++                  "_useOriginalCooldown": false
++                },
++                {
++                  "$type": "Torappu.Battle.Action.Nodes+UpdateAbilityCoolDown, Assembly-CSharp",
++                  "_ownerType": "BUFF_OWNER",
++                  "_abilityName": "SummonDupilr",
++                  "_loadFromBlackboard": true,
++                  "_coolDownKey": "summon_dupilr_p2[cd]",
++                  "_useNewPeriod": true,
++                  "_newPeriod": 0.0,
++                  "_loadAbilityFromBlackboard": false,
++                  "_waitFirstPeriod": true,
++                  "_useAbilityBlackboard": false,
++                  "_keepPassedTime": false,
++                  "_useOriginalCooldown": false
++                },
++                {
++                  "$type": "Torappu.Battle.Action.Nodes+MoveNextLevelBranch, Assembly-CSharp",
++                  "_isLoop": false,
++                  "_branchId": "",
++                  "_maxValidEnemyCount": -1
++                }
++              ]
++            }
++          }
++        },
++        "native_source_values": {
++          "RebornTalent_hpRechargeRatio": 0.5,
++          "EmptyAnimatedAbility_preDelay": 4.5,
++          "EmptyAnimatedAbility_cooldown": 4.5,
++          "EmptyAnimatedAbility_timeMode": 2,
++          "RebornTalent_keepAlive": 0
++        },
++        "selected_runtime_policy": {
++          "delay_seconds": 5,
++          "restore_ratio": 1,
++          "buff_application_phase": "after actual HP restoration in real completing callback",
++          "reference": "https://prts.wiki/w/%E8%94%93%E5%BE%B7%E6%8B%89",
++          "rationale": "Level0 reference:5s rebirth with100% HP, then second form shield and3s invulnerability. Fixed native Talent0.5 and empty ability4.5/timeMode2 are preserved conflicts, not silently interpreted as identical. Skill prefix5s invulnerability remains separate. Native method bodies are unavailable."
++        },
++        "source_order": "Actual restored active owner -> enemy_mandra_reborn ON_BUFF_START mode2/skillclock -> invulnerability -> p2 mask/stone effects (functional mode/shield/area equivalent) -> finish-current-wave marker requires stage binding; no synthetic activity while HP0",
++        "client_verified": false
++      },
++      "damage_resistance_source": {
++        "source": {
++          "path": "data/anon_textassets/buff_template_data.dat",
++          "sha256": "0c438b57b176e0fa430b5b982a58c7b524f4121aa8dbab33d3e647aa0fc1ee59",
++          "bytes": 16030804
++        },
++        "payload_sha256": "99ec60717a95fc64e99ea50959f80217e724919b7ec8825e1f6690a42e4ca799",
++        "templates": {
++          "damage_resistance": {
++            "parsed": {
++              "templateKey": "damage_resistance",
++              "effectKey": "",
++              "onEventPriority": "DEFAULT",
++              "eventToActions": {
++                "ON_TAKE_DAMAGE": [
++                  {
++                    "$type": "Torappu.Battle.Action.Nodes+DamageScale, Assembly-CSharp",
++                    "_filterDamageType": true,
++                    "_damageMask": "PHYSICAL_AND_MAGICAL",
++                    "_filterApplyWay": false,
++                    "_applyWayFilter": "NONE",
++                    "_filterModifierKey": false,
++                    "_modifierKey": "",
++                    "_isOneMinus": true,
++                    "_isStackable": false,
++                    "_isValidStackCnt": false,
++                    "_cachedDeltaValueToBBKey": "",
++                    "_customKey": ""
++                  }
++                ]
++              }
++            },
++            "payload_offset": 149717,
++            "document_base64": "uQEAAAJ0ZW1wbGF0ZUtleQASAAAAZGFtYWdlX3Jlc2lzdGFuY2UAAmVmZmVjdEtleQABAAAAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQAA2V2ZW50VG9BY3Rpb25zAFQBAAAET05fVEFLRV9EQU1BR0UAPwEAAAMwADcBAAACJHR5cGUAOQAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytEYW1hZ2VTY2FsZSwgQXNzZW1ibHktQ1NoYXJwAAhfZmlsdGVyRGFtYWdlVHlwZQABAl9kYW1hZ2VNYXNrABUAAABQSFlTSUNBTF9BTkRfTUFHSUNBTAAIX2ZpbHRlckFwcGx5V2F5AAACX2FwcGx5V2F5RmlsdGVyAAUAAABOT05FAAhfZmlsdGVyTW9kaWZpZXJLZXkAAAJfbW9kaWZpZXJLZXkAAQAAAAAIX2lzT25lTWludXMAAQhfaXNTdGFja2FibGUAAAhfaXNWYWxpZFN0YWNrQ250AAACX2NhY2hlZERlbHRhVmFsdWVUb0JCS2V5AAEAAAAAAl9jdXN0b21LZXkAAQAAAAAAAAAA",
++            "document_sha256": "4bbf046e3455f970fb198990fdafac3b7f0b3d658c31d549cf44a922102e9f24"
++          }
++        },
++        "missing_templates": [],
++        "native_method_bodies_recovered": false
++      }
+     }
+   },
+   "rules": [
+@@ -5462,6 +6021,24 @@
+         "type": "provider",
+         "provider": "model.projectile.collision"
+       }
++    },
++    {
++      "id": "rule/ch9/mandra/invulnerable",
++      "kind": "rule",
++      "contract": "damage.pipeline",
++      "implementation": {
++        "type": "provider",
++        "provider": "reference.mandra.invulnerable"
++      }
++    },
++    {
++      "id": "rule/ch9/mandra/stun_immunity",
++      "kind": "rule",
++      "contract": "buff.applicability",
++      "implementation": {
++        "type": "provider",
++        "provider": "reference.mandra.immune_control"
++      }
+     }
+   ],
+   "buffs": [
+@@ -5537,6 +6114,13 @@
+         "attack": false,
+         "abilities": false,
+         "interrupt": true
++      },
++      "control_rule": "rule/ch9/mandra/stun_immunity",
++      "parameters": {
++        "flags": [
++          0
++        ],
++        "combos": []
+       }
+     },
+     {
+@@ -5837,7 +6421,13 @@
+           5,
+           15
+         ]
+-      }
++      },
++      "damage_hooks": [
++        {
++          "phase": "after",
++          "rule": "rule/ch9/mandra/invulnerable"
++        }
++      ]
+     },
+     {
+       "id": "buff/ch9/mandra/selfstun",
+@@ -5863,9 +6453,9 @@
+           "selection_projection": {
+             "defaults": {
+               "can_select_camouflage": false,
+-              "ally_target_free": false,
+               "camouflage": false,
+               "target_free": false,
++              "ally_target_free": false,
+               "heal_free": false,
+               "motion": 0,
+               "category": 0,
+@@ -5993,6 +6583,87 @@
+           ]
+         }
+       ]
++    },
++    {
++      "id": "buff/ch9/mandra/native_immune",
++      "kind": "buff",
++      "selection_flags": {
++        "abnormal_flags": [
++          8
++        ],
++        "abnormal_immunes": [
++          0,
++          12,
++          16,
++          11,
++          18
++        ],
++        "abnormal_combo_immunes": [
++          0
++        ]
++      },
++      "metadata": {
++        "native_inline": {
++          "component_path_id": "4830213052029315889",
++          "buff": {
++            "attributes": {
++              "abnormalFlags": [
++                8
++              ],
++              "abnormalImmunes": [
++                0,
++                12,
++                16,
++                11,
++                18
++              ],
++              "abnormalAntis": [],
++              "abnormalCombos": [],
++              "abnormalComboImmunes": [
++                0
++              ],
++              "attributeModifiers": []
++            },
++            "buffKey": "mandra_immune",
++            "loadFromDB": 0,
++            "isDurableBuff": 0,
++            "isDamageMissable": 0,
++            "isSilenceable": 0,
++            "isStunnable": 0,
++            "isFreezable": 0,
++            "isLevitatable": 0,
++            "isGroundBoundable": 0,
++            "statusResistable": 2,
++            "templateKey": "empty",
++            "disableOverride": 0,
++            "overrideKey": "",
++            "overrideType": 0,
++            "maxStackCnt": 1,
++            "refreshRemainingTimeWhenStackMax": 0,
++            "clearAllStackCntWhenTimeUp": 0,
++            "maxValidStackCnt": -1,
++            "independentCharacterSource": 0,
++            "overrideEffectKey": "",
++            "overrideOnEventPriority": 0,
++            "onEventPriority": 0,
++            "audioSignal": "",
++            "lifeTimeType": 2,
++            "takeSnapshotWhenExtend": 0,
++            "durationKey": "",
++            "lifeTime": 0.0,
++            "triggerLifeType": 0,
++            "triggerCnt": 0,
++            "triggerInterval": -1.0,
++            "waitFirstTriggerInterval": 1,
++            "firstTriggerInterval": -1.0,
++            "priority": -1,
++            "priorityBBKeys": [],
++            "stripBlackboardParamsWithBuffKey": 0,
++            "blackboard": [],
++            "enableInitDirectionFromSource": 0
++          }
++        }
++      }
+     }
+   ],
+   "abilities": [
+@@ -6044,9 +6715,9 @@
+               "selection_projection": {
+                 "defaults": {
+                   "can_select_camouflage": false,
+-                  "ally_target_free": false,
+                   "camouflage": false,
+                   "target_free": false,
++                  "ally_target_free": false,
+                   "heal_free": false,
+                   "motion": 0,
+                   "category": 0,
+@@ -6102,9 +6773,9 @@
+               "selection_projection": {
+                 "defaults": {
+                   "can_select_camouflage": false,
+-                  "ally_target_free": false,
+                   "camouflage": false,
+                   "target_free": false,
++                  "ally_target_free": false,
+                   "heal_free": false,
+                   "motion": 0,
+                   "category": 0,
+@@ -6157,9 +6828,9 @@
+               "selection_projection": {
+                 "defaults": {
+                   "can_select_camouflage": false,
+-                  "ally_target_free": false,
+                   "camouflage": false,
+                   "target_free": false,
++                  "ally_target_free": false,
+                   "heal_free": false,
+                   "motion": 0,
+                   "category": 0,
+@@ -6280,9 +6951,9 @@
+               "selection_projection": {
+                 "defaults": {
+                   "can_select_camouflage": false,
+-                  "ally_target_free": false,
+                   "camouflage": false,
+                   "target_free": false,
++                  "ally_target_free": false,
+                   "heal_free": false,
+                   "motion": 0,
+                   "category": 0,
+@@ -6338,9 +7009,9 @@
+               "selection_projection": {
+                 "defaults": {
+                   "can_select_camouflage": false,
+-                  "ally_target_free": false,
+                   "camouflage": false,
+                   "target_free": false,
++                  "ally_target_free": false,
+                   "heal_free": false,
+                   "motion": 0,
+                   "category": 0,
+@@ -6393,9 +7064,9 @@
+               "selection_projection": {
+                 "defaults": {
+                   "can_select_camouflage": false,
+-                  "ally_target_free": false,
+                   "camouflage": false,
+                   "target_free": false,
++                  "ally_target_free": false,
+                   "heal_free": false,
+                   "motion": 0,
+                   "category": 0,
+@@ -6516,9 +7187,9 @@
+               "selection_projection": {
+                 "defaults": {
+                   "can_select_camouflage": false,
+-                  "ally_target_free": false,
+                   "camouflage": false,
+                   "target_free": false,
++                  "ally_target_free": false,
+                   "heal_free": false,
+                   "motion": 0,
+                   "category": 0,
+@@ -6574,9 +7245,9 @@
+               "selection_projection": {
+                 "defaults": {
+                   "can_select_camouflage": false,
+-                  "ally_target_free": false,
+                   "camouflage": false,
+                   "target_free": false,
++                  "ally_target_free": false,
+                   "heal_free": false,
+                   "motion": 0,
+                   "category": 0,
+@@ -6629,9 +7300,9 @@
+               "selection_projection": {
+                 "defaults": {
+                   "can_select_camouflage": false,
+-                  "ally_target_free": false,
+                   "camouflage": false,
+                   "target_free": false,
++                  "ally_target_free": false,
+                   "heal_free": false,
+                   "motion": 0,
+                   "category": 0,
+@@ -6752,9 +7423,9 @@
+               "selection_projection": {
+                 "defaults": {
+                   "can_select_camouflage": false,
+-                  "ally_target_free": false,
+                   "camouflage": false,
+                   "target_free": false,
++                  "ally_target_free": false,
+                   "heal_free": false,
+                   "motion": 0,
+                   "category": 0,
+@@ -6810,9 +7481,9 @@
+               "selection_projection": {
+                 "defaults": {
+                   "can_select_camouflage": false,
+-                  "ally_target_free": false,
+                   "camouflage": false,
+                   "target_free": false,
++                  "ally_target_free": false,
+                   "heal_free": false,
+                   "motion": 0,
+                   "category": 0,
+@@ -6865,9 +7536,9 @@
+               "selection_projection": {
+                 "defaults": {
+                   "can_select_camouflage": false,
+-                  "ally_target_free": false,
+                   "camouflage": false,
+                   "target_free": false,
++                  "ally_target_free": false,
+                   "heal_free": false,
+                   "motion": 0,
+                   "category": 0,
+@@ -8250,11 +8921,13 @@
+         },
+         "buffs": {
+           "initial": [
+-            "buff/ch9/mandra/shield"
++            "buff/ch9/mandra/shield",
++            "buff/ch9/mandra/native_immune"
+           ]
+         },
+         "lifecycle": {
+-          "policy": "policy/ark_lifecycle"
++          "policy": "policy/ark_lifecycle",
++          "leak_loss": 2
+         },
+         "rebirth": {
+           "resource": "hp",
+@@ -8264,6 +8937,13 @@
+           "restore_rule": "rule/ch9/mandra/restore",
+           "reset_attack_clock": true,
+           "on_begin": [
++            {
++              "op": "apply_buff",
++              "buff": "buff/ch9/mandra/native_immune",
++              "target": "source"
++            }
++          ],
++          "on_finish": [
+             {
+               "op": "transition",
+               "state": "fly_stone"
+@@ -8286,7 +8966,9 @@
+               "duration_seconds": 20
+             }
+           ],
+-          "on_finish": []
++          "retain_buffs": [
++            "buff/ch9/mandra/native_immune"
++          ]
+         }
+       }
+     }
+@@ -8624,9 +9306,9 @@
+           "neutral_policy": "reject",
+           "defaults": {
+             "can_select_camouflage": false,
+-            "ally_target_free": false,
+             "camouflage": false,
+             "target_free": false,
++            "ally_target_free": false,
+             "heal_free": false,
+             "motion": 0,
+             "category": 0,
+@@ -8699,9 +9381,9 @@
+           "neutral_policy": "reject",
+           "defaults": {
+             "can_select_camouflage": false,
+-            "ally_target_free": false,
+             "camouflage": false,
+             "target_free": false,
++            "ally_target_free": false,
+             "heal_free": false,
+             "motion": 0,
+             "category": 0,
