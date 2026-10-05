@@ -1,0 +1,2320 @@
+{
+  "source": {
+    "path": "data/anon_textassets/buff_template_data.dat",
+    "sha256": "0c438b57b176e0fa430b5b982a58c7b524f4121aa8dbab33d3e647aa0fc1ee59",
+    "bytes": 16030804
+  },
+  "payload_sha256": "99ec60717a95fc64e99ea50959f80217e724919b7ec8825e1f6690a42e4ca799",
+  "templates": {
+    "damage_resistance": {
+      "parsed": {
+        "templateKey": "damage_resistance",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_TAKE_DAMAGE": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+DamageScale, Assembly-CSharp",
+              "_filterDamageType": true,
+              "_damageMask": "PHYSICAL_AND_MAGICAL",
+              "_filterApplyWay": false,
+              "_applyWayFilter": "NONE",
+              "_filterModifierKey": false,
+              "_modifierKey": "",
+              "_isOneMinus": true,
+              "_isStackable": false,
+              "_isValidStackCnt": false,
+              "_cachedDeltaValueToBBKey": "",
+              "_customKey": ""
+            }
+          ]
+        }
+      },
+      "payload_offset": 149717,
+      "document_base64": "uQEAAAJ0ZW1wbGF0ZUtleQASAAAAZGFtYWdlX3Jlc2lzdGFuY2UAAmVmZmVjdEtleQABAAAAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQAA2V2ZW50VG9BY3Rpb25zAFQBAAAET05fVEFLRV9EQU1BR0UAPwEAAAMwADcBAAACJHR5cGUAOQAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytEYW1hZ2VTY2FsZSwgQXNzZW1ibHktQ1NoYXJwAAhfZmlsdGVyRGFtYWdlVHlwZQABAl9kYW1hZ2VNYXNrABUAAABQSFlTSUNBTF9BTkRfTUFHSUNBTAAIX2ZpbHRlckFwcGx5V2F5AAACX2FwcGx5V2F5RmlsdGVyAAUAAABOT05FAAhfZmlsdGVyTW9kaWZpZXJLZXkAAAJfbW9kaWZpZXJLZXkAAQAAAAAIX2lzT25lTWludXMAAQhfaXNTdGFja2FibGUAAAhfaXNWYWxpZFN0YWNrQ250AAACX2NhY2hlZERlbHRhVmFsdWVUb0JCS2V5AAEAAAAAAl9jdXN0b21LZXkAAQAAAAAAAAAA",
+      "document_sha256": "4bbf046e3455f970fb198990fdafac3b7f0b3d658c31d549cf44a922102e9f24"
+    },
+    "empty": {
+      "parsed": {
+        "templateKey": "empty",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {}
+      },
+      "payload_offset": 172433,
+      "document_base64": "XgAAAAJ0ZW1wbGF0ZUtleQAGAAAAZW1wdHkAAmVmZmVjdEtleQABAAAAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQAA2V2ZW50VG9BY3Rpb25zAAUAAAAAAA==",
+      "document_sha256": "a1cd280d2a084b40853417f1688f946a5e7c460b25bf168ac32adcf9cfecd427"
+    },
+    "enemy_bloodsucker_block_cnt[control]": {
+      "parsed": {
+        "templateKey": "enemy_bloodsucker_block_cnt[control]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+              "_buff": {
+                "attributes": {
+                  "abnormalFlags": [],
+                  "abnormalImmunes": [],
+                  "abnormalAntis": [],
+                  "abnormalCombos": [],
+                  "abnormalComboImmunes": [],
+                  "attributeModifiers": [
+                    {
+                      "attributeType": "BLOCK_CNT",
+                      "formulaItem": "ADDITION",
+                      "value": 0.0,
+                      "loadFromBlackboard": true,
+                      "fetchBaseValueFromSourceEntity": false
+                    }
+                  ]
+                },
+                "buffKey": "enemy_bloodsucker_block_cnt",
+                "loadFromDB": false,
+                "isDurableBuff": false,
+                "isDamageMissable": false,
+                "isSilenceable": false,
+                "isStunnable": false,
+                "isFreezable": false,
+                "isLevitatable": false,
+                "isGroundBoundable": false,
+                "statusResistable": "AUTOMATIC",
+                "templateKey": "empty",
+                "disableOverride": false,
+                "overrideKey": null,
+                "overrideType": "STACK",
+                "maxStackCnt": -1,
+                "refreshRemainingTimeWhenStackMax": false,
+                "clearAllStackCntWhenTimeUp": false,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": false,
+                "overrideEffectKey": null,
+                "overrideOnEventPriority": false,
+                "onEventPriority": "DEFAULT",
+                "audioSignal": null,
+                "lifeTimeType": "INFINITY",
+                "takeSnapshotWhenExtend": false,
+                "durationKey": null,
+                "lifeTime": 0.0,
+                "triggerLifeType": "IMMEDIATELY",
+                "triggerCnt": 0,
+                "triggerInterval": -1.0,
+                "waitFirstTriggerInterval": true,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": false,
+                "blackboard": [],
+                "enableInitDirectionFromSource": false
+              },
+              "_buffOwner": "BUFF_OWNER",
+              "_useSpecialBuffSource": false,
+              "_specialBuffSource": "BUFF_SOURCE",
+              "_isDerivedBuff": false,
+              "_finishDerivedBuffIfParentFinish": false,
+              "_inherateSourceProjectileFromParentBuff": false,
+              "_hookEffectKeyFromSourceProjectile": false
+            }
+          ],
+          "ON_BUFF_FINISH": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuffsById, Assembly-CSharp",
+              "_buffKey": "enemy_bloodsucker_block_cnt",
+              "_loadFromBlackboard": false,
+              "_decCntIfStack": true,
+              "_updateOverrideMap": true,
+              "_targetType": "BUFF_OWNER",
+              "_checkBuffSource": false,
+              "_sourceType": "BUFF_SOURCE",
+              "_alsoClearNullSource": false,
+              "_finishHostBuff": false,
+              "_decCntKey": null,
+              "_decCnt": 1
+            }
+          ]
+        }
+      },
+      "payload_offset": 1584702,
+      "document_base64": "dgcAAAJ0ZW1wbGF0ZUtleQAlAAAAZW5lbXlfYmxvb2RzdWNrZXJfYmxvY2tfY250W2NvbnRyb2xdAAJlZmZlY3RLZXkAAQAAAAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAANldmVudFRvQWN0aW9ucwD+BgAABE9OX0JVRkZfU1RBUlQAkQUAAAMwAIkFAAACJHR5cGUAOAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDcmVhdGVCdWZmLCBBc3NlbWJseS1DU2hhcnAAA19idWZmAGAEAAADYXR0cmlidXRlcwAQAQAABGFibm9ybWFsRmxhZ3MABQAAAAAEYWJub3JtYWxJbW11bmVzAAUAAAAABGFibm9ybWFsQW50aXMABQAAAAAEYWJub3JtYWxDb21ib3MABQAAAAAEYWJub3JtYWxDb21ib0ltbXVuZXMABQAAAAAEYXR0cmlidXRlTW9kaWZpZXJzAIkAAAADMACBAAAAAmF0dHJpYnV0ZVR5cGUACgAAAEJMT0NLX0NOVAACZm9ybXVsYUl0ZW0ACQAAAEFERElUSU9OAAF2YWx1ZQAAAAAAAAAAAAhsb2FkRnJvbUJsYWNrYm9hcmQAAQhmZXRjaEJhc2VWYWx1ZUZyb21Tb3VyY2VFbnRpdHkAAAAAAAJidWZmS2V5ABwAAABlbmVteV9ibG9vZHN1Y2tlcl9ibG9ja19jbnQACGxvYWRGcm9tREIAAAhpc0R1cmFibGVCdWZmAAAIaXNEYW1hZ2VNaXNzYWJsZQAACGlzU2lsZW5jZWFibGUAAAhpc1N0dW5uYWJsZQAACGlzRnJlZXphYmxlAAAIaXNMZXZpdGF0YWJsZQAACGlzR3JvdW5kQm91bmRhYmxlAAACc3RhdHVzUmVzaXN0YWJsZQAKAAAAQVVUT01BVElDAAJ0ZW1wbGF0ZUtleQAGAAAAZW1wdHkACGRpc2FibGVPdmVycmlkZQAACm92ZXJyaWRlS2V5AAJvdmVycmlkZVR5cGUABgAAAFNUQUNLABBtYXhTdGFja0NudAD/////CHJlZnJlc2hSZW1haW5pbmdUaW1lV2hlblN0YWNrTWF4AAAIY2xlYXJBbGxTdGFja0NudFdoZW5UaW1lVXAAABBtYXhWYWxpZFN0YWNrQ250AP////8IaW5kZXBlbmRlbnRDaGFyYWN0ZXJTb3VyY2UAAApvdmVycmlkZUVmZmVjdEtleQAIb3ZlcnJpZGVPbkV2ZW50UHJpb3JpdHkAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQACmF1ZGlvU2lnbmFsAAJsaWZlVGltZVR5cGUACQAAAElORklOSVRZAAh0YWtlU25hcHNob3RXaGVuRXh0ZW5kAAAKZHVyYXRpb25LZXkAAWxpZmVUaW1lAAAAAAAAAAAAAnRyaWdnZXJMaWZlVHlwZQAMAAAASU1NRURJQVRFTFkAEHRyaWdnZXJDbnQAAAAAAAF0cmlnZ2VySW50ZXJ2YWwAAAAAAAAA8L8Id2FpdEZpcnN0VHJpZ2dlckludGVydmFsAAEBZmlyc3RUcmlnZ2VySW50ZXJ2YWwAAAAAAAAA8L8QcHJpb3JpdHkA/////wRwcmlvcml0eUJCS2V5cwAFAAAAAAhzdHJpcEJsYWNrYm9hcmRQYXJhbXNXaXRoQnVmZktleQAABGJsYWNrYm9hcmQABQAAAAAIZW5hYmxlSW5pdERpcmVjdGlvbkZyb21Tb3VyY2UAAAACX2J1ZmZPd25lcgALAAAAQlVGRl9PV05FUgAIX3VzZVNwZWNpYWxCdWZmU291cmNlAAACX3NwZWNpYWxCdWZmU291cmNlAAwAAABCVUZGX1NPVVJDRQAIX2lzRGVyaXZlZEJ1ZmYAAAhfZmluaXNoRGVyaXZlZEJ1ZmZJZlBhcmVudEZpbmlzaAAACF9pbmhlcmF0ZVNvdXJjZVByb2plY3RpbGVGcm9tUGFyZW50QnVmZgAACF9ob29rRWZmZWN0S2V5RnJvbVNvdXJjZVByb2plY3RpbGUAAAAABE9OX0JVRkZfRklOSVNIAEkBAAADMABBAQAAAiR0eXBlAD0AAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrRmluaXNoQnVmZnNCeUlkLCBBc3NlbWJseS1DU2hhcnAAAl9idWZmS2V5ABwAAABlbmVteV9ibG9vZHN1Y2tlcl9ibG9ja19jbnQACF9sb2FkRnJvbUJsYWNrYm9hcmQAAAhfZGVjQ250SWZTdGFjawABCF91cGRhdGVPdmVycmlkZU1hcAABAl90YXJnZXRUeXBlAAsAAABCVUZGX09XTkVSAAhfY2hlY2tCdWZmU291cmNlAAACX3NvdXJjZVR5cGUADAAAAEJVRkZfU09VUkNFAAhfYWxzb0NsZWFyTnVsbFNvdXJjZQAACF9maW5pc2hIb3N0QnVmZgAACl9kZWNDbnRLZXkAEF9kZWNDbnQAAQAAAAAAAAA=",
+      "document_sha256": "fdf23e22b3c815c98745504c09eb121e2c371a52a97a5a1b409b2c30f3c020ce"
+    },
+    "enemy_dklord_aura": {
+      "parsed": {
+        "templateKey": "enemy_dklord_aura",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+              "_buff": {
+                "attributes": {
+                  "abnormalFlags": [],
+                  "abnormalImmunes": [],
+                  "abnormalAntis": [],
+                  "abnormalCombos": [],
+                  "abnormalComboImmunes": [],
+                  "attributeModifiers": [
+                    {
+                      "attributeType": "ATK",
+                      "formulaItem": "MULTIPLIER",
+                      "value": 0.0,
+                      "loadFromBlackboard": true,
+                      "fetchBaseValueFromSourceEntity": false
+                    }
+                  ]
+                },
+                "buffKey": "enemy_dklord_atk",
+                "loadFromDB": false,
+                "isDurableBuff": false,
+                "isDamageMissable": false,
+                "isSilenceable": false,
+                "isStunnable": false,
+                "isFreezable": false,
+                "isLevitatable": false,
+                "isGroundBoundable": false,
+                "statusResistable": "AUTOMATIC",
+                "templateKey": "empty",
+                "disableOverride": false,
+                "overrideKey": null,
+                "overrideType": "STACK",
+                "maxStackCnt": -1,
+                "refreshRemainingTimeWhenStackMax": false,
+                "clearAllStackCntWhenTimeUp": false,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": false,
+                "overrideEffectKey": "",
+                "overrideOnEventPriority": false,
+                "onEventPriority": "DEFAULT",
+                "audioSignal": null,
+                "lifeTimeType": "INFINITY",
+                "takeSnapshotWhenExtend": false,
+                "durationKey": null,
+                "lifeTime": 0.0,
+                "triggerLifeType": "IMMEDIATELY",
+                "triggerCnt": 0,
+                "triggerInterval": -1.0,
+                "waitFirstTriggerInterval": true,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": false,
+                "blackboard": [],
+                "enableInitDirectionFromSource": false
+              },
+              "_buffOwner": "BUFF_SOURCE",
+              "_useSpecialBuffSource": false,
+              "_specialBuffSource": "BUFF_SOURCE",
+              "_isDerivedBuff": false,
+              "_finishDerivedBuffIfParentFinish": false,
+              "_inherateSourceProjectileFromParentBuff": false,
+              "_hookEffectKeyFromSourceProjectile": false
+            }
+          ],
+          "ON_BUFF_FINISH": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuffsById, Assembly-CSharp",
+              "_buffKey": "enemy_dklord_atk",
+              "_loadFromBlackboard": false,
+              "_decCntIfStack": true,
+              "_updateOverrideMap": true,
+              "_targetType": "BUFF_SOURCE",
+              "_checkBuffSource": false,
+              "_sourceType": "BUFF_SOURCE",
+              "_alsoClearNullSource": false,
+              "_finishHostBuff": false,
+              "_decCntKey": null,
+              "_decCnt": 1
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FilterByBuffStackCount, Assembly-CSharp",
+              "_targetType": "BUFF_SOURCE",
+              "_buffKey": "enemy_dklord_atk",
+              "_stackCount": 5,
+              "_stackCountKey": "",
+              "_stackCountPeeling": 0,
+              "_condType": "LT",
+              "_checkFromUnoverridableBuffCount": false,
+              "_checkSnapshotBuff": false,
+              "_checkBuffSource": false,
+              "_sourceType": "BUFF_OWNER",
+              "_checkTargetHost": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuffsById, Assembly-CSharp",
+              "_buffKey": "ememy_dklord_atk[effect_2]",
+              "_loadFromBlackboard": false,
+              "_decCntIfStack": false,
+              "_updateOverrideMap": true,
+              "_targetType": "BUFF_SOURCE",
+              "_checkBuffSource": false,
+              "_sourceType": "BUFF_SOURCE",
+              "_alsoClearNullSource": false,
+              "_finishHostBuff": false,
+              "_decCntKey": null,
+              "_decCnt": 1
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FilterByBuffStackCount, Assembly-CSharp",
+              "_targetType": "BUFF_SOURCE",
+              "_buffKey": "enemy_dklord_atk",
+              "_stackCount": 2,
+              "_stackCountKey": "",
+              "_stackCountPeeling": 0,
+              "_condType": "LE",
+              "_checkFromUnoverridableBuffCount": false,
+              "_checkSnapshotBuff": false,
+              "_checkBuffSource": false,
+              "_sourceType": "BUFF_OWNER",
+              "_checkTargetHost": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuffsById, Assembly-CSharp",
+              "_buffKey": "ememy_dklord_atk[effect_1]",
+              "_loadFromBlackboard": false,
+              "_decCntIfStack": false,
+              "_updateOverrideMap": true,
+              "_targetType": "BUFF_SOURCE",
+              "_checkBuffSource": false,
+              "_sourceType": "BUFF_SOURCE",
+              "_alsoClearNullSource": false,
+              "_finishHostBuff": false,
+              "_decCntKey": null,
+              "_decCnt": 1
+            }
+          ],
+          "ON_BUFF_LATE_ENABLE": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FilterByBuffStackCount, Assembly-CSharp",
+              "_targetType": "BUFF_SOURCE",
+              "_buffKey": "enemy_dklord_atk",
+              "_stackCount": 2,
+              "_stackCountKey": "",
+              "_stackCountPeeling": 0,
+              "_condType": "GT",
+              "_checkFromUnoverridableBuffCount": false,
+              "_checkSnapshotBuff": false,
+              "_checkBuffSource": false,
+              "_sourceType": "BUFF_OWNER",
+              "_checkTargetHost": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+IfElse, Assembly-CSharp",
+              "_conditionNode": {
+                "$type": "Torappu.Battle.Action.Nodes+FilterByBuffStackCount, Assembly-CSharp",
+                "_targetType": "BUFF_SOURCE",
+                "_buffKey": "enemy_dklord_atk",
+                "_stackCount": 5,
+                "_stackCountKey": null,
+                "_stackCountPeeling": 0,
+                "_condType": "GE",
+                "_checkFromUnoverridableBuffCount": false,
+                "_checkSnapshotBuff": false,
+                "_checkBuffSource": false,
+                "_sourceType": "BUFF_OWNER",
+                "_checkTargetHost": false
+              },
+              "_succeedNodes": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+CheckContainsBuff, Assembly-CSharp",
+                  "_targetType": "BUFF_SOURCE",
+                  "_buffKeys": [
+                    "ememy_dklord_atk[effect_2]"
+                  ],
+                  "isAND": true,
+                  "_loadFromBlackboard": false,
+                  "_checkBuffSource": false,
+                  "_buffSourceType": "BUFF_SOURCE",
+                  "_checkSourceHost": false
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+IfNot, Assembly-CSharp"
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+                  "_buff": {
+                    "attributes": {
+                      "abnormalFlags": [],
+                      "abnormalImmunes": [],
+                      "abnormalAntis": [],
+                      "abnormalCombos": [],
+                      "abnormalComboImmunes": [],
+                      "attributeModifiers": []
+                    },
+                    "buffKey": "ememy_dklord_atk[effect_2]",
+                    "loadFromDB": false,
+                    "isDurableBuff": false,
+                    "isDamageMissable": false,
+                    "isSilenceable": false,
+                    "isStunnable": false,
+                    "isFreezable": false,
+                    "isLevitatable": false,
+                    "isGroundBoundable": false,
+                    "statusResistable": "AUTOMATIC",
+                    "templateKey": "empty",
+                    "disableOverride": false,
+                    "overrideKey": null,
+                    "overrideType": "DEFAULT",
+                    "maxStackCnt": 1,
+                    "refreshRemainingTimeWhenStackMax": false,
+                    "clearAllStackCntWhenTimeUp": false,
+                    "maxValidStackCnt": -1,
+                    "independentCharacterSource": false,
+                    "overrideEffectKey": "enemy_dklord_buff_02",
+                    "overrideOnEventPriority": false,
+                    "onEventPriority": "DEFAULT",
+                    "audioSignal": null,
+                    "lifeTimeType": "INFINITY",
+                    "takeSnapshotWhenExtend": false,
+                    "durationKey": null,
+                    "lifeTime": 0.0,
+                    "triggerLifeType": "IMMEDIATELY",
+                    "triggerCnt": 0,
+                    "triggerInterval": -1.0,
+                    "waitFirstTriggerInterval": true,
+                    "firstTriggerInterval": -1.0,
+                    "priority": -1,
+                    "priorityBBKeys": [],
+                    "stripBlackboardParamsWithBuffKey": false,
+                    "blackboard": [],
+                    "enableInitDirectionFromSource": false
+                  },
+                  "_buffOwner": "BUFF_SOURCE",
+                  "_useSpecialBuffSource": false,
+                  "_specialBuffSource": "BUFF_SOURCE",
+                  "_isDerivedBuff": false,
+                  "_finishDerivedBuffIfParentFinish": false,
+                  "_inherateSourceProjectileFromParentBuff": false,
+                  "_hookEffectKeyFromSourceProjectile": false
+                }
+              ],
+              "_failNodes": null
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CheckContainsBuff, Assembly-CSharp",
+              "_targetType": "BUFF_SOURCE",
+              "_buffKeys": [
+                "ememy_dklord_atk[effect_1]"
+              ],
+              "isAND": true,
+              "_loadFromBlackboard": false,
+              "_checkBuffSource": false,
+              "_buffSourceType": "BUFF_SOURCE",
+              "_checkSourceHost": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+IfNot, Assembly-CSharp"
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+              "_buff": {
+                "attributes": {
+                  "abnormalFlags": [],
+                  "abnormalImmunes": [],
+                  "abnormalAntis": [],
+                  "abnormalCombos": [],
+                  "abnormalComboImmunes": [],
+                  "attributeModifiers": []
+                },
+                "buffKey": "ememy_dklord_atk[effect_1]",
+                "loadFromDB": false,
+                "isDurableBuff": false,
+                "isDamageMissable": false,
+                "isSilenceable": false,
+                "isStunnable": false,
+                "isFreezable": false,
+                "isLevitatable": false,
+                "isGroundBoundable": false,
+                "statusResistable": "AUTOMATIC",
+                "templateKey": "empty",
+                "disableOverride": false,
+                "overrideKey": null,
+                "overrideType": "DEFAULT",
+                "maxStackCnt": 1,
+                "refreshRemainingTimeWhenStackMax": false,
+                "clearAllStackCntWhenTimeUp": false,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": false,
+                "overrideEffectKey": "enemy_dklord_buff_01",
+                "overrideOnEventPriority": false,
+                "onEventPriority": "DEFAULT",
+                "audioSignal": null,
+                "lifeTimeType": "INFINITY",
+                "takeSnapshotWhenExtend": false,
+                "durationKey": null,
+                "lifeTime": 0.0,
+                "triggerLifeType": "IMMEDIATELY",
+                "triggerCnt": 0,
+                "triggerInterval": -1.0,
+                "waitFirstTriggerInterval": true,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": false,
+                "blackboard": [],
+                "enableInitDirectionFromSource": false
+              },
+              "_buffOwner": "BUFF_SOURCE",
+              "_useSpecialBuffSource": false,
+              "_specialBuffSource": "BUFF_SOURCE",
+              "_isDerivedBuff": false,
+              "_finishDerivedBuffIfParentFinish": false,
+              "_inherateSourceProjectileFromParentBuff": false,
+              "_hookEffectKeyFromSourceProjectile": false
+            }
+          ]
+        }
+      },
+      "payload_offset": 1593941,
+      "document_base64": "sxwAAAJ0ZW1wbGF0ZUtleQASAAAAZW5lbXlfZGtsb3JkX2F1cmEAAmVmZmVjdEtleQABAAAAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQAA2V2ZW50VG9BY3Rpb25zAE4cAAAET05fQlVGRl9TVEFSVACIBQAAAzAAgAUAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NyZWF0ZUJ1ZmYsIEFzc2VtYmx5LUNTaGFycAADX2J1ZmYAVgQAAANhdHRyaWJ1dGVzAAwBAAAEYWJub3JtYWxGbGFncwAFAAAAAARhYm5vcm1hbEltbXVuZXMABQAAAAAEYWJub3JtYWxBbnRpcwAFAAAAAARhYm5vcm1hbENvbWJvcwAFAAAAAARhYm5vcm1hbENvbWJvSW1tdW5lcwAFAAAAAARhdHRyaWJ1dGVNb2RpZmllcnMAhQAAAAMwAH0AAAACYXR0cmlidXRlVHlwZQAEAAAAQVRLAAJmb3JtdWxhSXRlbQALAAAATVVMVElQTElFUgABdmFsdWUAAAAAAAAAAAAIbG9hZEZyb21CbGFja2JvYXJkAAEIZmV0Y2hCYXNlVmFsdWVGcm9tU291cmNlRW50aXR5AAAAAAACYnVmZktleQARAAAAZW5lbXlfZGtsb3JkX2F0awAIbG9hZEZyb21EQgAACGlzRHVyYWJsZUJ1ZmYAAAhpc0RhbWFnZU1pc3NhYmxlAAAIaXNTaWxlbmNlYWJsZQAACGlzU3R1bm5hYmxlAAAIaXNGcmVlemFibGUAAAhpc0xldml0YXRhYmxlAAAIaXNHcm91bmRCb3VuZGFibGUAAAJzdGF0dXNSZXNpc3RhYmxlAAoAAABBVVRPTUFUSUMAAnRlbXBsYXRlS2V5AAYAAABlbXB0eQAIZGlzYWJsZU92ZXJyaWRlAAAKb3ZlcnJpZGVLZXkAAm92ZXJyaWRlVHlwZQAGAAAAU1RBQ0sAEG1heFN0YWNrQ250AP////8IcmVmcmVzaFJlbWFpbmluZ1RpbWVXaGVuU3RhY2tNYXgAAAhjbGVhckFsbFN0YWNrQ250V2hlblRpbWVVcAAAEG1heFZhbGlkU3RhY2tDbnQA/////whpbmRlcGVuZGVudENoYXJhY3RlclNvdXJjZQAAAm92ZXJyaWRlRWZmZWN0S2V5AAEAAAAACG92ZXJyaWRlT25FdmVudFByaW9yaXR5AAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAAphdWRpb1NpZ25hbAACbGlmZVRpbWVUeXBlAAkAAABJTkZJTklUWQAIdGFrZVNuYXBzaG90V2hlbkV4dGVuZAAACmR1cmF0aW9uS2V5AAFsaWZlVGltZQAAAAAAAAAAAAJ0cmlnZ2VyTGlmZVR5cGUADAAAAElNTUVESUFURUxZABB0cmlnZ2VyQ250AAAAAAABdHJpZ2dlckludGVydmFsAAAAAAAAAPC/CHdhaXRGaXJzdFRyaWdnZXJJbnRlcnZhbAABAWZpcnN0VHJpZ2dlckludGVydmFsAAAAAAAAAPC/EHByaW9yaXR5AP////8EcHJpb3JpdHlCQktleXMABQAAAAAIc3RyaXBCbGFja2JvYXJkUGFyYW1zV2l0aEJ1ZmZLZXkAAARibGFja2JvYXJkAAUAAAAACGVuYWJsZUluaXREaXJlY3Rpb25Gcm9tU291cmNlAAAAAl9idWZmT3duZXIADAAAAEJVRkZfU09VUkNFAAhfdXNlU3BlY2lhbEJ1ZmZTb3VyY2UAAAJfc3BlY2lhbEJ1ZmZTb3VyY2UADAAAAEJVRkZfU09VUkNFAAhfaXNEZXJpdmVkQnVmZgAACF9maW5pc2hEZXJpdmVkQnVmZklmUGFyZW50RmluaXNoAAAIX2luaGVyYXRlU291cmNlUHJvamVjdGlsZUZyb21QYXJlbnRCdWZmAAAIX2hvb2tFZmZlY3RLZXlGcm9tU291cmNlUHJvamVjdGlsZQAAAAAET05fQlVGRl9GSU5JU0gAgQYAAAMwADcBAAACJHR5cGUAPQAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytGaW5pc2hCdWZmc0J5SWQsIEFzc2VtYmx5LUNTaGFycAACX2J1ZmZLZXkAEQAAAGVuZW15X2RrbG9yZF9hdGsACF9sb2FkRnJvbUJsYWNrYm9hcmQAAAhfZGVjQ250SWZTdGFjawABCF91cGRhdGVPdmVycmlkZU1hcAABAl90YXJnZXRUeXBlAAwAAABCVUZGX1NPVVJDRQAIX2NoZWNrQnVmZlNvdXJjZQAAAl9zb3VyY2VUeXBlAAwAAABCVUZGX1NPVVJDRQAIX2Fsc29DbGVhck51bGxTb3VyY2UAAAhfZmluaXNoSG9zdEJ1ZmYAAApfZGVjQ250S2V5ABBfZGVjQ250AAEAAAAAAzEAWgEAAAIkdHlwZQBEAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0ZpbHRlckJ5QnVmZlN0YWNrQ291bnQsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUADAAAAEJVRkZfU09VUkNFAAJfYnVmZktleQARAAAAZW5lbXlfZGtsb3JkX2F0awAQX3N0YWNrQ291bnQABQAAAAJfc3RhY2tDb3VudEtleQABAAAAABBfc3RhY2tDb3VudFBlZWxpbmcAAAAAAAJfY29uZFR5cGUAAwAAAExUAAhfY2hlY2tGcm9tVW5vdmVycmlkYWJsZUJ1ZmZDb3VudAAACF9jaGVja1NuYXBzaG90QnVmZgAACF9jaGVja0J1ZmZTb3VyY2UAAAJfc291cmNlVHlwZQALAAAAQlVGRl9PV05FUgAIX2NoZWNrVGFyZ2V0SG9zdAAAAAMyAEEBAAACJHR5cGUAPQAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytGaW5pc2hCdWZmc0J5SWQsIEFzc2VtYmx5LUNTaGFycAACX2J1ZmZLZXkAGwAAAGVtZW15X2RrbG9yZF9hdGtbZWZmZWN0XzJdAAhfbG9hZEZyb21CbGFja2JvYXJkAAAIX2RlY0NudElmU3RhY2sAAAhfdXBkYXRlT3ZlcnJpZGVNYXAAAQJfdGFyZ2V0VHlwZQAMAAAAQlVGRl9TT1VSQ0UACF9jaGVja0J1ZmZTb3VyY2UAAAJfc291cmNlVHlwZQAMAAAAQlVGRl9TT1VSQ0UACF9hbHNvQ2xlYXJOdWxsU291cmNlAAAIX2ZpbmlzaEhvc3RCdWZmAAAKX2RlY0NudEtleQAQX2RlY0NudAABAAAAAAMzAFoBAAACJHR5cGUARAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytGaWx0ZXJCeUJ1ZmZTdGFja0NvdW50LCBBc3NlbWJseS1DU2hhcnAAAl90YXJnZXRUeXBlAAwAAABCVUZGX1NPVVJDRQACX2J1ZmZLZXkAEQAAAGVuZW15X2RrbG9yZF9hdGsAEF9zdGFja0NvdW50AAIAAAACX3N0YWNrQ291bnRLZXkAAQAAAAAQX3N0YWNrQ291bnRQZWVsaW5nAAAAAAACX2NvbmRUeXBlAAMAAABMRQAIX2NoZWNrRnJvbVVub3ZlcnJpZGFibGVCdWZmQ291bnQAAAhfY2hlY2tTbmFwc2hvdEJ1ZmYAAAhfY2hlY2tCdWZmU291cmNlAAACX3NvdXJjZVR5cGUACwAAAEJVRkZfT1dORVIACF9jaGVja1RhcmdldEhvc3QAAAADNABBAQAAAiR0eXBlAD0AAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrRmluaXNoQnVmZnNCeUlkLCBBc3NlbWJseS1DU2hhcnAAAl9idWZmS2V5ABsAAABlbWVteV9ka2xvcmRfYXRrW2VmZmVjdF8xXQAIX2xvYWRGcm9tQmxhY2tib2FyZAAACF9kZWNDbnRJZlN0YWNrAAAIX3VwZGF0ZU92ZXJyaWRlTWFwAAECX3RhcmdldFR5cGUADAAAAEJVRkZfU09VUkNFAAhfY2hlY2tCdWZmU291cmNlAAACX3NvdXJjZVR5cGUADAAAAEJVRkZfU09VUkNFAAhfYWxzb0NsZWFyTnVsbFNvdXJjZQAACF9maW5pc2hIb3N0QnVmZgAACl9kZWNDbnRLZXkAEF9kZWNDbnQAAQAAAAAABE9OX0JVRkZfTEFURV9FTkFCTEUADBAAAAMwAFoBAAACJHR5cGUARAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytGaWx0ZXJCeUJ1ZmZTdGFja0NvdW50LCBBc3NlbWJseS1DU2hhcnAAAl90YXJnZXRUeXBlAAwAAABCVUZGX1NPVVJDRQACX2J1ZmZLZXkAEQAAAGVuZW15X2RrbG9yZF9hdGsAEF9zdGFja0NvdW50AAIAAAACX3N0YWNrQ291bnRLZXkAAQAAAAAQX3N0YWNrQ291bnRQZWVsaW5nAAAAAAACX2NvbmRUeXBlAAMAAABHVAAIX2NoZWNrRnJvbVVub3ZlcnJpZGFibGVCdWZmQ291bnQAAAhfY2hlY2tTbmFwc2hvdEJ1ZmYAAAhfY2hlY2tCdWZmU291cmNlAAACX3NvdXJjZVR5cGUACwAAAEJVRkZfT1dORVIACF9jaGVja1RhcmdldEhvc3QAAAADMQA4CAAAAiR0eXBlADQAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrSWZFbHNlLCBBc3NlbWJseS1DU2hhcnAAA19jb25kaXRpb25Ob2RlAFUBAAACJHR5cGUARAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytGaWx0ZXJCeUJ1ZmZTdGFja0NvdW50LCBBc3NlbWJseS1DU2hhcnAAAl90YXJnZXRUeXBlAAwAAABCVUZGX1NPVVJDRQACX2J1ZmZLZXkAEQAAAGVuZW15X2RrbG9yZF9hdGsAEF9zdGFja0NvdW50AAUAAAAKX3N0YWNrQ291bnRLZXkAEF9zdGFja0NvdW50UGVlbGluZwAAAAAAAl9jb25kVHlwZQADAAAAR0UACF9jaGVja0Zyb21Vbm92ZXJyaWRhYmxlQnVmZkNvdW50AAAIX2NoZWNrU25hcHNob3RCdWZmAAAIX2NoZWNrQnVmZlNvdXJjZQAAAl9zb3VyY2VUeXBlAAsAAABCVUZGX09XTkVSAAhfY2hlY2tUYXJnZXRIb3N0AAAABF9zdWNjZWVkTm9kZXMAdAYAAAMwAAMBAAACJHR5cGUAPwAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDaGVja0NvbnRhaW5zQnVmZiwgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQAMAAAAQlVGRl9TT1VSQ0UABF9idWZmS2V5cwAnAAAAAjAAGwAAAGVtZW15X2RrbG9yZF9hdGtbZWZmZWN0XzJdAAAIaXNBTkQAAQhfbG9hZEZyb21CbGFja2JvYXJkAAAIX2NoZWNrQnVmZlNvdXJjZQAAAl9idWZmU291cmNlVHlwZQAMAAAAQlVGRl9TT1VSQ0UACF9jaGVja1NvdXJjZUhvc3QAAAADMQBDAAAAAiR0eXBlADMAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrSWZOb3QsIEFzc2VtYmx5LUNTaGFycAAAAzIAIAUAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NyZWF0ZUJ1ZmYsIEFzc2VtYmx5LUNTaGFycAADX2J1ZmYA9gMAAANhdHRyaWJ1dGVzAIwAAAAEYWJub3JtYWxGbGFncwAFAAAAAARhYm5vcm1hbEltbXVuZXMABQAAAAAEYWJub3JtYWxBbnRpcwAFAAAAAARhYm5vcm1hbENvbWJvcwAFAAAAAARhYm5vcm1hbENvbWJvSW1tdW5lcwAFAAAAAARhdHRyaWJ1dGVNb2RpZmllcnMABQAAAAAAAmJ1ZmZLZXkAGwAAAGVtZW15X2RrbG9yZF9hdGtbZWZmZWN0XzJdAAhsb2FkRnJvbURCAAAIaXNEdXJhYmxlQnVmZgAACGlzRGFtYWdlTWlzc2FibGUAAAhpc1NpbGVuY2VhYmxlAAAIaXNTdHVubmFibGUAAAhpc0ZyZWV6YWJsZQAACGlzTGV2aXRhdGFibGUAAAhpc0dyb3VuZEJvdW5kYWJsZQAAAnN0YXR1c1Jlc2lzdGFibGUACgAAAEFVVE9NQVRJQwACdGVtcGxhdGVLZXkABgAAAGVtcHR5AAhkaXNhYmxlT3ZlcnJpZGUAAApvdmVycmlkZUtleQACb3ZlcnJpZGVUeXBlAAgAAABERUZBVUxUABBtYXhTdGFja0NudAABAAAACHJlZnJlc2hSZW1haW5pbmdUaW1lV2hlblN0YWNrTWF4AAAIY2xlYXJBbGxTdGFja0NudFdoZW5UaW1lVXAAABBtYXhWYWxpZFN0YWNrQ250AP////8IaW5kZXBlbmRlbnRDaGFyYWN0ZXJTb3VyY2UAAAJvdmVycmlkZUVmZmVjdEtleQAVAAAAZW5lbXlfZGtsb3JkX2J1ZmZfMDIACG92ZXJyaWRlT25FdmVudFByaW9yaXR5AAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAAphdWRpb1NpZ25hbAACbGlmZVRpbWVUeXBlAAkAAABJTkZJTklUWQAIdGFrZVNuYXBzaG90V2hlbkV4dGVuZAAACmR1cmF0aW9uS2V5AAFsaWZlVGltZQAAAAAAAAAAAAJ0cmlnZ2VyTGlmZVR5cGUADAAAAElNTUVESUFURUxZABB0cmlnZ2VyQ250AAAAAAABdHJpZ2dlckludGVydmFsAAAAAAAAAPC/CHdhaXRGaXJzdFRyaWdnZXJJbnRlcnZhbAABAWZpcnN0VHJpZ2dlckludGVydmFsAAAAAAAAAPC/EHByaW9yaXR5AP////8EcHJpb3JpdHlCQktleXMABQAAAAAIc3RyaXBCbGFja2JvYXJkUGFyYW1zV2l0aEJ1ZmZLZXkAAARibGFja2JvYXJkAAUAAAAACGVuYWJsZUluaXREaXJlY3Rpb25Gcm9tU291cmNlAAAAAl9idWZmT3duZXIADAAAAEJVRkZfU09VUkNFAAhfdXNlU3BlY2lhbEJ1ZmZTb3VyY2UAAAJfc3BlY2lhbEJ1ZmZTb3VyY2UADAAAAEJVRkZfU09VUkNFAAhfaXNEZXJpdmVkQnVmZgAACF9maW5pc2hEZXJpdmVkQnVmZklmUGFyZW50RmluaXNoAAAIX2luaGVyYXRlU291cmNlUHJvamVjdGlsZUZyb21QYXJlbnRCdWZmAAAIX2hvb2tFZmZlY3RLZXlGcm9tU291cmNlUHJvamVjdGlsZQAAAAAKX2ZhaWxOb2RlcwAAAzIAAwEAAAIkdHlwZQA/AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NoZWNrQ29udGFpbnNCdWZmLCBBc3NlbWJseS1DU2hhcnAAAl90YXJnZXRUeXBlAAwAAABCVUZGX1NPVVJDRQAEX2J1ZmZLZXlzACcAAAACMAAbAAAAZW1lbXlfZGtsb3JkX2F0a1tlZmZlY3RfMV0AAAhpc0FORAABCF9sb2FkRnJvbUJsYWNrYm9hcmQAAAhfY2hlY2tCdWZmU291cmNlAAACX2J1ZmZTb3VyY2VUeXBlAAwAAABCVUZGX1NPVVJDRQAIX2NoZWNrU291cmNlSG9zdAAAAAMzAEMAAAACJHR5cGUAMwAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytJZk5vdCwgQXNzZW1ibHktQ1NoYXJwAAADNAAgBQAAAiR0eXBlADgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ3JlYXRlQnVmZiwgQXNzZW1ibHktQ1NoYXJwAANfYnVmZgD2AwAAA2F0dHJpYnV0ZXMAjAAAAARhYm5vcm1hbEZsYWdzAAUAAAAABGFibm9ybWFsSW1tdW5lcwAFAAAAAARhYm5vcm1hbEFudGlzAAUAAAAABGFibm9ybWFsQ29tYm9zAAUAAAAABGFibm9ybWFsQ29tYm9JbW11bmVzAAUAAAAABGF0dHJpYnV0ZU1vZGlmaWVycwAFAAAAAAACYnVmZktleQAbAAAAZW1lbXlfZGtsb3JkX2F0a1tlZmZlY3RfMV0ACGxvYWRGcm9tREIAAAhpc0R1cmFibGVCdWZmAAAIaXNEYW1hZ2VNaXNzYWJsZQAACGlzU2lsZW5jZWFibGUAAAhpc1N0dW5uYWJsZQAACGlzRnJlZXphYmxlAAAIaXNMZXZpdGF0YWJsZQAACGlzR3JvdW5kQm91bmRhYmxlAAACc3RhdHVzUmVzaXN0YWJsZQAKAAAAQVVUT01BVElDAAJ0ZW1wbGF0ZUtleQAGAAAAZW1wdHkACGRpc2FibGVPdmVycmlkZQAACm92ZXJyaWRlS2V5AAJvdmVycmlkZVR5cGUACAAAAERFRkFVTFQAEG1heFN0YWNrQ250AAEAAAAIcmVmcmVzaFJlbWFpbmluZ1RpbWVXaGVuU3RhY2tNYXgAAAhjbGVhckFsbFN0YWNrQ250V2hlblRpbWVVcAAAEG1heFZhbGlkU3RhY2tDbnQA/////whpbmRlcGVuZGVudENoYXJhY3RlclNvdXJjZQAAAm92ZXJyaWRlRWZmZWN0S2V5ABUAAABlbmVteV9ka2xvcmRfYnVmZl8wMQAIb3ZlcnJpZGVPbkV2ZW50UHJpb3JpdHkAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQACmF1ZGlvU2lnbmFsAAJsaWZlVGltZVR5cGUACQAAAElORklOSVRZAAh0YWtlU25hcHNob3RXaGVuRXh0ZW5kAAAKZHVyYXRpb25LZXkAAWxpZmVUaW1lAAAAAAAAAAAAAnRyaWdnZXJMaWZlVHlwZQAMAAAASU1NRURJQVRFTFkAEHRyaWdnZXJDbnQAAAAAAAF0cmlnZ2VySW50ZXJ2YWwAAAAAAAAA8L8Id2FpdEZpcnN0VHJpZ2dlckludGVydmFsAAEBZmlyc3RUcmlnZ2VySW50ZXJ2YWwAAAAAAAAA8L8QcHJpb3JpdHkA/////wRwcmlvcml0eUJCS2V5cwAFAAAAAAhzdHJpcEJsYWNrYm9hcmRQYXJhbXNXaXRoQnVmZktleQAABGJsYWNrYm9hcmQABQAAAAAIZW5hYmxlSW5pdERpcmVjdGlvbkZyb21Tb3VyY2UAAAACX2J1ZmZPd25lcgAMAAAAQlVGRl9TT1VSQ0UACF91c2VTcGVjaWFsQnVmZlNvdXJjZQAAAl9zcGVjaWFsQnVmZlNvdXJjZQAMAAAAQlVGRl9TT1VSQ0UACF9pc0Rlcml2ZWRCdWZmAAAIX2ZpbmlzaERlcml2ZWRCdWZmSWZQYXJlbnRGaW5pc2gAAAhfaW5oZXJhdGVTb3VyY2VQcm9qZWN0aWxlRnJvbVBhcmVudEJ1ZmYAAAhfaG9va0VmZmVjdEtleUZyb21Tb3VyY2VQcm9qZWN0aWxlAAAAAAAA",
+      "document_sha256": "9224e44a269fb37111ad9d533f10757c4044dd08b7daff9e14b6cc72872bd599"
+    },
+    "enemy_dmech_charge[interrupt]": {
+      "parsed": {
+        "templateKey": "enemy_dmech_charge[interrupt]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_ABILITY_INTERRUPTED": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateBuffUseAbilitySelector, Assembly-CSharp",
+              "_sourceType": "SOURCE",
+              "_targetType": "TARGET",
+              "_useAbilityFromTarget": false,
+              "_abilityFromTargetType": "SOURCE",
+              "_abilityName": "charge_gunctrl",
+              "_excludeTarget": false,
+              "_excludeTargetType": "SOURCE",
+              "_buff": {
+                "attributes": {
+                  "abnormalFlags": null,
+                  "abnormalImmunes": null,
+                  "abnormalAntis": null,
+                  "abnormalCombos": null,
+                  "abnormalComboImmunes": null,
+                  "attributeModifiers": null
+                },
+                "buffKey": "enemy_dmech_charge[sp_reduce]",
+                "loadFromDB": false,
+                "isDurableBuff": false,
+                "isDamageMissable": false,
+                "isSilenceable": false,
+                "isStunnable": false,
+                "isFreezable": false,
+                "isLevitatable": false,
+                "isGroundBoundable": false,
+                "statusResistable": "AUTOMATIC",
+                "templateKey": "modify_sp[start]",
+                "disableOverride": false,
+                "overrideKey": null,
+                "overrideType": "DEFAULT",
+                "maxStackCnt": 1,
+                "refreshRemainingTimeWhenStackMax": false,
+                "clearAllStackCntWhenTimeUp": false,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": false,
+                "overrideEffectKey": null,
+                "overrideOnEventPriority": false,
+                "onEventPriority": "DEFAULT",
+                "audioSignal": null,
+                "lifeTimeType": "IMMEDIATELY",
+                "takeSnapshotWhenExtend": false,
+                "durationKey": null,
+                "lifeTime": 0.0,
+                "triggerLifeType": "IMMEDIATELY",
+                "triggerCnt": 0,
+                "triggerInterval": -1.0,
+                "waitFirstTriggerInterval": true,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": true,
+                "blackboard": [],
+                "enableInitDirectionFromSource": false
+              },
+              "_isDerivedBuff": false,
+              "_finishDerivedBuffIfParentFinish": false,
+              "_actionFailedIfNoTarget": false,
+              "_overrideBuffSourceType": false,
+              "_buffSourceType": "SOURCE",
+              "_assignTargetCntToBB": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuff, Assembly-CSharp",
+              "_decCntIfStack": false,
+              "_updateOverrideMap": true
+            }
+          ],
+          "ON_ABILITY_FINISH": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuffsById, Assembly-CSharp",
+              "_buffKey": "enemy_dmech_charge[effect]",
+              "_loadFromBlackboard": false,
+              "_decCntIfStack": false,
+              "_updateOverrideMap": true,
+              "_targetType": "SOURCE",
+              "_checkBuffSource": false,
+              "_sourceType": "BUFF_SOURCE",
+              "_alsoClearNullSource": false,
+              "_finishHostBuff": false,
+              "_decCntKey": null,
+              "_decCnt": 1
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+AlwaysNext, Assembly-CSharp"
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CheckAbnormalFlag, Assembly-CSharp",
+              "_abnormalFlag": "SILENCED",
+              "_targetType": "SOURCE",
+              "_isUnset": false,
+              "_abnormalFlagKey": ""
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateBuffUseAbilitySelector, Assembly-CSharp",
+              "_sourceType": "SOURCE",
+              "_targetType": "TARGET",
+              "_useAbilityFromTarget": false,
+              "_abilityFromTargetType": "SOURCE",
+              "_abilityName": "charge_gunctrl",
+              "_excludeTarget": false,
+              "_excludeTargetType": "SOURCE",
+              "_buff": {
+                "attributes": {
+                  "abnormalFlags": null,
+                  "abnormalImmunes": null,
+                  "abnormalAntis": null,
+                  "abnormalCombos": null,
+                  "abnormalComboImmunes": null,
+                  "attributeModifiers": null
+                },
+                "buffKey": "enemy_dmech_charge[sp_reduce]",
+                "loadFromDB": false,
+                "isDurableBuff": false,
+                "isDamageMissable": false,
+                "isSilenceable": false,
+                "isStunnable": false,
+                "isFreezable": false,
+                "isLevitatable": false,
+                "isGroundBoundable": false,
+                "statusResistable": "AUTOMATIC",
+                "templateKey": "modify_sp[start]",
+                "disableOverride": false,
+                "overrideKey": null,
+                "overrideType": "DEFAULT",
+                "maxStackCnt": 1,
+                "refreshRemainingTimeWhenStackMax": false,
+                "clearAllStackCntWhenTimeUp": false,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": false,
+                "overrideEffectKey": null,
+                "overrideOnEventPriority": false,
+                "onEventPriority": "DEFAULT",
+                "audioSignal": null,
+                "lifeTimeType": "IMMEDIATELY",
+                "takeSnapshotWhenExtend": false,
+                "durationKey": null,
+                "lifeTime": 0.0,
+                "triggerLifeType": "IMMEDIATELY",
+                "triggerCnt": 0,
+                "triggerInterval": -1.0,
+                "waitFirstTriggerInterval": true,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": true,
+                "blackboard": [],
+                "enableInitDirectionFromSource": false
+              },
+              "_isDerivedBuff": false,
+              "_finishDerivedBuffIfParentFinish": false,
+              "_actionFailedIfNoTarget": false,
+              "_overrideBuffSourceType": false,
+              "_buffSourceType": "SOURCE",
+              "_assignTargetCntToBB": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuff, Assembly-CSharp",
+              "_decCntIfStack": false,
+              "_updateOverrideMap": true
+            }
+          ]
+        }
+      },
+      "payload_offset": 1601756,
+      "document_base64": "1Q4AAAJ0ZW1wbGF0ZUtleQAeAAAAZW5lbXlfZG1lY2hfY2hhcmdlW2ludGVycnVwdF0AAmVmZmVjdEtleQABAAAAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQAA2V2ZW50VG9BY3Rpb25zAGQOAAAET05fQUJJTElUWV9JTlRFUlJVUFRFRAABBgAAAzAAiAUAAAIkdHlwZQBKAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NyZWF0ZUJ1ZmZVc2VBYmlsaXR5U2VsZWN0b3IsIEFzc2VtYmx5LUNTaGFycAACX3NvdXJjZVR5cGUABwAAAFNPVVJDRQACX3RhcmdldFR5cGUABwAAAFRBUkdFVAAIX3VzZUFiaWxpdHlGcm9tVGFyZ2V0AAACX2FiaWxpdHlGcm9tVGFyZ2V0VHlwZQAHAAAAU09VUkNFAAJfYWJpbGl0eU5hbWUADwAAAGNoYXJnZV9ndW5jdHJsAAhfZXhjbHVkZVRhcmdldAAAAl9leGNsdWRlVGFyZ2V0VHlwZQAHAAAAU09VUkNFAANfYnVmZgDQAwAAA2F0dHJpYnV0ZXMAbgAAAAphYm5vcm1hbEZsYWdzAAphYm5vcm1hbEltbXVuZXMACmFibm9ybWFsQW50aXMACmFibm9ybWFsQ29tYm9zAAphYm5vcm1hbENvbWJvSW1tdW5lcwAKYXR0cmlidXRlTW9kaWZpZXJzAAACYnVmZktleQAeAAAAZW5lbXlfZG1lY2hfY2hhcmdlW3NwX3JlZHVjZV0ACGxvYWRGcm9tREIAAAhpc0R1cmFibGVCdWZmAAAIaXNEYW1hZ2VNaXNzYWJsZQAACGlzU2lsZW5jZWFibGUAAAhpc1N0dW5uYWJsZQAACGlzRnJlZXphYmxlAAAIaXNMZXZpdGF0YWJsZQAACGlzR3JvdW5kQm91bmRhYmxlAAACc3RhdHVzUmVzaXN0YWJsZQAKAAAAQVVUT01BVElDAAJ0ZW1wbGF0ZUtleQARAAAAbW9kaWZ5X3NwW3N0YXJ0XQAIZGlzYWJsZU92ZXJyaWRlAAAKb3ZlcnJpZGVLZXkAAm92ZXJyaWRlVHlwZQAIAAAAREVGQVVMVAAQbWF4U3RhY2tDbnQAAQAAAAhyZWZyZXNoUmVtYWluaW5nVGltZVdoZW5TdGFja01heAAACGNsZWFyQWxsU3RhY2tDbnRXaGVuVGltZVVwAAAQbWF4VmFsaWRTdGFja0NudAD/////CGluZGVwZW5kZW50Q2hhcmFjdGVyU291cmNlAAAKb3ZlcnJpZGVFZmZlY3RLZXkACG92ZXJyaWRlT25FdmVudFByaW9yaXR5AAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAAphdWRpb1NpZ25hbAACbGlmZVRpbWVUeXBlAAwAAABJTU1FRElBVEVMWQAIdGFrZVNuYXBzaG90V2hlbkV4dGVuZAAACmR1cmF0aW9uS2V5AAFsaWZlVGltZQAAAAAAAAAAAAJ0cmlnZ2VyTGlmZVR5cGUADAAAAElNTUVESUFURUxZABB0cmlnZ2VyQ250AAAAAAABdHJpZ2dlckludGVydmFsAAAAAAAAAPC/CHdhaXRGaXJzdFRyaWdnZXJJbnRlcnZhbAABAWZpcnN0VHJpZ2dlckludGVydmFsAAAAAAAAAPC/EHByaW9yaXR5AP////8EcHJpb3JpdHlCQktleXMABQAAAAAIc3RyaXBCbGFja2JvYXJkUGFyYW1zV2l0aEJ1ZmZLZXkAAQRibGFja2JvYXJkAAUAAAAACGVuYWJsZUluaXREaXJlY3Rpb25Gcm9tU291cmNlAAAACF9pc0Rlcml2ZWRCdWZmAAAIX2ZpbmlzaERlcml2ZWRCdWZmSWZQYXJlbnRGaW5pc2gAAAhfYWN0aW9uRmFpbGVkSWZOb1RhcmdldAAACF9vdmVycmlkZUJ1ZmZTb3VyY2VUeXBlAAACX2J1ZmZTb3VyY2VUeXBlAAcAAABTT1VSQ0UACF9hc3NpZ25UYXJnZXRDbnRUb0JCAAAAAzEAbgAAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0ZpbmlzaEJ1ZmYsIEFzc2VtYmx5LUNTaGFycAAIX2RlY0NudElmU3RhY2sAAAhfdXBkYXRlT3ZlcnJpZGVNYXAAAQAABE9OX0FCSUxJVFlfRklOSVNIADMIAAADMAA8AQAAAiR0eXBlAD0AAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrRmluaXNoQnVmZnNCeUlkLCBBc3NlbWJseS1DU2hhcnAAAl9idWZmS2V5ABsAAABlbmVteV9kbWVjaF9jaGFyZ2VbZWZmZWN0XQAIX2xvYWRGcm9tQmxhY2tib2FyZAAACF9kZWNDbnRJZlN0YWNrAAAIX3VwZGF0ZU92ZXJyaWRlTWFwAAECX3RhcmdldFR5cGUABwAAAFNPVVJDRQAIX2NoZWNrQnVmZlNvdXJjZQAAAl9zb3VyY2VUeXBlAAwAAABCVUZGX1NPVVJDRQAIX2Fsc29DbGVhck51bGxTb3VyY2UAAAhfZmluaXNoSG9zdEJ1ZmYAAApfZGVjQ250S2V5ABBfZGVjQ250AAEAAAAAAzEASAAAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0Fsd2F5c05leHQsIEFzc2VtYmx5LUNTaGFycAAAAzIApQAAAAIkdHlwZQA/AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NoZWNrQWJub3JtYWxGbGFnLCBBc3NlbWJseS1DU2hhcnAAAl9hYm5vcm1hbEZsYWcACQAAAFNJTEVOQ0VEAAJfdGFyZ2V0VHlwZQAHAAAAU09VUkNFAAhfaXNVbnNldAAAAl9hYm5vcm1hbEZsYWdLZXkAAQAAAAAAAzMAiAUAAAIkdHlwZQBKAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NyZWF0ZUJ1ZmZVc2VBYmlsaXR5U2VsZWN0b3IsIEFzc2VtYmx5LUNTaGFycAACX3NvdXJjZVR5cGUABwAAAFNPVVJDRQACX3RhcmdldFR5cGUABwAAAFRBUkdFVAAIX3VzZUFiaWxpdHlGcm9tVGFyZ2V0AAACX2FiaWxpdHlGcm9tVGFyZ2V0VHlwZQAHAAAAU09VUkNFAAJfYWJpbGl0eU5hbWUADwAAAGNoYXJnZV9ndW5jdHJsAAhfZXhjbHVkZVRhcmdldAAAAl9leGNsdWRlVGFyZ2V0VHlwZQAHAAAAU09VUkNFAANfYnVmZgDQAwAAA2F0dHJpYnV0ZXMAbgAAAAphYm5vcm1hbEZsYWdzAAphYm5vcm1hbEltbXVuZXMACmFibm9ybWFsQW50aXMACmFibm9ybWFsQ29tYm9zAAphYm5vcm1hbENvbWJvSW1tdW5lcwAKYXR0cmlidXRlTW9kaWZpZXJzAAACYnVmZktleQAeAAAAZW5lbXlfZG1lY2hfY2hhcmdlW3NwX3JlZHVjZV0ACGxvYWRGcm9tREIAAAhpc0R1cmFibGVCdWZmAAAIaXNEYW1hZ2VNaXNzYWJsZQAACGlzU2lsZW5jZWFibGUAAAhpc1N0dW5uYWJsZQAACGlzRnJlZXphYmxlAAAIaXNMZXZpdGF0YWJsZQAACGlzR3JvdW5kQm91bmRhYmxlAAACc3RhdHVzUmVzaXN0YWJsZQAKAAAAQVVUT01BVElDAAJ0ZW1wbGF0ZUtleQARAAAAbW9kaWZ5X3NwW3N0YXJ0XQAIZGlzYWJsZU92ZXJyaWRlAAAKb3ZlcnJpZGVLZXkAAm92ZXJyaWRlVHlwZQAIAAAAREVGQVVMVAAQbWF4U3RhY2tDbnQAAQAAAAhyZWZyZXNoUmVtYWluaW5nVGltZVdoZW5TdGFja01heAAACGNsZWFyQWxsU3RhY2tDbnRXaGVuVGltZVVwAAAQbWF4VmFsaWRTdGFja0NudAD/////CGluZGVwZW5kZW50Q2hhcmFjdGVyU291cmNlAAAKb3ZlcnJpZGVFZmZlY3RLZXkACG92ZXJyaWRlT25FdmVudFByaW9yaXR5AAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAAphdWRpb1NpZ25hbAACbGlmZVRpbWVUeXBlAAwAAABJTU1FRElBVEVMWQAIdGFrZVNuYXBzaG90V2hlbkV4dGVuZAAACmR1cmF0aW9uS2V5AAFsaWZlVGltZQAAAAAAAAAAAAJ0cmlnZ2VyTGlmZVR5cGUADAAAAElNTUVESUFURUxZABB0cmlnZ2VyQ250AAAAAAABdHJpZ2dlckludGVydmFsAAAAAAAAAPC/CHdhaXRGaXJzdFRyaWdnZXJJbnRlcnZhbAABAWZpcnN0VHJpZ2dlckludGVydmFsAAAAAAAAAPC/EHByaW9yaXR5AP////8EcHJpb3JpdHlCQktleXMABQAAAAAIc3RyaXBCbGFja2JvYXJkUGFyYW1zV2l0aEJ1ZmZLZXkAAQRibGFja2JvYXJkAAUAAAAACGVuYWJsZUluaXREaXJlY3Rpb25Gcm9tU291cmNlAAAACF9pc0Rlcml2ZWRCdWZmAAAIX2ZpbmlzaERlcml2ZWRCdWZmSWZQYXJlbnRGaW5pc2gAAAhfYWN0aW9uRmFpbGVkSWZOb1RhcmdldAAACF9vdmVycmlkZUJ1ZmZTb3VyY2VUeXBlAAACX2J1ZmZTb3VyY2VUeXBlAAcAAABTT1VSQ0UACF9hc3NpZ25UYXJnZXRDbnRUb0JCAAAAAzQAbgAAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0ZpbmlzaEJ1ZmYsIEFzc2VtYmx5LUNTaGFycAAIX2RlY0NudElmU3RhY2sAAAhfdXBkYXRlT3ZlcnJpZGVNYXAAAQAAAAA=",
+      "document_sha256": "965eb42f68f3693fda4061f2193e9d790cddb7b753e390f234615bafffb549d6"
+    },
+    "enemy_dslime_vampire": {
+      "parsed": {
+        "templateKey": "enemy_dslime_vampire",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_AFTER_OUTPUT_DAMAGE": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+HealViaDamage, Assembly-CSharp",
+              "_filterModifierCancelled": false,
+              "_healType": "DAMAGE_SCALE"
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateEffect, Assembly-CSharp",
+              "_targetType": "BUFF_OWNER",
+              "_sourceType": "BUFF_OWNER",
+              "_effectKey": "enemy_dslime_heal_01",
+              "_useSourceFaceVactor": false,
+              "_useSourceToTargetDirection": false,
+              "_useConstDirection": false,
+              "_constDirection": "UP",
+              "_createEffectHoldBySource": false,
+              "_createEffectConstDirectionHoldBySource": false,
+              "_useAttackPlaybackSpeed": false,
+              "_manualSetPlaybackSpeed": false,
+              "_blackboardKey": "",
+              "_playbackSpeed": 1.0
+            }
+          ]
+        }
+      },
+      "payload_offset": 1605575,
+      "document_base64": "wgIAAAJ0ZW1wbGF0ZUtleQAVAAAAZW5lbXlfZHNsaW1lX3ZhbXBpcmUAAmVmZmVjdEtleQABAAAAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQAA2V2ZW50VG9BY3Rpb25zAFoCAAAET05fQUZURVJfT1VUUFVUX0RBTUFHRQA9AgAAAzAAggAAAAIkdHlwZQA7AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0hlYWxWaWFEYW1hZ2UsIEFzc2VtYmx5LUNTaGFycAAIX2ZpbHRlck1vZGlmaWVyQ2FuY2VsbGVkAAACX2hlYWxUeXBlAA0AAABEQU1BR0VfU0NBTEUAAAMxALABAAACJHR5cGUAOgAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDcmVhdGVFZmZlY3QsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIAAl9zb3VyY2VUeXBlAAsAAABCVUZGX09XTkVSAAJfZWZmZWN0S2V5ABUAAABlbmVteV9kc2xpbWVfaGVhbF8wMQAIX3VzZVNvdXJjZUZhY2VWYWN0b3IAAAhfdXNlU291cmNlVG9UYXJnZXREaXJlY3Rpb24AAAhfdXNlQ29uc3REaXJlY3Rpb24AAAJfY29uc3REaXJlY3Rpb24AAwAAAFVQAAhfY3JlYXRlRWZmZWN0SG9sZEJ5U291cmNlAAAIX2NyZWF0ZUVmZmVjdENvbnN0RGlyZWN0aW9uSG9sZEJ5U291cmNlAAAIX3VzZUF0dGFja1BsYXliYWNrU3BlZWQAAAhfbWFudWFsU2V0UGxheWJhY2tTcGVlZAAAAl9ibGFja2JvYXJkS2V5AAEAAAAAAV9wbGF5YmFja1NwZWVkAAAAAAAAAPA/AAAAAA==",
+      "document_sha256": "0489d65c4192f82d3a35286225b965fc6f58e91726a8456e9ac2d30f3f0dc731"
+    },
+    "enemy_dsuply_2_t[aura]": {
+      "parsed": {
+        "templateKey": "enemy_dsuply_2_t[aura]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_CALCULATE_DAMAGE": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+ApplyElementDamage, Assembly-CSharp",
+              "_elementDamageType": "DARK",
+              "_sourceType": "BUFF_OWNER",
+              "_isFixedEpDamage": false,
+              "_baseOnHostAtk": false,
+              "_baseOnEnemyHostAtk": false,
+              "_fixedEpDamageKey": null,
+              "_fixedEpDamage": 0.0,
+              "_noSource": false,
+              "_forceUseProjectileCachedAtk": false,
+              "_multiplyWithBuffValidStackCnt": true,
+              "_buffKey": "enemy_dsuply_2_t[attr_buff]",
+              "_buffSourceType": "BUFF_OWNER",
+              "_targetType": "TARGET",
+              "_isEnvElementDamage": false,
+              "_loadElementTypeFromBb": false,
+              "_fixedEpDamageScale": "",
+              "_epDamageScale": "ep_damage_ratio"
+            }
+          ],
+          "ON_BUFF_FINISH": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuffsById, Assembly-CSharp",
+              "_buffKey": "enemy_dsuply_2_t[attr_buff]",
+              "_loadFromBlackboard": false,
+              "_decCntIfStack": true,
+              "_updateOverrideMap": true,
+              "_targetType": "BUFF_OWNER",
+              "_checkBuffSource": false,
+              "_sourceType": "BUFF_SOURCE",
+              "_alsoClearNullSource": false,
+              "_finishHostBuff": false,
+              "_decCntKey": null,
+              "_decCnt": 1
+            }
+          ],
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+              "_buff": {
+                "attributes": {
+                  "abnormalFlags": [],
+                  "abnormalImmunes": [],
+                  "abnormalAntis": [],
+                  "abnormalCombos": [],
+                  "abnormalComboImmunes": [],
+                  "attributeModifiers": [
+                    {
+                      "attributeType": "ATK",
+                      "formulaItem": "MULTIPLIER",
+                      "value": 0.0,
+                      "loadFromBlackboard": true,
+                      "fetchBaseValueFromSourceEntity": false
+                    }
+                  ]
+                },
+                "buffKey": "enemy_dsuply_2_t[attr_buff]",
+                "loadFromDB": false,
+                "isDurableBuff": false,
+                "isDamageMissable": false,
+                "isSilenceable": false,
+                "isStunnable": false,
+                "isFreezable": false,
+                "isLevitatable": false,
+                "isGroundBoundable": false,
+                "statusResistable": "AUTOMATIC",
+                "templateKey": "empty",
+                "disableOverride": false,
+                "overrideKey": null,
+                "overrideType": "STACK",
+                "maxStackCnt": -1,
+                "refreshRemainingTimeWhenStackMax": false,
+                "clearAllStackCntWhenTimeUp": false,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": false,
+                "overrideEffectKey": null,
+                "overrideOnEventPriority": false,
+                "onEventPriority": "DEFAULT",
+                "audioSignal": null,
+                "lifeTimeType": "INFINITY",
+                "takeSnapshotWhenExtend": false,
+                "durationKey": null,
+                "lifeTime": 0.0,
+                "triggerLifeType": "IMMEDIATELY",
+                "triggerCnt": 0,
+                "triggerInterval": -1.0,
+                "waitFirstTriggerInterval": true,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": true,
+                "blackboard": [],
+                "enableInitDirectionFromSource": false
+              },
+              "_buffOwner": "BUFF_OWNER",
+              "_useSpecialBuffSource": false,
+              "_specialBuffSource": "BUFF_SOURCE",
+              "_isDerivedBuff": false,
+              "_finishDerivedBuffIfParentFinish": false,
+              "_inherateSourceProjectileFromParentBuff": false,
+              "_hookEffectKeyFromSourceProjectile": false
+            }
+          ]
+        }
+      },
+      "payload_offset": 1591480,
+      "document_base64": "igkAAAJ0ZW1wbGF0ZUtleQAXAAAAZW5lbXlfZHN1cGx5XzJfdFthdXJhXQACZWZmZWN0S2V5AAEAAAAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAADZXZlbnRUb0FjdGlvbnMAIAkAAARPTl9DQUxDVUxBVEVfREFNQUdFABECAAADMAAJAgAAAiR0eXBlAEAAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQXBwbHlFbGVtZW50RGFtYWdlLCBBc3NlbWJseS1DU2hhcnAAAl9lbGVtZW50RGFtYWdlVHlwZQAFAAAAREFSSwACX3NvdXJjZVR5cGUACwAAAEJVRkZfT1dORVIACF9pc0ZpeGVkRXBEYW1hZ2UAAAhfYmFzZU9uSG9zdEF0awAACF9iYXNlT25FbmVteUhvc3RBdGsAAApfZml4ZWRFcERhbWFnZUtleQABX2ZpeGVkRXBEYW1hZ2UAAAAAAAAAAAAIX25vU291cmNlAAAIX2ZvcmNlVXNlUHJvamVjdGlsZUNhY2hlZEF0awAACF9tdWx0aXBseVdpdGhCdWZmVmFsaWRTdGFja0NudAABAl9idWZmS2V5ABwAAABlbmVteV9kc3VwbHlfMl90W2F0dHJfYnVmZl0AAl9idWZmU291cmNlVHlwZQALAAAAQlVGRl9PV05FUgACX3RhcmdldFR5cGUABwAAAFRBUkdFVAAIX2lzRW52RWxlbWVudERhbWFnZQAACF9sb2FkRWxlbWVudFR5cGVGcm9tQmIAAAJfZml4ZWRFcERhbWFnZVNjYWxlAAEAAAAAAl9lcERhbWFnZVNjYWxlABAAAABlcF9kYW1hZ2VfcmF0aW8AAAAET05fQlVGRl9GSU5JU0gASQEAAAMwAEEBAAACJHR5cGUAPQAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytGaW5pc2hCdWZmc0J5SWQsIEFzc2VtYmx5LUNTaGFycAACX2J1ZmZLZXkAHAAAAGVuZW15X2RzdXBseV8yX3RbYXR0cl9idWZmXQAIX2xvYWRGcm9tQmxhY2tib2FyZAAACF9kZWNDbnRJZlN0YWNrAAEIX3VwZGF0ZU92ZXJyaWRlTWFwAAECX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIACF9jaGVja0J1ZmZTb3VyY2UAAAJfc291cmNlVHlwZQAMAAAAQlVGRl9TT1VSQ0UACF9hbHNvQ2xlYXJOdWxsU291cmNlAAAIX2ZpbmlzaEhvc3RCdWZmAAAKX2RlY0NudEtleQAQX2RlY0NudAABAAAAAAAET05fQlVGRl9TVEFSVACNBQAAAzAAhQUAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NyZWF0ZUJ1ZmYsIEFzc2VtYmx5LUNTaGFycAADX2J1ZmYAXAQAAANhdHRyaWJ1dGVzAAwBAAAEYWJub3JtYWxGbGFncwAFAAAAAARhYm5vcm1hbEltbXVuZXMABQAAAAAEYWJub3JtYWxBbnRpcwAFAAAAAARhYm5vcm1hbENvbWJvcwAFAAAAAARhYm5vcm1hbENvbWJvSW1tdW5lcwAFAAAAAARhdHRyaWJ1dGVNb2RpZmllcnMAhQAAAAMwAH0AAAACYXR0cmlidXRlVHlwZQAEAAAAQVRLAAJmb3JtdWxhSXRlbQALAAAATVVMVElQTElFUgABdmFsdWUAAAAAAAAAAAAIbG9hZEZyb21CbGFja2JvYXJkAAEIZmV0Y2hCYXNlVmFsdWVGcm9tU291cmNlRW50aXR5AAAAAAACYnVmZktleQAcAAAAZW5lbXlfZHN1cGx5XzJfdFthdHRyX2J1ZmZdAAhsb2FkRnJvbURCAAAIaXNEdXJhYmxlQnVmZgAACGlzRGFtYWdlTWlzc2FibGUAAAhpc1NpbGVuY2VhYmxlAAAIaXNTdHVubmFibGUAAAhpc0ZyZWV6YWJsZQAACGlzTGV2aXRhdGFibGUAAAhpc0dyb3VuZEJvdW5kYWJsZQAAAnN0YXR1c1Jlc2lzdGFibGUACgAAAEFVVE9NQVRJQwACdGVtcGxhdGVLZXkABgAAAGVtcHR5AAhkaXNhYmxlT3ZlcnJpZGUAAApvdmVycmlkZUtleQACb3ZlcnJpZGVUeXBlAAYAAABTVEFDSwAQbWF4U3RhY2tDbnQA/////whyZWZyZXNoUmVtYWluaW5nVGltZVdoZW5TdGFja01heAAACGNsZWFyQWxsU3RhY2tDbnRXaGVuVGltZVVwAAAQbWF4VmFsaWRTdGFja0NudAD/////CGluZGVwZW5kZW50Q2hhcmFjdGVyU291cmNlAAAKb3ZlcnJpZGVFZmZlY3RLZXkACG92ZXJyaWRlT25FdmVudFByaW9yaXR5AAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAAphdWRpb1NpZ25hbAACbGlmZVRpbWVUeXBlAAkAAABJTkZJTklUWQAIdGFrZVNuYXBzaG90V2hlbkV4dGVuZAAACmR1cmF0aW9uS2V5AAFsaWZlVGltZQAAAAAAAAAAAAJ0cmlnZ2VyTGlmZVR5cGUADAAAAElNTUVESUFURUxZABB0cmlnZ2VyQ250AAAAAAABdHJpZ2dlckludGVydmFsAAAAAAAAAPC/CHdhaXRGaXJzdFRyaWdnZXJJbnRlcnZhbAABAWZpcnN0VHJpZ2dlckludGVydmFsAAAAAAAAAPC/EHByaW9yaXR5AP////8EcHJpb3JpdHlCQktleXMABQAAAAAIc3RyaXBCbGFja2JvYXJkUGFyYW1zV2l0aEJ1ZmZLZXkAAQRibGFja2JvYXJkAAUAAAAACGVuYWJsZUluaXREaXJlY3Rpb25Gcm9tU291cmNlAAAAAl9idWZmT3duZXIACwAAAEJVRkZfT1dORVIACF91c2VTcGVjaWFsQnVmZlNvdXJjZQAAAl9zcGVjaWFsQnVmZlNvdXJjZQAMAAAAQlVGRl9TT1VSQ0UACF9pc0Rlcml2ZWRCdWZmAAAIX2ZpbmlzaERlcml2ZWRCdWZmSWZQYXJlbnRGaW5pc2gAAAhfaW5oZXJhdGVTb3VyY2VQcm9qZWN0aWxlRnJvbVBhcmVudEJ1ZmYAAAhfaG9va0VmZmVjdEtleUZyb21Tb3VyY2VQcm9qZWN0aWxlAAAAAAAA",
+      "document_sha256": "0c5160c2609b1f38c26bf4c2c0f9d9e7e24933a69ac729a5b2a1f115f4b8b7e4"
+    },
+    "enemy_manfri_atk[holder]": {
+      "parsed": {
+        "templateKey": "enemy_manfri_atk[holder]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_FINISH": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CheckContainsBuff, Assembly-CSharp",
+              "_targetType": "BUFF_OWNER",
+              "_buffKeys": [
+                "enemy_manfri_atk[holder]"
+              ],
+              "isAND": true,
+              "_loadFromBlackboard": false,
+              "_checkBuffSource": false,
+              "_buffSourceType": "BUFF_SOURCE",
+              "_checkSourceHost": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+IfNot, Assembly-CSharp"
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuffsById, Assembly-CSharp",
+              "_buffKey": "enemy_manfri_[atk_speed]",
+              "_loadFromBlackboard": false,
+              "_decCntIfStack": false,
+              "_updateOverrideMap": true,
+              "_targetType": "BUFF_OWNER",
+              "_checkBuffSource": false,
+              "_sourceType": "BUFF_SOURCE",
+              "_alsoClearNullSource": false,
+              "_finishHostBuff": false,
+              "_decCntKey": null,
+              "_decCnt": 1
+            }
+          ]
+        }
+      },
+      "payload_offset": 1628872,
+      "document_base64": "EAMAAAJ0ZW1wbGF0ZUtleQAZAAAAZW5lbXlfbWFuZnJpX2F0a1tob2xkZXJdAAJlZmZlY3RLZXkAAQAAAAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAANldmVudFRvQWN0aW9ucwCkAgAABE9OX0JVRkZfRklOSVNIAI8CAAADMAAAAQAAAiR0eXBlAD8AAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2hlY2tDb250YWluc0J1ZmYsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIABF9idWZmS2V5cwAlAAAAAjAAGQAAAGVuZW15X21hbmZyaV9hdGtbaG9sZGVyXQAACGlzQU5EAAEIX2xvYWRGcm9tQmxhY2tib2FyZAAACF9jaGVja0J1ZmZTb3VyY2UAAAJfYnVmZlNvdXJjZVR5cGUADAAAAEJVRkZfU09VUkNFAAhfY2hlY2tTb3VyY2VIb3N0AAAAAzEAQwAAAAIkdHlwZQAzAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0lmTm90LCBBc3NlbWJseS1DU2hhcnAAAAMyAD4BAAACJHR5cGUAPQAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytGaW5pc2hCdWZmc0J5SWQsIEFzc2VtYmx5LUNTaGFycAACX2J1ZmZLZXkAGQAAAGVuZW15X21hbmZyaV9bYXRrX3NwZWVkXQAIX2xvYWRGcm9tQmxhY2tib2FyZAAACF9kZWNDbnRJZlN0YWNrAAAIX3VwZGF0ZU92ZXJyaWRlTWFwAAECX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIACF9jaGVja0J1ZmZTb3VyY2UAAAJfc291cmNlVHlwZQAMAAAAQlVGRl9TT1VSQ0UACF9hbHNvQ2xlYXJOdWxsU291cmNlAAAIX2ZpbmlzaEhvc3RCdWZmAAAKX2RlY0NudEtleQAQX2RlY0NudAABAAAAAAAAAA==",
+      "document_sha256": "ab918d1aec4b6687ecc29632f2b14bdfdb153bf070fb04d94e4fdc398f6a3b86"
+    },
+    "enemy_manfri_atk[imme]": {
+      "parsed": {
+        "templateKey": "enemy_manfri_atk[imme]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuffsById, Assembly-CSharp",
+              "_buffKey": "enemy_manfri_[atk_speed]",
+              "_loadFromBlackboard": false,
+              "_decCntIfStack": false,
+              "_updateOverrideMap": true,
+              "_targetType": "BUFF_OWNER",
+              "_checkBuffSource": false,
+              "_sourceType": "BUFF_SOURCE",
+              "_alsoClearNullSource": false,
+              "_finishHostBuff": false,
+              "_decCntKey": null,
+              "_decCnt": 1
+            }
+          ]
+        }
+      },
+      "payload_offset": 1628394,
+      "document_base64": "xAEAAAJ0ZW1wbGF0ZUtleQAXAAAAZW5lbXlfbWFuZnJpX2F0a1tpbW1lXQACZWZmZWN0S2V5AAEAAAAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAADZXZlbnRUb0FjdGlvbnMAWgEAAARPTl9CVUZGX1NUQVJUAEYBAAADMAA+AQAAAiR0eXBlAD0AAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrRmluaXNoQnVmZnNCeUlkLCBBc3NlbWJseS1DU2hhcnAAAl9idWZmS2V5ABkAAABlbmVteV9tYW5mcmlfW2F0a19zcGVlZF0ACF9sb2FkRnJvbUJsYWNrYm9hcmQAAAhfZGVjQ250SWZTdGFjawAACF91cGRhdGVPdmVycmlkZU1hcAABAl90YXJnZXRUeXBlAAsAAABCVUZGX09XTkVSAAhfY2hlY2tCdWZmU291cmNlAAACX3NvdXJjZVR5cGUADAAAAEJVRkZfU09VUkNFAAhfYWxzb0NsZWFyTnVsbFNvdXJjZQAACF9maW5pc2hIb3N0QnVmZgAACl9kZWNDbnRLZXkAEF9kZWNDbnQAAQAAAAAAAAA=",
+      "document_sha256": "6b5e6a6bb3830686b915d4de4d3f444c5c644f6f2231baf9a0db1b5094ef2b2b"
+    },
+    "enemy_manfri_aura": {
+      "parsed": {
+        "templateKey": "enemy_manfri_aura",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+IsBlackboardEqualWithString, Assembly-CSharp",
+              "_var": "isenabled",
+              "_compareValue": "aura_on",
+              "_compareBBKey": null,
+              "_useBuffBlackboard": false,
+              "_buffKey": ""
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+              "_buff": {
+                "attributes": {
+                  "abnormalFlags": [],
+                  "abnormalImmunes": [],
+                  "abnormalAntis": [],
+                  "abnormalCombos": [],
+                  "abnormalComboImmunes": [],
+                  "attributeModifiers": []
+                },
+                "buffKey": "enemy_manfri_aura[damage]",
+                "loadFromDB": false,
+                "isDurableBuff": false,
+                "isDamageMissable": false,
+                "isSilenceable": false,
+                "isStunnable": false,
+                "isFreezable": false,
+                "isLevitatable": false,
+                "isGroundBoundable": false,
+                "statusResistable": "AUTOMATIC",
+                "templateKey": "enemy_manfri_aura[damage]",
+                "disableOverride": false,
+                "overrideKey": null,
+                "overrideType": "DEFAULT",
+                "maxStackCnt": 1,
+                "refreshRemainingTimeWhenStackMax": false,
+                "clearAllStackCntWhenTimeUp": false,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": false,
+                "overrideEffectKey": "enemy_manfri_buff_03_start",
+                "overrideOnEventPriority": false,
+                "onEventPriority": "DEFAULT",
+                "audioSignal": null,
+                "lifeTimeType": "INFINITY",
+                "takeSnapshotWhenExtend": false,
+                "durationKey": null,
+                "lifeTime": 0.0,
+                "triggerLifeType": "INFINITY",
+                "triggerCnt": 0,
+                "triggerInterval": 1.0,
+                "waitFirstTriggerInterval": true,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": false,
+                "blackboard": [],
+                "enableInitDirectionFromSource": false
+              },
+              "_buffOwner": "BUFF_OWNER",
+              "_useSpecialBuffSource": false,
+              "_specialBuffSource": "BUFF_SOURCE",
+              "_isDerivedBuff": true,
+              "_finishDerivedBuffIfParentFinish": false,
+              "_inherateSourceProjectileFromParentBuff": false,
+              "_hookEffectKeyFromSourceProjectile": false
+            }
+          ],
+          "ON_BEFORE_APPEAR": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+IsBlackboardEqualWithString, Assembly-CSharp",
+              "_var": "isenabled",
+              "_compareValue": "aura_on",
+              "_compareBBKey": null,
+              "_useBuffBlackboard": false,
+              "_buffKey": ""
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CheckContainsDerviedBuff, Assembly-CSharp",
+              "_derviedBuffKey": null
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+IfNot, Assembly-CSharp"
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+              "_buff": {
+                "attributes": {
+                  "abnormalFlags": [],
+                  "abnormalImmunes": [],
+                  "abnormalAntis": [],
+                  "abnormalCombos": [],
+                  "abnormalComboImmunes": [],
+                  "attributeModifiers": []
+                },
+                "buffKey": "enemy_manfri_aura[damage]",
+                "loadFromDB": false,
+                "isDurableBuff": false,
+                "isDamageMissable": false,
+                "isSilenceable": false,
+                "isStunnable": false,
+                "isFreezable": false,
+                "isLevitatable": false,
+                "isGroundBoundable": false,
+                "statusResistable": "AUTOMATIC",
+                "templateKey": "enemy_manfri_aura[damage]",
+                "disableOverride": false,
+                "overrideKey": null,
+                "overrideType": "DEFAULT",
+                "maxStackCnt": 1,
+                "refreshRemainingTimeWhenStackMax": false,
+                "clearAllStackCntWhenTimeUp": false,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": false,
+                "overrideEffectKey": "enemy_manfri_buff_03_start",
+                "overrideOnEventPriority": false,
+                "onEventPriority": "DEFAULT",
+                "audioSignal": null,
+                "lifeTimeType": "INFINITY",
+                "takeSnapshotWhenExtend": false,
+                "durationKey": null,
+                "lifeTime": 0.0,
+                "triggerLifeType": "INFINITY",
+                "triggerCnt": 0,
+                "triggerInterval": 1.0,
+                "waitFirstTriggerInterval": true,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": false,
+                "blackboard": [],
+                "enableInitDirectionFromSource": false
+              },
+              "_buffOwner": "BUFF_OWNER",
+              "_useSpecialBuffSource": false,
+              "_specialBuffSource": "BUFF_SOURCE",
+              "_isDerivedBuff": true,
+              "_finishDerivedBuffIfParentFinish": false,
+              "_inherateSourceProjectileFromParentBuff": false,
+              "_hookEffectKeyFromSourceProjectile": false
+            }
+          ],
+          "ON_BEFORE_DISAPPEAR": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishDerivedBuff, Assembly-CSharp",
+              "_updateOverrideMap": true
+            }
+          ]
+        }
+      },
+      "payload_offset": 1621325,
+      "document_base64": "sg0AAAJ0ZW1wbGF0ZUtleQASAAAAZW5lbXlfbWFuZnJpX2F1cmEAAmVmZmVjdEtleQABAAAAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQAA2V2ZW50VG9BY3Rpb25zAE0NAAAET05fQlVGRl9TVEFSVAD7BQAAAzAAuwAAAAIkdHlwZQBJAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0lzQmxhY2tib2FyZEVxdWFsV2l0aFN0cmluZywgQXNzZW1ibHktQ1NoYXJwAAJfdmFyAAoAAABpc2VuYWJsZWQAAl9jb21wYXJlVmFsdWUACAAAAGF1cmFfb24ACl9jb21wYXJlQkJLZXkACF91c2VCdWZmQmxhY2tib2FyZAAAAl9idWZmS2V5AAEAAAAAAAMxADUFAAACJHR5cGUAOAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDcmVhdGVCdWZmLCBBc3NlbWJseS1DU2hhcnAAA19idWZmAAwEAAADYXR0cmlidXRlcwCMAAAABGFibm9ybWFsRmxhZ3MABQAAAAAEYWJub3JtYWxJbW11bmVzAAUAAAAABGFibm9ybWFsQW50aXMABQAAAAAEYWJub3JtYWxDb21ib3MABQAAAAAEYWJub3JtYWxDb21ib0ltbXVuZXMABQAAAAAEYXR0cmlidXRlTW9kaWZpZXJzAAUAAAAAAAJidWZmS2V5ABoAAABlbmVteV9tYW5mcmlfYXVyYVtkYW1hZ2VdAAhsb2FkRnJvbURCAAAIaXNEdXJhYmxlQnVmZgAACGlzRGFtYWdlTWlzc2FibGUAAAhpc1NpbGVuY2VhYmxlAAAIaXNTdHVubmFibGUAAAhpc0ZyZWV6YWJsZQAACGlzTGV2aXRhdGFibGUAAAhpc0dyb3VuZEJvdW5kYWJsZQAAAnN0YXR1c1Jlc2lzdGFibGUACgAAAEFVVE9NQVRJQwACdGVtcGxhdGVLZXkAGgAAAGVuZW15X21hbmZyaV9hdXJhW2RhbWFnZV0ACGRpc2FibGVPdmVycmlkZQAACm92ZXJyaWRlS2V5AAJvdmVycmlkZVR5cGUACAAAAERFRkFVTFQAEG1heFN0YWNrQ250AAEAAAAIcmVmcmVzaFJlbWFpbmluZ1RpbWVXaGVuU3RhY2tNYXgAAAhjbGVhckFsbFN0YWNrQ250V2hlblRpbWVVcAAAEG1heFZhbGlkU3RhY2tDbnQA/////whpbmRlcGVuZGVudENoYXJhY3RlclNvdXJjZQAAAm92ZXJyaWRlRWZmZWN0S2V5ABsAAABlbmVteV9tYW5mcmlfYnVmZl8wM19zdGFydAAIb3ZlcnJpZGVPbkV2ZW50UHJpb3JpdHkAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQACmF1ZGlvU2lnbmFsAAJsaWZlVGltZVR5cGUACQAAAElORklOSVRZAAh0YWtlU25hcHNob3RXaGVuRXh0ZW5kAAAKZHVyYXRpb25LZXkAAWxpZmVUaW1lAAAAAAAAAAAAAnRyaWdnZXJMaWZlVHlwZQAJAAAASU5GSU5JVFkAEHRyaWdnZXJDbnQAAAAAAAF0cmlnZ2VySW50ZXJ2YWwAAAAAAAAA8D8Id2FpdEZpcnN0VHJpZ2dlckludGVydmFsAAEBZmlyc3RUcmlnZ2VySW50ZXJ2YWwAAAAAAAAA8L8QcHJpb3JpdHkA/////wRwcmlvcml0eUJCS2V5cwAFAAAAAAhzdHJpcEJsYWNrYm9hcmRQYXJhbXNXaXRoQnVmZktleQAABGJsYWNrYm9hcmQABQAAAAAIZW5hYmxlSW5pdERpcmVjdGlvbkZyb21Tb3VyY2UAAAACX2J1ZmZPd25lcgALAAAAQlVGRl9PV05FUgAIX3VzZVNwZWNpYWxCdWZmU291cmNlAAACX3NwZWNpYWxCdWZmU291cmNlAAwAAABCVUZGX1NPVVJDRQAIX2lzRGVyaXZlZEJ1ZmYAAQhfZmluaXNoRGVyaXZlZEJ1ZmZJZlBhcmVudEZpbmlzaAAACF9pbmhlcmF0ZVNvdXJjZVByb2plY3RpbGVGcm9tUGFyZW50QnVmZgAACF9ob29rRWZmZWN0S2V5RnJvbVNvdXJjZVByb2plY3RpbGUAAAAABE9OX0JFRk9SRV9BUFBFQVIAqwYAAAMwALsAAAACJHR5cGUASQAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytJc0JsYWNrYm9hcmRFcXVhbFdpdGhTdHJpbmcsIEFzc2VtYmx5LUNTaGFycAACX3ZhcgAKAAAAaXNlbmFibGVkAAJfY29tcGFyZVZhbHVlAAgAAABhdXJhX29uAApfY29tcGFyZUJCS2V5AAhfdXNlQnVmZkJsYWNrYm9hcmQAAAJfYnVmZktleQABAAAAAAADMQBnAAAAAiR0eXBlAEYAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2hlY2tDb250YWluc0RlcnZpZWRCdWZmLCBBc3NlbWJseS1DU2hhcnAACl9kZXJ2aWVkQnVmZktleQAAAzIAQwAAAAIkdHlwZQAzAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0lmTm90LCBBc3NlbWJseS1DU2hhcnAAAAMzADUFAAACJHR5cGUAOAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDcmVhdGVCdWZmLCBBc3NlbWJseS1DU2hhcnAAA19idWZmAAwEAAADYXR0cmlidXRlcwCMAAAABGFibm9ybWFsRmxhZ3MABQAAAAAEYWJub3JtYWxJbW11bmVzAAUAAAAABGFibm9ybWFsQW50aXMABQAAAAAEYWJub3JtYWxDb21ib3MABQAAAAAEYWJub3JtYWxDb21ib0ltbXVuZXMABQAAAAAEYXR0cmlidXRlTW9kaWZpZXJzAAUAAAAAAAJidWZmS2V5ABoAAABlbmVteV9tYW5mcmlfYXVyYVtkYW1hZ2VdAAhsb2FkRnJvbURCAAAIaXNEdXJhYmxlQnVmZgAACGlzRGFtYWdlTWlzc2FibGUAAAhpc1NpbGVuY2VhYmxlAAAIaXNTdHVubmFibGUAAAhpc0ZyZWV6YWJsZQAACGlzTGV2aXRhdGFibGUAAAhpc0dyb3VuZEJvdW5kYWJsZQAAAnN0YXR1c1Jlc2lzdGFibGUACgAAAEFVVE9NQVRJQwACdGVtcGxhdGVLZXkAGgAAAGVuZW15X21hbmZyaV9hdXJhW2RhbWFnZV0ACGRpc2FibGVPdmVycmlkZQAACm92ZXJyaWRlS2V5AAJvdmVycmlkZVR5cGUACAAAAERFRkFVTFQAEG1heFN0YWNrQ250AAEAAAAIcmVmcmVzaFJlbWFpbmluZ1RpbWVXaGVuU3RhY2tNYXgAAAhjbGVhckFsbFN0YWNrQ250V2hlblRpbWVVcAAAEG1heFZhbGlkU3RhY2tDbnQA/////whpbmRlcGVuZGVudENoYXJhY3RlclNvdXJjZQAAAm92ZXJyaWRlRWZmZWN0S2V5ABsAAABlbmVteV9tYW5mcmlfYnVmZl8wM19zdGFydAAIb3ZlcnJpZGVPbkV2ZW50UHJpb3JpdHkAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQACmF1ZGlvU2lnbmFsAAJsaWZlVGltZVR5cGUACQAAAElORklOSVRZAAh0YWtlU25hcHNob3RXaGVuRXh0ZW5kAAAKZHVyYXRpb25LZXkAAWxpZmVUaW1lAAAAAAAAAAAAAnRyaWdnZXJMaWZlVHlwZQAJAAAASU5GSU5JVFkAEHRyaWdnZXJDbnQAAAAAAAF0cmlnZ2VySW50ZXJ2YWwAAAAAAAAA8D8Id2FpdEZpcnN0VHJpZ2dlckludGVydmFsAAEBZmlyc3RUcmlnZ2VySW50ZXJ2YWwAAAAAAAAA8L8QcHJpb3JpdHkA/////wRwcmlvcml0eUJCS2V5cwAFAAAAAAhzdHJpcEJsYWNrYm9hcmRQYXJhbXNXaXRoQnVmZktleQAABGJsYWNrYm9hcmQABQAAAAAIZW5hYmxlSW5pdERpcmVjdGlvbkZyb21Tb3VyY2UAAAACX2J1ZmZPd25lcgALAAAAQlVGRl9PV05FUgAIX3VzZVNwZWNpYWxCdWZmU291cmNlAAACX3NwZWNpYWxCdWZmU291cmNlAAwAAABCVUZGX1NPVVJDRQAIX2lzRGVyaXZlZEJ1ZmYAAQhfZmluaXNoRGVyaXZlZEJ1ZmZJZlBhcmVudEZpbmlzaAAACF9pbmhlcmF0ZVNvdXJjZVByb2plY3RpbGVGcm9tUGFyZW50QnVmZgAACF9ob29rRWZmZWN0S2V5RnJvbVNvdXJjZVByb2plY3RpbGUAAAAABE9OX0JFRk9SRV9ESVNBUFBFQVIAbAAAAAMwAGQAAAACJHR5cGUAPwAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytGaW5pc2hEZXJpdmVkQnVmZiwgQXNzZW1ibHktQ1NoYXJwAAhfdXBkYXRlT3ZlcnJpZGVNYXAAAQAAAAA=",
+      "document_sha256": "56dae4b7c49174ef7dc5b2c70f9bbc7575ee0020ba6632f0594f5168ce7b0536"
+    },
+    "enemy_manfri_aura[damage]": {
+      "parsed": {
+        "templateKey": "enemy_manfri_aura[damage]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_TRIGGER": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+AOEDamage, Assembly-CSharp",
+              "_useAbilitySourceSide": true,
+              "_sourceType": "BUFF_SOURCE",
+              "_targetType": "BUFF_OWNER",
+              "_damageType": "MAGICAL",
+              "_sourceApplyWay": "NONE",
+              "_targetOptions": {
+                "targetSide": "ENEMY",
+                "targetMotion": "ALL",
+                "targetCategory": "DEFAULT",
+                "enableAdvancedOptions": true,
+                "ignoreTargetFree": false,
+                "ignoreAllyTargetFree": false,
+                "ignoreHealFree": false,
+                "ignoreMotionMode": false,
+                "ignoreTargetSide": false,
+                "excludeSomeAbnormalFlags": false,
+                "containSomeAbnormalFlags": false,
+                "excludeAbnormalFlag": "STUNNED",
+                "containAbnormalFlag": "STUNNED",
+                "purposeMask": "NONE",
+                "professionMask": "NONE",
+                "checkUnitType": false,
+                "unitTypeMask": "NONE",
+                "onlyIgnoreSomeOfTargetFreeCase": false,
+                "abnormalFlag": "STUNNED",
+                "abnormalCombo": "SLEEPING"
+              },
+              "_excludeTarget": false,
+              "_rangeId": null,
+              "_useRadius": true,
+              "_radius": 1.0,
+              "_useAbilitySelector": false,
+              "_abilityName": null,
+              "_damageScale": "atk_scale",
+              "_buffs": [],
+              "_attackType": "NORMAL",
+              "_createEffect": false,
+              "_hitEffectKey": null,
+              "_hitEffectUseSourceFaceTo": false,
+              "_useDamageFromBB": false,
+              "_damageKey": "value",
+              "_isNoSourceDamage": true,
+              "_checkTargetAlive": false,
+              "_modifierKey": "",
+              "_maxTargetCountKey": "",
+              "_filterType": "ALL"
+            }
+          ]
+        }
+      },
+      "payload_offset": 1620094,
+      "document_base64": "vAQAAAJ0ZW1wbGF0ZUtleQAaAAAAZW5lbXlfbWFuZnJpX2F1cmFbZGFtYWdlXQACZWZmZWN0S2V5AAEAAAAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAADZXZlbnRUb0FjdGlvbnMATwQAAARPTl9CVUZGX1RSSUdHRVIAOQQAAAMwADEEAAACJHR5cGUANwAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytBT0VEYW1hZ2UsIEFzc2VtYmx5LUNTaGFycAAIX3VzZUFiaWxpdHlTb3VyY2VTaWRlAAECX3NvdXJjZVR5cGUADAAAAEJVRkZfU09VUkNFAAJfdGFyZ2V0VHlwZQALAAAAQlVGRl9PV05FUgACX2RhbWFnZVR5cGUACAAAAE1BR0lDQUwAAl9zb3VyY2VBcHBseVdheQAFAAAATk9ORQADX3RhcmdldE9wdGlvbnMA6wEAAAJ0YXJnZXRTaWRlAAYAAABFTkVNWQACdGFyZ2V0TW90aW9uAAQAAABBTEwAAnRhcmdldENhdGVnb3J5AAgAAABERUZBVUxUAAhlbmFibGVBZHZhbmNlZE9wdGlvbnMAAQhpZ25vcmVUYXJnZXRGcmVlAAAIaWdub3JlQWxseVRhcmdldEZyZWUAAAhpZ25vcmVIZWFsRnJlZQAACGlnbm9yZU1vdGlvbk1vZGUAAAhpZ25vcmVUYXJnZXRTaWRlAAAIZXhjbHVkZVNvbWVBYm5vcm1hbEZsYWdzAAAIY29udGFpblNvbWVBYm5vcm1hbEZsYWdzAAACZXhjbHVkZUFibm9ybWFsRmxhZwAIAAAAU1RVTk5FRAACY29udGFpbkFibm9ybWFsRmxhZwAIAAAAU1RVTk5FRAACcHVycG9zZU1hc2sABQAAAE5PTkUAAnByb2Zlc3Npb25NYXNrAAUAAABOT05FAAhjaGVja1VuaXRUeXBlAAACdW5pdFR5cGVNYXNrAAUAAABOT05FAAhvbmx5SWdub3JlU29tZU9mVGFyZ2V0RnJlZUNhc2UAAAJhYm5vcm1hbEZsYWcACAAAAFNUVU5ORUQAAmFibm9ybWFsQ29tYm8ACQAAAFNMRUVQSU5HAAAIX2V4Y2x1ZGVUYXJnZXQAAApfcmFuZ2VJZAAIX3VzZVJhZGl1cwABAV9yYWRpdXMAAAAAAAAA8D8IX3VzZUFiaWxpdHlTZWxlY3RvcgAACl9hYmlsaXR5TmFtZQACX2RhbWFnZVNjYWxlAAoAAABhdGtfc2NhbGUABF9idWZmcwAFAAAAAAJfYXR0YWNrVHlwZQAHAAAATk9STUFMAAhfY3JlYXRlRWZmZWN0AAAKX2hpdEVmZmVjdEtleQAIX2hpdEVmZmVjdFVzZVNvdXJjZUZhY2VUbwAACF91c2VEYW1hZ2VGcm9tQkIAAAJfZGFtYWdlS2V5AAYAAAB2YWx1ZQAIX2lzTm9Tb3VyY2VEYW1hZ2UAAQhfY2hlY2tUYXJnZXRBbGl2ZQAAAl9tb2RpZmllcktleQABAAAAAAJfbWF4VGFyZ2V0Q291bnRLZXkAAQAAAAACX2ZpbHRlclR5cGUABAAAAEFMTAAAAAAA",
+      "document_sha256": "1e17152f0e7d5301f2055dee1d98870a1033d64c35d731d0f976ac3df8eadf9b"
+    },
+    "enemy_manfri_effect[hide_idle]": {
+      "parsed": {
+        "templateKey": "enemy_manfri_effect[hide_idle]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuffsById, Assembly-CSharp",
+              "_buffKey": "enemy_manfri_funnel_effect_1",
+              "_loadFromBlackboard": false,
+              "_decCntIfStack": false,
+              "_updateOverrideMap": true,
+              "_targetType": "BUFF_OWNER",
+              "_checkBuffSource": false,
+              "_sourceType": "BUFF_SOURCE",
+              "_alsoClearNullSource": false,
+              "_finishHostBuff": false,
+              "_decCntKey": null,
+              "_decCnt": 1
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+AlwaysNext, Assembly-CSharp"
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuffsById, Assembly-CSharp",
+              "_buffKey": "enemy_manfri_funnel_effect_2",
+              "_loadFromBlackboard": false,
+              "_decCntIfStack": false,
+              "_updateOverrideMap": true,
+              "_targetType": "BUFF_OWNER",
+              "_checkBuffSource": false,
+              "_sourceType": "BUFF_SOURCE",
+              "_alsoClearNullSource": false,
+              "_finishHostBuff": false,
+              "_decCntKey": null,
+              "_decCnt": 1
+            }
+          ]
+        }
+      },
+      "payload_offset": 1615206,
+      "document_base64": "YAMAAAJ0ZW1wbGF0ZUtleQAfAAAAZW5lbXlfbWFuZnJpX2VmZmVjdFtoaWRlX2lkbGVdAAJlZmZlY3RLZXkAAQAAAAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAANldmVudFRvQWN0aW9ucwDuAgAABE9OX0JVRkZfU1RBUlQA2gIAAAMwAEIBAAACJHR5cGUAPQAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytGaW5pc2hCdWZmc0J5SWQsIEFzc2VtYmx5LUNTaGFycAACX2J1ZmZLZXkAHQAAAGVuZW15X21hbmZyaV9mdW5uZWxfZWZmZWN0XzEACF9sb2FkRnJvbUJsYWNrYm9hcmQAAAhfZGVjQ250SWZTdGFjawAACF91cGRhdGVPdmVycmlkZU1hcAABAl90YXJnZXRUeXBlAAsAAABCVUZGX09XTkVSAAhfY2hlY2tCdWZmU291cmNlAAACX3NvdXJjZVR5cGUADAAAAEJVRkZfU09VUkNFAAhfYWxzb0NsZWFyTnVsbFNvdXJjZQAACF9maW5pc2hIb3N0QnVmZgAACl9kZWNDbnRLZXkAEF9kZWNDbnQAAQAAAAADMQBIAAAAAiR0eXBlADgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQWx3YXlzTmV4dCwgQXNzZW1ibHktQ1NoYXJwAAADMgBCAQAAAiR0eXBlAD0AAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrRmluaXNoQnVmZnNCeUlkLCBBc3NlbWJseS1DU2hhcnAAAl9idWZmS2V5AB0AAABlbmVteV9tYW5mcmlfZnVubmVsX2VmZmVjdF8yAAhfbG9hZEZyb21CbGFja2JvYXJkAAAIX2RlY0NudElmU3RhY2sAAAhfdXBkYXRlT3ZlcnJpZGVNYXAAAQJfdGFyZ2V0VHlwZQALAAAAQlVGRl9PV05FUgAIX2NoZWNrQnVmZlNvdXJjZQAAAl9zb3VyY2VUeXBlAAwAAABCVUZGX1NPVVJDRQAIX2Fsc29DbGVhck51bGxTb3VyY2UAAAhfZmluaXNoSG9zdEJ1ZmYAAApfZGVjQ250S2V5ABBfZGVjQ250AAEAAAAAAAAA",
+      "document_sha256": "4946a87c28a98e5b3c8dbb17a6163eeea9e856fdd2ba4e612320b8fceceb3c88"
+    },
+    "enemy_manfri_effect[trigger_idle]": {
+      "parsed": {
+        "templateKey": "enemy_manfri_effect[trigger_idle]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+              "_buff": {
+                "attributes": {
+                  "abnormalFlags": [],
+                  "abnormalImmunes": [],
+                  "abnormalAntis": [],
+                  "abnormalCombos": [],
+                  "abnormalComboImmunes": [],
+                  "attributeModifiers": []
+                },
+                "buffKey": "enemy_manfri_funnel_effect_1",
+                "loadFromDB": false,
+                "isDurableBuff": false,
+                "isDamageMissable": false,
+                "isSilenceable": false,
+                "isStunnable": false,
+                "isFreezable": false,
+                "isLevitatable": false,
+                "isGroundBoundable": false,
+                "statusResistable": "AUTOMATIC",
+                "templateKey": "empty",
+                "disableOverride": false,
+                "overrideKey": "",
+                "overrideType": "DEFAULT",
+                "maxStackCnt": 1,
+                "refreshRemainingTimeWhenStackMax": false,
+                "clearAllStackCntWhenTimeUp": false,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": false,
+                "overrideEffectKey": "enemy_manfri_buff_02_start",
+                "overrideOnEventPriority": false,
+                "onEventPriority": "DEFAULT",
+                "audioSignal": null,
+                "lifeTimeType": "INFINITY",
+                "takeSnapshotWhenExtend": false,
+                "durationKey": null,
+                "lifeTime": 0.0,
+                "triggerLifeType": "IMMEDIATELY",
+                "triggerCnt": 0,
+                "triggerInterval": -1.0,
+                "waitFirstTriggerInterval": true,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": false,
+                "blackboard": [],
+                "enableInitDirectionFromSource": false
+              },
+              "_buffOwner": "BUFF_OWNER",
+              "_useSpecialBuffSource": false,
+              "_specialBuffSource": "BUFF_SOURCE",
+              "_isDerivedBuff": false,
+              "_finishDerivedBuffIfParentFinish": false,
+              "_inherateSourceProjectileFromParentBuff": false,
+              "_hookEffectKeyFromSourceProjectile": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CheckUnitCurrentMode, Assembly-CSharp",
+              "_targetType": "BUFF_OWNER",
+              "_checkCurModeIndex": 0,
+              "_loadCurModeBbKey": ""
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+IfNot, Assembly-CSharp"
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+              "_buff": {
+                "attributes": {
+                  "abnormalFlags": [],
+                  "abnormalImmunes": [],
+                  "abnormalAntis": [],
+                  "abnormalCombos": [],
+                  "abnormalComboImmunes": [],
+                  "attributeModifiers": []
+                },
+                "buffKey": "enemy_manfri_funnel_effect_2",
+                "loadFromDB": false,
+                "isDurableBuff": false,
+                "isDamageMissable": false,
+                "isSilenceable": false,
+                "isStunnable": false,
+                "isFreezable": false,
+                "isLevitatable": false,
+                "isGroundBoundable": false,
+                "statusResistable": "AUTOMATIC",
+                "templateKey": "empty",
+                "disableOverride": false,
+                "overrideKey": "",
+                "overrideType": "DEFAULT",
+                "maxStackCnt": 1,
+                "refreshRemainingTimeWhenStackMax": false,
+                "clearAllStackCntWhenTimeUp": false,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": false,
+                "overrideEffectKey": "enemy_manfri_buff_02_start_02",
+                "overrideOnEventPriority": false,
+                "onEventPriority": "DEFAULT",
+                "audioSignal": null,
+                "lifeTimeType": "INFINITY",
+                "takeSnapshotWhenExtend": false,
+                "durationKey": null,
+                "lifeTime": 0.0,
+                "triggerLifeType": "IMMEDIATELY",
+                "triggerCnt": 0,
+                "triggerInterval": -1.0,
+                "waitFirstTriggerInterval": true,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": false,
+                "blackboard": [],
+                "enableInitDirectionFromSource": false
+              },
+              "_buffOwner": "BUFF_OWNER",
+              "_useSpecialBuffSource": false,
+              "_specialBuffSource": "BUFF_SOURCE",
+              "_isDerivedBuff": false,
+              "_finishDerivedBuffIfParentFinish": false,
+              "_inherateSourceProjectileFromParentBuff": false,
+              "_hookEffectKeyFromSourceProjectile": false
+            }
+          ]
+        }
+      },
+      "payload_offset": 1617037,
+      "document_base64": "1gsAAAJ0ZW1wbGF0ZUtleQAiAAAAZW5lbXlfbWFuZnJpX2VmZmVjdFt0cmlnZ2VyX2lkbGVdAAJlZmZlY3RLZXkAAQAAAAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAANldmVudFRvQWN0aW9ucwBhCwAABE9OX0JVRkZfU1RBUlQATQsAAAMwACwFAAACJHR5cGUAOAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDcmVhdGVCdWZmLCBBc3NlbWJseS1DU2hhcnAAA19idWZmAAMEAAADYXR0cmlidXRlcwCMAAAABGFibm9ybWFsRmxhZ3MABQAAAAAEYWJub3JtYWxJbW11bmVzAAUAAAAABGFibm9ybWFsQW50aXMABQAAAAAEYWJub3JtYWxDb21ib3MABQAAAAAEYWJub3JtYWxDb21ib0ltbXVuZXMABQAAAAAEYXR0cmlidXRlTW9kaWZpZXJzAAUAAAAAAAJidWZmS2V5AB0AAABlbmVteV9tYW5mcmlfZnVubmVsX2VmZmVjdF8xAAhsb2FkRnJvbURCAAAIaXNEdXJhYmxlQnVmZgAACGlzRGFtYWdlTWlzc2FibGUAAAhpc1NpbGVuY2VhYmxlAAAIaXNTdHVubmFibGUAAAhpc0ZyZWV6YWJsZQAACGlzTGV2aXRhdGFibGUAAAhpc0dyb3VuZEJvdW5kYWJsZQAAAnN0YXR1c1Jlc2lzdGFibGUACgAAAEFVVE9NQVRJQwACdGVtcGxhdGVLZXkABgAAAGVtcHR5AAhkaXNhYmxlT3ZlcnJpZGUAAAJvdmVycmlkZUtleQABAAAAAAJvdmVycmlkZVR5cGUACAAAAERFRkFVTFQAEG1heFN0YWNrQ250AAEAAAAIcmVmcmVzaFJlbWFpbmluZ1RpbWVXaGVuU3RhY2tNYXgAAAhjbGVhckFsbFN0YWNrQ250V2hlblRpbWVVcAAAEG1heFZhbGlkU3RhY2tDbnQA/////whpbmRlcGVuZGVudENoYXJhY3RlclNvdXJjZQAAAm92ZXJyaWRlRWZmZWN0S2V5ABsAAABlbmVteV9tYW5mcmlfYnVmZl8wMl9zdGFydAAIb3ZlcnJpZGVPbkV2ZW50UHJpb3JpdHkAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQACmF1ZGlvU2lnbmFsAAJsaWZlVGltZVR5cGUACQAAAElORklOSVRZAAh0YWtlU25hcHNob3RXaGVuRXh0ZW5kAAAKZHVyYXRpb25LZXkAAWxpZmVUaW1lAAAAAAAAAAAAAnRyaWdnZXJMaWZlVHlwZQAMAAAASU1NRURJQVRFTFkAEHRyaWdnZXJDbnQAAAAAAAF0cmlnZ2VySW50ZXJ2YWwAAAAAAAAA8L8Id2FpdEZpcnN0VHJpZ2dlckludGVydmFsAAEBZmlyc3RUcmlnZ2VySW50ZXJ2YWwAAAAAAAAA8L8QcHJpb3JpdHkA/////wRwcmlvcml0eUJCS2V5cwAFAAAAAAhzdHJpcEJsYWNrYm9hcmRQYXJhbXNXaXRoQnVmZktleQAABGJsYWNrYm9hcmQABQAAAAAIZW5hYmxlSW5pdERpcmVjdGlvbkZyb21Tb3VyY2UAAAACX2J1ZmZPd25lcgALAAAAQlVGRl9PV05FUgAIX3VzZVNwZWNpYWxCdWZmU291cmNlAAACX3NwZWNpYWxCdWZmU291cmNlAAwAAABCVUZGX1NPVVJDRQAIX2lzRGVyaXZlZEJ1ZmYAAAhfZmluaXNoRGVyaXZlZEJ1ZmZJZlBhcmVudEZpbmlzaAAACF9pbmhlcmF0ZVNvdXJjZVByb2plY3RpbGVGcm9tUGFyZW50QnVmZgAACF9ob29rRWZmZWN0S2V5RnJvbVNvdXJjZVByb2plY3RpbGUAAAADMQCeAAAAAiR0eXBlAEIAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2hlY2tVbml0Q3VycmVudE1vZGUsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIAEF9jaGVja0N1ck1vZGVJbmRleAAAAAAAAl9sb2FkQ3VyTW9kZUJiS2V5AAEAAAAAAAMyAEMAAAACJHR5cGUAMwAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytJZk5vdCwgQXNzZW1ibHktQ1NoYXJwAAADMwAvBQAAAiR0eXBlADgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ3JlYXRlQnVmZiwgQXNzZW1ibHktQ1NoYXJwAANfYnVmZgAGBAAAA2F0dHJpYnV0ZXMAjAAAAARhYm5vcm1hbEZsYWdzAAUAAAAABGFibm9ybWFsSW1tdW5lcwAFAAAAAARhYm5vcm1hbEFudGlzAAUAAAAABGFibm9ybWFsQ29tYm9zAAUAAAAABGFibm9ybWFsQ29tYm9JbW11bmVzAAUAAAAABGF0dHJpYnV0ZU1vZGlmaWVycwAFAAAAAAACYnVmZktleQAdAAAAZW5lbXlfbWFuZnJpX2Z1bm5lbF9lZmZlY3RfMgAIbG9hZEZyb21EQgAACGlzRHVyYWJsZUJ1ZmYAAAhpc0RhbWFnZU1pc3NhYmxlAAAIaXNTaWxlbmNlYWJsZQAACGlzU3R1bm5hYmxlAAAIaXNGcmVlemFibGUAAAhpc0xldml0YXRhYmxlAAAIaXNHcm91bmRCb3VuZGFibGUAAAJzdGF0dXNSZXNpc3RhYmxlAAoAAABBVVRPTUFUSUMAAnRlbXBsYXRlS2V5AAYAAABlbXB0eQAIZGlzYWJsZU92ZXJyaWRlAAACb3ZlcnJpZGVLZXkAAQAAAAACb3ZlcnJpZGVUeXBlAAgAAABERUZBVUxUABBtYXhTdGFja0NudAABAAAACHJlZnJlc2hSZW1haW5pbmdUaW1lV2hlblN0YWNrTWF4AAAIY2xlYXJBbGxTdGFja0NudFdoZW5UaW1lVXAAABBtYXhWYWxpZFN0YWNrQ250AP////8IaW5kZXBlbmRlbnRDaGFyYWN0ZXJTb3VyY2UAAAJvdmVycmlkZUVmZmVjdEtleQAeAAAAZW5lbXlfbWFuZnJpX2J1ZmZfMDJfc3RhcnRfMDIACG92ZXJyaWRlT25FdmVudFByaW9yaXR5AAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAAphdWRpb1NpZ25hbAACbGlmZVRpbWVUeXBlAAkAAABJTkZJTklUWQAIdGFrZVNuYXBzaG90V2hlbkV4dGVuZAAACmR1cmF0aW9uS2V5AAFsaWZlVGltZQAAAAAAAAAAAAJ0cmlnZ2VyTGlmZVR5cGUADAAAAElNTUVESUFURUxZABB0cmlnZ2VyQ250AAAAAAABdHJpZ2dlckludGVydmFsAAAAAAAAAPC/CHdhaXRGaXJzdFRyaWdnZXJJbnRlcnZhbAABAWZpcnN0VHJpZ2dlckludGVydmFsAAAAAAAAAPC/EHByaW9yaXR5AP////8EcHJpb3JpdHlCQktleXMABQAAAAAIc3RyaXBCbGFja2JvYXJkUGFyYW1zV2l0aEJ1ZmZLZXkAAARibGFja2JvYXJkAAUAAAAACGVuYWJsZUluaXREaXJlY3Rpb25Gcm9tU291cmNlAAAAAl9idWZmT3duZXIACwAAAEJVRkZfT1dORVIACF91c2VTcGVjaWFsQnVmZlNvdXJjZQAAAl9zcGVjaWFsQnVmZlNvdXJjZQAMAAAAQlVGRl9TT1VSQ0UACF9pc0Rlcml2ZWRCdWZmAAAIX2ZpbmlzaERlcml2ZWRCdWZmSWZQYXJlbnRGaW5pc2gAAAhfaW5oZXJhdGVTb3VyY2VQcm9qZWN0aWxlRnJvbVBhcmVudEJ1ZmYAAAhfaG9va0VmZmVjdEtleUZyb21Tb3VyY2VQcm9qZWN0aWxlAAAAAAAA",
+      "document_sha256": "d878ffc92fee4381d2f87e6be17f4844deb3d5b6ba442ff9c76eaa8627d75a94"
+    },
+    "enemy_manfri_evade[disable]": {
+      "parsed": {
+        "templateKey": "enemy_manfri_evade[disable]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuffsById, Assembly-CSharp",
+              "_buffKey": "enemy_manfri_evade",
+              "_loadFromBlackboard": false,
+              "_decCntIfStack": false,
+              "_updateOverrideMap": true,
+              "_targetType": "BUFF_OWNER",
+              "_checkBuffSource": false,
+              "_sourceType": "BUFF_SOURCE",
+              "_alsoClearNullSource": false,
+              "_finishHostBuff": false,
+              "_decCntKey": null,
+              "_decCnt": 1
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+AlwaysNext, Assembly-CSharp"
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateBuffById, Assembly-CSharp",
+              "_buffKey": "stun",
+              "_buffOwner": "BUFF_OWNER",
+              "_isDerivedBuff": false,
+              "_loadFromBlackboard": false,
+              "_finishDerivedBuffIfParentFinish": false
+            }
+          ]
+        }
+      },
+      "payload_offset": 1624860,
+      "document_base64": "1QIAAAJ0ZW1wbGF0ZUtleQAcAAAAZW5lbXlfbWFuZnJpX2V2YWRlW2Rpc2FibGVdAAJlZmZlY3RLZXkAAQAAAAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAANldmVudFRvQWN0aW9ucwBmAgAABE9OX0JVRkZfU1RBUlQAUgIAAAMwADgBAAACJHR5cGUAPQAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytGaW5pc2hCdWZmc0J5SWQsIEFzc2VtYmx5LUNTaGFycAACX2J1ZmZLZXkAEwAAAGVuZW15X21hbmZyaV9ldmFkZQAIX2xvYWRGcm9tQmxhY2tib2FyZAAACF9kZWNDbnRJZlN0YWNrAAAIX3VwZGF0ZU92ZXJyaWRlTWFwAAECX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIACF9jaGVja0J1ZmZTb3VyY2UAAAJfc291cmNlVHlwZQAMAAAAQlVGRl9TT1VSQ0UACF9hbHNvQ2xlYXJOdWxsU291cmNlAAAIX2ZpbmlzaEhvc3RCdWZmAAAKX2RlY0NudEtleQAQX2RlY0NudAABAAAAAAMxAEgAAAACJHR5cGUAOAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytBbHdheXNOZXh0LCBBc3NlbWJseS1DU2hhcnAAAAMyAMQAAAACJHR5cGUAPAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDcmVhdGVCdWZmQnlJZCwgQXNzZW1ibHktQ1NoYXJwAAJfYnVmZktleQAFAAAAc3R1bgACX2J1ZmZPd25lcgALAAAAQlVGRl9PV05FUgAIX2lzRGVyaXZlZEJ1ZmYAAAhfbG9hZEZyb21CbGFja2JvYXJkAAAIX2ZpbmlzaERlcml2ZWRCdWZmSWZQYXJlbnRGaW5pc2gAAAAAAAA=",
+      "document_sha256": "6333c4d9960b038a98ea8eac003b2cab2c45cb3d6fa68668935aef8b6433827b"
+    },
+    "enemy_manfri_evade[disable_effect]": {
+      "parsed": {
+        "templateKey": "enemy_manfri_evade[disable_effect]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateEffect, Assembly-CSharp",
+              "_targetType": "TARGET",
+              "_sourceType": "SOURCE",
+              "_effectKey": "enemy_manfri_buff_01_end",
+              "_useSourceFaceVactor": false,
+              "_useSourceToTargetDirection": false,
+              "_useConstDirection": false,
+              "_constDirection": "UP",
+              "_createEffectHoldBySource": false,
+              "_createEffectConstDirectionHoldBySource": false,
+              "_useAttackPlaybackSpeed": false,
+              "_manualSetPlaybackSpeed": false,
+              "_blackboardKey": "",
+              "_playbackSpeed": 1.0
+            }
+          ]
+        }
+      },
+      "payload_offset": 1629692,
+      "document_base64": "PgIAAAJ0ZW1wbGF0ZUtleQAjAAAAZW5lbXlfbWFuZnJpX2V2YWRlW2Rpc2FibGVfZWZmZWN0XQACZWZmZWN0S2V5AAEAAAAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAADZXZlbnRUb0FjdGlvbnMAyAEAAARPTl9CVUZGX1NUQVJUALQBAAADMACsAQAAAiR0eXBlADoAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ3JlYXRlRWZmZWN0LCBBc3NlbWJseS1DU2hhcnAAAl90YXJnZXRUeXBlAAcAAABUQVJHRVQAAl9zb3VyY2VUeXBlAAcAAABTT1VSQ0UAAl9lZmZlY3RLZXkAGQAAAGVuZW15X21hbmZyaV9idWZmXzAxX2VuZAAIX3VzZVNvdXJjZUZhY2VWYWN0b3IAAAhfdXNlU291cmNlVG9UYXJnZXREaXJlY3Rpb24AAAhfdXNlQ29uc3REaXJlY3Rpb24AAAJfY29uc3REaXJlY3Rpb24AAwAAAFVQAAhfY3JlYXRlRWZmZWN0SG9sZEJ5U291cmNlAAAIX2NyZWF0ZUVmZmVjdENvbnN0RGlyZWN0aW9uSG9sZEJ5U291cmNlAAAIX3VzZUF0dGFja1BsYXliYWNrU3BlZWQAAAhfbWFudWFsU2V0UGxheWJhY2tTcGVlZAAAAl9ibGFja2JvYXJkS2V5AAEAAAAAAV9wbGF5YmFja1NwZWVkAAAAAAAAAPA/AAAAAA==",
+      "document_sha256": "8e23284fa66d7da1ce8cf01f2cd32af805d74afb2d47bb469e3b28fa96c6eed2"
+    },
+    "enemy_manfri_evade[disable_timer]": {
+      "parsed": {
+        "templateKey": "enemy_manfri_evade[disable_timer]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_FINISH": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CheckContainsBuff, Assembly-CSharp",
+              "_targetType": "BUFF_OWNER",
+              "_buffKeys": [
+                "enemy_manfri_evade[disable_timer]"
+              ],
+              "isAND": true,
+              "_loadFromBlackboard": false,
+              "_checkBuffSource": false,
+              "_buffSourceType": "BUFF_SOURCE",
+              "_checkSourceHost": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+IfNot, Assembly-CSharp"
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+              "_buff": {
+                "attributes": {
+                  "abnormalFlags": null,
+                  "abnormalImmunes": null,
+                  "abnormalAntis": null,
+                  "abnormalCombos": null,
+                  "abnormalComboImmunes": null,
+                  "attributeModifiers": null
+                },
+                "buffKey": "enemy_manfri_evade",
+                "loadFromDB": false,
+                "isDurableBuff": false,
+                "isDamageMissable": false,
+                "isSilenceable": false,
+                "isStunnable": false,
+                "isFreezable": false,
+                "isLevitatable": false,
+                "isGroundBoundable": false,
+                "statusResistable": "AUTOMATIC",
+                "templateKey": "evade",
+                "disableOverride": false,
+                "overrideKey": null,
+                "overrideType": "DEFAULT",
+                "maxStackCnt": 1,
+                "refreshRemainingTimeWhenStackMax": false,
+                "clearAllStackCntWhenTimeUp": false,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": false,
+                "overrideEffectKey": "enemy_manfri_buff_01_start",
+                "overrideOnEventPriority": false,
+                "onEventPriority": "DEFAULT",
+                "audioSignal": null,
+                "lifeTimeType": "INFINITY",
+                "takeSnapshotWhenExtend": false,
+                "durationKey": null,
+                "lifeTime": 0.0,
+                "triggerLifeType": "IMMEDIATELY",
+                "triggerCnt": 0,
+                "triggerInterval": -1.0,
+                "waitFirstTriggerInterval": true,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": false,
+                "blackboard": [],
+                "enableInitDirectionFromSource": false
+              },
+              "_buffOwner": "BUFF_OWNER",
+              "_useSpecialBuffSource": false,
+              "_specialBuffSource": "BUFF_SOURCE",
+              "_isDerivedBuff": false,
+              "_finishDerivedBuffIfParentFinish": false,
+              "_inherateSourceProjectileFromParentBuff": false,
+              "_hookEffectKeyFromSourceProjectile": false
+            }
+          ]
+        }
+      },
+      "payload_offset": 1630301,
+      "document_base64": "4wYAAAJ0ZW1wbGF0ZUtleQAiAAAAZW5lbXlfbWFuZnJpX2V2YWRlW2Rpc2FibGVfdGltZXJdAAJlZmZlY3RLZXkAAQAAAAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAANldmVudFRvQWN0aW9ucwBuBgAABE9OX0JVRkZfRklOSVNIAFkGAAADMAAJAQAAAiR0eXBlAD8AAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2hlY2tDb250YWluc0J1ZmYsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIABF9idWZmS2V5cwAuAAAAAjAAIgAAAGVuZW15X21hbmZyaV9ldmFkZVtkaXNhYmxlX3RpbWVyXQAACGlzQU5EAAEIX2xvYWRGcm9tQmxhY2tib2FyZAAACF9jaGVja0J1ZmZTb3VyY2UAAAJfYnVmZlNvdXJjZVR5cGUADAAAAEJVRkZfU09VUkNFAAhfY2hlY2tTb3VyY2VIb3N0AAAAAzEAQwAAAAIkdHlwZQAzAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0lmTm90LCBBc3NlbWJseS1DU2hhcnAAAAMyAP8EAAACJHR5cGUAOAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDcmVhdGVCdWZmLCBBc3NlbWJseS1DU2hhcnAAA19idWZmANYDAAADYXR0cmlidXRlcwBuAAAACmFibm9ybWFsRmxhZ3MACmFibm9ybWFsSW1tdW5lcwAKYWJub3JtYWxBbnRpcwAKYWJub3JtYWxDb21ib3MACmFibm9ybWFsQ29tYm9JbW11bmVzAAphdHRyaWJ1dGVNb2RpZmllcnMAAAJidWZmS2V5ABMAAABlbmVteV9tYW5mcmlfZXZhZGUACGxvYWRGcm9tREIAAAhpc0R1cmFibGVCdWZmAAAIaXNEYW1hZ2VNaXNzYWJsZQAACGlzU2lsZW5jZWFibGUAAAhpc1N0dW5uYWJsZQAACGlzRnJlZXphYmxlAAAIaXNMZXZpdGF0YWJsZQAACGlzR3JvdW5kQm91bmRhYmxlAAACc3RhdHVzUmVzaXN0YWJsZQAKAAAAQVVUT01BVElDAAJ0ZW1wbGF0ZUtleQAGAAAAZXZhZGUACGRpc2FibGVPdmVycmlkZQAACm92ZXJyaWRlS2V5AAJvdmVycmlkZVR5cGUACAAAAERFRkFVTFQAEG1heFN0YWNrQ250AAEAAAAIcmVmcmVzaFJlbWFpbmluZ1RpbWVXaGVuU3RhY2tNYXgAAAhjbGVhckFsbFN0YWNrQ250V2hlblRpbWVVcAAAEG1heFZhbGlkU3RhY2tDbnQA/////whpbmRlcGVuZGVudENoYXJhY3RlclNvdXJjZQAAAm92ZXJyaWRlRWZmZWN0S2V5ABsAAABlbmVteV9tYW5mcmlfYnVmZl8wMV9zdGFydAAIb3ZlcnJpZGVPbkV2ZW50UHJpb3JpdHkAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQACmF1ZGlvU2lnbmFsAAJsaWZlVGltZVR5cGUACQAAAElORklOSVRZAAh0YWtlU25hcHNob3RXaGVuRXh0ZW5kAAAKZHVyYXRpb25LZXkAAWxpZmVUaW1lAAAAAAAAAAAAAnRyaWdnZXJMaWZlVHlwZQAMAAAASU1NRURJQVRFTFkAEHRyaWdnZXJDbnQAAAAAAAF0cmlnZ2VySW50ZXJ2YWwAAAAAAAAA8L8Id2FpdEZpcnN0VHJpZ2dlckludGVydmFsAAEBZmlyc3RUcmlnZ2VySW50ZXJ2YWwAAAAAAAAA8L8QcHJpb3JpdHkA/////wRwcmlvcml0eUJCS2V5cwAFAAAAAAhzdHJpcEJsYWNrYm9hcmRQYXJhbXNXaXRoQnVmZktleQAABGJsYWNrYm9hcmQABQAAAAAIZW5hYmxlSW5pdERpcmVjdGlvbkZyb21Tb3VyY2UAAAACX2J1ZmZPd25lcgALAAAAQlVGRl9PV05FUgAIX3VzZVNwZWNpYWxCdWZmU291cmNlAAACX3NwZWNpYWxCdWZmU291cmNlAAwAAABCVUZGX1NPVVJDRQAIX2lzRGVyaXZlZEJ1ZmYAAAhfZmluaXNoRGVyaXZlZEJ1ZmZJZlBhcmVudEZpbmlzaAAACF9pbmhlcmF0ZVNvdXJjZVByb2plY3RpbGVGcm9tUGFyZW50QnVmZgAACF9ob29rRWZmZWN0S2V5RnJvbVNvdXJjZVByb2plY3RpbGUAAAAAAAA=",
+      "document_sha256": "7b6e2a748f5ae7edf7d450b4ada9c45b50bf23f160541cceb4564c762051d70f"
+    },
+    "enemy_manfri_evade[trigger]": {
+      "parsed": {
+        "templateKey": "enemy_manfri_evade[trigger]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+TriggerAbility, Assembly-CSharp",
+              "_ownerType": "BUFF_OWNER",
+              "_targetType": "BUFF_OWNER",
+              "_abilityName": "Shield",
+              "_checkCanUseAblityFlag": false,
+              "_castDirectly": true,
+              "_useFirstActiveAbility": false,
+              "_useCastResult": false,
+              "_triggerHostAbility": false,
+              "_notInterruptAbilityIfCasting": false
+            }
+          ]
+        }
+      },
+      "payload_offset": 1614742,
+      "document_base64": "sAEAAAJ0ZW1wbGF0ZUtleQAcAAAAZW5lbXlfbWFuZnJpX2V2YWRlW3RyaWdnZXJdAAJlZmZlY3RLZXkAAQAAAAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAANldmVudFRvQWN0aW9ucwBBAQAABE9OX0JVRkZfU1RBUlQALQEAAAMwACUBAAACJHR5cGUAPAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytUcmlnZ2VyQWJpbGl0eSwgQXNzZW1ibHktQ1NoYXJwAAJfb3duZXJUeXBlAAsAAABCVUZGX09XTkVSAAJfdGFyZ2V0VHlwZQALAAAAQlVGRl9PV05FUgACX2FiaWxpdHlOYW1lAAcAAABTaGllbGQACF9jaGVja0NhblVzZUFibGl0eUZsYWcAAAhfY2FzdERpcmVjdGx5AAEIX3VzZUZpcnN0QWN0aXZlQWJpbGl0eQAACF91c2VDYXN0UmVzdWx0AAAIX3RyaWdnZXJIb3N0QWJpbGl0eQAACF9ub3RJbnRlcnJ1cHRBYmlsaXR5SWZDYXN0aW5nAAAAAAAA",
+      "document_sha256": "ffc0789cc4f31f137f6b6bbd2217ff3ffe6ab5d6986e8cada8fbf8467610b819"
+    },
+    "enemy_manfri_funnel[trigger]": {
+      "parsed": {
+        "templateKey": "enemy_manfri_funnel[trigger]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_ABILITY_CAST_ON_TARGET": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+TriggerAbility, Assembly-CSharp",
+              "_ownerType": "BUFF_OWNER",
+              "_targetType": "TARGET",
+              "_abilityName": "Funnel_s2",
+              "_checkCanUseAblityFlag": false,
+              "_castDirectly": false,
+              "_useFirstActiveAbility": false,
+              "_useCastResult": false,
+              "_triggerHostAbility": false,
+              "_notInterruptAbilityIfCasting": false
+            }
+          ]
+        }
+      },
+      "payload_offset": 1627926,
+      "document_base64": "vAEAAAJ0ZW1wbGF0ZUtleQAdAAAAZW5lbXlfbWFuZnJpX2Z1bm5lbFt0cmlnZ2VyXQACZWZmZWN0S2V5AAEAAAAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAADZXZlbnRUb0FjdGlvbnMATAEAAARPTl9BQklMSVRZX0NBU1RfT05fVEFSR0VUACwBAAADMAAkAQAAAiR0eXBlADwAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrVHJpZ2dlckFiaWxpdHksIEFzc2VtYmx5LUNTaGFycAACX293bmVyVHlwZQALAAAAQlVGRl9PV05FUgACX3RhcmdldFR5cGUABwAAAFRBUkdFVAACX2FiaWxpdHlOYW1lAAoAAABGdW5uZWxfczIACF9jaGVja0NhblVzZUFibGl0eUZsYWcAAAhfY2FzdERpcmVjdGx5AAAIX3VzZUZpcnN0QWN0aXZlQWJpbGl0eQAACF91c2VDYXN0UmVzdWx0AAAIX3RyaWdnZXJIb3N0QWJpbGl0eQAACF9ub3RJbnRlcnJ1cHRBYmlsaXR5SWZDYXN0aW5nAAAAAAAA",
+      "document_sha256": "6c9569a2ed1985c523007f6a37c5031ac2608044e9e63e6fee0f301bebb2c2f6"
+    },
+    "enemy_manfri_funnel_s2_effect[hit]": {
+      "parsed": {
+        "templateKey": "enemy_manfri_funnel_s2_effect[hit]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CheckContainsBuff, Assembly-CSharp",
+              "_targetType": "BUFF_OWNER",
+              "_buffKeys": [
+                "enemy_manfri_funnel_effect[mark]"
+              ],
+              "isAND": true,
+              "_loadFromBlackboard": false,
+              "_checkBuffSource": false,
+              "_buffSourceType": "BUFF_SOURCE",
+              "_checkSourceHost": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+IfNot, Assembly-CSharp"
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateEffect, Assembly-CSharp",
+              "_targetType": "BUFF_OWNER",
+              "_sourceType": "BUFF_SOURCE",
+              "_effectKey": "",
+              "_useSourceFaceVactor": true,
+              "_useSourceToTargetDirection": false,
+              "_useConstDirection": false,
+              "_constDirection": "UP",
+              "_createEffectHoldBySource": false,
+              "_createEffectConstDirectionHoldBySource": false,
+              "_useAttackPlaybackSpeed": false,
+              "_manualSetPlaybackSpeed": false,
+              "_blackboardKey": "",
+              "_playbackSpeed": 1.0
+            }
+          ]
+        }
+      },
+      "payload_offset": 1616106,
+      "document_base64": "gAMAAAJ0ZW1wbGF0ZUtleQAjAAAAZW5lbXlfbWFuZnJpX2Z1bm5lbF9zMl9lZmZlY3RbaGl0XQACZWZmZWN0S2V5AAEAAAAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAADZXZlbnRUb0FjdGlvbnMACgMAAARPTl9CVUZGX1NUQVJUAPYCAAADMAAIAQAAAiR0eXBlAD8AAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2hlY2tDb250YWluc0J1ZmYsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIABF9idWZmS2V5cwAtAAAAAjAAIQAAAGVuZW15X21hbmZyaV9mdW5uZWxfZWZmZWN0W21hcmtdAAAIaXNBTkQAAQhfbG9hZEZyb21CbGFja2JvYXJkAAAIX2NoZWNrQnVmZlNvdXJjZQAAAl9idWZmU291cmNlVHlwZQAMAAAAQlVGRl9TT1VSQ0UACF9jaGVja1NvdXJjZUhvc3QAAAADMQBDAAAAAiR0eXBlADMAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrSWZOb3QsIEFzc2VtYmx5LUNTaGFycAAAAzIAnQEAAAIkdHlwZQA6AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NyZWF0ZUVmZmVjdCwgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQALAAAAQlVGRl9PV05FUgACX3NvdXJjZVR5cGUADAAAAEJVRkZfU09VUkNFAAJfZWZmZWN0S2V5AAEAAAAACF91c2VTb3VyY2VGYWNlVmFjdG9yAAEIX3VzZVNvdXJjZVRvVGFyZ2V0RGlyZWN0aW9uAAAIX3VzZUNvbnN0RGlyZWN0aW9uAAACX2NvbnN0RGlyZWN0aW9uAAMAAABVUAAIX2NyZWF0ZUVmZmVjdEhvbGRCeVNvdXJjZQAACF9jcmVhdGVFZmZlY3RDb25zdERpcmVjdGlvbkhvbGRCeVNvdXJjZQAACF91c2VBdHRhY2tQbGF5YmFja1NwZWVkAAAIX21hbnVhbFNldFBsYXliYWNrU3BlZWQAAAJfYmxhY2tib2FyZEtleQABAAAAAAFfcGxheWJhY2tTcGVlZAAAAAAAAADwPwAAAAA=",
+      "document_sha256": "96bd1afe524bf649267594a00a99dd3d19356d91e72d651afaa3872c29cd9db5"
+    },
+    "enemy_manfri_mark": {
+      "parsed": {
+        "templateKey": "enemy_manfri_mark",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_AFTER_OUTPUT_DAMAGE": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+IfTarget, Assembly-CSharp",
+              "_targetType": "MODIFIER_TARGET",
+              "_motionMask": "ALL",
+              "_checkTargetAlive": true,
+              "_checkApplyWay": false,
+              "_checkTargetUnitType": false,
+              "_unitType": "ENEMY",
+              "_applyWay": "ALL",
+              "_checkTargetFree": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CheckContainsBuff, Assembly-CSharp",
+              "_targetType": "MODIFIER_TARGET",
+              "_buffKeys": [
+                "enemy_manfri_evade",
+                "enemy_manfri_evade[disable_timer]"
+              ],
+              "isAND": false,
+              "_loadFromBlackboard": false,
+              "_checkBuffSource": false,
+              "_buffSourceType": "BUFF_SOURCE",
+              "_checkSourceHost": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+TriggerAbility, Assembly-CSharp",
+              "_ownerType": "SOURCE",
+              "_targetType": "SOURCE",
+              "_abilityName": "Shield[disable]",
+              "_checkCanUseAblityFlag": false,
+              "_castDirectly": true,
+              "_useFirstActiveAbility": false,
+              "_useCastResult": false,
+              "_triggerHostAbility": false,
+              "_notInterruptAbilityIfCasting": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+              "_buff": {
+                "attributes": {
+                  "abnormalFlags": null,
+                  "abnormalImmunes": null,
+                  "abnormalAntis": null,
+                  "abnormalCombos": null,
+                  "abnormalComboImmunes": null,
+                  "attributeModifiers": null
+                },
+                "buffKey": "enemy_manfri_evade[disable_timer]",
+                "loadFromDB": false,
+                "isDurableBuff": false,
+                "isDamageMissable": false,
+                "isSilenceable": false,
+                "isStunnable": false,
+                "isFreezable": false,
+                "isLevitatable": false,
+                "isGroundBoundable": false,
+                "statusResistable": "AUTOMATIC",
+                "templateKey": "enemy_manfri_evade[disable_timer]",
+                "disableOverride": false,
+                "overrideKey": null,
+                "overrideType": "DEFAULT",
+                "maxStackCnt": 1,
+                "refreshRemainingTimeWhenStackMax": false,
+                "clearAllStackCntWhenTimeUp": false,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": false,
+                "overrideEffectKey": null,
+                "overrideOnEventPriority": false,
+                "onEventPriority": "DEFAULT",
+                "audioSignal": null,
+                "lifeTimeType": "LIMITED",
+                "takeSnapshotWhenExtend": false,
+                "durationKey": "disable_duration",
+                "lifeTime": 0.0,
+                "triggerLifeType": "IMMEDIATELY",
+                "triggerCnt": 0,
+                "triggerInterval": -1.0,
+                "waitFirstTriggerInterval": true,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": false,
+                "blackboard": [],
+                "enableInitDirectionFromSource": false
+              },
+              "_buffOwner": "BUFF_SOURCE",
+              "_useSpecialBuffSource": false,
+              "_specialBuffSource": "BUFF_SOURCE",
+              "_isDerivedBuff": false,
+              "_finishDerivedBuffIfParentFinish": false,
+              "_inherateSourceProjectileFromParentBuff": false,
+              "_hookEffectKeyFromSourceProjectile": false
+            }
+          ]
+        }
+      },
+      "payload_offset": 1625604,
+      "document_base64": "9AgAAAJ0ZW1wbGF0ZUtleQASAAAAZW5lbXlfbWFuZnJpX21hcmsAAmVmZmVjdEtleQABAAAAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQAA2V2ZW50VG9BY3Rpb25zAI8IAAAET05fQUZURVJfT1VUUFVUX0RBTUFHRQByCAAAAzAA8wAAAAIkdHlwZQA2AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0lmVGFyZ2V0LCBBc3NlbWJseS1DU2hhcnAAAl90YXJnZXRUeXBlABAAAABNT0RJRklFUl9UQVJHRVQAAl9tb3Rpb25NYXNrAAQAAABBTEwACF9jaGVja1RhcmdldEFsaXZlAAEIX2NoZWNrQXBwbHlXYXkAAAhfY2hlY2tUYXJnZXRVbml0VHlwZQAAAl91bml0VHlwZQAGAAAARU5FTVkAAl9hcHBseVdheQAEAAAAQUxMAAhfY2hlY2tUYXJnZXRGcmVlAAAAAzEAKAEAAAIkdHlwZQA/AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NoZWNrQ29udGFpbnNCdWZmLCBBc3NlbWJseS1DU2hhcnAAAl90YXJnZXRUeXBlABAAAABNT0RJRklFUl9UQVJHRVQABF9idWZmS2V5cwBIAAAAAjAAEwAAAGVuZW15X21hbmZyaV9ldmFkZQACMQAiAAAAZW5lbXlfbWFuZnJpX2V2YWRlW2Rpc2FibGVfdGltZXJdAAAIaXNBTkQAAAhfbG9hZEZyb21CbGFja2JvYXJkAAAIX2NoZWNrQnVmZlNvdXJjZQAAAl9idWZmU291cmNlVHlwZQAMAAAAQlVGRl9TT1VSQ0UACF9jaGVja1NvdXJjZUhvc3QAAAADMgAmAQAAAiR0eXBlADwAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrVHJpZ2dlckFiaWxpdHksIEFzc2VtYmx5LUNTaGFycAACX293bmVyVHlwZQAHAAAAU09VUkNFAAJfdGFyZ2V0VHlwZQAHAAAAU09VUkNFAAJfYWJpbGl0eU5hbWUAEAAAAFNoaWVsZFtkaXNhYmxlXQAIX2NoZWNrQ2FuVXNlQWJsaXR5RmxhZwAACF9jYXN0RGlyZWN0bHkAAQhfdXNlRmlyc3RBY3RpdmVBYmlsaXR5AAAIX3VzZUNhc3RSZXN1bHQAAAhfdHJpZ2dlckhvc3RBYmlsaXR5AAAIX25vdEludGVycnVwdEFiaWxpdHlJZkNhc3RpbmcAAAADMwAgBQAAAiR0eXBlADgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ3JlYXRlQnVmZiwgQXNzZW1ibHktQ1NoYXJwAANfYnVmZgD2AwAAA2F0dHJpYnV0ZXMAbgAAAAphYm5vcm1hbEZsYWdzAAphYm5vcm1hbEltbXVuZXMACmFibm9ybWFsQW50aXMACmFibm9ybWFsQ29tYm9zAAphYm5vcm1hbENvbWJvSW1tdW5lcwAKYXR0cmlidXRlTW9kaWZpZXJzAAACYnVmZktleQAiAAAAZW5lbXlfbWFuZnJpX2V2YWRlW2Rpc2FibGVfdGltZXJdAAhsb2FkRnJvbURCAAAIaXNEdXJhYmxlQnVmZgAACGlzRGFtYWdlTWlzc2FibGUAAAhpc1NpbGVuY2VhYmxlAAAIaXNTdHVubmFibGUAAAhpc0ZyZWV6YWJsZQAACGlzTGV2aXRhdGFibGUAAAhpc0dyb3VuZEJvdW5kYWJsZQAAAnN0YXR1c1Jlc2lzdGFibGUACgAAAEFVVE9NQVRJQwACdGVtcGxhdGVLZXkAIgAAAGVuZW15X21hbmZyaV9ldmFkZVtkaXNhYmxlX3RpbWVyXQAIZGlzYWJsZU92ZXJyaWRlAAAKb3ZlcnJpZGVLZXkAAm92ZXJyaWRlVHlwZQAIAAAAREVGQVVMVAAQbWF4U3RhY2tDbnQAAQAAAAhyZWZyZXNoUmVtYWluaW5nVGltZVdoZW5TdGFja01heAAACGNsZWFyQWxsU3RhY2tDbnRXaGVuVGltZVVwAAAQbWF4VmFsaWRTdGFja0NudAD/////CGluZGVwZW5kZW50Q2hhcmFjdGVyU291cmNlAAAKb3ZlcnJpZGVFZmZlY3RLZXkACG92ZXJyaWRlT25FdmVudFByaW9yaXR5AAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAAphdWRpb1NpZ25hbAACbGlmZVRpbWVUeXBlAAgAAABMSU1JVEVEAAh0YWtlU25hcHNob3RXaGVuRXh0ZW5kAAACZHVyYXRpb25LZXkAEQAAAGRpc2FibGVfZHVyYXRpb24AAWxpZmVUaW1lAAAAAAAAAAAAAnRyaWdnZXJMaWZlVHlwZQAMAAAASU1NRURJQVRFTFkAEHRyaWdnZXJDbnQAAAAAAAF0cmlnZ2VySW50ZXJ2YWwAAAAAAAAA8L8Id2FpdEZpcnN0VHJpZ2dlckludGVydmFsAAEBZmlyc3RUcmlnZ2VySW50ZXJ2YWwAAAAAAAAA8L8QcHJpb3JpdHkA/////wRwcmlvcml0eUJCS2V5cwAFAAAAAAhzdHJpcEJsYWNrYm9hcmRQYXJhbXNXaXRoQnVmZktleQAABGJsYWNrYm9hcmQABQAAAAAIZW5hYmxlSW5pdERpcmVjdGlvbkZyb21Tb3VyY2UAAAACX2J1ZmZPd25lcgAMAAAAQlVGRl9TT1VSQ0UACF91c2VTcGVjaWFsQnVmZlNvdXJjZQAAAl9zcGVjaWFsQnVmZlNvdXJjZQAMAAAAQlVGRl9TT1VSQ0UACF9pc0Rlcml2ZWRCdWZmAAAIX2ZpbmlzaERlcml2ZWRCdWZmSWZQYXJlbnRGaW5pc2gAAAhfaW5oZXJhdGVTb3VyY2VQcm9qZWN0aWxlRnJvbVBhcmVudEJ1ZmYAAAhfaG9va0VmZmVjdEtleUZyb21Tb3VyY2VQcm9qZWN0aWxlAAAAAAAA",
+      "document_sha256": "544d22ded2da8f97fd9f566935fb3d51de87734420476826f3b59686015b340f"
+    },
+    "enemy_trigger_ability": {
+      "parsed": {
+        "templateKey": "enemy_trigger_ability",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+TriggerAbilityUseSelector, Assembly-CSharp",
+              "_sourceType": "BUFF_OWNER",
+              "_targetType": "BUFF_OWNER",
+              "_abilityName": "",
+              "_excludeTarget": false,
+              "_excludeTargetType": "SOURCE",
+              "_checkCanUseAbilityFlag": false,
+              "_returnFalseIfNoTarget": false
+            }
+          ]
+        }
+      },
+      "payload_offset": 620612,
+      "document_base64": "igEAAAJ0ZW1wbGF0ZUtleQAWAAAAZW5lbXlfdHJpZ2dlcl9hYmlsaXR5AAJlZmZlY3RLZXkAAQAAAAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAANldmVudFRvQWN0aW9ucwAhAQAABE9OX0JVRkZfU1RBUlQADQEAAAMwAAUBAAACJHR5cGUARwAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytUcmlnZ2VyQWJpbGl0eVVzZVNlbGVjdG9yLCBBc3NlbWJseS1DU2hhcnAAAl9zb3VyY2VUeXBlAAsAAABCVUZGX09XTkVSAAJfdGFyZ2V0VHlwZQALAAAAQlVGRl9PV05FUgACX2FiaWxpdHlOYW1lAAEAAAAACF9leGNsdWRlVGFyZ2V0AAACX2V4Y2x1ZGVUYXJnZXRUeXBlAAcAAABTT1VSQ0UACF9jaGVja0NhblVzZUFiaWxpdHlGbGFnAAAIX3JldHVybkZhbHNlSWZOb1RhcmdldAAAAAAAAA==",
+      "document_sha256": "fad0c1e64315c02298e2d5674b17d92d77d725f95077fd9f64ee991dd02ed3ca"
+    },
+    "enemy_vampires[bloodsucker_summon]": {
+      "parsed": {
+        "templateKey": "enemy_vampires[bloodsucker_summon]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_OWNER_KILLED": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FilterDeathReason, Assembly-CSharp",
+              "_source": "TARGET",
+              "_finishReason": "FALLDOWN"
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+IfNot, Assembly-CSharp"
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+              "_buff": {
+                "attributes": {
+                  "abnormalFlags": [],
+                  "abnormalImmunes": [],
+                  "abnormalAntis": [],
+                  "abnormalCombos": [],
+                  "abnormalComboImmunes": [],
+                  "attributeModifiers": []
+                },
+                "buffKey": "bloodsucker_summon[audio]",
+                "loadFromDB": false,
+                "isDurableBuff": false,
+                "isDamageMissable": false,
+                "isSilenceable": false,
+                "isStunnable": false,
+                "isFreezable": false,
+                "isLevitatable": false,
+                "isGroundBoundable": false,
+                "statusResistable": "AUTOMATIC",
+                "templateKey": "empty",
+                "disableOverride": false,
+                "overrideKey": null,
+                "overrideType": "DEFAULT",
+                "maxStackCnt": 1,
+                "refreshRemainingTimeWhenStackMax": false,
+                "clearAllStackCntWhenTimeUp": false,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": false,
+                "overrideEffectKey": null,
+                "overrideOnEventPriority": false,
+                "onEventPriority": "DEFAULT",
+                "audioSignal": "bloodsucker_summon[audio]",
+                "lifeTimeType": "INFINITY",
+                "takeSnapshotWhenExtend": false,
+                "durationKey": null,
+                "lifeTime": 0.0,
+                "triggerLifeType": "IMMEDIATELY",
+                "triggerCnt": 0,
+                "triggerInterval": -1.0,
+                "waitFirstTriggerInterval": true,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": false,
+                "blackboard": [],
+                "enableInitDirectionFromSource": false
+              },
+              "_buffOwner": "BUFF_OWNER",
+              "_useSpecialBuffSource": false,
+              "_specialBuffSource": "BUFF_SOURCE",
+              "_isDerivedBuff": false,
+              "_finishDerivedBuffIfParentFinish": false,
+              "_inherateSourceProjectileFromParentBuff": false,
+              "_hookEffectKeyFromSourceProjectile": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+SummonEnemiesFollowMyRoute, Assembly-CSharp",
+              "_source": "TARGET",
+              "_enemyKey": null,
+              "_summonCount": 1,
+              "_delayTime": 0.0,
+              "_managedByScheduler": true,
+              "_dontBlockWave": false,
+              "_trySummonOutsideWhenInObstacle": false,
+              "_randomOffsetBound": 0.10000000149011612,
+              "_passableMask": "WALK_ONLY",
+              "_onlySummonOneInTheSamePlace": false,
+              "_useOffsetInBB": false,
+              "_offsetXKey": null,
+              "_offsetYKey": null,
+              "_offset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "_useLocalUnharmfulFlag": false,
+              "_unharmful": false,
+              "_useMapPosition": false,
+              "_spawnOnHostRootTile": false,
+              "_useTargetPosition": false,
+              "_targetType": "TARGET",
+              "_useRandomDelay": false,
+              "_randomDelayRange": 0.5,
+              "_stopSummonIfHostDead": false,
+              "_useOffsetForEach": false,
+              "_addBuffToEnemy": false,
+              "_buffToEnemy": null,
+              "_checkMotionMode": "ALL",
+              "_skipCheckPoint": false
+            }
+          ]
+        }
+      },
+      "payload_offset": 1586648,
+      "document_base64": "MAkAAAJ0ZW1wbGF0ZUtleQAjAAAAZW5lbXlfdmFtcGlyZXNbYmxvb2RzdWNrZXJfc3VtbW9uXQACZWZmZWN0S2V5AAEAAAAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAADZXZlbnRUb0FjdGlvbnMAuggAAARPTl9PV05FUl9LSUxMRUQApAgAAAMwAH8AAAACJHR5cGUAPwAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytGaWx0ZXJEZWF0aFJlYXNvbiwgQXNzZW1ibHktQ1NoYXJwAAJfc291cmNlAAcAAABUQVJHRVQAAl9maW5pc2hSZWFzb24ACQAAAEZBTExET1dOAAADMQBDAAAAAiR0eXBlADMAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrSWZOb3QsIEFzc2VtYmx5LUNTaGFycAAAAzIAIwUAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NyZWF0ZUJ1ZmYsIEFzc2VtYmx5LUNTaGFycAADX2J1ZmYA+gMAAANhdHRyaWJ1dGVzAIwAAAAEYWJub3JtYWxGbGFncwAFAAAAAARhYm5vcm1hbEltbXVuZXMABQAAAAAEYWJub3JtYWxBbnRpcwAFAAAAAARhYm5vcm1hbENvbWJvcwAFAAAAAARhYm5vcm1hbENvbWJvSW1tdW5lcwAFAAAAAARhdHRyaWJ1dGVNb2RpZmllcnMABQAAAAAAAmJ1ZmZLZXkAGgAAAGJsb29kc3Vja2VyX3N1bW1vblthdWRpb10ACGxvYWRGcm9tREIAAAhpc0R1cmFibGVCdWZmAAAIaXNEYW1hZ2VNaXNzYWJsZQAACGlzU2lsZW5jZWFibGUAAAhpc1N0dW5uYWJsZQAACGlzRnJlZXphYmxlAAAIaXNMZXZpdGF0YWJsZQAACGlzR3JvdW5kQm91bmRhYmxlAAACc3RhdHVzUmVzaXN0YWJsZQAKAAAAQVVUT01BVElDAAJ0ZW1wbGF0ZUtleQAGAAAAZW1wdHkACGRpc2FibGVPdmVycmlkZQAACm92ZXJyaWRlS2V5AAJvdmVycmlkZVR5cGUACAAAAERFRkFVTFQAEG1heFN0YWNrQ250AAEAAAAIcmVmcmVzaFJlbWFpbmluZ1RpbWVXaGVuU3RhY2tNYXgAAAhjbGVhckFsbFN0YWNrQ250V2hlblRpbWVVcAAAEG1heFZhbGlkU3RhY2tDbnQA/////whpbmRlcGVuZGVudENoYXJhY3RlclNvdXJjZQAACm92ZXJyaWRlRWZmZWN0S2V5AAhvdmVycmlkZU9uRXZlbnRQcmlvcml0eQAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAACYXVkaW9TaWduYWwAGgAAAGJsb29kc3Vja2VyX3N1bW1vblthdWRpb10AAmxpZmVUaW1lVHlwZQAJAAAASU5GSU5JVFkACHRha2VTbmFwc2hvdFdoZW5FeHRlbmQAAApkdXJhdGlvbktleQABbGlmZVRpbWUAAAAAAAAAAAACdHJpZ2dlckxpZmVUeXBlAAwAAABJTU1FRElBVEVMWQAQdHJpZ2dlckNudAAAAAAAAXRyaWdnZXJJbnRlcnZhbAAAAAAAAADwvwh3YWl0Rmlyc3RUcmlnZ2VySW50ZXJ2YWwAAQFmaXJzdFRyaWdnZXJJbnRlcnZhbAAAAAAAAADwvxBwcmlvcml0eQD/////BHByaW9yaXR5QkJLZXlzAAUAAAAACHN0cmlwQmxhY2tib2FyZFBhcmFtc1dpdGhCdWZmS2V5AAAEYmxhY2tib2FyZAAFAAAAAAhlbmFibGVJbml0RGlyZWN0aW9uRnJvbVNvdXJjZQAAAAJfYnVmZk93bmVyAAsAAABCVUZGX09XTkVSAAhfdXNlU3BlY2lhbEJ1ZmZTb3VyY2UAAAJfc3BlY2lhbEJ1ZmZTb3VyY2UADAAAAEJVRkZfU09VUkNFAAhfaXNEZXJpdmVkQnVmZgAACF9maW5pc2hEZXJpdmVkQnVmZklmUGFyZW50RmluaXNoAAAIX2luaGVyYXRlU291cmNlUHJvamVjdGlsZUZyb21QYXJlbnRCdWZmAAAIX2hvb2tFZmZlY3RLZXlGcm9tU291cmNlUHJvamVjdGlsZQAAAAMzAK4CAAACJHR5cGUASAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytTdW1tb25FbmVtaWVzRm9sbG93TXlSb3V0ZSwgQXNzZW1ibHktQ1NoYXJwAAJfc291cmNlAAcAAABUQVJHRVQACl9lbmVteUtleQAQX3N1bW1vbkNvdW50AAEAAAABX2RlbGF5VGltZQAAAAAAAAAAAAhfbWFuYWdlZEJ5U2NoZWR1bGVyAAEIX2RvbnRCbG9ja1dhdmUAAAhfdHJ5U3VtbW9uT3V0c2lkZVdoZW5Jbk9ic3RhY2xlAAABX3JhbmRvbU9mZnNldEJvdW5kAAAAAKCZmbk/Al9wYXNzYWJsZU1hc2sACgAAAFdBTEtfT05MWQAIX29ubHlTdW1tb25PbmVJblRoZVNhbWVQbGFjZQAACF91c2VPZmZzZXRJbkJCAAAKX29mZnNldFhLZXkACl9vZmZzZXRZS2V5AANfb2Zmc2V0ABsAAAABeAAAAAAAAAAAAAF5AAAAAAAAAAAAAAhfdXNlTG9jYWxVbmhhcm1mdWxGbGFnAAAIX3VuaGFybWZ1bAAACF91c2VNYXBQb3NpdGlvbgAACF9zcGF3bk9uSG9zdFJvb3RUaWxlAAAIX3VzZVRhcmdldFBvc2l0aW9uAAACX3RhcmdldFR5cGUABwAAAFRBUkdFVAAIX3VzZVJhbmRvbURlbGF5AAABX3JhbmRvbURlbGF5UmFuZ2UAAAAAAAAA4D8IX3N0b3BTdW1tb25JZkhvc3REZWFkAAAIX3VzZU9mZnNldEZvckVhY2gAAAhfYWRkQnVmZlRvRW5lbXkAAApfYnVmZlRvRW5lbXkAAl9jaGVja01vdGlvbk1vZGUABAAAAEFMTAAIX3NraXBDaGVja1BvaW50AAAAAAAA",
+      "document_sha256": "bd7cdc0dd8c69847a8602e70bc50dd4224ec4ad849e9188e3d34f2689dab3acb"
+    },
+    "evade": {
+      "parsed": {
+        "templateKey": "evade",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_TAKE_DAMAGE": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+Evade, Assembly-CSharp",
+              "_damageMask": "PHYSICAL_AND_MAGICAL",
+              "_applyWayFilter": "ALL"
+            }
+          ]
+        }
+      },
+      "payload_offset": 238735,
+      "document_base64": "+AAAAAJ0ZW1wbGF0ZUtleQAGAAAAZXZhZGUAAmVmZmVjdEtleQABAAAAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQAA2V2ZW50VG9BY3Rpb25zAJ8AAAAET05fVEFLRV9EQU1BR0UAigAAAAMwAIIAAAACJHR5cGUAMwAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytFdmFkZSwgQXNzZW1ibHktQ1NoYXJwAAJfZGFtYWdlTWFzawAVAAAAUEhZU0lDQUxfQU5EX01BR0lDQUwAAl9hcHBseVdheUZpbHRlcgAEAAAAQUxMAAAAAAA=",
+      "document_sha256": "53cc8b2308834c0c71af7be316088128e41ad9e73a73ea16f5ab8341e62d2ec5"
+    },
+    "gunctrl_alert": {
+      "parsed": {
+        "templateKey": "gunctrl_alert",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_TRIGGER": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+IfElse, Assembly-CSharp",
+              "_conditionNode": {
+                "$type": "Torappu.Battle.Action.Nodes+FilterByTargetSpRatio, Assembly-CSharp",
+                "_targetType": "BUFF_SOURCE",
+                "_condType": "GT",
+                "_spRatio": 0.0
+              },
+              "_succeedNodes": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+CheckContainsBuff, Assembly-CSharp",
+                  "_targetType": "BUFF_OWNER",
+                  "_buffKeys": [
+                    "gunctrl_alert[effect_2]"
+                  ],
+                  "isAND": true,
+                  "_loadFromBlackboard": false,
+                  "_checkBuffSource": false,
+                  "_buffSourceType": "BUFF_SOURCE",
+                  "_checkSourceHost": false
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+IfNot, Assembly-CSharp"
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+                  "_buff": {
+                    "attributes": {
+                      "abnormalFlags": [],
+                      "abnormalImmunes": [],
+                      "abnormalAntis": [],
+                      "abnormalCombos": [],
+                      "abnormalComboImmunes": [],
+                      "attributeModifiers": []
+                    },
+                    "buffKey": "gunctrl_alert[effect_2]",
+                    "loadFromDB": false,
+                    "isDurableBuff": false,
+                    "isDamageMissable": false,
+                    "isSilenceable": false,
+                    "isStunnable": false,
+                    "isFreezable": false,
+                    "isLevitatable": false,
+                    "isGroundBoundable": false,
+                    "statusResistable": "AUTOMATIC",
+                    "templateKey": "empty",
+                    "disableOverride": false,
+                    "overrideKey": null,
+                    "overrideType": "DEFAULT",
+                    "maxStackCnt": 1,
+                    "refreshRemainingTimeWhenStackMax": false,
+                    "clearAllStackCntWhenTimeUp": false,
+                    "maxValidStackCnt": -1,
+                    "independentCharacterSource": false,
+                    "overrideEffectKey": "map_027_chengfangpao_buff_02",
+                    "overrideOnEventPriority": false,
+                    "onEventPriority": "DEFAULT",
+                    "audioSignal": null,
+                    "lifeTimeType": "INFINITY",
+                    "takeSnapshotWhenExtend": false,
+                    "durationKey": null,
+                    "lifeTime": 0.0,
+                    "triggerLifeType": "IMMEDIATELY",
+                    "triggerCnt": 0,
+                    "triggerInterval": -1.0,
+                    "waitFirstTriggerInterval": true,
+                    "firstTriggerInterval": -1.0,
+                    "priority": -1,
+                    "priorityBBKeys": [],
+                    "stripBlackboardParamsWithBuffKey": false,
+                    "blackboard": [],
+                    "enableInitDirectionFromSource": false
+                  },
+                  "_buffOwner": "BUFF_OWNER",
+                  "_useSpecialBuffSource": false,
+                  "_specialBuffSource": "BUFF_SOURCE",
+                  "_isDerivedBuff": true,
+                  "_finishDerivedBuffIfParentFinish": false,
+                  "_inherateSourceProjectileFromParentBuff": false,
+                  "_hookEffectKeyFromSourceProjectile": false
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+FinishDerivedBuffById, Assembly-CSharp",
+                  "_buffKey": "gunctrl_alert[effect_1]",
+                  "_decCntIfStack": false,
+                  "_updateOverrideMap": true
+                }
+              ],
+              "_failNodes": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+CheckContainsBuff, Assembly-CSharp",
+                  "_targetType": "BUFF_OWNER",
+                  "_buffKeys": [
+                    "gunctrl_alert[effect_1]"
+                  ],
+                  "isAND": true,
+                  "_loadFromBlackboard": false,
+                  "_checkBuffSource": false,
+                  "_buffSourceType": "BUFF_SOURCE",
+                  "_checkSourceHost": false
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+IfNot, Assembly-CSharp"
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+                  "_buff": {
+                    "attributes": {
+                      "abnormalFlags": [],
+                      "abnormalImmunes": [],
+                      "abnormalAntis": [],
+                      "abnormalCombos": [],
+                      "abnormalComboImmunes": [],
+                      "attributeModifiers": []
+                    },
+                    "buffKey": "gunctrl_alert[effect_1]",
+                    "loadFromDB": false,
+                    "isDurableBuff": false,
+                    "isDamageMissable": false,
+                    "isSilenceable": false,
+                    "isStunnable": false,
+                    "isFreezable": false,
+                    "isLevitatable": false,
+                    "isGroundBoundable": false,
+                    "statusResistable": "AUTOMATIC",
+                    "templateKey": "empty",
+                    "disableOverride": false,
+                    "overrideKey": null,
+                    "overrideType": "DEFAULT",
+                    "maxStackCnt": 1,
+                    "refreshRemainingTimeWhenStackMax": false,
+                    "clearAllStackCntWhenTimeUp": false,
+                    "maxValidStackCnt": -1,
+                    "independentCharacterSource": false,
+                    "overrideEffectKey": "map_027_chengfangpao_buff_01",
+                    "overrideOnEventPriority": false,
+                    "onEventPriority": "DEFAULT",
+                    "audioSignal": null,
+                    "lifeTimeType": "INFINITY",
+                    "takeSnapshotWhenExtend": false,
+                    "durationKey": null,
+                    "lifeTime": 0.0,
+                    "triggerLifeType": "IMMEDIATELY",
+                    "triggerCnt": 0,
+                    "triggerInterval": -1.0,
+                    "waitFirstTriggerInterval": true,
+                    "firstTriggerInterval": -1.0,
+                    "priority": -1,
+                    "priorityBBKeys": [],
+                    "stripBlackboardParamsWithBuffKey": false,
+                    "blackboard": [],
+                    "enableInitDirectionFromSource": false
+                  },
+                  "_buffOwner": "BUFF_OWNER",
+                  "_useSpecialBuffSource": false,
+                  "_specialBuffSource": "BUFF_SOURCE",
+                  "_isDerivedBuff": true,
+                  "_finishDerivedBuffIfParentFinish": false,
+                  "_inherateSourceProjectileFromParentBuff": false,
+                  "_hookEffectKeyFromSourceProjectile": false
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+FinishDerivedBuffById, Assembly-CSharp",
+                  "_buffKey": "gunctrl_alert[effect_2]",
+                  "_decCntIfStack": false,
+                  "_updateOverrideMap": true
+                }
+              ]
+            }
+          ],
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+IfElse, Assembly-CSharp",
+              "_conditionNode": {
+                "$type": "Torappu.Battle.Action.Nodes+FilterByTargetSpRatio, Assembly-CSharp",
+                "_targetType": "BUFF_SOURCE",
+                "_condType": "GT",
+                "_spRatio": 0.0
+              },
+              "_succeedNodes": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+                  "_buff": {
+                    "attributes": {
+                      "abnormalFlags": [],
+                      "abnormalImmunes": [],
+                      "abnormalAntis": [],
+                      "abnormalCombos": [],
+                      "abnormalComboImmunes": [],
+                      "attributeModifiers": []
+                    },
+                    "buffKey": "gunctrl_alert[effect_2]",
+                    "loadFromDB": false,
+                    "isDurableBuff": false,
+                    "isDamageMissable": false,
+                    "isSilenceable": false,
+                    "isStunnable": false,
+                    "isFreezable": false,
+                    "isLevitatable": false,
+                    "isGroundBoundable": false,
+                    "statusResistable": "AUTOMATIC",
+                    "templateKey": "empty",
+                    "disableOverride": false,
+                    "overrideKey": null,
+                    "overrideType": "DEFAULT",
+                    "maxStackCnt": 1,
+                    "refreshRemainingTimeWhenStackMax": false,
+                    "clearAllStackCntWhenTimeUp": false,
+                    "maxValidStackCnt": -1,
+                    "independentCharacterSource": false,
+                    "overrideEffectKey": "map_027_chengfangpao_buff_02",
+                    "overrideOnEventPriority": false,
+                    "onEventPriority": "DEFAULT",
+                    "audioSignal": null,
+                    "lifeTimeType": "INFINITY",
+                    "takeSnapshotWhenExtend": false,
+                    "durationKey": null,
+                    "lifeTime": 0.0,
+                    "triggerLifeType": "IMMEDIATELY",
+                    "triggerCnt": 0,
+                    "triggerInterval": -1.0,
+                    "waitFirstTriggerInterval": true,
+                    "firstTriggerInterval": -1.0,
+                    "priority": -1,
+                    "priorityBBKeys": [],
+                    "stripBlackboardParamsWithBuffKey": false,
+                    "blackboard": [],
+                    "enableInitDirectionFromSource": false
+                  },
+                  "_buffOwner": "BUFF_OWNER",
+                  "_useSpecialBuffSource": false,
+                  "_specialBuffSource": "BUFF_SOURCE",
+                  "_isDerivedBuff": true,
+                  "_finishDerivedBuffIfParentFinish": false,
+                  "_inherateSourceProjectileFromParentBuff": false,
+                  "_hookEffectKeyFromSourceProjectile": false
+                }
+              ],
+              "_failNodes": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+                  "_buff": {
+                    "attributes": {
+                      "abnormalFlags": [],
+                      "abnormalImmunes": [],
+                      "abnormalAntis": [],
+                      "abnormalCombos": [],
+                      "abnormalComboImmunes": [],
+                      "attributeModifiers": []
+                    },
+                    "buffKey": "gunctrl_alert[effect_1]",
+                    "loadFromDB": false,
+                    "isDurableBuff": false,
+                    "isDamageMissable": false,
+                    "isSilenceable": false,
+                    "isStunnable": false,
+                    "isFreezable": false,
+                    "isLevitatable": false,
+                    "isGroundBoundable": false,
+                    "statusResistable": "AUTOMATIC",
+                    "templateKey": "empty",
+                    "disableOverride": false,
+                    "overrideKey": null,
+                    "overrideType": "DEFAULT",
+                    "maxStackCnt": 1,
+                    "refreshRemainingTimeWhenStackMax": false,
+                    "clearAllStackCntWhenTimeUp": false,
+                    "maxValidStackCnt": -1,
+                    "independentCharacterSource": false,
+                    "overrideEffectKey": "map_027_chengfangpao_buff_01",
+                    "overrideOnEventPriority": false,
+                    "onEventPriority": "DEFAULT",
+                    "audioSignal": null,
+                    "lifeTimeType": "INFINITY",
+                    "takeSnapshotWhenExtend": false,
+                    "durationKey": null,
+                    "lifeTime": 0.0,
+                    "triggerLifeType": "IMMEDIATELY",
+                    "triggerCnt": 0,
+                    "triggerInterval": -1.0,
+                    "waitFirstTriggerInterval": true,
+                    "firstTriggerInterval": -1.0,
+                    "priority": -1,
+                    "priorityBBKeys": [],
+                    "stripBlackboardParamsWithBuffKey": false,
+                    "blackboard": [],
+                    "enableInitDirectionFromSource": false
+                  },
+                  "_buffOwner": "BUFF_OWNER",
+                  "_useSpecialBuffSource": false,
+                  "_specialBuffSource": "BUFF_SOURCE",
+                  "_isDerivedBuff": true,
+                  "_finishDerivedBuffIfParentFinish": false,
+                  "_inherateSourceProjectileFromParentBuff": false,
+                  "_hookEffectKeyFromSourceProjectile": false
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "payload_offset": 1606296,
+      "document_base64": "IBsAAAJ0ZW1wbGF0ZUtleQAOAAAAZ3VuY3RybF9hbGVydAACZWZmZWN0S2V5AAEAAAAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAADZXZlbnRUb0FjdGlvbnMAvxoAAARPTl9CVUZGX1RSSUdHRVIANw8AAAMwAC8PAAACJHR5cGUANAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytJZkVsc2UsIEFzc2VtYmx5LUNTaGFycAADX2NvbmRpdGlvbk5vZGUAlAAAAAIkdHlwZQBDAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0ZpbHRlckJ5VGFyZ2V0U3BSYXRpbywgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQAMAAAAQlVGRl9TT1VSQ0UAAl9jb25kVHlwZQADAAAAR1QAAV9zcFJhdGlvAAAAAAAAAAAAAARfc3VjY2VlZE5vZGVzABYHAAADMAD/AAAAAiR0eXBlAD8AAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2hlY2tDb250YWluc0J1ZmYsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIABF9idWZmS2V5cwAkAAAAAjAAGAAAAGd1bmN0cmxfYWxlcnRbZWZmZWN0XzJdAAAIaXNBTkQAAQhfbG9hZEZyb21CbGFja2JvYXJkAAAIX2NoZWNrQnVmZlNvdXJjZQAAAl9idWZmU291cmNlVHlwZQAMAAAAQlVGRl9TT1VSQ0UACF9jaGVja1NvdXJjZUhvc3QAAAADMQBDAAAAAiR0eXBlADMAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrSWZOb3QsIEFzc2VtYmx5LUNTaGFycAAAAzIAJAUAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NyZWF0ZUJ1ZmYsIEFzc2VtYmx5LUNTaGFycAADX2J1ZmYA+wMAAANhdHRyaWJ1dGVzAIwAAAAEYWJub3JtYWxGbGFncwAFAAAAAARhYm5vcm1hbEltbXVuZXMABQAAAAAEYWJub3JtYWxBbnRpcwAFAAAAAARhYm5vcm1hbENvbWJvcwAFAAAAAARhYm5vcm1hbENvbWJvSW1tdW5lcwAFAAAAAARhdHRyaWJ1dGVNb2RpZmllcnMABQAAAAAAAmJ1ZmZLZXkAGAAAAGd1bmN0cmxfYWxlcnRbZWZmZWN0XzJdAAhsb2FkRnJvbURCAAAIaXNEdXJhYmxlQnVmZgAACGlzRGFtYWdlTWlzc2FibGUAAAhpc1NpbGVuY2VhYmxlAAAIaXNTdHVubmFibGUAAAhpc0ZyZWV6YWJsZQAACGlzTGV2aXRhdGFibGUAAAhpc0dyb3VuZEJvdW5kYWJsZQAAAnN0YXR1c1Jlc2lzdGFibGUACgAAAEFVVE9NQVRJQwACdGVtcGxhdGVLZXkABgAAAGVtcHR5AAhkaXNhYmxlT3ZlcnJpZGUAAApvdmVycmlkZUtleQACb3ZlcnJpZGVUeXBlAAgAAABERUZBVUxUABBtYXhTdGFja0NudAABAAAACHJlZnJlc2hSZW1haW5pbmdUaW1lV2hlblN0YWNrTWF4AAAIY2xlYXJBbGxTdGFja0NudFdoZW5UaW1lVXAAABBtYXhWYWxpZFN0YWNrQ250AP////8IaW5kZXBlbmRlbnRDaGFyYWN0ZXJTb3VyY2UAAAJvdmVycmlkZUVmZmVjdEtleQAdAAAAbWFwXzAyN19jaGVuZ2ZhbmdwYW9fYnVmZl8wMgAIb3ZlcnJpZGVPbkV2ZW50UHJpb3JpdHkAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQACmF1ZGlvU2lnbmFsAAJsaWZlVGltZVR5cGUACQAAAElORklOSVRZAAh0YWtlU25hcHNob3RXaGVuRXh0ZW5kAAAKZHVyYXRpb25LZXkAAWxpZmVUaW1lAAAAAAAAAAAAAnRyaWdnZXJMaWZlVHlwZQAMAAAASU1NRURJQVRFTFkAEHRyaWdnZXJDbnQAAAAAAAF0cmlnZ2VySW50ZXJ2YWwAAAAAAAAA8L8Id2FpdEZpcnN0VHJpZ2dlckludGVydmFsAAEBZmlyc3RUcmlnZ2VySW50ZXJ2YWwAAAAAAAAA8L8QcHJpb3JpdHkA/////wRwcmlvcml0eUJCS2V5cwAFAAAAAAhzdHJpcEJsYWNrYm9hcmRQYXJhbXNXaXRoQnVmZktleQAABGJsYWNrYm9hcmQABQAAAAAIZW5hYmxlSW5pdERpcmVjdGlvbkZyb21Tb3VyY2UAAAACX2J1ZmZPd25lcgALAAAAQlVGRl9PV05FUgAIX3VzZVNwZWNpYWxCdWZmU291cmNlAAACX3NwZWNpYWxCdWZmU291cmNlAAwAAABCVUZGX1NPVVJDRQAIX2lzRGVyaXZlZEJ1ZmYAAQhfZmluaXNoRGVyaXZlZEJ1ZmZJZlBhcmVudEZpbmlzaAAACF9pbmhlcmF0ZVNvdXJjZVByb2plY3RpbGVGcm9tUGFyZW50QnVmZgAACF9ob29rRWZmZWN0S2V5RnJvbVNvdXJjZVByb2plY3RpbGUAAAADMwCfAAAAAiR0eXBlAEMAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrRmluaXNoRGVyaXZlZEJ1ZmZCeUlkLCBBc3NlbWJseS1DU2hhcnAAAl9idWZmS2V5ABgAAABndW5jdHJsX2FsZXJ0W2VmZmVjdF8xXQAIX2RlY0NudElmU3RhY2sAAAhfdXBkYXRlT3ZlcnJpZGVNYXAAAQAABF9mYWlsTm9kZXMAFgcAAAMwAP8AAAACJHR5cGUAPwAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDaGVja0NvbnRhaW5zQnVmZiwgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQALAAAAQlVGRl9PV05FUgAEX2J1ZmZLZXlzACQAAAACMAAYAAAAZ3VuY3RybF9hbGVydFtlZmZlY3RfMV0AAAhpc0FORAABCF9sb2FkRnJvbUJsYWNrYm9hcmQAAAhfY2hlY2tCdWZmU291cmNlAAACX2J1ZmZTb3VyY2VUeXBlAAwAAABCVUZGX1NPVVJDRQAIX2NoZWNrU291cmNlSG9zdAAAAAMxAEMAAAACJHR5cGUAMwAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytJZk5vdCwgQXNzZW1ibHktQ1NoYXJwAAADMgAkBQAAAiR0eXBlADgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ3JlYXRlQnVmZiwgQXNzZW1ibHktQ1NoYXJwAANfYnVmZgD7AwAAA2F0dHJpYnV0ZXMAjAAAAARhYm5vcm1hbEZsYWdzAAUAAAAABGFibm9ybWFsSW1tdW5lcwAFAAAAAARhYm5vcm1hbEFudGlzAAUAAAAABGFibm9ybWFsQ29tYm9zAAUAAAAABGFibm9ybWFsQ29tYm9JbW11bmVzAAUAAAAABGF0dHJpYnV0ZU1vZGlmaWVycwAFAAAAAAACYnVmZktleQAYAAAAZ3VuY3RybF9hbGVydFtlZmZlY3RfMV0ACGxvYWRGcm9tREIAAAhpc0R1cmFibGVCdWZmAAAIaXNEYW1hZ2VNaXNzYWJsZQAACGlzU2lsZW5jZWFibGUAAAhpc1N0dW5uYWJsZQAACGlzRnJlZXphYmxlAAAIaXNMZXZpdGF0YWJsZQAACGlzR3JvdW5kQm91bmRhYmxlAAACc3RhdHVzUmVzaXN0YWJsZQAKAAAAQVVUT01BVElDAAJ0ZW1wbGF0ZUtleQAGAAAAZW1wdHkACGRpc2FibGVPdmVycmlkZQAACm92ZXJyaWRlS2V5AAJvdmVycmlkZVR5cGUACAAAAERFRkFVTFQAEG1heFN0YWNrQ250AAEAAAAIcmVmcmVzaFJlbWFpbmluZ1RpbWVXaGVuU3RhY2tNYXgAAAhjbGVhckFsbFN0YWNrQ250V2hlblRpbWVVcAAAEG1heFZhbGlkU3RhY2tDbnQA/////whpbmRlcGVuZGVudENoYXJhY3RlclNvdXJjZQAAAm92ZXJyaWRlRWZmZWN0S2V5AB0AAABtYXBfMDI3X2NoZW5nZmFuZ3Bhb19idWZmXzAxAAhvdmVycmlkZU9uRXZlbnRQcmlvcml0eQAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAAKYXVkaW9TaWduYWwAAmxpZmVUaW1lVHlwZQAJAAAASU5GSU5JVFkACHRha2VTbmFwc2hvdFdoZW5FeHRlbmQAAApkdXJhdGlvbktleQABbGlmZVRpbWUAAAAAAAAAAAACdHJpZ2dlckxpZmVUeXBlAAwAAABJTU1FRElBVEVMWQAQdHJpZ2dlckNudAAAAAAAAXRyaWdnZXJJbnRlcnZhbAAAAAAAAADwvwh3YWl0Rmlyc3RUcmlnZ2VySW50ZXJ2YWwAAQFmaXJzdFRyaWdnZXJJbnRlcnZhbAAAAAAAAADwvxBwcmlvcml0eQD/////BHByaW9yaXR5QkJLZXlzAAUAAAAACHN0cmlwQmxhY2tib2FyZFBhcmFtc1dpdGhCdWZmS2V5AAAEYmxhY2tib2FyZAAFAAAAAAhlbmFibGVJbml0RGlyZWN0aW9uRnJvbVNvdXJjZQAAAAJfYnVmZk93bmVyAAsAAABCVUZGX09XTkVSAAhfdXNlU3BlY2lhbEJ1ZmZTb3VyY2UAAAJfc3BlY2lhbEJ1ZmZTb3VyY2UADAAAAEJVRkZfU09VUkNFAAhfaXNEZXJpdmVkQnVmZgABCF9maW5pc2hEZXJpdmVkQnVmZklmUGFyZW50RmluaXNoAAAIX2luaGVyYXRlU291cmNlUHJvamVjdGlsZUZyb21QYXJlbnRCdWZmAAAIX2hvb2tFZmZlY3RLZXlGcm9tU291cmNlUHJvamVjdGlsZQAAAAMzAJ8AAAACJHR5cGUAQwAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytGaW5pc2hEZXJpdmVkQnVmZkJ5SWQsIEFzc2VtYmx5LUNTaGFycAACX2J1ZmZLZXkAGAAAAGd1bmN0cmxfYWxlcnRbZWZmZWN0XzJdAAhfZGVjQ250SWZTdGFjawAACF91cGRhdGVPdmVycmlkZU1hcAABAAAAAARPTl9CVUZGX1NUQVJUAGMLAAADMABbCwAAAiR0eXBlADQAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrSWZFbHNlLCBBc3NlbWJseS1DU2hhcnAAA19jb25kaXRpb25Ob2RlAJQAAAACJHR5cGUAQwAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytGaWx0ZXJCeVRhcmdldFNwUmF0aW8sIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUADAAAAEJVRkZfU09VUkNFAAJfY29uZFR5cGUAAwAAAEdUAAFfc3BSYXRpbwAAAAAAAAAAAAAEX3N1Y2NlZWROb2RlcwAsBQAAAzAAJAUAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NyZWF0ZUJ1ZmYsIEFzc2VtYmx5LUNTaGFycAADX2J1ZmYA+wMAAANhdHRyaWJ1dGVzAIwAAAAEYWJub3JtYWxGbGFncwAFAAAAAARhYm5vcm1hbEltbXVuZXMABQAAAAAEYWJub3JtYWxBbnRpcwAFAAAAAARhYm5vcm1hbENvbWJvcwAFAAAAAARhYm5vcm1hbENvbWJvSW1tdW5lcwAFAAAAAARhdHRyaWJ1dGVNb2RpZmllcnMABQAAAAAAAmJ1ZmZLZXkAGAAAAGd1bmN0cmxfYWxlcnRbZWZmZWN0XzJdAAhsb2FkRnJvbURCAAAIaXNEdXJhYmxlQnVmZgAACGlzRGFtYWdlTWlzc2FibGUAAAhpc1NpbGVuY2VhYmxlAAAIaXNTdHVubmFibGUAAAhpc0ZyZWV6YWJsZQAACGlzTGV2aXRhdGFibGUAAAhpc0dyb3VuZEJvdW5kYWJsZQAAAnN0YXR1c1Jlc2lzdGFibGUACgAAAEFVVE9NQVRJQwACdGVtcGxhdGVLZXkABgAAAGVtcHR5AAhkaXNhYmxlT3ZlcnJpZGUAAApvdmVycmlkZUtleQACb3ZlcnJpZGVUeXBlAAgAAABERUZBVUxUABBtYXhTdGFja0NudAABAAAACHJlZnJlc2hSZW1haW5pbmdUaW1lV2hlblN0YWNrTWF4AAAIY2xlYXJBbGxTdGFja0NudFdoZW5UaW1lVXAAABBtYXhWYWxpZFN0YWNrQ250AP////8IaW5kZXBlbmRlbnRDaGFyYWN0ZXJTb3VyY2UAAAJvdmVycmlkZUVmZmVjdEtleQAdAAAAbWFwXzAyN19jaGVuZ2ZhbmdwYW9fYnVmZl8wMgAIb3ZlcnJpZGVPbkV2ZW50UHJpb3JpdHkAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQACmF1ZGlvU2lnbmFsAAJsaWZlVGltZVR5cGUACQAAAElORklOSVRZAAh0YWtlU25hcHNob3RXaGVuRXh0ZW5kAAAKZHVyYXRpb25LZXkAAWxpZmVUaW1lAAAAAAAAAAAAAnRyaWdnZXJMaWZlVHlwZQAMAAAASU1NRURJQVRFTFkAEHRyaWdnZXJDbnQAAAAAAAF0cmlnZ2VySW50ZXJ2YWwAAAAAAAAA8L8Id2FpdEZpcnN0VHJpZ2dlckludGVydmFsAAEBZmlyc3RUcmlnZ2VySW50ZXJ2YWwAAAAAAAAA8L8QcHJpb3JpdHkA/////wRwcmlvcml0eUJCS2V5cwAFAAAAAAhzdHJpcEJsYWNrYm9hcmRQYXJhbXNXaXRoQnVmZktleQAABGJsYWNrYm9hcmQABQAAAAAIZW5hYmxlSW5pdERpcmVjdGlvbkZyb21Tb3VyY2UAAAACX2J1ZmZPd25lcgALAAAAQlVGRl9PV05FUgAIX3VzZVNwZWNpYWxCdWZmU291cmNlAAACX3NwZWNpYWxCdWZmU291cmNlAAwAAABCVUZGX1NPVVJDRQAIX2lzRGVyaXZlZEJ1ZmYAAQhfZmluaXNoRGVyaXZlZEJ1ZmZJZlBhcmVudEZpbmlzaAAACF9pbmhlcmF0ZVNvdXJjZVByb2plY3RpbGVGcm9tUGFyZW50QnVmZgAACF9ob29rRWZmZWN0S2V5RnJvbVNvdXJjZVByb2plY3RpbGUAAAAABF9mYWlsTm9kZXMALAUAAAMwACQFAAACJHR5cGUAOAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDcmVhdGVCdWZmLCBBc3NlbWJseS1DU2hhcnAAA19idWZmAPsDAAADYXR0cmlidXRlcwCMAAAABGFibm9ybWFsRmxhZ3MABQAAAAAEYWJub3JtYWxJbW11bmVzAAUAAAAABGFibm9ybWFsQW50aXMABQAAAAAEYWJub3JtYWxDb21ib3MABQAAAAAEYWJub3JtYWxDb21ib0ltbXVuZXMABQAAAAAEYXR0cmlidXRlTW9kaWZpZXJzAAUAAAAAAAJidWZmS2V5ABgAAABndW5jdHJsX2FsZXJ0W2VmZmVjdF8xXQAIbG9hZEZyb21EQgAACGlzRHVyYWJsZUJ1ZmYAAAhpc0RhbWFnZU1pc3NhYmxlAAAIaXNTaWxlbmNlYWJsZQAACGlzU3R1bm5hYmxlAAAIaXNGcmVlemFibGUAAAhpc0xldml0YXRhYmxlAAAIaXNHcm91bmRCb3VuZGFibGUAAAJzdGF0dXNSZXNpc3RhYmxlAAoAAABBVVRPTUFUSUMAAnRlbXBsYXRlS2V5AAYAAABlbXB0eQAIZGlzYWJsZU92ZXJyaWRlAAAKb3ZlcnJpZGVLZXkAAm92ZXJyaWRlVHlwZQAIAAAAREVGQVVMVAAQbWF4U3RhY2tDbnQAAQAAAAhyZWZyZXNoUmVtYWluaW5nVGltZVdoZW5TdGFja01heAAACGNsZWFyQWxsU3RhY2tDbnRXaGVuVGltZVVwAAAQbWF4VmFsaWRTdGFja0NudAD/////CGluZGVwZW5kZW50Q2hhcmFjdGVyU291cmNlAAACb3ZlcnJpZGVFZmZlY3RLZXkAHQAAAG1hcF8wMjdfY2hlbmdmYW5ncGFvX2J1ZmZfMDEACG92ZXJyaWRlT25FdmVudFByaW9yaXR5AAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAAphdWRpb1NpZ25hbAACbGlmZVRpbWVUeXBlAAkAAABJTkZJTklUWQAIdGFrZVNuYXBzaG90V2hlbkV4dGVuZAAACmR1cmF0aW9uS2V5AAFsaWZlVGltZQAAAAAAAAAAAAJ0cmlnZ2VyTGlmZVR5cGUADAAAAElNTUVESUFURUxZABB0cmlnZ2VyQ250AAAAAAABdHJpZ2dlckludGVydmFsAAAAAAAAAPC/CHdhaXRGaXJzdFRyaWdnZXJJbnRlcnZhbAABAWZpcnN0VHJpZ2dlckludGVydmFsAAAAAAAAAPC/EHByaW9yaXR5AP////8EcHJpb3JpdHlCQktleXMABQAAAAAIc3RyaXBCbGFja2JvYXJkUGFyYW1zV2l0aEJ1ZmZLZXkAAARibGFja2JvYXJkAAUAAAAACGVuYWJsZUluaXREaXJlY3Rpb25Gcm9tU291cmNlAAAAAl9idWZmT3duZXIACwAAAEJVRkZfT1dORVIACF91c2VTcGVjaWFsQnVmZlNvdXJjZQAAAl9zcGVjaWFsQnVmZlNvdXJjZQAMAAAAQlVGRl9TT1VSQ0UACF9pc0Rlcml2ZWRCdWZmAAEIX2ZpbmlzaERlcml2ZWRCdWZmSWZQYXJlbnRGaW5pc2gAAAhfaW5oZXJhdGVTb3VyY2VQcm9qZWN0aWxlRnJvbVBhcmVudEJ1ZmYAAAhfaG9va0VmZmVjdEtleUZyb21Tb3VyY2VQcm9qZWN0aWxlAAAAAAAAAAA=",
+      "document_sha256": "94b58d0f6d85fb53dc43ca15bd194f7886ab72406f5da69810e8728d2454a109"
+    },
+    "gunctrl_camera_eff": {
+      "parsed": {
+        "templateKey": "gunctrl_camera_eff",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_TRIGGER": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+IfElse, Assembly-CSharp",
+              "_conditionNode": {
+                "$type": "Torappu.Battle.Action.Nodes+FilterByTargetSpRatio, Assembly-CSharp",
+                "_targetType": "BUFF_OWNER",
+                "_condType": "GE",
+                "_spRatio": 0.0
+              },
+              "_succeedNodes": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+CheckContainsDerviedBuff, Assembly-CSharp",
+                  "_derviedBuffKey": "gunctrl_alert[effect_camera]"
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+IfNot, Assembly-CSharp"
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+                  "_buff": {
+                    "attributes": {
+                      "abnormalFlags": null,
+                      "abnormalImmunes": null,
+                      "abnormalAntis": null,
+                      "abnormalCombos": null,
+                      "abnormalComboImmunes": null,
+                      "attributeModifiers": null
+                    },
+                    "buffKey": "gunctrl_alert[effect_camera]",
+                    "loadFromDB": false,
+                    "isDurableBuff": false,
+                    "isDamageMissable": false,
+                    "isSilenceable": false,
+                    "isStunnable": false,
+                    "isFreezable": false,
+                    "isLevitatable": false,
+                    "isGroundBoundable": false,
+                    "statusResistable": "AUTOMATIC",
+                    "templateKey": "empty",
+                    "disableOverride": false,
+                    "overrideKey": null,
+                    "overrideType": "DEFAULT",
+                    "maxStackCnt": 1,
+                    "refreshRemainingTimeWhenStackMax": false,
+                    "clearAllStackCntWhenTimeUp": false,
+                    "maxValidStackCnt": -1,
+                    "independentCharacterSource": false,
+                    "overrideEffectKey": "",
+                    "overrideOnEventPriority": false,
+                    "onEventPriority": "DEFAULT",
+                    "audioSignal": "gunctrl_camera_eff_audio",
+                    "lifeTimeType": "INFINITY",
+                    "takeSnapshotWhenExtend": false,
+                    "durationKey": null,
+                    "lifeTime": 0.0,
+                    "triggerLifeType": "IMMEDIATELY",
+                    "triggerCnt": 0,
+                    "triggerInterval": -1.0,
+                    "waitFirstTriggerInterval": true,
+                    "firstTriggerInterval": -1.0,
+                    "priority": -1,
+                    "priorityBBKeys": [],
+                    "stripBlackboardParamsWithBuffKey": false,
+                    "blackboard": [],
+                    "enableInitDirectionFromSource": false
+                  },
+                  "_buffOwner": "BUFF_OWNER",
+                  "_useSpecialBuffSource": false,
+                  "_specialBuffSource": "BUFF_SOURCE",
+                  "_isDerivedBuff": true,
+                  "_finishDerivedBuffIfParentFinish": false,
+                  "_inherateSourceProjectileFromParentBuff": false,
+                  "_hookEffectKeyFromSourceProjectile": false
+                }
+              ],
+              "_failNodes": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+FinishDerivedBuff, Assembly-CSharp",
+                  "_updateOverrideMap": true
+                }
+              ]
+            }
+          ],
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateEffect, Assembly-CSharp",
+              "_targetType": "TARGET",
+              "_sourceType": "SOURCE",
+              "_effectKey": "map_027_chengfangpao_screen",
+              "_useSourceFaceVactor": false,
+              "_useSourceToTargetDirection": false,
+              "_useConstDirection": false,
+              "_constDirection": "UP",
+              "_createEffectHoldBySource": false,
+              "_createEffectConstDirectionHoldBySource": false,
+              "_useAttackPlaybackSpeed": false,
+              "_manualSetPlaybackSpeed": false,
+              "_blackboardKey": "",
+              "_playbackSpeed": 1.0
+            }
+          ]
+        }
+      },
+      "payload_offset": 894916,
+      "document_base64": "nQkAAAJ0ZW1wbGF0ZUtleQATAAAAZ3VuY3RybF9jYW1lcmFfZWZmAAJlZmZlY3RLZXkAAQAAAAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAANldmVudFRvQWN0aW9ucwA3CQAABE9OX0JVRkZfVFJJR0dFUgBbBwAAAzAAUwcAAAIkdHlwZQA0AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0lmRWxzZSwgQXNzZW1ibHktQ1NoYXJwAANfY29uZGl0aW9uTm9kZQCTAAAAAiR0eXBlAEMAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrRmlsdGVyQnlUYXJnZXRTcFJhdGlvLCBBc3NlbWJseS1DU2hhcnAAAl90YXJnZXRUeXBlAAsAAABCVUZGX09XTkVSAAJfY29uZFR5cGUAAwAAAEdFAAFfc3BSYXRpbwAAAAAAAAAAAAAEX3N1Y2NlZWROb2RlcwDlBQAAAzAAiAAAAAIkdHlwZQBGAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NoZWNrQ29udGFpbnNEZXJ2aWVkQnVmZiwgQXNzZW1ibHktQ1NoYXJwAAJfZGVydmllZEJ1ZmZLZXkAHQAAAGd1bmN0cmxfYWxlcnRbZWZmZWN0X2NhbWVyYV0AAAMxAEMAAAACJHR5cGUAMwAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytJZk5vdCwgQXNzZW1ibHktQ1NoYXJwAAADMgAMBQAAAiR0eXBlADgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ3JlYXRlQnVmZiwgQXNzZW1ibHktQ1NoYXJwAANfYnVmZgDjAwAAA2F0dHJpYnV0ZXMAbgAAAAphYm5vcm1hbEZsYWdzAAphYm5vcm1hbEltbXVuZXMACmFibm9ybWFsQW50aXMACmFibm9ybWFsQ29tYm9zAAphYm5vcm1hbENvbWJvSW1tdW5lcwAKYXR0cmlidXRlTW9kaWZpZXJzAAACYnVmZktleQAdAAAAZ3VuY3RybF9hbGVydFtlZmZlY3RfY2FtZXJhXQAIbG9hZEZyb21EQgAACGlzRHVyYWJsZUJ1ZmYAAAhpc0RhbWFnZU1pc3NhYmxlAAAIaXNTaWxlbmNlYWJsZQAACGlzU3R1bm5hYmxlAAAIaXNGcmVlemFibGUAAAhpc0xldml0YXRhYmxlAAAIaXNHcm91bmRCb3VuZGFibGUAAAJzdGF0dXNSZXNpc3RhYmxlAAoAAABBVVRPTUFUSUMAAnRlbXBsYXRlS2V5AAYAAABlbXB0eQAIZGlzYWJsZU92ZXJyaWRlAAAKb3ZlcnJpZGVLZXkAAm92ZXJyaWRlVHlwZQAIAAAAREVGQVVMVAAQbWF4U3RhY2tDbnQAAQAAAAhyZWZyZXNoUmVtYWluaW5nVGltZVdoZW5TdGFja01heAAACGNsZWFyQWxsU3RhY2tDbnRXaGVuVGltZVVwAAAQbWF4VmFsaWRTdGFja0NudAD/////CGluZGVwZW5kZW50Q2hhcmFjdGVyU291cmNlAAACb3ZlcnJpZGVFZmZlY3RLZXkAAQAAAAAIb3ZlcnJpZGVPbkV2ZW50UHJpb3JpdHkAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQAAmF1ZGlvU2lnbmFsABkAAABndW5jdHJsX2NhbWVyYV9lZmZfYXVkaW8AAmxpZmVUaW1lVHlwZQAJAAAASU5GSU5JVFkACHRha2VTbmFwc2hvdFdoZW5FeHRlbmQAAApkdXJhdGlvbktleQABbGlmZVRpbWUAAAAAAAAAAAACdHJpZ2dlckxpZmVUeXBlAAwAAABJTU1FRElBVEVMWQAQdHJpZ2dlckNudAAAAAAAAXRyaWdnZXJJbnRlcnZhbAAAAAAAAADwvwh3YWl0Rmlyc3RUcmlnZ2VySW50ZXJ2YWwAAQFmaXJzdFRyaWdnZXJJbnRlcnZhbAAAAAAAAADwvxBwcmlvcml0eQD/////BHByaW9yaXR5QkJLZXlzAAUAAAAACHN0cmlwQmxhY2tib2FyZFBhcmFtc1dpdGhCdWZmS2V5AAAEYmxhY2tib2FyZAAFAAAAAAhlbmFibGVJbml0RGlyZWN0aW9uRnJvbVNvdXJjZQAAAAJfYnVmZk93bmVyAAsAAABCVUZGX09XTkVSAAhfdXNlU3BlY2lhbEJ1ZmZTb3VyY2UAAAJfc3BlY2lhbEJ1ZmZTb3VyY2UADAAAAEJVRkZfU09VUkNFAAhfaXNEZXJpdmVkQnVmZgABCF9maW5pc2hEZXJpdmVkQnVmZklmUGFyZW50RmluaXNoAAAIX2luaGVyYXRlU291cmNlUHJvamVjdGlsZUZyb21QYXJlbnRCdWZmAAAIX2hvb2tFZmZlY3RLZXlGcm9tU291cmNlUHJvamVjdGlsZQAAAAAEX2ZhaWxOb2RlcwBsAAAAAzAAZAAAAAIkdHlwZQA/AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0ZpbmlzaERlcml2ZWRCdWZmLCBBc3NlbWJseS1DU2hhcnAACF91cGRhdGVPdmVycmlkZU1hcAABAAAAAARPTl9CVUZGX1NUQVJUALcBAAADMACvAQAAAiR0eXBlADoAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ3JlYXRlRWZmZWN0LCBBc3NlbWJseS1DU2hhcnAAAl90YXJnZXRUeXBlAAcAAABUQVJHRVQAAl9zb3VyY2VUeXBlAAcAAABTT1VSQ0UAAl9lZmZlY3RLZXkAHAAAAG1hcF8wMjdfY2hlbmdmYW5ncGFvX3NjcmVlbgAIX3VzZVNvdXJjZUZhY2VWYWN0b3IAAAhfdXNlU291cmNlVG9UYXJnZXREaXJlY3Rpb24AAAhfdXNlQ29uc3REaXJlY3Rpb24AAAJfY29uc3REaXJlY3Rpb24AAwAAAFVQAAhfY3JlYXRlRWZmZWN0SG9sZEJ5U291cmNlAAAIX2NyZWF0ZUVmZmVjdENvbnN0RGlyZWN0aW9uSG9sZEJ5U291cmNlAAAIX3VzZUF0dGFja1BsYXliYWNrU3BlZWQAAAhfbWFudWFsU2V0UGxheWJhY2tTcGVlZAAAAl9ibGFja2JvYXJkS2V5AAEAAAAAAV9wbGF5YmFja1NwZWVkAAAAAAAAAPA/AAAAAA==",
+      "document_sha256": "d6a148c753a0c5de090b4cb24077bb219953fa52c21eadc4fc2c85980fc3d0f6"
+    },
+    "modify_sp[start]": {
+      "parsed": {
+        "templateKey": "modify_sp[start]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+ModifySp, Assembly-CSharp",
+              "_targetType": "TARGET",
+              "_modifyByRatio": false,
+              "_modifyRatio": 0.0,
+              "_modifyByRatioBasedOnCurSP": false,
+              "_modifyBySpCost": false,
+              "_dontCheckSpType": false,
+              "_spMask": "ALL",
+              "_forceFlag": false,
+              "_dontShowSpUI": false,
+              "_modifyValue": 0,
+              "_spString": "sp",
+              "_isMinis": false,
+              "_customModifierKey": ""
+            }
+          ]
+        }
+      },
+      "payload_offset": 306926,
+      "document_base64": "vQEAAAJ0ZW1wbGF0ZUtleQARAAAAbW9kaWZ5X3NwW3N0YXJ0XQACZWZmZWN0S2V5AAEAAAAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAADZXZlbnRUb0FjdGlvbnMAWQEAAARPTl9CVUZGX1NUQVJUAEUBAAADMAA9AQAAAiR0eXBlADYAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrTW9kaWZ5U3AsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUABwAAAFRBUkdFVAAIX21vZGlmeUJ5UmF0aW8AAAFfbW9kaWZ5UmF0aW8AAAAAAAAAAAAIX21vZGlmeUJ5UmF0aW9CYXNlZE9uQ3VyU1AAAAhfbW9kaWZ5QnlTcENvc3QAAAhfZG9udENoZWNrU3BUeXBlAAACX3NwTWFzawAEAAAAQUxMAAhfZm9yY2VGbGFnAAAIX2RvbnRTaG93U3BVSQAAEF9tb2RpZnlWYWx1ZQAAAAAAAl9zcFN0cmluZwADAAAAc3AACF9pc01pbmlzAAACX2N1c3RvbU1vZGlmaWVyS2V5AAEAAAAAAAAAAA==",
+      "document_sha256": "defc5260d4cf08eedebe5762a0b5cf4b10d3e43e5ab5d77e817a72522edd636c"
+    },
+    "switch_mode_no_restore": {
+      "parsed": {
+        "templateKey": "switch_mode_no_restore",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+SwitchMode, Assembly-CSharp",
+              "_modeIndex": 0,
+              "_loadModeFromBlackboard": true,
+              "_restoreDefault": false,
+              "_restartFSM": true,
+              "_targetType": "TARGET"
+            }
+          ]
+        }
+      },
+      "payload_offset": 444879,
+      "document_base64": "MAEAAAJ0ZW1wbGF0ZUtleQAXAAAAc3dpdGNoX21vZGVfbm9fcmVzdG9yZQACZWZmZWN0S2V5AAEAAAAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAADZXZlbnRUb0FjdGlvbnMAxgAAAARPTl9CVUZGX1NUQVJUALIAAAADMACqAAAAAiR0eXBlADgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrU3dpdGNoTW9kZSwgQXNzZW1ibHktQ1NoYXJwABBfbW9kZUluZGV4AAAAAAAIX2xvYWRNb2RlRnJvbUJsYWNrYm9hcmQAAQhfcmVzdG9yZURlZmF1bHQAAAhfcmVzdGFydEZTTQABAl90YXJnZXRUeXBlAAcAAABUQVJHRVQAAAAAAA==",
+      "document_sha256": "1f94bccda3e16f376fef6425fbcfc5ca24ee24771fc2ba4eff58fa3579b726ed"
+    },
+    "track_at_next_wave_when_buff_finish": {
+      "parsed": {
+        "templateKey": "track_at_next_wave_when_buff_finish",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_FINISH": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishCurrentWave, Assembly-CSharp",
+              "_finishAndSkip": false,
+              "_trackSourceAtNextWave": true,
+              "_trackSourceAtWaveDelta": 0,
+              "_trackAllManagedEnemiesAtNextWave": false,
+              "_sourceType": "BUFF_OWNER"
+            }
+          ]
+        }
+      },
+      "payload_offset": 243452,
+      "document_base64": "agEAAAJ0ZW1wbGF0ZUtleQAkAAAAdHJhY2tfYXRfbmV4dF93YXZlX3doZW5fYnVmZl9maW5pc2gAAmVmZmVjdEtleQABAAAAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQAA2V2ZW50VG9BY3Rpb25zAPMAAAAET05fQlVGRl9GSU5JU0gA3gAAAAMwANYAAAACJHR5cGUAPwAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytGaW5pc2hDdXJyZW50V2F2ZSwgQXNzZW1ibHktQ1NoYXJwAAhfZmluaXNoQW5kU2tpcAAACF90cmFja1NvdXJjZUF0TmV4dFdhdmUAARBfdHJhY2tTb3VyY2VBdFdhdmVEZWx0YQAAAAAACF90cmFja0FsbE1hbmFnZWRFbmVtaWVzQXROZXh0V2F2ZQAAAl9zb3VyY2VUeXBlAAsAAABCVUZGX09XTkVSAAAAAAA=",
+      "document_sha256": "9ec897d69cc86ca08860a12a20d844f89300d002e86a9e2b667ac0bd3870ab8e"
+    },
+    "triggerability_tick_trigger": {
+      "parsed": {
+        "templateKey": "triggerability_tick_trigger",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_TRIGGER": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+TriggerAbility, Assembly-CSharp",
+              "_ownerType": "BUFF_OWNER",
+              "_targetType": "BUFF_OWNER",
+              "_abilityName": "",
+              "_checkCanUseAblityFlag": false,
+              "_castDirectly": false,
+              "_useFirstActiveAbility": false,
+              "_useCastResult": false,
+              "_triggerHostAbility": false,
+              "_notInterruptAbilityIfCasting": false
+            }
+          ]
+        }
+      },
+      "payload_offset": 395582,
+      "document_base64": "rAEAAAJ0ZW1wbGF0ZUtleQAcAAAAdHJpZ2dlcmFiaWxpdHlfdGlja190cmlnZ2VyAAJlZmZlY3RLZXkAAQAAAAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAANldmVudFRvQWN0aW9ucwA9AQAABE9OX0JVRkZfVFJJR0dFUgAnAQAAAzAAHwEAAAIkdHlwZQA8AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK1RyaWdnZXJBYmlsaXR5LCBBc3NlbWJseS1DU2hhcnAAAl9vd25lclR5cGUACwAAAEJVRkZfT1dORVIAAl90YXJnZXRUeXBlAAsAAABCVUZGX09XTkVSAAJfYWJpbGl0eU5hbWUAAQAAAAAIX2NoZWNrQ2FuVXNlQWJsaXR5RmxhZwAACF9jYXN0RGlyZWN0bHkAAAhfdXNlRmlyc3RBY3RpdmVBYmlsaXR5AAAIX3VzZUNhc3RSZXN1bHQAAAhfdHJpZ2dlckhvc3RBYmlsaXR5AAAIX25vdEludGVycnVwdEFiaWxpdHlJZkNhc3RpbmcAAAAAAAA=",
+      "document_sha256": "81e681f9210e3531584acce04bd589f33e9f6e694a4016e1edc6675af10a618f"
+    }
+  },
+  "missing_templates": [],
+  "native_method_bodies_recovered": false
+}
