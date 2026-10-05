@@ -26,7 +26,7 @@ DeadBoom源PullDupilr又证明5000→4500仍应倒塌，原zero-only桥未消费
 9-18源完整输入308definitions+固定12+34birth/25routes/8slotsDP12+重复alias实际3注册与2卡库存已compile，62tickCP/head全值通过，42公开有限计划已写；wholeRun/admission仍pending。
 爆破装置v1另发现真实动态Buff失衡免疫8仍被推动的counter；newv2完整状态投影9作者组及10独立门已通过，17/18场景CPP/head严格比较，旧冻结收据保持原scope。
 岩石敌人新ed5路线/空中资格分离、Recover28/Start20动作占用8作者门通过，独立11门/10场景23CP已passed；source来源profile保留。
-新770接收者前置marker已表达固定native同次修正create/check/clear，作者4+协议4+Domain46+oldhooks33通过，独立继续；旧原型的无效latefault证据明确保局限。
+新770接收者前置marker已表达固定native同次修正create/check/clear，作者4+协议4+Domain46+oldhooks33和独立16个有效门/10场景20CPP通过；旧原型的无效latefault证据明确保局限。
 Mandra四mode/9BSON/当前HP与前缀要求已固定，新消费者开发中，不计第九章整关通过。
 
 7-18 保持唯一冻结82db/finite_v3进程。正向已实际45出生=31击杀+14漏怪，terminal15198/end15200；

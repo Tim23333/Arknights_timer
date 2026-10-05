@@ -1,0 +1,289 @@
+{
+  "pipeline_rule_actually_resolved": "rule/peer/pipeline_reject",
+  "source": 2,
+  "target": 3,
+  "value": {
+    "accepted": false,
+    "amount": 619,
+    "allocations": [],
+    "events": []
+  },
+  "trace": {
+    "calculation_id": "damage.pipeline",
+    "rule_id": "rule/peer/pipeline_reject",
+    "contract_version": 1,
+    "rule_fingerprint": "d82a09eebfba2ce6ae300233626e87238b0928698bc115a8d4e680b20ab61a16",
+    "runtime_fingerprint": "147e17f0ed2324162e19db398c36f71c5fac711ec7dade093829ab73b943ce79",
+    "inputs": {
+      "source": {
+        "id": 2,
+        "definition_id": "unit/peer/receiver/source",
+        "tags": [
+          "source"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 33317,
+              "atk": 619,
+              "def": 417,
+              "mres": 63
+            },
+            "modifiers": []
+          },
+          "resources": {
+            "hp": {
+              "current": 33317,
+              "spec": {
+                "role": "health",
+                "initial": 33317,
+                "capacity": 33317
+              },
+              "observed_capacity": 33317,
+              "capacity_signature": "2929a9d9000d39d4c3974b7a552e66097fb0c119e232b82b837d45650876dceb"
+            }
+          },
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "unit_type": 1
+          },
+          "spatial": {
+            "position": {
+              "row": 2,
+              "col": 0
+            },
+            "facing": "right"
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/peer/receiver_hit"
+          ],
+          "runtime": {
+            "alive": true,
+            "state": "alive",
+            "deployed": false,
+            "initializing": false,
+            "casts": {
+              "cast/2/1": {
+                "id": "cast/2/1",
+                "source": 2,
+                "ability": "ability/peer/receiver_hit",
+                "targets": [
+                  3
+                ],
+                "activation_mode": "manual",
+                "started_at": 17,
+                "finish_at": 17,
+                "tasks": [
+                  9,
+                  10
+                ],
+                "blocks_attacks": true,
+                "automatic": false,
+                "parameters": {},
+                "generation": 1,
+                "payments": []
+              }
+            },
+            "cooldowns": {
+              "ability/peer/receiver_hit": 17
+            },
+            "next_attack": 0,
+            "blocked_by": null,
+            "rule_bindings": {},
+            "next_cast_id": 2
+          },
+          "buffs": {
+            "instances": [],
+            "next_instance_id": 1
+          }
+        },
+        "version": 7
+      },
+      "target": {
+        "id": 3,
+        "definition_id": "unit/peer/receiver/target",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 9933,
+              "atk": 0,
+              "def": 417,
+              "mres": 63
+            },
+            "modifiers": []
+          },
+          "resources": {
+            "hp": {
+              "current": 9933,
+              "spec": {
+                "role": "health",
+                "initial": 9933,
+                "capacity": 9933
+              },
+              "observed_capacity": 9933,
+              "capacity_signature": "1c4355c9650a5a63ec9e540d109d597b084f5b8811af1c41a4378b24a3dbbae8"
+            }
+          },
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1,
+            "unit_type": 2
+          },
+          "spatial": {
+            "position": {
+              "row": 2,
+              "col": 4
+            },
+            "facing": "right"
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [],
+          "buffs": {
+            "initial": [
+              "buff/peer/receiver_holder"
+            ],
+            "instances": [
+              {
+                "definition": "buff/peer/receiver_holder",
+                "source": 3,
+                "target": 3,
+                "id": "buff/3/1",
+                "stacks": 1,
+                "started_at": 0,
+                "expires_at": null,
+                "interval_units": 0,
+                "generation": 1,
+                "tasks": {},
+                "blackboard": {}
+              },
+              {
+                "definition": "buff/peer/receiver_signal",
+                "source": 3,
+                "target": 3,
+                "id": "buff/3/2",
+                "stacks": 1,
+                "started_at": 17,
+                "expires_at": 47,
+                "interval_units": 0,
+                "generation": 1,
+                "tasks": {
+                  "expire": 13
+                },
+                "blackboard": {}
+              }
+            ],
+            "next_instance_id": 3
+          },
+          "runtime": {
+            "alive": true,
+            "state": "alive",
+            "deployed": false,
+            "initializing": false,
+            "casts": {},
+            "cooldowns": {},
+            "next_attack": 0,
+            "blocked_by": null,
+            "rule_bindings": {}
+          }
+        },
+        "version": 11
+      },
+      "effect": {
+        "op": "damage",
+        "damage_type": "true",
+        "scale": 1,
+        "parameters": {
+          "expected_tick": 17
+        },
+        "additions": 0
+      },
+      "samples": [],
+      "states": {}
+    },
+    "parameters": {},
+    "context": {
+      "time": 17,
+      "seconds": 0.5666666666666667,
+      "quantum": 0.03333333333333333,
+      "rule_scope": {
+        "scenario": {},
+        "source": {},
+        "target": {},
+        "owner": {},
+        "component": {},
+        "attribute_or_resource": {},
+        "ability": {
+          "damage.pipeline": "rule/peer/pipeline_reject"
+        },
+        "effect": {}
+      },
+      "source_id": 2,
+      "target_id": 3,
+      "owner_id": null
+    },
+    "stages": [
+      {
+        "id": "denied",
+        "raw": {
+          "accepted": false,
+          "amount": 619,
+          "allocations": [],
+          "events": []
+        },
+        "value": {
+          "accepted": false,
+          "amount": 619,
+          "allocations": [],
+          "events": []
+        },
+        "trace": {
+          "expression": "{'accepted': False, 'amount': 619, 'allocations': [], 'events': []}"
+        }
+      }
+    ],
+    "raw": {
+      "accepted": false,
+      "amount": 619,
+      "allocations": [],
+      "events": []
+    },
+    "value": {
+      "accepted": false,
+      "amount": 619,
+      "allocations": [],
+      "events": []
+    },
+    "numeric": {
+      "backend": "float",
+      "rounding": "half_even"
+    },
+    "binding": {
+      "owner": "scenario",
+      "origin": "ability",
+      "overrides": [
+        {
+          "scope": "preset",
+          "rule_id": "rule/ark_damage_pipeline"
+        },
+        {
+          "scope": "ability",
+          "rule_id": "rule/peer/pipeline_reject"
+        }
+      ]
+    }
+  },
+  "checkpoint_sha256": "7604985902c484e1872cfcc4e0466792ac72bbf937211aebd64e79fb6e51670c",
+  "no_context_ability_field_assumed": true,
+  "prior_sourceGarg_checkpoint_final_registry_restore_probe_pass": true
+}
