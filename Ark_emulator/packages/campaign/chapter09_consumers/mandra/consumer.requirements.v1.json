@@ -1,0 +1,5298 @@
+{
+  "schema": "ark-sim/ch9-mandra-consumer-requirements/v1",
+  "source_locks": {
+    "packages\\campaign\\chapter09_source_prepare\\enemies.native.v1.json": "592afac29cc32d1aeaba3ea739eb6da5a218055e255a42f53315f4a2ca0962ff",
+    "packages\\campaign\\chapter09_source_prepare\\source.detail.v1.json": "984c309553cd8eb205274257c50a07f32e9d1397265d06d578e045e0f841387e"
+  },
+  "native_variant_id": "enemy_1523_mandra@0/1821d9ad3a30248f",
+  "native_reference": {
+    "useDb": true,
+    "id": "enemy_1523_mandra",
+    "level": 0,
+    "overwrittenData": null
+  },
+  "attributes": {
+    "maxHp": 50000,
+    "atk": 640,
+    "def": 520,
+    "magicResistance": 35.0,
+    "moveSpeed": 0.4,
+    "attackSpeed": 100.0,
+    "baseAttackTime": 1.8,
+    "hpRecoveryPerSec": 0.0,
+    "massLevel": 7,
+    "stunImmune": false,
+    "silenceImmune": false
+  },
+  "talentBlackboard": [
+    {
+      "key": "StoneSkin.damage_resistance",
+      "value": 0.6,
+      "valueStr": null
+    },
+    {
+      "key": "ReSummonStoneSkin.duration",
+      "value": 25.0,
+      "valueStr": null
+    },
+    {
+      "key": "ReSummonStoneSkin.hp_ratio_offset",
+      "value": -0.4,
+      "valueStr": null
+    },
+    {
+      "key": "StoneSkin_2.range_radius",
+      "value": 1.7,
+      "valueStr": null
+    },
+    {
+      "key": "StoneSkin_2.atk_scale",
+      "value": 0.3,
+      "valueStr": null
+    },
+    {
+      "key": "StoneSkin_2.interval",
+      "value": 1.0,
+      "valueStr": null
+    },
+    {
+      "key": "Reborn.duration",
+      "value": 5.0,
+      "valueStr": null
+    },
+    {
+      "key": "Reborn.mandra_p2_invinsible.duration",
+      "value": 3.0,
+      "valueStr": null
+    },
+    {
+      "key": "Reborn.mandra_ray_p2[cd]",
+      "value": 10.0,
+      "valueStr": null
+    },
+    {
+      "key": "Reborn.summon_dupilr_p2[cd]",
+      "value": 20.0,
+      "valueStr": null
+    },
+    {
+      "key": "Reborn.branch_id",
+      "value": 0.0,
+      "valueStr": "summon_dupilr"
+    }
+  ],
+  "native_skills": [
+    {
+      "prefabKey": "PetrifiedRay",
+      "priority": 0,
+      "cooldown": 0.0,
+      "initCooldown": 5.0,
+      "spCost": 0,
+      "blackboard": [
+        {
+          "key": "mandra_ray[cd].duration",
+          "value": 7.1,
+          "valueStr": null
+        },
+        {
+          "key": "mandra_ray[cd].cooldown",
+          "value": 15.0,
+          "valueStr": null
+        },
+        {
+          "key": "range_radius",
+          "value": 1.5,
+          "valueStr": null
+        },
+        {
+          "key": "atk_scale",
+          "value": 1.0,
+          "valueStr": null
+        },
+        {
+          "key": "hit_interval",
+          "value": 1.0,
+          "valueStr": null
+        },
+        {
+          "key": "attack_speed",
+          "value": -0.7,
+          "valueStr": null
+        },
+        {
+          "key": "mandra_ray[cd].interval",
+          "value": 6.0,
+          "valueStr": null
+        }
+      ]
+    },
+    {
+      "prefabKey": "Reborn",
+      "priority": 1,
+      "cooldown": 0.0,
+      "initCooldown": 0.0,
+      "spCost": 0,
+      "blackboard": [
+        {
+          "key": "mandra_p2_invinsible.duration",
+          "value": 5.0,
+          "valueStr": null
+        },
+        {
+          "key": "mandra_ray_p2[cd]",
+          "value": 10.0,
+          "valueStr": null
+        },
+        {
+          "key": "summon_dupilr_p2[cd]",
+          "value": 10.0,
+          "valueStr": null
+        },
+        {
+          "key": "branch_id",
+          "value": 0.0,
+          "valueStr": "reborn_summon_dupilr"
+        }
+      ]
+    },
+    {
+      "prefabKey": "SummonDupilr",
+      "priority": 2,
+      "cooldown": 15.0,
+      "initCooldown": 15.0,
+      "spCost": 0,
+      "blackboard": [
+        {
+          "key": "branch_id",
+          "value": 0.0,
+          "valueStr": "summon_dupilr"
+        },
+        {
+          "key": "dupilr_t[auto_collapse].interval",
+          "value": 5.0,
+          "valueStr": null
+        }
+      ]
+    },
+    {
+      "prefabKey": "SummonStoneSkin_2",
+      "priority": 4,
+      "cooldown": 0.0,
+      "initCooldown": 0.0,
+      "spCost": 0,
+      "blackboard": null
+    },
+    {
+      "prefabKey": "SummonStoneSkin",
+      "priority": 3,
+      "cooldown": 5.0,
+      "initCooldown": 5.0,
+      "spCost": 0,
+      "blackboard": null
+    },
+    {
+      "prefabKey": "SelfStun",
+      "priority": 5,
+      "cooldown": 0.0,
+      "initCooldown": 0.0,
+      "spCost": 0,
+      "blackboard": null
+    }
+  ],
+  "mode_nodes": [
+    {
+      "index": 0,
+      "path_id": 133328866105797425,
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -2688246607758513359
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 5390319429299248724
+        },
+        "m_Name": "",
+        "_bodyTransform": {
+          "m_FileID": 0,
+          "m_PathID": -2201983390264808655
+        },
+        "_animatorHooker": {
+          "m_FileID": 0,
+          "m_PathID": 1078728767966522161
+        },
+        "_overrideStartEffect": "",
+        "_overrideDeadEffect": "",
+        "_combat": {
+          "m_FileID": 0,
+          "m_PathID": 2469851682584111921
+        },
+        "_attack": {
+          "m_FileID": 0,
+          "m_PathID": 2469851682584111921
+        },
+        "_attackTrigger": {
+          "m_FileID": 0,
+          "m_PathID": 7963894347107576625
+        },
+        "_hideUIAttackRange": 0,
+        "_updateAttackRangeExtendByAttributeDirty": 0,
+        "_rangeToShow": {
+          "m_FileID": 0,
+          "m_PathID": 0
+        },
+        "_extraRangesToShow": [],
+        "_generalAbilities": [],
+        "_addIndexToSignalId": 0,
+        "_includeIndexZero": 0,
+        "_alwaysHideHp": {
+          "isDefined": 0,
+          "value": 0
+        },
+        "_alwaysHideSp": {
+          "isDefined": 0,
+          "value": 0
+        }
+      },
+      "nodes": {
+        "_combat": {
+          "script_path_id": 4381884627089348317,
+          "gameobject_path_id": -9061764885436519631,
+          "gameobject_name": "Combat",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -9061764885436519631
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 4381884627089348317
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_waitForAttackEvent": 1,
+            "_interuptIfTargetDead": 0,
+            "_resetCdStrategy": 1,
+            "_selectTargetSource": 2,
+            "_selectTargetTiming": 0,
+            "_timeMode": 0,
+            "_alwaysIncludeTarget": 1,
+            "_allowNoTarget": 0,
+            "_animKey": "Attack",
+            "_endAnimKey": "Idle",
+            "_downAnimKey": "",
+            "_downEndAnimKey": "",
+            "_upAnimKey": "",
+            "_upEndAnimKey": "",
+            "_cooldown": 0.0,
+            "_cooldownKey": "duration",
+            "_preDelay": 0.0,
+            "_escapeTime": 0.0,
+            "_faceToTarget": 1,
+            "_faceToDefault": 0,
+            "_faceToFront": 0,
+            "_faceToFirstCastTarget": 0,
+            "_checkFaceToFirstCastTargetDownAttack": 0,
+            "_forceFaceToDirection": 0,
+            "_activeBuffs": [],
+            "_maxAnimScale": 1.100000023841858,
+            "_onlyPlayEndAnimWhenIsLastAbility": 0,
+            "_ignorePalsyInterrupt": 0,
+            "_affectedBySlowDown": 1,
+            "_atkScale": 1.0,
+            "_atkScaleKey": "atk_scale",
+            "_attackType": 1,
+            "_elementDamageType": 0,
+            "_epDamageRatio": 0.0,
+            "_useDynamicAttackType": 0,
+            "_deliveryParaWhenReplaceActionNode": 0,
+            "_damageType": 2,
+            "_extraDamageType": 0,
+            "_alwaysPutIncludeTargetFirst": 0
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:4381884627089348317",
+          "native_class": "MeleeAttack",
+          "path_id": 2469851682584111921,
+          "animation_binding": {
+            "status": "binding_gap",
+            "error": "animation binding key is absent or ambiguous: Attack"
+          }
+        },
+        "_attack": {
+          "script_path_id": 4381884627089348317,
+          "gameobject_path_id": -9061764885436519631,
+          "gameobject_name": "Combat",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -9061764885436519631
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 4381884627089348317
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_waitForAttackEvent": 1,
+            "_interuptIfTargetDead": 0,
+            "_resetCdStrategy": 1,
+            "_selectTargetSource": 2,
+            "_selectTargetTiming": 0,
+            "_timeMode": 0,
+            "_alwaysIncludeTarget": 1,
+            "_allowNoTarget": 0,
+            "_animKey": "Attack",
+            "_endAnimKey": "Idle",
+            "_downAnimKey": "",
+            "_downEndAnimKey": "",
+            "_upAnimKey": "",
+            "_upEndAnimKey": "",
+            "_cooldown": 0.0,
+            "_cooldownKey": "duration",
+            "_preDelay": 0.0,
+            "_escapeTime": 0.0,
+            "_faceToTarget": 1,
+            "_faceToDefault": 0,
+            "_faceToFront": 0,
+            "_faceToFirstCastTarget": 0,
+            "_checkFaceToFirstCastTargetDownAttack": 0,
+            "_forceFaceToDirection": 0,
+            "_activeBuffs": [],
+            "_maxAnimScale": 1.100000023841858,
+            "_onlyPlayEndAnimWhenIsLastAbility": 0,
+            "_ignorePalsyInterrupt": 0,
+            "_affectedBySlowDown": 1,
+            "_atkScale": 1.0,
+            "_atkScaleKey": "atk_scale",
+            "_attackType": 1,
+            "_elementDamageType": 0,
+            "_epDamageRatio": 0.0,
+            "_useDynamicAttackType": 0,
+            "_deliveryParaWhenReplaceActionNode": 0,
+            "_damageType": 2,
+            "_extraDamageType": 0,
+            "_alwaysPutIncludeTargetFirst": 0
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:4381884627089348317",
+          "native_class": "MeleeAttack",
+          "path_id": 2469851682584111921,
+          "animation_binding": {
+            "status": "binding_gap",
+            "error": "animation binding key is absent or ambiguous: Attack"
+          }
+        },
+        "_attackTrigger": {
+          "script_path_id": 248012603862317511,
+          "gameobject_path_id": -4032641883186681039,
+          "gameobject_name": "NeverTrigger",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -4032641883186681039
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 248012603862317511
+            },
+            "m_Name": ""
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:248012603862317511",
+          "native_class": "NeverTrigger",
+          "path_id": 7963894347107576625,
+          "animation_binding": null
+        }
+      }
+    },
+    {
+      "index": 1,
+      "path_id": -7250983686389191887,
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": 6969291429443971889
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 5390319429299248724
+        },
+        "m_Name": "",
+        "_bodyTransform": {
+          "m_FileID": 0,
+          "m_PathID": -4118724587036234959
+        },
+        "_animatorHooker": {
+          "m_FileID": 0,
+          "m_PathID": -8914629963002827983
+        },
+        "_overrideStartEffect": "",
+        "_overrideDeadEffect": "",
+        "_combat": {
+          "m_FileID": 0,
+          "m_PathID": -5232101583418053839
+        },
+        "_attack": {
+          "m_FileID": 0,
+          "m_PathID": -5232101583418053839
+        },
+        "_attackTrigger": {
+          "m_FileID": 0,
+          "m_PathID": 3924077135995448113
+        },
+        "_hideUIAttackRange": 0,
+        "_updateAttackRangeExtendByAttributeDirty": 0,
+        "_rangeToShow": {
+          "m_FileID": 0,
+          "m_PathID": 0
+        },
+        "_extraRangesToShow": [],
+        "_generalAbilities": [],
+        "_addIndexToSignalId": 0,
+        "_includeIndexZero": 0,
+        "_alwaysHideHp": {
+          "isDefined": 0,
+          "value": 0
+        },
+        "_alwaysHideSp": {
+          "isDefined": 0,
+          "value": 0
+        }
+      },
+      "nodes": {
+        "_combat": {
+          "script_path_id": 4381884627089348317,
+          "gameobject_path_id": 2017609439654751025,
+          "gameobject_name": "Combat",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 2017609439654751025
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 4381884627089348317
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_waitForAttackEvent": 1,
+            "_interuptIfTargetDead": 0,
+            "_resetCdStrategy": 1,
+            "_selectTargetSource": 2,
+            "_selectTargetTiming": 0,
+            "_timeMode": 0,
+            "_alwaysIncludeTarget": 1,
+            "_allowNoTarget": 0,
+            "_animKey": "Attack",
+            "_endAnimKey": "Idle",
+            "_downAnimKey": "",
+            "_downEndAnimKey": "",
+            "_upAnimKey": "",
+            "_upEndAnimKey": "",
+            "_cooldown": 0.0,
+            "_cooldownKey": "duration",
+            "_preDelay": 0.0,
+            "_escapeTime": 0.0,
+            "_faceToTarget": 1,
+            "_faceToDefault": 0,
+            "_faceToFront": 0,
+            "_faceToFirstCastTarget": 0,
+            "_checkFaceToFirstCastTargetDownAttack": 0,
+            "_forceFaceToDirection": 0,
+            "_activeBuffs": [],
+            "_maxAnimScale": 1.100000023841858,
+            "_onlyPlayEndAnimWhenIsLastAbility": 0,
+            "_ignorePalsyInterrupt": 0,
+            "_affectedBySlowDown": 1,
+            "_atkScale": 1.0,
+            "_atkScaleKey": "atk_scale",
+            "_attackType": 1,
+            "_elementDamageType": 0,
+            "_epDamageRatio": 0.0,
+            "_useDynamicAttackType": 0,
+            "_deliveryParaWhenReplaceActionNode": 0,
+            "_damageType": 2,
+            "_extraDamageType": 0,
+            "_alwaysPutIncludeTargetFirst": 0
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:4381884627089348317",
+          "native_class": "MeleeAttack",
+          "path_id": -5232101583418053839,
+          "animation_binding": {
+            "status": "binding_gap",
+            "error": "animation binding key is absent or ambiguous: Attack"
+          }
+        },
+        "_attack": {
+          "script_path_id": 4381884627089348317,
+          "gameobject_path_id": 2017609439654751025,
+          "gameobject_name": "Combat",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 2017609439654751025
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 4381884627089348317
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_waitForAttackEvent": 1,
+            "_interuptIfTargetDead": 0,
+            "_resetCdStrategy": 1,
+            "_selectTargetSource": 2,
+            "_selectTargetTiming": 0,
+            "_timeMode": 0,
+            "_alwaysIncludeTarget": 1,
+            "_allowNoTarget": 0,
+            "_animKey": "Attack",
+            "_endAnimKey": "Idle",
+            "_downAnimKey": "",
+            "_downEndAnimKey": "",
+            "_upAnimKey": "",
+            "_upEndAnimKey": "",
+            "_cooldown": 0.0,
+            "_cooldownKey": "duration",
+            "_preDelay": 0.0,
+            "_escapeTime": 0.0,
+            "_faceToTarget": 1,
+            "_faceToDefault": 0,
+            "_faceToFront": 0,
+            "_faceToFirstCastTarget": 0,
+            "_checkFaceToFirstCastTargetDownAttack": 0,
+            "_forceFaceToDirection": 0,
+            "_activeBuffs": [],
+            "_maxAnimScale": 1.100000023841858,
+            "_onlyPlayEndAnimWhenIsLastAbility": 0,
+            "_ignorePalsyInterrupt": 0,
+            "_affectedBySlowDown": 1,
+            "_atkScale": 1.0,
+            "_atkScaleKey": "atk_scale",
+            "_attackType": 1,
+            "_elementDamageType": 0,
+            "_epDamageRatio": 0.0,
+            "_useDynamicAttackType": 0,
+            "_deliveryParaWhenReplaceActionNode": 0,
+            "_damageType": 2,
+            "_extraDamageType": 0,
+            "_alwaysPutIncludeTargetFirst": 0
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:4381884627089348317",
+          "native_class": "MeleeAttack",
+          "path_id": -5232101583418053839,
+          "animation_binding": {
+            "status": "binding_gap",
+            "error": "animation binding key is absent or ambiguous: Attack"
+          }
+        },
+        "_attackTrigger": {
+          "script_path_id": 248012603862317511,
+          "gameobject_path_id": 3124713352591289137,
+          "gameobject_name": "NeverTrigger",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 3124713352591289137
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 248012603862317511
+            },
+            "m_Name": ""
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:248012603862317511",
+          "native_class": "NeverTrigger",
+          "path_id": 3924077135995448113,
+          "animation_binding": null
+        }
+      }
+    },
+    {
+      "index": 2,
+      "path_id": -5541932340073813199,
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": 7787093402753018673
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 5390319429299248724
+        },
+        "m_Name": "",
+        "_bodyTransform": {
+          "m_FileID": 0,
+          "m_PathID": -2191477180392232143
+        },
+        "_animatorHooker": {
+          "m_FileID": 0,
+          "m_PathID": 6201325323197000497
+        },
+        "_overrideStartEffect": "",
+        "_overrideDeadEffect": "",
+        "_combat": {
+          "m_FileID": 0,
+          "m_PathID": 6405600725156604721
+        },
+        "_attack": {
+          "m_FileID": 0,
+          "m_PathID": 6405600725156604721
+        },
+        "_attackTrigger": {
+          "m_FileID": 0,
+          "m_PathID": 3921973531444292401
+        },
+        "_hideUIAttackRange": 0,
+        "_updateAttackRangeExtendByAttributeDirty": 0,
+        "_rangeToShow": {
+          "m_FileID": 0,
+          "m_PathID": 0
+        },
+        "_extraRangesToShow": [],
+        "_generalAbilities": [],
+        "_addIndexToSignalId": 0,
+        "_includeIndexZero": 0,
+        "_alwaysHideHp": {
+          "isDefined": 0,
+          "value": 0
+        },
+        "_alwaysHideSp": {
+          "isDefined": 0,
+          "value": 0
+        }
+      },
+      "nodes": {
+        "_combat": {
+          "script_path_id": 4156651312234227407,
+          "gameobject_path_id": -2992484032152425679,
+          "gameobject_name": "Attack",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -2992484032152425679
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 4156651312234227407
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_waitForAttackEvent": 1,
+            "_interuptIfTargetDead": 0,
+            "_resetCdStrategy": 1,
+            "_selectTargetSource": 2,
+            "_selectTargetTiming": 0,
+            "_timeMode": 0,
+            "_alwaysIncludeTarget": 1,
+            "_allowNoTarget": 0,
+            "_animKey": "Attack",
+            "_endAnimKey": "Idle",
+            "_downAnimKey": "",
+            "_downEndAnimKey": "",
+            "_upAnimKey": "",
+            "_upEndAnimKey": "",
+            "_cooldown": 0.0,
+            "_cooldownKey": "duration",
+            "_preDelay": 0.0,
+            "_escapeTime": 0.0,
+            "_faceToTarget": 1,
+            "_faceToDefault": 0,
+            "_faceToFront": 0,
+            "_faceToFirstCastTarget": 0,
+            "_checkFaceToFirstCastTargetDownAttack": 0,
+            "_forceFaceToDirection": 0,
+            "_activeBuffs": [],
+            "_maxAnimScale": 1.0,
+            "_onlyPlayEndAnimWhenIsLastAbility": 0,
+            "_ignorePalsyInterrupt": 0,
+            "_affectedBySlowDown": 1,
+            "_atkScale": 1.0,
+            "_atkScaleKey": "atk_scale",
+            "_attackType": 1,
+            "_elementDamageType": 0,
+            "_epDamageRatio": 0.0,
+            "_useDynamicAttackType": 0,
+            "_deliveryParaWhenReplaceActionNode": 0,
+            "_projectileKey": "projectile_enemy_mandra_p2",
+            "_mountPointType": 2,
+            "_useMountGroup": 0,
+            "_mountGroup": {
+              "loopType": 0,
+              "mountPoints": []
+            },
+            "_damageType": 2,
+            "_waitForProjectileInvalid": 0,
+            "_notClearProjectileWhenCastEnd": 0,
+            "_fireAttackFinishWhenProjectileInvalid": 0,
+            "_minPostDelayWhenProjectileInvalid": 0.0,
+            "_waitForAnimEndWhenProjectileInvalid": 0,
+            "_projectileDestination": 0,
+            "_extraDamageType": 0,
+            "_emitToInputPosWhenTargetIsInvalid": 0,
+            "_emitToInputRootTileWhenTargetIsInvalid": 0,
+            "_useCachedAtkOnly": 0,
+            "_transferSource": 0,
+            "_extraProjectileKeys": [],
+            "_fireCreateProjectileEvent": 0
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:4156651312234227407",
+          "native_class": "RangedAttack",
+          "path_id": 6405600725156604721,
+          "animation_binding": {
+            "status": "binding_gap",
+            "error": "animation binding key is absent or ambiguous: Attack"
+          }
+        },
+        "_attack": {
+          "script_path_id": 4156651312234227407,
+          "gameobject_path_id": -2992484032152425679,
+          "gameobject_name": "Attack",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -2992484032152425679
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 4156651312234227407
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_waitForAttackEvent": 1,
+            "_interuptIfTargetDead": 0,
+            "_resetCdStrategy": 1,
+            "_selectTargetSource": 2,
+            "_selectTargetTiming": 0,
+            "_timeMode": 0,
+            "_alwaysIncludeTarget": 1,
+            "_allowNoTarget": 0,
+            "_animKey": "Attack",
+            "_endAnimKey": "Idle",
+            "_downAnimKey": "",
+            "_downEndAnimKey": "",
+            "_upAnimKey": "",
+            "_upEndAnimKey": "",
+            "_cooldown": 0.0,
+            "_cooldownKey": "duration",
+            "_preDelay": 0.0,
+            "_escapeTime": 0.0,
+            "_faceToTarget": 1,
+            "_faceToDefault": 0,
+            "_faceToFront": 0,
+            "_faceToFirstCastTarget": 0,
+            "_checkFaceToFirstCastTargetDownAttack": 0,
+            "_forceFaceToDirection": 0,
+            "_activeBuffs": [],
+            "_maxAnimScale": 1.0,
+            "_onlyPlayEndAnimWhenIsLastAbility": 0,
+            "_ignorePalsyInterrupt": 0,
+            "_affectedBySlowDown": 1,
+            "_atkScale": 1.0,
+            "_atkScaleKey": "atk_scale",
+            "_attackType": 1,
+            "_elementDamageType": 0,
+            "_epDamageRatio": 0.0,
+            "_useDynamicAttackType": 0,
+            "_deliveryParaWhenReplaceActionNode": 0,
+            "_projectileKey": "projectile_enemy_mandra_p2",
+            "_mountPointType": 2,
+            "_useMountGroup": 0,
+            "_mountGroup": {
+              "loopType": 0,
+              "mountPoints": []
+            },
+            "_damageType": 2,
+            "_waitForProjectileInvalid": 0,
+            "_notClearProjectileWhenCastEnd": 0,
+            "_fireAttackFinishWhenProjectileInvalid": 0,
+            "_minPostDelayWhenProjectileInvalid": 0.0,
+            "_waitForAnimEndWhenProjectileInvalid": 0,
+            "_projectileDestination": 0,
+            "_extraDamageType": 0,
+            "_emitToInputPosWhenTargetIsInvalid": 0,
+            "_emitToInputRootTileWhenTargetIsInvalid": 0,
+            "_useCachedAtkOnly": 0,
+            "_transferSource": 0,
+            "_extraProjectileKeys": [],
+            "_fireCreateProjectileEvent": 0
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:4156651312234227407",
+          "native_class": "RangedAttack",
+          "path_id": 6405600725156604721,
+          "animation_binding": {
+            "status": "binding_gap",
+            "error": "animation binding key is absent or ambiguous: Attack"
+          }
+        },
+        "_attackTrigger": {
+          "script_path_id": 8607874384982393801,
+          "gameobject_path_id": -1051787903599662287,
+          "gameobject_name": "Trigger",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -1051787903599662287
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 8607874384982393801
+            },
+            "m_Name": "",
+            "_keepTarget": 0,
+            "_minTargetNum": 1,
+            "_overrideSearchTargetTick": -1
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:8607874384982393801",
+          "native_class": "SelectorTrigger",
+          "path_id": 3921973531444292401,
+          "animation_binding": null
+        }
+      }
+    },
+    {
+      "index": 3,
+      "path_id": 2921331142248737585,
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -2419151095018378447
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 5390319429299248724
+        },
+        "m_Name": "",
+        "_bodyTransform": {
+          "m_FileID": 0,
+          "m_PathID": 7778426660231949105
+        },
+        "_animatorHooker": {
+          "m_FileID": 0,
+          "m_PathID": 8087069891049138993
+        },
+        "_overrideStartEffect": "",
+        "_overrideDeadEffect": "",
+        "_combat": {
+          "m_FileID": 0,
+          "m_PathID": -2697254480004732111
+        },
+        "_attack": {
+          "m_FileID": 0,
+          "m_PathID": -2697254480004732111
+        },
+        "_attackTrigger": {
+          "m_FileID": 0,
+          "m_PathID": 7067378406451424049
+        },
+        "_hideUIAttackRange": 0,
+        "_updateAttackRangeExtendByAttributeDirty": 0,
+        "_rangeToShow": {
+          "m_FileID": 0,
+          "m_PathID": 0
+        },
+        "_extraRangesToShow": [],
+        "_generalAbilities": [],
+        "_addIndexToSignalId": 0,
+        "_includeIndexZero": 0,
+        "_alwaysHideHp": {
+          "isDefined": 0,
+          "value": 0
+        },
+        "_alwaysHideSp": {
+          "isDefined": 0,
+          "value": 0
+        }
+      },
+      "nodes": {
+        "_combat": {
+          "script_path_id": 4156651312234227407,
+          "gameobject_path_id": 290366556322507569,
+          "gameobject_name": "Attack",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 290366556322507569
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 4156651312234227407
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_waitForAttackEvent": 1,
+            "_interuptIfTargetDead": 0,
+            "_resetCdStrategy": 1,
+            "_selectTargetSource": 2,
+            "_selectTargetTiming": 0,
+            "_timeMode": 0,
+            "_alwaysIncludeTarget": 1,
+            "_allowNoTarget": 0,
+            "_animKey": "Attack",
+            "_endAnimKey": "Idle",
+            "_downAnimKey": "",
+            "_downEndAnimKey": "",
+            "_upAnimKey": "",
+            "_upEndAnimKey": "",
+            "_cooldown": 0.0,
+            "_cooldownKey": "duration",
+            "_preDelay": 0.0,
+            "_escapeTime": 0.0,
+            "_faceToTarget": 1,
+            "_faceToDefault": 0,
+            "_faceToFront": 0,
+            "_faceToFirstCastTarget": 0,
+            "_checkFaceToFirstCastTargetDownAttack": 0,
+            "_forceFaceToDirection": 0,
+            "_activeBuffs": [],
+            "_maxAnimScale": 1.0,
+            "_onlyPlayEndAnimWhenIsLastAbility": 0,
+            "_ignorePalsyInterrupt": 0,
+            "_affectedBySlowDown": 1,
+            "_atkScale": 1.0,
+            "_atkScaleKey": "atk_scale",
+            "_attackType": 1,
+            "_elementDamageType": 0,
+            "_epDamageRatio": 0.0,
+            "_useDynamicAttackType": 0,
+            "_deliveryParaWhenReplaceActionNode": 0,
+            "_projectileKey": "projectile_enemy_mandra_p2",
+            "_mountPointType": 2,
+            "_useMountGroup": 0,
+            "_mountGroup": {
+              "loopType": 0,
+              "mountPoints": []
+            },
+            "_damageType": 2,
+            "_waitForProjectileInvalid": 0,
+            "_notClearProjectileWhenCastEnd": 0,
+            "_fireAttackFinishWhenProjectileInvalid": 0,
+            "_minPostDelayWhenProjectileInvalid": 0.0,
+            "_waitForAnimEndWhenProjectileInvalid": 0,
+            "_projectileDestination": 0,
+            "_extraDamageType": 0,
+            "_emitToInputPosWhenTargetIsInvalid": 0,
+            "_emitToInputRootTileWhenTargetIsInvalid": 0,
+            "_useCachedAtkOnly": 0,
+            "_transferSource": 0,
+            "_extraProjectileKeys": [],
+            "_fireCreateProjectileEvent": 0
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:4156651312234227407",
+          "native_class": "RangedAttack",
+          "path_id": -2697254480004732111,
+          "animation_binding": {
+            "status": "binding_gap",
+            "error": "animation binding key is absent or ambiguous: Attack"
+          }
+        },
+        "_attack": {
+          "script_path_id": 4156651312234227407,
+          "gameobject_path_id": 290366556322507569,
+          "gameobject_name": "Attack",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 290366556322507569
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 4156651312234227407
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_waitForAttackEvent": 1,
+            "_interuptIfTargetDead": 0,
+            "_resetCdStrategy": 1,
+            "_selectTargetSource": 2,
+            "_selectTargetTiming": 0,
+            "_timeMode": 0,
+            "_alwaysIncludeTarget": 1,
+            "_allowNoTarget": 0,
+            "_animKey": "Attack",
+            "_endAnimKey": "Idle",
+            "_downAnimKey": "",
+            "_downEndAnimKey": "",
+            "_upAnimKey": "",
+            "_upEndAnimKey": "",
+            "_cooldown": 0.0,
+            "_cooldownKey": "duration",
+            "_preDelay": 0.0,
+            "_escapeTime": 0.0,
+            "_faceToTarget": 1,
+            "_faceToDefault": 0,
+            "_faceToFront": 0,
+            "_faceToFirstCastTarget": 0,
+            "_checkFaceToFirstCastTargetDownAttack": 0,
+            "_forceFaceToDirection": 0,
+            "_activeBuffs": [],
+            "_maxAnimScale": 1.0,
+            "_onlyPlayEndAnimWhenIsLastAbility": 0,
+            "_ignorePalsyInterrupt": 0,
+            "_affectedBySlowDown": 1,
+            "_atkScale": 1.0,
+            "_atkScaleKey": "atk_scale",
+            "_attackType": 1,
+            "_elementDamageType": 0,
+            "_epDamageRatio": 0.0,
+            "_useDynamicAttackType": 0,
+            "_deliveryParaWhenReplaceActionNode": 0,
+            "_projectileKey": "projectile_enemy_mandra_p2",
+            "_mountPointType": 2,
+            "_useMountGroup": 0,
+            "_mountGroup": {
+              "loopType": 0,
+              "mountPoints": []
+            },
+            "_damageType": 2,
+            "_waitForProjectileInvalid": 0,
+            "_notClearProjectileWhenCastEnd": 0,
+            "_fireAttackFinishWhenProjectileInvalid": 0,
+            "_minPostDelayWhenProjectileInvalid": 0.0,
+            "_waitForAnimEndWhenProjectileInvalid": 0,
+            "_projectileDestination": 0,
+            "_extraDamageType": 0,
+            "_emitToInputPosWhenTargetIsInvalid": 0,
+            "_emitToInputRootTileWhenTargetIsInvalid": 0,
+            "_useCachedAtkOnly": 0,
+            "_transferSource": 0,
+            "_extraProjectileKeys": [],
+            "_fireCreateProjectileEvent": 0
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:4156651312234227407",
+          "native_class": "RangedAttack",
+          "path_id": -2697254480004732111,
+          "animation_binding": {
+            "status": "binding_gap",
+            "error": "animation binding key is absent or ambiguous: Attack"
+          }
+        },
+        "_attackTrigger": {
+          "script_path_id": 8607874384982393801,
+          "gameobject_path_id": -5289410998265730255,
+          "gameobject_name": "Trigger",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -5289410998265730255
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 8607874384982393801
+            },
+            "m_Name": "",
+            "_keepTarget": 0,
+            "_minTargetNum": 1,
+            "_overrideSearchTargetTick": -1
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:8607874384982393801",
+          "native_class": "SelectorTrigger",
+          "path_id": 7067378406451424049,
+          "animation_binding": null
+        }
+      }
+    }
+  ],
+  "components": [
+    {
+      "path_id": "-8581146982011983055",
+      "class": "AdvancedSelector",
+      "gameobject": "Trigger",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -1051787903599662287
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 7080728813803358465
+        },
+        "m_Name": "",
+        "_targetSide": 2,
+        "_targetMotion": 1,
+        "_targetCategory": 1,
+        "_postFilter": 4,
+        "_ignoreTargetFree": 0,
+        "_onlyIgnoreSomeOfTargetFreeCase": 0,
+        "_abnormalFlag": 23,
+        "_abnormalCombo": 2,
+        "_ignoreAllyTargetFree": 0,
+        "_ignoreHealFree": 0,
+        "_ignoreMotionMode": 0,
+        "_forceIgnoreCamouflage": 0,
+        "_needProfessionMask": 0,
+        "_professionMask": 0,
+        "_excludeSomeAbnormalFlags": 0,
+        "_excludeAbnormalFlag": 46,
+        "_limitTargetNum": 1,
+        "_maxTargetKey": "max_target",
+        "_maxNum": 1,
+        "_excludeOwner": 0,
+        "_sortByTauntAtLast": 0,
+        "_ignoreHitRange": 0,
+        "_checkUnitType": 0,
+        "_unitTypeMask": 0,
+        "_abilityInputTargetAsSortSource": 0
+      }
+    },
+    {
+      "path_id": "-7052230271913841871",
+      "class": "PassiveBuffAbility",
+      "gameobject": "StoneSkin_2_fly",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -7867399582292006095
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 3800760148018415462
+        },
+        "m_Name": "",
+        "_selector": {
+          "m_FileID": 0,
+          "m_PathID": 0
+        },
+        "_metadata": {
+          "namedAsAlias": "",
+          "blackboardPrefix": ""
+        },
+        "_interruptAbilityOnDetach": 0,
+        "_attachPassiveBuffsOnDummy": 1,
+        "_ignoreIfOwnerDead": 0,
+        "_forceAsDmgOrHealAbility": 0,
+        "_buffs": [
+          {
+            "attributes": {
+              "abnormalFlags": [],
+              "abnormalImmunes": [],
+              "abnormalAntis": [],
+              "abnormalCombos": [],
+              "abnormalComboImmunes": [],
+              "attributeModifiers": []
+            },
+            "buffKey": "mandra_stone_skin_fly",
+            "loadFromDB": 0,
+            "isDurableBuff": 0,
+            "isDamageMissable": 0,
+            "isSilenceable": 0,
+            "isStunnable": 0,
+            "isFreezable": 0,
+            "isLevitatable": 0,
+            "isGroundBoundable": 0,
+            "statusResistable": 2,
+            "templateKey": "enemy_mandra_stone_skin_fly",
+            "disableOverride": 0,
+            "overrideKey": "",
+            "overrideType": 0,
+            "maxStackCnt": 1,
+            "refreshRemainingTimeWhenStackMax": 0,
+            "clearAllStackCntWhenTimeUp": 0,
+            "maxValidStackCnt": -1,
+            "independentCharacterSource": 0,
+            "overrideEffectKey": "",
+            "overrideOnEventPriority": 0,
+            "onEventPriority": 0,
+            "audioSignal": "",
+            "lifeTimeType": 2,
+            "takeSnapshotWhenExtend": 0,
+            "durationKey": "",
+            "lifeTime": 0.0,
+            "triggerLifeType": 0,
+            "triggerCnt": 0,
+            "triggerInterval": -1.0,
+            "waitFirstTriggerInterval": 1,
+            "firstTriggerInterval": -1.0,
+            "priority": -1,
+            "priorityBBKeys": [],
+            "stripBlackboardParamsWithBuffKey": 0,
+            "blackboard": [
+              {
+                "key": "motion",
+                "value": 1.0,
+                "valueStr": ""
+              }
+            ],
+            "enableInitDirectionFromSource": 0
+          }
+        ]
+      }
+    },
+    {
+      "path_id": "-6466895884286252239",
+      "class": "RangedAttack",
+      "gameobject": "PetrifiedRay",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": 1922525979527260977
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 4156651312234227407
+        },
+        "m_Name": "",
+        "_selector": {
+          "m_FileID": 0,
+          "m_PathID": -4060036006314661071
+        },
+        "_metadata": {
+          "namedAsAlias": "",
+          "blackboardPrefix": ""
+        },
+        "_interruptAbilityOnDetach": 0,
+        "_attachPassiveBuffsOnDummy": 1,
+        "_ignoreIfOwnerDead": 0,
+        "_forceAsDmgOrHealAbility": 0,
+        "_waitForAttackEvent": 1,
+        "_interuptIfTargetDead": 0,
+        "_resetCdStrategy": 1,
+        "_selectTargetSource": 1,
+        "_selectTargetTiming": 1,
+        "_timeMode": 0,
+        "_alwaysIncludeTarget": 0,
+        "_allowNoTarget": 0,
+        "_animKey": "",
+        "_endAnimKey": "Idle",
+        "_downAnimKey": "",
+        "_downEndAnimKey": "",
+        "_upAnimKey": "",
+        "_upEndAnimKey": "",
+        "_cooldown": 0.0,
+        "_cooldownKey": "duration",
+        "_preDelay": 0.25,
+        "_escapeTime": 0.0,
+        "_faceToTarget": 1,
+        "_faceToDefault": 0,
+        "_faceToFront": 0,
+        "_faceToFirstCastTarget": 0,
+        "_checkFaceToFirstCastTargetDownAttack": 0,
+        "_forceFaceToDirection": 0,
+        "_activeBuffs": [
+          {
+            "attributes": {
+              "abnormalFlags": [],
+              "abnormalImmunes": [],
+              "abnormalAntis": [],
+              "abnormalCombos": [],
+              "abnormalComboImmunes": [],
+              "attributeModifiers": [
+                {
+                  "attributeType": 7,
+                  "formulaItem": 3,
+                  "value": 0.0,
+                  "loadFromBlackboard": 1,
+                  "fetchBaseValueFromSourceEntity": 0
+                }
+              ]
+            },
+            "buffKey": "mandra_ray[attack_speed_down]",
+            "loadFromDB": 0,
+            "isDurableBuff": 0,
+            "isDamageMissable": 0,
+            "isSilenceable": 0,
+            "isStunnable": 0,
+            "isFreezable": 0,
+            "isLevitatable": 0,
+            "isGroundBoundable": 0,
+            "statusResistable": 2,
+            "templateKey": "enemy_mandra_ray[during_attack]",
+            "disableOverride": 0,
+            "overrideKey": "",
+            "overrideType": 0,
+            "maxStackCnt": 1,
+            "refreshRemainingTimeWhenStackMax": 0,
+            "clearAllStackCntWhenTimeUp": 0,
+            "maxValidStackCnt": -1,
+            "independentCharacterSource": 0,
+            "overrideEffectKey": "",
+            "overrideOnEventPriority": 0,
+            "onEventPriority": 0,
+            "audioSignal": "",
+            "lifeTimeType": 2,
+            "takeSnapshotWhenExtend": 0,
+            "durationKey": "",
+            "lifeTime": 0.0,
+            "triggerLifeType": 2,
+            "triggerCnt": 0,
+            "triggerInterval": 1.0,
+            "waitFirstTriggerInterval": 1,
+            "firstTriggerInterval": -1.0,
+            "priority": -1,
+            "priorityBBKeys": [],
+            "stripBlackboardParamsWithBuffKey": 0,
+            "blackboard": [],
+            "enableInitDirectionFromSource": 0
+          }
+        ],
+        "_maxAnimScale": 1.0,
+        "_onlyPlayEndAnimWhenIsLastAbility": 0,
+        "_ignorePalsyInterrupt": 0,
+        "_affectedBySlowDown": 0,
+        "_atkScale": 1.0,
+        "_atkScaleKey": "atk_scale",
+        "_attackType": 1,
+        "_elementDamageType": 0,
+        "_epDamageRatio": 1.0,
+        "_useDynamicAttackType": 0,
+        "_deliveryParaWhenReplaceActionNode": 0,
+        "_projectileKey": "projectile_enemy_mandra_ray",
+        "_mountPointType": 2,
+        "_useMountGroup": 0,
+        "_mountGroup": {
+          "loopType": 0,
+          "mountPoints": []
+        },
+        "_damageType": 2,
+        "_waitForProjectileInvalid": 1,
+        "_notClearProjectileWhenCastEnd": 0,
+        "_fireAttackFinishWhenProjectileInvalid": 1,
+        "_minPostDelayWhenProjectileInvalid": 0.25,
+        "_waitForAnimEndWhenProjectileInvalid": 0,
+        "_projectileDestination": 0,
+        "_extraDamageType": 0,
+        "_emitToInputPosWhenTargetIsInvalid": 0,
+        "_emitToInputRootTileWhenTargetIsInvalid": 0,
+        "_useCachedAtkOnly": 0,
+        "_transferSource": 0,
+        "_extraProjectileKeys": [],
+        "_fireCreateProjectileEvent": 0
+      }
+    },
+    {
+      "path_id": "-6456719628239459535",
+      "class": "PassiveBuffAbility",
+      "gameobject": "StoneSkin",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -5945689895925732559
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 3800760148018415462
+        },
+        "m_Name": "",
+        "_selector": {
+          "m_FileID": 0,
+          "m_PathID": 0
+        },
+        "_metadata": {
+          "namedAsAlias": "",
+          "blackboardPrefix": ""
+        },
+        "_interruptAbilityOnDetach": 0,
+        "_attachPassiveBuffsOnDummy": 1,
+        "_ignoreIfOwnerDead": 0,
+        "_forceAsDmgOrHealAbility": 0,
+        "_buffs": [
+          {
+            "attributes": {
+              "abnormalFlags": [],
+              "abnormalImmunes": [],
+              "abnormalAntis": [],
+              "abnormalCombos": [],
+              "abnormalComboImmunes": [],
+              "attributeModifiers": []
+            },
+            "buffKey": "mandra_stone_skin",
+            "loadFromDB": 0,
+            "isDurableBuff": 0,
+            "isDamageMissable": 0,
+            "isSilenceable": 0,
+            "isStunnable": 0,
+            "isFreezable": 0,
+            "isLevitatable": 0,
+            "isGroundBoundable": 0,
+            "statusResistable": 2,
+            "templateKey": "damage_resistance",
+            "disableOverride": 0,
+            "overrideKey": "",
+            "overrideType": 0,
+            "maxStackCnt": 1,
+            "refreshRemainingTimeWhenStackMax": 0,
+            "clearAllStackCntWhenTimeUp": 0,
+            "maxValidStackCnt": -1,
+            "independentCharacterSource": 0,
+            "overrideEffectKey": "",
+            "overrideOnEventPriority": 0,
+            "onEventPriority": 0,
+            "audioSignal": "",
+            "lifeTimeType": 2,
+            "takeSnapshotWhenExtend": 0,
+            "durationKey": "",
+            "lifeTime": 0.0,
+            "triggerLifeType": 0,
+            "triggerCnt": 0,
+            "triggerInterval": -1.0,
+            "waitFirstTriggerInterval": 1,
+            "firstTriggerInterval": -1.0,
+            "priority": -1,
+            "priorityBBKeys": [],
+            "stripBlackboardParamsWithBuffKey": 0,
+            "blackboard": [],
+            "enableInitDirectionFromSource": 0
+          }
+        ]
+      }
+    },
+    {
+      "path_id": "-6292485413446833359",
+      "class": "EnemySkill",
+      "gameobject": "SummonStoneSkin_2",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -3253980679950324943
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": -5087399121287503180
+        },
+        "m_Name": "",
+        "_familyMask": 3,
+        "_trigger": {
+          "m_FileID": 0,
+          "m_PathID": -3013673586882401487
+        },
+        "_checkParentActive": 0,
+        "_maxTriggerTime": -1,
+        "_resetMainAbilityCdWhenCastEnd": 0,
+        "_resetCdWaitFirstPeriod": 1,
+        "_overwriteInitCooldown": -1,
+        "_ignoreSilence": 0,
+        "_immuneStunWhenAffecting": 0,
+        "_addEnemyIdToSignalId": 0,
+        "_castLikeAttack": 0
+      }
+    },
+    {
+      "path_id": "-5710503255995274447",
+      "class": "PassiveBuffAbility",
+      "gameobject": "ReSummonStoneSkin",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -167718999402632399
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 3800760148018415462
+        },
+        "m_Name": "",
+        "_selector": {
+          "m_FileID": 0,
+          "m_PathID": 0
+        },
+        "_metadata": {
+          "namedAsAlias": "",
+          "blackboardPrefix": ""
+        },
+        "_interruptAbilityOnDetach": 0,
+        "_attachPassiveBuffsOnDummy": 1,
+        "_ignoreIfOwnerDead": 0,
+        "_forceAsDmgOrHealAbility": 0,
+        "_buffs": [
+          {
+            "attributes": {
+              "abnormalFlags": [],
+              "abnormalImmunes": [],
+              "abnormalAntis": [],
+              "abnormalCombos": [],
+              "abnormalComboImmunes": [],
+              "attributeModifiers": []
+            },
+            "buffKey": "mandra_resummon_stone_skin",
+            "loadFromDB": 0,
+            "isDurableBuff": 0,
+            "isDamageMissable": 0,
+            "isSilenceable": 0,
+            "isStunnable": 0,
+            "isFreezable": 0,
+            "isLevitatable": 0,
+            "isGroundBoundable": 0,
+            "statusResistable": 2,
+            "templateKey": "enemy_mandra_resummon_stone_skin",
+            "disableOverride": 0,
+            "overrideKey": "",
+            "overrideType": 0,
+            "maxStackCnt": 1,
+            "refreshRemainingTimeWhenStackMax": 0,
+            "clearAllStackCntWhenTimeUp": 0,
+            "maxValidStackCnt": -1,
+            "independentCharacterSource": 0,
+            "overrideEffectKey": "",
+            "overrideOnEventPriority": 0,
+            "onEventPriority": 0,
+            "audioSignal": "mandra_stone_skin_disappear_p1",
+            "lifeTimeType": 1,
+            "takeSnapshotWhenExtend": 0,
+            "durationKey": "",
+            "lifeTime": 0.0,
+            "triggerLifeType": 0,
+            "triggerCnt": 0,
+            "triggerInterval": -1.0,
+            "waitFirstTriggerInterval": 1,
+            "firstTriggerInterval": -1.0,
+            "priority": -1,
+            "priorityBBKeys": [],
+            "stripBlackboardParamsWithBuffKey": 0,
+            "blackboard": [],
+            "enableInitDirectionFromSource": 0
+          }
+        ]
+      }
+    },
+    {
+      "path_id": "-5232101583418053839",
+      "class": "MeleeAttack",
+      "gameobject": "Combat",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": 2017609439654751025
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 4381884627089348317
+        },
+        "m_Name": "",
+        "_selector": {
+          "m_FileID": 0,
+          "m_PathID": 0
+        },
+        "_metadata": {
+          "namedAsAlias": "",
+          "blackboardPrefix": ""
+        },
+        "_interruptAbilityOnDetach": 0,
+        "_attachPassiveBuffsOnDummy": 1,
+        "_ignoreIfOwnerDead": 0,
+        "_forceAsDmgOrHealAbility": 0,
+        "_waitForAttackEvent": 1,
+        "_interuptIfTargetDead": 0,
+        "_resetCdStrategy": 1,
+        "_selectTargetSource": 2,
+        "_selectTargetTiming": 0,
+        "_timeMode": 0,
+        "_alwaysIncludeTarget": 1,
+        "_allowNoTarget": 0,
+        "_animKey": "Attack",
+        "_endAnimKey": "Idle",
+        "_downAnimKey": "",
+        "_downEndAnimKey": "",
+        "_upAnimKey": "",
+        "_upEndAnimKey": "",
+        "_cooldown": 0.0,
+        "_cooldownKey": "duration",
+        "_preDelay": 0.0,
+        "_escapeTime": 0.0,
+        "_faceToTarget": 1,
+        "_faceToDefault": 0,
+        "_faceToFront": 0,
+        "_faceToFirstCastTarget": 0,
+        "_checkFaceToFirstCastTargetDownAttack": 0,
+        "_forceFaceToDirection": 0,
+        "_activeBuffs": [],
+        "_maxAnimScale": 1.100000023841858,
+        "_onlyPlayEndAnimWhenIsLastAbility": 0,
+        "_ignorePalsyInterrupt": 0,
+        "_affectedBySlowDown": 1,
+        "_atkScale": 1.0,
+        "_atkScaleKey": "atk_scale",
+        "_attackType": 1,
+        "_elementDamageType": 0,
+        "_epDamageRatio": 0.0,
+        "_useDynamicAttackType": 0,
+        "_deliveryParaWhenReplaceActionNode": 0,
+        "_damageType": 2,
+        "_extraDamageType": 0,
+        "_alwaysPutIncludeTargetFirst": 0
+      }
+    },
+    {
+      "path_id": "-4229711969501467855",
+      "class": "RebornTalent",
+      "gameobject": "Reborn",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": 6485472363750730545
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": -4458530021321694031
+        },
+        "m_Name": "",
+        "_overwriteTalentKey": "",
+        "_overwriteParentRangeId": 0,
+        "_checkValidBySkillIndex": [],
+        "_attachInDummy": 0,
+        "_defaultModeIndex": -1,
+        "_attackBlackboardModeIndex": -1,
+        "_extraAttackBlackboardModeIndices": [],
+        "_overrideDefaultRangeId": 0,
+        "_applyTalentScale": 0,
+        "_influenceSkillBlackboard": 0,
+        "_fromRawDataToSkill": 0,
+        "_applyTalentRange": 0,
+        "_applyBlackboardBySkill": 0,
+        "_applyStrBlackboardBySkill": 0,
+        "_writeRangeIdToProjectileBlackboard": 0,
+        "_affectWhenNotRootTalent": 0,
+        "_scaleCertainKeyFlag": 0,
+        "_scaleCertainKeyList": [],
+        "_scaleCertainMode": 0,
+        "_scaleModeIndices": [],
+        "_maxRespawnCnt": 1,
+        "_modeIndex": -1,
+        "_keepAlive": 0,
+        "_buffs": [
+          {
+            "attributes": {
+              "abnormalFlags": [],
+              "abnormalImmunes": [],
+              "abnormalAntis": [],
+              "abnormalCombos": [],
+              "abnormalComboImmunes": [],
+              "attributeModifiers": []
+            },
+            "buffKey": "mandra_reborn",
+            "loadFromDB": 0,
+            "isDurableBuff": 0,
+            "isDamageMissable": 0,
+            "isSilenceable": 0,
+            "isStunnable": 0,
+            "isFreezable": 0,
+            "isLevitatable": 0,
+            "isGroundBoundable": 0,
+            "statusResistable": 2,
+            "templateKey": "enemy_mandra_reborn",
+            "disableOverride": 0,
+            "overrideKey": "",
+            "overrideType": 0,
+            "maxStackCnt": 1,
+            "refreshRemainingTimeWhenStackMax": 0,
+            "clearAllStackCntWhenTimeUp": 0,
+            "maxValidStackCnt": -1,
+            "independentCharacterSource": 0,
+            "overrideEffectKey": "",
+            "overrideOnEventPriority": 0,
+            "onEventPriority": 0,
+            "audioSignal": "",
+            "lifeTimeType": 0,
+            "takeSnapshotWhenExtend": 0,
+            "durationKey": "",
+            "lifeTime": 0.0,
+            "triggerLifeType": 0,
+            "triggerCnt": 0,
+            "triggerInterval": -1.0,
+            "waitFirstTriggerInterval": 1,
+            "firstTriggerInterval": -1.0,
+            "priority": -1,
+            "priorityBBKeys": [],
+            "stripBlackboardParamsWithBuffKey": 0,
+            "blackboard": [],
+            "enableInitDirectionFromSource": 0
+          },
+          {
+            "attributes": {
+              "abnormalFlags": [
+                15,
+                5
+              ],
+              "abnormalImmunes": [],
+              "abnormalAntis": [],
+              "abnormalCombos": [],
+              "abnormalComboImmunes": [],
+              "attributeModifiers": []
+            },
+            "buffKey": "mandra_p2_invinsible",
+            "loadFromDB": 0,
+            "isDurableBuff": 0,
+            "isDamageMissable": 0,
+            "isSilenceable": 0,
+            "isStunnable": 0,
+            "isFreezable": 0,
+            "isLevitatable": 0,
+            "isGroundBoundable": 0,
+            "statusResistable": 2,
+            "templateKey": "empty",
+            "disableOverride": 0,
+            "overrideKey": "",
+            "overrideType": 0,
+            "maxStackCnt": 1,
+            "refreshRemainingTimeWhenStackMax": 0,
+            "clearAllStackCntWhenTimeUp": 0,
+            "maxValidStackCnt": -1,
+            "independentCharacterSource": 0,
+            "overrideEffectKey": "common_invincible_01",
+            "overrideOnEventPriority": 0,
+            "onEventPriority": 0,
+            "audioSignal": "",
+            "lifeTimeType": 1,
+            "takeSnapshotWhenExtend": 0,
+            "durationKey": "",
+            "lifeTime": 0.0,
+            "triggerLifeType": 0,
+            "triggerCnt": 0,
+            "triggerInterval": -1.0,
+            "waitFirstTriggerInterval": 1,
+            "firstTriggerInterval": -1.0,
+            "priority": -1,
+            "priorityBBKeys": [],
+            "stripBlackboardParamsWithBuffKey": 1,
+            "blackboard": [],
+            "enableInitDirectionFromSource": 0
+          },
+          {
+            "attributes": {
+              "abnormalFlags": [],
+              "abnormalImmunes": [],
+              "abnormalAntis": [],
+              "abnormalCombos": [],
+              "abnormalComboImmunes": [],
+              "attributeModifiers": []
+            },
+            "buffKey": "mandra_p2_mask",
+            "loadFromDB": 0,
+            "isDurableBuff": 0,
+            "isDamageMissable": 0,
+            "isSilenceable": 0,
+            "isStunnable": 0,
+            "isFreezable": 0,
+            "isLevitatable": 0,
+            "isGroundBoundable": 0,
+            "statusResistable": 2,
+            "templateKey": "empty",
+            "disableOverride": 0,
+            "overrideKey": "",
+            "overrideType": 0,
+            "maxStackCnt": 1,
+            "refreshRemainingTimeWhenStackMax": 0,
+            "clearAllStackCntWhenTimeUp": 0,
+            "maxValidStackCnt": -1,
+            "independentCharacterSource": 0,
+            "overrideEffectKey": "",
+            "overrideOnEventPriority": 0,
+            "onEventPriority": 0,
+            "audioSignal": "",
+            "lifeTimeType": 2,
+            "takeSnapshotWhenExtend": 0,
+            "durationKey": "",
+            "lifeTime": 0.0,
+            "triggerLifeType": 0,
+            "triggerCnt": 0,
+            "triggerInterval": -1.0,
+            "waitFirstTriggerInterval": 1,
+            "firstTriggerInterval": -1.0,
+            "priority": -1,
+            "priorityBBKeys": [],
+            "stripBlackboardParamsWithBuffKey": 0,
+            "blackboard": [],
+            "enableInitDirectionFromSource": 0
+          },
+          {
+            "attributes": {
+              "abnormalFlags": [],
+              "abnormalImmunes": [],
+              "abnormalAntis": [],
+              "abnormalCombos": [],
+              "abnormalComboImmunes": [],
+              "attributeModifiers": []
+            },
+            "buffKey": "mandra_stone_skin[effect]",
+            "loadFromDB": 0,
+            "isDurableBuff": 0,
+            "isDamageMissable": 0,
+            "isSilenceable": 0,
+            "isStunnable": 0,
+            "isFreezable": 0,
+            "isLevitatable": 0,
+            "isGroundBoundable": 0,
+            "statusResistable": 2,
+            "templateKey": "enemy_mandra_stone_skin[effect]",
+            "disableOverride": 0,
+            "overrideKey": "",
+            "overrideType": 0,
+            "maxStackCnt": 1,
+            "refreshRemainingTimeWhenStackMax": 0,
+            "clearAllStackCntWhenTimeUp": 0,
+            "maxValidStackCnt": -1,
+            "independentCharacterSource": 0,
+            "overrideEffectKey": "",
+            "overrideOnEventPriority": 0,
+            "onEventPriority": 0,
+            "audioSignal": "",
+            "lifeTimeType": 2,
+            "takeSnapshotWhenExtend": 0,
+            "durationKey": "",
+            "lifeTime": 0.0,
+            "triggerLifeType": 0,
+            "triggerCnt": 0,
+            "triggerInterval": -1.0,
+            "waitFirstTriggerInterval": 1,
+            "firstTriggerInterval": -1.0,
+            "priority": -1,
+            "priorityBBKeys": [],
+            "stripBlackboardParamsWithBuffKey": 0,
+            "blackboard": [],
+            "enableInitDirectionFromSource": 0
+          },
+          {
+            "attributes": {
+              "abnormalFlags": [],
+              "abnormalImmunes": [],
+              "abnormalAntis": [],
+              "abnormalCombos": [],
+              "abnormalComboImmunes": [],
+              "attributeModifiers": []
+            },
+            "buffKey": "mandra_next_wave",
+            "loadFromDB": 0,
+            "isDurableBuff": 0,
+            "isDamageMissable": 0,
+            "isSilenceable": 0,
+            "isStunnable": 0,
+            "isFreezable": 0,
+            "isLevitatable": 0,
+            "isGroundBoundable": 0,
+            "statusResistable": 2,
+            "templateKey": "finish_current_wave_when_buff_finish",
+            "disableOverride": 0,
+            "overrideKey": "",
+            "overrideType": 0,
+            "maxStackCnt": 1,
+            "refreshRemainingTimeWhenStackMax": 0,
+            "clearAllStackCntWhenTimeUp": 0,
+            "maxValidStackCnt": -1,
+            "independentCharacterSource": 0,
+            "overrideEffectKey": "",
+            "overrideOnEventPriority": 0,
+            "onEventPriority": 0,
+            "audioSignal": "",
+            "lifeTimeType": 0,
+            "takeSnapshotWhenExtend": 0,
+            "durationKey": "",
+            "lifeTime": 0.0,
+            "triggerLifeType": 0,
+            "triggerCnt": 0,
+            "triggerInterval": -1.0,
+            "waitFirstTriggerInterval": 1,
+            "firstTriggerInterval": -1.0,
+            "priority": -1,
+            "priorityBBKeys": [],
+            "stripBlackboardParamsWithBuffKey": 0,
+            "blackboard": [],
+            "enableInitDirectionFromSource": 0
+          }
+        ],
+        "_effects": [],
+        "_clearEffectsAfterReborn": 0,
+        "_useAbilityToHandle": 1,
+        "_abilityName": "Reborn",
+        "_finishHandleAbilityAfterReborn": 0,
+        "_hpRechargeRatio": 0.5,
+        "_buffsRetainedWhenReborn": [
+          "mandra_immune"
+        ],
+        "_detachAbilityWhenReborn": 0,
+        "_rebornAfterWave": 0,
+        "_rebornAfterWaveCnt": 0,
+        "_validWhenContainsBuff": "",
+        "_extraRebornDataPresets": []
+      }
+    },
+    {
+      "path_id": "-4060036006314661071",
+      "class": "AdvancedSelector",
+      "gameobject": "Trigger",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": 2724802777393834801
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 7080728813803358465
+        },
+        "m_Name": "",
+        "_targetSide": 2,
+        "_targetMotion": 1,
+        "_targetCategory": 1,
+        "_postFilter": 17,
+        "_ignoreTargetFree": 0,
+        "_onlyIgnoreSomeOfTargetFreeCase": 0,
+        "_abnormalFlag": 23,
+        "_abnormalCombo": 2,
+        "_ignoreAllyTargetFree": 0,
+        "_ignoreHealFree": 0,
+        "_ignoreMotionMode": 0,
+        "_forceIgnoreCamouflage": 0,
+        "_needProfessionMask": 0,
+        "_professionMask": 0,
+        "_excludeSomeAbnormalFlags": 0,
+        "_excludeAbnormalFlag": 46,
+        "_limitTargetNum": 1,
+        "_maxTargetKey": "max_target",
+        "_maxNum": 1,
+        "_excludeOwner": 0,
+        "_sortByTauntAtLast": 0,
+        "_ignoreHitRange": 0,
+        "_checkUnitType": 0,
+        "_unitTypeMask": 0,
+        "_abilityInputTargetAsSortSource": 0
+      }
+    },
+    {
+      "path_id": "-3624171337761510607",
+      "class": "EnemySkill",
+      "gameobject": "PetrifiedRay",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -4214693835297608911
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": -5087399121287503180
+        },
+        "m_Name": "",
+        "_familyMask": 3,
+        "_trigger": {
+          "m_FileID": 0,
+          "m_PathID": 6018829106496711473
+        },
+        "_checkParentActive": 0,
+        "_maxTriggerTime": -1,
+        "_resetMainAbilityCdWhenCastEnd": 0,
+        "_resetCdWaitFirstPeriod": 1,
+        "_overwriteInitCooldown": -1,
+        "_ignoreSilence": 0,
+        "_immuneStunWhenAffecting": 0,
+        "_addEnemyIdToSignalId": 0,
+        "_castLikeAttack": 0
+      }
+    },
+    {
+      "path_id": "-3593526333797520591",
+      "class": "PassiveBuffAbility",
+      "gameobject": "ReSummonStoneSkin",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -7624265099423929551
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 3800760148018415462
+        },
+        "m_Name": "",
+        "_selector": {
+          "m_FileID": 0,
+          "m_PathID": 0
+        },
+        "_metadata": {
+          "namedAsAlias": "",
+          "blackboardPrefix": ""
+        },
+        "_interruptAbilityOnDetach": 0,
+        "_attachPassiveBuffsOnDummy": 1,
+        "_ignoreIfOwnerDead": 0,
+        "_forceAsDmgOrHealAbility": 0,
+        "_buffs": [
+          {
+            "attributes": {
+              "abnormalFlags": [],
+              "abnormalImmunes": [],
+              "abnormalAntis": [],
+              "abnormalCombos": [],
+              "abnormalComboImmunes": [],
+              "attributeModifiers": []
+            },
+            "buffKey": "mandra_resummon_stone_skin",
+            "loadFromDB": 0,
+            "isDurableBuff": 0,
+            "isDamageMissable": 0,
+            "isSilenceable": 0,
+            "isStunnable": 0,
+            "isFreezable": 0,
+            "isLevitatable": 0,
+            "isGroundBoundable": 0,
+            "statusResistable": 2,
+            "templateKey": "enemy_mandra_resummon_stone_skin",
+            "disableOverride": 0,
+            "overrideKey": "",
+            "overrideType": 0,
+            "maxStackCnt": 1,
+            "refreshRemainingTimeWhenStackMax": 0,
+            "clearAllStackCntWhenTimeUp": 0,
+            "maxValidStackCnt": -1,
+            "independentCharacterSource": 0,
+            "overrideEffectKey": "",
+            "overrideOnEventPriority": 0,
+            "onEventPriority": 0,
+            "audioSignal": "",
+            "lifeTimeType": 1,
+            "takeSnapshotWhenExtend": 0,
+            "durationKey": "",
+            "lifeTime": 0.0,
+            "triggerLifeType": 0,
+            "triggerCnt": 0,
+            "triggerInterval": -1.0,
+            "waitFirstTriggerInterval": 1,
+            "firstTriggerInterval": -1.0,
+            "priority": -1,
+            "priorityBBKeys": [],
+            "stripBlackboardParamsWithBuffKey": 0,
+            "blackboard": [],
+            "enableInitDirectionFromSource": 0
+          }
+        ]
+      }
+    },
+    {
+      "path_id": "-3508038696112313551",
+      "class": "SelfSelector",
+      "gameobject": "SummonStoneSkin_2",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -3253980679950324943
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 8735719249224227112
+        },
+        "m_Name": ""
+      }
+    },
+    {
+      "path_id": "-3102844489906607311",
+      "class": "EnemySkill",
+      "gameobject": "PetrifiedRay",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": 1922525979527260977
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": -5087399121287503180
+        },
+        "m_Name": "",
+        "_familyMask": 3,
+        "_trigger": {
+          "m_FileID": 0,
+          "m_PathID": -7167537788497646799
+        },
+        "_checkParentActive": 0,
+        "_maxTriggerTime": -1,
+        "_resetMainAbilityCdWhenCastEnd": 0,
+        "_resetCdWaitFirstPeriod": 1,
+        "_overwriteInitCooldown": -1,
+        "_ignoreSilence": 0,
+        "_immuneStunWhenAffecting": 0,
+        "_addEnemyIdToSignalId": 0,
+        "_castLikeAttack": 0
+      }
+    },
+    {
+      "path_id": "-2970779890810442959",
+      "class": "EnemySkill",
+      "gameobject": "SummonDupilr",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": 7751010851648351025
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": -5087399121287503180
+        },
+        "m_Name": "",
+        "_familyMask": 3,
+        "_trigger": {
+          "m_FileID": 0,
+          "m_PathID": 1906148477462096689
+        },
+        "_checkParentActive": 0,
+        "_maxTriggerTime": -1,
+        "_resetMainAbilityCdWhenCastEnd": 0,
+        "_resetCdWaitFirstPeriod": 1,
+        "_overwriteInitCooldown": -1,
+        "_ignoreSilence": 1,
+        "_immuneStunWhenAffecting": 1,
+        "_addEnemyIdToSignalId": 0,
+        "_castLikeAttack": 0
+      }
+    },
+    {
+      "path_id": "-2913360609436456143",
+      "class": "SelfSelector",
+      "gameobject": "SummonStoneSkin",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": 7501444279029246769
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 8735719249224227112
+        },
+        "m_Name": ""
+      }
+    },
+    {
+      "path_id": "-2697254480004732111",
+      "class": "RangedAttack",
+      "gameobject": "Attack",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": 290366556322507569
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 4156651312234227407
+        },
+        "m_Name": "",
+        "_selector": {
+          "m_FileID": 0,
+          "m_PathID": 0
+        },
+        "_metadata": {
+          "namedAsAlias": "",
+          "blackboardPrefix": ""
+        },
+        "_interruptAbilityOnDetach": 0,
+        "_attachPassiveBuffsOnDummy": 1,
+        "_ignoreIfOwnerDead": 0,
+        "_forceAsDmgOrHealAbility": 0,
+        "_waitForAttackEvent": 1,
+        "_interuptIfTargetDead": 0,
+        "_resetCdStrategy": 1,
+        "_selectTargetSource": 2,
+        "_selectTargetTiming": 0,
+        "_timeMode": 0,
+        "_alwaysIncludeTarget": 1,
+        "_allowNoTarget": 0,
+        "_animKey": "Attack",
+        "_endAnimKey": "Idle",
+        "_downAnimKey": "",
+        "_downEndAnimKey": "",
+        "_upAnimKey": "",
+        "_upEndAnimKey": "",
+        "_cooldown": 0.0,
+        "_cooldownKey": "duration",
+        "_preDelay": 0.0,
+        "_escapeTime": 0.0,
+        "_faceToTarget": 1,
+        "_faceToDefault": 0,
+        "_faceToFront": 0,
+        "_faceToFirstCastTarget": 0,
+        "_checkFaceToFirstCastTargetDownAttack": 0,
+        "_forceFaceToDirection": 0,
+        "_activeBuffs": [],
+        "_maxAnimScale": 1.0,
+        "_onlyPlayEndAnimWhenIsLastAbility": 0,
+        "_ignorePalsyInterrupt": 0,
+        "_affectedBySlowDown": 1,
+        "_atkScale": 1.0,
+        "_atkScaleKey": "atk_scale",
+        "_attackType": 1,
+        "_elementDamageType": 0,
+        "_epDamageRatio": 0.0,
+        "_useDynamicAttackType": 0,
+        "_deliveryParaWhenReplaceActionNode": 0,
+        "_projectileKey": "projectile_enemy_mandra_p2",
+        "_mountPointType": 2,
+        "_useMountGroup": 0,
+        "_mountGroup": {
+          "loopType": 0,
+          "mountPoints": []
+        },
+        "_damageType": 2,
+        "_waitForProjectileInvalid": 0,
+        "_notClearProjectileWhenCastEnd": 0,
+        "_fireAttackFinishWhenProjectileInvalid": 0,
+        "_minPostDelayWhenProjectileInvalid": 0.0,
+        "_waitForAnimEndWhenProjectileInvalid": 0,
+        "_projectileDestination": 0,
+        "_extraDamageType": 0,
+        "_emitToInputPosWhenTargetIsInvalid": 0,
+        "_emitToInputRootTileWhenTargetIsInvalid": 0,
+        "_useCachedAtkOnly": 0,
+        "_transferSource": 0,
+        "_extraProjectileKeys": [],
+        "_fireCreateProjectileEvent": 0
+      }
+    },
+    {
+      "path_id": "-2234030309795058895",
+      "class": "EnemySkill",
+      "gameobject": "SummonStoneSkin",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": 7501444279029246769
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": -5087399121287503180
+        },
+        "m_Name": "",
+        "_familyMask": 3,
+        "_trigger": {
+          "m_FileID": 0,
+          "m_PathID": -1447802976708416719
+        },
+        "_checkParentActive": 0,
+        "_maxTriggerTime": -1,
+        "_resetMainAbilityCdWhenCastEnd": 0,
+        "_resetCdWaitFirstPeriod": 1,
+        "_overwriteInitCooldown": -1,
+        "_ignoreSilence": 0,
+        "_immuneStunWhenAffecting": 0,
+        "_addEnemyIdToSignalId": 0,
+        "_castLikeAttack": 0
+      }
+    },
+    {
+      "path_id": "-1903513046766015695",
+      "class": "AdvancedSelector",
+      "gameobject": "Trigger",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -1726891177929692367
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 7080728813803358465
+        },
+        "m_Name": "",
+        "_targetSide": 2,
+        "_targetMotion": 3,
+        "_targetCategory": 1,
+        "_postFilter": 17,
+        "_ignoreTargetFree": 0,
+        "_onlyIgnoreSomeOfTargetFreeCase": 0,
+        "_abnormalFlag": 23,
+        "_abnormalCombo": 2,
+        "_ignoreAllyTargetFree": 0,
+        "_ignoreHealFree": 0,
+        "_ignoreMotionMode": 0,
+        "_forceIgnoreCamouflage": 0,
+        "_needProfessionMask": 0,
+        "_professionMask": 0,
+        "_excludeSomeAbnormalFlags": 0,
+        "_excludeAbnormalFlag": 46,
+        "_limitTargetNum": 1,
+        "_maxTargetKey": "max_target",
+        "_maxNum": 1,
+        "_excludeOwner": 0,
+        "_sortByTauntAtLast": 0,
+        "_ignoreHitRange": 0,
+        "_checkUnitType": 0,
+        "_unitTypeMask": 0,
+        "_abilityInputTargetAsSortSource": 0
+      }
+    },
+    {
+      "path_id": "-1739991923319198927",
+      "class": "AnimatedActionToOwnerAbility",
+      "gameobject": "SummonStoneSkin",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": 7501444279029246769
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 2702927552840241462
+        },
+        "m_Name": "",
+        "_selector": {
+          "m_FileID": 0,
+          "m_PathID": -2913360609436456143
+        },
+        "_metadata": {
+          "namedAsAlias": "",
+          "blackboardPrefix": ""
+        },
+        "_interruptAbilityOnDetach": 0,
+        "_attachPassiveBuffsOnDummy": 1,
+        "_ignoreIfOwnerDead": 0,
+        "_forceAsDmgOrHealAbility": 0,
+        "_waitForAttackEvent": 1,
+        "_interuptIfTargetDead": 0,
+        "_resetCdStrategy": 1,
+        "_selectTargetSource": 1,
+        "_selectTargetTiming": 0,
+        "_timeMode": 1,
+        "_alwaysIncludeTarget": 1,
+        "_allowNoTarget": 0,
+        "_animKey": "C1_Skill_2",
+        "_endAnimKey": "",
+        "_downAnimKey": "",
+        "_downEndAnimKey": "",
+        "_upAnimKey": "",
+        "_upEndAnimKey": "",
+        "_cooldown": 0.0,
+        "_cooldownKey": "duration",
+        "_preDelay": 0.0,
+        "_escapeTime": 0.0,
+        "_faceToTarget": 1,
+        "_faceToDefault": 0,
+        "_faceToFront": 0,
+        "_faceToFirstCastTarget": 0,
+        "_checkFaceToFirstCastTargetDownAttack": 0,
+        "_forceFaceToDirection": 0,
+        "_activeBuffs": [],
+        "_maxAnimScale": -1.0,
+        "_onlyPlayEndAnimWhenIsLastAbility": 0,
+        "_ignorePalsyInterrupt": 0,
+        "_affectedBySlowDown": 1,
+        "_actions": {
+          "SerializedState": "[]",
+          "SerializedObjectReferences": []
+        }
+      }
+    },
+    {
+      "path_id": "-1263899846878647503",
+      "class": "SelfSelector",
+      "gameobject": "Reborn",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": 6485472363750730545
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 8735719249224227112
+        },
+        "m_Name": ""
+      }
+    },
+    {
+      "path_id": "-151333272209806543",
+      "class": "AnimatedActionToOwnerAbility",
+      "gameobject": "Summon",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": 3051906629303905073
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 2702927552840241462
+        },
+        "m_Name": "",
+        "_selector": {
+          "m_FileID": 0,
+          "m_PathID": 0
+        },
+        "_metadata": {
+          "namedAsAlias": "",
+          "blackboardPrefix": ""
+        },
+        "_interruptAbilityOnDetach": 0,
+        "_attachPassiveBuffsOnDummy": 1,
+        "_ignoreIfOwnerDead": 0,
+        "_forceAsDmgOrHealAbility": 0,
+        "_waitForAttackEvent": 1,
+        "_interuptIfTargetDead": 0,
+        "_resetCdStrategy": 1,
+        "_selectTargetSource": 1,
+        "_selectTargetTiming": 0,
+        "_timeMode": 0,
+        "_alwaysIncludeTarget": 0,
+        "_allowNoTarget": 1,
+        "_animKey": "C2_Skill_3",
+        "_endAnimKey": "Idle",
+        "_downAnimKey": "",
+        "_downEndAnimKey": "",
+        "_upAnimKey": "",
+        "_upEndAnimKey": "",
+        "_cooldown": 0.0,
+        "_cooldownKey": "duration",
+        "_preDelay": 0.0,
+        "_escapeTime": 0.0,
+        "_faceToTarget": 1,
+        "_faceToDefault": 0,
+        "_faceToFront": 0,
+        "_faceToFirstCastTarget": 0,
+        "_checkFaceToFirstCastTargetDownAttack": 0,
+        "_forceFaceToDirection": 0,
+        "_activeBuffs": [],
+        "_maxAnimScale": 1.0,
+        "_onlyPlayEndAnimWhenIsLastAbility": 0,
+        "_ignorePalsyInterrupt": 0,
+        "_affectedBySlowDown": 1,
+        "_actions": {
+          "SerializedState": "[{\"_isLoop\":false,\"_branchId\":\"\",\"_maxValidEnemyCount\":-1,\"$type\":\"Torappu.Battle.Action.Nodes+MoveNextLevelBranch\"}]",
+          "SerializedObjectReferences": []
+        }
+      }
+    },
+    {
+      "path_id": "1955193690744204081",
+      "class": "AbilitySequenceGroup",
+      "gameobject": "SummonDupilr",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": 7751010851648351025
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": -3703208971068511792
+        },
+        "m_Name": "",
+        "_selector": {
+          "m_FileID": 0,
+          "m_PathID": 0
+        },
+        "_metadata": {
+          "namedAsAlias": "",
+          "blackboardPrefix": ""
+        },
+        "_interruptAbilityOnDetach": 0,
+        "_attachPassiveBuffsOnDummy": 1,
+        "_ignoreIfOwnerDead": 0,
+        "_forceAsDmgOrHealAbility": 0,
+        "_abilities": [
+          {
+            "m_FileID": 0,
+            "m_PathID": -151333272209806543
+          },
+          {
+            "m_FileID": 0,
+            "m_PathID": 7141568811111721777
+          }
+        ],
+        "_alwaysNext": 1,
+        "_forceNextIfCastFail": 0,
+        "_checkCanUseSubAbility": 0,
+        "_useLongestAbilityCooldown": 0,
+        "_fireCastStartEventWhenCast": 0,
+        "_stopMoveNextWhenNotCasting": 0,
+        "_alsoInterruptCurrentSubAbility": 0,
+        "_interruptableSubAbilityIndice": [],
+        "_alsoStopSubAbilityAffect": 0,
+        "_alsoResetSubAbilityCooldown": 0,
+        "_setDataExceptRedundance": 0,
+        "_interruptIfTargetDead": 0,
+        "_castToInputPosIfTargetInvalid": 0,
+        "_timeMode": 1,
+        "_updateCooldownAfterSubAbilitiesAttached": 0,
+        "_enableLoop": 0,
+        "_abilityLoopSettings": []
+      }
+    },
+    {
+      "path_id": "2164108437467015985",
+      "class": "RangedAttack",
+      "gameobject": "PetrifiedRay",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -4214693835297608911
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 4156651312234227407
+        },
+        "m_Name": "",
+        "_selector": {
+          "m_FileID": 0,
+          "m_PathID": -1903513046766015695
+        },
+        "_metadata": {
+          "namedAsAlias": "",
+          "blackboardPrefix": ""
+        },
+        "_interruptAbilityOnDetach": 0,
+        "_attachPassiveBuffsOnDummy": 1,
+        "_ignoreIfOwnerDead": 0,
+        "_forceAsDmgOrHealAbility": 0,
+        "_waitForAttackEvent": 1,
+        "_interuptIfTargetDead": 0,
+        "_resetCdStrategy": 1,
+        "_selectTargetSource": 1,
+        "_selectTargetTiming": 1,
+        "_timeMode": 0,
+        "_alwaysIncludeTarget": 0,
+        "_allowNoTarget": 0,
+        "_animKey": "",
+        "_endAnimKey": "Idle",
+        "_downAnimKey": "",
+        "_downEndAnimKey": "",
+        "_upAnimKey": "",
+        "_upEndAnimKey": "",
+        "_cooldown": 0.0,
+        "_cooldownKey": "duration",
+        "_preDelay": 0.25,
+        "_escapeTime": 0.0,
+        "_faceToTarget": 1,
+        "_faceToDefault": 0,
+        "_faceToFront": 0,
+        "_faceToFirstCastTarget": 0,
+        "_checkFaceToFirstCastTargetDownAttack": 0,
+        "_forceFaceToDirection": 0,
+        "_activeBuffs": [
+          {
+            "attributes": {
+              "abnormalFlags": [],
+              "abnormalImmunes": [],
+              "abnormalAntis": [],
+              "abnormalCombos": [],
+              "abnormalComboImmunes": [],
+              "attributeModifiers": [
+                {
+                  "attributeType": 7,
+                  "formulaItem": 3,
+                  "value": 0.0,
+                  "loadFromBlackboard": 1,
+                  "fetchBaseValueFromSourceEntity": 0
+                }
+              ]
+            },
+            "buffKey": "mandra_ray[attack_speed_down]",
+            "loadFromDB": 0,
+            "isDurableBuff": 0,
+            "isDamageMissable": 0,
+            "isSilenceable": 0,
+            "isStunnable": 0,
+            "isFreezable": 0,
+            "isLevitatable": 0,
+            "isGroundBoundable": 0,
+            "statusResistable": 2,
+            "templateKey": "enemy_mandra_ray[during_attack]",
+            "disableOverride": 0,
+            "overrideKey": "",
+            "overrideType": 0,
+            "maxStackCnt": 1,
+            "refreshRemainingTimeWhenStackMax": 0,
+            "clearAllStackCntWhenTimeUp": 0,
+            "maxValidStackCnt": -1,
+            "independentCharacterSource": 0,
+            "overrideEffectKey": "",
+            "overrideOnEventPriority": 0,
+            "onEventPriority": 0,
+            "audioSignal": "",
+            "lifeTimeType": 2,
+            "takeSnapshotWhenExtend": 0,
+            "durationKey": "",
+            "lifeTime": 0.0,
+            "triggerLifeType": 2,
+            "triggerCnt": 0,
+            "triggerInterval": 1.0,
+            "waitFirstTriggerInterval": 1,
+            "firstTriggerInterval": -1.0,
+            "priority": -1,
+            "priorityBBKeys": [],
+            "stripBlackboardParamsWithBuffKey": 0,
+            "blackboard": [],
+            "enableInitDirectionFromSource": 0
+          }
+        ],
+        "_maxAnimScale": 1.0,
+        "_onlyPlayEndAnimWhenIsLastAbility": 0,
+        "_ignorePalsyInterrupt": 0,
+        "_affectedBySlowDown": 0,
+        "_atkScale": 1.0,
+        "_atkScaleKey": "atk_scale",
+        "_attackType": 1,
+        "_elementDamageType": 0,
+        "_epDamageRatio": 1.0,
+        "_useDynamicAttackType": 0,
+        "_deliveryParaWhenReplaceActionNode": 0,
+        "_projectileKey": "projectile_enemy_mandra_ray",
+        "_mountPointType": 2,
+        "_useMountGroup": 0,
+        "_mountGroup": {
+          "loopType": 0,
+          "mountPoints": []
+        },
+        "_damageType": 2,
+        "_waitForProjectileInvalid": 1,
+        "_notClearProjectileWhenCastEnd": 0,
+        "_fireAttackFinishWhenProjectileInvalid": 1,
+        "_minPostDelayWhenProjectileInvalid": 0.25,
+        "_waitForAnimEndWhenProjectileInvalid": 0,
+        "_projectileDestination": 0,
+        "_extraDamageType": 0,
+        "_emitToInputPosWhenTargetIsInvalid": 0,
+        "_emitToInputRootTileWhenTargetIsInvalid": 0,
+        "_useCachedAtkOnly": 0,
+        "_transferSource": 0,
+        "_extraProjectileKeys": [],
+        "_fireCreateProjectileEvent": 0
+      }
+    },
+    {
+      "path_id": "2469851682584111921",
+      "class": "MeleeAttack",
+      "gameobject": "Combat",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -9061764885436519631
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 4381884627089348317
+        },
+        "m_Name": "",
+        "_selector": {
+          "m_FileID": 0,
+          "m_PathID": 0
+        },
+        "_metadata": {
+          "namedAsAlias": "",
+          "blackboardPrefix": ""
+        },
+        "_interruptAbilityOnDetach": 0,
+        "_attachPassiveBuffsOnDummy": 1,
+        "_ignoreIfOwnerDead": 0,
+        "_forceAsDmgOrHealAbility": 0,
+        "_waitForAttackEvent": 1,
+        "_interuptIfTargetDead": 0,
+        "_resetCdStrategy": 1,
+        "_selectTargetSource": 2,
+        "_selectTargetTiming": 0,
+        "_timeMode": 0,
+        "_alwaysIncludeTarget": 1,
+        "_allowNoTarget": 0,
+        "_animKey": "Attack",
+        "_endAnimKey": "Idle",
+        "_downAnimKey": "",
+        "_downEndAnimKey": "",
+        "_upAnimKey": "",
+        "_upEndAnimKey": "",
+        "_cooldown": 0.0,
+        "_cooldownKey": "duration",
+        "_preDelay": 0.0,
+        "_escapeTime": 0.0,
+        "_faceToTarget": 1,
+        "_faceToDefault": 0,
+        "_faceToFront": 0,
+        "_faceToFirstCastTarget": 0,
+        "_checkFaceToFirstCastTargetDownAttack": 0,
+        "_forceFaceToDirection": 0,
+        "_activeBuffs": [],
+        "_maxAnimScale": 1.100000023841858,
+        "_onlyPlayEndAnimWhenIsLastAbility": 0,
+        "_ignorePalsyInterrupt": 0,
+        "_affectedBySlowDown": 1,
+        "_atkScale": 1.0,
+        "_atkScaleKey": "atk_scale",
+        "_attackType": 1,
+        "_elementDamageType": 0,
+        "_epDamageRatio": 0.0,
+        "_useDynamicAttackType": 0,
+        "_deliveryParaWhenReplaceActionNode": 0,
+        "_damageType": 2,
+        "_extraDamageType": 0,
+        "_alwaysPutIncludeTargetFirst": 0
+      }
+    },
+    {
+      "path_id": "3983794923662388017",
+      "class": "AnimatedActionToOwnerAbility",
+      "gameobject": "SummonStoneSkin_2",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -3253980679950324943
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 2702927552840241462
+        },
+        "m_Name": "",
+        "_selector": {
+          "m_FileID": 0,
+          "m_PathID": -3508038696112313551
+        },
+        "_metadata": {
+          "namedAsAlias": "",
+          "blackboardPrefix": ""
+        },
+        "_interruptAbilityOnDetach": 0,
+        "_attachPassiveBuffsOnDummy": 1,
+        "_ignoreIfOwnerDead": 0,
+        "_forceAsDmgOrHealAbility": 0,
+        "_waitForAttackEvent": 1,
+        "_interuptIfTargetDead": 0,
+        "_resetCdStrategy": 1,
+        "_selectTargetSource": 1,
+        "_selectTargetTiming": 0,
+        "_timeMode": 1,
+        "_alwaysIncludeTarget": 1,
+        "_allowNoTarget": 0,
+        "_animKey": "C2_Skill_2",
+        "_endAnimKey": "",
+        "_downAnimKey": "",
+        "_downEndAnimKey": "",
+        "_upAnimKey": "",
+        "_upEndAnimKey": "",
+        "_cooldown": 0.0,
+        "_cooldownKey": "duration",
+        "_preDelay": 0.0,
+        "_escapeTime": 0.0,
+        "_faceToTarget": 1,
+        "_faceToDefault": 0,
+        "_faceToFront": 0,
+        "_faceToFirstCastTarget": 0,
+        "_checkFaceToFirstCastTargetDownAttack": 0,
+        "_forceFaceToDirection": 0,
+        "_activeBuffs": [],
+        "_maxAnimScale": -1.0,
+        "_onlyPlayEndAnimWhenIsLastAbility": 0,
+        "_ignorePalsyInterrupt": 0,
+        "_affectedBySlowDown": 1,
+        "_actions": {
+          "SerializedState": "[]",
+          "SerializedObjectReferences": []
+        }
+      }
+    },
+    {
+      "path_id": "4548671083534527281",
+      "class": "EnemySkill",
+      "gameobject": "SelfStun",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -4214349867795698895
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": -5087399121287503180
+        },
+        "m_Name": "",
+        "_familyMask": 3,
+        "_trigger": {
+          "m_FileID": 0,
+          "m_PathID": -1603832119817884879
+        },
+        "_checkParentActive": 0,
+        "_maxTriggerTime": -1,
+        "_resetMainAbilityCdWhenCastEnd": 0,
+        "_resetCdWaitFirstPeriod": 1,
+        "_overwriteInitCooldown": -1,
+        "_ignoreSilence": 0,
+        "_immuneStunWhenAffecting": 0,
+        "_addEnemyIdToSignalId": 0,
+        "_castLikeAttack": 0
+      }
+    },
+    {
+      "path_id": "4830213052029315889",
+      "class": "PassiveBuffAbility",
+      "gameobject": "Passives",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -5801619941855155407
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 3800760148018415462
+        },
+        "m_Name": "",
+        "_selector": {
+          "m_FileID": 0,
+          "m_PathID": 0
+        },
+        "_metadata": {
+          "namedAsAlias": "",
+          "blackboardPrefix": ""
+        },
+        "_interruptAbilityOnDetach": 0,
+        "_attachPassiveBuffsOnDummy": 1,
+        "_ignoreIfOwnerDead": 0,
+        "_forceAsDmgOrHealAbility": 0,
+        "_buffs": [
+          {
+            "attributes": {
+              "abnormalFlags": [
+                8
+              ],
+              "abnormalImmunes": [
+                0,
+                12,
+                16,
+                11,
+                18
+              ],
+              "abnormalAntis": [],
+              "abnormalCombos": [],
+              "abnormalComboImmunes": [
+                0
+              ],
+              "attributeModifiers": []
+            },
+            "buffKey": "mandra_immune",
+            "loadFromDB": 0,
+            "isDurableBuff": 0,
+            "isDamageMissable": 0,
+            "isSilenceable": 0,
+            "isStunnable": 0,
+            "isFreezable": 0,
+            "isLevitatable": 0,
+            "isGroundBoundable": 0,
+            "statusResistable": 2,
+            "templateKey": "empty",
+            "disableOverride": 0,
+            "overrideKey": "",
+            "overrideType": 0,
+            "maxStackCnt": 1,
+            "refreshRemainingTimeWhenStackMax": 0,
+            "clearAllStackCntWhenTimeUp": 0,
+            "maxValidStackCnt": -1,
+            "independentCharacterSource": 0,
+            "overrideEffectKey": "",
+            "overrideOnEventPriority": 0,
+            "onEventPriority": 0,
+            "audioSignal": "",
+            "lifeTimeType": 2,
+            "takeSnapshotWhenExtend": 0,
+            "durationKey": "",
+            "lifeTime": 0.0,
+            "triggerLifeType": 0,
+            "triggerCnt": 0,
+            "triggerInterval": -1.0,
+            "waitFirstTriggerInterval": 1,
+            "firstTriggerInterval": -1.0,
+            "priority": -1,
+            "priorityBBKeys": [],
+            "stripBlackboardParamsWithBuffKey": 0,
+            "blackboard": [],
+            "enableInitDirectionFromSource": 0
+          },
+          {
+            "attributes": {
+              "abnormalFlags": [],
+              "abnormalImmunes": [],
+              "abnormalAntis": [],
+              "abnormalCombos": [],
+              "abnormalComboImmunes": [],
+              "attributeModifiers": []
+            },
+            "buffKey": "mandra_stone_skin[effect]",
+            "loadFromDB": 0,
+            "isDurableBuff": 0,
+            "isDamageMissable": 0,
+            "isSilenceable": 0,
+            "isStunnable": 0,
+            "isFreezable": 0,
+            "isLevitatable": 0,
+            "isGroundBoundable": 0,
+            "statusResistable": 2,
+            "templateKey": "enemy_mandra_stone_skin[effect]",
+            "disableOverride": 0,
+            "overrideKey": "",
+            "overrideType": 0,
+            "maxStackCnt": 1,
+            "refreshRemainingTimeWhenStackMax": 0,
+            "clearAllStackCntWhenTimeUp": 0,
+            "maxValidStackCnt": -1,
+            "independentCharacterSource": 0,
+            "overrideEffectKey": "",
+            "overrideOnEventPriority": 0,
+            "onEventPriority": 0,
+            "audioSignal": "",
+            "lifeTimeType": 2,
+            "takeSnapshotWhenExtend": 0,
+            "durationKey": "",
+            "lifeTime": 0.0,
+            "triggerLifeType": 0,
+            "triggerCnt": 0,
+            "triggerInterval": -1.0,
+            "waitFirstTriggerInterval": 1,
+            "firstTriggerInterval": -1.0,
+            "priority": -1,
+            "priorityBBKeys": [],
+            "stripBlackboardParamsWithBuffKey": 0,
+            "blackboard": [],
+            "enableInitDirectionFromSource": 0
+          }
+        ]
+      }
+    },
+    {
+      "path_id": "6405600725156604721",
+      "class": "RangedAttack",
+      "gameobject": "Attack",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -2992484032152425679
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 4156651312234227407
+        },
+        "m_Name": "",
+        "_selector": {
+          "m_FileID": 0,
+          "m_PathID": 0
+        },
+        "_metadata": {
+          "namedAsAlias": "",
+          "blackboardPrefix": ""
+        },
+        "_interruptAbilityOnDetach": 0,
+        "_attachPassiveBuffsOnDummy": 1,
+        "_ignoreIfOwnerDead": 0,
+        "_forceAsDmgOrHealAbility": 0,
+        "_waitForAttackEvent": 1,
+        "_interuptIfTargetDead": 0,
+        "_resetCdStrategy": 1,
+        "_selectTargetSource": 2,
+        "_selectTargetTiming": 0,
+        "_timeMode": 0,
+        "_alwaysIncludeTarget": 1,
+        "_allowNoTarget": 0,
+        "_animKey": "Attack",
+        "_endAnimKey": "Idle",
+        "_downAnimKey": "",
+        "_downEndAnimKey": "",
+        "_upAnimKey": "",
+        "_upEndAnimKey": "",
+        "_cooldown": 0.0,
+        "_cooldownKey": "duration",
+        "_preDelay": 0.0,
+        "_escapeTime": 0.0,
+        "_faceToTarget": 1,
+        "_faceToDefault": 0,
+        "_faceToFront": 0,
+        "_faceToFirstCastTarget": 0,
+        "_checkFaceToFirstCastTargetDownAttack": 0,
+        "_forceFaceToDirection": 0,
+        "_activeBuffs": [],
+        "_maxAnimScale": 1.0,
+        "_onlyPlayEndAnimWhenIsLastAbility": 0,
+        "_ignorePalsyInterrupt": 0,
+        "_affectedBySlowDown": 1,
+        "_atkScale": 1.0,
+        "_atkScaleKey": "atk_scale",
+        "_attackType": 1,
+        "_elementDamageType": 0,
+        "_epDamageRatio": 0.0,
+        "_useDynamicAttackType": 0,
+        "_deliveryParaWhenReplaceActionNode": 0,
+        "_projectileKey": "projectile_enemy_mandra_p2",
+        "_mountPointType": 2,
+        "_useMountGroup": 0,
+        "_mountGroup": {
+          "loopType": 0,
+          "mountPoints": []
+        },
+        "_damageType": 2,
+        "_waitForProjectileInvalid": 0,
+        "_notClearProjectileWhenCastEnd": 0,
+        "_fireAttackFinishWhenProjectileInvalid": 0,
+        "_minPostDelayWhenProjectileInvalid": 0.0,
+        "_waitForAnimEndWhenProjectileInvalid": 0,
+        "_projectileDestination": 0,
+        "_extraDamageType": 0,
+        "_emitToInputPosWhenTargetIsInvalid": 0,
+        "_emitToInputRootTileWhenTargetIsInvalid": 0,
+        "_useCachedAtkOnly": 0,
+        "_transferSource": 0,
+        "_extraProjectileKeys": [],
+        "_fireCreateProjectileEvent": 0
+      }
+    },
+    {
+      "path_id": "7093549736563878705",
+      "class": "AdvancedSelector",
+      "gameobject": "Trigger",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -5289410998265730255
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 7080728813803358465
+        },
+        "m_Name": "",
+        "_targetSide": 2,
+        "_targetMotion": 1,
+        "_targetCategory": 1,
+        "_postFilter": 4,
+        "_ignoreTargetFree": 0,
+        "_onlyIgnoreSomeOfTargetFreeCase": 0,
+        "_abnormalFlag": 23,
+        "_abnormalCombo": 2,
+        "_ignoreAllyTargetFree": 0,
+        "_ignoreHealFree": 0,
+        "_ignoreMotionMode": 0,
+        "_forceIgnoreCamouflage": 0,
+        "_needProfessionMask": 0,
+        "_professionMask": 0,
+        "_excludeSomeAbnormalFlags": 0,
+        "_excludeAbnormalFlag": 46,
+        "_limitTargetNum": 1,
+        "_maxTargetKey": "max_target",
+        "_maxNum": 1,
+        "_excludeOwner": 0,
+        "_sortByTauntAtLast": 0,
+        "_ignoreHitRange": 0,
+        "_checkUnitType": 0,
+        "_unitTypeMask": 0,
+        "_abilityInputTargetAsSortSource": 0
+      }
+    },
+    {
+      "path_id": "7200584069701348145",
+      "class": "PassiveBuffAbility",
+      "gameobject": "StoneSkin",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": 7454287297775971121
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 3800760148018415462
+        },
+        "m_Name": "",
+        "_selector": {
+          "m_FileID": 0,
+          "m_PathID": 0
+        },
+        "_metadata": {
+          "namedAsAlias": "",
+          "blackboardPrefix": ""
+        },
+        "_interruptAbilityOnDetach": 0,
+        "_attachPassiveBuffsOnDummy": 1,
+        "_ignoreIfOwnerDead": 0,
+        "_forceAsDmgOrHealAbility": 0,
+        "_buffs": [
+          {
+            "attributes": {
+              "abnormalFlags": [],
+              "abnormalImmunes": [],
+              "abnormalAntis": [],
+              "abnormalCombos": [],
+              "abnormalComboImmunes": [],
+              "attributeModifiers": []
+            },
+            "buffKey": "mandra_stone_skin",
+            "loadFromDB": 0,
+            "isDurableBuff": 0,
+            "isDamageMissable": 0,
+            "isSilenceable": 0,
+            "isStunnable": 0,
+            "isFreezable": 0,
+            "isLevitatable": 0,
+            "isGroundBoundable": 0,
+            "statusResistable": 2,
+            "templateKey": "damage_resistance",
+            "disableOverride": 0,
+            "overrideKey": "",
+            "overrideType": 0,
+            "maxStackCnt": 1,
+            "refreshRemainingTimeWhenStackMax": 0,
+            "clearAllStackCntWhenTimeUp": 0,
+            "maxValidStackCnt": -1,
+            "independentCharacterSource": 0,
+            "overrideEffectKey": "",
+            "overrideOnEventPriority": 0,
+            "onEventPriority": 0,
+            "audioSignal": "",
+            "lifeTimeType": 2,
+            "takeSnapshotWhenExtend": 0,
+            "durationKey": "",
+            "lifeTime": 0.0,
+            "triggerLifeType": 0,
+            "triggerCnt": 0,
+            "triggerInterval": -1.0,
+            "waitFirstTriggerInterval": 1,
+            "firstTriggerInterval": -1.0,
+            "priority": -1,
+            "priorityBBKeys": [],
+            "stripBlackboardParamsWithBuffKey": 0,
+            "blackboard": [],
+            "enableInitDirectionFromSource": 0
+          }
+        ]
+      }
+    },
+    {
+      "path_id": "7673819281887046449",
+      "class": "SelfSelector",
+      "gameobject": "SelfStun",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -4214349867795698895
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 8735719249224227112
+        },
+        "m_Name": ""
+      }
+    },
+    {
+      "path_id": "7824173455482465073",
+      "class": "AnimatedActionToOwnerAbility",
+      "gameobject": "SelfStun",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -4214349867795698895
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 2702927552840241462
+        },
+        "m_Name": "",
+        "_selector": {
+          "m_FileID": 0,
+          "m_PathID": 7673819281887046449
+        },
+        "_metadata": {
+          "namedAsAlias": "",
+          "blackboardPrefix": ""
+        },
+        "_interruptAbilityOnDetach": 0,
+        "_attachPassiveBuffsOnDummy": 1,
+        "_ignoreIfOwnerDead": 0,
+        "_forceAsDmgOrHealAbility": 0,
+        "_waitForAttackEvent": 1,
+        "_interuptIfTargetDead": 0,
+        "_resetCdStrategy": 1,
+        "_selectTargetSource": 1,
+        "_selectTargetTiming": 0,
+        "_timeMode": 1,
+        "_alwaysIncludeTarget": 1,
+        "_allowNoTarget": 0,
+        "_animKey": "C2_Stun",
+        "_endAnimKey": "",
+        "_downAnimKey": "",
+        "_downEndAnimKey": "",
+        "_upAnimKey": "",
+        "_upEndAnimKey": "",
+        "_cooldown": 0.0,
+        "_cooldownKey": "duration",
+        "_preDelay": 0.0,
+        "_escapeTime": 0.0,
+        "_faceToTarget": 1,
+        "_faceToDefault": 0,
+        "_faceToFront": 0,
+        "_faceToFirstCastTarget": 0,
+        "_checkFaceToFirstCastTargetDownAttack": 0,
+        "_forceFaceToDirection": 0,
+        "_activeBuffs": [],
+        "_maxAnimScale": 1.0,
+        "_onlyPlayEndAnimWhenIsLastAbility": 0,
+        "_ignorePalsyInterrupt": 0,
+        "_affectedBySlowDown": 1,
+        "_actions": {
+          "SerializedState": "[]",
+          "SerializedObjectReferences": []
+        }
+      }
+    }
+  ],
+  "prefix_and_raw_rows": {
+    "talent_entries": [
+      {
+        "key": "StoneSkin.damage_resistance",
+        "value": 0.6,
+        "valueStr": null
+      },
+      {
+        "key": "ReSummonStoneSkin.duration",
+        "value": 25.0,
+        "valueStr": null
+      },
+      {
+        "key": "ReSummonStoneSkin.hp_ratio_offset",
+        "value": -0.4,
+        "valueStr": null
+      },
+      {
+        "key": "StoneSkin_2.range_radius",
+        "value": 1.7,
+        "valueStr": null
+      },
+      {
+        "key": "StoneSkin_2.atk_scale",
+        "value": 0.3,
+        "valueStr": null
+      },
+      {
+        "key": "StoneSkin_2.interval",
+        "value": 1.0,
+        "valueStr": null
+      },
+      {
+        "key": "Reborn.duration",
+        "value": 5.0,
+        "valueStr": null
+      },
+      {
+        "key": "Reborn.mandra_p2_invinsible.duration",
+        "value": 3.0,
+        "valueStr": null
+      },
+      {
+        "key": "Reborn.mandra_ray_p2[cd]",
+        "value": 10.0,
+        "valueStr": null
+      },
+      {
+        "key": "Reborn.summon_dupilr_p2[cd]",
+        "value": 20.0,
+        "valueStr": null
+      },
+      {
+        "key": "Reborn.branch_id",
+        "value": 0.0,
+        "valueStr": "summon_dupilr"
+      }
+    ],
+    "raw_rows": [
+      {
+        "level": 0,
+        "enemyData": {
+          "name": {
+            "m_defined": true,
+            "m_value": "蔓德拉"
+          },
+          "description": {
+            "m_defined": true,
+            "m_value": "操纵岩石的术师。她来自维多利亚的阴影深处，誓要将过去从贵族们手下受过的屈辱悉数奉还。"
+          },
+          "prefabKey": {
+            "m_defined": true,
+            "m_value": "enemy_1523_mandra"
+          },
+          "attributes": {
+            "maxHp": {
+              "m_defined": true,
+              "m_value": 50000
+            },
+            "atk": {
+              "m_defined": true,
+              "m_value": 640
+            },
+            "def": {
+              "m_defined": true,
+              "m_value": 520
+            },
+            "magicResistance": {
+              "m_defined": true,
+              "m_value": 35.0
+            },
+            "cost": {
+              "m_defined": false,
+              "m_value": 0
+            },
+            "blockCnt": {
+              "m_defined": false,
+              "m_value": 0
+            },
+            "moveSpeed": {
+              "m_defined": true,
+              "m_value": 0.4
+            },
+            "attackSpeed": {
+              "m_defined": true,
+              "m_value": 100.0
+            },
+            "baseAttackTime": {
+              "m_defined": true,
+              "m_value": 1.8
+            },
+            "respawnTime": {
+              "m_defined": false,
+              "m_value": 0
+            },
+            "hpRecoveryPerSec": {
+              "m_defined": true,
+              "m_value": 0.0
+            },
+            "spRecoveryPerSec": {
+              "m_defined": false,
+              "m_value": 0.0
+            },
+            "maxDeployCount": {
+              "m_defined": false,
+              "m_value": 0
+            },
+            "massLevel": {
+              "m_defined": true,
+              "m_value": 7
+            },
+            "baseForceLevel": {
+              "m_defined": false,
+              "m_value": 0
+            },
+            "tauntLevel": {
+              "m_defined": false,
+              "m_value": 0
+            },
+            "epDamageResistance": {
+              "m_defined": false,
+              "m_value": 0.0
+            },
+            "epResistance": {
+              "m_defined": false,
+              "m_value": 0.0
+            },
+            "damageHitratePhysical": {
+              "m_defined": false,
+              "m_value": 0.0
+            },
+            "damageHitrateMagical": {
+              "m_defined": false,
+              "m_value": 0.0
+            },
+            "epBreakRecoverSpeed": {
+              "m_defined": false,
+              "m_value": 0.0
+            },
+            "stunImmune": {
+              "m_defined": true,
+              "m_value": false
+            },
+            "silenceImmune": {
+              "m_defined": true,
+              "m_value": false
+            },
+            "sleepImmune": {
+              "m_defined": false,
+              "m_value": false
+            },
+            "frozenImmune": {
+              "m_defined": false,
+              "m_value": false
+            },
+            "levitateImmune": {
+              "m_defined": false,
+              "m_value": false
+            },
+            "disarmedCombatImmune": {
+              "m_defined": false,
+              "m_value": false
+            },
+            "fearedImmune": {
+              "m_defined": false,
+              "m_value": false
+            },
+            "palsyImmune": {
+              "m_defined": false,
+              "m_value": false
+            },
+            "attractImmune": {
+              "m_defined": false,
+              "m_value": false
+            },
+            "teleportImmune": {
+              "m_defined": false,
+              "m_value": false
+            },
+            "groundBoundImmune": {
+              "m_defined": false,
+              "m_value": false
+            }
+          },
+          "applyWay": {
+            "m_defined": true,
+            "m_value": "ALL"
+          },
+          "motion": {
+            "m_defined": true,
+            "m_value": "WALK"
+          },
+          "enemyTags": {
+            "m_defined": false,
+            "m_value": null
+          },
+          "lifePointReduce": {
+            "m_defined": true,
+            "m_value": 2
+          },
+          "levelType": {
+            "m_defined": true,
+            "m_value": "BOSS"
+          },
+          "rangeRadius": {
+            "m_defined": true,
+            "m_value": 1.5
+          },
+          "numOfExtraDrops": {
+            "m_defined": false,
+            "m_value": 0
+          },
+          "viewRadius": {
+            "m_defined": false,
+            "m_value": 0.0
+          },
+          "notCountInTotal": {
+            "m_defined": false,
+            "m_value": false
+          },
+          "talentBlackboard": [
+            {
+              "key": "StoneSkin.damage_resistance",
+              "value": 0.6,
+              "valueStr": null
+            },
+            {
+              "key": "ReSummonStoneSkin.duration",
+              "value": 25.0,
+              "valueStr": null
+            },
+            {
+              "key": "ReSummonStoneSkin.hp_ratio_offset",
+              "value": -0.4,
+              "valueStr": null
+            },
+            {
+              "key": "StoneSkin_2.range_radius",
+              "value": 1.7,
+              "valueStr": null
+            },
+            {
+              "key": "StoneSkin_2.atk_scale",
+              "value": 0.3,
+              "valueStr": null
+            },
+            {
+              "key": "StoneSkin_2.interval",
+              "value": 1.0,
+              "valueStr": null
+            },
+            {
+              "key": "Reborn.duration",
+              "value": 5.0,
+              "valueStr": null
+            },
+            {
+              "key": "Reborn.mandra_p2_invinsible.duration",
+              "value": 3.0,
+              "valueStr": null
+            },
+            {
+              "key": "Reborn.mandra_ray_p2[cd]",
+              "value": 10.0,
+              "valueStr": null
+            },
+            {
+              "key": "Reborn.summon_dupilr_p2[cd]",
+              "value": 20.0,
+              "valueStr": null
+            },
+            {
+              "key": "Reborn.branch_id",
+              "value": 0.0,
+              "valueStr": "summon_dupilr"
+            }
+          ],
+          "skills": [
+            {
+              "prefabKey": "PetrifiedRay",
+              "priority": 0,
+              "cooldown": 0.0,
+              "initCooldown": 5.0,
+              "spCost": 0,
+              "blackboard": [
+                {
+                  "key": "mandra_ray[cd].duration",
+                  "value": 7.1,
+                  "valueStr": null
+                },
+                {
+                  "key": "mandra_ray[cd].cooldown",
+                  "value": 15.0,
+                  "valueStr": null
+                },
+                {
+                  "key": "range_radius",
+                  "value": 1.5,
+                  "valueStr": null
+                },
+                {
+                  "key": "atk_scale",
+                  "value": 1.0,
+                  "valueStr": null
+                },
+                {
+                  "key": "hit_interval",
+                  "value": 1.0,
+                  "valueStr": null
+                },
+                {
+                  "key": "attack_speed",
+                  "value": -0.7,
+                  "valueStr": null
+                },
+                {
+                  "key": "mandra_ray[cd].interval",
+                  "value": 6.0,
+                  "valueStr": null
+                }
+              ]
+            },
+            {
+              "prefabKey": "Reborn",
+              "priority": 1,
+              "cooldown": 0.0,
+              "initCooldown": 0.0,
+              "spCost": 0,
+              "blackboard": [
+                {
+                  "key": "mandra_p2_invinsible.duration",
+                  "value": 5.0,
+                  "valueStr": null
+                },
+                {
+                  "key": "mandra_ray_p2[cd]",
+                  "value": 10.0,
+                  "valueStr": null
+                },
+                {
+                  "key": "summon_dupilr_p2[cd]",
+                  "value": 10.0,
+                  "valueStr": null
+                },
+                {
+                  "key": "branch_id",
+                  "value": 0.0,
+                  "valueStr": "reborn_summon_dupilr"
+                }
+              ]
+            },
+            {
+              "prefabKey": "SummonDupilr",
+              "priority": 2,
+              "cooldown": 15.0,
+              "initCooldown": 15.0,
+              "spCost": 0,
+              "blackboard": [
+                {
+                  "key": "branch_id",
+                  "value": 0.0,
+                  "valueStr": "summon_dupilr"
+                },
+                {
+                  "key": "dupilr_t[auto_collapse].interval",
+                  "value": 5.0,
+                  "valueStr": null
+                }
+              ]
+            },
+            {
+              "prefabKey": "SummonStoneSkin_2",
+              "priority": 4,
+              "cooldown": 0.0,
+              "initCooldown": 0.0,
+              "spCost": 0,
+              "blackboard": null
+            },
+            {
+              "prefabKey": "SummonStoneSkin",
+              "priority": 3,
+              "cooldown": 5.0,
+              "initCooldown": 5.0,
+              "spCost": 0,
+              "blackboard": null
+            },
+            {
+              "prefabKey": "SelfStun",
+              "priority": 5,
+              "cooldown": 0.0,
+              "initCooldown": 0.0,
+              "spCost": 0,
+              "blackboard": null
+            }
+          ],
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "maxSp": 0,
+            "initSp": 0,
+            "increment": 1.0
+          }
+        }
+      }
+    ],
+    "selected_resolved_skill_entries": [
+      {
+        "prefabKey": "PetrifiedRay",
+        "priority": 0,
+        "cooldown": 0.0,
+        "initCooldown": 5.0,
+        "spCost": 0,
+        "blackboard": [
+          {
+            "key": "mandra_ray[cd].duration",
+            "value": 7.1,
+            "valueStr": null
+          },
+          {
+            "key": "mandra_ray[cd].cooldown",
+            "value": 15.0,
+            "valueStr": null
+          },
+          {
+            "key": "range_radius",
+            "value": 1.5,
+            "valueStr": null
+          },
+          {
+            "key": "atk_scale",
+            "value": 1.0,
+            "valueStr": null
+          },
+          {
+            "key": "hit_interval",
+            "value": 1.0,
+            "valueStr": null
+          },
+          {
+            "key": "attack_speed",
+            "value": -0.7,
+            "valueStr": null
+          },
+          {
+            "key": "mandra_ray[cd].interval",
+            "value": 6.0,
+            "valueStr": null
+          }
+        ]
+      },
+      {
+        "prefabKey": "Reborn",
+        "priority": 1,
+        "cooldown": 0.0,
+        "initCooldown": 0.0,
+        "spCost": 0,
+        "blackboard": [
+          {
+            "key": "mandra_p2_invinsible.duration",
+            "value": 5.0,
+            "valueStr": null
+          },
+          {
+            "key": "mandra_ray_p2[cd]",
+            "value": 10.0,
+            "valueStr": null
+          },
+          {
+            "key": "summon_dupilr_p2[cd]",
+            "value": 10.0,
+            "valueStr": null
+          },
+          {
+            "key": "branch_id",
+            "value": 0.0,
+            "valueStr": "reborn_summon_dupilr"
+          }
+        ]
+      },
+      {
+        "prefabKey": "SummonDupilr",
+        "priority": 2,
+        "cooldown": 15.0,
+        "initCooldown": 15.0,
+        "spCost": 0,
+        "blackboard": [
+          {
+            "key": "branch_id",
+            "value": 0.0,
+            "valueStr": "summon_dupilr"
+          },
+          {
+            "key": "dupilr_t[auto_collapse].interval",
+            "value": 5.0,
+            "valueStr": null
+          }
+        ]
+      },
+      {
+        "prefabKey": "SummonStoneSkin_2",
+        "priority": 4,
+        "cooldown": 0.0,
+        "initCooldown": 0.0,
+        "spCost": 0,
+        "blackboard": null
+      },
+      {
+        "prefabKey": "SummonStoneSkin",
+        "priority": 3,
+        "cooldown": 5.0,
+        "initCooldown": 5.0,
+        "spCost": 0,
+        "blackboard": null
+      },
+      {
+        "prefabKey": "SelfStun",
+        "priority": 5,
+        "cooldown": 0.0,
+        "initCooldown": 0.0,
+        "spCost": 0,
+        "blackboard": null
+      }
+    ],
+    "native_reference_override": null,
+    "policy": "EachTalent/skill/prefix remains distinct. No wholelist merge override or same-suffix aliasing. Methodbody keybinding conflicts are explicit replaceable source consumers."
+  },
+  "animations": [
+    {
+      "variant_id": "enemy_1523_mandra@0/1821d9ad3a30248f",
+      "mode": 0,
+      "role": "_combat",
+      "native_node_path": 2469851682584111921,
+      "original_key": "Attack",
+      "hook_replaced_key": "C1_Attack",
+      "binding": {
+        "key": "C1_Attack",
+        "animation_name": "C1_Attack",
+        "mapping": {
+          "animKey": "C1_Attack",
+          "animName": "C1_Attack",
+          "loop": 0,
+          "speed": 1.0,
+          "ignoreMissing": 0
+        },
+        "duration": {
+          "source_seconds_float32": 1.5,
+          "seconds": 1.5,
+          "frame": 45,
+          "exact_authored_frame": true
+        },
+        "events": [
+          {
+            "name": "OnAttack",
+            "source_seconds_float32": 0.8333333134651184,
+            "seconds": 0.8333333333333334,
+            "frame": 25,
+            "exact_authored_frame": true
+          }
+        ],
+        "status": "native_binding_resolved"
+      }
+    },
+    {
+      "variant_id": "enemy_1523_mandra@0/1821d9ad3a30248f",
+      "mode": 0,
+      "role": "_attack",
+      "native_node_path": 2469851682584111921,
+      "original_key": "Attack",
+      "hook_replaced_key": "C1_Attack",
+      "binding": {
+        "key": "C1_Attack",
+        "animation_name": "C1_Attack",
+        "mapping": {
+          "animKey": "C1_Attack",
+          "animName": "C1_Attack",
+          "loop": 0,
+          "speed": 1.0,
+          "ignoreMissing": 0
+        },
+        "duration": {
+          "source_seconds_float32": 1.5,
+          "seconds": 1.5,
+          "frame": 45,
+          "exact_authored_frame": true
+        },
+        "events": [
+          {
+            "name": "OnAttack",
+            "source_seconds_float32": 0.8333333134651184,
+            "seconds": 0.8333333333333334,
+            "frame": 25,
+            "exact_authored_frame": true
+          }
+        ],
+        "status": "native_binding_resolved"
+      }
+    },
+    {
+      "variant_id": "enemy_1523_mandra@0/1821d9ad3a30248f",
+      "mode": 1,
+      "role": "_combat",
+      "native_node_path": -5232101583418053839,
+      "original_key": "Attack",
+      "hook_replaced_key": "C1_Attack",
+      "binding": {
+        "key": "C1_Attack",
+        "animation_name": "C1_Attack",
+        "mapping": {
+          "animKey": "C1_Attack",
+          "animName": "C1_Attack",
+          "loop": 0,
+          "speed": 1.0,
+          "ignoreMissing": 0
+        },
+        "duration": {
+          "source_seconds_float32": 1.5,
+          "seconds": 1.5,
+          "frame": 45,
+          "exact_authored_frame": true
+        },
+        "events": [
+          {
+            "name": "OnAttack",
+            "source_seconds_float32": 0.8333333134651184,
+            "seconds": 0.8333333333333334,
+            "frame": 25,
+            "exact_authored_frame": true
+          }
+        ],
+        "status": "native_binding_resolved"
+      }
+    },
+    {
+      "variant_id": "enemy_1523_mandra@0/1821d9ad3a30248f",
+      "mode": 1,
+      "role": "_attack",
+      "native_node_path": -5232101583418053839,
+      "original_key": "Attack",
+      "hook_replaced_key": "C1_Attack",
+      "binding": {
+        "key": "C1_Attack",
+        "animation_name": "C1_Attack",
+        "mapping": {
+          "animKey": "C1_Attack",
+          "animName": "C1_Attack",
+          "loop": 0,
+          "speed": 1.0,
+          "ignoreMissing": 0
+        },
+        "duration": {
+          "source_seconds_float32": 1.5,
+          "seconds": 1.5,
+          "frame": 45,
+          "exact_authored_frame": true
+        },
+        "events": [
+          {
+            "name": "OnAttack",
+            "source_seconds_float32": 0.8333333134651184,
+            "seconds": 0.8333333333333334,
+            "frame": 25,
+            "exact_authored_frame": true
+          }
+        ],
+        "status": "native_binding_resolved"
+      }
+    },
+    {
+      "variant_id": "enemy_1523_mandra@0/1821d9ad3a30248f",
+      "mode": 2,
+      "role": "_combat",
+      "native_node_path": 6405600725156604721,
+      "original_key": "Attack",
+      "hook_replaced_key": "C2_Attack_1",
+      "binding": {
+        "key": "C2_Attack_1",
+        "animation_name": "C2_Attack_1",
+        "mapping": {
+          "animKey": "C2_Attack_1",
+          "animName": "C2_Attack_1",
+          "loop": 0,
+          "speed": 1.0,
+          "ignoreMissing": 0
+        },
+        "duration": {
+          "source_seconds_float32": 1.5,
+          "seconds": 1.5,
+          "frame": 45,
+          "exact_authored_frame": true
+        },
+        "events": [
+          {
+            "name": "OnAttack",
+            "source_seconds_float32": 0.8333333134651184,
+            "seconds": 0.8333333333333334,
+            "frame": 25,
+            "exact_authored_frame": true
+          }
+        ],
+        "status": "native_binding_resolved"
+      }
+    },
+    {
+      "variant_id": "enemy_1523_mandra@0/1821d9ad3a30248f",
+      "mode": 2,
+      "role": "_attack",
+      "native_node_path": 6405600725156604721,
+      "original_key": "Attack",
+      "hook_replaced_key": "C2_Attack_1",
+      "binding": {
+        "key": "C2_Attack_1",
+        "animation_name": "C2_Attack_1",
+        "mapping": {
+          "animKey": "C2_Attack_1",
+          "animName": "C2_Attack_1",
+          "loop": 0,
+          "speed": 1.0,
+          "ignoreMissing": 0
+        },
+        "duration": {
+          "source_seconds_float32": 1.5,
+          "seconds": 1.5,
+          "frame": 45,
+          "exact_authored_frame": true
+        },
+        "events": [
+          {
+            "name": "OnAttack",
+            "source_seconds_float32": 0.8333333134651184,
+            "seconds": 0.8333333333333334,
+            "frame": 25,
+            "exact_authored_frame": true
+          }
+        ],
+        "status": "native_binding_resolved"
+      }
+    },
+    {
+      "variant_id": "enemy_1523_mandra@0/1821d9ad3a30248f",
+      "mode": 3,
+      "role": "_combat",
+      "native_node_path": -2697254480004732111,
+      "original_key": "Attack",
+      "hook_replaced_key": "C2_Attack_2",
+      "binding": {
+        "key": "C2_Attack_2",
+        "animation_name": "C2_Attack_2",
+        "mapping": {
+          "animKey": "C2_Attack_2",
+          "animName": "C2_Attack_2",
+          "loop": 0,
+          "speed": 1.0,
+          "ignoreMissing": 0
+        },
+        "duration": {
+          "source_seconds_float32": 1.5,
+          "seconds": 1.5,
+          "frame": 45,
+          "exact_authored_frame": true
+        },
+        "events": [
+          {
+            "name": "OnAttack",
+            "source_seconds_float32": 0.8333333134651184,
+            "seconds": 0.8333333333333334,
+            "frame": 25,
+            "exact_authored_frame": true
+          }
+        ],
+        "status": "native_binding_resolved"
+      }
+    },
+    {
+      "variant_id": "enemy_1523_mandra@0/1821d9ad3a30248f",
+      "mode": 3,
+      "role": "_attack",
+      "native_node_path": -2697254480004732111,
+      "original_key": "Attack",
+      "hook_replaced_key": "C2_Attack_2",
+      "binding": {
+        "key": "C2_Attack_2",
+        "animation_name": "C2_Attack_2",
+        "mapping": {
+          "animKey": "C2_Attack_2",
+          "animName": "C2_Attack_2",
+          "loop": 0,
+          "speed": 1.0,
+          "ignoreMissing": 0
+        },
+        "duration": {
+          "source_seconds_float32": 1.5,
+          "seconds": 1.5,
+          "frame": 45,
+          "exact_authored_frame": true
+        },
+        "events": [
+          {
+            "name": "OnAttack",
+            "source_seconds_float32": 0.8333333134651184,
+            "seconds": 0.8333333333333334,
+            "frame": 25,
+            "exact_authored_frame": true
+          }
+        ],
+        "status": "native_binding_resolved"
+      }
+    }
+  ],
+  "templates": {
+    "enemy_mandra_in_stone_skin": {
+      "document_sha256": "38a03f171943678106792da649604eddbc401a6350e3acdb43b560f8a58bf49e",
+      "parsed": {
+        "templateKey": "enemy_mandra_in_stone_skin",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_APPLIED_MODIFIER": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+IsDamage, Assembly-CSharp"
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CheckContainsBuff, Assembly-CSharp",
+              "_targetType": "MODIFIER_SOURCE",
+              "_buffKeys": [
+                "dupilr_trait"
+              ],
+              "isAND": true,
+              "_loadFromBlackboard": false,
+              "_checkBuffSource": false,
+              "_buffSourceType": "BUFF_SOURCE",
+              "_checkSourceHost": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuffsById, Assembly-CSharp",
+              "_buffKey": "mandra_ray[cd]",
+              "_loadFromBlackboard": false,
+              "_decCntIfStack": false,
+              "_updateOverrideMap": true,
+              "_targetType": "BUFF_OWNER",
+              "_checkBuffSource": false,
+              "_sourceType": "BUFF_SOURCE",
+              "_alsoClearNullSource": false,
+              "_finishHostBuff": false,
+              "_decCntKey": null,
+              "_decCnt": 1
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+              "_buff": {
+                "attributes": {
+                  "abnormalFlags": [],
+                  "abnormalImmunes": [],
+                  "abnormalAntis": [],
+                  "abnormalCombos": [],
+                  "abnormalComboImmunes": [],
+                  "attributeModifiers": []
+                },
+                "buffKey": "mandra_restore_cd",
+                "loadFromDB": false,
+                "isDurableBuff": false,
+                "isDamageMissable": false,
+                "isSilenceable": false,
+                "isStunnable": false,
+                "isFreezable": false,
+                "isLevitatable": false,
+                "isGroundBoundable": false,
+                "statusResistable": "AUTOMATIC",
+                "templateKey": "enemy_mandra_restore_cd",
+                "disableOverride": false,
+                "overrideKey": null,
+                "overrideType": "DEFAULT",
+                "maxStackCnt": 1,
+                "refreshRemainingTimeWhenStackMax": false,
+                "clearAllStackCntWhenTimeUp": false,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": false,
+                "overrideEffectKey": null,
+                "overrideOnEventPriority": false,
+                "onEventPriority": "DEFAULT",
+                "audioSignal": null,
+                "lifeTimeType": "INFINITY",
+                "takeSnapshotWhenExtend": false,
+                "durationKey": null,
+                "lifeTime": 0.0,
+                "triggerLifeType": "IMMEDIATELY",
+                "triggerCnt": 0,
+                "triggerInterval": -1.0,
+                "waitFirstTriggerInterval": true,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": false,
+                "blackboard": [],
+                "enableInitDirectionFromSource": false
+              },
+              "_buffOwner": "BUFF_OWNER",
+              "_useSpecialBuffSource": false,
+              "_specialBuffSource": "BUFF_SOURCE",
+              "_isDerivedBuff": false,
+              "_finishDerivedBuffIfParentFinish": false,
+              "_inherateSourceProjectileFromParentBuff": false,
+              "_hookEffectKeyFromSourceProjectile": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+IfElse, Assembly-CSharp",
+              "_conditionNode": {
+                "$type": "Torappu.Battle.Action.Nodes+CheckUnitCurrentMode, Assembly-CSharp",
+                "_targetType": "BUFF_OWNER",
+                "_checkCurModeIndex": 0,
+                "_loadCurModeBbKey": ""
+              },
+              "_succeedNodes": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+FinishBuffsById, Assembly-CSharp",
+                  "_buffKey": "mandra_stone_skin[effect]",
+                  "_loadFromBlackboard": false,
+                  "_decCntIfStack": false,
+                  "_updateOverrideMap": true,
+                  "_targetType": "BUFF_OWNER",
+                  "_checkBuffSource": false,
+                  "_sourceType": "BUFF_SOURCE",
+                  "_alsoClearNullSource": false,
+                  "_finishHostBuff": false,
+                  "_decCntKey": null,
+                  "_decCnt": 1
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+SwitchMode, Assembly-CSharp",
+                  "_modeIndex": 1,
+                  "_loadModeFromBlackboard": false,
+                  "_restoreDefault": false,
+                  "_restartFSM": true,
+                  "_targetType": "TARGET"
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+FinishBuff, Assembly-CSharp",
+                  "_decCntIfStack": false,
+                  "_updateOverrideMap": true
+                }
+              ],
+              "_failNodes": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+FinishBuffsById, Assembly-CSharp",
+                  "_buffKey": "mandra_stone_skin[effect]",
+                  "_loadFromBlackboard": false,
+                  "_decCntIfStack": false,
+                  "_updateOverrideMap": true,
+                  "_targetType": "BUFF_OWNER",
+                  "_checkBuffSource": false,
+                  "_sourceType": "BUFF_SOURCE",
+                  "_alsoClearNullSource": false,
+                  "_finishHostBuff": false,
+                  "_decCntKey": null,
+                  "_decCnt": 1
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+FinishBuffsById, Assembly-CSharp",
+                  "_buffKey": "mandra_stone_skin",
+                  "_loadFromBlackboard": false,
+                  "_decCntIfStack": false,
+                  "_updateOverrideMap": true,
+                  "_targetType": "BUFF_OWNER",
+                  "_checkBuffSource": false,
+                  "_sourceType": "BUFF_SOURCE",
+                  "_alsoClearNullSource": false,
+                  "_finishHostBuff": false,
+                  "_decCntKey": null,
+                  "_decCnt": 1
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+FinishBuffsById, Assembly-CSharp",
+                  "_buffKey": "mandra_in_stone_skin",
+                  "_loadFromBlackboard": false,
+                  "_decCntIfStack": false,
+                  "_updateOverrideMap": true,
+                  "_targetType": "BUFF_OWNER",
+                  "_checkBuffSource": false,
+                  "_sourceType": "BUFF_SOURCE",
+                  "_alsoClearNullSource": false,
+                  "_finishHostBuff": false,
+                  "_decCntKey": null,
+                  "_decCnt": 1
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+TriggerEnemySkill, Assembly-CSharp",
+                  "_skillName": "SelfStun",
+                  "_checkSkillActive": false,
+                  "_checkSkillReady": false,
+                  "_ownerType": "BUFF_OWNER",
+                  "_targetType": "BUFF_OWNER",
+                  "_interruptCurAbility": true,
+                  "_interruptCurAbilityUnlessItIsExpectedAbility": false,
+                  "_assignCombatAbility": false,
+                  "_forceFindTargetBySkillSelector": false,
+                  "_clearPalsyingBuffBeforeTrigger": true,
+                  "_tryCastDirectlyWhenNoTarget": false
+                }
+              ]
+            }
+          ],
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuffsById, Assembly-CSharp",
+              "_buffKey": "mandra_restore_cd",
+              "_loadFromBlackboard": false,
+              "_decCntIfStack": false,
+              "_updateOverrideMap": true,
+              "_targetType": "BUFF_OWNER",
+              "_checkBuffSource": false,
+              "_sourceType": "BUFF_SOURCE",
+              "_alsoClearNullSource": false,
+              "_finishHostBuff": false,
+              "_decCntKey": null,
+              "_decCnt": 1
+            }
+          ]
+        }
+      }
+    },
+    "enemy_mandra_ray[cd]": {
+      "document_sha256": "5dd4c4b4c68be83e0f214d97efc7b7b7dd8f1cfb5457405294741a6f7cc50ee6",
+      "parsed": {
+        "templateKey": "enemy_mandra_ray[cd]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+UpdateAbilityCoolDown, Assembly-CSharp",
+              "_ownerType": "BUFF_OWNER",
+              "_abilityName": "PetrifiedRay",
+              "_loadFromBlackboard": false,
+              "_coolDownKey": "",
+              "_useNewPeriod": true,
+              "_newPeriod": 0.0,
+              "_loadAbilityFromBlackboard": false,
+              "_waitFirstPeriod": true,
+              "_useAbilityBlackboard": false,
+              "_keepPassedTime": false,
+              "_useOriginalCooldown": false
+            }
+          ],
+          "ON_BUFF_FINISH": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+InterruptAbility, Assembly-CSharp",
+              "_ownerType": "BUFF_OWNER",
+              "_abilityName": "PetrifiedRay",
+              "_loadFromBlackboard": false,
+              "_stopAffect": false,
+              "_emitAttackFinishOnly": false,
+              "_useCurrentAbility": false,
+              "_useBlackboardCardUidAsOwner": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+AlwaysNext, Assembly-CSharp"
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+UpdateAbilityCoolDown, Assembly-CSharp",
+              "_ownerType": "BUFF_OWNER",
+              "_abilityName": "PetrifiedRay",
+              "_loadFromBlackboard": true,
+              "_coolDownKey": "",
+              "_useNewPeriod": true,
+              "_newPeriod": 0.0,
+              "_loadAbilityFromBlackboard": false,
+              "_waitFirstPeriod": true,
+              "_useAbilityBlackboard": false,
+              "_keepPassedTime": false,
+              "_useOriginalCooldown": false
+            }
+          ],
+          "ON_BUFF_DISABLE": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuff, Assembly-CSharp",
+              "_decCntIfStack": false,
+              "_updateOverrideMap": true
+            }
+          ],
+          "ON_BUFF_TRIGGER": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+UpdateAbilityCoolDown, Assembly-CSharp",
+              "_ownerType": "BUFF_OWNER",
+              "_abilityName": "PetrifiedRay",
+              "_loadFromBlackboard": true,
+              "_coolDownKey": "",
+              "_useNewPeriod": true,
+              "_newPeriod": 0.0,
+              "_loadAbilityFromBlackboard": false,
+              "_waitFirstPeriod": true,
+              "_useAbilityBlackboard": false,
+              "_keepPassedTime": false,
+              "_useOriginalCooldown": false
+            }
+          ]
+        }
+      }
+    },
+    "enemy_mandra_ray[during_attack]": {
+      "document_sha256": "5cb128562c7af3412b89846bd40cd9920f12764f9a454cabfc0449a6884a2671",
+      "parsed": {
+        "templateKey": "enemy_mandra_ray[during_attack]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_OWNER_FINISH": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+TriggerAbility, Assembly-CSharp",
+              "_ownerType": "BUFF_SOURCE",
+              "_targetType": "BUFF_OWNER",
+              "_abilityName": "TileSpawn",
+              "_checkCanUseAblityFlag": false,
+              "_castDirectly": false,
+              "_useFirstActiveAbility": false,
+              "_useCastResult": false,
+              "_triggerHostAbility": false,
+              "_notInterruptAbilityIfCasting": false
+            }
+          ],
+          "ON_BUFF_TRIGGER": []
+        }
+      }
+    },
+    "enemy_mandra_reborn": {
+      "document_sha256": "e6737be5e8feeca8e21df5f690068e42a34f8e3db71989981cc24c4ca2bea86e",
+      "parsed": {
+        "templateKey": "enemy_mandra_reborn",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+SwitchMode, Assembly-CSharp",
+              "_modeIndex": 2,
+              "_loadModeFromBlackboard": false,
+              "_restoreDefault": false,
+              "_restartFSM": false,
+              "_targetType": "TARGET"
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+UpdateAbilityCoolDown, Assembly-CSharp",
+              "_ownerType": "BUFF_OWNER",
+              "_abilityName": "PetrifiedRay",
+              "_loadFromBlackboard": true,
+              "_coolDownKey": "mandra_ray_p2[cd]",
+              "_useNewPeriod": true,
+              "_newPeriod": 0.0,
+              "_loadAbilityFromBlackboard": false,
+              "_waitFirstPeriod": true,
+              "_useAbilityBlackboard": false,
+              "_keepPassedTime": false,
+              "_useOriginalCooldown": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+UpdateAbilityCoolDown, Assembly-CSharp",
+              "_ownerType": "BUFF_OWNER",
+              "_abilityName": "SummonDupilr",
+              "_loadFromBlackboard": true,
+              "_coolDownKey": "summon_dupilr_p2[cd]",
+              "_useNewPeriod": true,
+              "_newPeriod": 0.0,
+              "_loadAbilityFromBlackboard": false,
+              "_waitFirstPeriod": true,
+              "_useAbilityBlackboard": false,
+              "_keepPassedTime": false,
+              "_useOriginalCooldown": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+MoveNextLevelBranch, Assembly-CSharp",
+              "_isLoop": false,
+              "_branchId": "",
+              "_maxValidEnemyCount": -1
+            }
+          ]
+        }
+      }
+    },
+    "enemy_mandra_resummon_stone_skin": {
+      "document_sha256": "1af09903fa5aef1ae89e7fa1c65a3a1f3b1b0cb7b9f1c10dac27a89608863fd5",
+      "parsed": {
+        "templateKey": "enemy_mandra_resummon_stone_skin",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+RecordCurrentHpRatio, Assembly-CSharp",
+              "_ownerType": "BUFF_OWNER",
+              "_recordKey": "hp_ratio",
+              "_needOffset": true,
+              "_recordType": "hpRatio"
+            }
+          ],
+          "ON_BUFF_FINISH": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FilterByTargetHp, Assembly-CSharp",
+              "_targetType": "TARGET",
+              "_condType": "GT",
+              "_hpValue": {
+                "_serializedValue": 0
+              }
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+              "_buff": {
+                "attributes": {
+                  "abnormalFlags": [],
+                  "abnormalImmunes": [],
+                  "abnormalAntis": [],
+                  "abnormalCombos": [],
+                  "abnormalComboImmunes": [],
+                  "attributeModifiers": []
+                },
+                "buffKey": "mandra_stone_skin[effect]",
+                "loadFromDB": false,
+                "isDurableBuff": false,
+                "isDamageMissable": false,
+                "isSilenceable": false,
+                "isStunnable": false,
+                "isFreezable": false,
+                "isLevitatable": false,
+                "isGroundBoundable": false,
+                "statusResistable": "AUTOMATIC",
+                "templateKey": "enemy_mandra_stone_skin[effect]",
+                "disableOverride": false,
+                "overrideKey": null,
+                "overrideType": "DEFAULT",
+                "maxStackCnt": 1,
+                "refreshRemainingTimeWhenStackMax": false,
+                "clearAllStackCntWhenTimeUp": false,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": false,
+                "overrideEffectKey": null,
+                "overrideOnEventPriority": false,
+                "onEventPriority": "DEFAULT",
+                "audioSignal": null,
+                "lifeTimeType": "INFINITY",
+                "takeSnapshotWhenExtend": false,
+                "durationKey": null,
+                "lifeTime": 0.0,
+                "triggerLifeType": "IMMEDIATELY",
+                "triggerCnt": 0,
+                "triggerInterval": -1.0,
+                "waitFirstTriggerInterval": true,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": false,
+                "blackboard": [],
+                "enableInitDirectionFromSource": false
+              },
+              "_buffOwner": "BUFF_OWNER",
+              "_useSpecialBuffSource": false,
+              "_specialBuffSource": "BUFF_SOURCE",
+              "_isDerivedBuff": false,
+              "_finishDerivedBuffIfParentFinish": false,
+              "_inherateSourceProjectileFromParentBuff": false,
+              "_hookEffectKeyFromSourceProjectile": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+IfElse, Assembly-CSharp",
+              "_conditionNode": {
+                "$type": "Torappu.Battle.Action.Nodes+CheckUnitCurrentMode, Assembly-CSharp",
+                "_targetType": "BUFF_OWNER",
+                "_checkCurModeIndex": 1,
+                "_loadCurModeBbKey": ""
+              },
+              "_succeedNodes": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+TriggerEnemySkill, Assembly-CSharp",
+                  "_skillName": "SummonStoneSkin",
+                  "_checkSkillActive": false,
+                  "_checkSkillReady": false,
+                  "_ownerType": "BUFF_OWNER",
+                  "_targetType": "BUFF_OWNER",
+                  "_interruptCurAbility": true,
+                  "_interruptCurAbilityUnlessItIsExpectedAbility": false,
+                  "_assignCombatAbility": false,
+                  "_forceFindTargetBySkillSelector": false,
+                  "_clearPalsyingBuffBeforeTrigger": true,
+                  "_tryCastDirectlyWhenNoTarget": false
+                }
+              ],
+              "_failNodes": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+TriggerEnemySkill, Assembly-CSharp",
+                  "_skillName": "SummonStoneSkin_2",
+                  "_checkSkillActive": false,
+                  "_checkSkillReady": false,
+                  "_ownerType": "BUFF_OWNER",
+                  "_targetType": "BUFF_OWNER",
+                  "_interruptCurAbility": true,
+                  "_interruptCurAbilityUnlessItIsExpectedAbility": false,
+                  "_assignCombatAbility": false,
+                  "_forceFindTargetBySkillSelector": false,
+                  "_clearPalsyingBuffBeforeTrigger": true,
+                  "_tryCastDirectlyWhenNoTarget": false
+                }
+              ]
+            }
+          ],
+          "ON_APPLIED_MODIFIER": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FilterByTargetHpRatio, Assembly-CSharp",
+              "_targetType": "BUFF_OWNER",
+              "_condType": "LT",
+              "_value": 0.0,
+              "_useSourceHpRatio": false,
+              "_sourceType": "SOURCE",
+              "_blackboardPrefix": null
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuff, Assembly-CSharp",
+              "_decCntIfStack": false,
+              "_updateOverrideMap": true
+            }
+          ]
+        }
+      }
+    },
+    "enemy_mandra_stone_skin[damage]": {
+      "document_sha256": "67b0d25c5fa5bc3b86fc04428a31134b2925051160ec8c10203859b2757b2d4d",
+      "parsed": {
+        "templateKey": "enemy_mandra_stone_skin[damage]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_TRIGGER": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+AdvancedApplyDamage, Assembly-CSharp",
+              "_sourceType": "SOURCE",
+              "_targetType": "TARGET",
+              "_damageType": "MAGICAL",
+              "_atkScaleVar": "atk_scale",
+              "_defaultAtkScale": 1.0,
+              "_applyWay": "NONE",
+              "_baseOnHostAtk": false,
+              "_emitSourceOnCalculateDamage": false,
+              "_attackType": "SPLASH",
+              "_forceUseProjectileCachedAtk": false,
+              "_ignoreForSp": false,
+              "_ignoreMissFlag": "NONE",
+              "_ignoreCancelReasonMask": "NONE",
+              "_modifierKey": "",
+              "_assignRealDamageToBB": false,
+              "_assignFinalDamageToBB": false,
+              "_skipModifierEvent": false,
+              "_noSource": false,
+              "_onlyUseSourceOnCalculateDamage": false,
+              "_getCachedAtkFromBlackboard": false,
+              "_cachedAtkKey": "atk",
+              "_useSourceWhenUseCachedAtk": false,
+              "_setSharedFlag": false,
+              "_sharedFlagIndex": "IS_CONTINUOUS"
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateEffect, Assembly-CSharp",
+              "_targetType": "BUFF_OWNER",
+              "_sourceType": "BUFF_SOURCE",
+              "_effectKey": "enemy_mandra_c1_skill_02_hit",
+              "_useSourceFaceVactor": false,
+              "_useSourceToTargetDirection": false,
+              "_useConstDirection": false,
+              "_constDirection": "UP",
+              "_createEffectHoldBySource": false,
+              "_createEffectConstDirectionHoldBySource": false,
+              "_useAttackPlaybackSpeed": false,
+              "_manualSetPlaybackSpeed": false,
+              "_blackboardKey": "",
+              "_playbackSpeed": 1.0
+            }
+          ]
+        }
+      }
+    },
+    "enemy_mandra_stone_skin[effect]": {
+      "document_sha256": "cdbb09473208f1460feb6f53714a4a96a1c449336f570f25b33ef75fff00fa64",
+      "parsed": {
+        "templateKey": "enemy_mandra_stone_skin[effect]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_TAKE_DAMAGE": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+IfElse, Assembly-CSharp",
+              "_conditionNode": {
+                "$type": "Torappu.Battle.Action.Nodes+CheckUnitCurrentMode, Assembly-CSharp",
+                "_targetType": "BUFF_OWNER",
+                "_checkCurModeIndex": 0,
+                "_loadCurModeBbKey": ""
+              },
+              "_succeedNodes": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+CreateEffect, Assembly-CSharp",
+                  "_targetType": "BUFF_OWNER",
+                  "_sourceType": "BUFF_OWNER",
+                  "_effectKey": "enemy_mandra_c1_skill_02_shieldGlow",
+                  "_useSourceFaceVactor": false,
+                  "_useSourceToTargetDirection": false,
+                  "_useConstDirection": false,
+                  "_constDirection": "UP",
+                  "_createEffectHoldBySource": false,
+                  "_createEffectConstDirectionHoldBySource": false,
+                  "_useAttackPlaybackSpeed": false,
+                  "_manualSetPlaybackSpeed": false,
+                  "_blackboardKey": "",
+                  "_playbackSpeed": 1.0
+                }
+              ],
+              "_failNodes": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+CheckUnitCurrentMode, Assembly-CSharp",
+                  "_targetType": "BUFF_OWNER",
+                  "_checkCurModeIndex": 2,
+                  "_loadCurModeBbKey": ""
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+CreateEffect, Assembly-CSharp",
+                  "_targetType": "BUFF_OWNER",
+                  "_sourceType": "BUFF_OWNER",
+                  "_effectKey": "enemy_mandra_c2_skill_02_shieldGlow",
+                  "_useSourceFaceVactor": false,
+                  "_useSourceToTargetDirection": false,
+                  "_useConstDirection": false,
+                  "_constDirection": "UP",
+                  "_createEffectHoldBySource": false,
+                  "_createEffectConstDirectionHoldBySource": false,
+                  "_useAttackPlaybackSpeed": false,
+                  "_manualSetPlaybackSpeed": false,
+                  "_blackboardKey": "",
+                  "_playbackSpeed": 1.0
+                }
+              ]
+            }
+          ],
+          "ON_BUFF_FINISH": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+IfElse, Assembly-CSharp",
+              "_conditionNode": {
+                "$type": "Torappu.Battle.Action.Nodes+CheckUnitCurrentMode, Assembly-CSharp",
+                "_targetType": "BUFF_OWNER",
+                "_checkCurModeIndex": 0,
+                "_loadCurModeBbKey": ""
+              },
+              "_succeedNodes": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+CreateEffect, Assembly-CSharp",
+                  "_targetType": "BUFF_OWNER",
+                  "_sourceType": "BUFF_OWNER",
+                  "_effectKey": "enemy_mandra_c1_skill_02_end_01",
+                  "_useSourceFaceVactor": false,
+                  "_useSourceToTargetDirection": false,
+                  "_useConstDirection": false,
+                  "_constDirection": "UP",
+                  "_createEffectHoldBySource": false,
+                  "_createEffectConstDirectionHoldBySource": false,
+                  "_useAttackPlaybackSpeed": false,
+                  "_manualSetPlaybackSpeed": false,
+                  "_blackboardKey": "",
+                  "_playbackSpeed": 1.0
+                }
+              ],
+              "_failNodes": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+CreateEffect, Assembly-CSharp",
+                  "_targetType": "BUFF_OWNER",
+                  "_sourceType": "BUFF_OWNER",
+                  "_effectKey": "enemy_mandra_c2_skill_02_buff_02_end",
+                  "_useSourceFaceVactor": false,
+                  "_useSourceToTargetDirection": false,
+                  "_useConstDirection": false,
+                  "_constDirection": "UP",
+                  "_createEffectHoldBySource": false,
+                  "_createEffectConstDirectionHoldBySource": false,
+                  "_useAttackPlaybackSpeed": false,
+                  "_manualSetPlaybackSpeed": false,
+                  "_blackboardKey": "",
+                  "_playbackSpeed": 1.0
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+CreateEffect, Assembly-CSharp",
+                  "_targetType": "BUFF_OWNER",
+                  "_sourceType": "BUFF_OWNER",
+                  "_effectKey": "enemy_mandra_c2_skill_02_end_01",
+                  "_useSourceFaceVactor": false,
+                  "_useSourceToTargetDirection": false,
+                  "_useConstDirection": false,
+                  "_constDirection": "UP",
+                  "_createEffectHoldBySource": false,
+                  "_createEffectConstDirectionHoldBySource": false,
+                  "_useAttackPlaybackSpeed": false,
+                  "_manualSetPlaybackSpeed": false,
+                  "_blackboardKey": "",
+                  "_playbackSpeed": 1.0
+                }
+              ]
+            }
+          ],
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+IfElse, Assembly-CSharp",
+              "_conditionNode": {
+                "$type": "Torappu.Battle.Action.Nodes+CheckContainsBuff, Assembly-CSharp",
+                "_targetType": "BUFF_OWNER",
+                "_buffKeys": [
+                  "mandra_p2_mask"
+                ],
+                "isAND": true,
+                "_loadFromBlackboard": false,
+                "_checkBuffSource": false,
+                "_buffSourceType": "BUFF_SOURCE",
+                "_checkSourceHost": false
+              },
+              "_succeedNodes": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+                  "_buff": {
+                    "attributes": {
+                      "abnormalFlags": [],
+                      "abnormalImmunes": [],
+                      "abnormalAntis": [],
+                      "abnormalCombos": [],
+                      "abnormalComboImmunes": [],
+                      "attributeModifiers": []
+                    },
+                    "buffKey": "mandra_stoneskin_p2_1[effect]",
+                    "loadFromDB": false,
+                    "isDurableBuff": false,
+                    "isDamageMissable": false,
+                    "isSilenceable": false,
+                    "isStunnable": false,
+                    "isFreezable": false,
+                    "isLevitatable": false,
+                    "isGroundBoundable": false,
+                    "statusResistable": "AUTOMATIC",
+                    "templateKey": "empty",
+                    "disableOverride": false,
+                    "overrideKey": null,
+                    "overrideType": "DEFAULT",
+                    "maxStackCnt": 1,
+                    "refreshRemainingTimeWhenStackMax": false,
+                    "clearAllStackCntWhenTimeUp": false,
+                    "maxValidStackCnt": -1,
+                    "independentCharacterSource": false,
+                    "overrideEffectKey": "enemy_mandra_c2_skill_02_begin_01",
+                    "overrideOnEventPriority": false,
+                    "onEventPriority": "DEFAULT",
+                    "audioSignal": "mandra_stone_skin_p2",
+                    "lifeTimeType": "INFINITY",
+                    "takeSnapshotWhenExtend": false,
+                    "durationKey": null,
+                    "lifeTime": 0.0,
+                    "triggerLifeType": "IMMEDIATELY",
+                    "triggerCnt": 0,
+                    "triggerInterval": -1.0,
+                    "waitFirstTriggerInterval": true,
+                    "firstTriggerInterval": -1.0,
+                    "priority": -1,
+                    "priorityBBKeys": [],
+                    "stripBlackboardParamsWithBuffKey": false,
+                    "blackboard": [],
+                    "enableInitDirectionFromSource": false
+                  },
+                  "_buffOwner": "BUFF_OWNER",
+                  "_useSpecialBuffSource": false,
+                  "_specialBuffSource": "BUFF_SOURCE",
+                  "_isDerivedBuff": true,
+                  "_finishDerivedBuffIfParentFinish": false,
+                  "_inherateSourceProjectileFromParentBuff": false,
+                  "_hookEffectKeyFromSourceProjectile": false
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+                  "_buff": {
+                    "attributes": {
+                      "abnormalFlags": [],
+                      "abnormalImmunes": [],
+                      "abnormalAntis": [],
+                      "abnormalCombos": [],
+                      "abnormalComboImmunes": [],
+                      "attributeModifiers": []
+                    },
+                    "buffKey": "mandra_stoneskin_p2_2[effect]",
+                    "loadFromDB": false,
+                    "isDurableBuff": false,
+                    "isDamageMissable": false,
+                    "isSilenceable": false,
+                    "isStunnable": false,
+                    "isFreezable": false,
+                    "isLevitatable": false,
+                    "isGroundBoundable": false,
+                    "statusResistable": "AUTOMATIC",
+                    "templateKey": "empty",
+                    "disableOverride": false,
+                    "overrideKey": null,
+                    "overrideType": "DEFAULT",
+                    "maxStackCnt": 1,
+                    "refreshRemainingTimeWhenStackMax": false,
+                    "clearAllStackCntWhenTimeUp": false,
+                    "maxValidStackCnt": -1,
+                    "independentCharacterSource": false,
+                    "overrideEffectKey": "enemy_mandra_c2_skill_02_buff_01",
+                    "overrideOnEventPriority": false,
+                    "onEventPriority": "DEFAULT",
+                    "audioSignal": null,
+                    "lifeTimeType": "INFINITY",
+                    "takeSnapshotWhenExtend": false,
+                    "durationKey": null,
+                    "lifeTime": 0.0,
+                    "triggerLifeType": "IMMEDIATELY",
+                    "triggerCnt": 0,
+                    "triggerInterval": -1.0,
+                    "waitFirstTriggerInterval": true,
+                    "firstTriggerInterval": -1.0,
+                    "priority": -1,
+                    "priorityBBKeys": [],
+                    "stripBlackboardParamsWithBuffKey": false,
+                    "blackboard": [],
+                    "enableInitDirectionFromSource": false
+                  },
+                  "_buffOwner": "BUFF_OWNER",
+                  "_useSpecialBuffSource": false,
+                  "_specialBuffSource": "BUFF_SOURCE",
+                  "_isDerivedBuff": true,
+                  "_finishDerivedBuffIfParentFinish": false,
+                  "_inherateSourceProjectileFromParentBuff": false,
+                  "_hookEffectKeyFromSourceProjectile": false
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+                  "_buff": {
+                    "attributes": {
+                      "abnormalFlags": [],
+                      "abnormalImmunes": [],
+                      "abnormalAntis": [],
+                      "abnormalCombos": [],
+                      "abnormalComboImmunes": [],
+                      "attributeModifiers": []
+                    },
+                    "buffKey": "mandra_stoneskin_p2_3[effect]",
+                    "loadFromDB": false,
+                    "isDurableBuff": false,
+                    "isDamageMissable": false,
+                    "isSilenceable": false,
+                    "isStunnable": false,
+                    "isFreezable": false,
+                    "isLevitatable": false,
+                    "isGroundBoundable": false,
+                    "statusResistable": "AUTOMATIC",
+                    "templateKey": "empty",
+                    "disableOverride": false,
+                    "overrideKey": null,
+                    "overrideType": "DEFAULT",
+                    "maxStackCnt": 1,
+                    "refreshRemainingTimeWhenStackMax": false,
+                    "clearAllStackCntWhenTimeUp": false,
+                    "maxValidStackCnt": -1,
+                    "independentCharacterSource": false,
+                    "overrideEffectKey": "enemy_mandra_c2_skill_02_buff_02",
+                    "overrideOnEventPriority": false,
+                    "onEventPriority": "DEFAULT",
+                    "audioSignal": null,
+                    "lifeTimeType": "INFINITY",
+                    "takeSnapshotWhenExtend": false,
+                    "durationKey": null,
+                    "lifeTime": 0.0,
+                    "triggerLifeType": "IMMEDIATELY",
+                    "triggerCnt": 0,
+                    "triggerInterval": -1.0,
+                    "waitFirstTriggerInterval": true,
+                    "firstTriggerInterval": -1.0,
+                    "priority": -1,
+                    "priorityBBKeys": [],
+                    "stripBlackboardParamsWithBuffKey": false,
+                    "blackboard": [],
+                    "enableInitDirectionFromSource": false
+                  },
+                  "_buffOwner": "BUFF_OWNER",
+                  "_useSpecialBuffSource": false,
+                  "_specialBuffSource": "BUFF_SOURCE",
+                  "_isDerivedBuff": true,
+                  "_finishDerivedBuffIfParentFinish": false,
+                  "_inherateSourceProjectileFromParentBuff": false,
+                  "_hookEffectKeyFromSourceProjectile": false
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+                  "_buff": {
+                    "attributes": {
+                      "abnormalFlags": [],
+                      "abnormalImmunes": [],
+                      "abnormalAntis": [],
+                      "abnormalCombos": [],
+                      "abnormalComboImmunes": [],
+                      "attributeModifiers": []
+                    },
+                    "buffKey": "mandra_stoneskin_p2_4[effect]",
+                    "loadFromDB": false,
+                    "isDurableBuff": false,
+                    "isDamageMissable": false,
+                    "isSilenceable": false,
+                    "isStunnable": false,
+                    "isFreezable": false,
+                    "isLevitatable": false,
+                    "isGroundBoundable": false,
+                    "statusResistable": "AUTOMATIC",
+                    "templateKey": "empty",
+                    "disableOverride": false,
+                    "overrideKey": null,
+                    "overrideType": "DEFAULT",
+                    "maxStackCnt": 1,
+                    "refreshRemainingTimeWhenStackMax": false,
+                    "clearAllStackCntWhenTimeUp": false,
+                    "maxValidStackCnt": -1,
+                    "independentCharacterSource": false,
+                    "overrideEffectKey": "enemy_mandra_c2_skill_02_buff_03",
+                    "overrideOnEventPriority": false,
+                    "onEventPriority": "DEFAULT",
+                    "audioSignal": null,
+                    "lifeTimeType": "INFINITY",
+                    "takeSnapshotWhenExtend": false,
+                    "durationKey": null,
+                    "lifeTime": 0.0,
+                    "triggerLifeType": "IMMEDIATELY",
+                    "triggerCnt": 0,
+                    "triggerInterval": -1.0,
+                    "waitFirstTriggerInterval": true,
+                    "firstTriggerInterval": -1.0,
+                    "priority": -1,
+                    "priorityBBKeys": [],
+                    "stripBlackboardParamsWithBuffKey": false,
+                    "blackboard": [],
+                    "enableInitDirectionFromSource": false
+                  },
+                  "_buffOwner": "BUFF_OWNER",
+                  "_useSpecialBuffSource": false,
+                  "_specialBuffSource": "BUFF_SOURCE",
+                  "_isDerivedBuff": true,
+                  "_finishDerivedBuffIfParentFinish": false,
+                  "_inherateSourceProjectileFromParentBuff": false,
+                  "_hookEffectKeyFromSourceProjectile": false
+                }
+              ],
+              "_failNodes": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+                  "_buff": {
+                    "attributes": {
+                      "abnormalFlags": [],
+                      "abnormalImmunes": [],
+                      "abnormalAntis": [],
+                      "abnormalCombos": [],
+                      "abnormalComboImmunes": [],
+                      "attributeModifiers": []
+                    },
+                    "buffKey": "mandra_stoneskin_p1_1[effect]",
+                    "loadFromDB": false,
+                    "isDurableBuff": false,
+                    "isDamageMissable": false,
+                    "isSilenceable": false,
+                    "isStunnable": false,
+                    "isFreezable": false,
+                    "isLevitatable": false,
+                    "isGroundBoundable": false,
+                    "statusResistable": "AUTOMATIC",
+                    "templateKey": "empty",
+                    "disableOverride": false,
+                    "overrideKey": null,
+                    "overrideType": "DEFAULT",
+                    "maxStackCnt": 1,
+                    "refreshRemainingTimeWhenStackMax": false,
+                    "clearAllStackCntWhenTimeUp": false,
+                    "maxValidStackCnt": -1,
+                    "independentCharacterSource": false,
+                    "overrideEffectKey": "enemy_mandra_c1_skill_02_begin_01",
+                    "overrideOnEventPriority": false,
+                    "onEventPriority": "DEFAULT",
+                    "audioSignal": "mandra_stone_skin_p1",
+                    "lifeTimeType": "INFINITY",
+                    "takeSnapshotWhenExtend": false,
+                    "durationKey": null,
+                    "lifeTime": 0.0,
+                    "triggerLifeType": "IMMEDIATELY",
+                    "triggerCnt": 0,
+                    "triggerInterval": -1.0,
+                    "waitFirstTriggerInterval": true,
+                    "firstTriggerInterval": -1.0,
+                    "priority": -1,
+                    "priorityBBKeys": [],
+                    "stripBlackboardParamsWithBuffKey": false,
+                    "blackboard": [],
+                    "enableInitDirectionFromSource": false
+                  },
+                  "_buffOwner": "BUFF_OWNER",
+                  "_useSpecialBuffSource": false,
+                  "_specialBuffSource": "BUFF_SOURCE",
+                  "_isDerivedBuff": true,
+                  "_finishDerivedBuffIfParentFinish": false,
+                  "_inherateSourceProjectileFromParentBuff": false,
+                  "_hookEffectKeyFromSourceProjectile": false
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+                  "_buff": {
+                    "attributes": {
+                      "abnormalFlags": [],
+                      "abnormalImmunes": [],
+                      "abnormalAntis": [],
+                      "abnormalCombos": [],
+                      "abnormalComboImmunes": [],
+                      "attributeModifiers": []
+                    },
+                    "buffKey": "mandra_stoneskin_p1_2[effect]",
+                    "loadFromDB": false,
+                    "isDurableBuff": false,
+                    "isDamageMissable": false,
+                    "isSilenceable": false,
+                    "isStunnable": false,
+                    "isFreezable": false,
+                    "isLevitatable": false,
+                    "isGroundBoundable": false,
+                    "statusResistable": "AUTOMATIC",
+                    "templateKey": "empty",
+                    "disableOverride": false,
+                    "overrideKey": null,
+                    "overrideType": "DEFAULT",
+                    "maxStackCnt": 1,
+                    "refreshRemainingTimeWhenStackMax": false,
+                    "clearAllStackCntWhenTimeUp": false,
+                    "maxValidStackCnt": -1,
+                    "independentCharacterSource": false,
+                    "overrideEffectKey": "enemy_mandra_c1_skill_02_buff_01",
+                    "overrideOnEventPriority": false,
+                    "onEventPriority": "DEFAULT",
+                    "audioSignal": null,
+                    "lifeTimeType": "INFINITY",
+                    "takeSnapshotWhenExtend": false,
+                    "durationKey": null,
+                    "lifeTime": 0.0,
+                    "triggerLifeType": "IMMEDIATELY",
+                    "triggerCnt": 0,
+                    "triggerInterval": -1.0,
+                    "waitFirstTriggerInterval": true,
+                    "firstTriggerInterval": -1.0,
+                    "priority": -1,
+                    "priorityBBKeys": [],
+                    "stripBlackboardParamsWithBuffKey": false,
+                    "blackboard": [],
+                    "enableInitDirectionFromSource": false
+                  },
+                  "_buffOwner": "BUFF_OWNER",
+                  "_useSpecialBuffSource": false,
+                  "_specialBuffSource": "BUFF_SOURCE",
+                  "_isDerivedBuff": true,
+                  "_finishDerivedBuffIfParentFinish": false,
+                  "_inherateSourceProjectileFromParentBuff": false,
+                  "_hookEffectKeyFromSourceProjectile": false
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "enemy_mandra_stone_skin_fly": {
+      "document_sha256": "3c44f39f46e9aa84a41a3c6f30b2bf4d78b63d407393f79d787b717ae3bced2c",
+      "parsed": {
+        "templateKey": "enemy_mandra_stone_skin_fly",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+ChangeMotionMode, Assembly-CSharp",
+              "_target": "BUFF_OWNER",
+              "_resetToDefault": false,
+              "_motionMode": "WALK"
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+ReleaseFromBlocker, Assembly-CSharp",
+              "_target": "BUFF_OWNER"
+            }
+          ],
+          "ON_BUFF_FINISH": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+ChangeMotionMode, Assembly-CSharp",
+              "_target": "BUFF_OWNER",
+              "_resetToDefault": true,
+              "_motionMode": "WALK"
+            }
+          ]
+        }
+      }
+    },
+    "enemy_mandra_switch_mode": {
+      "document_sha256": "be24789a0c930c72c14c03e2a70be3c64f67405fcfd0315ee7736d950847007e",
+      "parsed": {
+        "templateKey": "enemy_mandra_switch_mode",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_FINISH": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FilterByTargetHp, Assembly-CSharp",
+              "_targetType": "BUFF_OWNER",
+              "_condType": "GT",
+              "_hpValue": {
+                "_serializedValue": 0
+              }
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+SwitchMode, Assembly-CSharp",
+              "_modeIndex": 0,
+              "_loadModeFromBlackboard": true,
+              "_restoreDefault": false,
+              "_restartFSM": true,
+              "_targetType": "TARGET"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "pending": [
+    "Actual four mode initial/stone/flight/reborn transitions and source-owned ordinary/skill animation clocks",
+    "StoneSkin damage_resistance0.6 and recovery trigger25s/hp_ratio_offset−0.4, all original passive flags and removals",
+    "PetrifiedRay source first5s, duration7.1s/pulse6s/cooldown15s, live HP and attack_scale1 and current status sampling, actual target movement/cancellation",
+    "StoneSkin_2 radius1.7/scaling0.3/interval1s and true ownership, not folded into normal attack",
+    "Reborn invulnerability/skillclock values kept by component prefix: native talent3sec vs skill5sec; Summon20 vs10, explicit version policy",
+    "Native branch strings summon_dupilr vs reborn_summon_dupilr; required stage has native branches null, consume real spawn-on-tiles/token/owned-collapse pipeline without fabricating empty branch",
+    "Source pillar dependency, original predefines identities and dynamic source actor slots/terrain; all damage-trigger/positiveHP features only from actual source",
+    "Source self-stun/retained effects, two-stage death vs actual terminal, conservation and full commands/CPP/head"
+  ],
+  "whole_enemy": false,
+  "whole_stage": false,
+  "runtime_consumed": false,
+  "client_verified": false
+}

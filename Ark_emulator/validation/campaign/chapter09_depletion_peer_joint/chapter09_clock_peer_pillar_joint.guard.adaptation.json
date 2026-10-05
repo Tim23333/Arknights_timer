@@ -1,0 +1,6 @@
+{
+  "previous_guard": "def test_runtime_and_source_delta_guard():\n assert guard()==START;parent=ROOT.parent/'unpack_work/campaign_c9_foundation_v9_candidate/ark_sim';child=CAND/'ark_sim';changed=[p.relative_to(parent).as_posix() for p in parent.rglob('*') if p.is_file() and p.suffix in ('.py','.json') and p.read_bytes()!=(child/p.relative_to(parent)).read_bytes()];assert set(changed)=={'content/capabilities.py','content/compiler.py','content/dependencies.py','content/schemas.py','domains/effects.py','content/spatial_validation.py','domains/spatial.py','domains/tile_fields.py','domains/tile_mechanics.py'}\n",
+  "new_guard": "def test_runtime_and_source_delta_guard():\n assert guard()==START\n frozen=json.loads((ROOT/'validation/campaign/chapter09_depletion_peer_joint/identity.freeze.json').read_bytes());assert frozen['core_before']==frozen['core_after']==CORE\n for item in frozen['delta']:assert sha(CAND/item['path'])==item['candidate_sha256']\n assert sha(ROOT/'validation/campaign/chapter09_pillar_channel_joint_v1/merge.json')==frozen['joint_merge_sha']\n",
+  "reason": "identity source inventory adaptation only; all preceding business/math/CPP code byte-preserved",
+  "old_prefix_equals_new_prefix": true
+}

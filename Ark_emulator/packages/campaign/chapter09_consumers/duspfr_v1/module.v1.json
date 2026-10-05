@@ -1,0 +1,4858 @@
+{
+  "schemaVersion": 2,
+  "rules": [
+    {
+      "id": "rule/ch9/duspfr/capacity",
+      "kind": "rule",
+      "contract": "elemental.capacity",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.parameters.capacity"
+      }
+    },
+    {
+      "id": "rule/ch9/duspfr/loss",
+      "kind": "rule",
+      "contract": "elemental.loss",
+      "implementation": {
+        "type": "expression",
+        "expression": "max(0, inputs.request.raw_amount*(1-inputs.parameters.resistance*.01))"
+      }
+    },
+    {
+      "id": "rule/ch9/duspfr/recovery",
+      "kind": "rule",
+      "contract": "elemental.recovery",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.current"
+      }
+    },
+    {
+      "id": "rule/ch9/duspfr/duration",
+      "kind": "rule",
+      "contract": "elemental.break_duration",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.parameters.break_duration_seconds"
+      }
+    },
+    {
+      "id": "rule/ch9/duspfr/eligible",
+      "kind": "rule",
+      "contract": "elemental.eligibility",
+      "implementation": {
+        "type": "expression",
+        "expression": "'neutral' not in inputs.target.tags"
+      }
+    },
+    {
+      "id": "rule/ch9/duspfr/packet",
+      "kind": "rule",
+      "contract": "elemental.packet",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.source_attributes.atk * inputs.request.parameters.ep_ratio"
+      }
+    },
+    {
+      "id": "rule/ch9/duspfr/motion",
+      "kind": "rule",
+      "contract": "projectile.trajectory",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.linked.homing"
+      }
+    },
+    {
+      "id": "rule/ch9/duspfr/steering",
+      "kind": "rule",
+      "contract": "movement.steering",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.movement.steering_velocity"
+      }
+    },
+    {
+      "id": "rule/ch9/duspfr/eligibility",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.ch9.duspfr_eligibility"
+      }
+    },
+    {
+      "id": "rule/ch9/duspfr/depletion",
+      "kind": "rule",
+      "contract": "resource.depletion",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.ch9.duspfr_dead_plan"
+      }
+    },
+    {
+      "id": "rule/ch9/duspfr/dead_members",
+      "kind": "rule",
+      "contract": "area.members",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.ch9.duspfr_members"
+      }
+    },
+    {
+      "id": "rule/ch9/pillar/members",
+      "kind": "rule",
+      "contract": "area.members",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.ch9.pillar_members"
+      }
+    },
+    {
+      "id": "rule/ch9/pillar/gate",
+      "kind": "rule",
+      "contract": "resource.depletion",
+      "parameters": {
+        "hit_offsets": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            -1
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            -1,
+            0
+          ]
+        ]
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.ch9.pillar_gate"
+      }
+    },
+    {
+      "id": "rule/ch9/pillar/depletion",
+      "kind": "rule",
+      "contract": "resource.depletion",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.ch9.pillar_plan"
+      }
+    },
+    {
+      "id": "rule/ch9/duspfr/pillar_plan",
+      "kind": "rule",
+      "contract": "resource.depletion",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.ch9.pillar_positive_plan"
+      }
+    }
+  ],
+  "definitions": [
+    {
+      "id": "attachment/ch9/duspfr/flame",
+      "kind": "attachment",
+      "duration_seconds": 10.6,
+      "flight_lifetime_seconds": 5,
+      "step_interval_seconds": 0.03333333333333333,
+      "hit_interval_seconds": 0.5,
+      "refresh_interval_seconds": 1,
+      "motion": {
+        "rule": "rule/ch9/duspfr/motion",
+        "parameters": {
+          "mode": "homing",
+          "speed": 10
+        }
+      },
+      "target_buff": "buff/ch9/duspfr/marker",
+      "effect": {
+        "op": "elemental_attack",
+        "health_effect": {
+          "op": "damage",
+          "damage_type": "arts",
+          "scale": 0.12,
+          "read_mode": {
+            "source_attributes": "at_hit",
+            "target_attributes": "at_hit"
+          }
+        },
+        "element_effect": {
+          "op": "elemental_damage",
+          "element": "FIRE",
+          "amount_rule": "rule/ch9/duspfr/packet",
+          "parameters": {
+            "ep_ratio": 0.06
+          }
+        }
+      },
+      "damage_integral": false,
+      "source_cancel_flags": [
+        0,
+        12,
+        16
+      ],
+      "ignored_owned_source_flags": [],
+      "force_reach_on_timeout": true,
+      "lifecycle": {
+        "source_invalid": "cancel",
+        "target_invalid": "cancel",
+        "source_hidden": "cancel",
+        "target_hidden": "cancel"
+      },
+      "max_packets": null,
+      "completion_blocking": false,
+      "source_recovery_buff": null,
+      "recovery_on": []
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/ch9/duspfr/marker",
+      "kind": "buff",
+      "stacking": {
+        "mode": "independent"
+      }
+    },
+    {
+      "id": "buff/ch9/duspfr/casting_state",
+      "kind": "buff",
+      "duration_seconds": 10.6,
+      "interval_seconds": 6,
+      "control": {
+        "move": false,
+        "attack": false
+      },
+      "effects": [
+        {
+          "op": "set_ability_cooldown",
+          "ability": "ability/ch9/duspfr/flame",
+          "duration_seconds": 10
+        }
+      ],
+      "on_remove": [
+        {
+          "op": "interrupt_ability",
+          "ability": "ability/ch9/duspfr/flame"
+        },
+        {
+          "op": "set_ability_cooldown",
+          "ability": "ability/ch9/duspfr/flame",
+          "duration_seconds": 10
+        }
+      ],
+      "events": [
+        {
+          "event": "attachment.finished",
+          "condition": "inputs.payload.source == context.owner.id and inputs.payload.reason in ['source_flags','cast_interrupted','target_invalid']",
+          "effects": [
+            {
+              "op": "interrupt_ability",
+              "ability": "ability/ch9/duspfr/flame"
+            },
+            {
+              "op": "remove_buff",
+              "buff": "buff/ch9/duspfr/casting_state"
+            }
+          ]
+        }
+      ],
+      "metadata": {
+        "native_buff_key": "duspfr_flame[cd]",
+        "native_template": "enemy_duspfr_flame[cd]",
+        "source_BB": {
+          "duspfr_flame[cd].duration": 10.6,
+          "duspfr_flame[cd].cooldown": 10.0,
+          "atk_scale": 0.12,
+          "ep_damage_ratio": 0.06,
+          "hit_interval": 0.5,
+          "duspfr_flame[cd].interval": 6.0
+        },
+        "source_BSON": {
+          "parsed": {
+            "templateKey": "enemy_duspfr_flame[cd]",
+            "effectKey": "",
+            "onEventPriority": "DEFAULT",
+            "eventToActions": {
+              "ON_BUFF_FINISH": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+InterruptEnemyAbility, Assembly-CSharp",
+                  "_enemyFrom": "BUFF_OWNER",
+                  "_resetCooldown": false,
+                  "_checkBuffAbility": false
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+AlwaysNext, Assembly-CSharp"
+                },
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+UpdateAbilityCoolDown, Assembly-CSharp",
+                  "_ownerType": "BUFF_OWNER",
+                  "_abilityName": "Flame",
+                  "_loadFromBlackboard": true,
+                  "_coolDownKey": "",
+                  "_useNewPeriod": true,
+                  "_newPeriod": 0.0,
+                  "_loadAbilityFromBlackboard": false,
+                  "_waitFirstPeriod": true,
+                  "_useAbilityBlackboard": false,
+                  "_keepPassedTime": false,
+                  "_useOriginalCooldown": false
+                }
+              ],
+              "ON_BUFF_DISABLE": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+FinishBuff, Assembly-CSharp",
+                  "_decCntIfStack": false,
+                  "_updateOverrideMap": true
+                }
+              ],
+              "ON_BUFF_START": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+UpdateAbilityCoolDown, Assembly-CSharp",
+                  "_ownerType": "BUFF_OWNER",
+                  "_abilityName": "Flame",
+                  "_loadFromBlackboard": false,
+                  "_coolDownKey": "",
+                  "_useNewPeriod": true,
+                  "_newPeriod": 0.0,
+                  "_loadAbilityFromBlackboard": false,
+                  "_waitFirstPeriod": true,
+                  "_useAbilityBlackboard": false,
+                  "_keepPassedTime": false,
+                  "_useOriginalCooldown": false
+                }
+              ],
+              "ON_BUFF_TRIGGER": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+UpdateAbilityCoolDown, Assembly-CSharp",
+                  "_ownerType": "BUFF_OWNER",
+                  "_abilityName": "Flame",
+                  "_loadFromBlackboard": true,
+                  "_coolDownKey": "",
+                  "_useNewPeriod": true,
+                  "_newPeriod": 0.0,
+                  "_loadAbilityFromBlackboard": false,
+                  "_waitFirstPeriod": true,
+                  "_useAbilityBlackboard": false,
+                  "_keepPassedTime": false,
+                  "_useOriginalCooldown": false
+                }
+              ]
+            }
+          },
+          "payload_offset": 1370223,
+          "document_base64": "6wUAAAJ0ZW1wbGF0ZUtleQAXAAAAZW5lbXlfZHVzcGZyX2ZsYW1lW2NkXQACZWZmZWN0S2V5AAEAAAAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAADZXZlbnRUb0FjdGlvbnMAgQUAAARPTl9CVUZGX0ZJTklTSAAtAgAAAzAAkwAAAAIkdHlwZQBDAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0ludGVycnVwdEVuZW15QWJpbGl0eSwgQXNzZW1ibHktQ1NoYXJwAAJfZW5lbXlGcm9tAAsAAABCVUZGX09XTkVSAAhfcmVzZXRDb29sZG93bgAACF9jaGVja0J1ZmZBYmlsaXR5AAAAAzEASAAAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0Fsd2F5c05leHQsIEFzc2VtYmx5LUNTaGFycAAAAzIARAEAAAIkdHlwZQBDAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK1VwZGF0ZUFiaWxpdHlDb29sRG93biwgQXNzZW1ibHktQ1NoYXJwAAJfb3duZXJUeXBlAAsAAABCVUZGX09XTkVSAAJfYWJpbGl0eU5hbWUABgAAAEZsYW1lAAhfbG9hZEZyb21CbGFja2JvYXJkAAECX2Nvb2xEb3duS2V5AAEAAAAACF91c2VOZXdQZXJpb2QAAQFfbmV3UGVyaW9kAAAAAAAAAAAACF9sb2FkQWJpbGl0eUZyb21CbGFja2JvYXJkAAAIX3dhaXRGaXJzdFBlcmlvZAABCF91c2VBYmlsaXR5QmxhY2tib2FyZAAACF9rZWVwUGFzc2VkVGltZQAACF91c2VPcmlnaW5hbENvb2xkb3duAAAAAARPTl9CVUZGX0RJU0FCTEUAdgAAAAMwAG4AAAACJHR5cGUAOAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytGaW5pc2hCdWZmLCBBc3NlbWJseS1DU2hhcnAACF9kZWNDbnRJZlN0YWNrAAAIX3VwZGF0ZU92ZXJyaWRlTWFwAAEAAARPTl9CVUZGX1NUQVJUAEwBAAADMABEAQAAAiR0eXBlAEMAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrVXBkYXRlQWJpbGl0eUNvb2xEb3duLCBBc3NlbWJseS1DU2hhcnAAAl9vd25lclR5cGUACwAAAEJVRkZfT1dORVIAAl9hYmlsaXR5TmFtZQAGAAAARmxhbWUACF9sb2FkRnJvbUJsYWNrYm9hcmQAAAJfY29vbERvd25LZXkAAQAAAAAIX3VzZU5ld1BlcmlvZAABAV9uZXdQZXJpb2QAAAAAAAAAAAAIX2xvYWRBYmlsaXR5RnJvbUJsYWNrYm9hcmQAAAhfd2FpdEZpcnN0UGVyaW9kAAEIX3VzZUFiaWxpdHlCbGFja2JvYXJkAAAIX2tlZXBQYXNzZWRUaW1lAAAIX3VzZU9yaWdpbmFsQ29vbGRvd24AAAAABE9OX0JVRkZfVFJJR0dFUgBMAQAAAzAARAEAAAIkdHlwZQBDAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK1VwZGF0ZUFiaWxpdHlDb29sRG93biwgQXNzZW1ibHktQ1NoYXJwAAJfb3duZXJUeXBlAAsAAABCVUZGX09XTkVSAAJfYWJpbGl0eU5hbWUABgAAAEZsYW1lAAhfbG9hZEZyb21CbGFja2JvYXJkAAECX2Nvb2xEb3duS2V5AAEAAAAACF91c2VOZXdQZXJpb2QAAQFfbmV3UGVyaW9kAAAAAAAAAAAACF9sb2FkQWJpbGl0eUZyb21CbGFja2JvYXJkAAAIX3dhaXRGaXJzdFBlcmlvZAABCF91c2VBYmlsaXR5QmxhY2tib2FyZAAACF9rZWVwUGFzc2VkVGltZQAACF91c2VPcmlnaW5hbENvb2xkb3duAAAAAAAA",
+          "document_sha256": "e83b799f84b226a9f0e6f79ea140a3485bf1b67bb4613b947b82c34fa3062388"
+        }
+      }
+    },
+    {
+      "id": "buff/ch9/duspfr/deadboom",
+      "kind": "buff",
+      "metadata": {
+        "native_BSON": {
+          "parsed": {
+            "templateKey": "enemy_duspfr_t[deadboom]",
+            "effectKey": "",
+            "onEventPriority": "DEFAULT",
+            "eventToActions": {
+              "ON_BEFORE_TRY_SET_HP_ZERO": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+IfElse, Assembly-CSharp",
+                  "_conditionNode": {
+                    "$type": "Torappu.Battle.Action.Nodes+CheckAbnormalFlag, Assembly-CSharp",
+                    "_abnormalFlag": "SILENCED",
+                    "_targetType": "BUFF_OWNER",
+                    "_isUnset": false,
+                    "_abnormalFlagKey": ""
+                  },
+                  "_succeedNodes": [
+                    {
+                      "$type": "Torappu.Battle.Action.Nodes+FinishBuff, Assembly-CSharp",
+                      "_decCntIfStack": false,
+                      "_updateOverrideMap": true
+                    }
+                  ],
+                  "_failNodes": [
+                    {
+                      "$type": "Torappu.Battle.Action.Nodes+CheckContainsBuff, Assembly-CSharp",
+                      "_targetType": "BUFF_OWNER",
+                      "_buffKeys": [
+                        "duspfr_dead_like"
+                      ],
+                      "isAND": true,
+                      "_loadFromBlackboard": false,
+                      "_checkBuffSource": false,
+                      "_buffSourceType": "BUFF_SOURCE",
+                      "_checkSourceHost": false
+                    },
+                    {
+                      "$type": "Torappu.Battle.Action.Nodes+IfNot, Assembly-CSharp"
+                    },
+                    {
+                      "$type": "Torappu.Battle.Action.Nodes+InterruptEnemyAbility, Assembly-CSharp",
+                      "_enemyFrom": "BUFF_OWNER",
+                      "_resetCooldown": false,
+                      "_checkBuffAbility": false
+                    },
+                    {
+                      "$type": "Torappu.Battle.Action.Nodes+ClearAllBuffs, Assembly-CSharp",
+                      "_targetType": "BUFF_OWNER",
+                      "_retainedBuffsWhenClear": [
+                        "duspfr_t[deadboom]"
+                      ],
+                      "_alsoRemoveDurableBuff": false
+                    },
+                    {
+                      "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+                      "_buff": {
+                        "attributes": {
+                          "abnormalFlags": [
+                            "ALLY_TARGET_FREE",
+                            "TARGET_FREE",
+                            "INVINCIBLE",
+                            "UNMOVABLE_PRIVATE",
+                            "UNDEADABLE"
+                          ],
+                          "abnormalImmunes": [
+                            "STUNNED",
+                            "FROZEN"
+                          ],
+                          "abnormalAntis": [],
+                          "abnormalCombos": [],
+                          "abnormalComboImmunes": [
+                            "SLEEPING"
+                          ],
+                          "attributeModifiers": []
+                        },
+                        "buffKey": "duspfr_dead_like",
+                        "loadFromDB": false,
+                        "isDurableBuff": false,
+                        "isDamageMissable": false,
+                        "isSilenceable": false,
+                        "isStunnable": false,
+                        "isFreezable": false,
+                        "isLevitatable": false,
+                        "isGroundBoundable": false,
+                        "statusResistable": "AUTOMATIC",
+                        "templateKey": "empty",
+                        "disableOverride": false,
+                        "overrideKey": null,
+                        "overrideType": "DEFAULT",
+                        "maxStackCnt": 1,
+                        "refreshRemainingTimeWhenStackMax": false,
+                        "clearAllStackCntWhenTimeUp": false,
+                        "maxValidStackCnt": -1,
+                        "independentCharacterSource": false,
+                        "overrideEffectKey": null,
+                        "overrideOnEventPriority": false,
+                        "onEventPriority": "DEFAULT",
+                        "audioSignal": null,
+                        "lifeTimeType": "LIMITED",
+                        "takeSnapshotWhenExtend": false,
+                        "durationKey": "none",
+                        "lifeTime": 3.0,
+                        "triggerLifeType": "IMMEDIATELY",
+                        "triggerCnt": 0,
+                        "triggerInterval": -1.0,
+                        "waitFirstTriggerInterval": true,
+                        "firstTriggerInterval": -1.0,
+                        "priority": -1,
+                        "priorityBBKeys": [],
+                        "stripBlackboardParamsWithBuffKey": false,
+                        "blackboard": [],
+                        "enableInitDirectionFromSource": false
+                      },
+                      "_buffOwner": "BUFF_OWNER",
+                      "_useSpecialBuffSource": false,
+                      "_specialBuffSource": "BUFF_SOURCE",
+                      "_isDerivedBuff": false,
+                      "_finishDerivedBuffIfParentFinish": false,
+                      "_inherateSourceProjectileFromParentBuff": false,
+                      "_hookEffectKeyFromSourceProjectile": false
+                    },
+                    {
+                      "$type": "Torappu.Battle.Action.Nodes+CreateEffect, Assembly-CSharp",
+                      "_targetType": "BUFF_OWNER",
+                      "_sourceType": "BUFF_OWNER",
+                      "_effectKey": "enemy_duspfr_2_Die_02",
+                      "_useSourceFaceVactor": false,
+                      "_useSourceToTargetDirection": false,
+                      "_useConstDirection": false,
+                      "_constDirection": "UP",
+                      "_createEffectHoldBySource": false,
+                      "_createEffectConstDirectionHoldBySource": false,
+                      "_useAttackPlaybackSpeed": false,
+                      "_manualSetPlaybackSpeed": false,
+                      "_blackboardKey": "",
+                      "_playbackSpeed": 1.0
+                    },
+                    {
+                      "$type": "Torappu.Battle.Action.Nodes+CreateEffect, Assembly-CSharp",
+                      "_targetType": "BUFF_OWNER",
+                      "_sourceType": "BUFF_OWNER",
+                      "_effectKey": "enemy_duspfr_2_Die_03",
+                      "_useSourceFaceVactor": false,
+                      "_useSourceToTargetDirection": false,
+                      "_useConstDirection": false,
+                      "_constDirection": "UP",
+                      "_createEffectHoldBySource": false,
+                      "_createEffectConstDirectionHoldBySource": false,
+                      "_useAttackPlaybackSpeed": false,
+                      "_manualSetPlaybackSpeed": false,
+                      "_blackboardKey": "",
+                      "_playbackSpeed": 1.0
+                    },
+                    {
+                      "$type": "Torappu.Battle.Action.Nodes+SwitchMode, Assembly-CSharp",
+                      "_modeIndex": 1,
+                      "_loadModeFromBlackboard": false,
+                      "_restoreDefault": false,
+                      "_restartFSM": false,
+                      "_targetType": "TARGET"
+                    },
+                    {
+                      "$type": "Torappu.Battle.Action.Nodes+TriggerEnemySkill, Assembly-CSharp",
+                      "_skillName": "DeadBoom",
+                      "_checkSkillActive": false,
+                      "_checkSkillReady": false,
+                      "_ownerType": "BUFF_OWNER",
+                      "_targetType": "BUFF_OWNER",
+                      "_interruptCurAbility": true,
+                      "_interruptCurAbilityUnlessItIsExpectedAbility": false,
+                      "_assignCombatAbility": false,
+                      "_forceFindTargetBySkillSelector": false,
+                      "_clearPalsyingBuffBeforeTrigger": true,
+                      "_tryCastDirectlyWhenNoTarget": false
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "payload_offset": 1366115,
+          "document_base64": "9A8AAAJ0ZW1wbGF0ZUtleQAZAAAAZW5lbXlfZHVzcGZyX3RbZGVhZGJvb21dAAJlZmZlY3RLZXkAAQAAAAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAANldmVudFRvQWN0aW9ucwCIDwAABE9OX0JFRk9SRV9UUllfU0VUX0hQX1pFUk8AaA8AAAMwAGAPAAACJHR5cGUANAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytJZkVsc2UsIEFzc2VtYmx5LUNTaGFycAADX2NvbmRpdGlvbk5vZGUAqQAAAAIkdHlwZQA/AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NoZWNrQWJub3JtYWxGbGFnLCBBc3NlbWJseS1DU2hhcnAAAl9hYm5vcm1hbEZsYWcACQAAAFNJTEVOQ0VEAAJfdGFyZ2V0VHlwZQALAAAAQlVGRl9PV05FUgAIX2lzVW5zZXQAAAJfYWJub3JtYWxGbGFnS2V5AAEAAAAAAARfc3VjY2VlZE5vZGVzAHYAAAADMABuAAAAAiR0eXBlADgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrRmluaXNoQnVmZiwgQXNzZW1ibHktQ1NoYXJwAAhfZGVjQ250SWZTdGFjawAACF91cGRhdGVPdmVycmlkZU1hcAABAAAEX2ZhaWxOb2RlcwDSDQAAAzAA+AAAAAIkdHlwZQA/AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NoZWNrQ29udGFpbnNCdWZmLCBBc3NlbWJseS1DU2hhcnAAAl90YXJnZXRUeXBlAAsAAABCVUZGX09XTkVSAARfYnVmZktleXMAHQAAAAIwABEAAABkdXNwZnJfZGVhZF9saWtlAAAIaXNBTkQAAQhfbG9hZEZyb21CbGFja2JvYXJkAAAIX2NoZWNrQnVmZlNvdXJjZQAAAl9idWZmU291cmNlVHlwZQAMAAAAQlVGRl9TT1VSQ0UACF9jaGVja1NvdXJjZUhvc3QAAAADMQBDAAAAAiR0eXBlADMAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrSWZOb3QsIEFzc2VtYmx5LUNTaGFycAAAAzIAkwAAAAIkdHlwZQBDAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0ludGVycnVwdEVuZW15QWJpbGl0eSwgQXNzZW1ibHktQ1NoYXJwAAJfZW5lbXlGcm9tAAsAAABCVUZGX09XTkVSAAhfcmVzZXRDb29sZG93bgAACF9jaGVja0J1ZmZBYmlsaXR5AAAAAzMAuAAAAAIkdHlwZQA7AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NsZWFyQWxsQnVmZnMsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIABF9yZXRhaW5lZEJ1ZmZzV2hlbkNsZWFyAB8AAAACMAATAAAAZHVzcGZyX3RbZGVhZGJvb21dAAAIX2Fsc29SZW1vdmVEdXJhYmxlQnVmZgAAAAM0AJkFAAACJHR5cGUAOAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDcmVhdGVCdWZmLCBBc3NlbWJseS1DU2hhcnAAA19idWZmAHAEAAADYXR0cmlidXRlcwAhAQAABGFibm9ybWFsRmxhZ3MAbQAAAAIwABEAAABBTExZX1RBUkdFVF9GUkVFAAIxAAwAAABUQVJHRVRfRlJFRQACMgALAAAASU5WSU5DSUJMRQACMwASAAAAVU5NT1ZBQkxFX1BSSVZBVEUAAjQACwAAAFVOREVBREFCTEUAAARhYm5vcm1hbEltbXVuZXMAIgAAAAIwAAgAAABTVFVOTkVEAAIxAAcAAABGUk9aRU4AAARhYm5vcm1hbEFudGlzAAUAAAAABGFibm9ybWFsQ29tYm9zAAUAAAAABGFibm9ybWFsQ29tYm9JbW11bmVzABUAAAACMAAJAAAAU0xFRVBJTkcAAARhdHRyaWJ1dGVNb2RpZmllcnMABQAAAAAAAmJ1ZmZLZXkAEQAAAGR1c3Bmcl9kZWFkX2xpa2UACGxvYWRGcm9tREIAAAhpc0R1cmFibGVCdWZmAAAIaXNEYW1hZ2VNaXNzYWJsZQAACGlzU2lsZW5jZWFibGUAAAhpc1N0dW5uYWJsZQAACGlzRnJlZXphYmxlAAAIaXNMZXZpdGF0YWJsZQAACGlzR3JvdW5kQm91bmRhYmxlAAACc3RhdHVzUmVzaXN0YWJsZQAKAAAAQVVUT01BVElDAAJ0ZW1wbGF0ZUtleQAGAAAAZW1wdHkACGRpc2FibGVPdmVycmlkZQAACm92ZXJyaWRlS2V5AAJvdmVycmlkZVR5cGUACAAAAERFRkFVTFQAEG1heFN0YWNrQ250AAEAAAAIcmVmcmVzaFJlbWFpbmluZ1RpbWVXaGVuU3RhY2tNYXgAAAhjbGVhckFsbFN0YWNrQ250V2hlblRpbWVVcAAAEG1heFZhbGlkU3RhY2tDbnQA/////whpbmRlcGVuZGVudENoYXJhY3RlclNvdXJjZQAACm92ZXJyaWRlRWZmZWN0S2V5AAhvdmVycmlkZU9uRXZlbnRQcmlvcml0eQAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAAKYXVkaW9TaWduYWwAAmxpZmVUaW1lVHlwZQAIAAAATElNSVRFRAAIdGFrZVNuYXBzaG90V2hlbkV4dGVuZAAAAmR1cmF0aW9uS2V5AAUAAABub25lAAFsaWZlVGltZQAAAAAAAAAIQAJ0cmlnZ2VyTGlmZVR5cGUADAAAAElNTUVESUFURUxZABB0cmlnZ2VyQ250AAAAAAABdHJpZ2dlckludGVydmFsAAAAAAAAAPC/CHdhaXRGaXJzdFRyaWdnZXJJbnRlcnZhbAABAWZpcnN0VHJpZ2dlckludGVydmFsAAAAAAAAAPC/EHByaW9yaXR5AP////8EcHJpb3JpdHlCQktleXMABQAAAAAIc3RyaXBCbGFja2JvYXJkUGFyYW1zV2l0aEJ1ZmZLZXkAAARibGFja2JvYXJkAAUAAAAACGVuYWJsZUluaXREaXJlY3Rpb25Gcm9tU291cmNlAAAAAl9idWZmT3duZXIACwAAAEJVRkZfT1dORVIACF91c2VTcGVjaWFsQnVmZlNvdXJjZQAAAl9zcGVjaWFsQnVmZlNvdXJjZQAMAAAAQlVGRl9TT1VSQ0UACF9pc0Rlcml2ZWRCdWZmAAAIX2ZpbmlzaERlcml2ZWRCdWZmSWZQYXJlbnRGaW5pc2gAAAhfaW5oZXJhdGVTb3VyY2VQcm9qZWN0aWxlRnJvbVBhcmVudEJ1ZmYAAAhfaG9va0VmZmVjdEtleUZyb21Tb3VyY2VQcm9qZWN0aWxlAAAAAzUAsQEAAAIkdHlwZQA6AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NyZWF0ZUVmZmVjdCwgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQALAAAAQlVGRl9PV05FUgACX3NvdXJjZVR5cGUACwAAAEJVRkZfT1dORVIAAl9lZmZlY3RLZXkAFgAAAGVuZW15X2R1c3Bmcl8yX0RpZV8wMgAIX3VzZVNvdXJjZUZhY2VWYWN0b3IAAAhfdXNlU291cmNlVG9UYXJnZXREaXJlY3Rpb24AAAhfdXNlQ29uc3REaXJlY3Rpb24AAAJfY29uc3REaXJlY3Rpb24AAwAAAFVQAAhfY3JlYXRlRWZmZWN0SG9sZEJ5U291cmNlAAAIX2NyZWF0ZUVmZmVjdENvbnN0RGlyZWN0aW9uSG9sZEJ5U291cmNlAAAIX3VzZUF0dGFja1BsYXliYWNrU3BlZWQAAAhfbWFudWFsU2V0UGxheWJhY2tTcGVlZAAAAl9ibGFja2JvYXJkS2V5AAEAAAAAAV9wbGF5YmFja1NwZWVkAAAAAAAAAPA/AAM2ALEBAAACJHR5cGUAOgAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDcmVhdGVFZmZlY3QsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIAAl9zb3VyY2VUeXBlAAsAAABCVUZGX09XTkVSAAJfZWZmZWN0S2V5ABYAAABlbmVteV9kdXNwZnJfMl9EaWVfMDMACF91c2VTb3VyY2VGYWNlVmFjdG9yAAAIX3VzZVNvdXJjZVRvVGFyZ2V0RGlyZWN0aW9uAAAIX3VzZUNvbnN0RGlyZWN0aW9uAAACX2NvbnN0RGlyZWN0aW9uAAMAAABVUAAIX2NyZWF0ZUVmZmVjdEhvbGRCeVNvdXJjZQAACF9jcmVhdGVFZmZlY3RDb25zdERpcmVjdGlvbkhvbGRCeVNvdXJjZQAACF91c2VBdHRhY2tQbGF5YmFja1NwZWVkAAAIX21hbnVhbFNldFBsYXliYWNrU3BlZWQAAAJfYmxhY2tib2FyZEtleQABAAAAAAFfcGxheWJhY2tTcGVlZAAAAAAAAADwPwADNwCqAAAAAiR0eXBlADgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrU3dpdGNoTW9kZSwgQXNzZW1ibHktQ1NoYXJwABBfbW9kZUluZGV4AAEAAAAIX2xvYWRNb2RlRnJvbUJsYWNrYm9hcmQAAAhfcmVzdG9yZURlZmF1bHQAAAhfcmVzdGFydEZTTQAAAl90YXJnZXRUeXBlAAcAAABUQVJHRVQAAAM4AIcBAAACJHR5cGUAPwAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytUcmlnZ2VyRW5lbXlTa2lsbCwgQXNzZW1ibHktQ1NoYXJwAAJfc2tpbGxOYW1lAAkAAABEZWFkQm9vbQAIX2NoZWNrU2tpbGxBY3RpdmUAAAhfY2hlY2tTa2lsbFJlYWR5AAACX293bmVyVHlwZQALAAAAQlVGRl9PV05FUgACX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIACF9pbnRlcnJ1cHRDdXJBYmlsaXR5AAEIX2ludGVycnVwdEN1ckFiaWxpdHlVbmxlc3NJdElzRXhwZWN0ZWRBYmlsaXR5AAAIX2Fzc2lnbkNvbWJhdEFiaWxpdHkAAAhfZm9yY2VGaW5kVGFyZ2V0QnlTa2lsbFNlbGVjdG9yAAAIX2NsZWFyUGFsc3lpbmdCdWZmQmVmb3JlVHJpZ2dlcgABCF90cnlDYXN0RGlyZWN0bHlXaGVuTm9UYXJnZXQAAAAAAAAAAA==",
+          "document_sha256": "e630a4516a35a769d2cbea4b9d7a4ab8f67ba4acc2cee793c820a909dca0f0bd"
+        },
+        "consumer": "Unsilenced current zero-health request -> finite owned five-way parallel callbacks"
+      }
+    },
+    {
+      "id": "buff/ch9/duspfr/deadlike",
+      "kind": "buff",
+      "duration_seconds": 3,
+      "selection_flags": {
+        "abnormal_flags": [
+          15,
+          2,
+          5,
+          3,
+          6
+        ],
+        "abnormal_immunes": [
+          0,
+          16
+        ],
+        "abnormal_combo_immunes": [
+          0
+        ]
+      },
+      "control": {
+        "move": false,
+        "attack": false
+      }
+    },
+    {
+      "id": "buff/ch9/pillar/trait",
+      "kind": "buff",
+      "metadata": {
+        "native_inline": {
+          "attributes": {
+            "abnormalFlags": [],
+            "abnormalImmunes": [],
+            "abnormalAntis": [],
+            "abnormalCombos": [],
+            "abnormalComboImmunes": [],
+            "attributeModifiers": []
+          },
+          "buffKey": "dupilr_trait",
+          "loadFromDB": 0,
+          "isDurableBuff": 0,
+          "isDamageMissable": 0,
+          "isSilenceable": 0,
+          "isStunnable": 0,
+          "isFreezable": 0,
+          "isLevitatable": 0,
+          "statusResistable": 2,
+          "templateKey": "trap_dupilr_trait",
+          "disableOverride": 0,
+          "overrideKey": "",
+          "overrideType": 0,
+          "maxStackCnt": 1,
+          "refreshRemainingTimeWhenStackMax": 0,
+          "clearAllStackCntWhenTimeUp": 0,
+          "maxValidStackCnt": -1,
+          "independentCharacterSource": 0,
+          "overrideEffectKey": "",
+          "overrideOnEventPriority": 0,
+          "onEventPriority": 0,
+          "audioSignal": "",
+          "lifeTimeType": 2,
+          "takeSnapshotWhenExtend": 0,
+          "durationKey": "",
+          "lifeTime": 0.0,
+          "triggerLifeType": 0,
+          "triggerCnt": 0,
+          "triggerInterval": -1.0,
+          "waitFirstTriggerInterval": 1,
+          "firstTriggerInterval": -1.0,
+          "priority": -1,
+          "priorityBBKeys": [],
+          "stripBlackboardParamsWithBuffKey": 0,
+          "blackboard": [
+            {
+              "key": "hp",
+              "value": 1.0,
+              "valueStr": ""
+            }
+          ]
+        },
+        "source_marker_role": "Actual pillar damage provenance for gargoyle skip consumer; modifier callbacks separately pending"
+      }
+    },
+    {
+      "id": "buff/ch9/pillar/stun10",
+      "kind": "buff",
+      "duration_seconds": 10,
+      "selection_flags": {
+        "abnormal_flags": [
+          0
+        ]
+      },
+      "control": {
+        "move": false,
+        "attack": false,
+        "abilities": false,
+        "interrupt": true
+      }
+    },
+    {
+      "id": "buff/ch9/pillar/deadlike",
+      "kind": "buff",
+      "selection_flags": {
+        "abnormal_flags": [
+          5,
+          6,
+          2,
+          15,
+          3
+        ],
+        "abnormal_immunes": [
+          0,
+          16,
+          19
+        ],
+        "abnormal_combo_immunes": [
+          0
+        ]
+      }
+    },
+    {
+      "id": "buff/ch9/pillar/startdead",
+      "kind": "buff",
+      "stacking": {
+        "mode": "refresh",
+        "identity": [
+          "definition",
+          "target"
+        ],
+        "max_stacks": 1
+      },
+      "selection_flags": {
+        "abnormal_flags": [
+          5,
+          2,
+          15
+        ]
+      }
+    },
+    {
+      "id": "buff/ch9/pillar/candead",
+      "kind": "buff",
+      "stacking": {
+        "mode": "refresh",
+        "identity": [
+          "definition",
+          "target"
+        ],
+        "max_stacks": 1
+      }
+    },
+    {
+      "id": "buff/ch9/pillar/ready_effect",
+      "kind": "buff",
+      "stacking": {
+        "mode": "refresh",
+        "identity": [
+          "definition",
+          "target"
+        ],
+        "max_stacks": 1
+      }
+    },
+    {
+      "id": "buff/ch9/pillar/abnormalimmunes",
+      "kind": "buff",
+      "selection_flags": {
+        "abnormal_flags": [
+          8,
+          21
+        ],
+        "abnormal_immunes": [
+          0,
+          16,
+          12,
+          23,
+          13
+        ],
+        "abnormal_combo_immunes": [
+          0
+        ]
+      }
+    },
+    {
+      "id": "buff/ch9/pillar/undead",
+      "kind": "buff",
+      "selection_flags": {
+        "abnormal_flags": [
+          6
+        ]
+      },
+      "metadata": {
+        "native_inline": {
+          "attributes": {
+            "abnormalFlags": [
+              6
+            ],
+            "abnormalImmunes": [],
+            "abnormalAntis": [],
+            "abnormalCombos": [],
+            "abnormalComboImmunes": [],
+            "attributeModifiers": []
+          },
+          "buffKey": "dupilr_trait[undead]",
+          "loadFromDB": 0,
+          "isDurableBuff": 0,
+          "isDamageMissable": 0,
+          "isSilenceable": 0,
+          "isStunnable": 0,
+          "isFreezable": 0,
+          "isLevitatable": 0,
+          "statusResistable": 2,
+          "templateKey": "empty",
+          "disableOverride": 0,
+          "overrideKey": "",
+          "overrideType": 0,
+          "maxStackCnt": 1,
+          "refreshRemainingTimeWhenStackMax": 0,
+          "clearAllStackCntWhenTimeUp": 0,
+          "maxValidStackCnt": -1,
+          "independentCharacterSource": 0,
+          "overrideEffectKey": "",
+          "overrideOnEventPriority": 0,
+          "onEventPriority": 0,
+          "audioSignal": "",
+          "lifeTimeType": 2,
+          "takeSnapshotWhenExtend": 0,
+          "durationKey": "",
+          "lifeTime": 0.0,
+          "triggerLifeType": 0,
+          "triggerCnt": 0,
+          "triggerInterval": -1.0,
+          "waitFirstTriggerInterval": 1,
+          "firstTriggerInterval": -1.0,
+          "priority": -1,
+          "priorityBBKeys": [],
+          "stripBlackboardParamsWithBuffKey": 0,
+          "blackboard": []
+        },
+        "consumer": "exact-zero opt-in lifecycle holds HP0, never HP1"
+      }
+    },
+    {
+      "id": "buff/ch9/pillar/ondead",
+      "kind": "buff",
+      "metadata": {
+        "native_inline": {
+          "attributes": {
+            "abnormalFlags": [],
+            "abnormalImmunes": [],
+            "abnormalAntis": [],
+            "abnormalCombos": [],
+            "abnormalComboImmunes": [],
+            "attributeModifiers": []
+          },
+          "buffKey": "dupilr_trait[ondead]",
+          "loadFromDB": 0,
+          "isDurableBuff": 0,
+          "isDamageMissable": 0,
+          "isSilenceable": 0,
+          "isStunnable": 0,
+          "isFreezable": 0,
+          "isLevitatable": 0,
+          "statusResistable": 2,
+          "templateKey": "trap_dupilr_trait[ondead]",
+          "disableOverride": 0,
+          "overrideKey": "",
+          "overrideType": 0,
+          "maxStackCnt": 1,
+          "refreshRemainingTimeWhenStackMax": 0,
+          "clearAllStackCntWhenTimeUp": 0,
+          "maxValidStackCnt": -1,
+          "independentCharacterSource": 0,
+          "overrideEffectKey": "",
+          "overrideOnEventPriority": 0,
+          "onEventPriority": 0,
+          "audioSignal": "",
+          "lifeTimeType": 2,
+          "takeSnapshotWhenExtend": 0,
+          "durationKey": "",
+          "lifeTime": 0.0,
+          "triggerLifeType": 0,
+          "triggerCnt": 0,
+          "triggerInterval": -1.0,
+          "waitFirstTriggerInterval": 1,
+          "firstTriggerInterval": -1.0,
+          "priority": -1,
+          "priorityBBKeys": [],
+          "stripBlackboardParamsWithBuffKey": 0,
+          "blackboard": []
+        },
+        "consumer": "resource.depletion source-owned actual damage -> finite possessed collapse cast"
+      }
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/ch9/duspfr/flame_trigger",
+      "kind": "selector",
+      "region": {
+        "type": "radius",
+        "radius": 1
+      },
+      "filters": [
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1,
+      "eligibility": {
+        "rule": "rule/ch9/duspfr/eligibility",
+        "parameters": {
+          "source_configuration": {
+            "_ignoreTargetFree": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_needProfessionMask": 0,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_checkUnitType": 0,
+            "m_Enabled": 1,
+            "m_Name": "",
+            "_targetSide": 2,
+            "_targetMotion": 1,
+            "_targetCategory": 1,
+            "_postFilter": 4,
+            "_abnormalFlag": 23,
+            "_abnormalCombo": 2,
+            "_professionMask": 0,
+            "_excludeAbnormalFlag": 46,
+            "_limitTargetNum": 1,
+            "_maxTargetKey": "max_target",
+            "_maxNum": 1,
+            "_excludeOwner": 0,
+            "_sortByTauntAtLast": 0,
+            "_ignoreHitRange": 0,
+            "_unitTypeMask": 0,
+            "_abilityInputTargetAsSortSource": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject",
+          "defaults": {
+            "camouflage": false,
+            "target_free": false,
+            "can_select_camouflage": false,
+            "heal_free": false,
+            "ally_target_free": false,
+            "motion": 0,
+            "category": 0,
+            "profession": 0,
+            "unit_type": 0,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "abnormal_immunes": [],
+            "side": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "selector/ch9/duspfr/flame_target",
+      "kind": "selector",
+      "region": {
+        "type": "radius",
+        "radius": 2
+      },
+      "filters": [
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1,
+      "eligibility": {
+        "rule": "rule/ch9/duspfr/eligibility",
+        "parameters": {
+          "source_configuration": {
+            "_ignoreTargetFree": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_needProfessionMask": 0,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_checkUnitType": 0,
+            "m_Enabled": 1,
+            "m_Name": "",
+            "_targetSide": 2,
+            "_targetMotion": 1,
+            "_targetCategory": 1,
+            "_postFilter": 0,
+            "_abnormalFlag": 23,
+            "_abnormalCombo": 2,
+            "_professionMask": 0,
+            "_excludeAbnormalFlag": 46,
+            "_limitTargetNum": 0,
+            "_maxTargetKey": "max_target",
+            "_maxNum": 1,
+            "_excludeOwner": 0,
+            "_sortByTauntAtLast": 0,
+            "_ignoreHitRange": 0,
+            "_unitTypeMask": 0,
+            "_abilityInputTargetAsSortSource": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject",
+          "defaults": {
+            "camouflage": false,
+            "target_free": false,
+            "can_select_camouflage": false,
+            "heal_free": false,
+            "ally_target_free": false,
+            "motion": 0,
+            "category": 0,
+            "profession": 0,
+            "unit_type": 0,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "abnormal_immunes": [],
+            "side": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "selector/ch9/duspfr/blocker",
+      "kind": "selector",
+      "region": {
+        "type": "all",
+        "blocked_only": true
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/ch9/duspfr/flame",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "forbidden_source_flags": [
+          0,
+          12,
+          16
+        ],
+        "parameters": {
+          "auto_only": true,
+          "auto_when_ready": true,
+          "requires_targets": true
+        },
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/ch9/duspfr/casting_state",
+            "bind_to_cast": true
+          },
+          {
+            "op": "set_ability_cooldown",
+            "target": "source",
+            "ability": "ability/ch9/duspfr/flame",
+            "duration_seconds": 0
+          }
+        ]
+      },
+      "wait_for_channels": true,
+      "selector": "selector/ch9/duspfr/flame_target",
+      "timeline": [
+        {
+          "at_seconds": 0.5,
+          "effect": {
+            "op": "begin_attachment",
+            "attachment": "attachment/ch9/duspfr/flame"
+          }
+        }
+      ],
+      "duration_seconds": 10.6,
+      "trigger_selector": "selector/ch9/duspfr/flame_trigger"
+    },
+    {
+      "id": "ability/ch9/duspfr/blocked_attack",
+      "kind": "ability",
+      "activation": {
+        "mode": "automatic_attack",
+        "interval_seconds": 2
+      },
+      "selector": "selector/ch9/duspfr/blocker",
+      "duration_seconds": 1,
+      "timeline": [
+        {
+          "at_seconds": 0.43333333333333335,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1
+          }
+        }
+      ],
+      "metadata": {
+        "source_OnAttack_frame": 13,
+        "source_full_frame": 30,
+        "native_attack_trigger": "NeverTrigger; only actual blocked combat permitted"
+      }
+    },
+    {
+      "id": "ability/ch9/duspfr/dead_DieAnim",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "parameters": {
+          "blocks_attacks": false
+        }
+      },
+      "duration_seconds": 1.3,
+      "timeline": [],
+      "metadata": {
+        "native_child": {
+          "path_id": -156798167760190174,
+          "node": {
+            "script_path_id": 2702927552840241462,
+            "gameobject_path_id": 9124580805240472866,
+            "gameobject_name": "DieAnim",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 9124580805240472866
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 2702927552840241462
+              },
+              "m_Name": "",
+              "_selector": {
+                "m_FileID": 0,
+                "m_PathID": -370550191829957342
+              },
+              "_metadata": {
+                "namedAsAlias": "",
+                "blackboardPrefix": ""
+              },
+              "_interruptAbilityOnDetach": 0,
+              "_attachPassiveBuffsOnDummy": 1,
+              "_ignoreIfOwnerDead": 0,
+              "_forceAsDmgOrHealAbility": 0,
+              "_waitForAttackEvent": 0,
+              "_interuptIfTargetDead": 0,
+              "_resetCdStrategy": 1,
+              "_selectTargetSource": 1,
+              "_selectTargetTiming": 0,
+              "_timeMode": 1,
+              "_alwaysIncludeTarget": 1,
+              "_allowNoTarget": 0,
+              "_animKey": "DieBoom",
+              "_endAnimKey": "",
+              "_downAnimKey": "",
+              "_downEndAnimKey": "",
+              "_upAnimKey": "",
+              "_upEndAnimKey": "",
+              "_cooldown": 0.0,
+              "_cooldownKey": "duration",
+              "_preDelay": 0.0,
+              "_escapeTime": 0.0,
+              "_faceToTarget": 0,
+              "_faceToDefault": 0,
+              "_faceToFront": 0,
+              "_faceToFirstCastTarget": 0,
+              "_checkFaceToFirstCastTargetDownAttack": 0,
+              "_forceFaceToDirection": 0,
+              "_activeBuffs": [],
+              "_maxAnimScale": 1.0,
+              "_onlyPlayEndAnimWhenIsLastAbility": 0,
+              "_ignorePalsyInterrupt": 0,
+              "_affectedBySlowDown": 1,
+              "_actions": {
+                "SerializedState": "[]",
+                "SerializedObjectReferences": []
+              }
+            },
+            "script_key": "CAB-658d74aab777086fc32b93f385be999a:2702927552840241462",
+            "native_class": "AnimatedActionToOwnerAbility"
+          },
+          "selector": {
+            "script_path_id": 8735719249224227112,
+            "gameobject_path_id": -3248485079666211550,
+            "gameobject_name": "DeadBoom",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -3248485079666211550
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 8735719249224227112
+              },
+              "m_Name": ""
+            },
+            "script_key": "CAB-658d74aab777086fc32b93f385be999a:8735719249224227112",
+            "native_class": "SelfSelector"
+          }
+        },
+        "parallel_source_group": {
+          "script_path_id": 8671737732485835867,
+          "gameobject_path_id": -3248485079666211550,
+          "gameobject_name": "DeadBoom",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -3248485079666211550
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 8671737732485835867
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": -370550191829957342
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_abilities": [
+              {
+                "m_FileID": 0,
+                "m_PathID": -156798167760190174
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": 8329883186402542882
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": 7145536283770799394
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": -771751067344845534
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": 7632426845488071970
+              }
+            ],
+            "_alsoInterruptSubAbilities": 0,
+            "_useEscaptime": 0,
+            "_alsoCheckChildrenAffecting": 0,
+            "_finishAllAbilitiesIfOneFinish": 0,
+            "_mainAbility": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_timeMode": 1,
+            "_updateCooldownAfterSubAbilitiesAttached": 0
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:8671737732485835867",
+          "native_class": "AbilityParallelGroup"
+        },
+        "native_element_type": 0,
+        "native_ep_ratio": 0
+      }
+    },
+    {
+      "id": "ability/ch9/duspfr/dead_Suicide",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "parameters": {
+          "blocks_attacks": false
+        }
+      },
+      "duration_seconds": 1.100000023841858,
+      "timeline": [
+        {
+          "at_seconds": 1.100000023841858,
+          "effects": [
+            {
+              "op": "instant_kill",
+              "target": "source",
+              "parameters": {
+                "cause": "duspfr_suicide",
+                "skip_rebirth": false,
+                "source_policy": "none",
+                "origin": {
+                  "native": "DeadBoom/Suicide",
+                  "source_node": 8329883186402542882
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "metadata": {
+        "native_child": {
+          "path_id": 8329883186402542882,
+          "node": {
+            "script_path_id": 2702927552840241462,
+            "gameobject_path_id": -9021198955687131870,
+            "gameobject_name": "Suicide",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -9021198955687131870
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 2702927552840241462
+              },
+              "m_Name": "",
+              "_selector": {
+                "m_FileID": 0,
+                "m_PathID": -370550191829957342
+              },
+              "_metadata": {
+                "namedAsAlias": "",
+                "blackboardPrefix": ""
+              },
+              "_interruptAbilityOnDetach": 0,
+              "_attachPassiveBuffsOnDummy": 1,
+              "_ignoreIfOwnerDead": 1,
+              "_forceAsDmgOrHealAbility": 0,
+              "_waitForAttackEvent": 0,
+              "_interuptIfTargetDead": 0,
+              "_resetCdStrategy": 1,
+              "_selectTargetSource": 1,
+              "_selectTargetTiming": 0,
+              "_timeMode": 2,
+              "_alwaysIncludeTarget": 1,
+              "_allowNoTarget": 1,
+              "_animKey": "",
+              "_endAnimKey": "",
+              "_downAnimKey": "",
+              "_downEndAnimKey": "",
+              "_upAnimKey": "",
+              "_upEndAnimKey": "",
+              "_cooldown": 1.100000023841858,
+              "_cooldownKey": "duration",
+              "_preDelay": 1.100000023841858,
+              "_escapeTime": 0.0,
+              "_faceToTarget": 0,
+              "_faceToDefault": 0,
+              "_faceToFront": 0,
+              "_faceToFirstCastTarget": 0,
+              "_checkFaceToFirstCastTargetDownAttack": 0,
+              "_forceFaceToDirection": 0,
+              "_activeBuffs": [],
+              "_maxAnimScale": -1.0,
+              "_onlyPlayEndAnimWhenIsLastAbility": 0,
+              "_ignorePalsyInterrupt": 0,
+              "_affectedBySlowDown": 0,
+              "_actions": {
+                "SerializedState": "[{\"_targetType\":\"TARGET\",\"_killSource\":true,\"_noSource\":true,\"_withdrawIfRallyPoint\":false,\"_resultIfInRallyPointMode\":false,\"_skipReborn\":false,\"_noReason\":false,\"_markReachExit\":false,\"_switchState\":false,\"$type\":\"Torappu.Battle.Action.Nodes+InstantKill\"}]",
+                "SerializedObjectReferences": []
+              }
+            },
+            "script_key": "CAB-658d74aab777086fc32b93f385be999a:2702927552840241462",
+            "native_class": "AnimatedActionToOwnerAbility"
+          },
+          "selector": {
+            "script_path_id": 8735719249224227112,
+            "gameobject_path_id": -3248485079666211550,
+            "gameobject_name": "DeadBoom",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -3248485079666211550
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 8735719249224227112
+              },
+              "m_Name": ""
+            },
+            "script_key": "CAB-658d74aab777086fc32b93f385be999a:8735719249224227112",
+            "native_class": "SelfSelector"
+          }
+        },
+        "parallel_source_group": {
+          "script_path_id": 8671737732485835867,
+          "gameobject_path_id": -3248485079666211550,
+          "gameobject_name": "DeadBoom",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -3248485079666211550
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 8671737732485835867
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": -370550191829957342
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_abilities": [
+              {
+                "m_FileID": 0,
+                "m_PathID": -156798167760190174
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": 8329883186402542882
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": 7145536283770799394
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": -771751067344845534
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": 7632426845488071970
+              }
+            ],
+            "_alsoInterruptSubAbilities": 0,
+            "_useEscaptime": 0,
+            "_alsoCheckChildrenAffecting": 0,
+            "_finishAllAbilitiesIfOneFinish": 0,
+            "_mainAbility": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_timeMode": 1,
+            "_updateCooldownAfterSubAbilitiesAttached": 0
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:8671737732485835867",
+          "native_class": "AbilityParallelGroup"
+        },
+        "native_element_type": 0,
+        "native_ep_ratio": 0
+      }
+    },
+    {
+      "id": "ability/ch9/duspfr/dead_PullDupilr",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "parameters": {
+          "blocks_attacks": false
+        }
+      },
+      "duration_seconds": 1.0,
+      "timeline": [
+        {
+          "at_seconds": 1.0,
+          "effects": [
+            {
+              "op": "area",
+              "center": "source",
+              "target": "source",
+              "membership_rule": "rule/ch9/duspfr/dead_members",
+              "selection_projection": {
+                "defaults": {
+                  "camouflage": false,
+                  "target_free": false,
+                  "can_select_camouflage": false,
+                  "heal_free": false,
+                  "ally_target_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "parameters": {
+                "kind": "pillar"
+              },
+              "effects": [
+                {
+                  "op": "apply_buff",
+                  "buff": "buff/ch9/pillar/candead"
+                },
+                {
+                  "op": "damage",
+                  "damage_type": "true",
+                  "scale": 1.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "metadata": {
+        "native_child": {
+          "path_id": 7145536283770799394,
+          "node": {
+            "script_path_id": 4381884627089348317,
+            "gameobject_path_id": 3069005309856105762,
+            "gameobject_name": "PullDupilr",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 3069005309856105762
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 4381884627089348317
+              },
+              "m_Name": "",
+              "_selector": {
+                "m_FileID": 0,
+                "m_PathID": -1547655559946910430
+              },
+              "_metadata": {
+                "namedAsAlias": "",
+                "blackboardPrefix": ""
+              },
+              "_interruptAbilityOnDetach": 0,
+              "_attachPassiveBuffsOnDummy": 1,
+              "_ignoreIfOwnerDead": 1,
+              "_forceAsDmgOrHealAbility": 0,
+              "_waitForAttackEvent": 0,
+              "_interuptIfTargetDead": 0,
+              "_resetCdStrategy": 1,
+              "_selectTargetSource": 1,
+              "_selectTargetTiming": 1,
+              "_timeMode": 2,
+              "_alwaysIncludeTarget": 0,
+              "_allowNoTarget": 1,
+              "_animKey": "",
+              "_endAnimKey": "",
+              "_downAnimKey": "",
+              "_downEndAnimKey": "",
+              "_upAnimKey": "",
+              "_upEndAnimKey": "",
+              "_cooldown": 1.0,
+              "_cooldownKey": "duration",
+              "_preDelay": 1.0,
+              "_escapeTime": 0.0,
+              "_faceToTarget": 0,
+              "_faceToDefault": 0,
+              "_faceToFront": 0,
+              "_faceToFirstCastTarget": 0,
+              "_checkFaceToFirstCastTargetDownAttack": 0,
+              "_forceFaceToDirection": 0,
+              "_activeBuffs": [
+                {
+                  "attributes": {
+                    "abnormalFlags": [],
+                    "abnormalImmunes": [],
+                    "abnormalAntis": [],
+                    "abnormalCombos": [],
+                    "abnormalComboImmunes": [],
+                    "attributeModifiers": []
+                  },
+                  "buffKey": "dupilr_trait[candead]",
+                  "loadFromDB": 0,
+                  "isDurableBuff": 0,
+                  "isDamageMissable": 0,
+                  "isSilenceable": 0,
+                  "isStunnable": 0,
+                  "isFreezable": 0,
+                  "isLevitatable": 0,
+                  "isGroundBoundable": 0,
+                  "statusResistable": 2,
+                  "templateKey": "empty",
+                  "disableOverride": 0,
+                  "overrideKey": "",
+                  "overrideType": 0,
+                  "maxStackCnt": 1,
+                  "refreshRemainingTimeWhenStackMax": 0,
+                  "clearAllStackCntWhenTimeUp": 0,
+                  "maxValidStackCnt": -1,
+                  "independentCharacterSource": 0,
+                  "overrideEffectKey": "",
+                  "overrideOnEventPriority": 0,
+                  "onEventPriority": 0,
+                  "audioSignal": "",
+                  "lifeTimeType": 2,
+                  "takeSnapshotWhenExtend": 0,
+                  "durationKey": "",
+                  "lifeTime": 0.0,
+                  "triggerLifeType": 0,
+                  "triggerCnt": 0,
+                  "triggerInterval": -1.0,
+                  "waitFirstTriggerInterval": 1,
+                  "firstTriggerInterval": -1.0,
+                  "priority": -1,
+                  "priorityBBKeys": [],
+                  "stripBlackboardParamsWithBuffKey": 0,
+                  "blackboard": [],
+                  "enableInitDirectionFromSource": 0
+                }
+              ],
+              "_maxAnimScale": -1.0,
+              "_onlyPlayEndAnimWhenIsLastAbility": 0,
+              "_ignorePalsyInterrupt": 0,
+              "_affectedBySlowDown": 0,
+              "_atkScale": 1.0,
+              "_atkScaleKey": "atk_scale",
+              "_attackType": 1,
+              "_elementDamageType": 0,
+              "_epDamageRatio": 0.0,
+              "_useDynamicAttackType": 1,
+              "_deliveryParaWhenReplaceActionNode": 0,
+              "_damageType": 3,
+              "_extraDamageType": 0,
+              "_alwaysPutIncludeTargetFirst": 0
+            },
+            "script_key": "CAB-658d74aab777086fc32b93f385be999a:4381884627089348317",
+            "native_class": "MeleeAttack"
+          },
+          "selector": {
+            "script_path_id": 6959540303033999559,
+            "gameobject_path_id": 3473214133300741410,
+            "gameobject_name": "Selector",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 3473214133300741410
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 6959540303033999559
+              },
+              "m_Name": "",
+              "_targetSide": 1,
+              "_targetMotion": 3,
+              "_targetCategory": 1,
+              "_postFilter": 0,
+              "_ignoreTargetFree": 1,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_abnormalFlag": 23,
+              "_abnormalCombo": 2,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 0,
+              "_needProfessionMask": 0,
+              "_professionMask": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_excludeAbnormalFlag": 46,
+              "_limitTargetNum": 0,
+              "_maxTargetKey": "max_target",
+              "_maxNum": 1,
+              "_excludeOwner": 0,
+              "_sortByTauntAtLast": 0,
+              "_ignoreHitRange": 0,
+              "_checkUnitType": 0,
+              "_unitTypeMask": 0,
+              "_abilityInputTargetAsSortSource": 0,
+              "_tagExcluded": 0,
+              "_filterTag": "",
+              "_filterTagList": [],
+              "_buffKeyExcluded": 0,
+              "_buffKey": "dupilr_trait",
+              "_buffs": [],
+              "_checkOrInsteadOfAnd": 0,
+              "_filterBuffSource": 0,
+              "_filterTokenHost": 0
+            },
+            "script_key": "CAB-658d74aab777086fc32b93f385be999a:6959540303033999559",
+            "native_class": "AdvancedSelectorWithTagAndBuffKey"
+          }
+        },
+        "parallel_source_group": {
+          "script_path_id": 8671737732485835867,
+          "gameobject_path_id": -3248485079666211550,
+          "gameobject_name": "DeadBoom",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -3248485079666211550
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 8671737732485835867
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": -370550191829957342
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_abilities": [
+              {
+                "m_FileID": 0,
+                "m_PathID": -156798167760190174
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": 8329883186402542882
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": 7145536283770799394
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": -771751067344845534
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": 7632426845488071970
+              }
+            ],
+            "_alsoInterruptSubAbilities": 0,
+            "_useEscaptime": 0,
+            "_alsoCheckChildrenAffecting": 0,
+            "_finishAllAbilitiesIfOneFinish": 0,
+            "_mainAbility": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_timeMode": 1,
+            "_updateCooldownAfterSubAbilitiesAttached": 0
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:8671737732485835867",
+          "native_class": "AbilityParallelGroup"
+        },
+        "native_element_type": 0,
+        "native_ep_ratio": 0.0
+      }
+    },
+    {
+      "id": "ability/ch9/duspfr/dead_Damage",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "parameters": {
+          "blocks_attacks": false
+        }
+      },
+      "duration_seconds": 1.0,
+      "timeline": [
+        {
+          "at_seconds": 1.0,
+          "effects": [
+            {
+              "op": "area",
+              "center": "source",
+              "target": "source",
+              "membership_rule": "rule/ch9/duspfr/dead_members",
+              "selection_projection": {
+                "defaults": {
+                  "camouflage": false,
+                  "target_free": false,
+                  "can_select_camouflage": false,
+                  "heal_free": false,
+                  "ally_target_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "parameters": {
+                "kind": "players"
+              },
+              "effects": [
+                {
+                  "op": "damage",
+                  "damage_type": "arts",
+                  "scale": 1.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "metadata": {
+        "native_child": {
+          "path_id": -771751067344845534,
+          "node": {
+            "script_path_id": 4381884627089348317,
+            "gameobject_path_id": -2450992857869204190,
+            "gameobject_name": "Damage",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -2450992857869204190
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 4381884627089348317
+              },
+              "m_Name": "",
+              "_selector": {
+                "m_FileID": 0,
+                "m_PathID": 1262462257489757474
+              },
+              "_metadata": {
+                "namedAsAlias": "",
+                "blackboardPrefix": ""
+              },
+              "_interruptAbilityOnDetach": 0,
+              "_attachPassiveBuffsOnDummy": 1,
+              "_ignoreIfOwnerDead": 1,
+              "_forceAsDmgOrHealAbility": 0,
+              "_waitForAttackEvent": 0,
+              "_interuptIfTargetDead": 0,
+              "_resetCdStrategy": 1,
+              "_selectTargetSource": 1,
+              "_selectTargetTiming": 1,
+              "_timeMode": 2,
+              "_alwaysIncludeTarget": 0,
+              "_allowNoTarget": 1,
+              "_animKey": "",
+              "_endAnimKey": "",
+              "_downAnimKey": "",
+              "_downEndAnimKey": "",
+              "_upAnimKey": "",
+              "_upEndAnimKey": "",
+              "_cooldown": 1.0,
+              "_cooldownKey": "duration",
+              "_preDelay": 1.0,
+              "_escapeTime": 0.0,
+              "_faceToTarget": 0,
+              "_faceToDefault": 0,
+              "_faceToFront": 0,
+              "_faceToFirstCastTarget": 0,
+              "_checkFaceToFirstCastTargetDownAttack": 0,
+              "_forceFaceToDirection": 0,
+              "_activeBuffs": [],
+              "_maxAnimScale": -1.0,
+              "_onlyPlayEndAnimWhenIsLastAbility": 0,
+              "_ignorePalsyInterrupt": 0,
+              "_affectedBySlowDown": 0,
+              "_atkScale": 1.0,
+              "_atkScaleKey": "atk_scale",
+              "_attackType": 1,
+              "_elementDamageType": 0,
+              "_epDamageRatio": 0.0,
+              "_useDynamicAttackType": 0,
+              "_deliveryParaWhenReplaceActionNode": 0,
+              "_damageType": 2,
+              "_extraDamageType": 0,
+              "_alwaysPutIncludeTargetFirst": 0
+            },
+            "script_key": "CAB-658d74aab777086fc32b93f385be999a:4381884627089348317",
+            "native_class": "MeleeAttack"
+          },
+          "selector": {
+            "script_path_id": 7080728813803358465,
+            "gameobject_path_id": 1624495202598765858,
+            "gameobject_name": "Selector",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 1624495202598765858
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 7080728813803358465
+              },
+              "m_Name": "",
+              "_targetSide": 2,
+              "_targetMotion": 1,
+              "_targetCategory": 1,
+              "_postFilter": 0,
+              "_ignoreTargetFree": 0,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_abnormalFlag": 23,
+              "_abnormalCombo": 2,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 0,
+              "_needProfessionMask": 0,
+              "_professionMask": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_excludeAbnormalFlag": 46,
+              "_limitTargetNum": 0,
+              "_maxTargetKey": "max_target",
+              "_maxNum": 1,
+              "_excludeOwner": 0,
+              "_sortByTauntAtLast": 0,
+              "_ignoreHitRange": 0,
+              "_checkUnitType": 0,
+              "_unitTypeMask": 0,
+              "_abilityInputTargetAsSortSource": 0
+            },
+            "script_key": "CAB-658d74aab777086fc32b93f385be999a:7080728813803358465",
+            "native_class": "AdvancedSelector"
+          }
+        },
+        "parallel_source_group": {
+          "script_path_id": 8671737732485835867,
+          "gameobject_path_id": -3248485079666211550,
+          "gameobject_name": "DeadBoom",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -3248485079666211550
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 8671737732485835867
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": -370550191829957342
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_abilities": [
+              {
+                "m_FileID": 0,
+                "m_PathID": -156798167760190174
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": 8329883186402542882
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": 7145536283770799394
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": -771751067344845534
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": 7632426845488071970
+              }
+            ],
+            "_alsoInterruptSubAbilities": 0,
+            "_useEscaptime": 0,
+            "_alsoCheckChildrenAffecting": 0,
+            "_finishAllAbilitiesIfOneFinish": 0,
+            "_mainAbility": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_timeMode": 1,
+            "_updateCooldownAfterSubAbilitiesAttached": 0
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:8671737732485835867",
+          "native_class": "AbilityParallelGroup"
+        },
+        "native_element_type": 0,
+        "native_ep_ratio": 0.0
+      }
+    },
+    {
+      "id": "ability/ch9/duspfr/dead_KillDuspfr",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "parameters": {
+          "blocks_attacks": false
+        }
+      },
+      "duration_seconds": 1.0,
+      "timeline": [
+        {
+          "at_seconds": 1.0,
+          "effects": [
+            {
+              "op": "area",
+              "center": "source",
+              "target": "source",
+              "membership_rule": "rule/ch9/duspfr/dead_members",
+              "selection_projection": {
+                "defaults": {
+                  "camouflage": false,
+                  "target_free": false,
+                  "can_select_camouflage": false,
+                  "heal_free": false,
+                  "ally_target_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "parameters": {
+                "kind": "duspfr"
+              },
+              "effects": [
+                {
+                  "op": "damage",
+                  "damage_type": "true",
+                  "scale": 100.0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "metadata": {
+        "native_child": {
+          "path_id": 7632426845488071970,
+          "node": {
+            "script_path_id": 4381884627089348317,
+            "gameobject_path_id": 2075414069597685026,
+            "gameobject_name": "KillDuspfr",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 2075414069597685026
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 4381884627089348317
+              },
+              "m_Name": "",
+              "_selector": {
+                "m_FileID": 0,
+                "m_PathID": -6878496482030795486
+              },
+              "_metadata": {
+                "namedAsAlias": "",
+                "blackboardPrefix": ""
+              },
+              "_interruptAbilityOnDetach": 0,
+              "_attachPassiveBuffsOnDummy": 1,
+              "_ignoreIfOwnerDead": 1,
+              "_forceAsDmgOrHealAbility": 0,
+              "_waitForAttackEvent": 0,
+              "_interuptIfTargetDead": 0,
+              "_resetCdStrategy": 1,
+              "_selectTargetSource": 1,
+              "_selectTargetTiming": 1,
+              "_timeMode": 2,
+              "_alwaysIncludeTarget": 0,
+              "_allowNoTarget": 1,
+              "_animKey": "",
+              "_endAnimKey": "",
+              "_downAnimKey": "",
+              "_downEndAnimKey": "",
+              "_upAnimKey": "",
+              "_upEndAnimKey": "",
+              "_cooldown": 1.0,
+              "_cooldownKey": "duration",
+              "_preDelay": 1.0,
+              "_escapeTime": 0.0,
+              "_faceToTarget": 0,
+              "_faceToDefault": 0,
+              "_faceToFront": 0,
+              "_faceToFirstCastTarget": 0,
+              "_checkFaceToFirstCastTargetDownAttack": 0,
+              "_forceFaceToDirection": 0,
+              "_activeBuffs": [],
+              "_maxAnimScale": -1.0,
+              "_onlyPlayEndAnimWhenIsLastAbility": 0,
+              "_ignorePalsyInterrupt": 0,
+              "_affectedBySlowDown": 0,
+              "_atkScale": 100.0,
+              "_atkScaleKey": "atk_scale",
+              "_attackType": 1,
+              "_elementDamageType": 0,
+              "_epDamageRatio": 0.0,
+              "_useDynamicAttackType": 1,
+              "_deliveryParaWhenReplaceActionNode": 0,
+              "_damageType": 3,
+              "_extraDamageType": 0,
+              "_alwaysPutIncludeTargetFirst": 0
+            },
+            "script_key": "CAB-658d74aab777086fc32b93f385be999a:4381884627089348317",
+            "native_class": "MeleeAttack"
+          },
+          "selector": {
+            "script_path_id": 6959540303033999559,
+            "gameobject_path_id": 4940798182448809250,
+            "gameobject_name": "Selector",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 4940798182448809250
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 6959540303033999559
+              },
+              "m_Name": "",
+              "_targetSide": 1,
+              "_targetMotion": 3,
+              "_targetCategory": 1,
+              "_postFilter": 0,
+              "_ignoreTargetFree": 0,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_abnormalFlag": 23,
+              "_abnormalCombo": 2,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 0,
+              "_needProfessionMask": 0,
+              "_professionMask": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_excludeAbnormalFlag": 46,
+              "_limitTargetNum": 0,
+              "_maxTargetKey": "max_target",
+              "_maxNum": 1,
+              "_excludeOwner": 0,
+              "_sortByTauntAtLast": 0,
+              "_ignoreHitRange": 0,
+              "_checkUnitType": 0,
+              "_unitTypeMask": 0,
+              "_abilityInputTargetAsSortSource": 0,
+              "_tagExcluded": 0,
+              "_filterTag": "",
+              "_filterTagList": [],
+              "_buffKeyExcluded": 0,
+              "_buffKey": "duspfr_t[deadboom]",
+              "_buffs": [],
+              "_checkOrInsteadOfAnd": 0,
+              "_filterBuffSource": 0,
+              "_filterTokenHost": 0
+            },
+            "script_key": "CAB-658d74aab777086fc32b93f385be999a:6959540303033999559",
+            "native_class": "AdvancedSelectorWithTagAndBuffKey"
+          }
+        },
+        "parallel_source_group": {
+          "script_path_id": 8671737732485835867,
+          "gameobject_path_id": -3248485079666211550,
+          "gameobject_name": "DeadBoom",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -3248485079666211550
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 8671737732485835867
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": -370550191829957342
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_abilities": [
+              {
+                "m_FileID": 0,
+                "m_PathID": -156798167760190174
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": 8329883186402542882
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": 7145536283770799394
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": -771751067344845534
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": 7632426845488071970
+              }
+            ],
+            "_alsoInterruptSubAbilities": 0,
+            "_useEscaptime": 0,
+            "_alsoCheckChildrenAffecting": 0,
+            "_finishAllAbilitiesIfOneFinish": 0,
+            "_mainAbility": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_timeMode": 1,
+            "_updateCooldownAfterSubAbilitiesAttached": 0
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:8671737732485835867",
+          "native_class": "AbilityParallelGroup"
+        },
+        "native_element_type": 0,
+        "native_ep_ratio": 0.0
+      }
+    },
+    {
+      "id": "ability/ch9/pillar/collapse_right",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "costs": [
+          {
+            "resource": "sp",
+            "amount": 10
+          }
+        ],
+        "condition": "inputs.resources.sp.current >= 10",
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/ch9/pillar/deadlike",
+            "bind_to_cast": true
+          }
+        ]
+      },
+      "tile_selector": {
+        "eligibility_expression": "inputs.cell.row - inputs.source.components.spatial.position.row in params.rows and inputs.cell.col - inputs.source.components.spatial.position.col in params.cols and inputs.tile.buildableType != 0 and not inputs.deployment_blocked",
+        "parameters": {
+          "rows": [
+            0
+          ],
+          "cols": [
+            1,
+            2
+          ]
+        },
+        "limit": 2,
+        "selection": "row_major",
+        "stream": null
+      },
+      "timeline": [
+        {
+          "at_seconds": 1.5,
+          "effects": [
+            {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/ch9/pillar/members",
+              "selection_projection": {
+                "defaults": {
+                  "camouflage": false,
+                  "target_free": false,
+                  "can_select_camouflage": false,
+                  "heal_free": false,
+                  "ally_target_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "parameters": {
+                "offsets": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    1
+                  ],
+                  [
+                    0,
+                    2
+                  ]
+                ],
+                "side": 1,
+                "category_mask": 1,
+                "motion_mask": 3,
+                "ignore_target_free": false,
+                "can_select_invisible": false,
+                "can_select_camouflage": false
+              },
+              "effects": [
+                {
+                  "op": "damage",
+                  "damage_type": "true",
+                  "scale": 1
+                },
+                {
+                  "op": "apply_buff",
+                  "buff": "buff/ch9/pillar/stun10"
+                }
+              ]
+            },
+            {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/ch9/pillar/members",
+              "selection_projection": {
+                "defaults": {
+                  "camouflage": false,
+                  "target_free": false,
+                  "can_select_camouflage": false,
+                  "heal_free": false,
+                  "ally_target_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "parameters": {
+                "offsets": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    1
+                  ],
+                  [
+                    0,
+                    2
+                  ]
+                ],
+                "side": 0,
+                "category_mask": 1,
+                "motion_mask": 3,
+                "ignore_target_free": true,
+                "can_select_invisible": false,
+                "can_select_camouflage": false
+              },
+              "effects": [
+                {
+                  "op": "retire",
+                  "parameters": {
+                    "reason": "withdrawn"
+                  }
+                }
+              ]
+            },
+            {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/ch9/pillar/members",
+              "selection_projection": {
+                "defaults": {
+                  "camouflage": false,
+                  "target_free": false,
+                  "can_select_camouflage": false,
+                  "heal_free": false,
+                  "ally_target_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "parameters": {
+                "offsets": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    1
+                  ],
+                  [
+                    0,
+                    2
+                  ]
+                ],
+                "side": 0,
+                "category_mask": 2,
+                "motion_mask": 3,
+                "ignore_target_free": true,
+                "can_select_invisible": false,
+                "can_select_camouflage": false
+              },
+              "effects": [
+                {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "pillar_collapse",
+                    "skip_rebirth": false
+                  }
+                }
+              ]
+            },
+            {
+              "op": "spawn_on_tiles",
+              "definition": "unit/ch9/pillar/ruin",
+              "parameters": {
+                "cells": "captured",
+                "recheck": true,
+                "occupant_expression": "False",
+                "occupant_parameters": {},
+                "instant_kill": {
+                  "cause": "pillar_spawn",
+                  "skip_rebirth": false
+                },
+                "on_owner_retire": "retain"
+              }
+            },
+            {
+              "op": "retire",
+              "target": "source",
+              "parameters": {
+                "reason": "dead"
+              }
+            }
+          ]
+        }
+      ],
+      "duration_seconds": 1.5
+    },
+    {
+      "id": "ability/ch9/pillar/collapse_left",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "costs": [
+          {
+            "resource": "sp",
+            "amount": 10
+          }
+        ],
+        "condition": "inputs.resources.sp.current >= 10",
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/ch9/pillar/deadlike",
+            "bind_to_cast": true
+          }
+        ]
+      },
+      "tile_selector": {
+        "eligibility_expression": "inputs.cell.row - inputs.source.components.spatial.position.row in params.rows and inputs.cell.col - inputs.source.components.spatial.position.col in params.cols and inputs.tile.buildableType != 0 and not inputs.deployment_blocked",
+        "parameters": {
+          "rows": [
+            0
+          ],
+          "cols": [
+            -1,
+            -2
+          ]
+        },
+        "limit": 2,
+        "selection": "row_major",
+        "stream": null
+      },
+      "timeline": [
+        {
+          "at_seconds": 1.5,
+          "effects": [
+            {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/ch9/pillar/members",
+              "selection_projection": {
+                "defaults": {
+                  "camouflage": false,
+                  "target_free": false,
+                  "can_select_camouflage": false,
+                  "heal_free": false,
+                  "ally_target_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "parameters": {
+                "offsets": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    -1
+                  ],
+                  [
+                    0,
+                    -2
+                  ]
+                ],
+                "side": 1,
+                "category_mask": 1,
+                "motion_mask": 3,
+                "ignore_target_free": false,
+                "can_select_invisible": false,
+                "can_select_camouflage": false
+              },
+              "effects": [
+                {
+                  "op": "damage",
+                  "damage_type": "true",
+                  "scale": 1
+                },
+                {
+                  "op": "apply_buff",
+                  "buff": "buff/ch9/pillar/stun10"
+                }
+              ]
+            },
+            {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/ch9/pillar/members",
+              "selection_projection": {
+                "defaults": {
+                  "camouflage": false,
+                  "target_free": false,
+                  "can_select_camouflage": false,
+                  "heal_free": false,
+                  "ally_target_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "parameters": {
+                "offsets": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    -1
+                  ],
+                  [
+                    0,
+                    -2
+                  ]
+                ],
+                "side": 0,
+                "category_mask": 1,
+                "motion_mask": 3,
+                "ignore_target_free": true,
+                "can_select_invisible": false,
+                "can_select_camouflage": false
+              },
+              "effects": [
+                {
+                  "op": "retire",
+                  "parameters": {
+                    "reason": "withdrawn"
+                  }
+                }
+              ]
+            },
+            {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/ch9/pillar/members",
+              "selection_projection": {
+                "defaults": {
+                  "camouflage": false,
+                  "target_free": false,
+                  "can_select_camouflage": false,
+                  "heal_free": false,
+                  "ally_target_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "parameters": {
+                "offsets": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    -1
+                  ],
+                  [
+                    0,
+                    -2
+                  ]
+                ],
+                "side": 0,
+                "category_mask": 2,
+                "motion_mask": 3,
+                "ignore_target_free": true,
+                "can_select_invisible": false,
+                "can_select_camouflage": false
+              },
+              "effects": [
+                {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "pillar_collapse",
+                    "skip_rebirth": false
+                  }
+                }
+              ]
+            },
+            {
+              "op": "spawn_on_tiles",
+              "definition": "unit/ch9/pillar/ruin",
+              "parameters": {
+                "cells": "captured",
+                "recheck": true,
+                "occupant_expression": "False",
+                "occupant_parameters": {},
+                "instant_kill": {
+                  "cause": "pillar_spawn",
+                  "skip_rebirth": false
+                },
+                "on_owner_retire": "retain"
+              }
+            },
+            {
+              "op": "retire",
+              "target": "source",
+              "parameters": {
+                "reason": "dead"
+              }
+            }
+          ]
+        }
+      ],
+      "duration_seconds": 1.5
+    },
+    {
+      "id": "ability/ch9/pillar/collapse_up",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "costs": [
+          {
+            "resource": "sp",
+            "amount": 10
+          }
+        ],
+        "condition": "inputs.resources.sp.current >= 10",
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/ch9/pillar/deadlike",
+            "bind_to_cast": true
+          }
+        ]
+      },
+      "tile_selector": {
+        "eligibility_expression": "inputs.cell.row - inputs.source.components.spatial.position.row in params.rows and inputs.cell.col - inputs.source.components.spatial.position.col in params.cols and inputs.tile.buildableType != 0 and not inputs.deployment_blocked",
+        "parameters": {
+          "rows": [
+            -1,
+            -2
+          ],
+          "cols": [
+            0
+          ]
+        },
+        "limit": 2,
+        "selection": "row_major",
+        "stream": null
+      },
+      "timeline": [
+        {
+          "at_seconds": 1.5,
+          "effects": [
+            {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/ch9/pillar/members",
+              "selection_projection": {
+                "defaults": {
+                  "camouflage": false,
+                  "target_free": false,
+                  "can_select_camouflage": false,
+                  "heal_free": false,
+                  "ally_target_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "parameters": {
+                "offsets": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    -1,
+                    0
+                  ],
+                  [
+                    -2,
+                    0
+                  ]
+                ],
+                "side": 1,
+                "category_mask": 1,
+                "motion_mask": 3,
+                "ignore_target_free": false,
+                "can_select_invisible": false,
+                "can_select_camouflage": false
+              },
+              "effects": [
+                {
+                  "op": "damage",
+                  "damage_type": "true",
+                  "scale": 1
+                },
+                {
+                  "op": "apply_buff",
+                  "buff": "buff/ch9/pillar/stun10"
+                }
+              ]
+            },
+            {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/ch9/pillar/members",
+              "selection_projection": {
+                "defaults": {
+                  "camouflage": false,
+                  "target_free": false,
+                  "can_select_camouflage": false,
+                  "heal_free": false,
+                  "ally_target_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "parameters": {
+                "offsets": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    -1,
+                    0
+                  ],
+                  [
+                    -2,
+                    0
+                  ]
+                ],
+                "side": 0,
+                "category_mask": 1,
+                "motion_mask": 3,
+                "ignore_target_free": true,
+                "can_select_invisible": false,
+                "can_select_camouflage": false
+              },
+              "effects": [
+                {
+                  "op": "retire",
+                  "parameters": {
+                    "reason": "withdrawn"
+                  }
+                }
+              ]
+            },
+            {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/ch9/pillar/members",
+              "selection_projection": {
+                "defaults": {
+                  "camouflage": false,
+                  "target_free": false,
+                  "can_select_camouflage": false,
+                  "heal_free": false,
+                  "ally_target_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "parameters": {
+                "offsets": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    -1,
+                    0
+                  ],
+                  [
+                    -2,
+                    0
+                  ]
+                ],
+                "side": 0,
+                "category_mask": 2,
+                "motion_mask": 3,
+                "ignore_target_free": true,
+                "can_select_invisible": false,
+                "can_select_camouflage": false
+              },
+              "effects": [
+                {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "pillar_collapse",
+                    "skip_rebirth": false
+                  }
+                }
+              ]
+            },
+            {
+              "op": "spawn_on_tiles",
+              "definition": "unit/ch9/pillar/ruin",
+              "parameters": {
+                "cells": "captured",
+                "recheck": true,
+                "occupant_expression": "False",
+                "occupant_parameters": {},
+                "instant_kill": {
+                  "cause": "pillar_spawn",
+                  "skip_rebirth": false
+                },
+                "on_owner_retire": "retain"
+              }
+            },
+            {
+              "op": "retire",
+              "target": "source",
+              "parameters": {
+                "reason": "dead"
+              }
+            }
+          ]
+        }
+      ],
+      "duration_seconds": 1.5
+    },
+    {
+      "id": "ability/ch9/pillar/collapse_down",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "costs": [
+          {
+            "resource": "sp",
+            "amount": 10
+          }
+        ],
+        "condition": "inputs.resources.sp.current >= 10",
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/ch9/pillar/deadlike",
+            "bind_to_cast": true
+          }
+        ]
+      },
+      "tile_selector": {
+        "eligibility_expression": "inputs.cell.row - inputs.source.components.spatial.position.row in params.rows and inputs.cell.col - inputs.source.components.spatial.position.col in params.cols and inputs.tile.buildableType != 0 and not inputs.deployment_blocked",
+        "parameters": {
+          "rows": [
+            1,
+            2
+          ],
+          "cols": [
+            0
+          ]
+        },
+        "limit": 2,
+        "selection": "row_major",
+        "stream": null
+      },
+      "timeline": [
+        {
+          "at_seconds": 1.5,
+          "effects": [
+            {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/ch9/pillar/members",
+              "selection_projection": {
+                "defaults": {
+                  "camouflage": false,
+                  "target_free": false,
+                  "can_select_camouflage": false,
+                  "heal_free": false,
+                  "ally_target_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "parameters": {
+                "offsets": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    1,
+                    0
+                  ],
+                  [
+                    2,
+                    0
+                  ]
+                ],
+                "side": 1,
+                "category_mask": 1,
+                "motion_mask": 3,
+                "ignore_target_free": false,
+                "can_select_invisible": false,
+                "can_select_camouflage": false
+              },
+              "effects": [
+                {
+                  "op": "damage",
+                  "damage_type": "true",
+                  "scale": 1
+                },
+                {
+                  "op": "apply_buff",
+                  "buff": "buff/ch9/pillar/stun10"
+                }
+              ]
+            },
+            {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/ch9/pillar/members",
+              "selection_projection": {
+                "defaults": {
+                  "camouflage": false,
+                  "target_free": false,
+                  "can_select_camouflage": false,
+                  "heal_free": false,
+                  "ally_target_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "parameters": {
+                "offsets": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    1,
+                    0
+                  ],
+                  [
+                    2,
+                    0
+                  ]
+                ],
+                "side": 0,
+                "category_mask": 1,
+                "motion_mask": 3,
+                "ignore_target_free": true,
+                "can_select_invisible": false,
+                "can_select_camouflage": false
+              },
+              "effects": [
+                {
+                  "op": "retire",
+                  "parameters": {
+                    "reason": "withdrawn"
+                  }
+                }
+              ]
+            },
+            {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/ch9/pillar/members",
+              "selection_projection": {
+                "defaults": {
+                  "camouflage": false,
+                  "target_free": false,
+                  "can_select_camouflage": false,
+                  "heal_free": false,
+                  "ally_target_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "parameters": {
+                "offsets": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    1,
+                    0
+                  ],
+                  [
+                    2,
+                    0
+                  ]
+                ],
+                "side": 0,
+                "category_mask": 2,
+                "motion_mask": 3,
+                "ignore_target_free": true,
+                "can_select_invisible": false,
+                "can_select_camouflage": false
+              },
+              "effects": [
+                {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "pillar_collapse",
+                    "skip_rebirth": false
+                  }
+                }
+              ]
+            },
+            {
+              "op": "spawn_on_tiles",
+              "definition": "unit/ch9/pillar/ruin",
+              "parameters": {
+                "cells": "captured",
+                "recheck": true,
+                "occupant_expression": "False",
+                "occupant_parameters": {},
+                "instant_kill": {
+                  "cause": "pillar_spawn",
+                  "skip_rebirth": false
+                },
+                "on_owner_retire": "retain"
+              }
+            },
+            {
+              "op": "retire",
+              "target": "source",
+              "parameters": {
+                "reason": "dead"
+              }
+            }
+          ]
+        }
+      ],
+      "duration_seconds": 1.5
+    }
+  ],
+  "entities": [
+    {
+      "id": "unit/ch9/duspfr/body",
+      "kind": "entity",
+      "tags": [
+        "enemy"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 8000,
+            "atk": 500,
+            "def": 400,
+            "mres": 0,
+            "attack_interval": 2,
+            "attack_speed_ratio": 1,
+            "move_speed": 0.8,
+            "mass_level": 3,
+            "block_cost": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "role": "health",
+            "initial": 8000,
+            "capacity": 8000
+          }
+        },
+        "selection_state": {
+          "side": 1,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 2,
+          "abnormal_flags": []
+        },
+        "abilities": [
+          "ability/ch9/duspfr/flame",
+          "ability/ch9/duspfr/blocked_attack",
+          "ability/ch9/duspfr/dead_DieAnim",
+          "ability/ch9/duspfr/dead_Suicide",
+          "ability/ch9/duspfr/dead_PullDupilr",
+          "ability/ch9/duspfr/dead_Damage",
+          "ability/ch9/duspfr/dead_KillDuspfr"
+        ],
+        "spatial": {
+          "motion_mode": 0,
+          "steering": {
+            "rule": "rule/ch9/duspfr/steering",
+            "parameters": {
+              "response_factor": 8,
+              "max_acceleration": 10,
+              "arrival_radius": 0.05
+            }
+          }
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "buffs": {
+          "initial": [
+            "buff/ch9/duspfr/deadboom"
+          ]
+        },
+        "depletion": {
+          "resource": "hp",
+          "rule": "rule/ch9/duspfr/depletion",
+          "selection_context": true,
+          "initial_stage": "normal",
+          "parameters": {},
+          "stages": {
+            "normal": {
+              "active": true,
+              "selectable": true
+            },
+            "terminal": {
+              "active": false,
+              "selectable": false
+            }
+          },
+          "actions": {
+            "begin": {
+              "at_seconds": 0,
+              "effects": [
+                {
+                  "op": "remove_buff",
+                  "buff": "buff/ch9/duspfr/deadboom",
+                  "remove_all": true,
+                  "parameters": {
+                    "retain_definitions": [
+                      "buff/ch9/duspfr/deadboom"
+                    ]
+                  }
+                },
+                {
+                  "op": "apply_buff",
+                  "buff": "buff/ch9/duspfr/deadlike"
+                }
+              ]
+            },
+            "DieAnim": {
+              "at_seconds": 0,
+              "effects": [],
+              "owned_ability": "ability/ch9/duspfr/dead_DieAnim"
+            },
+            "Suicide": {
+              "at_seconds": 0,
+              "effects": [],
+              "owned_ability": "ability/ch9/duspfr/dead_Suicide"
+            },
+            "PullDupilr": {
+              "at_seconds": 0,
+              "effects": [],
+              "owned_ability": "ability/ch9/duspfr/dead_PullDupilr"
+            },
+            "Damage": {
+              "at_seconds": 0,
+              "effects": [],
+              "owned_ability": "ability/ch9/duspfr/dead_Damage"
+            },
+            "KillDuspfr": {
+              "at_seconds": 0,
+              "effects": [],
+              "owned_ability": "ability/ch9/duspfr/dead_KillDuspfr"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "unit/ch9/pillar/body",
+      "kind": "entity",
+      "tags": [
+        "pillar",
+        "dupilr"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 5000,
+            "atk": 12000,
+            "def": 0,
+            "mres": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "role": "health",
+            "capacity": 5000,
+            "initial": 5000
+          },
+          "sp": {
+            "capacity": 10,
+            "initial": 10
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "side": 2,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 4
+        },
+        "buffs": {
+          "initial": [
+            "buff/ch9/pillar/trait",
+            "buff/ch9/pillar/abnormalimmunes",
+            "buff/ch9/pillar/undead",
+            "buff/ch9/pillar/ondead"
+          ]
+        },
+        "abilities": [
+          "ability/ch9/pillar/collapse_right",
+          "ability/ch9/pillar/collapse_left",
+          "ability/ch9/pillar/collapse_up",
+          "ability/ch9/pillar/collapse_down"
+        ],
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "depletion": {
+          "resource": "hp",
+          "rule": "rule/ch9/duspfr/pillar_plan",
+          "damage_gate_rule": "rule/ch9/pillar/gate",
+          "initial_stage": "normal",
+          "parameters": {},
+          "stages": {
+            "normal": {
+              "active": true,
+              "selectable": true
+            },
+            "damaged": {
+              "active": false,
+              "selectable": false
+            },
+            "ready": {
+              "active": true,
+              "selectable": true
+            },
+            "collapsing": {
+              "active": true,
+              "selectable": false
+            }
+          },
+          "actions": {
+            "mark_ready": {
+              "at_seconds": 0,
+              "effects": [
+                {
+                  "op": "apply_buff",
+                  "buff": "buff/ch9/pillar/candead"
+                }
+              ]
+            },
+            "begin": {
+              "at_seconds": 0,
+              "effects": [
+                {
+                  "op": "apply_buff",
+                  "buff": "buff/ch9/pillar/startdead"
+                },
+                {
+                  "op": "remove_buff",
+                  "buff": "buff/ch9/pillar/trait",
+                  "remove_all": true,
+                  "parameters": {
+                    "retain_definitions": [
+                      "buff/ch9/pillar/trait",
+                      "buff/ch9/pillar/startdead",
+                      "buff/ch9/pillar/candead",
+                      "buff/ch9/pillar/abnormalimmunes",
+                      "buff/ch9/pillar/ready_effect",
+                      "buff/ch9/pillar/undead",
+                      "buff/ch9/pillar/ondead"
+                    ]
+                  }
+                },
+                {
+                  "op": "apply_buff",
+                  "buff": "buff/ch9/pillar/ready_effect"
+                }
+              ]
+            },
+            "ready": {
+              "at_seconds": 2,
+              "next_stage": "ready",
+              "effects": [
+                {
+                  "op": "remove_buff",
+                  "buff": "buff/ch9/pillar/startdead"
+                },
+                {
+                  "op": "apply_buff",
+                  "buff": "buff/ch9/pillar/candead"
+                },
+                {
+                  "op": "remove_buff",
+                  "buff": "buff/ch9/pillar/trait",
+                  "remove_all": true,
+                  "parameters": {
+                    "retain_definitions": [
+                      "buff/ch9/pillar/trait",
+                      "buff/ch9/pillar/startdead",
+                      "buff/ch9/pillar/candead",
+                      "buff/ch9/pillar/abnormalimmunes",
+                      "buff/ch9/pillar/ready_effect",
+                      "buff/ch9/pillar/undead",
+                      "buff/ch9/pillar/ondead"
+                    ]
+                  }
+                }
+              ]
+            },
+            "collapse_right": {
+              "at_seconds": 0,
+              "effects": [
+                {
+                  "op": "remove_buff",
+                  "buff": "buff/ch9/pillar/trait",
+                  "remove_all": true,
+                  "parameters": {
+                    "retain_definitions": [
+                      "buff/ch9/pillar/trait",
+                      "buff/ch9/pillar/startdead",
+                      "buff/ch9/pillar/candead",
+                      "buff/ch9/pillar/abnormalimmunes",
+                      "buff/ch9/pillar/ready_effect",
+                      "buff/ch9/pillar/undead",
+                      "buff/ch9/pillar/ondead"
+                    ]
+                  }
+                }
+              ],
+              "owned_ability": "ability/ch9/pillar/collapse_right"
+            },
+            "collapse_left": {
+              "at_seconds": 0,
+              "effects": [
+                {
+                  "op": "remove_buff",
+                  "buff": "buff/ch9/pillar/trait",
+                  "remove_all": true,
+                  "parameters": {
+                    "retain_definitions": [
+                      "buff/ch9/pillar/trait",
+                      "buff/ch9/pillar/startdead",
+                      "buff/ch9/pillar/candead",
+                      "buff/ch9/pillar/abnormalimmunes",
+                      "buff/ch9/pillar/ready_effect",
+                      "buff/ch9/pillar/undead",
+                      "buff/ch9/pillar/ondead"
+                    ]
+                  }
+                }
+              ],
+              "owned_ability": "ability/ch9/pillar/collapse_left"
+            },
+            "collapse_up": {
+              "at_seconds": 0,
+              "effects": [
+                {
+                  "op": "remove_buff",
+                  "buff": "buff/ch9/pillar/trait",
+                  "remove_all": true,
+                  "parameters": {
+                    "retain_definitions": [
+                      "buff/ch9/pillar/trait",
+                      "buff/ch9/pillar/startdead",
+                      "buff/ch9/pillar/candead",
+                      "buff/ch9/pillar/abnormalimmunes",
+                      "buff/ch9/pillar/ready_effect",
+                      "buff/ch9/pillar/undead",
+                      "buff/ch9/pillar/ondead"
+                    ]
+                  }
+                }
+              ],
+              "owned_ability": "ability/ch9/pillar/collapse_up"
+            },
+            "collapse_down": {
+              "at_seconds": 0,
+              "effects": [
+                {
+                  "op": "remove_buff",
+                  "buff": "buff/ch9/pillar/trait",
+                  "remove_all": true,
+                  "parameters": {
+                    "retain_definitions": [
+                      "buff/ch9/pillar/trait",
+                      "buff/ch9/pillar/startdead",
+                      "buff/ch9/pillar/candead",
+                      "buff/ch9/pillar/abnormalimmunes",
+                      "buff/ch9/pillar/ready_effect",
+                      "buff/ch9/pillar/undead",
+                      "buff/ch9/pillar/ondead"
+                    ]
+                  }
+                }
+              ],
+              "owned_ability": "ability/ch9/pillar/collapse_down"
+            }
+          },
+          "trigger": "health_zero_or_damage"
+        }
+      }
+    },
+    {
+      "id": "unit/ch9/pillar/ruin",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ruin"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 100,
+            "atk": 0,
+            "def": 0,
+            "mres": 0,
+            "block_count": 3
+          }
+        },
+        "resources": {
+          "hp": {
+            "role": "health",
+            "capacity": 100,
+            "initial": 100
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "side": 1,
+          "motion": 1,
+          "category": 4,
+          "unit_type": 4
+        },
+        "tile_occupancy": {
+          "blocks_deployment": true,
+          "exclusive": false,
+          "targetable": true,
+          "withdrawable": true
+        },
+        "terrain_overlays": [
+          {
+            "key": "ruin",
+            "priority": 0,
+            "values": {
+              "buildableType": 0,
+              "physicalHeight": 0.4000000059604645,
+              "obstacleLikeMoveCost": true
+            },
+            "preserve": [
+              "passableMask",
+              "heightType"
+            ]
+          }
+        ],
+        "deployable": {
+          "base_cost": 5,
+          "terrain": "ground",
+          "capacity": 0,
+          "cooldown_seconds": 5,
+          "refund_ratio": 0,
+          "parameters": {
+            "max_instances": 100
+          }
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    }
+  ],
+  "manifest": {
+    "id": "package/ch9/duspfr/full_source_v1",
+    "metadata": {
+      "source_locks": {
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter09_source_prepare\\enemies.native.v1.json": "592afac29cc32d1aeaba3ea739eb6da5a218055e255a42f53315f4a2ca0962ff",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter09_source_prepare\\source.detail.v1.json": "984c309553cd8eb205274257c50a07f32e9d1397265d06d578e045e0f841387e",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter09_consumers\\linked_elemental\\duspfr.consumer.requirements.v1.json": "197a101a3a222132c022c579b1517e46f6c5d18ec2c51706d571a89d5bb9b5e2",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_duspfr_v1\\build.py": "d59387ba199c7f7a56ffd99eca0e3c6b363fa6548a4dc421277dc56a52577418"
+      },
+      "native_variant": {
+        "useDb": true,
+        "id": "enemy_1173_duspfr",
+        "level": 0,
+        "overwrittenData": null
+      },
+      "literal_native_stats": {
+        "maxHp": 8000,
+        "atk": 500,
+        "def": 400,
+        "magicResistance": 0.0,
+        "moveSpeed": 0.8,
+        "attackSpeed": 100.0,
+        "baseAttackTime": 2.0,
+        "hpRecoveryPerSec": 0.0,
+        "massLevel": 3,
+        "stunImmune": false,
+        "silenceImmune": false
+      },
+      "literal_skill_rows": [
+        {
+          "prefabKey": "Flame",
+          "priority": 1,
+          "cooldown": 0.0,
+          "initCooldown": 0.0,
+          "spCost": 0,
+          "blackboard": [
+            {
+              "key": "duspfr_flame[cd].duration",
+              "value": 10.6,
+              "valueStr": null
+            },
+            {
+              "key": "duspfr_flame[cd].cooldown",
+              "value": 10.0,
+              "valueStr": null
+            },
+            {
+              "key": "atk_scale",
+              "value": 0.12,
+              "valueStr": null
+            },
+            {
+              "key": "ep_damage_ratio",
+              "value": 0.06,
+              "valueStr": null
+            },
+            {
+              "key": "hit_interval",
+              "value": 0.5,
+              "valueStr": null
+            },
+            {
+              "key": "duspfr_flame[cd].interval",
+              "value": 6.0,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "prefabKey": "DeadBoom",
+          "priority": 0,
+          "cooldown": 0.0,
+          "initCooldown": 0.0,
+          "spCost": 0,
+          "blackboard": [
+            {
+              "key": "atk_scale",
+              "value": 1.0,
+              "valueStr": null
+            }
+          ]
+        }
+      ],
+      "literal_normal_attack": {
+        "script_path_id": 4381884627089348317,
+        "gameobject_path_id": 991518709704803618,
+        "gameobject_name": "Combat",
+        "raw": {
+          "m_GameObject": {
+            "m_FileID": 0,
+            "m_PathID": 991518709704803618
+          },
+          "m_Enabled": 1,
+          "m_Script": {
+            "m_FileID": 1,
+            "m_PathID": 4381884627089348317
+          },
+          "m_Name": "",
+          "_selector": {
+            "m_FileID": 0,
+            "m_PathID": 0
+          },
+          "_metadata": {
+            "namedAsAlias": "",
+            "blackboardPrefix": ""
+          },
+          "_interruptAbilityOnDetach": 0,
+          "_attachPassiveBuffsOnDummy": 1,
+          "_ignoreIfOwnerDead": 0,
+          "_forceAsDmgOrHealAbility": 0,
+          "_waitForAttackEvent": 1,
+          "_interuptIfTargetDead": 0,
+          "_resetCdStrategy": 1,
+          "_selectTargetSource": 2,
+          "_selectTargetTiming": 0,
+          "_timeMode": 0,
+          "_alwaysIncludeTarget": 1,
+          "_allowNoTarget": 0,
+          "_animKey": "Attack",
+          "_endAnimKey": "Idle",
+          "_downAnimKey": "",
+          "_downEndAnimKey": "",
+          "_upAnimKey": "",
+          "_upEndAnimKey": "",
+          "_cooldown": 0.0,
+          "_cooldownKey": "duration",
+          "_preDelay": 0.0,
+          "_escapeTime": 0.0,
+          "_faceToTarget": 1,
+          "_faceToDefault": 0,
+          "_faceToFront": 0,
+          "_faceToFirstCastTarget": 0,
+          "_checkFaceToFirstCastTargetDownAttack": 0,
+          "_forceFaceToDirection": 0,
+          "_activeBuffs": [],
+          "_maxAnimScale": 1.100000023841858,
+          "_onlyPlayEndAnimWhenIsLastAbility": 0,
+          "_ignorePalsyInterrupt": 0,
+          "_affectedBySlowDown": 1,
+          "_atkScale": 1.0,
+          "_atkScaleKey": "atk_scale",
+          "_attackType": 1,
+          "_elementDamageType": 0,
+          "_epDamageRatio": 0.0,
+          "_useDynamicAttackType": 0,
+          "_deliveryParaWhenReplaceActionNode": 0,
+          "_damageType": 1,
+          "_extraDamageType": 0,
+          "_alwaysPutIncludeTargetFirst": 0
+        },
+        "script_key": "CAB-658d74aab777086fc32b93f385be999a:4381884627089348317",
+        "native_class": "MeleeAttack",
+        "path_id": 7181440501402551586,
+        "animation_binding": {
+          "key": "Attack",
+          "animation_name": "Attack",
+          "mapping": {
+            "animKey": "Attack",
+            "animName": "Attack",
+            "loop": 0,
+            "speed": 1.0,
+            "ignoreMissing": 0
+          },
+          "duration": {
+            "source_seconds_float32": 1.0,
+            "seconds": 1.0,
+            "frame": 30,
+            "exact_authored_frame": true
+          },
+          "events": [
+            {
+              "name": "OnAttack",
+              "source_seconds_float32": 0.4333333373069763,
+              "seconds": 0.43333333333333335,
+              "frame": 13,
+              "exact_authored_frame": true
+            }
+          ],
+          "status": "native_binding_resolved"
+        }
+      },
+      "literal_Flame": {
+        "script_path_id": 4156651312234227407,
+        "gameobject_path_id": -8344981307987606238,
+        "gameobject_name": "Flame",
+        "raw": {
+          "m_GameObject": {
+            "m_FileID": 0,
+            "m_PathID": -8344981307987606238
+          },
+          "m_Enabled": 1,
+          "m_Script": {
+            "m_FileID": 1,
+            "m_PathID": 4156651312234227407
+          },
+          "m_Name": "",
+          "_selector": {
+            "m_FileID": 0,
+            "m_PathID": 0
+          },
+          "_metadata": {
+            "namedAsAlias": "",
+            "blackboardPrefix": ""
+          },
+          "_interruptAbilityOnDetach": 0,
+          "_attachPassiveBuffsOnDummy": 1,
+          "_ignoreIfOwnerDead": 0,
+          "_forceAsDmgOrHealAbility": 0,
+          "_waitForAttackEvent": 0,
+          "_interuptIfTargetDead": 0,
+          "_resetCdStrategy": 1,
+          "_selectTargetSource": 2,
+          "_selectTargetTiming": 0,
+          "_timeMode": 0,
+          "_alwaysIncludeTarget": 1,
+          "_allowNoTarget": 0,
+          "_animKey": "",
+          "_endAnimKey": "Idle",
+          "_downAnimKey": "",
+          "_downEndAnimKey": "",
+          "_upAnimKey": "",
+          "_upEndAnimKey": "",
+          "_cooldown": 0.25,
+          "_cooldownKey": "duration",
+          "_preDelay": 0.5,
+          "_escapeTime": 0.0,
+          "_faceToTarget": 1,
+          "_faceToDefault": 0,
+          "_faceToFront": 0,
+          "_faceToFirstCastTarget": 0,
+          "_checkFaceToFirstCastTargetDownAttack": 0,
+          "_forceFaceToDirection": 0,
+          "_activeBuffs": [],
+          "_maxAnimScale": 1.0,
+          "_onlyPlayEndAnimWhenIsLastAbility": 0,
+          "_ignorePalsyInterrupt": 0,
+          "_affectedBySlowDown": 0,
+          "_atkScale": 1.0,
+          "_atkScaleKey": "atk_scale",
+          "_attackType": 1,
+          "_elementDamageType": 3,
+          "_epDamageRatio": 1.0,
+          "_useDynamicAttackType": 0,
+          "_deliveryParaWhenReplaceActionNode": 0,
+          "_projectileKey": "projectile_enemy_duspfr",
+          "_mountPointType": 2,
+          "_useMountGroup": 0,
+          "_mountGroup": {
+            "loopType": 0,
+            "mountPoints": []
+          },
+          "_damageType": 2,
+          "_waitForProjectileInvalid": 1,
+          "_notClearProjectileWhenCastEnd": 0,
+          "_fireAttackFinishWhenProjectileInvalid": 1,
+          "_minPostDelayWhenProjectileInvalid": 0.25,
+          "_waitForAnimEndWhenProjectileInvalid": 0,
+          "_projectileDestination": 0,
+          "_extraDamageType": 0,
+          "_emitToInputPosWhenTargetIsInvalid": 0,
+          "_emitToInputRootTileWhenTargetIsInvalid": 0,
+          "_useCachedAtkOnly": 0,
+          "_transferSource": 0,
+          "_extraProjectileKeys": [],
+          "_fireCreateProjectileEvent": 0
+        },
+        "script_key": "CAB-658d74aab777086fc32b93f385be999a:4156651312234227407",
+        "native_class": "RangedAttack"
+      },
+      "literal_trigger": {
+        "script_path_id": 8607874384982393801,
+        "gameobject_path_id": -7056510749172579038,
+        "gameobject_name": "Trigger",
+        "raw": {
+          "m_GameObject": {
+            "m_FileID": 0,
+            "m_PathID": -7056510749172579038
+          },
+          "m_Enabled": 1,
+          "m_Script": {
+            "m_FileID": 1,
+            "m_PathID": 8607874384982393801
+          },
+          "m_Name": "",
+          "_keepTarget": 0,
+          "_minTargetNum": 1,
+          "_overrideSearchTargetTick": -1
+        },
+        "script_key": "CAB-658d74aab777086fc32b93f385be999a:8607874384982393801",
+        "native_class": "SelectorTrigger"
+      },
+      "literal_geometries": [
+        {
+          "path_id": 6466955889213490466,
+          "gameobject_path_id": -7056510749172579038,
+          "gameobject_name": "Trigger",
+          "unity_type": "CircleCollider2D",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -7056510749172579038
+            },
+            "m_Enabled": 1,
+            "m_Density": 1.0,
+            "m_Material": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "m_IsTrigger": true,
+            "m_UsedByEffector": false,
+            "m_UsedByComposite": false,
+            "m_Offset": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "m_Radius": 1.0
+          }
+        },
+        {
+          "path_id": -3163684060540517086,
+          "gameobject_path_id": 1624495202598765858,
+          "gameobject_name": "Selector",
+          "unity_type": "CircleCollider2D",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 1624495202598765858
+            },
+            "m_Enabled": 1,
+            "m_Density": 1.0,
+            "m_Material": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "m_IsTrigger": true,
+            "m_UsedByEffector": false,
+            "m_UsedByComposite": false,
+            "m_Offset": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "m_Radius": 2.0
+          }
+        },
+        {
+          "path_id": -5839732647930116830,
+          "gameobject_path_id": 3473214133300741410,
+          "gameobject_name": "Selector",
+          "unity_type": "CircleCollider2D",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 3473214133300741410
+            },
+            "m_Enabled": 1,
+            "m_Density": 1.0,
+            "m_Material": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "m_IsTrigger": true,
+            "m_UsedByEffector": false,
+            "m_UsedByComposite": false,
+            "m_Offset": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "m_Radius": 2.0
+          }
+        },
+        {
+          "path_id": -6335411093787654878,
+          "gameobject_path_id": 4940798182448809250,
+          "gameobject_name": "Selector",
+          "unity_type": "CircleCollider2D",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 4940798182448809250
+            },
+            "m_Enabled": 1,
+            "m_Density": 1.0,
+            "m_Material": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "m_IsTrigger": true,
+            "m_UsedByEffector": false,
+            "m_UsedByComposite": false,
+            "m_Offset": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "m_Radius": 2.0
+          }
+        },
+        {
+          "path_id": 1453647838038574370,
+          "gameobject_path_id": 8766079258819609890,
+          "gameobject_name": "enemy_1173_duspfr",
+          "unity_type": "CircleCollider2D",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 8766079258819609890
+            },
+            "m_Enabled": 1,
+            "m_Density": 1.0,
+            "m_Material": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "m_IsTrigger": true,
+            "m_UsedByEffector": false,
+            "m_UsedByComposite": false,
+            "m_Offset": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "m_Radius": 0.10000000149011612
+          }
+        }
+      ],
+      "literal_deadboom": {
+        "BSON": {
+          "parsed": {
+            "templateKey": "enemy_duspfr_t[deadboom]",
+            "effectKey": "",
+            "onEventPriority": "DEFAULT",
+            "eventToActions": {
+              "ON_BEFORE_TRY_SET_HP_ZERO": [
+                {
+                  "$type": "Torappu.Battle.Action.Nodes+IfElse, Assembly-CSharp",
+                  "_conditionNode": {
+                    "$type": "Torappu.Battle.Action.Nodes+CheckAbnormalFlag, Assembly-CSharp",
+                    "_abnormalFlag": "SILENCED",
+                    "_targetType": "BUFF_OWNER",
+                    "_isUnset": false,
+                    "_abnormalFlagKey": ""
+                  },
+                  "_succeedNodes": [
+                    {
+                      "$type": "Torappu.Battle.Action.Nodes+FinishBuff, Assembly-CSharp",
+                      "_decCntIfStack": false,
+                      "_updateOverrideMap": true
+                    }
+                  ],
+                  "_failNodes": [
+                    {
+                      "$type": "Torappu.Battle.Action.Nodes+CheckContainsBuff, Assembly-CSharp",
+                      "_targetType": "BUFF_OWNER",
+                      "_buffKeys": [
+                        "duspfr_dead_like"
+                      ],
+                      "isAND": true,
+                      "_loadFromBlackboard": false,
+                      "_checkBuffSource": false,
+                      "_buffSourceType": "BUFF_SOURCE",
+                      "_checkSourceHost": false
+                    },
+                    {
+                      "$type": "Torappu.Battle.Action.Nodes+IfNot, Assembly-CSharp"
+                    },
+                    {
+                      "$type": "Torappu.Battle.Action.Nodes+InterruptEnemyAbility, Assembly-CSharp",
+                      "_enemyFrom": "BUFF_OWNER",
+                      "_resetCooldown": false,
+                      "_checkBuffAbility": false
+                    },
+                    {
+                      "$type": "Torappu.Battle.Action.Nodes+ClearAllBuffs, Assembly-CSharp",
+                      "_targetType": "BUFF_OWNER",
+                      "_retainedBuffsWhenClear": [
+                        "duspfr_t[deadboom]"
+                      ],
+                      "_alsoRemoveDurableBuff": false
+                    },
+                    {
+                      "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+                      "_buff": {
+                        "attributes": {
+                          "abnormalFlags": [
+                            "ALLY_TARGET_FREE",
+                            "TARGET_FREE",
+                            "INVINCIBLE",
+                            "UNMOVABLE_PRIVATE",
+                            "UNDEADABLE"
+                          ],
+                          "abnormalImmunes": [
+                            "STUNNED",
+                            "FROZEN"
+                          ],
+                          "abnormalAntis": [],
+                          "abnormalCombos": [],
+                          "abnormalComboImmunes": [
+                            "SLEEPING"
+                          ],
+                          "attributeModifiers": []
+                        },
+                        "buffKey": "duspfr_dead_like",
+                        "loadFromDB": false,
+                        "isDurableBuff": false,
+                        "isDamageMissable": false,
+                        "isSilenceable": false,
+                        "isStunnable": false,
+                        "isFreezable": false,
+                        "isLevitatable": false,
+                        "isGroundBoundable": false,
+                        "statusResistable": "AUTOMATIC",
+                        "templateKey": "empty",
+                        "disableOverride": false,
+                        "overrideKey": null,
+                        "overrideType": "DEFAULT",
+                        "maxStackCnt": 1,
+                        "refreshRemainingTimeWhenStackMax": false,
+                        "clearAllStackCntWhenTimeUp": false,
+                        "maxValidStackCnt": -1,
+                        "independentCharacterSource": false,
+                        "overrideEffectKey": null,
+                        "overrideOnEventPriority": false,
+                        "onEventPriority": "DEFAULT",
+                        "audioSignal": null,
+                        "lifeTimeType": "LIMITED",
+                        "takeSnapshotWhenExtend": false,
+                        "durationKey": "none",
+                        "lifeTime": 3.0,
+                        "triggerLifeType": "IMMEDIATELY",
+                        "triggerCnt": 0,
+                        "triggerInterval": -1.0,
+                        "waitFirstTriggerInterval": true,
+                        "firstTriggerInterval": -1.0,
+                        "priority": -1,
+                        "priorityBBKeys": [],
+                        "stripBlackboardParamsWithBuffKey": false,
+                        "blackboard": [],
+                        "enableInitDirectionFromSource": false
+                      },
+                      "_buffOwner": "BUFF_OWNER",
+                      "_useSpecialBuffSource": false,
+                      "_specialBuffSource": "BUFF_SOURCE",
+                      "_isDerivedBuff": false,
+                      "_finishDerivedBuffIfParentFinish": false,
+                      "_inherateSourceProjectileFromParentBuff": false,
+                      "_hookEffectKeyFromSourceProjectile": false
+                    },
+                    {
+                      "$type": "Torappu.Battle.Action.Nodes+CreateEffect, Assembly-CSharp",
+                      "_targetType": "BUFF_OWNER",
+                      "_sourceType": "BUFF_OWNER",
+                      "_effectKey": "enemy_duspfr_2_Die_02",
+                      "_useSourceFaceVactor": false,
+                      "_useSourceToTargetDirection": false,
+                      "_useConstDirection": false,
+                      "_constDirection": "UP",
+                      "_createEffectHoldBySource": false,
+                      "_createEffectConstDirectionHoldBySource": false,
+                      "_useAttackPlaybackSpeed": false,
+                      "_manualSetPlaybackSpeed": false,
+                      "_blackboardKey": "",
+                      "_playbackSpeed": 1.0
+                    },
+                    {
+                      "$type": "Torappu.Battle.Action.Nodes+CreateEffect, Assembly-CSharp",
+                      "_targetType": "BUFF_OWNER",
+                      "_sourceType": "BUFF_OWNER",
+                      "_effectKey": "enemy_duspfr_2_Die_03",
+                      "_useSourceFaceVactor": false,
+                      "_useSourceToTargetDirection": false,
+                      "_useConstDirection": false,
+                      "_constDirection": "UP",
+                      "_createEffectHoldBySource": false,
+                      "_createEffectConstDirectionHoldBySource": false,
+                      "_useAttackPlaybackSpeed": false,
+                      "_manualSetPlaybackSpeed": false,
+                      "_blackboardKey": "",
+                      "_playbackSpeed": 1.0
+                    },
+                    {
+                      "$type": "Torappu.Battle.Action.Nodes+SwitchMode, Assembly-CSharp",
+                      "_modeIndex": 1,
+                      "_loadModeFromBlackboard": false,
+                      "_restoreDefault": false,
+                      "_restartFSM": false,
+                      "_targetType": "TARGET"
+                    },
+                    {
+                      "$type": "Torappu.Battle.Action.Nodes+TriggerEnemySkill, Assembly-CSharp",
+                      "_skillName": "DeadBoom",
+                      "_checkSkillActive": false,
+                      "_checkSkillReady": false,
+                      "_ownerType": "BUFF_OWNER",
+                      "_targetType": "BUFF_OWNER",
+                      "_interruptCurAbility": true,
+                      "_interruptCurAbilityUnlessItIsExpectedAbility": false,
+                      "_assignCombatAbility": false,
+                      "_forceFindTargetBySkillSelector": false,
+                      "_clearPalsyingBuffBeforeTrigger": true,
+                      "_tryCastDirectlyWhenNoTarget": false
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "payload_offset": 1366115,
+          "document_base64": "9A8AAAJ0ZW1wbGF0ZUtleQAZAAAAZW5lbXlfZHVzcGZyX3RbZGVhZGJvb21dAAJlZmZlY3RLZXkAAQAAAAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAANldmVudFRvQWN0aW9ucwCIDwAABE9OX0JFRk9SRV9UUllfU0VUX0hQX1pFUk8AaA8AAAMwAGAPAAACJHR5cGUANAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytJZkVsc2UsIEFzc2VtYmx5LUNTaGFycAADX2NvbmRpdGlvbk5vZGUAqQAAAAIkdHlwZQA/AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NoZWNrQWJub3JtYWxGbGFnLCBBc3NlbWJseS1DU2hhcnAAAl9hYm5vcm1hbEZsYWcACQAAAFNJTEVOQ0VEAAJfdGFyZ2V0VHlwZQALAAAAQlVGRl9PV05FUgAIX2lzVW5zZXQAAAJfYWJub3JtYWxGbGFnS2V5AAEAAAAAAARfc3VjY2VlZE5vZGVzAHYAAAADMABuAAAAAiR0eXBlADgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrRmluaXNoQnVmZiwgQXNzZW1ibHktQ1NoYXJwAAhfZGVjQ250SWZTdGFjawAACF91cGRhdGVPdmVycmlkZU1hcAABAAAEX2ZhaWxOb2RlcwDSDQAAAzAA+AAAAAIkdHlwZQA/AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NoZWNrQ29udGFpbnNCdWZmLCBBc3NlbWJseS1DU2hhcnAAAl90YXJnZXRUeXBlAAsAAABCVUZGX09XTkVSAARfYnVmZktleXMAHQAAAAIwABEAAABkdXNwZnJfZGVhZF9saWtlAAAIaXNBTkQAAQhfbG9hZEZyb21CbGFja2JvYXJkAAAIX2NoZWNrQnVmZlNvdXJjZQAAAl9idWZmU291cmNlVHlwZQAMAAAAQlVGRl9TT1VSQ0UACF9jaGVja1NvdXJjZUhvc3QAAAADMQBDAAAAAiR0eXBlADMAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrSWZOb3QsIEFzc2VtYmx5LUNTaGFycAAAAzIAkwAAAAIkdHlwZQBDAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0ludGVycnVwdEVuZW15QWJpbGl0eSwgQXNzZW1ibHktQ1NoYXJwAAJfZW5lbXlGcm9tAAsAAABCVUZGX09XTkVSAAhfcmVzZXRDb29sZG93bgAACF9jaGVja0J1ZmZBYmlsaXR5AAAAAzMAuAAAAAIkdHlwZQA7AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NsZWFyQWxsQnVmZnMsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIABF9yZXRhaW5lZEJ1ZmZzV2hlbkNsZWFyAB8AAAACMAATAAAAZHVzcGZyX3RbZGVhZGJvb21dAAAIX2Fsc29SZW1vdmVEdXJhYmxlQnVmZgAAAAM0AJkFAAACJHR5cGUAOAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDcmVhdGVCdWZmLCBBc3NlbWJseS1DU2hhcnAAA19idWZmAHAEAAADYXR0cmlidXRlcwAhAQAABGFibm9ybWFsRmxhZ3MAbQAAAAIwABEAAABBTExZX1RBUkdFVF9GUkVFAAIxAAwAAABUQVJHRVRfRlJFRQACMgALAAAASU5WSU5DSUJMRQACMwASAAAAVU5NT1ZBQkxFX1BSSVZBVEUAAjQACwAAAFVOREVBREFCTEUAAARhYm5vcm1hbEltbXVuZXMAIgAAAAIwAAgAAABTVFVOTkVEAAIxAAcAAABGUk9aRU4AAARhYm5vcm1hbEFudGlzAAUAAAAABGFibm9ybWFsQ29tYm9zAAUAAAAABGFibm9ybWFsQ29tYm9JbW11bmVzABUAAAACMAAJAAAAU0xFRVBJTkcAAARhdHRyaWJ1dGVNb2RpZmllcnMABQAAAAAAAmJ1ZmZLZXkAEQAAAGR1c3Bmcl9kZWFkX2xpa2UACGxvYWRGcm9tREIAAAhpc0R1cmFibGVCdWZmAAAIaXNEYW1hZ2VNaXNzYWJsZQAACGlzU2lsZW5jZWFibGUAAAhpc1N0dW5uYWJsZQAACGlzRnJlZXphYmxlAAAIaXNMZXZpdGF0YWJsZQAACGlzR3JvdW5kQm91bmRhYmxlAAACc3RhdHVzUmVzaXN0YWJsZQAKAAAAQVVUT01BVElDAAJ0ZW1wbGF0ZUtleQAGAAAAZW1wdHkACGRpc2FibGVPdmVycmlkZQAACm92ZXJyaWRlS2V5AAJvdmVycmlkZVR5cGUACAAAAERFRkFVTFQAEG1heFN0YWNrQ250AAEAAAAIcmVmcmVzaFJlbWFpbmluZ1RpbWVXaGVuU3RhY2tNYXgAAAhjbGVhckFsbFN0YWNrQ250V2hlblRpbWVVcAAAEG1heFZhbGlkU3RhY2tDbnQA/////whpbmRlcGVuZGVudENoYXJhY3RlclNvdXJjZQAACm92ZXJyaWRlRWZmZWN0S2V5AAhvdmVycmlkZU9uRXZlbnRQcmlvcml0eQAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAAKYXVkaW9TaWduYWwAAmxpZmVUaW1lVHlwZQAIAAAATElNSVRFRAAIdGFrZVNuYXBzaG90V2hlbkV4dGVuZAAAAmR1cmF0aW9uS2V5AAUAAABub25lAAFsaWZlVGltZQAAAAAAAAAIQAJ0cmlnZ2VyTGlmZVR5cGUADAAAAElNTUVESUFURUxZABB0cmlnZ2VyQ250AAAAAAABdHJpZ2dlckludGVydmFsAAAAAAAAAPC/CHdhaXRGaXJzdFRyaWdnZXJJbnRlcnZhbAABAWZpcnN0VHJpZ2dlckludGVydmFsAAAAAAAAAPC/EHByaW9yaXR5AP////8EcHJpb3JpdHlCQktleXMABQAAAAAIc3RyaXBCbGFja2JvYXJkUGFyYW1zV2l0aEJ1ZmZLZXkAAARibGFja2JvYXJkAAUAAAAACGVuYWJsZUluaXREaXJlY3Rpb25Gcm9tU291cmNlAAAAAl9idWZmT3duZXIACwAAAEJVRkZfT1dORVIACF91c2VTcGVjaWFsQnVmZlNvdXJjZQAAAl9zcGVjaWFsQnVmZlNvdXJjZQAMAAAAQlVGRl9TT1VSQ0UACF9pc0Rlcml2ZWRCdWZmAAAIX2ZpbmlzaERlcml2ZWRCdWZmSWZQYXJlbnRGaW5pc2gAAAhfaW5oZXJhdGVTb3VyY2VQcm9qZWN0aWxlRnJvbVBhcmVudEJ1ZmYAAAhfaG9va0VmZmVjdEtleUZyb21Tb3VyY2VQcm9qZWN0aWxlAAAAAzUAsQEAAAIkdHlwZQA6AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NyZWF0ZUVmZmVjdCwgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQALAAAAQlVGRl9PV05FUgACX3NvdXJjZVR5cGUACwAAAEJVRkZfT1dORVIAAl9lZmZlY3RLZXkAFgAAAGVuZW15X2R1c3Bmcl8yX0RpZV8wMgAIX3VzZVNvdXJjZUZhY2VWYWN0b3IAAAhfdXNlU291cmNlVG9UYXJnZXREaXJlY3Rpb24AAAhfdXNlQ29uc3REaXJlY3Rpb24AAAJfY29uc3REaXJlY3Rpb24AAwAAAFVQAAhfY3JlYXRlRWZmZWN0SG9sZEJ5U291cmNlAAAIX2NyZWF0ZUVmZmVjdENvbnN0RGlyZWN0aW9uSG9sZEJ5U291cmNlAAAIX3VzZUF0dGFja1BsYXliYWNrU3BlZWQAAAhfbWFudWFsU2V0UGxheWJhY2tTcGVlZAAAAl9ibGFja2JvYXJkS2V5AAEAAAAAAV9wbGF5YmFja1NwZWVkAAAAAAAAAPA/AAM2ALEBAAACJHR5cGUAOgAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDcmVhdGVFZmZlY3QsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIAAl9zb3VyY2VUeXBlAAsAAABCVUZGX09XTkVSAAJfZWZmZWN0S2V5ABYAAABlbmVteV9kdXNwZnJfMl9EaWVfMDMACF91c2VTb3VyY2VGYWNlVmFjdG9yAAAIX3VzZVNvdXJjZVRvVGFyZ2V0RGlyZWN0aW9uAAAIX3VzZUNvbnN0RGlyZWN0aW9uAAACX2NvbnN0RGlyZWN0aW9uAAMAAABVUAAIX2NyZWF0ZUVmZmVjdEhvbGRCeVNvdXJjZQAACF9jcmVhdGVFZmZlY3RDb25zdERpcmVjdGlvbkhvbGRCeVNvdXJjZQAACF91c2VBdHRhY2tQbGF5YmFja1NwZWVkAAAIX21hbnVhbFNldFBsYXliYWNrU3BlZWQAAAJfYmxhY2tib2FyZEtleQABAAAAAAFfcGxheWJhY2tTcGVlZAAAAAAAAADwPwADNwCqAAAAAiR0eXBlADgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrU3dpdGNoTW9kZSwgQXNzZW1ibHktQ1NoYXJwABBfbW9kZUluZGV4AAEAAAAIX2xvYWRNb2RlRnJvbUJsYWNrYm9hcmQAAAhfcmVzdG9yZURlZmF1bHQAAAhfcmVzdGFydEZTTQAAAl90YXJnZXRUeXBlAAcAAABUQVJHRVQAAAM4AIcBAAACJHR5cGUAPwAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytUcmlnZ2VyRW5lbXlTa2lsbCwgQXNzZW1ibHktQ1NoYXJwAAJfc2tpbGxOYW1lAAkAAABEZWFkQm9vbQAIX2NoZWNrU2tpbGxBY3RpdmUAAAhfY2hlY2tTa2lsbFJlYWR5AAACX293bmVyVHlwZQALAAAAQlVGRl9PV05FUgACX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIACF9pbnRlcnJ1cHRDdXJBYmlsaXR5AAEIX2ludGVycnVwdEN1ckFiaWxpdHlVbmxlc3NJdElzRXhwZWN0ZWRBYmlsaXR5AAAIX2Fzc2lnbkNvbWJhdEFiaWxpdHkAAAhfZm9yY2VGaW5kVGFyZ2V0QnlTa2lsbFNlbGVjdG9yAAAIX2NsZWFyUGFsc3lpbmdCdWZmQmVmb3JlVHJpZ2dlcgABCF90cnlDYXN0RGlyZWN0bHlXaGVuTm9UYXJnZXQAAAAAAAAAAA==",
+          "document_sha256": "e630a4516a35a769d2cbea4b9d7a4ab8f67ba4acc2cee793c820a909dca0f0bd"
+        },
+        "parallel_group": {
+          "script_path_id": 8671737732485835867,
+          "gameobject_path_id": -3248485079666211550,
+          "gameobject_name": "DeadBoom",
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -3248485079666211550
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 8671737732485835867
+            },
+            "m_Name": "",
+            "_selector": {
+              "m_FileID": 0,
+              "m_PathID": -370550191829957342
+            },
+            "_metadata": {
+              "namedAsAlias": "",
+              "blackboardPrefix": ""
+            },
+            "_interruptAbilityOnDetach": 0,
+            "_attachPassiveBuffsOnDummy": 1,
+            "_ignoreIfOwnerDead": 0,
+            "_forceAsDmgOrHealAbility": 0,
+            "_abilities": [
+              {
+                "m_FileID": 0,
+                "m_PathID": -156798167760190174
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": 8329883186402542882
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": 7145536283770799394
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": -771751067344845534
+              },
+              {
+                "m_FileID": 0,
+                "m_PathID": 7632426845488071970
+              }
+            ],
+            "_alsoInterruptSubAbilities": 0,
+            "_useEscaptime": 0,
+            "_alsoCheckChildrenAffecting": 0,
+            "_finishAllAbilitiesIfOneFinish": 0,
+            "_mainAbility": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_timeMode": 1,
+            "_updateCooldownAfterSubAbilitiesAttached": 0
+          },
+          "script_key": "CAB-658d74aab777086fc32b93f385be999a:8671737732485835867",
+          "native_class": "AbilityParallelGroup"
+        },
+        "actual_child_nodes": [
+          {
+            "path_id": -156798167760190174,
+            "node": {
+              "script_path_id": 2702927552840241462,
+              "gameobject_path_id": 9124580805240472866,
+              "gameobject_name": "DieAnim",
+              "raw": {
+                "m_GameObject": {
+                  "m_FileID": 0,
+                  "m_PathID": 9124580805240472866
+                },
+                "m_Enabled": 1,
+                "m_Script": {
+                  "m_FileID": 1,
+                  "m_PathID": 2702927552840241462
+                },
+                "m_Name": "",
+                "_selector": {
+                  "m_FileID": 0,
+                  "m_PathID": -370550191829957342
+                },
+                "_metadata": {
+                  "namedAsAlias": "",
+                  "blackboardPrefix": ""
+                },
+                "_interruptAbilityOnDetach": 0,
+                "_attachPassiveBuffsOnDummy": 1,
+                "_ignoreIfOwnerDead": 0,
+                "_forceAsDmgOrHealAbility": 0,
+                "_waitForAttackEvent": 0,
+                "_interuptIfTargetDead": 0,
+                "_resetCdStrategy": 1,
+                "_selectTargetSource": 1,
+                "_selectTargetTiming": 0,
+                "_timeMode": 1,
+                "_alwaysIncludeTarget": 1,
+                "_allowNoTarget": 0,
+                "_animKey": "DieBoom",
+                "_endAnimKey": "",
+                "_downAnimKey": "",
+                "_downEndAnimKey": "",
+                "_upAnimKey": "",
+                "_upEndAnimKey": "",
+                "_cooldown": 0.0,
+                "_cooldownKey": "duration",
+                "_preDelay": 0.0,
+                "_escapeTime": 0.0,
+                "_faceToTarget": 0,
+                "_faceToDefault": 0,
+                "_faceToFront": 0,
+                "_faceToFirstCastTarget": 0,
+                "_checkFaceToFirstCastTargetDownAttack": 0,
+                "_forceFaceToDirection": 0,
+                "_activeBuffs": [],
+                "_maxAnimScale": 1.0,
+                "_onlyPlayEndAnimWhenIsLastAbility": 0,
+                "_ignorePalsyInterrupt": 0,
+                "_affectedBySlowDown": 1,
+                "_actions": {
+                  "SerializedState": "[]",
+                  "SerializedObjectReferences": []
+                }
+              },
+              "script_key": "CAB-658d74aab777086fc32b93f385be999a:2702927552840241462",
+              "native_class": "AnimatedActionToOwnerAbility"
+            },
+            "selector": {
+              "script_path_id": 8735719249224227112,
+              "gameobject_path_id": -3248485079666211550,
+              "gameobject_name": "DeadBoom",
+              "raw": {
+                "m_GameObject": {
+                  "m_FileID": 0,
+                  "m_PathID": -3248485079666211550
+                },
+                "m_Enabled": 1,
+                "m_Script": {
+                  "m_FileID": 1,
+                  "m_PathID": 8735719249224227112
+                },
+                "m_Name": ""
+              },
+              "script_key": "CAB-658d74aab777086fc32b93f385be999a:8735719249224227112",
+              "native_class": "SelfSelector"
+            }
+          },
+          {
+            "path_id": 8329883186402542882,
+            "node": {
+              "script_path_id": 2702927552840241462,
+              "gameobject_path_id": -9021198955687131870,
+              "gameobject_name": "Suicide",
+              "raw": {
+                "m_GameObject": {
+                  "m_FileID": 0,
+                  "m_PathID": -9021198955687131870
+                },
+                "m_Enabled": 1,
+                "m_Script": {
+                  "m_FileID": 1,
+                  "m_PathID": 2702927552840241462
+                },
+                "m_Name": "",
+                "_selector": {
+                  "m_FileID": 0,
+                  "m_PathID": -370550191829957342
+                },
+                "_metadata": {
+                  "namedAsAlias": "",
+                  "blackboardPrefix": ""
+                },
+                "_interruptAbilityOnDetach": 0,
+                "_attachPassiveBuffsOnDummy": 1,
+                "_ignoreIfOwnerDead": 1,
+                "_forceAsDmgOrHealAbility": 0,
+                "_waitForAttackEvent": 0,
+                "_interuptIfTargetDead": 0,
+                "_resetCdStrategy": 1,
+                "_selectTargetSource": 1,
+                "_selectTargetTiming": 0,
+                "_timeMode": 2,
+                "_alwaysIncludeTarget": 1,
+                "_allowNoTarget": 1,
+                "_animKey": "",
+                "_endAnimKey": "",
+                "_downAnimKey": "",
+                "_downEndAnimKey": "",
+                "_upAnimKey": "",
+                "_upEndAnimKey": "",
+                "_cooldown": 1.100000023841858,
+                "_cooldownKey": "duration",
+                "_preDelay": 1.100000023841858,
+                "_escapeTime": 0.0,
+                "_faceToTarget": 0,
+                "_faceToDefault": 0,
+                "_faceToFront": 0,
+                "_faceToFirstCastTarget": 0,
+                "_checkFaceToFirstCastTargetDownAttack": 0,
+                "_forceFaceToDirection": 0,
+                "_activeBuffs": [],
+                "_maxAnimScale": -1.0,
+                "_onlyPlayEndAnimWhenIsLastAbility": 0,
+                "_ignorePalsyInterrupt": 0,
+                "_affectedBySlowDown": 0,
+                "_actions": {
+                  "SerializedState": "[{\"_targetType\":\"TARGET\",\"_killSource\":true,\"_noSource\":true,\"_withdrawIfRallyPoint\":false,\"_resultIfInRallyPointMode\":false,\"_skipReborn\":false,\"_noReason\":false,\"_markReachExit\":false,\"_switchState\":false,\"$type\":\"Torappu.Battle.Action.Nodes+InstantKill\"}]",
+                  "SerializedObjectReferences": []
+                }
+              },
+              "script_key": "CAB-658d74aab777086fc32b93f385be999a:2702927552840241462",
+              "native_class": "AnimatedActionToOwnerAbility"
+            },
+            "selector": {
+              "script_path_id": 8735719249224227112,
+              "gameobject_path_id": -3248485079666211550,
+              "gameobject_name": "DeadBoom",
+              "raw": {
+                "m_GameObject": {
+                  "m_FileID": 0,
+                  "m_PathID": -3248485079666211550
+                },
+                "m_Enabled": 1,
+                "m_Script": {
+                  "m_FileID": 1,
+                  "m_PathID": 8735719249224227112
+                },
+                "m_Name": ""
+              },
+              "script_key": "CAB-658d74aab777086fc32b93f385be999a:8735719249224227112",
+              "native_class": "SelfSelector"
+            }
+          },
+          {
+            "path_id": 7145536283770799394,
+            "node": {
+              "script_path_id": 4381884627089348317,
+              "gameobject_path_id": 3069005309856105762,
+              "gameobject_name": "PullDupilr",
+              "raw": {
+                "m_GameObject": {
+                  "m_FileID": 0,
+                  "m_PathID": 3069005309856105762
+                },
+                "m_Enabled": 1,
+                "m_Script": {
+                  "m_FileID": 1,
+                  "m_PathID": 4381884627089348317
+                },
+                "m_Name": "",
+                "_selector": {
+                  "m_FileID": 0,
+                  "m_PathID": -1547655559946910430
+                },
+                "_metadata": {
+                  "namedAsAlias": "",
+                  "blackboardPrefix": ""
+                },
+                "_interruptAbilityOnDetach": 0,
+                "_attachPassiveBuffsOnDummy": 1,
+                "_ignoreIfOwnerDead": 1,
+                "_forceAsDmgOrHealAbility": 0,
+                "_waitForAttackEvent": 0,
+                "_interuptIfTargetDead": 0,
+                "_resetCdStrategy": 1,
+                "_selectTargetSource": 1,
+                "_selectTargetTiming": 1,
+                "_timeMode": 2,
+                "_alwaysIncludeTarget": 0,
+                "_allowNoTarget": 1,
+                "_animKey": "",
+                "_endAnimKey": "",
+                "_downAnimKey": "",
+                "_downEndAnimKey": "",
+                "_upAnimKey": "",
+                "_upEndAnimKey": "",
+                "_cooldown": 1.0,
+                "_cooldownKey": "duration",
+                "_preDelay": 1.0,
+                "_escapeTime": 0.0,
+                "_faceToTarget": 0,
+                "_faceToDefault": 0,
+                "_faceToFront": 0,
+                "_faceToFirstCastTarget": 0,
+                "_checkFaceToFirstCastTargetDownAttack": 0,
+                "_forceFaceToDirection": 0,
+                "_activeBuffs": [
+                  {
+                    "attributes": {
+                      "abnormalFlags": [],
+                      "abnormalImmunes": [],
+                      "abnormalAntis": [],
+                      "abnormalCombos": [],
+                      "abnormalComboImmunes": [],
+                      "attributeModifiers": []
+                    },
+                    "buffKey": "dupilr_trait[candead]",
+                    "loadFromDB": 0,
+                    "isDurableBuff": 0,
+                    "isDamageMissable": 0,
+                    "isSilenceable": 0,
+                    "isStunnable": 0,
+                    "isFreezable": 0,
+                    "isLevitatable": 0,
+                    "isGroundBoundable": 0,
+                    "statusResistable": 2,
+                    "templateKey": "empty",
+                    "disableOverride": 0,
+                    "overrideKey": "",
+                    "overrideType": 0,
+                    "maxStackCnt": 1,
+                    "refreshRemainingTimeWhenStackMax": 0,
+                    "clearAllStackCntWhenTimeUp": 0,
+                    "maxValidStackCnt": -1,
+                    "independentCharacterSource": 0,
+                    "overrideEffectKey": "",
+                    "overrideOnEventPriority": 0,
+                    "onEventPriority": 0,
+                    "audioSignal": "",
+                    "lifeTimeType": 2,
+                    "takeSnapshotWhenExtend": 0,
+                    "durationKey": "",
+                    "lifeTime": 0.0,
+                    "triggerLifeType": 0,
+                    "triggerCnt": 0,
+                    "triggerInterval": -1.0,
+                    "waitFirstTriggerInterval": 1,
+                    "firstTriggerInterval": -1.0,
+                    "priority": -1,
+                    "priorityBBKeys": [],
+                    "stripBlackboardParamsWithBuffKey": 0,
+                    "blackboard": [],
+                    "enableInitDirectionFromSource": 0
+                  }
+                ],
+                "_maxAnimScale": -1.0,
+                "_onlyPlayEndAnimWhenIsLastAbility": 0,
+                "_ignorePalsyInterrupt": 0,
+                "_affectedBySlowDown": 0,
+                "_atkScale": 1.0,
+                "_atkScaleKey": "atk_scale",
+                "_attackType": 1,
+                "_elementDamageType": 0,
+                "_epDamageRatio": 0.0,
+                "_useDynamicAttackType": 1,
+                "_deliveryParaWhenReplaceActionNode": 0,
+                "_damageType": 3,
+                "_extraDamageType": 0,
+                "_alwaysPutIncludeTargetFirst": 0
+              },
+              "script_key": "CAB-658d74aab777086fc32b93f385be999a:4381884627089348317",
+              "native_class": "MeleeAttack"
+            },
+            "selector": {
+              "script_path_id": 6959540303033999559,
+              "gameobject_path_id": 3473214133300741410,
+              "gameobject_name": "Selector",
+              "raw": {
+                "m_GameObject": {
+                  "m_FileID": 0,
+                  "m_PathID": 3473214133300741410
+                },
+                "m_Enabled": 1,
+                "m_Script": {
+                  "m_FileID": 1,
+                  "m_PathID": 6959540303033999559
+                },
+                "m_Name": "",
+                "_targetSide": 1,
+                "_targetMotion": 3,
+                "_targetCategory": 1,
+                "_postFilter": 0,
+                "_ignoreTargetFree": 1,
+                "_onlyIgnoreSomeOfTargetFreeCase": 0,
+                "_abnormalFlag": 23,
+                "_abnormalCombo": 2,
+                "_ignoreAllyTargetFree": 0,
+                "_ignoreHealFree": 0,
+                "_ignoreMotionMode": 0,
+                "_forceIgnoreCamouflage": 0,
+                "_needProfessionMask": 0,
+                "_professionMask": 0,
+                "_excludeSomeAbnormalFlags": 0,
+                "_excludeAbnormalFlag": 46,
+                "_limitTargetNum": 0,
+                "_maxTargetKey": "max_target",
+                "_maxNum": 1,
+                "_excludeOwner": 0,
+                "_sortByTauntAtLast": 0,
+                "_ignoreHitRange": 0,
+                "_checkUnitType": 0,
+                "_unitTypeMask": 0,
+                "_abilityInputTargetAsSortSource": 0,
+                "_tagExcluded": 0,
+                "_filterTag": "",
+                "_filterTagList": [],
+                "_buffKeyExcluded": 0,
+                "_buffKey": "dupilr_trait",
+                "_buffs": [],
+                "_checkOrInsteadOfAnd": 0,
+                "_filterBuffSource": 0,
+                "_filterTokenHost": 0
+              },
+              "script_key": "CAB-658d74aab777086fc32b93f385be999a:6959540303033999559",
+              "native_class": "AdvancedSelectorWithTagAndBuffKey"
+            }
+          },
+          {
+            "path_id": -771751067344845534,
+            "node": {
+              "script_path_id": 4381884627089348317,
+              "gameobject_path_id": -2450992857869204190,
+              "gameobject_name": "Damage",
+              "raw": {
+                "m_GameObject": {
+                  "m_FileID": 0,
+                  "m_PathID": -2450992857869204190
+                },
+                "m_Enabled": 1,
+                "m_Script": {
+                  "m_FileID": 1,
+                  "m_PathID": 4381884627089348317
+                },
+                "m_Name": "",
+                "_selector": {
+                  "m_FileID": 0,
+                  "m_PathID": 1262462257489757474
+                },
+                "_metadata": {
+                  "namedAsAlias": "",
+                  "blackboardPrefix": ""
+                },
+                "_interruptAbilityOnDetach": 0,
+                "_attachPassiveBuffsOnDummy": 1,
+                "_ignoreIfOwnerDead": 1,
+                "_forceAsDmgOrHealAbility": 0,
+                "_waitForAttackEvent": 0,
+                "_interuptIfTargetDead": 0,
+                "_resetCdStrategy": 1,
+                "_selectTargetSource": 1,
+                "_selectTargetTiming": 1,
+                "_timeMode": 2,
+                "_alwaysIncludeTarget": 0,
+                "_allowNoTarget": 1,
+                "_animKey": "",
+                "_endAnimKey": "",
+                "_downAnimKey": "",
+                "_downEndAnimKey": "",
+                "_upAnimKey": "",
+                "_upEndAnimKey": "",
+                "_cooldown": 1.0,
+                "_cooldownKey": "duration",
+                "_preDelay": 1.0,
+                "_escapeTime": 0.0,
+                "_faceToTarget": 0,
+                "_faceToDefault": 0,
+                "_faceToFront": 0,
+                "_faceToFirstCastTarget": 0,
+                "_checkFaceToFirstCastTargetDownAttack": 0,
+                "_forceFaceToDirection": 0,
+                "_activeBuffs": [],
+                "_maxAnimScale": -1.0,
+                "_onlyPlayEndAnimWhenIsLastAbility": 0,
+                "_ignorePalsyInterrupt": 0,
+                "_affectedBySlowDown": 0,
+                "_atkScale": 1.0,
+                "_atkScaleKey": "atk_scale",
+                "_attackType": 1,
+                "_elementDamageType": 0,
+                "_epDamageRatio": 0.0,
+                "_useDynamicAttackType": 0,
+                "_deliveryParaWhenReplaceActionNode": 0,
+                "_damageType": 2,
+                "_extraDamageType": 0,
+                "_alwaysPutIncludeTargetFirst": 0
+              },
+              "script_key": "CAB-658d74aab777086fc32b93f385be999a:4381884627089348317",
+              "native_class": "MeleeAttack"
+            },
+            "selector": {
+              "script_path_id": 7080728813803358465,
+              "gameobject_path_id": 1624495202598765858,
+              "gameobject_name": "Selector",
+              "raw": {
+                "m_GameObject": {
+                  "m_FileID": 0,
+                  "m_PathID": 1624495202598765858
+                },
+                "m_Enabled": 1,
+                "m_Script": {
+                  "m_FileID": 1,
+                  "m_PathID": 7080728813803358465
+                },
+                "m_Name": "",
+                "_targetSide": 2,
+                "_targetMotion": 1,
+                "_targetCategory": 1,
+                "_postFilter": 0,
+                "_ignoreTargetFree": 0,
+                "_onlyIgnoreSomeOfTargetFreeCase": 0,
+                "_abnormalFlag": 23,
+                "_abnormalCombo": 2,
+                "_ignoreAllyTargetFree": 0,
+                "_ignoreHealFree": 0,
+                "_ignoreMotionMode": 0,
+                "_forceIgnoreCamouflage": 0,
+                "_needProfessionMask": 0,
+                "_professionMask": 0,
+                "_excludeSomeAbnormalFlags": 0,
+                "_excludeAbnormalFlag": 46,
+                "_limitTargetNum": 0,
+                "_maxTargetKey": "max_target",
+                "_maxNum": 1,
+                "_excludeOwner": 0,
+                "_sortByTauntAtLast": 0,
+                "_ignoreHitRange": 0,
+                "_checkUnitType": 0,
+                "_unitTypeMask": 0,
+                "_abilityInputTargetAsSortSource": 0
+              },
+              "script_key": "CAB-658d74aab777086fc32b93f385be999a:7080728813803358465",
+              "native_class": "AdvancedSelector"
+            }
+          },
+          {
+            "path_id": 7632426845488071970,
+            "node": {
+              "script_path_id": 4381884627089348317,
+              "gameobject_path_id": 2075414069597685026,
+              "gameobject_name": "KillDuspfr",
+              "raw": {
+                "m_GameObject": {
+                  "m_FileID": 0,
+                  "m_PathID": 2075414069597685026
+                },
+                "m_Enabled": 1,
+                "m_Script": {
+                  "m_FileID": 1,
+                  "m_PathID": 4381884627089348317
+                },
+                "m_Name": "",
+                "_selector": {
+                  "m_FileID": 0,
+                  "m_PathID": -6878496482030795486
+                },
+                "_metadata": {
+                  "namedAsAlias": "",
+                  "blackboardPrefix": ""
+                },
+                "_interruptAbilityOnDetach": 0,
+                "_attachPassiveBuffsOnDummy": 1,
+                "_ignoreIfOwnerDead": 1,
+                "_forceAsDmgOrHealAbility": 0,
+                "_waitForAttackEvent": 0,
+                "_interuptIfTargetDead": 0,
+                "_resetCdStrategy": 1,
+                "_selectTargetSource": 1,
+                "_selectTargetTiming": 1,
+                "_timeMode": 2,
+                "_alwaysIncludeTarget": 0,
+                "_allowNoTarget": 1,
+                "_animKey": "",
+                "_endAnimKey": "",
+                "_downAnimKey": "",
+                "_downEndAnimKey": "",
+                "_upAnimKey": "",
+                "_upEndAnimKey": "",
+                "_cooldown": 1.0,
+                "_cooldownKey": "duration",
+                "_preDelay": 1.0,
+                "_escapeTime": 0.0,
+                "_faceToTarget": 0,
+                "_faceToDefault": 0,
+                "_faceToFront": 0,
+                "_faceToFirstCastTarget": 0,
+                "_checkFaceToFirstCastTargetDownAttack": 0,
+                "_forceFaceToDirection": 0,
+                "_activeBuffs": [],
+                "_maxAnimScale": -1.0,
+                "_onlyPlayEndAnimWhenIsLastAbility": 0,
+                "_ignorePalsyInterrupt": 0,
+                "_affectedBySlowDown": 0,
+                "_atkScale": 100.0,
+                "_atkScaleKey": "atk_scale",
+                "_attackType": 1,
+                "_elementDamageType": 0,
+                "_epDamageRatio": 0.0,
+                "_useDynamicAttackType": 1,
+                "_deliveryParaWhenReplaceActionNode": 0,
+                "_damageType": 3,
+                "_extraDamageType": 0,
+                "_alwaysPutIncludeTargetFirst": 0
+              },
+              "script_key": "CAB-658d74aab777086fc32b93f385be999a:4381884627089348317",
+              "native_class": "MeleeAttack"
+            },
+            "selector": {
+              "script_path_id": 6959540303033999559,
+              "gameobject_path_id": 4940798182448809250,
+              "gameobject_name": "Selector",
+              "raw": {
+                "m_GameObject": {
+                  "m_FileID": 0,
+                  "m_PathID": 4940798182448809250
+                },
+                "m_Enabled": 1,
+                "m_Script": {
+                  "m_FileID": 1,
+                  "m_PathID": 6959540303033999559
+                },
+                "m_Name": "",
+                "_targetSide": 1,
+                "_targetMotion": 3,
+                "_targetCategory": 1,
+                "_postFilter": 0,
+                "_ignoreTargetFree": 0,
+                "_onlyIgnoreSomeOfTargetFreeCase": 0,
+                "_abnormalFlag": 23,
+                "_abnormalCombo": 2,
+                "_ignoreAllyTargetFree": 0,
+                "_ignoreHealFree": 0,
+                "_ignoreMotionMode": 0,
+                "_forceIgnoreCamouflage": 0,
+                "_needProfessionMask": 0,
+                "_professionMask": 0,
+                "_excludeSomeAbnormalFlags": 0,
+                "_excludeAbnormalFlag": 46,
+                "_limitTargetNum": 0,
+                "_maxTargetKey": "max_target",
+                "_maxNum": 1,
+                "_excludeOwner": 0,
+                "_sortByTauntAtLast": 0,
+                "_ignoreHitRange": 0,
+                "_checkUnitType": 0,
+                "_unitTypeMask": 0,
+                "_abilityInputTargetAsSortSource": 0,
+                "_tagExcluded": 0,
+                "_filterTag": "",
+                "_filterTagList": [],
+                "_buffKeyExcluded": 0,
+                "_buffKey": "duspfr_t[deadboom]",
+                "_buffs": [],
+                "_checkOrInsteadOfAnd": 0,
+                "_filterBuffSource": 0,
+                "_filterTokenHost": 0
+              },
+              "script_key": "CAB-658d74aab777086fc32b93f385be999a:6959540303033999559",
+              "native_class": "AdvancedSelectorWithTagAndBuffKey"
+            }
+          }
+        ],
+        "policy": "Unsilenced first HPzero is a real source deferral/deadlike3s, not standardalreadydead emit. Fiveparallel children DieAnim/Suicide1.1s/PullDupilr1s/Damage1s/KillDuspfr1s; finiteowned action/lifecycle required, no arbitrary deadactor skill permission. Damage uses ARTSType2 scale1/motionground only; noEPtype. Allyexplosionchain checks marker anddamage100*ATK; exactfalse/noSource suicide flags preserved."
+      },
+      "reference_policy": {
+        "geometry": "Collider centers use Euclidean radius1 trigger/radius2 target; native ValidateTarget method absent, typed selection version retained",
+        "harpoon": "Travel planar homing10 at1/30; contact-first .5 packets; native Harpoon/Lasso raw preserved, no native method proof",
+        "Flame_clock": "Birth-ready automatic trigger; 10.6 castingstate/6pulse/10cooldown; source silence/stun/freeze and target invalid cancel link; repeat after cooldown",
+        "Suicide_clock": "Literal float32 1.10000002384 under model ceil ticks (34 at30fps), distinct from3s deadlike buff lifetime",
+        "DeadBoom": "Five owned concurrent casts, native Damage has elementDamageType0/epRatio0 and arts health500; no invented FIRE EP on explosion",
+        "positive_pillar": "Native candead ON_TAKE_DAMAGE can start collapse at actual positive HP4500; opt-in damage lifecycle profile, no fake zero/HP1"
+      },
+      "whole_enemy_complete": false,
+      "pending": [
+        "actual author/independent gates",
+        "durable Buff distinction and visuals",
+        "client method/Collider/harpoon equivalence"
+      ]
+    }
+  }
+}

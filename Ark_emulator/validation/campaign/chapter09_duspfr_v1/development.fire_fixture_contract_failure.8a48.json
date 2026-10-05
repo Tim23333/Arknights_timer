@@ -1,0 +1,104 @@
+{
+  "core_before": "8a48ad1269364571167ffcd8c62fc2cea4c10f8484792dd386487b5af79c99f2",
+  "core_after": "8a48ad1269364571167ffcd8c62fc2cea4c10f8484792dd386487b5af79c99f2",
+  "actual_exit": 1,
+  "results": [
+    {
+      "case": "first_flame_packet",
+      "passed": true
+    },
+    {
+      "case": "separate_trigger_and_target",
+      "passed": true
+    },
+    {
+      "case": "death_parallel_positive_pillar",
+      "passed": true
+    },
+    {
+      "case": "silenced_zero_and_stun_cancel",
+      "passed": true
+    },
+    {
+      "case": "public_cpp_head",
+      "passed": true
+    },
+    {
+      "case": "blocked_melee_and_route_birth",
+      "passed": true
+    },
+    {
+      "case": "repeated_flame_and_flight_cpp",
+      "passed": true
+    },
+    {
+      "case": "target_cancel_and_current_packet_stats",
+      "passed": true
+    },
+    {
+      "case": "health_first_lethal_skips_ep_and_real_fire",
+      "passed": false,
+      "error": "damage.pipeline does not allow implementation 'expression'",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_duspfr_v1_candidate\\ark_sim\\content\\compiler.py\", line 82, in compile\n    return self._compile(scenario, packages, ruleset, overrides)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_duspfr_v1_candidate\\ark_sim\\content\\compiler.py\", line 211, in _compile\n    runtime = self._validate_rules(rules, definitions, selected_ruleset,\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_duspfr_v1_candidate\\ark_sim\\content\\compiler.py\", line 268, in _validate_rules\n    runtime = RuleRuntime(rules, bindings=ruleset.get(\"bindings\", {}), catalog=self.catalog,\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_duspfr_v1_candidate\\ark_sim\\rules\\runtime.py\", line 92, in __init__\n    self.compiled = {key: validate_rule(value, self.catalog) for key, value in self.rules.items()}\n                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_duspfr_v1_candidate\\ark_sim\\rules\\runtime.py\", line 32, in validate_rule\n    raise RuleError(f\"{contract_id} does not allow implementation {kind!r}\")\nark_sim.rules.errors.RuleError: damage.pipeline does not allow implementation 'expression'\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_duspfr_v1\\test_author.py\", line 86, in main\n    try:fn();RESULTS.append({'case':fn.__name__,'passed':True})\n        ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_duspfr_v1\\test_author.py\", line 67, in health_first_lethal_skips_ep_and_real_fire\n    s=sim(p);s.advance(19);assert s.ctx.resources.current('player','hp')==20000-36-960 and eph(s)['break'] is not None\n      ^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter09_duspfr_v1\\test_author.py\", line 17, in sim\n    def sim(p=None):return Engine.create(Compiler(providers=providers()).compile(p or fixture()),providers=providers(),seed=173)\n                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_c9_duspfr_v1_candidate\\ark_sim\\content\\compiler.py\", line 86, in compile\n    raise CompileError(str(exc)) from exc\nark_sim.content.compiler.CompileError: damage.pipeline does not allow implementation 'expression'\n"
+    },
+    {
+      "case": "owned_fault_and_static_callback_rejection",
+      "passed": true
+    }
+  ],
+  "facts": {
+    "first_contact": {
+      "tick": 18,
+      "hp_loss": 48,
+      "native_health_scale": 0.12,
+      "native_ep_ratio": 0.06,
+      "elemental_state": {
+        "remaining": {
+          "FIRE": 970.0
+        },
+        "break": null,
+        "generation": 0,
+        "last_time": 18
+      }
+    },
+    "parallel": {
+      "started": 5,
+      "start_tick": 0,
+      "damage_tick": 30,
+      "positive_pillar_hp": 4500,
+      "suicide_tick": 34,
+      "source_none": true
+    },
+    "repeat_clock": {
+      "first_start": 0,
+      "next_start": 618,
+      "first_cast_packets": 20,
+      "flight_cpp": true,
+      "public_head": true
+    }
+  },
+  "artifacts": [
+    {
+      "path": "E:\\ArkSimLogs\\runs\\chapter09_duspfr_author_v1\\deadboom.public.checkpoint.json",
+      "bytes": 1207119,
+      "sha256": "137327f8f8fd2709baf2cb1b3918d80516bc8fdaabbf2e29ae18222cee5f5842"
+    }
+  ],
+  "cleanup": [
+    {
+      "apply": true,
+      "eligible_files": 1,
+      "eligible_bytes": 1207119,
+      "log_root": "E:\\ArkSimLogs",
+      "deleted_files": 1,
+      "reclaimed_bytes": 1207119,
+      "protected_files": 0,
+      "remaining_files": 0,
+      "error_count": 0,
+      "fully_cleaned": true,
+      "actual_exit": 0,
+      "report": "E:\\ArkSimLogs\\cleanup\\20261004T233836817778Z.deleted.json"
+    }
+  ],
+  "raw_deleted": true
+}
