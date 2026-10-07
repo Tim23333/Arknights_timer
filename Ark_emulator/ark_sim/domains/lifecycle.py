@@ -300,7 +300,11 @@ class LifecycleSystem:
         self.ctx.set(ref, ("runtime", "blocked_by"), None)
         self.ctx.buffs.reconcile()
         event = "entity.died" if reason == "dead" else "entity."+reason
-        self.ctx.emit(event, {"source": ref, "target": ref} if damage_attribution is None else {**damage_attribution, "source": None, "target": ref}, damage_attribution.get("cause") if damage_attribution is not None else None)
+        death_event = self.ctx.emit(event, {"source": ref, "target": ref} if damage_attribution is None else {**damage_attribution, "source": None, "target": ref}, damage_attribution.get("cause") if damage_attribution is not None else None)
+        if reason=='dead' and getattr(self.ctx,'death_spawns',None) is not None:
+            system=self.ctx.death_spawns;system._issuing.append((ref,death_event))
+            try:system.issue(ref,death_event)
+            finally:system._issuing.pop()
         state = self.ctx.state()
         if reason == "dead" and "enemy" in self.ctx.entity(ref)["tags"]:
             state["kills"] += 1

@@ -82,7 +82,7 @@ class TimelineSystem:
         return any(m["wave"] == state["wave_index"] and
                    (not fragment or m["fragment"] == state["fragment_index"]) and
                    m["blocks_fragment" if fragment else "blocks_wave"]
-                   for m in (*(state["members"].values() if fragment or not released else ()), *state.get("control_members", {}).values()))
+                   for m in (*(state["members"].values() if fragment or not released else ()), *state.get("control_members", {}).values(), *state.get("descendant_pending", {}).values()))
 
     def finish_current(self,source,effect,cause=None):
         validate_finish_request(effect)

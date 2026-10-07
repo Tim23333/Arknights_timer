@@ -382,6 +382,10 @@ def capability_preflight(scenario, definitions, ruleset, rules, catalog=None):
         for ability_id in components.get("abilities", []):
             ability(ability_id, f"{identifier} -> {ability_id}", scopes)
         lifecycle = components.get("lifecycle", {})
+        for row in lifecycle.get('death_spawns',{}).get('actions',[]):
+            require('lifecycle.death_emission',identifier+'.death_spawns',scopes,row['rule'])
+            require('spawn.position',identifier+'.death_spawns.placement',scopes,row['placement']['rule'])
+            require('time.quantize',identifier+'.death_spawns')
         for index,spec in enumerate(lifecycle.get('death_projectiles',[])):
             path=identifier+'.lifecycle.death_projectiles['+str(index)+']'
             require('lifecycle.death_emission',path,scopes,spec['rule'])
@@ -412,6 +416,10 @@ def capability_preflight(scenario, definitions, ruleset, rules, catalog=None):
             selector(identifier, identifier, [])
             if definition.get('eligible_rule'):require('selector.eligibility',identifier,scopes,definition['eligible_rule'])
         elif kind == "projectile":
+            if 'chain' in definition:
+                chosen=definitions[definition['chain']['selector']]
+                if chosen.get('kind')!='selector' or chosen.get('limit')!=1 or chosen.get('region',{}).get('type')!='radius' or not chosen.get('eligibility'):
+                    raise ContentError(identifier+': finite chain requires current qualified radius selector limit1')
             require("projectile.trajectory", identifier+".motion", scopes, definition["motion"]["rule"])
             require("projectile.collision", identifier+".collision", scopes, definition["collision"]["rule"])
             require("time.quantize", identifier)
@@ -419,6 +427,8 @@ def capability_preflight(scenario, definitions, ruleset, rules, catalog=None):
         elif kind == "buff":
             if definition.get('lifetime'):
                 require('buff.lifetime_rate',identifier+'.lifetime',scopes,definition['lifetime']['rule'])
+            if definition.get('aura',{}).get('lease_policy',{}).get('modifier_stacks'):
+                require('buff.stack_amount',identifier+'.aura.modifier_stacks',scopes,definition['aura']['lease_policy']['modifier_stacks']['rule'])
             for hook in definition.get("damage_hooks", []):
                 require("damage.request" if hook["phase"] in {"before", "receiver_request"} else "damage.pipeline",
                     f"{identifier}.damage_hooks", scopes, hook["rule"])

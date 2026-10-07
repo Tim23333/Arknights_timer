@@ -4,7 +4,9 @@ This file is a candidate source template, never imported by the primary runtime.
 """
 from collections.abc import Mapping
 import math
-from ark_sim.contracts import thaw
+from ark_sim.contracts import thaw, digest
+from . import elemental_proofs as audit
+from .elemental_proofs import tracked
 
 ELEMENT_RULES = {'elemental.capacity', 'elemental.loss', 'elemental.recovery', 'elemental.break_duration'}
 
@@ -61,6 +63,9 @@ def validate_effect(effect):
 class ElementalSystem:
     def __init__(self,ctx):
         self.ctx=ctx
+        self._proof_stack=[]
+        self._callback_token=object()
+        self._callback_scopes=[]
 
     def profile(self,ref):
         return self.ctx.get(ref,('elemental',))
@@ -68,7 +73,7 @@ class ElementalSystem:
     def stamp(self,ref):
         entity=self.ctx.entity(ref);runtime=entity['components'].get('runtime',{})
         return {'id':entity['id'],'definition':entity['definition_id'],'alive':self.ctx.alive(ref),'state':runtime.get('state'),
-                'death_generation':runtime.get('death_generation',0),'lifecycle_generation':runtime.get('lifecycle_generation',0)}
+                'death_generation':runtime.get('death_generation',0),'lifecycle_generation':runtime.get('lifecycle_generation',0),'active':self.ctx.active(ref),'finished':bool(self.ctx.state().get('finished'))}
 
     def calculate(self,contract,ref,key,profile,request=None,source=None,current=0,capacity=0,dt=0):
         inputs={'source':self.ctx.capture_view(source) if source is not None else {},
@@ -77,8 +82,9 @@ class ElementalSystem:
                 'attributes':{'source':self.ctx.attributes.values(source) if source is not None else {},'target':self.ctx.attributes.values(ref)},
                 'parameters':{name:thaw(value) for name,value in profile.items() if name not in {'rules','on_break','on_end'}}}
         rule=profile['rules'].get(contract) if contract in ELEMENT_RULES else self.profile(ref)['eligibility_rule']
-        return self.ctx.calc(contract,inputs,source=source,target=ref,owner=ref,rule_id=rule)
+        return audit.calculate(self,contract,inputs,source=source,target=ref,owner=ref,rule_id=rule)
 
+    @tracked
     def initialize(self,ref):
         spec=self.profile(ref)
         if spec is None:return
@@ -87,23 +93,32 @@ class ElementalSystem:
         for key,profile in spec['elements'].items():
             remaining[key]=numeric(self.calculate('elemental.capacity',ref,key,profile), .000000001)
         self.ctx.set(ref,('runtime','elemental'),{'remaining':remaining,'break':None,'generation':0,'last_time':self.ctx.session.time})
+        audit.seal(self,ref,'initialize')
 
     def valid(self,ref,stamp):
         return self.ctx.active(ref) and self.stamp(ref)==stamp and not self.ctx.state().get('finished')
 
+    @tracked
     def cancel(self,ref,reason):
         state=self.ctx.get(ref,('runtime','elemental'))
         if state is None:return
         lease=state.get('break')
+        if lease is None:
+            recorded=audit.event(self,state['audit_event'])['payload']
+            if recorded['stamp']!=self.stamp(ref):audit.seal(self,ref,'owner_state',{'before':thaw(state),'reason':reason})
+            return
         if lease is not None:
             if lease.get('task') in {x['id'] for x in self.ctx.session.scheduler.pending}:
                 self.ctx.session.cancel(lease['task'])
+            before=thaw(state)
             state['break']=None;state['generation']+=1
             self.ctx.set(ref,('runtime','elemental'),state)
             self.ctx.emit('elemental.break.cancelled',{'target':ref,'reason':reason,'generation':lease['generation']})
+            audit.seal(self,ref,'cancelled',{'before':before,'closed_lease':lease,'reason':reason})
 
+    @tracked
     def sync_capacities(self,ref):
-        state=self.ctx.get(ref,('runtime','elemental'));planned={};changes=[]
+        state=self.ctx.get(ref,('runtime','elemental'));before=thaw(state);planned={};changes=[]
         for key,profile in self.profile(ref)['elements'].items():
             capacity=numeric(self.calculate('elemental.capacity',ref,key,profile),.000000001)
             current=state['remaining'][key];planned[key]=min(current,capacity)
@@ -111,9 +126,18 @@ class ElementalSystem:
         if changes:
             state['remaining']=planned;self.ctx.set(ref,('runtime','elemental'),state)
             for row in changes:self.ctx.emit('elemental.capacity.synced',{'target':ref,**row})
+            audit.seal(self,ref,'capacity',{'before':before})
+            state=self.ctx.get(ref,('runtime','elemental'))
         return state
 
+    def _owned_callbacks(self,ref,key,lease,name,cause,*,_capability=None):
+        if _capability is not self._callback_token:raise ValueError('Elemental callbacks require actual runtime-owned scope')
+        self._callback_scopes.append((ref,lease['generation'],key,name,cause))
+        try:return self.callbacks(ref,key,lease,name,cause)
+        finally:self._callback_scopes.pop()
+
     def callbacks(self,ref,key,lease,name,cause):
+        if not self._callback_scopes or self._callback_scopes[-1]!=(ref,lease['generation'],key,name,cause):raise ValueError('Elemental callbacks data do not grant owned permission')
         # The status/break owner executes its declared callbacks. Original
         # damage attribution remains separate immutable provenance data.
         for effect in self.profile(ref)['elements'][key].get(name,()):
@@ -133,6 +157,7 @@ class ElementalSystem:
                 child.setdefault('parameters',{})['elemental_break']=thaw(lease['provenance'])
                 self.ctx.effects.execute(ref,[ref],child,cause=cause)
 
+    @tracked
     def apply(self,source,ref,effect,cause=None,cast=None):
         validate_effect(effect)
         with self.ctx.session.atomic():
@@ -156,7 +181,7 @@ class ElementalSystem:
             if not accepted:return {'accepted':False,'reason':'eligibility'}
             request=thaw(effect)
             if 'amount_rule' in effect:
-                request['raw_amount']=numeric(self.ctx.calc('elemental.packet',{
+                request['raw_amount']=numeric(audit.calculate(self,'elemental.packet',{
                     'source':self.ctx.capture_view(source) if source is not None else {},'target':self.ctx.capture_view(ref),
                     'source_attributes':self.ctx.attributes.values(source) if source is not None else {},
                     'target_attributes':self.ctx.attributes.values(ref),'request':request},
@@ -166,6 +191,7 @@ class ElementalSystem:
             state=self.sync_capacities(ref)
             capacity=numeric(self.calculate('elemental.capacity',ref,key,profile,request,source),.000000001)
             current=state['remaining'][key]
+            before=thaw(state)
             loss=numeric(self.calculate('elemental.loss',ref,key,profile,request,source,current,capacity))
             if loss==0:return {'accepted':True,'loss':0,'break':False}
             state['remaining'][key]=max(0,current-loss)
@@ -173,7 +199,7 @@ class ElementalSystem:
             lease=None
             if crossing:
                 seconds=numeric(self.calculate('elemental.break_duration',ref,key,profile,request,source,current,capacity),.000000001)
-                ticks=self.ctx.quantize(seconds)
+                ticks=audit.calculate(self,'time.quantize',{'seconds':seconds,'quantum':self.ctx.session.quantum,'rounding':{'mode':'ceil'}},target=ref,owner=ref)
                 if type(ticks) is not int or ticks<1:raise ValueError('Elemental break duration must advance logical time')
                 state['generation']+=1
                 session=self.ctx.session;due=session.time+ticks
@@ -187,10 +213,16 @@ class ElementalSystem:
             event=self.ctx.emit('elemental.loss.accepted',{'source':source,'target':ref,'element':key,'loss':loss,
                 'actual_loss':current-state['remaining'][key],'remaining':state['remaining'][key],'break':crossing},cause)
             if crossing:
-                event=self.ctx.emit('elemental.break.started',{'source':source,'target':ref,'element':key,'generation':lease['generation'],'due':lease['due']},event)
-                self.callbacks(ref,key,lease,'on_break',event)
+                event=self.ctx.emit('elemental.break.started',{'source':source,'target':ref,'element':key,'generation':lease['generation'],'due':lease['due'],'lease':thaw(lease),'profile_digest':digest(spec)},event)
+                lease['break_event']=event
+                state['break']=lease
+                self.ctx.set(ref,('runtime','elemental'),state)
+                audit.seal(self,ref,'loss',{'before':before,'request':request,'source':source,'element':key})
+                self._owned_callbacks(ref,key,lease,'on_break',event,_capability=self._callback_token)
+            if not crossing:audit.seal(self,ref,'loss',{'before':before,'request':request,'source':source,'element':key})
             return {'accepted':True,'loss':loss,'break':crossing}
 
+    @tracked
     def expire(self,session,payload):
         with session.atomic():
             if (not isinstance(payload,Mapping) or set(payload)!={'target','generation'} or
@@ -205,16 +237,20 @@ class ElementalSystem:
                 task['phase']!=session.scheduler.rank(lease['phase']) or task['kind']!='domain.elemental.expire'):
                 return
             if not self.valid(ref,lease['target_stamp']):self.cancel(ref,'owner_invalid');return
+            before=thaw(state)
             spec=self.profile(ref);remaining={}
             for key,profile in spec['elements'].items():
                 remaining[key]=numeric(self.calculate('elemental.capacity',ref,key,profile),.000000001)
             state.update(remaining=remaining,**{'break':None,'last_time':session.time})
             self.ctx.set(ref,('runtime','elemental'),state)
-            event=self.ctx.emit('elemental.break.ended',{'target':ref,'element':lease['element'],'generation':lease['generation']})
-            self.callbacks(ref,lease['element'],lease,'on_end',event)
+            event=self.ctx.emit('elemental.break.ended',{'target':ref,'element':lease['element'],'generation':lease['generation']},lease['break_event'])
+            audit.seal(self,ref,'ended',{'before':before,'closed_lease':lease,'actual_task':thaw(task),'end_event':event})
+            self._owned_callbacks(ref,lease['element'],lease,'on_end',event,_capability=self._callback_token)
 
+    @tracked
     def tick(self,session):
         with session.atomic():
+            updated=[]
             for actor in session.world.entities():
                 ref=actor['id'];state=self.ctx.get(ref,('runtime','elemental'))
                 if state is None:continue
@@ -224,8 +260,10 @@ class ElementalSystem:
                     self.cancel(ref,'owner_generation_changed')
                     state=self.ctx.get(ref,('runtime','elemental'))
                 if state['last_time']>=session.time:continue
+                before=thaw(state)
                 dt=(session.time-state['last_time'])*session.quantum
                 state['last_time']=session.time
+                updated.append({'target':ref,'before':before['last_time'],'last_time':session.time,'generation':state['generation']})
                 if state['break'] is None:
                     for key,profile in self.profile(ref)['elements'].items():
                         capacity=numeric(self.calculate('elemental.capacity',ref,key,profile),.000000001)
@@ -234,3 +272,8 @@ class ElementalSystem:
                         if value>capacity:raise ValueError('Elemental recovery must return a value within capacity')
                         state['remaining'][key]=value
                 self.ctx.set(ref,('runtime','elemental'),state)
+                if state['remaining']!=before['remaining']:audit.seal(self,ref,'recovery',{'before':before,'delta_seconds':dt})
+            if updated:session.emit('elemental.tick.record',{'time':session.time,'updated':updated})
+
+    def validate_restored(self):
+        return audit.validate_restored(self)

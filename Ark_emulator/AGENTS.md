@@ -27,7 +27,7 @@ V2 运行时不得导入或委托 V1 的战斗、地图、波次、属性、伤�
 
 用户要求大日志只在执行期间保留。所有后续事件、检查点、回放与测试捕获写入
 `E:\ArkSimLogs\runs`；源数据、关卡包与精简收据不属于日志。
-后续整关统一使用 `tools/run_campaign_disk_runthrough_v20.py`，完成仿真和CP/head验证后自动执行
+后续新整关统一使用 `tools/run_campaign_disk_runthrough_v22.py`，保留实际后代出生账，完成仿真和CP/head验证后自动执行
 `tools/cleanup_simulation_logs_v2.py`。其他机制工具通过 `tools/run_with_log_cleanup.py`
 执行，或在验证结束后调用同一清理脚本。手工入口为 `Clean-SimulationLogs.ps1`。
 日常运行内容包使用 `Run-Simulation.ps1`，避免直接把 CLI 快照和回放输出到仓库根目录。
@@ -43,8 +43,11 @@ V2 运行时不得导入或委托 V1 的战斗、地图、波次、属性、伤�
 ## 验证
 
 当前生产底座含 Buff采样、逐格场域、元素契约、有限零血量生命周期、独立路线运动模式、
-接收者请求钩子和拥有任务权限，共108项。2026-10-05 已推广实际完成1219项完整回归与0-1基线的
-核心cd873db；来源修复与集成说明见 [CHAPTER09_MANDRA.md](docs/campaign/CHAPTER09_MANDRA.md)。
+接收者请求钩子、拥有任务权限、认证有限死亡后代与链弹丸，共108项。
+2026-10-07 已将完成1219项完整回归、0-1／自定义基线和独立元素恢复校验的核心94d2f5cf
+按98份源码精确同步主目录；旧cd873源码完整保留。
+推广记录与新进程复核位于 `validation/campaign/chapter10_primary94_v1`，
+来源修复与历史集成说明见 [CHAPTER09_MANDRA.md](docs/campaign/CHAPTER09_MANDRA.md)。
 原4d42及旧验收收据保持各自版本身份，当前推广收据位于 validation/campaign/chapter09_finale_primary_v1。
 旧数量测试仍保留历史 98 契约断言字节，
 当前完整回归入口为 `..\.venv\Scripts\python.exe tools/run_primary_v2_suite.py`。
@@ -52,7 +55,10 @@ V2 运行时不得导入或委托 V1 的战斗、地图、波次、属性、伤�
 并使用固定E盘运行目录，在完成后自动清理临时日志。
 使用原始 `pytest tests_v2 -q` 会执行保留的历史数量断言；不得将其失败与当前完整入口混淆。
 内容修改同时使用 `python -m ark_sim validate <内容包>` 检查实际引用。
-涉及首关执行语义、规则、调度或回放的变化，运行 `tools/verify_v2_baseline.py` 更新相应证据。
+涉及首关执行语义、规则、调度或回放的变化，通过自动清理入口运行
+`tools/chapter10_stage_assembly_v2/verify_baseline_v2.py`，明确传入实际运行目录／核心／输出，
+其新helper保原0-1期待并比对属性缓存与命令记录，所有临时replay保在固定E盘run。
+旧 `tools/verify_v2_baseline.py` 和历史证据保留原身份，其旧相对路径输出假设不适用于E盘临时输出。
 纯文档和历史标记无需重新执行长程模型。
 
 来源测试场景必须保留实体实际拥有的能力及状态机；不要删除能力来屏蔽自动战斗，

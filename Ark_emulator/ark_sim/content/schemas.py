@@ -6,7 +6,7 @@ from .spatial_validation import validate_map, validate_route, position as valida
 
 
 COMMON = {"id", "kind", "version", "extends", "metadata", "rules", "dependencies", "dynamicReferences"}
-FIELDS = {'ability': {'trigger_selector','tile_selector','initial_cooldown_seconds','timeline', 'activation', 'success_definition', 'duration_seconds', 'selector', 'events', 'wait_for_channels', 'interrupt_policy', 'target_capture', 'parameters', 'cooldown_seconds'}, 'attachment': {'hit_interval_seconds', 'recovery_on', 'step_interval_seconds', 'effect', 'source_cancel_flags', 'lifecycle', 'max_packets', 'completion_blocking', 'flight_lifetime_seconds', 'motion', 'refresh_interval_seconds', 'duration_seconds', 'ignored_owned_source_flags', 'force_reach_on_timeout', 'damage_integral', 'source_recovery_buff', 'target_buff'}, 'behavior': {'initial_state', 'transitions', 'states', 'provider', 'implementation', 'parameters', 'initial', 'decision'}, 'buff': {'capture','lifetime','removal', 'duration_seconds', 'modifiers', 'events', 'control_rule', 'stacking', 'interval_seconds', 'damage_hooks', 'control', 'contact_flags', 'effects', 'aura', 'duration_rule', 'active_rule', 'interval_rule', 'on_remove', 'movement_damage', 'parameters', 'selection_flags', 'toggle'}, 'calculation_rule': {'contractVersion', 'numeric', 'contract', 'implementation', 'parameters'}, 'control': {'on_cancel', 'ack_policy', 'clock_policy', 'on_complete', 'on_start', 'steps'}, 'entity': {'progression', 'talents', 'equipment', 'tags', 'components', 'growth'}, 'policy': {'contract', 'implementation', 'provider', 'parameters'}, 'preset': {'ruleset', 'provides', 'parameters', 'requires'}, 'projectile': {'completion_blocking', 'on_invalid', 'motion', 'max_hits', 'stop_after_max', 'can_hit_same_target', 'collision', 'lifetime_seconds', 'stop_after_first', 'attach_at_launch', 'lifecycle'}, 'rule': {'contractVersion', 'numeric', 'contract', 'implementation', 'parameters'}, 'ruleset': {'reaction_budget', 'attribute_layers', 'numeric_profile', 'phase_order', 'bindings', 'parameters', 'quantum', 'system_order'}, 'scenario': {'cards','branches','timeline', 'seed', 'objectives', 'roster', 'commands', 'scheduledEffects', 'map', 'aliases', 'description', 'duration_seconds', 'waves', 'resources', 'initialEntities', 'ruleset', 'parameters', 'packages', 'routes'}, 'selector': {'limit', 'eligibility', 'ordering', 'provider', 'limit_attribute', 'eligible_rule', 'filters', 'exclude_abnormal_flags', 'parameters', 'region'}}
+FIELDS = {'ability': {'trigger_selector','tile_selector','initial_cooldown_seconds','timeline', 'activation', 'success_definition', 'duration_seconds', 'selector', 'events', 'wait_for_channels', 'interrupt_policy', 'target_capture', 'parameters', 'cooldown_seconds'}, 'attachment': {'hit_interval_seconds', 'recovery_on', 'step_interval_seconds', 'effect', 'source_cancel_flags', 'lifecycle', 'max_packets', 'completion_blocking', 'flight_lifetime_seconds', 'motion', 'refresh_interval_seconds', 'duration_seconds', 'ignored_owned_source_flags', 'force_reach_on_timeout', 'damage_integral', 'source_recovery_buff', 'target_buff'}, 'behavior': {'initial_state', 'transitions', 'states', 'provider', 'implementation', 'parameters', 'initial', 'decision'}, 'buff': {'capture','lifetime','removal', 'duration_seconds', 'modifiers', 'events', 'control_rule', 'stacking', 'interval_seconds', 'damage_hooks', 'control', 'contact_flags', 'effects', 'aura', 'duration_rule', 'active_rule', 'interval_rule', 'on_remove', 'movement_damage', 'parameters', 'selection_flags', 'toggle'}, 'calculation_rule': {'contractVersion', 'numeric', 'contract', 'implementation', 'parameters'}, 'control': {'on_cancel', 'ack_policy', 'clock_policy', 'on_complete', 'on_start', 'steps'}, 'entity': {'progression', 'talents', 'equipment', 'tags', 'components', 'growth'}, 'policy': {'contract', 'implementation', 'provider', 'parameters'}, 'preset': {'ruleset', 'provides', 'parameters', 'requires'}, 'projectile': {'chain', 'completion_blocking', 'on_invalid', 'motion', 'max_hits', 'stop_after_max', 'can_hit_same_target', 'collision', 'lifetime_seconds', 'stop_after_first', 'attach_at_launch', 'lifecycle'}, 'rule': {'contractVersion', 'numeric', 'contract', 'implementation', 'parameters'}, 'ruleset': {'reaction_budget', 'attribute_layers', 'numeric_profile', 'phase_order', 'bindings', 'parameters', 'quantum', 'system_order'}, 'scenario': {'cards','branches','timeline', 'seed', 'objectives', 'roster', 'commands', 'scheduledEffects', 'map', 'aliases', 'description', 'duration_seconds', 'waves', 'resources', 'initialEntities', 'ruleset', 'parameters', 'packages', 'routes'}, 'selector': {'limit', 'eligibility', 'ordering', 'provider', 'limit_attribute', 'eligible_rule', 'filters', 'exclude_abnormal_flags', 'parameters', 'region'}}
 COMPONENT_FIELDS = {"depletion":None,"elemental": None,"tile_occupancy": {"blocks_deployment", "exclusive", "targetable", "withdrawable"},"ability_arbitration": None,"ability_timing": {"initial_cooldowns"},
     "selection_state": None,
     "rebirth": None,
@@ -17,7 +17,7 @@ COMPONENT_FIELDS = {"depletion":None,"elemental": None,"tile_occupancy": {"block
     "route_obstacle": {"rule", "contact_radius", "parameters"},
     "deployable": {"connectivity", "cooldown_start", "stock", "policy", "cost", "base_cost", "cooldown_seconds", "refund_ratio", "terrain", "capacity", "rules", "parameters", "deployed", "initial_state"},
     "behavior": {"machine", "state", "rules", "parameters"},
-    "lifecycle": {"exit_rule", "exit_parameters", "policy", "initial_state", "rules", "parameters", "leak_loss", "revive", "death_projectiles"},
+    "lifecycle": {"exit_rule", "exit_parameters", "policy", "initial_state", "rules", "parameters", "leak_loss", "revive", "death_projectiles", "death_spawns"},
     "spatial": {"route_motion_mode", "motion_mode", "coordinate_space", "position", "facing", "route", "route_id", "speed", "blocking", "occupancy", "radius", "projectile", "rules", "parameters", "wait_seconds", "movement", "steering", "timing_origins", "terrain", "block_capacity", "block_cost"},
     "buffs": {"initial", "policy", "rules", "parameters"},
     "buff_container": {"initial", "policy", "rules", "parameters"},
@@ -285,6 +285,9 @@ def validate_definition(definition, capabilities=None):
         for name in ("finish_on_reach", "hit_on_reach", "force_reach_on_expire", "hit_on_expire"):
             if type(policy.get(name)) is not bool: raise ContentError(identifier+".lifecycle."+name+": explicit boolean required")
         for index,item in enumerate(definition.get("on_invalid", [])): validate_effect(item, f"{identifier}.on_invalid[{index}]", capabilities)
+        if 'chain' in definition:
+            from ..domains.projectile_chains import validate as validate_chain
+            validate_chain(definition['chain'], definition)
     elif kind == "control":
         if definition.get("rules"): raise ContentError(f"{identifier}.rules: bind individual effect rules; control owner rule scope is unsupported")
         if definition.get("clock_policy") != "logical": raise ContentError(f"{identifier}.clock_policy: explicit logical required")
@@ -340,6 +343,9 @@ def validate_definition(definition, capabilities=None):
             if not isinstance(lifecycle['exit_rule'],str) or not lifecycle['exit_rule']: raise ContentError(identifier+': nonempty exit rule ID required')
             if not isinstance(lifecycle.get('exit_parameters',{}),Mapping): raise ContentError(identifier+': exit parameters must be record')
         elif 'exit_parameters' in lifecycle: raise ContentError(identifier+': exit parameters require explicit rule')
+        if components.get('lifecycle',{}).get('death_spawns') is not None:
+            from ..domains.death_spawns import validate as validate_death_spawns
+            validate_death_spawns(components['lifecycle']['death_spawns'])
         emissions=components.get('lifecycle',{}).get('death_projectiles')
         if emissions is not None:
             from ark_sim.domains.death_projectiles import validate
@@ -587,8 +593,11 @@ def validate_definition(definition, capabilities=None):
                 raise ContentError(f"{identifier}.aura: selector and buff references are required")
             if 'lease_policy' in aura:
                 p=aura['lease_policy']
-                if not isinstance(p,Mapping) or set(p)-{'mode','identity','source_binding','external_child_collision','owner_activity'} or not {'mode','identity','source_binding','external_child_collision'}<=set(p) or p['mode']!='shared' or p['identity']!=['definition','target'] or p['source_binding']!='oldest_live_lease' or p['external_child_collision']!='reject' or p.get('owner_activity','active_only') not in ('active_only','active_or_rebirth_waiting'):
+                if not isinstance(p,Mapping) or set(p)-{'mode','identity','source_binding','external_child_collision','owner_activity','modifier_stacks'} or not {'mode','identity','source_binding','external_child_collision'}<=set(p) or p['mode']!='shared' or p['identity']!=['definition','target'] or p['source_binding']!='oldest_live_lease' or p['external_child_collision']!='reject' or p.get('owner_activity','active_only') not in ('active_only','active_or_rebirth_waiting'):
                     raise ContentError(f"{identifier}.aura: explicit shared lease policy required")
+                if 'modifier_stacks' in p:
+                    m=p['modifier_stacks']
+                    if not isinstance(m,Mapping) or set(m)!={'rule','maximum'} or not isinstance(m['rule'],str) or not m['rule'] or type(m['maximum']) is not int or not 1<=m['maximum']<=128:raise ContentError(identifier+': shared lease modifier stacks requires explicit rule and finite positive cap')
         control = definition.get("control", {})
         fields(control, {"move", "attack", "abilities", "block", "interrupt"}, f"{identifier}.control")
         if any(type(value) is not bool for value in control.values()):

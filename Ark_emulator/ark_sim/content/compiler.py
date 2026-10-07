@@ -418,7 +418,9 @@ class Compiler:
                     raise CompileError(f"{identifier}.aura: member must be a permanent non-emitter Buff")
                 if definition['aura'].get('lease_policy'):
                     policy=member.get('stacking',{})
-                    if policy.get('mode','refresh')!='refresh' or type(policy.get('max_stacks',1)) is not int or policy.get('max_stacks',1)!=1 or policy.get('policy') or ('duration_seconds' in member.get('parameters',{}) and member['parameters']['duration_seconds']!=0):
+                    lease_stacks=definition['aura']['lease_policy'].get('modifier_stacks')
+                    allowed=(policy.get('mode')=='add' and policy.get('max_stacks')==lease_stacks['maximum']) if lease_stacks else (policy.get('mode','refresh')=='refresh' and type(policy.get('max_stacks',1)) is int and policy.get('max_stacks',1)==1)
+                    if not allowed or policy.get('policy') or ('duration_seconds' in member.get('parameters',{}) and member['parameters']['duration_seconds']!=0):
                         raise CompileError(f"{identifier}.aura: shared child must be nonstacking permanent refresh max1")
                 elif member.get("stacking", {}).get("mode") != "independent":
                     raise CompileError(f"{identifier}.aura: member requires independent stacking")

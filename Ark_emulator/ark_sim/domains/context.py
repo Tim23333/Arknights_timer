@@ -63,6 +63,7 @@ class RuntimeContext:
         self._notifying = 0
         self.last_calculation_event_id = None
         self.depletion = None
+        self.death_spawns = None
         self.projectiles = None
         self.tile_contacts = None
         self.periodic_fields = None

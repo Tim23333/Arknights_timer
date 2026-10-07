@@ -9,7 +9,9 @@ class ProjectileSystem:
   self._inflight_hits={}
   self._impact_payload_scopes=[]
   self._area_payload_scopes=[]
-  self.handlers={'domain.projectile.step':self.step,'domain.projectile.expire':self.expire}
+  from .projectile_chains import FiniteProjectileChains
+  self.chains=FiniteProjectileChains(self)
+  self.handlers={'domain.projectile.step':self.step,'domain.projectile.expire':self.expire,'domain.projectile.chain.next':self.chains.next}
  def _state(self):return self.ctx.get('system/battle',('projectiles',),{'next_id':1,'instances':{}})
  def _save(self,state):self.ctx.set('system/battle',('projectiles',),state)
  def _put(self,instance):
@@ -39,7 +41,7 @@ class ProjectileSystem:
   if not isinstance(value,dict) or not {'row','col'}<=set(value) or any(type(value[k]) not in (int,float) or not math.isfinite(value[k]) for k in ('row','col')):raise ValueError('projectile trajectory requires finite row/col')
   if 'height' in value and (type(value['height']) not in (int,float) or not math.isfinite(value['height'])):raise ValueError('invalid projectile height')
  def _schedule_step(self,x,when):
-  job=self.ctx.session.schedule('domain.projectile.step',{'projectile':x['id']},when,phase=self.ctx.effect_phase);x['jobs'].append(job)
+  job=self.ctx.session.schedule('domain.projectile.step',{'projectile':x['id']},when,phase=self.ctx.effect_phase);x['jobs'].append(job);self.chains.issued(x,job,'step')
  def launch(self,source,target,effect,ability,cast,cause):
   with self.ctx.session.atomic():
    source=self.ctx.session.world.resolve(source);target=self.ctx.session.world.resolve(target);d=self.ctx.program.definitions[effect['projectile_definition']];a=self._position(source);b=self._position(target)
@@ -49,9 +51,10 @@ class ProjectileSystem:
    now=self.ctx.session.time;life=self.ctx.quantize(d['lifetime_seconds']);wait=ability.get('parameters',{}).get('wait_for_projectiles',False)
    if wait:self.ctx.abilities.projectile_started(source,c.get('id'))
    x={'id':key,'definition':d['id'],'source':source,'trace_target':target,'attachment_target':target,'position':b if d.get('attach_at_launch') else a,'start':a,'last_target':b,'previous_target':b,'born':now,'expires':now+life,'last_tick':now,'motion_state':{},'state':'active','jobs':[],'hit_targets':[],'hit_count':0,'cast':c,'ability':thaw(ability),'effect':packet,'cause':cause,'waiting_cast':wait}
+   if 'chain' in d:self.chains.initialize(x,d)
    if d['collision'].get('parameters',{}).get('qualified_ray') is True:x['candidate_previous_positions']={str(e['id']):thaw(e['components']['spatial']['position']) for e in self.ctx.session.world.entities() if e['components'].get('spatial',{}).get('position') is not None}
    motion=d['motion'];plan=self.ctx.calc('projectile.trajectory',{'source':self.ctx.entity(source),'target':self.ctx.entity(target),'positions':[{'position':x['position'],'start':x['start'],'last_target':x['last_target'],'motion_state':{}}],'trajectory_parameters':{**thaw(motion.get('parameters',{})),'age_seconds':0,'delta_seconds':0,'lifetime_seconds':d['lifetime_seconds']}},source=source,target=target,rule_id=motion['rule'],extra=self._trajectory_context(d));self._valid_position(plan.get('position'));x['position']=plan['position'];x['motion_state']=plan.get('motion_state',{})
-   x['jobs'].append(self.ctx.session.schedule('domain.projectile.expire',{'projectile':key},x['expires'],phase=self.ctx.effect_phase));self._schedule_step(x,now+1);state['instances'][key]=x;self._save(state)
+   expiry=self.ctx.session.schedule('domain.projectile.expire',{'projectile':key},x['expires'],phase=self.ctx.effect_phase);x['jobs'].append(expiry);self.chains.issued(x,expiry,'expire');self._schedule_step(x,now+1);state['instances'][key]=x;self._save(state);self.chains.seal(x)
    self.ctx.emit('projectile.launched',{'projectile':key,'definition':d['id'],'source':source,'target':target,'attachment_target':target,'ability':ability.get('id'),'position':x['position'],'expires':x['expires']},cause)
    return key
  def _invalid_policy(self,x,d):
@@ -63,9 +66,15 @@ class ProjectileSystem:
   return None
  def _target_available(self,x):return self.ctx.alive(x['trace_target']) and self.ctx.selectable(x['trace_target']) and self.ctx.effect_target_available(x['trace_target'])
  def _quota_exhausted(self,x,d,reserved=0):
+  if 'chain' in x:return len(x['chain']['visited'])+reserved>=d['chain']['maximum_targets']
   count=x['hit_count']+reserved
   return (d['stop_after_first'] and count>=1) or (d['max_hits'] is not None and count>=d['max_hits'])
  def _hit(self,x,d,target=None,finish_reason='max_hit'):
+  if 'chain' in x:
+   chosen=x['trace_target'] if target is None else self.ctx.session.world.resolve(target)
+   with self.chains.hit(x,chosen):return self._hit_core(x,d,chosen,finish_reason)
+  return self._hit_core(x,d,target,finish_reason)
+ def _hit_core(self,x,d,target=None,finish_reason='max_hit'):
   target=x['trace_target'] if target is None else target
   target=self.ctx.session.world.resolve(target)
   latest=self._get(x['id'])
@@ -92,7 +101,10 @@ class ProjectileSystem:
     x['state']='invalid';return True
    current['hit_targets'].append(target);current['hit_count']+=1;self._put(current)
    x.clear();x.update(current)
-   self.ctx.emit('projectile.hit',{'projectile':x['id'],'source':x['source'],'target':target,'position':x['position'],'hit_count':x['hit_count']})
+   hit_event=self.ctx.emit('projectile.hit',{'projectile':x['id'],'source':x['source'],'target':target,'position':x['position'],'hit_count':x['hit_count']})
+   if 'chain' in x:
+    if self.chains.impact(x,d,target,hit_event):return True
+    self._finish(x,'chain_complete');return True
    if x['state']=='active' and (d['stop_after_first'] or (d['stop_after_max'] and d['max_hits'] is not None and x['hit_count']>=d['max_hits'])):self._finish(x,finish_reason)
    return True
   finally:
@@ -140,10 +152,11 @@ class ProjectileSystem:
   if x['waiting_cast']:self.ctx.abilities.projectile_finished(x['source'],x['cast'].get('id'))
   # Retain compact identity/history, not recursive actor/cast snapshots.
   for field in ('cast','ability','effect'):x.pop(field,None)
-  self._put(x)
+  self._put(x);self.chains.seal(x)
  def step(self,session,payload):
   with session.atomic():
    x=self._get(payload['projectile'])
+   if x and 'chain' in x:self.chains.check_task(x,payload,'step')
    if x and x['state']=='active':x['jobs']=[job for job in x['jobs'] if job in {t['id'] for t in session.scheduler.pending}]
    if not x or x['state']!='active':return
    if self.ctx.state().get('finished'):self._finish(x,'battle_terminal',False);return
@@ -167,19 +180,20 @@ class ProjectileSystem:
    if not collision.get('allow_other_targets',False) and any(ref!=x['trace_target'] for ref in hits):raise ValueError('collision profile hit outside captured trace target')
    for hit in hits:
     self._hit(x,d,hit,finish_reason=('terrain_collision' if result['terrain_hit'] else 'collision_stop') if result['stop'] else 'max_hit')
-    if x['state']!='active':return
+    if x['state']!='active' or ('chain' in x and x['chain']['pending'] is not None):return
    if result['stop']:self._finish(x,'terrain_collision' if result['terrain_hit'] else 'collision_stop');return
-   if x['hit_count'] and (d['stop_after_first'] or (d['stop_after_max'] and d['max_hits'] is not None and x['hit_count']>=d['max_hits'])):self._finish(x,'max_hit');return
+   if 'chain' not in x and x['hit_count'] and (d['stop_after_first'] or (d['stop_after_max'] and d['max_hits'] is not None and x['hit_count']>=d['max_hits'])):self._finish(x,'max_hit');return
    if plan['reached']:
     self.ctx.emit('projectile.reached',{'projectile':x['id'],'position':x['position']})
     if d['lifecycle']['hit_on_reach']:
      self._hit(x,d)
-     if x['state']!='active':return
+     if x['state']!='active' or ('chain' in x and x['chain']['pending'] is not None):return
     if d['lifecycle']['finish_on_reach']:self._finish(x,'reached');return
-   self._schedule_step(x,session.time+1);self._put(x)
+   self._schedule_step(x,session.time+1);self._put(x);self.chains.seal(x)
  def expire(self,session,payload):
   with session.atomic():
    x=self._get(payload['projectile'])
+   if x and 'chain' in x:self.chains.check_task(x,payload,'expire')
    if x and x['state']=='active':x['jobs']=[job for job in x['jobs'] if job in {t['id'] for t in session.scheduler.pending}]
    if not x or x['state']!='active':return
    if self.ctx.state().get('finished'):self._finish(x,'battle_terminal',False);return

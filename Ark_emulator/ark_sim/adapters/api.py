@@ -59,6 +59,8 @@ class Simulation:
         self.ctx.tile_targets_enabled = uses_tiles(program.definitions) or uses_tiles(program.scenario)
         self.ctx.movement = MovementSystem(self.ctx)
         self.ctx.lifecycle = LifecycleSystem(self.ctx)
+        from ark_sim.domains.death_spawns import DeathSpawnSystem
+        self.ctx.death_spawns=DeathSpawnSystem(self.ctx) if any(d.get('components',{}).get('lifecycle',{}).get('death_spawns') for d in program.definitions.values()) else None
         def uses_rebirth(value):
             if isinstance(value,dict) or hasattr(value,"items"):
                 return "rebirth" in value.get("components",{}) or value.get("op") in {"instant_kill", "spawn_on_tiles"} or any(uses_rebirth(v) for k,v in value.items() if k not in {"metadata","parameters","payload"})
@@ -153,6 +155,7 @@ class Simulation:
             handlers["domain.elemental.expire"] = self.ctx.elemental.expire
             self.session.add_system(self.ctx.elemental.tick, phase=0)
         if self.ctx.depletion is not None:handlers["domain.depletion.action"] = self.ctx.depletion.action
+        if self.ctx.death_spawns is not None:handlers['domain.death_spawn']=self.ctx.death_spawns.handle
         for name, handler in handlers.items():
             self.session.register_handler(name, handler)
         if self.ctx.attachments is not None:
@@ -324,7 +327,12 @@ class Engine:
         simulation.session.restore(checkpoint["kernel"])
         simulation._commands = copy.deepcopy(checkpoint.get("commands", []))
         simulation.ctx.attributes.restore_cache(checkpoint.get("attribute_cache"))
+        simulation.ctx.elemental.validate_restored()
         if simulation.ctx.depletion is not None:simulation.ctx.depletion.validate_restored()
+        if simulation.ctx.death_spawns is not None:simulation.ctx.death_spawns.validate_restored()
+        from ..domains.shared_auras import validate_modifier_stacks
+        validate_modifier_stacks(simulation.ctx.buffs)
         from ..domains.buff_capture import validate_restored as validate_buff_capture
         validate_buff_capture(simulation.ctx.buffs)
+        if simulation.ctx.projectiles is not None:simulation.ctx.projectiles.chains.validate_restored()
         return simulation
