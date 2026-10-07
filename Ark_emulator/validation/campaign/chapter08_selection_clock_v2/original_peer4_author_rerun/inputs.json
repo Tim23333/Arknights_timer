@@ -1,0 +1,563 @@
+[
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/clock",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/clock",
+        "kind": "rule",
+        "contract": "targeting.availability",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.clock"
+        }
+      },
+      {
+        "id": "rule/peer/nested",
+        "kind": "rule",
+        "contract": "targeting.availability",
+        "dependencies": [
+          "rule/peer/clock"
+        ],
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.nested"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/hidden",
+        "kind": "buff",
+        "duration_seconds": 0.13333333333333333
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/mark",
+            "ability/peer/query"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/target",
+        "kind": "entity",
+        "rules": {
+          "targeting.availability": "rule/peer/nested"
+        },
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "spatial": {}
+        }
+      }
+    ],
+    "selectors": [
+      {
+        "id": "selector/peer/all",
+        "kind": "selector",
+        "region": {
+          "type": "all"
+        },
+        "filters": [
+          {
+            "tag": "target"
+          }
+        ],
+        "limit": null
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/mark",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 3,
+              "buff": "buff/peer/hidden"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/query",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "selector": "selector/peer/all",
+        "timeline": [
+          {
+            "at": 0,
+            "effect": {
+              "op": "emit",
+              "event": "peer.clock.targets"
+            }
+          }
+        ]
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/clock",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/target",
+          "instanceAlias": "target",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/clock",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/clock",
+        "kind": "rule",
+        "contract": "targeting.availability",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.mutate"
+        }
+      },
+      {
+        "id": "rule/peer/nested",
+        "kind": "rule",
+        "contract": "targeting.availability",
+        "dependencies": [
+          "rule/peer/clock"
+        ],
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.nested"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/hidden",
+        "kind": "buff",
+        "duration_seconds": 0.13333333333333333
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/mark",
+            "ability/peer/query"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/target",
+        "kind": "entity",
+        "rules": {
+          "targeting.availability": "rule/peer/nested"
+        },
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "spatial": {}
+        }
+      }
+    ],
+    "selectors": [
+      {
+        "id": "selector/peer/all",
+        "kind": "selector",
+        "region": {
+          "type": "all"
+        },
+        "filters": [
+          {
+            "tag": "target"
+          }
+        ],
+        "limit": null
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/mark",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 3,
+              "buff": "buff/peer/hidden"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/query",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "selector": "selector/peer/all",
+        "timeline": [
+          {
+            "at": 0,
+            "effect": {
+              "op": "emit",
+              "event": "peer.clock.targets"
+            }
+          }
+        ]
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/clock",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/target",
+          "instanceAlias": "target",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/clock",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/clock",
+        "kind": "rule",
+        "contract": "targeting.availability",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.throws"
+        }
+      },
+      {
+        "id": "rule/peer/nested",
+        "kind": "rule",
+        "contract": "targeting.availability",
+        "dependencies": [
+          "rule/peer/clock"
+        ],
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.nested"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/hidden",
+        "kind": "buff",
+        "duration_seconds": 0.13333333333333333
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/mark",
+            "ability/peer/query"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/target",
+        "kind": "entity",
+        "rules": {
+          "targeting.availability": "rule/peer/nested"
+        },
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "spatial": {}
+        }
+      }
+    ],
+    "selectors": [
+      {
+        "id": "selector/peer/all",
+        "kind": "selector",
+        "region": {
+          "type": "all"
+        },
+        "filters": [
+          {
+            "tag": "target"
+          }
+        ],
+        "limit": null
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/mark",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 3,
+              "buff": "buff/peer/hidden"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/query",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "selector": "selector/peer/all",
+        "timeline": [
+          {
+            "at": 0,
+            "effect": {
+              "op": "emit",
+              "event": "peer.clock.targets"
+            }
+          }
+        ]
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/clock",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/target",
+          "instanceAlias": "target",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/clock",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/clock",
+        "kind": "rule",
+        "contract": "targeting.availability",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.clock"
+        }
+      },
+      {
+        "id": "rule/peer/nested",
+        "kind": "rule",
+        "contract": "targeting.availability",
+        "dependencies": [
+          "rule/peer/clock"
+        ],
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.nested"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/hidden",
+        "kind": "buff",
+        "duration_seconds": 0.13333333333333333
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/mark",
+            "ability/peer/query"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/target",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "spatial": {}
+        }
+      }
+    ],
+    "selectors": [
+      {
+        "id": "selector/peer/all",
+        "kind": "selector",
+        "region": {
+          "type": "all"
+        },
+        "filters": [
+          {
+            "tag": "target"
+          }
+        ],
+        "limit": null
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/mark",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 3,
+              "buff": "buff/peer/hidden"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/query",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "selector": "selector/peer/all",
+        "timeline": [
+          {
+            "at": 0,
+            "effect": {
+              "op": "emit",
+              "event": "peer.clock.targets"
+            }
+          }
+        ]
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/clock",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/target",
+          "instanceAlias": "target",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  }
+]

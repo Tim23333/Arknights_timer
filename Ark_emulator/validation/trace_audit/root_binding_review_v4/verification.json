@@ -1,0 +1,565 @@
+{
+  "passed": true,
+  "results": [
+    {
+      "case": "cached_wrong_owner",
+      "passed": true,
+      "audit": {
+        "schema": "ark-sim/source-formula-stream-audit/v4",
+        "source_formula_consistent": false,
+        "all_fields_independently_verified": false,
+        "counts": {
+          "events": 14146,
+          "verified_calculations": 3001,
+          "verified_cached": 3541,
+          "verified_nested_calculations": 2
+        },
+        "verified_resource_transitions": 332,
+        "pending_fields": {
+          "resource.hp.maximum: source-bound effective maxHP not yet covered": 166,
+          "rule/ark_lifecycle_death: unsupported rule": 333,
+          "lifecycle.birth: source definition/initial HP binding not yet covered": 3,
+          "rule/support_temporal: unsupported rule": 4344,
+          "cached.source_event_id: absent or unverified independent source": 397,
+          "rule/ark_buff_stack_amount: unsupported rule": 2,
+          "rule/ark_buff_duration: unsupported rule": 2,
+          "rule/ark_buff_interval: unsupported rule": 2,
+          "rule/ark_time_quantize: unsupported rule": 498,
+          "rule/ark_targeting_score: unsupported rule": 334,
+          "rule/ark_targeting_selection: unsupported rule": 334,
+          "rule/ballista/time_sp: unsupported rule": 159,
+          "rule/support_time_sp: unsupported rule": 5,
+          "rule/ark_ability_windup: unsupported rule": 1,
+          "rule/ark_ability_repeat: unsupported rule": 1,
+          "rule/ark_ability_duration: unsupported rule": 1,
+          "rule/ark_ability_recovery: unsupported rule": 1,
+          "rule/ballista/cardinal_ray: unsupported rule": 9,
+          "rule/ballista/qualified_sweep: unsupported rule": 8,
+          "trace.rule/ark_lifecycle_death: source formula/definition not reviewed": 333,
+          "trace.rule/support_temporal: source formula/definition not reviewed": 4344,
+          "cached.source: absent or independently unverified identity/formula": 397,
+          "trace.rule/ark_buff_stack_amount: source formula/definition not reviewed": 2,
+          "trace.rule/ark_buff_duration: source formula/definition not reviewed": 2,
+          "trace.rule/ark_buff_interval: source formula/definition not reviewed": 2,
+          "trace.rule/ark_time_quantize: source formula/definition not reviewed": 498,
+          "trace.rule/ark_targeting_score: source formula/definition not reviewed": 334,
+          "trace.rule/ark_targeting_selection: source formula/definition not reviewed": 334,
+          "trace.rule/ballista/time_sp: source formula/definition not reviewed": 159,
+          "trace.rule/support_time_sp: source formula/definition not reviewed": 5,
+          "trace.rule/ark_ability_windup: source formula/definition not reviewed": 1,
+          "trace.rule/ark_ability_repeat: source formula/definition not reviewed": 1,
+          "trace.rule/ark_ability_duration: source formula/definition not reviewed": 1,
+          "trace.rule/ark_ability_recovery: source formula/definition not reviewed": 1,
+          "trace.rule/ballista/cardinal_ray: source formula/definition not reviewed": 9,
+          "trace.rule/ballista/qualified_sweep: source formula/definition not reviewed": 8
+        },
+        "failures": [
+          {
+            "event": 44,
+            "time": 0,
+            "field": "cached.identity",
+            "reason": "verified source differs in owner",
+            "expected": null,
+            "actual": null
+          }
+        ],
+        "final_observed_resources": [
+          {
+            "entity": 2,
+            "resource": "hp",
+            "value": 100
+          },
+          {
+            "entity": 2,
+            "resource": "sp",
+            "value": 0.26666666666666666
+          },
+          {
+            "entity": 3,
+            "resource": "hp",
+            "value": 1565
+          },
+          {
+            "entity": 3,
+            "resource": "sp",
+            "value": 15.0
+          },
+          {
+            "entity": 4,
+            "resource": "hp",
+            "value": 5000
+          },
+          {
+            "entity": 1,
+            "resource": "dp",
+            "value": 15
+          }
+        ],
+        "accuracy_scope": "Independent arithmetic from captured source-rule inputs; no client accuracy approval. Birth/maxHP source-binding and custom-rule coverage remain pending unless separately evidenced.",
+        "client_verified": false,
+        "source_standard_definition_sha": "1070ba6793cee5ded71c0f0b89a96ba72973d49989407e70a858a575febb9814",
+        "identity_counts": {
+          "identity_events": 14146,
+          "identity_verified_calculations": 3001,
+          "identity_or_arithmetic_failures": 1,
+          "identity_verified_cached": 3541,
+          "identity_verified_nested": 2
+        },
+        "scope": "Source arithmetic plus explicit rule/params/numeric/contract/context/cache identity. Source birth/maxHP and unsupported rules remain pending; no client accuracy approval.",
+        "graph_context_calls_checked": 2,
+        "aggregate_provider_calls_checked": 0,
+        "graph_context_contract": "Only reviewed rule/ark_damage_pipeline: same context actor IDs/owner/time/quantum/scope/runtime inherited for power and mitigation, with contract owner source/target respectively. Other/custom graph call scopes remain unverified."
+      },
+      "input_sha": "58607b1d5cda252c69d48db33d534e3344c778ede8f68490c73d5adc3427d1dc",
+      "expected": "Same numerical value does not excuse different source/target/attribute/contract identity"
+    },
+    {
+      "case": "cached_wrong_attribute",
+      "passed": true,
+      "audit": {
+        "schema": "ark-sim/source-formula-stream-audit/v4",
+        "source_formula_consistent": false,
+        "all_fields_independently_verified": false,
+        "counts": {
+          "events": 14146,
+          "verified_calculations": 3001,
+          "verified_cached": 3541,
+          "verified_nested_calculations": 2
+        },
+        "verified_resource_transitions": 332,
+        "pending_fields": {
+          "resource.hp.maximum: source-bound effective maxHP not yet covered": 166,
+          "rule/ark_lifecycle_death: unsupported rule": 333,
+          "lifecycle.birth: source definition/initial HP binding not yet covered": 3,
+          "rule/support_temporal: unsupported rule": 4344,
+          "cached.source_event_id: absent or unverified independent source": 397,
+          "rule/ark_buff_stack_amount: unsupported rule": 2,
+          "rule/ark_buff_duration: unsupported rule": 2,
+          "rule/ark_buff_interval: unsupported rule": 2,
+          "rule/ark_time_quantize: unsupported rule": 498,
+          "rule/ark_targeting_score: unsupported rule": 334,
+          "rule/ark_targeting_selection: unsupported rule": 334,
+          "rule/ballista/time_sp: unsupported rule": 159,
+          "rule/support_time_sp: unsupported rule": 5,
+          "rule/ark_ability_windup: unsupported rule": 1,
+          "rule/ark_ability_repeat: unsupported rule": 1,
+          "rule/ark_ability_duration: unsupported rule": 1,
+          "rule/ark_ability_recovery: unsupported rule": 1,
+          "rule/ballista/cardinal_ray: unsupported rule": 9,
+          "rule/ballista/qualified_sweep: unsupported rule": 8,
+          "trace.rule/ark_lifecycle_death: source formula/definition not reviewed": 333,
+          "trace.rule/support_temporal: source formula/definition not reviewed": 4344,
+          "cached.source: absent or independently unverified identity/formula": 397,
+          "trace.rule/ark_buff_stack_amount: source formula/definition not reviewed": 2,
+          "trace.rule/ark_buff_duration: source formula/definition not reviewed": 2,
+          "trace.rule/ark_buff_interval: source formula/definition not reviewed": 2,
+          "trace.rule/ark_time_quantize: source formula/definition not reviewed": 498,
+          "trace.rule/ark_targeting_score: source formula/definition not reviewed": 334,
+          "trace.rule/ark_targeting_selection: source formula/definition not reviewed": 334,
+          "trace.rule/ballista/time_sp: source formula/definition not reviewed": 159,
+          "trace.rule/support_time_sp: source formula/definition not reviewed": 5,
+          "trace.rule/ark_ability_windup: source formula/definition not reviewed": 1,
+          "trace.rule/ark_ability_repeat: source formula/definition not reviewed": 1,
+          "trace.rule/ark_ability_duration: source formula/definition not reviewed": 1,
+          "trace.rule/ark_ability_recovery: source formula/definition not reviewed": 1,
+          "trace.rule/ballista/cardinal_ray: source formula/definition not reviewed": 9,
+          "trace.rule/ballista/qualified_sweep: source formula/definition not reviewed": 8
+        },
+        "failures": [
+          {
+            "event": 44,
+            "time": 0,
+            "field": "cached.identity",
+            "reason": "verified source differs in attribute",
+            "expected": null,
+            "actual": null
+          }
+        ],
+        "final_observed_resources": [
+          {
+            "entity": 2,
+            "resource": "hp",
+            "value": 100
+          },
+          {
+            "entity": 2,
+            "resource": "sp",
+            "value": 0.26666666666666666
+          },
+          {
+            "entity": 3,
+            "resource": "hp",
+            "value": 1565
+          },
+          {
+            "entity": 3,
+            "resource": "sp",
+            "value": 15.0
+          },
+          {
+            "entity": 4,
+            "resource": "hp",
+            "value": 5000
+          },
+          {
+            "entity": 1,
+            "resource": "dp",
+            "value": 15
+          }
+        ],
+        "accuracy_scope": "Independent arithmetic from captured source-rule inputs; no client accuracy approval. Birth/maxHP source-binding and custom-rule coverage remain pending unless separately evidenced.",
+        "client_verified": false,
+        "source_standard_definition_sha": "1070ba6793cee5ded71c0f0b89a96ba72973d49989407e70a858a575febb9814",
+        "identity_counts": {
+          "identity_events": 14146,
+          "identity_verified_calculations": 3001,
+          "identity_or_arithmetic_failures": 1,
+          "identity_verified_cached": 3541,
+          "identity_verified_nested": 2
+        },
+        "scope": "Source arithmetic plus explicit rule/params/numeric/contract/context/cache identity. Source birth/maxHP and unsupported rules remain pending; no client accuracy approval.",
+        "graph_context_calls_checked": 2,
+        "aggregate_provider_calls_checked": 0,
+        "graph_context_contract": "Only reviewed rule/ark_damage_pipeline: same context actor IDs/owner/time/quantum/scope/runtime inherited for power and mitigation, with contract owner source/target respectively. Other/custom graph call scopes remain unverified."
+      },
+      "input_sha": "e32d666206f6cfbba7534d62c2cfaf686e9447588a4aac517bf89557311a1186",
+      "expected": "Same numerical value does not excuse different source/target/attribute/contract identity"
+    },
+    {
+      "case": "cached_wrong_contract",
+      "passed": true,
+      "audit": {
+        "schema": "ark-sim/source-formula-stream-audit/v4",
+        "source_formula_consistent": false,
+        "all_fields_independently_verified": false,
+        "counts": {
+          "events": 14146,
+          "verified_calculations": 3001,
+          "verified_cached": 3541,
+          "verified_nested_calculations": 2
+        },
+        "verified_resource_transitions": 332,
+        "pending_fields": {
+          "resource.hp.maximum: source-bound effective maxHP not yet covered": 166,
+          "rule/ark_lifecycle_death: unsupported rule": 333,
+          "lifecycle.birth: source definition/initial HP binding not yet covered": 3,
+          "rule/support_temporal: unsupported rule": 4344,
+          "cached.source_event_id: absent or unverified independent source": 397,
+          "rule/ark_buff_stack_amount: unsupported rule": 2,
+          "rule/ark_buff_duration: unsupported rule": 2,
+          "rule/ark_buff_interval: unsupported rule": 2,
+          "rule/ark_time_quantize: unsupported rule": 498,
+          "rule/ark_targeting_score: unsupported rule": 334,
+          "rule/ark_targeting_selection: unsupported rule": 334,
+          "rule/ballista/time_sp: unsupported rule": 159,
+          "rule/support_time_sp: unsupported rule": 5,
+          "rule/ark_ability_windup: unsupported rule": 1,
+          "rule/ark_ability_repeat: unsupported rule": 1,
+          "rule/ark_ability_duration: unsupported rule": 1,
+          "rule/ark_ability_recovery: unsupported rule": 1,
+          "rule/ballista/cardinal_ray: unsupported rule": 9,
+          "rule/ballista/qualified_sweep: unsupported rule": 8,
+          "trace.rule/ark_lifecycle_death: source formula/definition not reviewed": 333,
+          "trace.rule/support_temporal: source formula/definition not reviewed": 4344,
+          "cached.source: absent or independently unverified identity/formula": 397,
+          "trace.rule/ark_buff_stack_amount: source formula/definition not reviewed": 2,
+          "trace.rule/ark_buff_duration: source formula/definition not reviewed": 2,
+          "trace.rule/ark_buff_interval: source formula/definition not reviewed": 2,
+          "trace.rule/ark_time_quantize: source formula/definition not reviewed": 498,
+          "trace.rule/ark_targeting_score: source formula/definition not reviewed": 334,
+          "trace.rule/ark_targeting_selection: source formula/definition not reviewed": 334,
+          "trace.rule/ballista/time_sp: source formula/definition not reviewed": 159,
+          "trace.rule/support_time_sp: source formula/definition not reviewed": 5,
+          "trace.rule/ark_ability_windup: source formula/definition not reviewed": 1,
+          "trace.rule/ark_ability_repeat: source formula/definition not reviewed": 1,
+          "trace.rule/ark_ability_duration: source formula/definition not reviewed": 1,
+          "trace.rule/ark_ability_recovery: source formula/definition not reviewed": 1,
+          "trace.rule/ballista/cardinal_ray: source formula/definition not reviewed": 9,
+          "trace.rule/ballista/qualified_sweep: source formula/definition not reviewed": 8
+        },
+        "failures": [
+          {
+            "event": 44,
+            "time": 0,
+            "field": "cached.identity",
+            "reason": "verified source differs in calculation_id",
+            "expected": null,
+            "actual": null
+          }
+        ],
+        "final_observed_resources": [
+          {
+            "entity": 2,
+            "resource": "hp",
+            "value": 100
+          },
+          {
+            "entity": 2,
+            "resource": "sp",
+            "value": 0.26666666666666666
+          },
+          {
+            "entity": 3,
+            "resource": "hp",
+            "value": 1565
+          },
+          {
+            "entity": 3,
+            "resource": "sp",
+            "value": 15.0
+          },
+          {
+            "entity": 4,
+            "resource": "hp",
+            "value": 5000
+          },
+          {
+            "entity": 1,
+            "resource": "dp",
+            "value": 15
+          }
+        ],
+        "accuracy_scope": "Independent arithmetic from captured source-rule inputs; no client accuracy approval. Birth/maxHP source-binding and custom-rule coverage remain pending unless separately evidenced.",
+        "client_verified": false,
+        "source_standard_definition_sha": "1070ba6793cee5ded71c0f0b89a96ba72973d49989407e70a858a575febb9814",
+        "identity_counts": {
+          "identity_events": 14146,
+          "identity_verified_calculations": 3001,
+          "identity_or_arithmetic_failures": 1,
+          "identity_verified_cached": 3541,
+          "identity_verified_nested": 2
+        },
+        "scope": "Source arithmetic plus explicit rule/params/numeric/contract/context/cache identity. Source birth/maxHP and unsupported rules remain pending; no client accuracy approval.",
+        "graph_context_calls_checked": 2,
+        "aggregate_provider_calls_checked": 0,
+        "graph_context_contract": "Only reviewed rule/ark_damage_pipeline: same context actor IDs/owner/time/quantum/scope/runtime inherited for power and mitigation, with contract owner source/target respectively. Other/custom graph call scopes remain unverified."
+      },
+      "input_sha": "cabe9ce9bd2f562e378fc4932d18091d79e832dbeb2b4cd8a2b39129446f828e",
+      "expected": "Same numerical value does not excuse different source/target/attribute/contract identity"
+    },
+    {
+      "case": "nested_wrong_source",
+      "passed": true,
+      "audit": {
+        "schema": "ark-sim/source-formula-stream-audit/v4",
+        "source_formula_consistent": false,
+        "all_fields_independently_verified": false,
+        "counts": {
+          "events": 14146,
+          "verified_calculations": 3001,
+          "verified_cached": 3542,
+          "verified_nested_calculations": 2
+        },
+        "verified_resource_transitions": 332,
+        "pending_fields": {
+          "resource.hp.maximum: source-bound effective maxHP not yet covered": 166,
+          "rule/ark_lifecycle_death: unsupported rule": 333,
+          "lifecycle.birth: source definition/initial HP binding not yet covered": 3,
+          "rule/support_temporal: unsupported rule": 4344,
+          "cached.source_event_id: absent or unverified independent source": 397,
+          "rule/ark_buff_stack_amount: unsupported rule": 2,
+          "rule/ark_buff_duration: unsupported rule": 2,
+          "rule/ark_buff_interval: unsupported rule": 2,
+          "rule/ark_time_quantize: unsupported rule": 498,
+          "rule/ark_targeting_score: unsupported rule": 334,
+          "rule/ark_targeting_selection: unsupported rule": 334,
+          "rule/ballista/time_sp: unsupported rule": 159,
+          "rule/support_time_sp: unsupported rule": 5,
+          "rule/ark_ability_windup: unsupported rule": 1,
+          "rule/ark_ability_repeat: unsupported rule": 1,
+          "rule/ark_ability_duration: unsupported rule": 1,
+          "rule/ark_ability_recovery: unsupported rule": 1,
+          "rule/ballista/cardinal_ray: unsupported rule": 9,
+          "rule/ballista/qualified_sweep: unsupported rule": 8,
+          "trace.rule/ark_lifecycle_death: source formula/definition not reviewed": 333,
+          "trace.rule/support_temporal: source formula/definition not reviewed": 4344,
+          "cached.source: absent or independently unverified identity/formula": 397,
+          "trace.rule/ark_buff_stack_amount: source formula/definition not reviewed": 2,
+          "trace.rule/ark_buff_duration: source formula/definition not reviewed": 2,
+          "trace.rule/ark_buff_interval: source formula/definition not reviewed": 2,
+          "trace.rule/ark_time_quantize: source formula/definition not reviewed": 498,
+          "trace.rule/ark_targeting_score: source formula/definition not reviewed": 334,
+          "trace.rule/ark_targeting_selection: source formula/definition not reviewed": 334,
+          "trace.rule/ballista/time_sp: source formula/definition not reviewed": 159,
+          "trace.rule/support_time_sp: source formula/definition not reviewed": 5,
+          "trace.rule/ark_ability_windup: source formula/definition not reviewed": 1,
+          "trace.rule/ark_ability_repeat: source formula/definition not reviewed": 1,
+          "trace.rule/ark_ability_duration: source formula/definition not reviewed": 1,
+          "trace.rule/ark_ability_recovery: source formula/definition not reviewed": 1,
+          "trace.rule/ballista/cardinal_ray: source formula/definition not reviewed": 9,
+          "trace.rule/ballista/qualified_sweep: source formula/definition not reviewed": 8
+        },
+        "failures": [
+          {
+            "event": 14146,
+            "time": 164,
+            "field": "graph.power.context.source_id",
+            "reason": "Standard damage graph call-context/binding inheritance differs",
+            "expected": 2,
+            "actual": 9999
+          }
+        ],
+        "final_observed_resources": [
+          {
+            "entity": 2,
+            "resource": "hp",
+            "value": 100
+          },
+          {
+            "entity": 2,
+            "resource": "sp",
+            "value": 0.26666666666666666
+          },
+          {
+            "entity": 3,
+            "resource": "hp",
+            "value": 1565
+          },
+          {
+            "entity": 3,
+            "resource": "sp",
+            "value": 15.0
+          },
+          {
+            "entity": 4,
+            "resource": "hp",
+            "value": 5000
+          },
+          {
+            "entity": 1,
+            "resource": "dp",
+            "value": 15
+          }
+        ],
+        "accuracy_scope": "Independent arithmetic from captured source-rule inputs; no client accuracy approval. Birth/maxHP source-binding and custom-rule coverage remain pending unless separately evidenced.",
+        "client_verified": false,
+        "source_standard_definition_sha": "1070ba6793cee5ded71c0f0b89a96ba72973d49989407e70a858a575febb9814",
+        "identity_counts": {
+          "identity_events": 14146,
+          "identity_verified_calculations": 3001,
+          "identity_verified_cached": 3542,
+          "identity_verified_nested": 2
+        },
+        "scope": "Source arithmetic plus explicit rule/params/numeric/contract/context/cache identity. Source birth/maxHP and unsupported rules remain pending; no client accuracy approval.",
+        "graph_context_calls_checked": 2,
+        "aggregate_provider_calls_checked": 0,
+        "graph_context_contract": "Only reviewed rule/ark_damage_pipeline: same context actor IDs/owner/time/quantum/scope/runtime inherited for power and mitigation, with contract owner source/target respectively. Other/custom graph call scopes remain unverified."
+      },
+      "input_sha": "3ceeafc3073f96e650ad43dff6c5fadf8a86d0494d7abc813f1885e6b6db6f1d",
+      "expected": "Same numerical value does not excuse different source/target/attribute/contract identity"
+    },
+    {
+      "case": "nested_wrong_target",
+      "passed": true,
+      "audit": {
+        "schema": "ark-sim/source-formula-stream-audit/v4",
+        "source_formula_consistent": false,
+        "all_fields_independently_verified": false,
+        "counts": {
+          "events": 14146,
+          "verified_calculations": 3001,
+          "verified_cached": 3542,
+          "verified_nested_calculations": 2
+        },
+        "verified_resource_transitions": 332,
+        "pending_fields": {
+          "resource.hp.maximum: source-bound effective maxHP not yet covered": 166,
+          "rule/ark_lifecycle_death: unsupported rule": 333,
+          "lifecycle.birth: source definition/initial HP binding not yet covered": 3,
+          "rule/support_temporal: unsupported rule": 4344,
+          "cached.source_event_id: absent or unverified independent source": 397,
+          "rule/ark_buff_stack_amount: unsupported rule": 2,
+          "rule/ark_buff_duration: unsupported rule": 2,
+          "rule/ark_buff_interval: unsupported rule": 2,
+          "rule/ark_time_quantize: unsupported rule": 498,
+          "rule/ark_targeting_score: unsupported rule": 334,
+          "rule/ark_targeting_selection: unsupported rule": 334,
+          "rule/ballista/time_sp: unsupported rule": 159,
+          "rule/support_time_sp: unsupported rule": 5,
+          "rule/ark_ability_windup: unsupported rule": 1,
+          "rule/ark_ability_repeat: unsupported rule": 1,
+          "rule/ark_ability_duration: unsupported rule": 1,
+          "rule/ark_ability_recovery: unsupported rule": 1,
+          "rule/ballista/cardinal_ray: unsupported rule": 9,
+          "rule/ballista/qualified_sweep: unsupported rule": 8,
+          "trace.rule/ark_lifecycle_death: source formula/definition not reviewed": 333,
+          "trace.rule/support_temporal: source formula/definition not reviewed": 4344,
+          "cached.source: absent or independently unverified identity/formula": 397,
+          "trace.rule/ark_buff_stack_amount: source formula/definition not reviewed": 2,
+          "trace.rule/ark_buff_duration: source formula/definition not reviewed": 2,
+          "trace.rule/ark_buff_interval: source formula/definition not reviewed": 2,
+          "trace.rule/ark_time_quantize: source formula/definition not reviewed": 498,
+          "trace.rule/ark_targeting_score: source formula/definition not reviewed": 334,
+          "trace.rule/ark_targeting_selection: source formula/definition not reviewed": 334,
+          "trace.rule/ballista/time_sp: source formula/definition not reviewed": 159,
+          "trace.rule/support_time_sp: source formula/definition not reviewed": 5,
+          "trace.rule/ark_ability_windup: source formula/definition not reviewed": 1,
+          "trace.rule/ark_ability_repeat: source formula/definition not reviewed": 1,
+          "trace.rule/ark_ability_duration: source formula/definition not reviewed": 1,
+          "trace.rule/ark_ability_recovery: source formula/definition not reviewed": 1,
+          "trace.rule/ballista/cardinal_ray: source formula/definition not reviewed": 9,
+          "trace.rule/ballista/qualified_sweep: source formula/definition not reviewed": 8
+        },
+        "failures": [
+          {
+            "event": 14146,
+            "time": 164,
+            "field": "graph.mitigation.context.target_id",
+            "reason": "Standard damage graph call-context/binding inheritance differs",
+            "expected": 3,
+            "actual": 9999
+          }
+        ],
+        "final_observed_resources": [
+          {
+            "entity": 2,
+            "resource": "hp",
+            "value": 100
+          },
+          {
+            "entity": 2,
+            "resource": "sp",
+            "value": 0.26666666666666666
+          },
+          {
+            "entity": 3,
+            "resource": "hp",
+            "value": 1565
+          },
+          {
+            "entity": 3,
+            "resource": "sp",
+            "value": 15.0
+          },
+          {
+            "entity": 4,
+            "resource": "hp",
+            "value": 5000
+          },
+          {
+            "entity": 1,
+            "resource": "dp",
+            "value": 15
+          }
+        ],
+        "accuracy_scope": "Independent arithmetic from captured source-rule inputs; no client accuracy approval. Birth/maxHP source-binding and custom-rule coverage remain pending unless separately evidenced.",
+        "client_verified": false,
+        "source_standard_definition_sha": "1070ba6793cee5ded71c0f0b89a96ba72973d49989407e70a858a575febb9814",
+        "identity_counts": {
+          "identity_events": 14146,
+          "identity_verified_calculations": 3001,
+          "identity_verified_cached": 3542,
+          "identity_verified_nested": 2
+        },
+        "scope": "Source arithmetic plus explicit rule/params/numeric/contract/context/cache identity. Source birth/maxHP and unsupported rules remain pending; no client accuracy approval.",
+        "graph_context_calls_checked": 2,
+        "aggregate_provider_calls_checked": 0,
+        "graph_context_contract": "Only reviewed rule/ark_damage_pipeline: same context actor IDs/owner/time/quantum/scope/runtime inherited for power and mitigation, with contract owner source/target respectively. Other/custom graph call scopes remain unverified."
+      },
+      "input_sha": "7f951bac707e5ba5630ceaaa8f185599584e4dc7b972a1d24faf08f5556fc7d8",
+      "expected": "Same numerical value does not excuse different source/target/attribute/contract identity"
+    }
+  ],
+  "helper_sha": "7ea3e58428fe77ffbfc650e222c770db3eea3b40abf1d176df6c120ec79f899e",
+  "scope": "Independent source binding review; preserve failure if uncovered"
+}

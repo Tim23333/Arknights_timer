@@ -1,0 +1,256 @@
+{
+  "actual_exit": 0,
+  "source_raw_golden_sha": "497b185abe1b9a00c922d1dc27a6c89927ca79723df311104758c0ebeaeaabf9",
+  "pins_sha": "a4572ff2dfb1952a32dc2f8398f3fc752b80f8f2621b75eb95ec5bbe0209a69b",
+  "helpers": [
+    {
+      "path": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\trace_audit\\stream_oracle_v4.py",
+      "sha": "7ea3e58428fe77ffbfc650e222c770db3eea3b40abf1d176df6c120ec79f899e"
+    },
+    {
+      "path": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\trace_audit\\stream_oracle_v4_math.py",
+      "sha": "3df6f467d36c4aa8dac43cf0911ba6fb2fc9075841800f9bb39aa02024a8aba5"
+    },
+    {
+      "path": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\trace_audit\\stream_oracle_v4_identity.py",
+      "sha": "90e24d616924ca27e07650c36a35fbe09a7de50d18be079e271fff9b7a453b4a"
+    }
+  ],
+  "positive_actual_chen": {
+    "schema": "ark-sim/source-formula-stream-audit/v4",
+    "source_formula_consistent": true,
+    "all_fields_independently_verified": false,
+    "counts": {
+      "events": 3,
+      "verified_nested_calculations": 2,
+      "verified_calculations": 2,
+      "verified_cached": 0
+    },
+    "verified_resource_transitions": 0,
+    "pending_fields": {
+      "resource.before: initial state not yet independently bound": 1
+    },
+    "failures": [],
+    "final_observed_resources": [
+      {
+        "entity": 12,
+        "resource": "sp",
+        "value": 0
+      }
+    ],
+    "accuracy_scope": "Independent arithmetic from captured source-rule inputs; no client accuracy approval. Birth/maxHP source-binding and custom-rule coverage remain pending unless separately evidenced.",
+    "client_verified": false,
+    "source_standard_definition_sha": "1070ba6793cee5ded71c0f0b89a96ba72973d49989407e70a858a575febb9814",
+    "identity_counts": {
+      "identity_events": 3,
+      "identity_verified_nested": 2,
+      "identity_verified_calculations": 2
+    },
+    "scope": "Source arithmetic plus explicit rule/params/numeric/contract/context/cache identity. Source birth/maxHP and unsupported rules remain pending; no client accuracy approval.",
+    "graph_context_calls_checked": 0,
+    "aggregate_provider_calls_checked": 2,
+    "graph_context_contract": "Only reviewed rule/ark_damage_pipeline: same context actor IDs/owner/time/quantum/scope/runtime inherited for power and mitigation, with contract owner source/target respectively. Other/custom graph call scopes remain unverified."
+  },
+  "negatives": [
+    {
+      "case": "callback_child_raw_plus1",
+      "middle_only_final_unchanged": true,
+      "rejected_or_unverified": true,
+      "failures": [
+        {
+          "event": 175641,
+          "time": 780,
+          "field": "nested.raw",
+          "reason": "independent nested source-formula mismatch",
+          "expected": 659.4,
+          "actual": 660.4
+        },
+        {
+          "event": 175641,
+          "time": 780,
+          "field": "nested.raw",
+          "reason": "trace identity/value differs from source-bound expectation",
+          "expected": 659.4,
+          "actual": 660.4
+        }
+      ],
+      "pending": {},
+      "input_sha": "4b7f81b81066917aa71cb7be2446ff093683ce019b92622b7d6eb112da35471a"
+    },
+    {
+      "case": "callback_value_plus1",
+      "middle_only_final_unchanged": true,
+      "rejected_or_unverified": true,
+      "failures": [
+        {
+          "event": 175641,
+          "time": 780,
+          "field": "callback.value",
+          "reason": "independent nested source-formula mismatch",
+          "expected": 659.4,
+          "actual": 660.4
+        },
+        {
+          "event": 175641,
+          "time": 780,
+          "field": "nested.callback.value",
+          "reason": "trace identity/value differs from source-bound expectation",
+          "expected": 659.4,
+          "actual": 660.4
+        }
+      ],
+      "pending": {},
+      "input_sha": "74f8b1880934022b6518639d9301fb905bc1eff821db01a13bf20bd66ec406b0"
+    },
+    {
+      "case": "callback_kind_removed",
+      "middle_only_final_unchanged": true,
+      "rejected_or_unverified": true,
+      "failures": [
+        {
+          "event": 175641,
+          "time": 780,
+          "field": "nested.graph.fields",
+          "reason": "trace identity/value differs from source-bound expectation",
+          "expected": [
+            "id",
+            "raw",
+            "trace",
+            "value"
+          ],
+          "actual": [
+            "calculation_id",
+            "id",
+            "rule_id",
+            "trace",
+            "value"
+          ]
+        },
+        {
+          "event": 175641,
+          "time": 780,
+          "field": "nested.node.raw",
+          "reason": "trace identity/value differs from source-bound expectation",
+          "expected": 659.4,
+          "actual": null
+        }
+      ],
+      "pending": {
+        "nested.wrapper typed shape not reviewed": 1
+      },
+      "input_sha": "4c1aa3c35a4e7ea66e6daf5e07f177428bf47452a3eede22277623259e03b62c"
+    },
+    {
+      "case": "callback_fabricated_wrapper_raw",
+      "middle_only_final_unchanged": true,
+      "rejected_or_unverified": true,
+      "failures": [
+        {
+          "event": 175641,
+          "time": 780,
+          "field": "nested.callback.fields",
+          "reason": "trace identity/value differs from source-bound expectation",
+          "expected": [
+            "calculation_id",
+            "id",
+            "kind",
+            "rule_id",
+            "trace",
+            "value"
+          ],
+          "actual": [
+            "calculation_id",
+            "id",
+            "kind",
+            "raw",
+            "rule_id",
+            "trace",
+            "value"
+          ]
+        }
+      ],
+      "pending": {
+        "nested.callback wrapper shape/identity not reviewed": 1
+      },
+      "input_sha": "d09f2eb8a2c6ba7325c3016bb5590d57a24bea1ab9f0de77cf6fcd6f6e153f51"
+    },
+    {
+      "case": "aggregate_raw_ratio_plus1",
+      "middle_only_final_unchanged": true,
+      "rejected_or_unverified": true,
+      "failures": [
+        {
+          "event": 175641,
+          "time": 780,
+          "field": "provider.aggregate.raw",
+          "reason": "Standard damage graph call-context/binding inheritance differs",
+          "expected": {
+            "additive": 0,
+            "ratio": 0.05,
+            "factor": 1
+          },
+          "actual": {
+            "additive": 0,
+            "ratio": 1.05,
+            "factor": 1
+          }
+        }
+      ],
+      "pending": {},
+      "input_sha": "dc737a60ad70c7d8e7ed613df2e8b7c1f1c6fb74496d1ba7f15f6637ae2146ea"
+    },
+    {
+      "case": "callback_source_rule_identity",
+      "middle_only_final_unchanged": true,
+      "rejected_or_unverified": true,
+      "failures": [
+        {
+          "event": 175641,
+          "time": 780,
+          "field": "nested.callback.rule_id",
+          "reason": "trace identity/value differs from source-bound expectation",
+          "expected": "rule/ark_modifier_layer",
+          "actual": "rule/not_the_called_rule"
+        }
+      ],
+      "pending": {
+        "nested.callback wrapper shape/identity not reviewed": 1
+      },
+      "input_sha": "632a6925a30adccc493015918ece2dcb299a2b3718361cb6dd655cbed613f4d4"
+    },
+    {
+      "case": "graph_wrapper_raw_missing",
+      "rejected": true,
+      "failures": [
+        {
+          "event": 14146,
+          "time": 164,
+          "field": "nested.graph.fields",
+          "reason": "trace identity/value differs from source-bound expectation",
+          "expected": [
+            "id",
+            "raw",
+            "trace",
+            "value"
+          ],
+          "actual": [
+            "id",
+            "trace",
+            "value"
+          ]
+        },
+        {
+          "event": 14146,
+          "time": 164,
+          "field": "nested.node.raw",
+          "reason": "trace identity/value differs from source-bound expectation",
+          "expected": 600,
+          "actual": null
+        }
+      ]
+    }
+  ],
+  "cases": 7,
+  "client_verified": false,
+  "no_uniform_numeric_tolerance": true
+}

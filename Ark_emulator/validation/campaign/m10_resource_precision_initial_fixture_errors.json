@@ -1,0 +1,58 @@
+{
+  "schema": "ark-sim/campaign-mechanism-test-evidence/v1",
+  "passed": false,
+  "implementation_sha256": "f6bb448edc40641f55550f7188b412f57e68a56fa083ac4f4c1c24e30502328e",
+  "candidate_root": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m10_cast_freeze_candidate",
+  "primary_runtime_modified": false,
+  "identity_stable": true,
+  "identity_at_start": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\mainline_models\\level_main_00-10.m10_resource_precision.json": "d694705f9d6e3793ffd5e33e525adeace9c0478e4a6c627e50e5d575d5ea0637",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tests_v2\\test_m10_resource_precision_review.py": "1365ac648464462252f0a1d06b1e39db516408e58dc3116987607ef3d8d63056",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\review_m10_resource_precision.py": "9687a16ff11d891b8df5c728aa91b1452d2c702f4c30c4c71c14cf99efa5b971",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\canonical_summon_witness_support.py": "6ee3d79e43b816e972af591e5cbbd7bb5cd1c9a1d495ef0ccc6d67bf2e0d6b52",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\witness_canonical_kalts.py": "d3a12bd2507a15aca07f006828ff021b9065187b1f67b5a037dea9d0b9f6bc2d",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\witness_canonical_roster_trio.py": "971abe08048f4e66a62a1490f45d58dc4cc6a4388f0c5b19d7eeff1f91fa3324"
+  },
+  "identity_at_completion": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\mainline_models\\level_main_00-10.m10_resource_precision.json": "d694705f9d6e3793ffd5e33e525adeace9c0478e4a6c627e50e5d575d5ea0637",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tests_v2\\test_m10_resource_precision_review.py": "1365ac648464462252f0a1d06b1e39db516408e58dc3116987607ef3d8d63056",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\review_m10_resource_precision.py": "9687a16ff11d891b8df5c728aa91b1452d2c702f4c30c4c71c14cf99efa5b971",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\canonical_summon_witness_support.py": "6ee3d79e43b816e972af591e5cbbd7bb5cd1c9a1d495ef0ccc6d67bf2e0d6b52",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\witness_canonical_kalts.py": "d3a12bd2507a15aca07f006828ff021b9065187b1f67b5a037dea9d0b9f6bc2d",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\witness_canonical_roster_trio.py": "971abe08048f4e66a62a1490f45d58dc4cc6a4388f0c5b19d7eeff1f91fa3324"
+  },
+  "input_package": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\mainline_models\\level_main_00-10.m10_resource_precision.json",
+  "input_package_sha256": "d694705f9d6e3793ffd5e33e525adeace9c0478e4a6c627e50e5d575d5ea0637",
+  "pytest_output": "F..F                                                                     [100%]\n================================== FAILURES ===================================\n_ test_chen_selected_cast_freezes_periodic_talent_without_freezing_normal_attack_sp _\n..\\..\\Ark_emulator\\tests_v2\\test_m10_resource_precision_review.py:37: in test_chen_selected_cast_freezes_periodic_talent_without_freezing_normal_attack_sp\n    assert len(normal)==1 and normal[0]['time']==158\nE   assert (0 == 1)\nE    +  where 0 = len([])\n_ test_interrupt_late_pure_snapshot_rule_failure_rolls_back_tasks_world_events_rng _\nark_sim\\content\\compiler.py:79: in compile\n    return self._compile(scenario, packages, ruleset, overrides)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nark_sim\\content\\compiler.py:208: in _compile\n    runtime = self._validate_rules(rules, definitions, selected_ruleset,\nark_sim\\content\\compiler.py:247: in _validate_rules\n    runtime = RuleRuntime(rules, bindings=ruleset.get(\"bindings\", {}), catalog=self.catalog,\nark_sim\\rules\\runtime.py:92: in __init__\n    self.compiled = {key: validate_rule(value, self.catalog) for key, value in self.rules.items()}\n                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nark_sim\\rules\\runtime.py:39: in validate_rule\n    return Expression(implementation.get(\"expression\"))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nark_sim\\rules\\expressions.py:54: in __init__\n    raise ExpressionError(\"Only declared pure functions with positional arguments are allowed\")\nE   ark_sim.rules.errors.ExpressionError: Only declared pure functions with positional arguments are allowed\n\nThe above exception was the direct cause of the following exception:\n..\\..\\Ark_emulator\\tests_v2\\test_m10_resource_precision_review.py:85: in test_interrupt_late_pure_snapshot_rule_failure_rolls_back_tasks_world_events_rng\n    sim=Engine.create(Compiler().compile(data))\n                      ^^^^^^^^^^^^^^^^^^^^^^^^\nark_sim\\content\\compiler.py:83: in compile\n    raise CompileError(str(exc)) from exc\nE   ark_sim.content.compiler.CompileError: Only declared pure functions with positional arguments are allowed\n=========================== short test summary info ===========================\nFAILED ..\\..\\Ark_emulator\\tests_v2\\test_m10_resource_precision_review.py::test_chen_selected_cast_freezes_periodic_talent_without_freezing_normal_attack_sp\nFAILED ..\\..\\Ark_emulator\\tests_v2\\test_m10_resource_precision_review.py::test_interrupt_late_pure_snapshot_rule_failure_rolls_back_tasks_world_events_rng\n2 failed, 2 passed in 6.25s\n",
+  "pytest_exit_code": 1,
+  "tests": [
+    {
+      "path": "tests_v2/test_m10_resource_precision_review.py",
+      "source_sha256": "1365ac648464462252f0a1d06b1e39db516408e58dc3116987607ef3d8d63056",
+      "result": "failed"
+    },
+    {
+      "path": "tools/review_m10_resource_precision.py",
+      "source_sha256": "9687a16ff11d891b8df5c728aa91b1452d2c702f4c30c4c71c14cf99efa5b971",
+      "result": "failed"
+    },
+    {
+      "path": "tools/canonical_summon_witness_support.py",
+      "source_sha256": "6ee3d79e43b816e972af591e5cbbd7bb5cd1c9a1d495ef0ccc6d67bf2e0d6b52",
+      "result": "failed"
+    },
+    {
+      "path": "tools/witness_canonical_kalts.py",
+      "source_sha256": "d3a12bd2507a15aca07f006828ff021b9065187b1f67b5a037dea9d0b9f6bc2d",
+      "result": "failed"
+    },
+    {
+      "path": "tools/witness_canonical_roster_trio.py",
+      "source_sha256": "971abe08048f4e66a62a1490f45d58dc4cc6a4388f0c5b19d7eeff1f91fa3324",
+      "result": "failed"
+    }
+  ],
+  "scope": "M10 candidate exact cast recovery and interrupt atomicity; no stage acceptance",
+  "review_receipt": false,
+  "formal_approval": false
+}

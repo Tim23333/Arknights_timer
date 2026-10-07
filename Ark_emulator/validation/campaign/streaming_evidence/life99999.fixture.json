@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/leak_flow/runthrough99999",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "pending_model_gaps": [],
+      "runthrough_profile": {
+        "id": "campaign_full_process_base_life99999_v1",
+        "base_life_resource": "life",
+        "native_life_spec": {
+          "initial": 1,
+          "capacity": 1
+        },
+        "override_initial": 99999,
+        "override_capacity": 99999,
+        "unit_hp_unchanged": true,
+        "require_zero_leaks": false,
+        "require_squad_survival": false,
+        "completion": "all source wave actions executed; all enemy lifecycles terminal; pending0; timeline complete",
+        "accuracy": "intermediate data must match actual game; model assumptions/source-only evidence do not prove client correctness"
+      },
+      "runthrough_parent_sha256": "synthetic-source",
+      "client_accuracy_verified": false,
+      "builder_sha256": "6113c768ebac81dc669c67a580600934b4c5b50911fdf5219577f6b91c69b279"
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/enemy",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 10,
+            "move_speed": 30
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 10,
+            "capacity": 10,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle",
+          "leak_loss": 1
+        }
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scenario/leak_flow/runthrough99999",
+    "ruleset": "ruleset/ark_standard",
+    "seed": 99,
+    "map": {
+      "rows": 1,
+      "cols": 2
+    },
+    "resources": {
+      "life": {
+        "initial": 99999,
+        "capacity": 99999
+      }
+    },
+    "objectives": {
+      "type": "waves",
+      "life_resource": "life"
+    },
+    "metadata": {
+      "runthrough_profile": {
+        "id": "campaign_full_process_base_life99999_v1",
+        "base_life_resource": "life",
+        "native_life_spec": {
+          "initial": 1,
+          "capacity": 1
+        },
+        "override_initial": 99999,
+        "override_capacity": 99999,
+        "unit_hp_unchanged": true,
+        "require_zero_leaks": false,
+        "require_squad_survival": false,
+        "completion": "all source wave actions executed; all enemy lifecycles terminal; pending0; timeline complete",
+        "accuracy": "intermediate data must match actual game; model assumptions/source-only evidence do not prove client correctness"
+      }
+    },
+    "timeline": {
+      "policy": "managed_clear",
+      "negative_timeout_policy": "wait_for_clear",
+      "waves": [
+        {
+          "fragments": [
+            {
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "count": 3,
+                  "interval_seconds": 0.1,
+                  "spawn": {
+                    "definition": "unit/enemy",
+                    "position": {
+                      "row": 0,
+                      "col": 0
+                    },
+                    "route": {
+                      "motionMode": "WALK",
+                      "startPosition": {
+                        "row": 0,
+                        "col": 0
+                      },
+                      "endPosition": {
+                        "row": 0,
+                        "col": 1
+                      },
+                      "checkpoints": []
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

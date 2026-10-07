@@ -1,0 +1,100 @@
+{
+  "core_start": "1b548c29fba3dd19c177fbb458a0226e496b15a03c5c2a3599243bcb20e40932",
+  "core_end": "1b548c29fba3dd19c177fbb458a0226e496b15a03c5c2a3599243bcb20e40932",
+  "cases": [
+    {
+      "case": "retire_second",
+      "before_checkpoint_sha256": "869aa1c1c5e80db72eb147c3a2fb01b940cee18a5d063c8c3fd30e211765d336",
+      "fixture_sha256": "8353de61f21937f53cb88a2ade24a169ef53c0483d48501dc038a39cbc6491e1",
+      "actual_second_hp": 1300.0,
+      "required_second_hp": 2000,
+      "second_runtime": {
+        "alive": false,
+        "state": "withdrawn",
+        "deployed": false,
+        "initializing": false,
+        "casts": {},
+        "cooldowns": {},
+        "next_attack": 0,
+        "blocked_by": null,
+        "rule_bindings": {}
+      },
+      "second_position": {
+        "row": 0,
+        "col": 0
+      },
+      "event_order": [
+        {
+          "id": 45,
+          "time": 3,
+          "type": "field.triggered",
+          "target": null
+        },
+        {
+          "id": 55,
+          "time": 3,
+          "type": "damage.accepted",
+          "target": 2
+        },
+        {
+          "id": 66,
+          "time": 3,
+          "type": "damage.accepted",
+          "target": 3
+        },
+        {
+          "id": 70,
+          "time": 3,
+          "type": "entity.withdrawn",
+          "target": 3
+        }
+      ],
+      "complete_values_sha256": "51407310c7ab35899cdfdf0d6f86da35f5b56c2b7db3068e33b6a359a91d36c6"
+    },
+    {
+      "case": "move_second",
+      "before_checkpoint_sha256": "e305fac7806121d18079587afb1841eedb67417bc108911d62eadab38c446c2b",
+      "fixture_sha256": "7ec3dc7910d97b6ca369c72ed6e8a73fbbe7b0d0694edebc43b37446dffac92d",
+      "actual_second_hp": 1300.0,
+      "required_second_hp": 2000,
+      "second_runtime": {
+        "alive": true,
+        "state": "alive",
+        "deployed": false,
+        "initializing": false,
+        "casts": {},
+        "cooldowns": {},
+        "next_attack": 0,
+        "blocked_by": null,
+        "rule_bindings": {}
+      },
+      "second_position": {
+        "row": 0,
+        "col": 1
+      },
+      "event_order": [
+        {
+          "id": 45,
+          "time": 3,
+          "type": "field.triggered",
+          "target": null
+        },
+        {
+          "id": 55,
+          "time": 3,
+          "type": "damage.accepted",
+          "target": 2
+        },
+        {
+          "id": 66,
+          "time": 3,
+          "type": "damage.accepted",
+          "target": 3
+        }
+      ],
+      "complete_values_sha256": "aeb97f40abc256125a3598ef10ff50e1e3ff6f9e8db63391f5246c0a14569d2f"
+    }
+  ],
+  "runtime_bug_reproduced": true,
+  "scope": "Normal authored damage.accepted ability subscription; no monkeypatch or frozen-source edit"
+}

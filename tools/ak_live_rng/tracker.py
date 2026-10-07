@@ -133,7 +133,7 @@ class EngineTracker:
     @staticmethod
     def _observed_key(state):
         if isinstance(state, DotNetRandom):
-            return state.seeds, state.inext
+            return state.seeds, state.inext, state.inextp
         return state.mt, state.mti
 
     @staticmethod

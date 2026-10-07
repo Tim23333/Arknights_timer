@@ -1,0 +1,945 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/ch7/patrt/single_emitter_mechanism_probe_v3",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "status": "single_emitter_mechanism_probe_only_not_complete_enemy",
+      "stage_export_allowed": false,
+      "native_variant_id": "enemy_1506_patrt@0/a53a85a6d0cd714f",
+      "source_locks": {
+        "packages\\campaign\\chapter07_boss\\patrt\\source.closure.json": "acf57f6a07a5e141f9f1ddb0d37ee09fce1e25fc6555bda0504bf99e2b44b54c"
+      },
+      "builder_sha256": "f2db965f8cd70b5396b7ffc8d404e4348079613a72ea6e356295d646d9581ee8",
+      "unconsumed_required_mechanisms": [
+        "ReleaseWave literalfinish_current_wave",
+        "GlobalAura retainwhiletrueHP0reborning (requiredcounter)",
+        "Reborning ownedImmo_Rage .8s sourceattributed trueDamage despiteinactiveowner/9999naturalclock",
+        "Rage Immo tick .8s/.0521 sourceBufftriggering",
+        "Spear15/20/highground-farthest1.35/projectile_spear",
+        "Ore/Mine fullsourceintegration; oreimmune markeronly quarantined",
+        "Native sharedStrength markerproducer/aura child nonstacking requiresgenericlease identity contract; omitted fromthissingleemitter probe",
+        "MultiplePatriot stats nonstacking cannotbeverifiedusingindependent prototype children"
+      ],
+      "reference_policies": {
+        "source_methods": "Values/flags explicit where decoded; unavailable method bodies do not block. Every guessed timing/side/lifecycle interpretation declaredreplaceable.",
+        "restore": "Use exactnative ratio.8500000238418579; no currentwiki fullHP override",
+        "aura_self": "CurrentenumDEFAULT0 follows validator, referenceincludes owner corroboratedPRTS; not explicitnativeINCLUDE1",
+        "timing": "ExplicitTimeMode0 allnormal/spear scale bothwindup/full duration; .01 minimumASPD reference clamp"
+      },
+      "aura_self_policy": "DEFAULT0 followseligibleally/self; referenceincludesSelf, rawsourceunchanged",
+      "aura_waiting_policy": "GlobalAura mustpersistduringtrueHP0waiting perdeclaredreference, genericparentsrepresentownedemitters; expectedgap retainedforcounter notsilentpass",
+      "native_reborn_retained_buffs": [],
+      "typed_selector_envelope": "Mode0 rawselectorNULL preserved; exactmode1 config usedonlytypedcontract envelope, block_input rule solely actualblockedby identity. Validator missing switches envelope defaults borrowedmode1/rawtargetOptions override, notnativephase0 selectorclaim",
+      "generic_parent_storage_note": "Onlyvirtualemitterparents inretain_buffs; no nativegameBuffgrant/HPshortcut. Currentgeneric removes them anywaywhenownerinactive.",
+      "complete_source_policies": false,
+      "independent_reviewed": false,
+      "whole_stage_executed": false,
+      "client_verified": false,
+      "single_emitter_probe_adapter": "Own attributes child independent onlyto exercise exactlyone emitter. Notnative multiemitter stacking or externalmarker production; existingsharedmarker definition untouched.",
+      "additive_layer_policy": "NativeformulaADDITION0 binds standardflat; v2 unsupported direct_add receipt remainsfailed",
+      "immo_probe_scope": "Exactactionrawcooldown0 separatefrom naturalEnemySkill9999/init9999. Controlledtimer insertion; no arbitrary cooldownbypass ornativephase0 Immo claim. WaitingtrueHP0 usingpublicdamage."
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/ch7/patrt/a53a85a6d0cd714f",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground",
+        "boss",
+        "patriot_source"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 45000,
+            "atk": 1600,
+            "def": 500,
+            "mres": 45.0,
+            "move_speed": 0.4,
+            "attack_interval": 4.0,
+            "attack_speed_ratio": 1.0,
+            "mass_level": 7,
+            "block_cost": 1,
+            "taunt_level": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 45000,
+            "capacity_attribute": "max_hp",
+            "role": "health"
+          }
+        },
+        "selection_state": {
+          "side": 1,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 1,
+          "abnormal_immunes": [
+            12
+          ]
+        },
+        "spatial": {},
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle",
+          "leak_loss": 2
+        },
+        "buffs": {
+          "initial": [
+            "buff/unit/ch7/patrt/a53a85a6d0cd714f/shield",
+            "buff/unit/ch7/patrt/a53a85a6d0cd714f/taunt",
+            "buff/unit/ch7/patrt/a53a85a6d0cd714f/sleep",
+            "buff/ch7/source/ore_immune",
+            "buff/unit/ch7/patrt/a53a85a6d0cd714f/strength_parent",
+            "buff/unit/ch7/patrt/a53a85a6d0cd714f/immo_timer_probe"
+          ]
+        },
+        "abilities": [
+          "ability/unit/ch7/patrt/a53a85a6d0cd714f/normal0",
+          "ability/unit/ch7/patrt/a53a85a6d0cd714f/normal1",
+          "ability/unit/ch7/patrt/a53a85a6d0cd714f/immo_action",
+          "ability/unit/ch7/patrt/a53a85a6d0cd714f/immo_natural"
+        ],
+        "ability_arbitration": {
+          "priority_order": "higher_first",
+          "busy": "all_casts",
+          "entries": [
+            {
+              "ability": "ability/unit/ch7/patrt/a53a85a6d0cd714f/normal0",
+              "priority": 0,
+              "attack_clock": true,
+              "require_attack_control": true,
+              "condition": "('rebirth' not in inputs.runtime or inputs.runtime.rebirth.count == 0)",
+              "parameters": {}
+            },
+            {
+              "ability": "ability/unit/ch7/patrt/a53a85a6d0cd714f/normal1",
+              "priority": 0,
+              "attack_clock": true,
+              "require_attack_control": true,
+              "condition": "'rebirth' in inputs.runtime and inputs.runtime.rebirth.count == 1",
+              "parameters": {}
+            },
+            {
+              "ability": "ability/unit/ch7/patrt/a53a85a6d0cd714f/immo_action",
+              "priority": 0,
+              "attack_clock": false,
+              "require_attack_control": false,
+              "condition": "False",
+              "parameters": {}
+            },
+            {
+              "ability": "ability/unit/ch7/patrt/a53a85a6d0cd714f/immo_natural",
+              "priority": 0,
+              "attack_clock": false,
+              "require_attack_control": false,
+              "condition": "False",
+              "parameters": {}
+            }
+          ]
+        },
+        "rebirth": {
+          "resource": "hp",
+          "max_count": 1,
+          "delay_seconds": 60.0,
+          "restore_ratio": 0.8500000238418579,
+          "restore_rule": "rule/unit/ch7/patrt/a53a85a6d0cd714f/restore",
+          "retain_buffs": [
+            "buff/unit/ch7/patrt/a53a85a6d0cd714f/strength_parent"
+          ],
+          "reset_attack_clock": true,
+          "on_begin": [
+            {
+              "op": "apply_buff",
+              "target": "source",
+              "buff": "buff/unit/ch7/patrt/a53a85a6d0cd714f/strength_parent"
+            }
+          ],
+          "on_finish": [
+            {
+              "op": "apply_buff",
+              "target": "source",
+              "buff": "buff/unit/ch7/patrt/a53a85a6d0cd714f/rage"
+            },
+            {
+              "op": "apply_buff",
+              "target": "source",
+              "buff": "buff/unit/ch7/patrt/a53a85a6d0cd714f/invulnerable"
+            },
+            {
+              "op": "apply_buff",
+              "target": "source",
+              "buff": "buff/unit/ch7/patrt/a53a85a6d0cd714f/sleep"
+            },
+            {
+              "op": "apply_buff",
+              "target": "source",
+              "buff": "buff/ch7/source/ore_immune"
+            },
+            {
+              "op": "apply_buff",
+              "target": "source",
+              "buff": "buff/unit/ch7/patrt/a53a85a6d0cd714f/strength_parent"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "unit/test/patrt/hero",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 1000000,
+            "atk": 100000,
+            "def": 100,
+            "mres": 0,
+            "block_count": 3,
+            "taunt_level": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 1000000,
+            "capacity": 1000000,
+            "role": "health"
+          }
+        },
+        "selection_state": {
+          "side": 0,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 1
+        },
+        "spatial": {},
+        "deployable": {
+          "base_cost": 7,
+          "capacity": 1,
+          "cooldown_seconds": 0,
+          "terrain": "ground"
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "abilities": [
+          "ability/test/patrt/kill"
+        ]
+      }
+    },
+    {
+      "id": "unit/test/patrt/ally",
+      "kind": "entity",
+      "tags": [
+        "enemy"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 1000,
+            "atk": 100,
+            "def": 50
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 1000,
+            "capacity": 1000,
+            "role": "health"
+          }
+        },
+        "selection_state": {
+          "side": 1,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 1
+        },
+        "spatial": {},
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/unit/ch7/patrt/a53a85a6d0cd714f/eligibility",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.targeting.eligibility"
+      }
+    },
+    {
+      "id": "rule/unit/ch7/patrt/a53a85a6d0cd714f/block_input",
+      "kind": "calculation_rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "expression",
+        "expression": "{'accepted':'blocked_by' in inputs.source.components.runtime and inputs.source.components.runtime.blocked_by == inputs.candidate.id,'reason':'nativeINPUT_TARGET2'}"
+      }
+    },
+    {
+      "id": "rule/unit/ch7/patrt/a53a85a6d0cd714f/windup",
+      "kind": "calculation_rule",
+      "contract": "ability.windup",
+      "parameters": {
+        "minimum_speed": 0.01
+      },
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.timing_parameters.seconds / max(inputs.attributes.attack_speed_ratio, params.minimum_speed)"
+      }
+    },
+    {
+      "id": "rule/unit/ch7/patrt/a53a85a6d0cd714f/duration",
+      "kind": "calculation_rule",
+      "contract": "ability.duration",
+      "parameters": {
+        "minimum_speed": 0.01
+      },
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.duration_parameters.seconds / max(inputs.attributes.attack_speed_ratio, params.minimum_speed)"
+      }
+    },
+    {
+      "id": "rule/unit/ch7/patrt/a53a85a6d0cd714f/restore",
+      "kind": "rule",
+      "contract": "resource.recovery",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+      }
+    },
+    {
+      "id": "rule/unit/ch7/patrt/a53a85a6d0cd714f/invul",
+      "kind": "rule",
+      "contract": "damage.pipeline",
+      "implementation": {
+        "type": "graph",
+        "nodes": [
+          {
+            "id": "result",
+            "expression": "{'accepted':False,'amount':0,'allocations':[],'events':[]}"
+          }
+        ],
+        "output": "nodes.result"
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/unit/ch7/patrt/a53a85a6d0cd714f/shield",
+      "kind": "buff",
+      "modifiers": [
+        {
+          "attribute": "atk",
+          "layer": "direct_ratio",
+          "value": 0.5
+        },
+        {
+          "attribute": "def",
+          "layer": "direct_ratio",
+          "value": 2.0
+        },
+        {
+          "attribute": "mres",
+          "layer": "direct_ratio",
+          "value": 1.0
+        }
+      ]
+    },
+    {
+      "id": "buff/unit/ch7/patrt/a53a85a6d0cd714f/taunt",
+      "kind": "buff",
+      "modifiers": [
+        {
+          "attribute": "taunt_level",
+          "layer": "flat",
+          "value": 2.0
+        }
+      ]
+    },
+    {
+      "id": "buff/unit/ch7/patrt/a53a85a6d0cd714f/rage",
+      "kind": "buff",
+      "modifiers": [
+        {
+          "attribute": "atk",
+          "layer": "direct_ratio",
+          "value": 0.2
+        },
+        {
+          "attribute": "def",
+          "layer": "flat",
+          "value": 200.0
+        },
+        {
+          "attribute": "move_speed",
+          "layer": "flat",
+          "value": 0.1
+        },
+        {
+          "attribute": "attack_interval",
+          "layer": "flat",
+          "value": -0.4
+        }
+      ],
+      "selection_flags": {
+        "abnormal_immunes": [
+          0,
+          12,
+          16,
+          25
+        ],
+        "abnormal_combo_immunes": [
+          0
+        ]
+      }
+    },
+    {
+      "id": "buff/unit/ch7/patrt/a53a85a6d0cd714f/sleep",
+      "kind": "buff",
+      "selection_flags": {
+        "abnormal_combo_immunes": [
+          0
+        ]
+      }
+    },
+    {
+      "id": "buff/ch7/source/ore_immune",
+      "kind": "buff",
+      "metadata": {
+        "native_empty_marker": "ore_immune",
+        "semantic_consumer": "ore_s CheckContainsBuff/IfNot externalrequired"
+      }
+    },
+    {
+      "id": "buff/unit/ch7/patrt/a53a85a6d0cd714f/invulnerable",
+      "kind": "buff",
+      "duration_seconds": 15.0,
+      "selection_flags": {
+        "abnormal_flags": [
+          5
+        ]
+      },
+      "damage_hooks": [
+        {
+          "phase": "after",
+          "rule": "rule/unit/ch7/patrt/a53a85a6d0cd714f/invul"
+        }
+      ]
+    },
+    {
+      "id": "buff/unit/ch7/patrt/a53a85a6d0cd714f/strength",
+      "kind": "buff",
+      "stacking": {
+        "mode": "independent",
+        "max_stacks": 1
+      },
+      "modifiers": [
+        {
+          "attribute": "atk",
+          "layer": "direct_ratio",
+          "value": 0.2
+        },
+        {
+          "attribute": "def",
+          "layer": "flat",
+          "value": 200.0
+        }
+      ]
+    },
+    {
+      "id": "buff/unit/ch7/patrt/a53a85a6d0cd714f/strength_parent",
+      "kind": "buff",
+      "aura": {
+        "selector": "selector/unit/ch7/patrt/a53a85a6d0cd714f/allies",
+        "buff": "buff/unit/ch7/patrt/a53a85a6d0cd714f/strength"
+      },
+      "metadata": {
+        "nativeGlobalAuraDEFAULT": 0,
+        "reference_owner_included": true
+      }
+    },
+    {
+      "id": "buff/unit/ch7/patrt/a53a85a6d0cd714f/immo_timer_probe",
+      "kind": "buff",
+      "duration_seconds": 60,
+      "interval_seconds": 0.8,
+      "removal": {
+        "on_source_death": "retain",
+        "on_target_death": "retain"
+      },
+      "effects": [
+        {
+          "op": "trigger_ability",
+          "target": "source",
+          "ability": "ability/unit/ch7/patrt/a53a85a6d0cd714f/immo_action"
+        }
+      ]
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/unit/ch7/patrt/a53a85a6d0cd714f/normal0",
+      "kind": "ability",
+      "selector": "selector/unit/ch7/patrt/a53a85a6d0cd714f/normal0",
+      "target_capture": "at_cast",
+      "duration_seconds": 1.5,
+      "rules": {
+        "ability.windup": "rule/unit/ch7/patrt/a53a85a6d0cd714f/windup",
+        "ability.duration": "rule/unit/ch7/patrt/a53a85a6d0cd714f/duration"
+      },
+      "activation": {
+        "mode": "automatic_attack",
+        "settle_blocking": true,
+        "parameters": {
+          "auto_only": true
+        }
+      },
+      "timeline": [
+        {
+          "at_seconds": 0.6333333333333333,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1,
+            "damage_flags": {
+              "source_attack_type": "NORMAL",
+              "ignore_for_sp": false
+            },
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            }
+          }
+        },
+        {
+          "at_seconds": 0.7333333333333333,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1,
+            "damage_flags": {
+              "source_attack_type": "NORMAL",
+              "ignore_for_sp": false
+            },
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            }
+          }
+        },
+        {
+          "at_seconds": 0.8333333333333334,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1,
+            "damage_flags": {
+              "source_attack_type": "NORMAL",
+              "ignore_for_sp": false
+            },
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            }
+          }
+        },
+        {
+          "at_seconds": 0.9333333333333333,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1,
+            "damage_flags": {
+              "source_attack_type": "NORMAL",
+              "ignore_for_sp": false
+            },
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/unit/ch7/patrt/a53a85a6d0cd714f/normal1",
+      "kind": "ability",
+      "selector": "selector/unit/ch7/patrt/a53a85a6d0cd714f/normal1",
+      "target_capture": "at_cast",
+      "duration_seconds": 1.3666666666666667,
+      "rules": {
+        "ability.windup": "rule/unit/ch7/patrt/a53a85a6d0cd714f/windup",
+        "ability.duration": "rule/unit/ch7/patrt/a53a85a6d0cd714f/duration"
+      },
+      "activation": {
+        "mode": "automatic_attack",
+        "settle_blocking": true,
+        "parameters": {
+          "auto_only": true
+        }
+      },
+      "timeline": [
+        {
+          "at_seconds": 0.5333333333333333,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1,
+            "damage_flags": {
+              "source_attack_type": "NORMAL",
+              "ignore_for_sp": false
+            },
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/test/patrt/kill",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual"
+      },
+      "selector": "selector/test/patrt/boss",
+      "timeline": [
+        {
+          "at": 0,
+          "effect": {
+            "op": "damage",
+            "damage_type": "true",
+            "scale": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/unit/ch7/patrt/a53a85a6d0cd714f/immo_action",
+      "kind": "ability",
+      "selector": "selector/test/patrt/immo",
+      "cooldown_seconds": 0,
+      "activation": {
+        "mode": "manual",
+        "parameters": {
+          "auto_only": true,
+          "blocks_attacks": false
+        }
+      },
+      "timeline": [
+        {
+          "at": 0,
+          "effect": {
+            "op": "damage",
+            "damage_type": "true",
+            "scale": 0.0521,
+            "damage_flags": {
+              "source_attack_type": "SPLASH",
+              "ignore_for_sp": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/unit/ch7/patrt/a53a85a6d0cd714f/immo_natural",
+      "kind": "ability",
+      "initial_cooldown_seconds": 9999,
+      "cooldown_seconds": 9999,
+      "activation": {
+        "mode": "manual",
+        "parameters": {
+          "auto_only": true
+        }
+      },
+      "timeline": [
+        {
+          "at": 0,
+          "effect": {
+            "op": "trigger_ability",
+            "target": "source",
+            "ability": "ability/unit/ch7/patrt/a53a85a6d0cd714f/immo_action"
+          }
+        }
+      ]
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/unit/ch7/patrt/a53a85a6d0cd714f/allies",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "enemy"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": null,
+      "eligibility": {
+        "rule": "rule/unit/ch7/patrt/a53a85a6d0cd714f/eligibility",
+        "parameters": {
+          "source_configuration": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -6269586489978394422
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 7080728813803358465
+            },
+            "m_Name": "",
+            "_targetSide": 1,
+            "_targetMotion": 3,
+            "_targetCategory": 1,
+            "_postFilter": 0,
+            "_ignoreTargetFree": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_abnormalFlag": 0,
+            "_abnormalCombo": 0,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_needProfessionMask": 0,
+            "_professionMask": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_excludeAbnormalFlag": 0,
+            "_limitTargetNum": 1,
+            "_maxTargetKey": "max_target",
+            "_maxNum": 1,
+            "_excludeOwner": 0,
+            "_sortByTauntAtLast": 0,
+            "_ignoreHitRange": 0,
+            "_checkUnitType": 0,
+            "_unitTypeMask": 0,
+            "_abilityInputTargetAsSortSource": 0,
+            "_enableAdvancedOptions": 0,
+            "_ignoreTargetSide": 0,
+            "_containSomeAbnormalFlags": 0,
+            "_containAbnormalFlag": 0,
+            "_purposeMask": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject",
+          "defaults": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "profession": 0,
+            "unit_type": 1,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "target_free": false,
+            "ally_target_free": false,
+            "heal_free": false,
+            "camouflage": false,
+            "can_select_camouflage": false,
+            "abnormal_immunes": []
+          }
+        }
+      }
+    },
+    {
+      "id": "selector/unit/ch7/patrt/a53a85a6d0cd714f/normal0",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1,
+      "eligibility": {
+        "rule": "rule/unit/ch7/patrt/a53a85a6d0cd714f/block_input",
+        "parameters": {
+          "source_configuration": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -6269586489978394422
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 7080728813803358465
+            },
+            "m_Name": "",
+            "_targetSide": 2,
+            "_targetMotion": 1,
+            "_targetCategory": 1,
+            "_postFilter": 4,
+            "_ignoreTargetFree": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_abnormalFlag": 24,
+            "_abnormalCombo": 2,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_needProfessionMask": 0,
+            "_professionMask": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_excludeAbnormalFlag": 46,
+            "_limitTargetNum": 1,
+            "_maxTargetKey": "max_target",
+            "_maxNum": 1,
+            "_excludeOwner": 0,
+            "_sortByTauntAtLast": 0,
+            "_ignoreHitRange": 0,
+            "_checkUnitType": 0,
+            "_unitTypeMask": 0,
+            "_abilityInputTargetAsSortSource": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject",
+          "defaults": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "profession": 0,
+            "unit_type": 1,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "target_free": false,
+            "ally_target_free": false,
+            "heal_free": false,
+            "camouflage": false,
+            "can_select_camouflage": false,
+            "abnormal_immunes": []
+          }
+        }
+      }
+    },
+    {
+      "id": "selector/unit/ch7/patrt/a53a85a6d0cd714f/normal1",
+      "kind": "selector",
+      "region": {
+        "type": "radius",
+        "radius": 0.8500000238418579
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1
+    },
+    {
+      "id": "selector/test/patrt/boss",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "patriot_source"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1
+    },
+    {
+      "id": "selector/test/patrt/immo",
+      "kind": "selector",
+      "region": {
+        "type": "radius",
+        "radius": 1.75
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": null
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/ch7/patrt/mechanism",
+    "ruleset": "ruleset/ark_standard",
+    "objectives": {},
+    "map": {
+      "rows": 5,
+      "cols": 7
+    },
+    "resources": {
+      "life": {
+        "initial": 99999,
+        "capacity": 99999
+      },
+      "dp": {
+        "initial": 20,
+        "capacity": 99
+      }
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/ch7/patrt/a53a85a6d0cd714f",
+        "instanceAlias": "boss",
+        "position": {
+          "row": 2,
+          "col": 2
+        },
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 2,
+            "col": 2
+          },
+          "endPosition": {
+            "row": 2,
+            "col": 5
+          },
+          "checkpoints": []
+        }
+      },
+      {
+        "definition": "unit/test/patrt/ally",
+        "instanceAlias": "ally",
+        "position": {
+          "row": 4,
+          "col": 6
+        }
+      }
+    ],
+    "roster": [
+      "unit/test/patrt/hero"
+    ]
+  }
+}

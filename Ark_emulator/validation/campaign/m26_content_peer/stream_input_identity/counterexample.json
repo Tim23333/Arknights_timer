@@ -1,0 +1,223 @@
+{
+  "counterexample_reproduced": true,
+  "runner_exit": 0,
+  "package_read_calls": 4,
+  "advertised_source_sha256": "26dcc88d76ef8c7531e121e5b9ffd59c8cb162c84b2acc3513843950d914b829",
+  "actual_decoded_bytes_sha256": "4a8ede0f3fb935cde1f3082c31959e04e5f98c2196a0aa64f05655b61c393ee1",
+  "disk_bytes_sha256": "26dcc88d76ef8c7531e121e5b9ffd59c8cb162c84b2acc3513843950d914b829",
+  "reported_program": "5dad6fe442212c07d764b37586b6762ab0d852968a66ed9301d74f09b6693793",
+  "disk_program": "928a0da6f395c4ebf52b64526959b257b4a159b1204746fa1dc9d38769f0ee99",
+  "actual_program": "5dad6fe442212c07d764b37586b6762ab0d852968a66ed9301d74f09b6693793",
+  "reported_seed": 72,
+  "reported_identity_stable": true,
+  "reported_passed": true,
+  "fixture": {
+    "schemaVersion": 2,
+    "manifest": {
+      "requires": [
+        "preset/ark_standard"
+      ],
+      "metadata": {
+        "pending_model_gaps": []
+      }
+    },
+    "entities": [
+      {
+        "id": "unit/flow",
+        "kind": "entity",
+        "tags": [
+          "enemy",
+          "ground"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 17,
+              "move_speed": 30
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 17,
+              "capacity": 17,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle",
+            "leak_loss": 1
+          }
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scenario/peer_stream",
+      "ruleset": "ruleset/ark_standard",
+      "seed": 71,
+      "map": {
+        "rows": 1,
+        "cols": 3
+      },
+      "resources": {
+        "life": {
+          "initial": 99999,
+          "capacity": 99999
+        }
+      },
+      "objectives": {
+        "type": "waves",
+        "life_resource": "life"
+      },
+      "metadata": {
+        "runthrough_profile": {
+          "base_life_resource": "life",
+          "peer_probe": true
+        }
+      },
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "fragments": [
+              {
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 2,
+                    "interval_seconds": 0.06666666666666667,
+                    "spawn": {
+                      "definition": "unit/flow",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      },
+                      "route": {
+                        "motionMode": "WALK",
+                        "startPosition": {
+                          "row": 0,
+                          "col": 0
+                        },
+                        "endPosition": {
+                          "row": 0,
+                          "col": 2
+                        },
+                        "checkpoints": []
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "actual_decode_fixture": {
+    "schemaVersion": 2,
+    "manifest": {
+      "requires": [
+        "preset/ark_standard"
+      ],
+      "metadata": {
+        "pending_model_gaps": []
+      }
+    },
+    "entities": [
+      {
+        "id": "unit/flow",
+        "kind": "entity",
+        "tags": [
+          "enemy",
+          "ground"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 17,
+              "move_speed": 30
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 17,
+              "capacity": 17,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle",
+            "leak_loss": 1
+          }
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scenario/peer_stream",
+      "ruleset": "ruleset/ark_standard",
+      "seed": 72,
+      "map": {
+        "rows": 1,
+        "cols": 3
+      },
+      "resources": {
+        "life": {
+          "initial": 99999,
+          "capacity": 99999
+        }
+      },
+      "objectives": {
+        "type": "waves",
+        "life_resource": "life"
+      },
+      "metadata": {
+        "runthrough_profile": {
+          "base_life_resource": "life",
+          "peer_probe": true
+        }
+      },
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "fragments": [
+              {
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 2,
+                    "interval_seconds": 0.06666666666666667,
+                    "spawn": {
+                      "definition": "unit/flow",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      },
+                      "route": {
+                        "motionMode": "WALK",
+                        "startPosition": {
+                          "row": 0,
+                          "col": 0
+                        },
+                        "endPosition": {
+                          "row": 0,
+                          "col": 2
+                        },
+                        "checkpoints": []
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "scope": "input guard flaw only; no source/core changes; synthetic read injection models file replacement race"
+}

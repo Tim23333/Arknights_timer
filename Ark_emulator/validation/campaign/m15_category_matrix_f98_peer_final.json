@@ -1,0 +1,3645 @@
+{
+  "schema": "ark-sim/bounded-category-device-peer-review/v1",
+  "passed": true,
+  "implementation_sha256": "f98a638812a18a01d10505dadd48b01de410ac27e992230881bc01c4f9a993b9",
+  "input_package_sha256": "79ed4124a4dec23f199fd9edf83e6c473a166a803dd973fb02f4560a9841b24d",
+  "runtime_module": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m15_category_candidate\\ark_sim\\__init__.py",
+  "source_at_start": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m15_peer\\category_matrix.py": "2926165e3220fc28a8f470acce1a27a4521fbc7e26d861032d3715a3627ef82f",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m15_peer\\verify.py": "703d0b81072e00fe81e2737e5e142505fc66f24172a125586db91e7b1663c4e6",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m15_peer\\retire_boundaries.py": "a8da3086f5d67a828e69e64b863b38fb4560d35541a152fa278aa36af53e9908",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter01_devices\\emp.category.json": "79ed4124a4dec23f199fd9edf83e6c473a166a803dd973fb02f4560a9841b24d",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter01_devices\\emp.source.json": "7496c92a4d8772569af6a4a49802ab6fa0a9e7c7c1dc75d3890b074af63a1176"
+  },
+  "source_at_completion": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m15_peer\\category_matrix.py": "2926165e3220fc28a8f470acce1a27a4521fbc7e26d861032d3715a3627ef82f",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m15_peer\\verify.py": "703d0b81072e00fe81e2737e5e142505fc66f24172a125586db91e7b1663c4e6",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m15_peer\\retire_boundaries.py": "a8da3086f5d67a828e69e64b863b38fb4560d35541a152fa278aa36af53e9908",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter01_devices\\emp.category.json": "79ed4124a4dec23f199fd9edf83e6c473a166a803dd973fb02f4560a9841b24d",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter01_devices\\emp.source.json": "7496c92a4d8772569af6a4a49802ab6fa0a9e7c7c1dc75d3890b074af63a1176"
+  },
+  "identity_stable": true,
+  "cases": [
+    {
+      "case": "mask_matrix",
+      "result": "passed",
+      "actual": {
+        "expected": {
+          "bits1_accepts1_3_and_explicitmissingDefault1": true,
+          "2_4_0_bool_string_null_excluded": true
+        },
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "program_fingerprint": "3c8f9aded4059b7f807fed11e7311a908e9fef834ca361de999aac1569791ba5",
+        "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+        "fixture_initial_state": {
+          "id": "scenario/chapter01_emp_slice",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 8,
+            "cols": 11
+          },
+          "resources": {
+            "dp": {
+              "initial": 50,
+              "capacity": 99
+            }
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/chapter01_emp",
+              "position": {
+                "row": 5,
+                "col": 5
+              },
+              "facing": "up",
+              "instanceAlias": "device",
+              "components": {
+                "resources": {
+                  "sp": {
+                    "initial": 5
+                  }
+                }
+              }
+            },
+            {
+              "definition": "unit/matrix_missing",
+              "instanceAlias": "missing",
+              "position": {
+                "row": 4,
+                "col": 5
+              }
+            },
+            {
+              "definition": "unit/matrix_default",
+              "instanceAlias": "default",
+              "position": {
+                "row": 4,
+                "col": 5
+              }
+            },
+            {
+              "definition": "unit/matrix_mixed",
+              "instanceAlias": "mixed",
+              "position": {
+                "row": 4,
+                "col": 5
+              }
+            },
+            {
+              "definition": "unit/matrix_trap",
+              "instanceAlias": "trap",
+              "position": {
+                "row": 4,
+                "col": 5
+              }
+            },
+            {
+              "definition": "unit/matrix_other",
+              "instanceAlias": "other",
+              "position": {
+                "row": 4,
+                "col": 5
+              }
+            },
+            {
+              "definition": "unit/matrix_zero",
+              "instanceAlias": "zero",
+              "position": {
+                "row": 4,
+                "col": 5
+              }
+            },
+            {
+              "definition": "unit/matrix_bool",
+              "instanceAlias": "bool",
+              "position": {
+                "row": 4,
+                "col": 5
+              }
+            },
+            {
+              "definition": "unit/matrix_string",
+              "instanceAlias": "string",
+              "position": {
+                "row": 4,
+                "col": 5
+              }
+            },
+            {
+              "definition": "unit/matrix_null",
+              "instanceAlias": "null",
+              "position": {
+                "row": 4,
+                "col": 5
+              }
+            }
+          ],
+          "waves": [],
+          "objectives": {},
+          "kind": "scenario"
+        },
+        "commands": {
+          "schema": "ark-sim/replay/v2",
+          "program_fingerprint": "3c8f9aded4059b7f807fed11e7311a908e9fef834ca361de999aac1569791ba5",
+          "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+          "seed": 1517,
+          "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+          "until": 26,
+          "commands": [
+            {
+              "order": 1,
+              "submitted_at": 0,
+              "at": 0,
+              "action": {
+                "action": "skill",
+                "source": "device",
+                "ability": "ability/chapter01_emp/burst"
+              }
+            }
+          ]
+        },
+        "state": {
+          "finished": false,
+          "result": "running",
+          "pending_waves": 0,
+          "kills": 0,
+          "leaks": 0,
+          "damage_dealt": 2400.0,
+          "deployments": {},
+          "command_results": {}
+        },
+        "events": [
+          {
+            "id": 9,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 100
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 19,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 5
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 74,
+            "type": "buff.applied",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/chapter01_emp/invincible",
+              "instance": "buff/2/1",
+              "stacks": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 82,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 96,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 4,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 110,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 5,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 124,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 6,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 138,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 7,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 152,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 8,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 166,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 9,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 180,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 10,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 194,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 11,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 253,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": -5,
+              "value": 0,
+              "ability": "ability/chapter01_emp/burst",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 0,
+            "cause": 252
+          },
+          {
+            "id": 255,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 1,
+              "resource": "dp",
+              "delta": -10,
+              "value": 40,
+              "ability": "ability/chapter01_emp/burst",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 0,
+            "cause": 252
+          },
+          {
+            "id": 256,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "device",
+                "ability": "ability/chapter01_emp/burst"
+              },
+              "result": "cast/2/1"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 273,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "resource": "hp",
+              "delta": -800.0,
+              "value": 2200.0
+            },
+            "time": 23,
+            "cause": null
+          },
+          {
+            "id": 275,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "amount": 800.0,
+              "ability": "ability/chapter01_emp/burst",
+              "resource": "hp"
+            },
+            "time": 23,
+            "cause": null
+          },
+          {
+            "id": 297,
+            "type": "buff.applied",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "buff": "buff/chapter01_emp/stun",
+              "instance": "buff/3/1",
+              "stacks": 1
+            },
+            "time": 23,
+            "cause": null
+          },
+          {
+            "id": 308,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 4,
+              "resource": "hp",
+              "delta": -800.0,
+              "value": 2200.0
+            },
+            "time": 23,
+            "cause": null
+          },
+          {
+            "id": 310,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 2,
+              "target": 4,
+              "amount": 800.0,
+              "ability": "ability/chapter01_emp/burst",
+              "resource": "hp"
+            },
+            "time": 23,
+            "cause": null
+          },
+          {
+            "id": 332,
+            "type": "buff.applied",
+            "payload": {
+              "source": 2,
+              "target": 4,
+              "buff": "buff/chapter01_emp/stun",
+              "instance": "buff/4/1",
+              "stacks": 1
+            },
+            "time": 23,
+            "cause": null
+          },
+          {
+            "id": 343,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 5,
+              "resource": "hp",
+              "delta": -800.0,
+              "value": 2200.0
+            },
+            "time": 23,
+            "cause": null
+          },
+          {
+            "id": 345,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 2,
+              "target": 5,
+              "amount": 800.0,
+              "ability": "ability/chapter01_emp/burst",
+              "resource": "hp"
+            },
+            "time": 23,
+            "cause": null
+          },
+          {
+            "id": 367,
+            "type": "buff.applied",
+            "payload": {
+              "source": 2,
+              "target": 5,
+              "buff": "buff/chapter01_emp/stun",
+              "instance": "buff/5/1",
+              "stacks": 1
+            },
+            "time": 23,
+            "cause": null
+          }
+        ]
+      }
+    },
+    {
+      "case": "runtime_definition_scope",
+      "result": "passed",
+      "actual": {
+        "expected": "runtime current70 vs definition initial80/missing-default91 are distinct; no world mutation",
+        "actual": [
+          {
+            "name": "runtime_current",
+            "selected": [
+              3
+            ]
+          },
+          {
+            "name": "definition_current_default",
+            "selected": [
+              3
+            ]
+          },
+          {
+            "name": "runtime_current_not_default",
+            "selected": []
+          },
+          {
+            "name": "definition_initial",
+            "selected": [
+              3
+            ]
+          },
+          {
+            "name": "runtime_initial_missing",
+            "selected": []
+          }
+        ],
+        "API_only": true
+      }
+    },
+    {
+      "case": "data_only_schema",
+      "result": "passed",
+      "actual": {
+        "no_python_attribute_or_side_effect_getter": true,
+        "bad_specs_rejected": [
+          "selector/no_getattr.filters[1].field.path: nonempty mapping/list path required",
+          "selector/no_getattr.filters[1].field.path: nonempty mapping/list path required",
+          "selector/no_getattr.filters[1].field.path: nonempty mapping/list path required",
+          "selector/no_getattr.filters[1].field: exactly one equals or bits_any operation required",
+          "selector/no_getattr.filters[1].field.bits_any: nonnegative integer mask required",
+          "selector/no_getattr.filters[1].field.bits_any: nonnegative integer mask required",
+          "selector/no_getattr.filters[1].field.scope: runtime or definition required",
+          "selector/no_getattr.filters[1].field.default: expected a finite number"
+        ],
+        "API_compile_only": true
+      }
+    },
+    {
+      "case": "empty_cast",
+      "result": "passed",
+      "actual": {
+        "expected": {
+          "root_allowNoTarget1_empty_cast_pays10dp_5sp_and_retires45_once": true,
+          "recast_after_retire_rejected": true
+        },
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "program_fingerprint": "5a2bbcfcf8760202f5aa0c019e3451863f484c26d4168202cf99c9711a200726",
+        "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+        "fixture_initial_state": {
+          "id": "scenario/chapter01_emp_slice",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 8,
+            "cols": 11
+          },
+          "resources": {
+            "dp": {
+              "initial": 50,
+              "capacity": 99
+            }
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/chapter01_emp",
+              "position": {
+                "row": 5,
+                "col": 5
+              },
+              "facing": "up",
+              "instanceAlias": "device",
+              "components": {
+                "resources": {
+                  "sp": {
+                    "initial": 5
+                  }
+                }
+              }
+            }
+          ],
+          "waves": [],
+          "objectives": {},
+          "kind": "scenario"
+        },
+        "commands": {
+          "schema": "ark-sim/replay/v2",
+          "program_fingerprint": "5a2bbcfcf8760202f5aa0c019e3451863f484c26d4168202cf99c9711a200726",
+          "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+          "seed": 1517,
+          "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+          "until": 49,
+          "commands": [
+            {
+              "order": 1,
+              "submitted_at": 0,
+              "at": 0,
+              "action": {
+                "action": "skill",
+                "source": "device",
+                "ability": "ability/chapter01_emp/burst"
+              }
+            },
+            {
+              "order": 2,
+              "submitted_at": 0,
+              "at": 46,
+              "action": {
+                "action": "skill",
+                "source": "device",
+                "ability": "ability/chapter01_emp/burst"
+              }
+            }
+          ]
+        },
+        "state": {
+          "finished": false,
+          "result": "running",
+          "pending_waves": 0,
+          "kills": 0,
+          "leaks": 0,
+          "damage_dealt": 0,
+          "deployments": {
+            "unit/chapter01_emp": {
+              "count": 0,
+              "ready_at": 195
+            }
+          },
+          "command_results": {}
+        },
+        "events": [
+          {
+            "id": 9,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 100
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 19,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 5
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 74,
+            "type": "buff.applied",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/chapter01_emp/invincible",
+              "instance": "buff/2/1",
+              "stacks": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 127,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": -5,
+              "value": 0,
+              "ability": "ability/chapter01_emp/burst",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 0,
+            "cause": 126
+          },
+          {
+            "id": 129,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 1,
+              "resource": "dp",
+              "delta": -10,
+              "value": 40,
+              "ability": "ability/chapter01_emp/burst",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 0,
+            "cause": 126
+          },
+          {
+            "id": 130,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "device",
+                "ability": "ability/chapter01_emp/burst"
+              },
+              "result": "cast/2/1"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 134,
+            "type": "ability.finished",
+            "payload": {
+              "source": 2,
+              "ability": "ability/chapter01_emp/burst",
+              "cast": "cast/2/1"
+            },
+            "time": 45,
+            "cause": null
+          },
+          {
+            "id": 135,
+            "type": "entity.died",
+            "payload": {
+              "source": 2,
+              "target": 2
+            },
+            "time": 45,
+            "cause": null
+          },
+          {
+            "id": 172,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/chapter01_emp/invincible",
+              "instance": "buff/2/1"
+            },
+            "time": 45,
+            "cause": null
+          },
+          {
+            "id": 173,
+            "type": "command.rejected",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "device",
+                "ability": "ability/chapter01_emp/burst"
+              },
+              "reason": "Ability source is not active"
+            },
+            "time": 46,
+            "cause": null
+          }
+        ]
+      }
+    },
+    {
+      "case": "source_contract",
+      "result": "passed",
+      "actual": {
+        "actual_enum_dump_sha256": "18c43dde9466317c45a786a0e4fa35cd8894d128592adda4394704bf99ea477b",
+        "native_stats": {
+          "maxHp": 100.0,
+          "atk": 1000.0,
+          "cost": 5.0,
+          "blockCnt": 0.0
+        },
+        "raw_fields": {
+          "packet_delay": 0.75,
+          "cast_model_end": 1.5,
+          "before_spell_reselect": 1,
+          "ON_CAST_END": 3,
+          "INVINCIBLE": 5,
+          "STUNNED": 0,
+          "target_category": 1
+        },
+        "ground_category_filter_pending": true,
+        "terrain_overlay_pending": true
+      }
+    },
+    {
+      "case": "packet_reselect_halfopen",
+      "result": "passed",
+      "actual": {
+        "expected": {
+          "packet173_reselect_enter_and_diagonal_800_each": true,
+          "cast_end195_then_self_retire_HP100_noCombatKill": true,
+          "stun_expires383": true
+        },
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "program_fingerprint": "cb71ae55851b3e9c8f0004e8713f489889424ab34c081ab636533ad87654c83d",
+        "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+        "fixture_initial_state": {
+          "id": "scenario/chapter01_emp_slice",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 8,
+            "cols": 11
+          },
+          "resources": {
+            "dp": {
+              "initial": 50,
+              "capacity": 99
+            }
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/chapter01_emp",
+              "position": {
+                "row": 5,
+                "col": 5
+              },
+              "facing": "up",
+              "instanceAlias": "device"
+            },
+            {
+              "definition": "unit/peer_enemy",
+              "instanceAlias": "leave",
+              "position": {
+                "row": 5,
+                "col": 6
+              }
+            },
+            {
+              "definition": "unit/peer_enemy",
+              "instanceAlias": "enter",
+              "position": {
+                "row": 5,
+                "col": 7
+              }
+            },
+            {
+              "definition": "unit/peer_enemy",
+              "instanceAlias": "diagonal",
+              "position": {
+                "row": 4,
+                "col": 4
+              }
+            }
+          ],
+          "waves": [],
+          "objectives": {},
+          "kind": "scenario"
+        },
+        "commands": {
+          "schema": "ark-sim/replay/v2",
+          "program_fingerprint": "cb71ae55851b3e9c8f0004e8713f489889424ab34c081ab636533ad87654c83d",
+          "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+          "seed": 1517,
+          "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+          "until": 385,
+          "commands": [
+            {
+              "order": 1,
+              "submitted_at": 0,
+              "at": 150,
+              "action": {
+                "action": "skill",
+                "source": "device",
+                "ability": "ability/chapter01_emp/burst"
+              }
+            },
+            {
+              "order": 2,
+              "submitted_at": 0,
+              "at": 170,
+              "action": {
+                "action": "skill",
+                "source": "leave",
+                "ability": "ability/peer_exit"
+              }
+            },
+            {
+              "order": 3,
+              "submitted_at": 0,
+              "at": 171,
+              "action": {
+                "action": "skill",
+                "source": "enter",
+                "ability": "ability/peer_enter"
+              }
+            }
+          ]
+        },
+        "state": {
+          "finished": false,
+          "result": "running",
+          "pending_waves": 0,
+          "kills": 0,
+          "leaks": 0,
+          "damage_dealt": 1600.0,
+          "deployments": {
+            "unit/chapter01_emp": {
+              "count": 0,
+              "ready_at": 345
+            }
+          },
+          "command_results": {}
+        },
+        "events": [
+          {
+            "id": 9,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 100
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 19,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 74,
+            "type": "buff.applied",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/chapter01_emp/invincible",
+              "instance": "buff/2/1",
+              "stacks": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 82,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 96,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 4,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 110,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 5,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 374,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1,
+              "value": 1
+            },
+            "time": 29,
+            "cause": null
+          },
+          {
+            "id": 631,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1,
+              "value": 2
+            },
+            "time": 59,
+            "cause": null
+          },
+          {
+            "id": 888,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1,
+              "value": 3
+            },
+            "time": 89,
+            "cause": null
+          },
+          {
+            "id": 1145,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1,
+              "value": 4
+            },
+            "time": 119,
+            "cause": null
+          },
+          {
+            "id": 1402,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1,
+              "value": 5
+            },
+            "time": 149,
+            "cause": null
+          },
+          {
+            "id": 1455,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": -5,
+              "value": 0,
+              "ability": "ability/chapter01_emp/burst",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 150,
+            "cause": 1454
+          },
+          {
+            "id": 1457,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 1,
+              "resource": "dp",
+              "delta": -10,
+              "value": 40,
+              "ability": "ability/chapter01_emp/burst",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 150,
+            "cause": 1454
+          },
+          {
+            "id": 1458,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "device",
+                "ability": "ability/chapter01_emp/burst"
+              },
+              "result": "cast/2/1"
+            },
+            "time": 150,
+            "cause": null
+          },
+          {
+            "id": 1480,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "leave",
+                "ability": "ability/peer_exit"
+              },
+              "result": "cast/3/1"
+            },
+            "time": 170,
+            "cause": null
+          },
+          {
+            "id": 1482,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/peer_exit",
+              "cast": "cast/3/1"
+            },
+            "time": 170,
+            "cause": null
+          },
+          {
+            "id": 1504,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "enter",
+                "ability": "ability/peer_enter"
+              },
+              "result": "cast/4/1"
+            },
+            "time": 171,
+            "cause": null
+          },
+          {
+            "id": 1506,
+            "type": "ability.finished",
+            "payload": {
+              "source": 4,
+              "ability": "ability/peer_enter",
+              "cast": "cast/4/1"
+            },
+            "time": 171,
+            "cause": null
+          },
+          {
+            "id": 1521,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 4,
+              "resource": "hp",
+              "delta": -800.0,
+              "value": 2200.0
+            },
+            "time": 173,
+            "cause": null
+          },
+          {
+            "id": 1523,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 2,
+              "target": 4,
+              "amount": 800.0,
+              "ability": "ability/chapter01_emp/burst",
+              "resource": "hp"
+            },
+            "time": 173,
+            "cause": null
+          },
+          {
+            "id": 1545,
+            "type": "buff.applied",
+            "payload": {
+              "source": 2,
+              "target": 4,
+              "buff": "buff/chapter01_emp/stun",
+              "instance": "buff/4/1",
+              "stacks": 1
+            },
+            "time": 173,
+            "cause": null
+          },
+          {
+            "id": 1556,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 5,
+              "resource": "hp",
+              "delta": -800.0,
+              "value": 2200.0
+            },
+            "time": 173,
+            "cause": null
+          },
+          {
+            "id": 1558,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 2,
+              "target": 5,
+              "amount": 800.0,
+              "ability": "ability/chapter01_emp/burst",
+              "resource": "hp"
+            },
+            "time": 173,
+            "cause": null
+          },
+          {
+            "id": 1580,
+            "type": "buff.applied",
+            "payload": {
+              "source": 2,
+              "target": 5,
+              "buff": "buff/chapter01_emp/stun",
+              "instance": "buff/5/1",
+              "stacks": 1
+            },
+            "time": 173,
+            "cause": null
+          },
+          {
+            "id": 1581,
+            "type": "ability.finished",
+            "payload": {
+              "source": 2,
+              "ability": "ability/chapter01_emp/burst",
+              "cast": "cast/2/1"
+            },
+            "time": 195,
+            "cause": null
+          },
+          {
+            "id": 1582,
+            "type": "entity.died",
+            "payload": {
+              "source": 2,
+              "target": 2
+            },
+            "time": 195,
+            "cause": null
+          },
+          {
+            "id": 1619,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/chapter01_emp/invincible",
+              "instance": "buff/2/1"
+            },
+            "time": 195,
+            "cause": null
+          },
+          {
+            "id": 1630,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 4,
+              "buff": "buff/chapter01_emp/stun",
+              "instance": "buff/4/1"
+            },
+            "time": 383,
+            "cause": null
+          },
+          {
+            "id": 1641,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 5,
+              "buff": "buff/chapter01_emp/stun",
+              "instance": "buff/5/1"
+            },
+            "time": 383,
+            "cause": null
+          }
+        ]
+      }
+    },
+    {
+      "case": "incoming_payments",
+      "result": "passed",
+      "actual": [
+        {
+          "expected": {
+            "channel": "physical",
+            "actual_target_hook_rejects_HP_damage": true
+          },
+          "checkpoint_equal": true,
+          "replay_equal": true,
+          "program_fingerprint": "cb71ae55851b3e9c8f0004e8713f489889424ab34c081ab636533ad87654c83d",
+          "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+          "fixture_initial_state": {
+            "id": "scenario/chapter01_emp_slice",
+            "ruleset": "ruleset/ark_standard",
+            "map": {
+              "rows": 8,
+              "cols": 11
+            },
+            "resources": {
+              "dp": {
+                "initial": 50,
+                "capacity": 99
+              }
+            },
+            "initialEntities": [
+              {
+                "definition": "unit/chapter01_emp",
+                "position": {
+                  "row": 5,
+                  "col": 5
+                },
+                "facing": "up",
+                "instanceAlias": "device"
+              },
+              {
+                "definition": "unit/peer_enemy",
+                "instanceAlias": "leave",
+                "position": {
+                  "row": 5,
+                  "col": 6
+                }
+              },
+              {
+                "definition": "unit/peer_enemy",
+                "instanceAlias": "enter",
+                "position": {
+                  "row": 5,
+                  "col": 7
+                }
+              },
+              {
+                "definition": "unit/peer_enemy",
+                "instanceAlias": "diagonal",
+                "position": {
+                  "row": 4,
+                  "col": 4
+                }
+              }
+            ],
+            "waves": [],
+            "objectives": {},
+            "kind": "scenario"
+          },
+          "commands": {
+            "schema": "ark-sim/replay/v2",
+            "program_fingerprint": "cb71ae55851b3e9c8f0004e8713f489889424ab34c081ab636533ad87654c83d",
+            "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+            "seed": 1517,
+            "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+            "until": 3,
+            "commands": [
+              {
+                "order": 1,
+                "submitted_at": 0,
+                "at": 0,
+                "action": {
+                  "action": "skill",
+                  "source": "leave",
+                  "ability": "ability/peer_hit_physical"
+                }
+              }
+            ]
+          },
+          "state": {
+            "finished": false,
+            "result": "running",
+            "pending_waves": 0,
+            "kills": 0,
+            "leaks": 0,
+            "damage_dealt": 0,
+            "deployments": {},
+            "command_results": {}
+          },
+          "events": [
+            {
+              "id": 9,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 2,
+                "resource": "hp",
+                "delta": 0,
+                "value": 100
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 19,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 2,
+                "resource": "sp",
+                "delta": 0,
+                "value": 0
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 74,
+              "type": "buff.applied",
+              "payload": {
+                "source": 2,
+                "target": 2,
+                "buff": "buff/chapter01_emp/invincible",
+                "instance": "buff/2/1",
+                "stacks": 1
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 82,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 3,
+                "resource": "hp",
+                "delta": 0,
+                "value": 3000
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 96,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 4,
+                "resource": "hp",
+                "delta": 0,
+                "value": 3000
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 110,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 5,
+                "resource": "hp",
+                "delta": 0,
+                "value": 3000
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 142,
+              "type": "command.accepted",
+              "payload": {
+                "action": {
+                  "action": "skill",
+                  "source": "leave",
+                  "ability": "ability/peer_hit_physical"
+                },
+                "result": "cast/3/1"
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 157,
+              "type": "damage.rejected",
+              "payload": {
+                "source": 3,
+                "target": 2,
+                "reason": "pipeline_or_target_hook"
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 158,
+              "type": "ability.finished",
+              "payload": {
+                "source": 3,
+                "ability": "ability/peer_hit_physical",
+                "cast": "cast/3/1"
+              },
+              "time": 0,
+              "cause": null
+            }
+          ]
+        },
+        {
+          "expected": {
+            "channel": "arts",
+            "actual_target_hook_rejects_HP_damage": true
+          },
+          "checkpoint_equal": true,
+          "replay_equal": true,
+          "program_fingerprint": "cb71ae55851b3e9c8f0004e8713f489889424ab34c081ab636533ad87654c83d",
+          "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+          "fixture_initial_state": {
+            "id": "scenario/chapter01_emp_slice",
+            "ruleset": "ruleset/ark_standard",
+            "map": {
+              "rows": 8,
+              "cols": 11
+            },
+            "resources": {
+              "dp": {
+                "initial": 50,
+                "capacity": 99
+              }
+            },
+            "initialEntities": [
+              {
+                "definition": "unit/chapter01_emp",
+                "position": {
+                  "row": 5,
+                  "col": 5
+                },
+                "facing": "up",
+                "instanceAlias": "device"
+              },
+              {
+                "definition": "unit/peer_enemy",
+                "instanceAlias": "leave",
+                "position": {
+                  "row": 5,
+                  "col": 6
+                }
+              },
+              {
+                "definition": "unit/peer_enemy",
+                "instanceAlias": "enter",
+                "position": {
+                  "row": 5,
+                  "col": 7
+                }
+              },
+              {
+                "definition": "unit/peer_enemy",
+                "instanceAlias": "diagonal",
+                "position": {
+                  "row": 4,
+                  "col": 4
+                }
+              }
+            ],
+            "waves": [],
+            "objectives": {},
+            "kind": "scenario"
+          },
+          "commands": {
+            "schema": "ark-sim/replay/v2",
+            "program_fingerprint": "cb71ae55851b3e9c8f0004e8713f489889424ab34c081ab636533ad87654c83d",
+            "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+            "seed": 1517,
+            "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+            "until": 3,
+            "commands": [
+              {
+                "order": 1,
+                "submitted_at": 0,
+                "at": 0,
+                "action": {
+                  "action": "skill",
+                  "source": "leave",
+                  "ability": "ability/peer_hit_arts"
+                }
+              }
+            ]
+          },
+          "state": {
+            "finished": false,
+            "result": "running",
+            "pending_waves": 0,
+            "kills": 0,
+            "leaks": 0,
+            "damage_dealt": 0,
+            "deployments": {},
+            "command_results": {}
+          },
+          "events": [
+            {
+              "id": 9,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 2,
+                "resource": "hp",
+                "delta": 0,
+                "value": 100
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 19,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 2,
+                "resource": "sp",
+                "delta": 0,
+                "value": 0
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 74,
+              "type": "buff.applied",
+              "payload": {
+                "source": 2,
+                "target": 2,
+                "buff": "buff/chapter01_emp/invincible",
+                "instance": "buff/2/1",
+                "stacks": 1
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 82,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 3,
+                "resource": "hp",
+                "delta": 0,
+                "value": 3000
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 96,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 4,
+                "resource": "hp",
+                "delta": 0,
+                "value": 3000
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 110,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 5,
+                "resource": "hp",
+                "delta": 0,
+                "value": 3000
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 142,
+              "type": "command.accepted",
+              "payload": {
+                "action": {
+                  "action": "skill",
+                  "source": "leave",
+                  "ability": "ability/peer_hit_arts"
+                },
+                "result": "cast/3/1"
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 157,
+              "type": "damage.rejected",
+              "payload": {
+                "source": 3,
+                "target": 2,
+                "reason": "pipeline_or_target_hook"
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 158,
+              "type": "ability.finished",
+              "payload": {
+                "source": 3,
+                "ability": "ability/peer_hit_arts",
+                "cast": "cast/3/1"
+              },
+              "time": 0,
+              "cause": null
+            }
+          ]
+        },
+        {
+          "expected": {
+            "channel": "true",
+            "actual_target_hook_rejects_HP_damage": true
+          },
+          "checkpoint_equal": true,
+          "replay_equal": true,
+          "program_fingerprint": "cb71ae55851b3e9c8f0004e8713f489889424ab34c081ab636533ad87654c83d",
+          "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+          "fixture_initial_state": {
+            "id": "scenario/chapter01_emp_slice",
+            "ruleset": "ruleset/ark_standard",
+            "map": {
+              "rows": 8,
+              "cols": 11
+            },
+            "resources": {
+              "dp": {
+                "initial": 50,
+                "capacity": 99
+              }
+            },
+            "initialEntities": [
+              {
+                "definition": "unit/chapter01_emp",
+                "position": {
+                  "row": 5,
+                  "col": 5
+                },
+                "facing": "up",
+                "instanceAlias": "device"
+              },
+              {
+                "definition": "unit/peer_enemy",
+                "instanceAlias": "leave",
+                "position": {
+                  "row": 5,
+                  "col": 6
+                }
+              },
+              {
+                "definition": "unit/peer_enemy",
+                "instanceAlias": "enter",
+                "position": {
+                  "row": 5,
+                  "col": 7
+                }
+              },
+              {
+                "definition": "unit/peer_enemy",
+                "instanceAlias": "diagonal",
+                "position": {
+                  "row": 4,
+                  "col": 4
+                }
+              }
+            ],
+            "waves": [],
+            "objectives": {},
+            "kind": "scenario"
+          },
+          "commands": {
+            "schema": "ark-sim/replay/v2",
+            "program_fingerprint": "cb71ae55851b3e9c8f0004e8713f489889424ab34c081ab636533ad87654c83d",
+            "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+            "seed": 1517,
+            "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+            "until": 3,
+            "commands": [
+              {
+                "order": 1,
+                "submitted_at": 0,
+                "at": 0,
+                "action": {
+                  "action": "skill",
+                  "source": "leave",
+                  "ability": "ability/peer_hit_true"
+                }
+              }
+            ]
+          },
+          "state": {
+            "finished": false,
+            "result": "running",
+            "pending_waves": 0,
+            "kills": 0,
+            "leaks": 0,
+            "damage_dealt": 0,
+            "deployments": {},
+            "command_results": {}
+          },
+          "events": [
+            {
+              "id": 9,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 2,
+                "resource": "hp",
+                "delta": 0,
+                "value": 100
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 19,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 2,
+                "resource": "sp",
+                "delta": 0,
+                "value": 0
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 74,
+              "type": "buff.applied",
+              "payload": {
+                "source": 2,
+                "target": 2,
+                "buff": "buff/chapter01_emp/invincible",
+                "instance": "buff/2/1",
+                "stacks": 1
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 82,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 3,
+                "resource": "hp",
+                "delta": 0,
+                "value": 3000
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 96,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 4,
+                "resource": "hp",
+                "delta": 0,
+                "value": 3000
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 110,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 5,
+                "resource": "hp",
+                "delta": 0,
+                "value": 3000
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 142,
+              "type": "command.accepted",
+              "payload": {
+                "action": {
+                  "action": "skill",
+                  "source": "leave",
+                  "ability": "ability/peer_hit_true"
+                },
+                "result": "cast/3/1"
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 157,
+              "type": "damage.rejected",
+              "payload": {
+                "source": 3,
+                "target": 2,
+                "reason": "pipeline_or_target_hook"
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 158,
+              "type": "ability.finished",
+              "payload": {
+                "source": 3,
+                "ability": "ability/peer_hit_true",
+                "cast": "cast/3/1"
+              },
+              "time": 0,
+              "cause": null
+            }
+          ]
+        },
+        {
+          "expected": {
+            "SP_or_DP_failure_atomic": true,
+            "when": 0,
+            "DP": 50
+          },
+          "checkpoint_equal": true,
+          "replay_equal": true,
+          "program_fingerprint": "cb71ae55851b3e9c8f0004e8713f489889424ab34c081ab636533ad87654c83d",
+          "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+          "fixture_initial_state": {
+            "id": "scenario/chapter01_emp_slice",
+            "ruleset": "ruleset/ark_standard",
+            "map": {
+              "rows": 8,
+              "cols": 11
+            },
+            "resources": {
+              "dp": {
+                "initial": 50,
+                "capacity": 99
+              }
+            },
+            "initialEntities": [
+              {
+                "definition": "unit/chapter01_emp",
+                "position": {
+                  "row": 5,
+                  "col": 5
+                },
+                "facing": "up",
+                "instanceAlias": "device"
+              },
+              {
+                "definition": "unit/peer_enemy",
+                "instanceAlias": "leave",
+                "position": {
+                  "row": 5,
+                  "col": 6
+                }
+              },
+              {
+                "definition": "unit/peer_enemy",
+                "instanceAlias": "enter",
+                "position": {
+                  "row": 5,
+                  "col": 7
+                }
+              },
+              {
+                "definition": "unit/peer_enemy",
+                "instanceAlias": "diagonal",
+                "position": {
+                  "row": 4,
+                  "col": 4
+                }
+              }
+            ],
+            "waves": [],
+            "objectives": {},
+            "kind": "scenario"
+          },
+          "commands": {
+            "schema": "ark-sim/replay/v2",
+            "program_fingerprint": "cb71ae55851b3e9c8f0004e8713f489889424ab34c081ab636533ad87654c83d",
+            "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+            "seed": 1517,
+            "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+            "until": 3,
+            "commands": [
+              {
+                "order": 1,
+                "submitted_at": 0,
+                "at": 0,
+                "action": {
+                  "action": "skill",
+                  "source": "device",
+                  "ability": "ability/chapter01_emp/burst"
+                }
+              }
+            ]
+          },
+          "state": {
+            "finished": false,
+            "result": "running",
+            "pending_waves": 0,
+            "kills": 0,
+            "leaks": 0,
+            "damage_dealt": 0,
+            "deployments": {},
+            "command_results": {}
+          },
+          "events": [
+            {
+              "id": 9,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 2,
+                "resource": "hp",
+                "delta": 0,
+                "value": 100
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 19,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 2,
+                "resource": "sp",
+                "delta": 0,
+                "value": 0
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 74,
+              "type": "buff.applied",
+              "payload": {
+                "source": 2,
+                "target": 2,
+                "buff": "buff/chapter01_emp/invincible",
+                "instance": "buff/2/1",
+                "stacks": 1
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 82,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 3,
+                "resource": "hp",
+                "delta": 0,
+                "value": 3000
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 96,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 4,
+                "resource": "hp",
+                "delta": 0,
+                "value": 3000
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 110,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 5,
+                "resource": "hp",
+                "delta": 0,
+                "value": 3000
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 118,
+              "type": "command.rejected",
+              "payload": {
+                "action": {
+                  "action": "skill",
+                  "source": "device",
+                  "ability": "ability/chapter01_emp/burst"
+                },
+                "reason": "insufficient resource sp"
+              },
+              "time": 0,
+              "cause": null
+            }
+          ]
+        },
+        {
+          "expected": {
+            "SP_or_DP_failure_atomic": true,
+            "when": 150,
+            "DP": 9
+          },
+          "checkpoint_equal": true,
+          "replay_equal": true,
+          "program_fingerprint": "96c26d4a6a88a078578c3547b79cf8a5e6a84b44e19b25858292f699be9906ba",
+          "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+          "fixture_initial_state": {
+            "id": "scenario/chapter01_emp_slice",
+            "ruleset": "ruleset/ark_standard",
+            "map": {
+              "rows": 8,
+              "cols": 11
+            },
+            "resources": {
+              "dp": {
+                "initial": 9,
+                "capacity": 99
+              }
+            },
+            "initialEntities": [
+              {
+                "definition": "unit/chapter01_emp",
+                "position": {
+                  "row": 5,
+                  "col": 5
+                },
+                "facing": "up",
+                "instanceAlias": "device"
+              },
+              {
+                "definition": "unit/peer_enemy",
+                "instanceAlias": "leave",
+                "position": {
+                  "row": 5,
+                  "col": 6
+                }
+              },
+              {
+                "definition": "unit/peer_enemy",
+                "instanceAlias": "enter",
+                "position": {
+                  "row": 5,
+                  "col": 7
+                }
+              },
+              {
+                "definition": "unit/peer_enemy",
+                "instanceAlias": "diagonal",
+                "position": {
+                  "row": 4,
+                  "col": 4
+                }
+              }
+            ],
+            "waves": [],
+            "objectives": {},
+            "kind": "scenario"
+          },
+          "commands": {
+            "schema": "ark-sim/replay/v2",
+            "program_fingerprint": "96c26d4a6a88a078578c3547b79cf8a5e6a84b44e19b25858292f699be9906ba",
+            "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+            "seed": 1517,
+            "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+            "until": 153,
+            "commands": [
+              {
+                "order": 1,
+                "submitted_at": 0,
+                "at": 150,
+                "action": {
+                  "action": "skill",
+                  "source": "device",
+                  "ability": "ability/chapter01_emp/burst"
+                }
+              }
+            ]
+          },
+          "state": {
+            "finished": false,
+            "result": "running",
+            "pending_waves": 0,
+            "kills": 0,
+            "leaks": 0,
+            "damage_dealt": 0,
+            "deployments": {},
+            "command_results": {}
+          },
+          "events": [
+            {
+              "id": 9,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 2,
+                "resource": "hp",
+                "delta": 0,
+                "value": 100
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 19,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 2,
+                "resource": "sp",
+                "delta": 0,
+                "value": 0
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 74,
+              "type": "buff.applied",
+              "payload": {
+                "source": 2,
+                "target": 2,
+                "buff": "buff/chapter01_emp/invincible",
+                "instance": "buff/2/1",
+                "stacks": 1
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 82,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 3,
+                "resource": "hp",
+                "delta": 0,
+                "value": 3000
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 96,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 4,
+                "resource": "hp",
+                "delta": 0,
+                "value": 3000
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 110,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 5,
+                "resource": "hp",
+                "delta": 0,
+                "value": 3000
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 374,
+              "type": "resource.changed",
+              "payload": {
+                "source": 2,
+                "target": 2,
+                "resource": "sp",
+                "delta": 1,
+                "value": 1
+              },
+              "time": 29,
+              "cause": null
+            },
+            {
+              "id": 631,
+              "type": "resource.changed",
+              "payload": {
+                "source": 2,
+                "target": 2,
+                "resource": "sp",
+                "delta": 1,
+                "value": 2
+              },
+              "time": 59,
+              "cause": null
+            },
+            {
+              "id": 888,
+              "type": "resource.changed",
+              "payload": {
+                "source": 2,
+                "target": 2,
+                "resource": "sp",
+                "delta": 1,
+                "value": 3
+              },
+              "time": 89,
+              "cause": null
+            },
+            {
+              "id": 1145,
+              "type": "resource.changed",
+              "payload": {
+                "source": 2,
+                "target": 2,
+                "resource": "sp",
+                "delta": 1,
+                "value": 4
+              },
+              "time": 119,
+              "cause": null
+            },
+            {
+              "id": 1402,
+              "type": "resource.changed",
+              "payload": {
+                "source": 2,
+                "target": 2,
+                "resource": "sp",
+                "delta": 1,
+                "value": 5
+              },
+              "time": 149,
+              "cause": null
+            },
+            {
+              "id": 1404,
+              "type": "command.rejected",
+              "payload": {
+                "action": {
+                  "action": "skill",
+                  "source": "device",
+                  "ability": "ability/chapter01_emp/burst"
+                },
+                "reason": "insufficient resource dp"
+              },
+              "time": 150,
+              "cause": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "owner_retired_jobs",
+      "result": "passed",
+      "actual": {
+        "expected": {
+          "withdraw160_cancels_packet173_and_finish195": true,
+          "HP100_not_death_callback": true
+        },
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "program_fingerprint": "cb71ae55851b3e9c8f0004e8713f489889424ab34c081ab636533ad87654c83d",
+        "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+        "fixture_initial_state": {
+          "id": "scenario/chapter01_emp_slice",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 8,
+            "cols": 11
+          },
+          "resources": {
+            "dp": {
+              "initial": 50,
+              "capacity": 99
+            }
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/chapter01_emp",
+              "position": {
+                "row": 5,
+                "col": 5
+              },
+              "facing": "up",
+              "instanceAlias": "device"
+            },
+            {
+              "definition": "unit/peer_enemy",
+              "instanceAlias": "leave",
+              "position": {
+                "row": 5,
+                "col": 6
+              }
+            },
+            {
+              "definition": "unit/peer_enemy",
+              "instanceAlias": "enter",
+              "position": {
+                "row": 5,
+                "col": 7
+              }
+            },
+            {
+              "definition": "unit/peer_enemy",
+              "instanceAlias": "diagonal",
+              "position": {
+                "row": 4,
+                "col": 4
+              }
+            }
+          ],
+          "waves": [],
+          "objectives": {},
+          "kind": "scenario"
+        },
+        "commands": {
+          "schema": "ark-sim/replay/v2",
+          "program_fingerprint": "cb71ae55851b3e9c8f0004e8713f489889424ab34c081ab636533ad87654c83d",
+          "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+          "seed": 1517,
+          "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+          "until": 222,
+          "commands": [
+            {
+              "order": 1,
+              "submitted_at": 0,
+              "at": 150,
+              "action": {
+                "action": "skill",
+                "source": "device",
+                "ability": "ability/chapter01_emp/burst"
+              }
+            },
+            {
+              "order": 2,
+              "submitted_at": 0,
+              "at": 160,
+              "action": {
+                "action": "withdraw",
+                "source": "device"
+              }
+            }
+          ]
+        },
+        "state": {
+          "finished": false,
+          "result": "running",
+          "pending_waves": 0,
+          "kills": 0,
+          "leaks": 0,
+          "damage_dealt": 0,
+          "deployments": {
+            "unit/chapter01_emp": {
+              "count": 0,
+              "ready_at": 310
+            }
+          },
+          "command_results": {}
+        },
+        "events": [
+          {
+            "id": 9,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 100
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 19,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 74,
+            "type": "buff.applied",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/chapter01_emp/invincible",
+              "instance": "buff/2/1",
+              "stacks": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 82,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 96,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 4,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 110,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 5,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 374,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1,
+              "value": 1
+            },
+            "time": 29,
+            "cause": null
+          },
+          {
+            "id": 631,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1,
+              "value": 2
+            },
+            "time": 59,
+            "cause": null
+          },
+          {
+            "id": 888,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1,
+              "value": 3
+            },
+            "time": 89,
+            "cause": null
+          },
+          {
+            "id": 1145,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1,
+              "value": 4
+            },
+            "time": 119,
+            "cause": null
+          },
+          {
+            "id": 1402,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1,
+              "value": 5
+            },
+            "time": 149,
+            "cause": null
+          },
+          {
+            "id": 1455,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": -5,
+              "value": 0,
+              "ability": "ability/chapter01_emp/burst",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 150,
+            "cause": 1454
+          },
+          {
+            "id": 1457,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 1,
+              "resource": "dp",
+              "delta": -10,
+              "value": 40,
+              "ability": "ability/chapter01_emp/burst",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 150,
+            "cause": 1454
+          },
+          {
+            "id": 1458,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "device",
+                "ability": "ability/chapter01_emp/burst"
+              },
+              "result": "cast/2/1"
+            },
+            "time": 150,
+            "cause": null
+          },
+          {
+            "id": 1462,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 1,
+              "resource": "dp",
+              "delta": 0.0,
+              "value": 40.0
+            },
+            "time": 160,
+            "cause": null
+          },
+          {
+            "id": 1463,
+            "type": "ability.interrupted",
+            "payload": {
+              "source": 2,
+              "ability": "ability/chapter01_emp/burst",
+              "cast": "cast/2/1",
+              "reason": "withdrawn"
+            },
+            "time": 160,
+            "cause": null
+          },
+          {
+            "id": 1464,
+            "type": "entity.withdrawn",
+            "payload": {
+              "source": 2,
+              "target": 2
+            },
+            "time": 160,
+            "cause": null
+          },
+          {
+            "id": 1473,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "withdraw",
+                "source": "device"
+              },
+              "result": 2
+            },
+            "time": 160,
+            "cause": null
+          },
+          {
+            "id": 1502,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/chapter01_emp/invincible",
+              "instance": "buff/2/1"
+            },
+            "time": 160,
+            "cause": null
+          }
+        ]
+      }
+    },
+    {
+      "case": "generic_retire_idempotent_no_policy",
+      "result": "passed",
+      "actual": {
+        "expected": {
+          "no_lifecycle_policy_still_retires": true,
+          "enemy_reason_dead_counts_once_preservesHP80_noCombatKill": true
+        },
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "program_fingerprint": "9abec1c42afd82bb906a034c51c1438a3a2b47a6261dd7ddc2eac47647b7086f",
+        "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+        "fixture_initial_state": {
+          "id": "scenario/chapter01_emp_slice",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 8,
+            "cols": 11
+          },
+          "resources": {
+            "dp": {
+              "initial": 50,
+              "capacity": 99
+            }
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/chapter01_emp",
+              "position": {
+                "row": 5,
+                "col": 5
+              },
+              "facing": "up",
+              "instanceAlias": "device",
+              "components": {
+                "resources": {
+                  "sp": {
+                    "initial": 5
+                  }
+                }
+              }
+            },
+            {
+              "definition": "unit/no_policy",
+              "instanceAlias": "plain",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ],
+          "waves": [],
+          "objectives": {},
+          "kind": "scenario"
+        },
+        "commands": {
+          "schema": "ark-sim/replay/v2",
+          "program_fingerprint": "9abec1c42afd82bb906a034c51c1438a3a2b47a6261dd7ddc2eac47647b7086f",
+          "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+          "seed": 1517,
+          "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+          "until": 5,
+          "commands": [
+            {
+              "order": 1,
+              "submitted_at": 0,
+              "at": 0,
+              "action": {
+                "action": "skill",
+                "source": "device",
+                "ability": "ability/peer_retire"
+              }
+            },
+            {
+              "order": 2,
+              "submitted_at": 0,
+              "at": 2,
+              "action": {
+                "action": "skill",
+                "source": "device",
+                "ability": "ability/peer_retire"
+              }
+            }
+          ]
+        },
+        "state": {
+          "finished": false,
+          "result": "running",
+          "pending_waves": 0,
+          "kills": 1,
+          "leaks": 0,
+          "damage_dealt": 0,
+          "deployments": {},
+          "command_results": {}
+        },
+        "events": [
+          {
+            "id": 9,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 100
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 19,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 5
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 74,
+            "type": "buff.applied",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/chapter01_emp/invincible",
+              "instance": "buff/2/1",
+              "stacks": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 79,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 80
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 113,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "device",
+                "ability": "ability/peer_retire"
+              },
+              "result": "cast/2/1"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 115,
+            "type": "entity.died",
+            "payload": {
+              "source": 3,
+              "target": 3
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 116,
+            "type": "ability.finished",
+            "payload": {
+              "source": 2,
+              "ability": "ability/peer_retire",
+              "cast": "cast/2/1"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 154,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "device",
+                "ability": "ability/peer_retire"
+              },
+              "result": "cast/2/2"
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 155,
+            "type": "ability.finished",
+            "payload": {
+              "source": 2,
+              "ability": "ability/peer_retire",
+              "cast": "cast/2/2"
+            },
+            "time": 2,
+            "cause": null
+          }
+        ]
+      }
+    },
+    {
+      "case": "generic_retire_failure_atomic",
+      "result": "passed",
+      "actual": {
+        "expected": {
+          "lifecycle_retire_killcount_tasks_events_roll_back_with_child_failure": true
+        },
+        "checkpoint_equal": "API-only",
+        "replay_equal": "API-only",
+        "program_fingerprint": "383f2b7a88f3309aceb6f9d88134eb37d44a60764118e3526b616aa73eeb9cd3",
+        "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+        "fixture_initial_state": {
+          "id": "scenario/chapter01_emp_slice",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 8,
+            "cols": 11
+          },
+          "resources": {
+            "dp": {
+              "initial": 50,
+              "capacity": 99
+            }
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/chapter01_emp",
+              "position": {
+                "row": 5,
+                "col": 5
+              },
+              "facing": "up",
+              "instanceAlias": "device",
+              "components": {
+                "resources": {
+                  "sp": {
+                    "initial": 5
+                  }
+                }
+              }
+            },
+            {
+              "definition": "unit/no_policy",
+              "instanceAlias": "plain",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ],
+          "waves": [],
+          "objectives": {},
+          "kind": "scenario"
+        },
+        "commands": {
+          "schema": "ark-sim/replay/v2",
+          "program_fingerprint": "383f2b7a88f3309aceb6f9d88134eb37d44a60764118e3526b616aa73eeb9cd3",
+          "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+          "seed": 1517,
+          "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+          "until": 0,
+          "commands": []
+        },
+        "state": {
+          "finished": false,
+          "result": "running",
+          "pending_waves": 0,
+          "kills": 0,
+          "leaks": 0,
+          "damage_dealt": 0,
+          "deployments": {},
+          "command_results": {}
+        },
+        "events": [
+          {
+            "id": 9,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 100
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 19,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 5
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 74,
+            "type": "buff.applied",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/chapter01_emp/invincible",
+              "instance": "buff/2/1",
+              "stacks": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 79,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 80
+            },
+            "time": 0,
+            "cause": null
+          }
+        ]
+      }
+    },
+    {
+      "case": "reserved_battle",
+      "result": "passed",
+      "actual": {
+        "compile_rejections": [
+          {
+            "target": "battle",
+            "error": "ability/chapter01_emp/burst.events[0].effects.target: retire cannot remove the reserved battle entity"
+          },
+          {
+            "target": "system/battle",
+            "error": "ability/chapter01_emp/burst.events[0].effects.target: retire cannot remove the reserved battle entity"
+          }
+        ],
+        "runtime_numeric_battle_rejected_atomically": true,
+        "API_only": true
+      }
+    },
+    {
+      "case": "retire_owned_cleanup",
+      "result": "passed",
+      "actual": {
+        "expected": {
+          "owner_retire3_recursively_removes_child_preservesHP20_30": true,
+          "child_windup_and_finish_and_lifetime_tasks_cancelled": true
+        },
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "program_fingerprint": "d7127a5c6b7e278c0edf5921a2abca18cf058e28a386368b3ff53e849cc66825",
+        "runtime_fingerprint": "34aa7c14ddbcc17272ce32f49b1a4934f53e830c41e485112b200b395268e549",
+        "fixture_initial_state": {
+          "id": "scenario/chapter01_emp_slice",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 8,
+            "cols": 11
+          },
+          "resources": {
+            "dp": {
+              "initial": 50,
+              "capacity": 99
+            }
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/owner",
+              "instanceAlias": "owner",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ],
+          "waves": [],
+          "objectives": {},
+          "kind": "scenario"
+        },
+        "commands": {
+          "schema": "ark-sim/replay/v2",
+          "program_fingerprint": "d7127a5c6b7e278c0edf5921a2abca18cf058e28a386368b3ff53e849cc66825",
+          "runtime_fingerprint": "34aa7c14ddbcc17272ce32f49b1a4934f53e830c41e485112b200b395268e549",
+          "seed": 1517,
+          "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+          "until": 163,
+          "commands": [
+            {
+              "order": 1,
+              "submitted_at": 0,
+              "at": 0,
+              "action": {
+                "action": "skill",
+                "source": "owner",
+                "ability": "ability/summon"
+              }
+            },
+            {
+              "order": 2,
+              "submitted_at": 1,
+              "at": 1,
+              "action": {
+                "action": "skill",
+                "source": 3,
+                "ability": "ability/long_child"
+              }
+            },
+            {
+              "order": 3,
+              "submitted_at": 1,
+              "at": 3,
+              "action": {
+                "action": "skill",
+                "source": "owner",
+                "ability": "ability/remove_owner"
+              }
+            }
+          ]
+        },
+        "state": {
+          "finished": false,
+          "result": "running",
+          "pending_waves": 0,
+          "kills": 0,
+          "leaks": 0,
+          "damage_dealt": 0,
+          "deployments": {},
+          "command_results": {}
+        },
+        "events": [
+          {
+            "id": 4,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 20
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 19,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 30
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 23,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "owner",
+                "ability": "ability/summon"
+              },
+              "result": "cast/2/1"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 25,
+            "type": "ability.finished",
+            "payload": {
+              "source": 2,
+              "ability": "ability/summon",
+              "cast": "cast/2/1"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 38,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": 3,
+                "ability": "ability/long_child"
+              },
+              "result": "cast/3/1"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 51,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "owner",
+                "ability": "ability/remove_owner"
+              },
+              "result": "cast/2/2"
+            },
+            "time": 3,
+            "cause": null
+          },
+          {
+            "id": 52,
+            "type": "ability.interrupted",
+            "payload": {
+              "source": 2,
+              "ability": "ability/remove_owner",
+              "cast": "cast/2/2",
+              "reason": "removed"
+            },
+            "time": 3,
+            "cause": null
+          },
+          {
+            "id": 53,
+            "type": "ability.interrupted",
+            "payload": {
+              "source": 3,
+              "ability": "ability/long_child",
+              "cast": "cast/3/1",
+              "reason": "owner_retired"
+            },
+            "time": 3,
+            "cause": null
+          }
+        ]
+      }
+    },
+    {
+      "case": "retire_owned_rollback",
+      "result": "passed",
+      "actual": {
+        "expected": {
+          "failure_after_parent_and_child_retire_restores_lifetime_jobs_world_event_counters": true
+        },
+        "checkpoint_equal": "API-only",
+        "replay_equal": "API-only",
+        "program_fingerprint": "383f2b7a88f3309aceb6f9d88134eb37d44a60764118e3526b616aa73eeb9cd3",
+        "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+        "fixture_initial_state": {
+          "id": "scenario/chapter01_emp_slice",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 8,
+            "cols": 11
+          },
+          "resources": {
+            "dp": {
+              "initial": 50,
+              "capacity": 99
+            }
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/chapter01_emp",
+              "position": {
+                "row": 5,
+                "col": 5
+              },
+              "facing": "up",
+              "instanceAlias": "device",
+              "components": {
+                "resources": {
+                  "sp": {
+                    "initial": 5
+                  }
+                }
+              }
+            },
+            {
+              "definition": "unit/no_policy",
+              "instanceAlias": "plain",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ],
+          "waves": [],
+          "objectives": {},
+          "kind": "scenario"
+        },
+        "commands": {
+          "schema": "ark-sim/replay/v2",
+          "program_fingerprint": "383f2b7a88f3309aceb6f9d88134eb37d44a60764118e3526b616aa73eeb9cd3",
+          "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+          "seed": 1517,
+          "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+          "until": 0,
+          "commands": []
+        },
+        "state": {
+          "finished": false,
+          "result": "running",
+          "pending_waves": 0,
+          "kills": 0,
+          "leaks": 0,
+          "damage_dealt": 0,
+          "deployments": {},
+          "command_results": {}
+        },
+        "events": [
+          {
+            "id": 9,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 100
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 19,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 5
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 74,
+            "type": "buff.applied",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/chapter01_emp/invincible",
+              "instance": "buff/2/1",
+              "stacks": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 79,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 80
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 87,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 4,
+              "resource": "hp",
+              "delta": 0,
+              "value": 80
+            },
+            "time": 0,
+            "cause": null
+          }
+        ]
+      }
+    },
+    {
+      "case": "retire_control_context",
+      "result": "passed",
+      "actual": {
+        "context_compile_rejections": [
+          {
+            "target": "source",
+            "error": "control/peer.steps[0]: control retirement requires an explicit actor target or nonspatial selector"
+          },
+          {
+            "target": "selected",
+            "error": "control/peer.steps[0]: control retirement requires an explicit actor target or nonspatial selector"
+          },
+          {
+            "target": "self",
+            "error": "control/peer.steps[0]: control retirement requires an explicit actor target or nonspatial selector"
+          }
+        ],
+        "selector_control_retire": {
+          "expected": {
+            "explicit_all_actor_selector_removes_only_actor_not_battle": true
+          },
+          "checkpoint_equal": true,
+          "replay_equal": true,
+          "program_fingerprint": "c37deb02e08dd3f6752d1b365759ae83d85134daf8a1b1f0a01afc166239ab0a",
+          "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+          "fixture_initial_state": {
+            "id": "scenario/chapter01_emp_slice",
+            "ruleset": "ruleset/ark_standard",
+            "map": {
+              "rows": 8,
+              "cols": 11
+            },
+            "resources": {
+              "dp": {
+                "initial": 50,
+                "capacity": 99
+              }
+            },
+            "initialEntities": [
+              {
+                "definition": "unit/chapter01_emp",
+                "position": {
+                  "row": 5,
+                  "col": 5
+                },
+                "facing": "up",
+                "instanceAlias": "device",
+                "components": {
+                  "resources": {
+                    "sp": {
+                      "initial": 5
+                    }
+                  }
+                }
+              },
+              {
+                "definition": "unit/no_policy",
+                "instanceAlias": "plain",
+                "position": {
+                  "row": 0,
+                  "col": 0
+                }
+              }
+            ],
+            "objectives": {},
+            "timeline": {
+              "policy": "managed_clear",
+              "negative_timeout_policy": "wait_for_clear",
+              "waves": [
+                {
+                  "fragments": [
+                    {
+                      "actions": [
+                        {
+                          "kind": "control",
+                          "definition": "control/peer",
+                          "instanceAlias": "retirer"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "kind": "scenario"
+          },
+          "commands": {
+            "schema": "ark-sim/replay/v2",
+            "program_fingerprint": "c37deb02e08dd3f6752d1b365759ae83d85134daf8a1b1f0a01afc166239ab0a",
+            "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+            "seed": 1517,
+            "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+            "until": 5,
+            "commands": []
+          },
+          "state": {
+            "finished": false,
+            "result": "running",
+            "pending_waves": 0,
+            "kills": 0,
+            "leaks": 0,
+            "damage_dealt": 0,
+            "deployments": {},
+            "command_results": {},
+            "timeline": {
+              "phase": "complete",
+              "wave_index": 1,
+              "fragment_index": 1,
+              "members": {},
+              "remaining_actions": 0,
+              "wake_token": 2,
+              "wake_at": null,
+              "done": true,
+              "play_start": 0,
+              "wave_start": 0,
+              "fragment_start": 0,
+              "control_pending": {},
+              "control_members": {},
+              "gate_start": 0
+            },
+            "controls": {
+              "next_instance": 2,
+              "instances": {
+                "control/1": {
+                  "id": "control/1",
+                  "definition": "control/peer",
+                  "alias": "retirer",
+                  "status": "completed",
+                  "phase": "completed",
+                  "cursor": 1,
+                  "generation": 1,
+                  "tasks": {},
+                  "locks": {},
+                  "origins": {
+                    "play_start": 0,
+                    "wave_start": 0,
+                    "fragment_start": 0,
+                    "action_start": 0
+                  },
+                  "waiting_step": null,
+                  "waiting_key": null,
+                  "prepared_at": 0,
+                  "started_at": 0,
+                  "completed_at": 0
+                }
+              },
+              "aliases": {
+                "retirer": "control/1"
+              }
+            }
+          },
+          "events": [
+            {
+              "id": 9,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 2,
+                "resource": "hp",
+                "delta": 0,
+                "value": 100
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 19,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 2,
+                "resource": "sp",
+                "delta": 0,
+                "value": 5
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 74,
+              "type": "buff.applied",
+              "payload": {
+                "source": 2,
+                "target": 2,
+                "buff": "buff/chapter01_emp/invincible",
+                "instance": "buff/2/1",
+                "stacks": 1
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 79,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 3,
+                "resource": "hp",
+                "delta": 0,
+                "value": 80
+              },
+              "time": 0,
+              "cause": null
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "tests": [
+    {
+      "path": "tools/experiments/m15_peer/category_matrix.py",
+      "source_sha256": "2926165e3220fc28a8f470acce1a27a4521fbc7e26d861032d3715a3627ef82f",
+      "result": "passed"
+    }
+  ],
+  "scope": "category data filter and prior EMP/retire slice only; no terrain/fulldevice approval",
+  "formal_approval": false,
+  "review_receipt": false
+}

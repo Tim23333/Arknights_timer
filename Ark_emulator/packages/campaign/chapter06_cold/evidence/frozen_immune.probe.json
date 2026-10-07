@@ -1,0 +1,476 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/chapter06/cold/source_consumer",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "source_locks": {
+        "packages\\campaign\\chapter06_cold\\source.decoded.json": "97d7e82bddf8af166ae416e4e8148382b5f5f7d07a1eb1c7d71beda035d26419"
+      },
+      "builder_sha256": "4ee64916cc8dd6f6cee5f95efacf39e21beb6537c4f238328a6db55ef9cd5d2b",
+      "required_generic_capabilities": [
+        "buff.application",
+        "damage.request typed source/target selection projection"
+      ],
+      "formal_approved": false,
+      "independent_reviewed": false,
+      "whole_stage_executed": false,
+      "client_verified": false,
+      "policies": {
+        "duration": "Incoming exact5/10 BB seconds times effective one_minus_status_resistance; YES/AUTOMATIC Frozen status resistant. Zero lifetime is not a literal zero duration",
+        "cold": "COLD23, ASPD additive-30 normalized-.3; existing cold/frozen ->freeze if FROZEN16 not immune, then clear other cold/frozen handles across sources",
+        "refresh": "Current incoming duration replaces expiration on same definition/target independent of source; maxStack1",
+        "immunity": "Cold23 immune rejects pure application. Frozen16 immune retains/refreshed Cold; contribution/control gates dynamically honor immunities, clocks keep running",
+        "control": "Frozen stops move/attack/abilities and interrupts current casts; bind rule/ch6/cold/frozen_recovery to source SP resource to freeze recovery. HP recovery is not disabled by this SP binding",
+        "cold_plus_frozen": "Cold removed during freeze; new cold while frozen refreshes frozen from the current incoming source duration. Native resistance/refresh precise calibration remains replaceable",
+        "scope": "Reusable e2c source5/10 and TARGETFROZEN attack scale; NPC story control and complete stages separate"
+      }
+    }
+  },
+  "rules": [
+    {
+      "id": "rule/ch6/cold/application",
+      "kind": "rule",
+      "contract": "buff.application",
+      "dependencies": [
+        "rule/ch6/cold/status_duration"
+      ],
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c6.cold_application"
+      },
+      "parameters": {
+        "cold": "buff/ch6/cold/e2c_cold",
+        "frozen": "buff/ch6/cold/e2c_freeze",
+        "duration_rule": "rule/ch6/cold/status_duration"
+      }
+    },
+    {
+      "id": "rule/ch6/cold/status_duration",
+      "kind": "calculation_rule",
+      "contract": "buff.duration",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.buff_parameters.duration_seconds * inputs.buff_parameters.status_duration_factor"
+      }
+    },
+    {
+      "id": "rule/ch6/cold/frozen_recovery",
+      "kind": "rule",
+      "contract": "resource.recovery_freeze",
+      "metadata": {
+        "recovery_freeze_authority": "final_override"
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c6.frozen_recovery"
+      },
+      "parameters": {
+        "frozen": "buff/ch6/cold/e2c_freeze"
+      }
+    },
+    {
+      "id": "rule/ch6/cold/cold_active",
+      "kind": "rule",
+      "contract": "buff.applicability",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.owner.components.runtime.alive and 23 not in inputs.status.abnormal_immunes"
+      }
+    },
+    {
+      "id": "rule/ch6/cold/frozen_active",
+      "kind": "rule",
+      "contract": "buff.applicability",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.owner.components.runtime.alive and 16 not in inputs.status.abnormal_immunes"
+      }
+    },
+    {
+      "id": "rule/ch6/cold/frozen_atkscale1.5",
+      "kind": "rule",
+      "contract": "damage.request",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c6.frozen_atkscale"
+      },
+      "parameters": {
+        "atk_scale": 1.5
+      }
+    },
+    {
+      "id": "rule/ch6/cold/frozen_atkscale2.5",
+      "kind": "rule",
+      "contract": "damage.request",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c6.frozen_atkscale"
+      },
+      "parameters": {
+        "atk_scale": 2.5
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/ch6/cold/e2c_cold",
+      "kind": "buff",
+      "duration_seconds": 10,
+      "active_rule": "rule/ch6/cold/cold_active",
+      "stacking": {
+        "mode": "refresh",
+        "identity": [
+          "definition",
+          "target"
+        ],
+        "max_stacks": 1
+      },
+      "selection_flags": {
+        "abnormal_flags": [
+          23
+        ]
+      },
+      "modifiers": [
+        {
+          "attribute": "attack_speed_ratio",
+          "layer": "flat",
+          "value": -0.3
+        }
+      ]
+    },
+    {
+      "id": "buff/ch6/cold/e2c_freeze",
+      "kind": "buff",
+      "duration_seconds": 10,
+      "active_rule": "rule/ch6/cold/frozen_active",
+      "control_rule": "rule/ch6/cold/frozen_active",
+      "stacking": {
+        "mode": "refresh",
+        "identity": [
+          "definition",
+          "target"
+        ],
+        "max_stacks": 1
+      },
+      "selection_flags": {
+        "abnormal_flags": [
+          16
+        ]
+      },
+      "control": {
+        "move": false,
+        "attack": false,
+        "abilities": false,
+        "interrupt": true
+      }
+    },
+    {
+      "id": "buff/ch6/cold/frozen_atkscale1.5",
+      "kind": "buff",
+      "damage_hooks": [
+        {
+          "phase": "before",
+          "rule": "rule/ch6/cold/frozen_atkscale1.5"
+        }
+      ]
+    },
+    {
+      "id": "buff/ch6/cold/frozen_atkscale2.5",
+      "kind": "buff",
+      "damage_hooks": [
+        {
+          "phase": "before",
+          "rule": "rule/ch6/cold/frozen_atkscale2.5"
+        }
+      ]
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/ch6/cold/apply5",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual"
+      },
+      "selector": "selector/ch6/cold/receiver",
+      "timeline": [
+        {
+          "at": 0,
+          "effect": {
+            "op": "buff_application",
+            "application_rule": "rule/ch6/cold/application",
+            "allowed": [
+              "buff/ch6/cold/e2c_cold",
+              "buff/ch6/cold/e2c_freeze"
+            ],
+            "parameters": {
+              "duration_seconds": 5
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/ch6/cold/apply10",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual"
+      },
+      "selector": "selector/ch6/cold/receiver",
+      "timeline": [
+        {
+          "at": 0,
+          "effect": {
+            "op": "buff_application",
+            "application_rule": "rule/ch6/cold/application",
+            "allowed": [
+              "buff/ch6/cold/e2c_cold",
+              "buff/ch6/cold/e2c_freeze"
+            ],
+            "parameters": {
+              "duration_seconds": 10
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/test/cold/hit",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual"
+      },
+      "selector": "selector/ch6/cold/receiver",
+      "timeline": [
+        {
+          "at": 0,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1
+          }
+        }
+      ]
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/ch6/cold/receiver",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "cold_receiver"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "entities": [
+    {
+      "id": "unit/test/cold/caster",
+      "kind": "entity",
+      "tags": [
+        "enemy"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 10000,
+            "atk": 100,
+            "def": 0,
+            "mres": 0,
+            "attack_interval": 1,
+            "attack_speed_ratio": 1,
+            "move_speed": 1,
+            "block_count": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 10000,
+            "capacity": 10000,
+            "role": "health"
+          },
+          "sp": {
+            "initial": 0,
+            "capacity": 100,
+            "recovery_rate": 1,
+            "recovery_freeze_rule": "rule/ch6/cold/frozen_recovery"
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "side": 1,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 1,
+          "abnormal_immunes": [
+            16
+          ]
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "abilities": [
+          "ability/ch6/cold/apply5",
+          "ability/ch6/cold/apply10",
+          "ability/test/cold/hit"
+        ],
+        "buffs": {
+          "initial": [
+            "buff/ch6/cold/frozen_atkscale2.5"
+          ]
+        }
+      }
+    },
+    {
+      "id": "unit/test/cold/caster2",
+      "kind": "entity",
+      "tags": [
+        "enemy"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 10000,
+            "atk": 100,
+            "def": 0,
+            "mres": 0,
+            "attack_interval": 1,
+            "attack_speed_ratio": 1,
+            "move_speed": 1,
+            "block_count": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 10000,
+            "capacity": 10000,
+            "role": "health"
+          },
+          "sp": {
+            "initial": 0,
+            "capacity": 100,
+            "recovery_rate": 1,
+            "recovery_freeze_rule": "rule/ch6/cold/frozen_recovery"
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "side": 1,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 1,
+          "abnormal_immunes": [
+            16
+          ]
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "abilities": [
+          "ability/ch6/cold/apply5",
+          "ability/ch6/cold/apply10",
+          "ability/test/cold/hit"
+        ],
+        "buffs": {}
+      }
+    },
+    {
+      "id": "unit/test/cold/target",
+      "kind": "entity",
+      "tags": [
+        "player",
+        "cold_receiver"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 10000,
+            "atk": 100,
+            "def": 20,
+            "mres": 0,
+            "attack_interval": 1,
+            "attack_speed_ratio": 1,
+            "move_speed": 1,
+            "block_count": 0,
+            "one_minus_status_resistance": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 10000,
+            "capacity": 10000,
+            "role": "health"
+          },
+          "sp": {
+            "initial": 0,
+            "capacity": 100,
+            "recovery_rate": 1,
+            "recovery_freeze_rule": "rule/ch6/cold/frozen_recovery"
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "side": 0,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 1,
+          "abnormal_immunes": [
+            16
+          ]
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "abilities": [],
+        "buffs": {}
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/ch6/cold/author",
+    "ruleset": "ruleset/ark_standard",
+    "objectives": {},
+    "map": {
+      "rows": 1,
+      "cols": 10
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/test/cold/caster",
+        "instanceAlias": "caster",
+        "position": {
+          "row": 0,
+          "col": 0
+        }
+      },
+      {
+        "definition": "unit/test/cold/caster2",
+        "instanceAlias": "caster2",
+        "position": {
+          "row": 0,
+          "col": 1
+        }
+      },
+      {
+        "definition": "unit/test/cold/target",
+        "instanceAlias": "target",
+        "position": {
+          "row": 0,
+          "col": 2
+        }
+      }
+    ],
+    "scheduledEffects": []
+  }
+}

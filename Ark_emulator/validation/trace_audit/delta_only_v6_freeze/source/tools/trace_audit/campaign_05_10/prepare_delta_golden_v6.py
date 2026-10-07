@@ -1,0 +1,16 @@
+"""Extract real before/body/bounds/delta/after inputs, source-byte locked."""
+import ast,hashlib,json
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[3];OUT=ROOT/'validation/trace_audit/delta_only_v6';CAND=ROOT.parent/'unpack_work/campaign_chapter05_complete_v3_candidate'
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def digest(v):return hashlib.sha256(json.dumps(v,ensure_ascii=False,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
+def main():
+ original=Path('E:/ArkSimEvidence/campaign/05_10_8fa4e36752e92f7d/public_v1.original.json');r=json.loads(original.read_bytes());assert sha(original)=='6d0aead84e36a78fefb6672419a07138a66e67faa002cb63d7409755ac754b70';ids={288586,293316,293332,293333,293334};records=[]
+ with Path(r['journal']['path']).open(encoding='utf8') as f:
+  for line in f:
+   e=json.loads(line)
+   if e['id'] in ids:records.append(e)
+   if e['id']>max(ids):break
+ assert {e['id'] for e in records}==ids;OUT.mkdir(parents=True,exist_ok=True);golden=OUT/'actual_five_events.jsonl';assert not golden.exists();golden.write_text(''.join(json.dumps(e,separators=(',',':'),ensure_ascii=False)+'\n' for e in records),encoding='utf8',newline='')
+ std=CAND/'ark_sim/content/presets/ark_standard.json';contracts=CAND/'ark_sim/rules/contracts.json';providers=CAND/'ark_sim/presets/providers.py';source=providers.read_text(encoding='utf8');node=next(n for n in ast.parse(source).body if isinstance(n,ast.FunctionDef) and n.name=='lifecycle');code=''.join(source.splitlines(keepends=True)[node.lineno-1:node.end_lineno]);definition=next(d for d in json.loads(std.read_bytes())['rules'] if d['id']=='rule/ark_lifecycle_death');contract=next(c for c in json.loads(contracts.read_bytes())['contracts'] if c['id']=='lifecycle.death');provider={'name':'ark.lifecycle.standard','module':'ark_sim.presets.providers','qualname':'lifecycle','version':'ark-preset/1','source_sha256':hashlib.sha256(code.encode()).hexdigest(),'descriptor':{}};fingerprint=digest({'runtime_version':1,'definition':definition,'contract':contract,'numeric':{'backend':'float','rounding':'half_even'},'provider':provider,'dependencies':{}});post=next(e for e in records if e['id']==293334)['payload']['trace'];assert fingerprint==post['rule_fingerprint'] and provider==post['provider'];pins={'schema':'ark-sim/resource-delta-input-witness/v6','parent_oracle_pins_sha':sha(ROOT/'validation/trace_audit/simple_formulas_v5/oracle_pins.json'),'post_input_witness':{'rule_id':definition['id'],'rule_fingerprint':fingerprint,'contract':'lifecycle.death','contract_owner':'target','parameters':definition['parameters'],'provider':provider,'classification':'Source input/resources identity witness only; lifecycle output algorithm remains pending. raw/value/stage consistency required; not a lifecycle oracle.'},'rule_runtime_fingerprint':post['runtime_fingerprint'],'source_locks':{str(p):sha(p) for p in (std,contracts,providers,original,Path(__file__))},'full_original_journal_reference':r['journal'],'golden_sha':sha(golden)};out=OUT/'input_witness_pins.json';assert not out.exists();out.write_text(json.dumps(pins,indent=2)+'\n',encoding='utf8',newline='');print(json.dumps({'golden_sha':sha(golden),'pins_sha':sha(out),'post_fp':fingerprint}))
+if __name__=='__main__':main()

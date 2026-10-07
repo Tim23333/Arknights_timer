@@ -427,8 +427,8 @@ def probe_engines(reader, status=lambda m: None):
 #     Random(mscorlib) -> _seedArray@0x18, _inext@0x10           (Knuth)
 #     CompatilizedRandom -> original@0x20 -> MersenneTwister(mt@0x10, mti@0x18)
 #
-# 已联网证实战斗 RNG 即 System.Random (mono mscorlib, Knuth 减法门),
-# 判定方式为 NextDouble() < 阈值 (prts.wiki 代理学 + 贴吧逆向帖)。
+# 历史项目观测说明支持 Knuth 状态路径；这不是每个部署/调用的算法证明。
+# 当前dump包含IBattleRandom与包装层，正文/种子构造/具体操作转换仍待核实。
 
 KLASS_NAME = 0x10
 KLASS_NAMESPAZE = 0x18
@@ -442,7 +442,7 @@ RANDOM_OBJ_LAYOUTS = {
     "Random": ("knuth", 0x10, 0x18),
 }
 # 透明包装 klass 名 -> 内部 Random 对象字段偏移 (新版战斗随机外层,
-# dump.cs 旧版无此类: s_randomImp 声明为 Random, 现网实际指向包装)
+# 当前本地dump已声明IBattleRandom及BattleRandomWrapper.m_random)
 WRAPPER_LAYOUTS = {
     "BattleRandomWrapper": 0x10,
 }

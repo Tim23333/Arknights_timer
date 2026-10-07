@@ -1,0 +1,319 @@
+{
+  "input": {
+    "manifest": {
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/parent",
+        "kind": "entity",
+        "tags": [
+          "emitter"
+        ],
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "def": 10
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100
+            }
+          },
+          "buffs": {
+            "initial": []
+          },
+          "abilities": [
+            "ability/enable"
+          ]
+        }
+      },
+      {
+        "id": "unit/a",
+        "kind": "entity",
+        "tags": [
+          "member"
+        ],
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "def": 10
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100
+            }
+          },
+          "buffs": {
+            "initial": []
+          },
+          "abilities": [
+            "ability/leave"
+          ]
+        }
+      },
+      {
+        "id": "unit/b",
+        "kind": "entity",
+        "tags": [
+          "member"
+        ],
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "def": 10
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100
+            }
+          },
+          "buffs": {
+            "initial": []
+          }
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/parent",
+        "kind": "buff",
+        "aura": {
+          "selector": "selector/members",
+          "buff": "buff/child"
+        }
+      },
+      {
+        "id": "buff/child",
+        "kind": "buff",
+        "stacking": {
+          "mode": "independent"
+        },
+        "modifiers": [
+          {
+            "attribute": "def",
+            "layer": "flat",
+            "value": 5
+          }
+        ],
+        "effects": [
+          {
+            "op": "move",
+            "target": "source",
+            "offset": {
+              "row": 0,
+              "col": 1
+            }
+          }
+        ]
+      }
+    ],
+    "selectors": [
+      {
+        "id": "selector/members",
+        "kind": "selector",
+        "region": {
+          "type": "circle",
+          "radius": 2
+        },
+        "filters": [
+          {
+            "tag": "member"
+          },
+          {
+            "state": "alive"
+          }
+        ],
+        "provider": "peer.alternating"
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/leave",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "move",
+              "target": "source",
+              "position": {
+                "row": 0,
+                "col": 3
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/enable",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": "source",
+              "buff": "buff/parent"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/remove",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 10
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/parent",
+          "instanceAlias": "parent",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/a",
+          "instanceAlias": "a",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        },
+        {
+          "definition": "unit/b",
+          "instanceAlias": "b",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        }
+      ]
+    }
+  },
+  "positional_options": [],
+  "keyword_options": {
+    "ruleset": {
+      "id": "ruleset/budget",
+      "kind": "ruleset",
+      "version": "1.0.0",
+      "quantum": 0.03333333333333333,
+      "numeric_profile": {
+        "backend": "float",
+        "rounding": "half_even"
+      },
+      "system_order": [
+        "commands",
+        "resources",
+        "behavior",
+        "abilities",
+        "movement",
+        "lifecycle"
+      ],
+      "attribute_layers": [
+        "flat",
+        "direct_ratio",
+        "final_ratio"
+      ],
+      "bindings": {
+        "time.quantize": "rule/ark_time_quantize",
+        "time.interval": "rule/ark_attack_interval",
+        "attributes.effective": "rule/ark_attribute_layers",
+        "attributes.modifier_layer": "rule/ark_modifier_layer",
+        "attributes.growth": "rule/ark_growth",
+        "damage.base": "rule/ark_basic_power",
+        "damage.mitigation": "rule/ark_standard_mitigation",
+        "healing.base": "rule/ark_healing_power",
+        "resource.capacity": "rule/ark_resource_capacity",
+        "resource.recovery": "rule/ark_resource_recovery",
+        "resource.cost": "rule/ark_resource_cost",
+        "resource.bounds": "rule/ark_resource_bounds",
+        "deploy.cost": "rule/ark_deploy_cost",
+        "deploy.refund": "rule/ark_deploy_refund",
+        "deploy.cooldown": "rule/ark_deploy_cooldown",
+        "deploy.capacity": "rule/ark_deploy_capacity",
+        "deploy.eligibility": "rule/ark_deploy_eligibility",
+        "ability.windup": "rule/ark_ability_windup",
+        "ability.recovery": "rule/ark_ability_recovery",
+        "ability.duration": "rule/ark_ability_duration",
+        "ability.repeat": "rule/ark_ability_repeat",
+        "buff.duration": "rule/ark_buff_duration",
+        "buff.interval": "rule/ark_buff_interval",
+        "buff.stack_amount": "rule/ark_buff_stack_amount",
+        "movement.speed": "rule/ark_movement_speed",
+        "movement.distance": "rule/ark_movement_distance",
+        "projectile.speed": "rule/ark_projectile_speed",
+        "projectile.flight_time": "rule/ark_projectile_flight",
+        "lifecycle.leak_loss": "rule/ark_leak_loss",
+        "lifecycle.result": "rule/ark_battle_result",
+        "lifecycle.death": "rule/ark_lifecycle_death",
+        "targeting.score": "rule/ark_targeting_score",
+        "blocking.capacity": "rule/ark_block_capacity",
+        "blocking.occupancy": "rule/ark_block_occupancy",
+        "damage.pipeline": "rule/ark_damage_pipeline",
+        "movement.path": "rule/ark_movement_path",
+        "blocking.eligibility": "rule/ark_block_eligibility",
+        "targeting.selection": "rule/ark_targeting_selection",
+        "random.check": "rule/ark_random_check",
+        "resource.capacity_change": "rule/ark_capacity_change",
+        "movement.wait_deadline": "rule/ark_wait_deadline",
+        "terrain.tile_options": "rule/ark_terrain_tile_options",
+        "selector.eligibility": "rule/ark_selector_pure_eligibility"
+      },
+      "parameters": {
+        "health_resource": "hp",
+        "deployment_resource": "dp",
+        "attribute_roles": {
+          "attack": "atk",
+          "defense": "def",
+          "resistance": "mres",
+          "attack_interval": "attack_interval",
+          "speed_ratio": "attack_speed_ratio",
+          "movement_speed": "move_speed",
+          "block_capacity": "block_count",
+          "block_occupancy": "block_cost",
+          "deploy_cost": "deploy_cost",
+          "redeploy_time": "redeploy_time"
+        },
+        "attribute_defaults": {
+          "mres": 0,
+          "attack_speed_ratio": 1,
+          "move_speed": 0,
+          "block_count": 0,
+          "block_cost": 1,
+          "deploy_cost": 0,
+          "redeploy_time": 0
+        },
+        "layer_operations": {
+          "flat": "add",
+          "direct_ratio": "ratio_sum",
+          "final_ratio": "ratio_product",
+          "final_add": "add",
+          "final_mul": "factor_product"
+        }
+      },
+      "reaction_budget": 2
+    }
+  }
+}

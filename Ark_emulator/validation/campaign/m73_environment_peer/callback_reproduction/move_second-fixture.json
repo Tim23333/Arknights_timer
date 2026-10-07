@@ -1,0 +1,297 @@
+{
+  "manifest": {
+    "requires": [
+      "preset/ark_standard"
+    ]
+  },
+  "rules": [
+    {
+      "id": "rule/peer_clock",
+      "kind": "rule",
+      "contract": "field.trigger",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.field.uniform_trigger"
+      },
+      "parameters": {
+        "minimum_key": "low",
+        "maximum_key": "high"
+      }
+    },
+    {
+      "id": "rule/peer_members",
+      "kind": "rule",
+      "contract": "field.members",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.field.cell_combat_members"
+      },
+      "parameters": {
+        "side_mask": 3,
+        "motion_mask": 1,
+        "category_mask": 1,
+        "extra_offsets": [
+          [
+            0,
+            1
+          ]
+        ],
+        "combat_policy": "blocked_or_attacking",
+        "exclude_flags": [
+          9,
+          17
+        ],
+        "respect_target_free": true
+      }
+    },
+    {
+      "id": "rule/peer_fixed",
+      "kind": "rule",
+      "contract": "damage.pipeline",
+      "implementation": {
+        "type": "graph",
+        "nodes": [
+          {
+            "id": "settle",
+            "expression": "{'accepted':True,'amount':inputs.effect.fixed_amount,'allocations':[],'events':[]}"
+          }
+        ],
+        "output": "nodes.settle"
+      }
+    }
+  ],
+  "entities": [
+    {
+      "id": "unit/first",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "selection_state": {
+          "side": 0,
+          "motion": 1,
+          "category": 1
+        },
+        "spatial": {},
+        "attributes": {
+          "base": {
+            "max_hp": 2000,
+            "atk": 0,
+            "def": 99999,
+            "mres": 99
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 2000,
+            "capacity": 2000,
+            "role": "health"
+          }
+        },
+        "abilities": [],
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    },
+    {
+      "id": "unit/second",
+      "kind": "entity",
+      "tags": [
+        "enemy"
+      ],
+      "components": {
+        "selection_state": {
+          "side": 1,
+          "motion": 1,
+          "category": 1
+        },
+        "spatial": {},
+        "attributes": {
+          "base": {
+            "max_hp": 2000,
+            "atk": 0,
+            "def": 99999,
+            "mres": 99
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 2000,
+            "capacity": 2000,
+            "role": "health"
+          }
+        },
+        "abilities": [],
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    },
+    {
+      "id": "unit/observer",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "selection_state": {
+          "side": 0,
+          "motion": 1,
+          "category": 1
+        },
+        "spatial": {},
+        "attributes": {
+          "base": {
+            "max_hp": 2000,
+            "atk": 0,
+            "def": 99999,
+            "mres": 99
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 2000,
+            "capacity": 2000,
+            "role": "health"
+          }
+        },
+        "abilities": [
+          "ability/peer_callback"
+        ],
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/peer_fields",
+    "ruleset": "ruleset/ark_standard",
+    "objectives": {},
+    "initialEntities": [
+      {
+        "definition": "unit/first",
+        "instanceAlias": "first",
+        "position": {
+          "row": 0,
+          "col": 0
+        }
+      },
+      {
+        "definition": "unit/second",
+        "instanceAlias": "second",
+        "position": {
+          "row": 0,
+          "col": 0
+        }
+      },
+      {
+        "definition": "unit/observer",
+        "instanceAlias": "observer",
+        "position": {
+          "row": 0,
+          "col": 1
+        }
+      }
+    ],
+    "map": {
+      "rows": 1,
+      "cols": 2,
+      "tiles": [
+        {
+          "tileKey": "peer_field",
+          "passableMask": 3,
+          "buildableType": 1,
+          "blackboard": {
+            "damage": 700.0,
+            "low": 0.5,
+            "high": 0.5
+          }
+        },
+        {
+          "passableMask": 3,
+          "buildableType": 1
+        }
+      ],
+      "tile_mechanics": {
+        "peer_field": {
+          "type": "periodic_effect_field",
+          "origin": {
+            "rule": "raw field rule",
+            "provider": "raw field provider",
+            "condition": "raw field ["
+          },
+          "expected_blackboard": {
+            "damage": 700.0,
+            "low": 0.5,
+            "high": 0.5
+          },
+          "effects": [
+            {
+              "op": "no_source_damage",
+              "fixed_amount": 700.0,
+              "damage_type": "true",
+              "attack_type": "NONE",
+              "damage_without_modify": false,
+              "ignore_for_sp": false,
+              "node_is_env_damage": false,
+              "env_blackboard_injected": true,
+              "environmental": true,
+              "origin": {
+                "kind": "CastTile",
+                "condition": "raw origin [",
+                "provider": "opaque source provider",
+                "rule": "opaque origin rule"
+              },
+              "rules": {
+                "damage.pipeline": "rule/peer_fixed"
+              }
+            }
+          ],
+          "trigger": {
+            "rule": "rule/peer_clock",
+            "stream": "peer_field",
+            "sample_count": 1,
+            "parameters": {},
+            "initial": {
+              "mode": "fixed",
+              "seconds": 0.1
+            }
+          },
+          "membership": {
+            "rule": "rule/peer_members",
+            "parameters": {}
+          }
+        }
+      }
+    }
+  },
+  "abilities": [
+    {
+      "id": "ability/peer_callback",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual"
+      },
+      "timeline": [],
+      "events": [
+        {
+          "event": "damage.accepted",
+          "condition": "inputs.payload.target == 2",
+          "effects": [
+            {
+              "op": "move",
+              "target": 3,
+              "position": {
+                "row": 0,
+                "col": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

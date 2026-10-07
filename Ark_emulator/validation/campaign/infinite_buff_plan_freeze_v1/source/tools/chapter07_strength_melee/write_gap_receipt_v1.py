@@ -1,0 +1,12 @@
+"""Persist actual source infinity incompatibility, not a passed consumer claim."""
+import hashlib,json
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2];OUT=ROOT/'validation/campaign/chapter07_strength_melee_gap_v1'
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def main():
+ source=ROOT/'packages/campaign/chapter07_consumption_plan/source.consumption.plan.json';d=json.loads(source.read_bytes());log=ROOT/'validation/campaign/chapter07_strength_melee_author_v1.log';text=log.read_text(encoding='utf8');assert '3 failed, 3 passed' in text and 'Finite nonnegative application duration required' in text;rows=[]
+ for r in d['exact12_variants']:
+  if not any(n in r['variant_id'] for n in ('sotisc@','sotiab@','sotiab_2@')):continue
+  docs=r['literal_BSON_templates'];start=next(v for k,v in docs.items() if 'start_listener' in k);actions=start['parsed']['eventToActions']['ON_BUFF_TRIGGER'];create=next(a for a in actions if a['$type'].split('+')[1].startswith('CreateBuff,'));assert create['_buff']['lifeTimeType']=='INFINITY' and not create['_finishDerivedBuffIfParentFinish'];rows.append({'variant':r['variant_id'],'BSON_document_sha':start['document_sha256'],'source_create':create,'listener_interval_raw':[b['raw']['triggerInterval'] for b in r['inline_Buff_records'] if 'listener' in b['raw'].get('buffKey','')]})
+ paths=[source,log,Path(__file__),ROOT/'tools/chapter07_strength_melee/test_source_v1.py',ROOT.parent/'unpack_work/campaign_chapter06_complete_base_v5_candidate/ark_sim/domains/buff_application.py',ROOT.parent/'unpack_work/campaign_chapter06_complete_base_v5_candidate/ark_sim/domains/buffs.py']+list((ROOT/'packages/campaign/chapter07_strength_melee').glob('*.json'));OUT.mkdir(parents=True,exist_ok=True);out=OUT/'receipt.json';assert not out.exists();r={'passed':False,'actual_author_partial':'3 normal attack assertions pass;3 real marker transition assertions fail','source_infinity':rows,'pins':{str(p):sha(p) for p in paths},'gap':'buff.application apply plans demand finite duration_seconds and force duration_override; native INFINITY needs declared permanent application. duration0 is not permanent and cannot replace source.','core_changed':False,'primary_changed':False,'client_verified':False,'whole_stage_executed':False};out.write_text(json.dumps(r,indent=2)+'\n',encoding='utf8',newline='');print(json.dumps({'gap_receipt_sha':sha(out)}))
+if __name__=='__main__':main()

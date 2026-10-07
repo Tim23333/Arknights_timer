@@ -1,0 +1,166 @@
+{
+  "source_input": {
+    "schemaVersion": 2,
+    "rulesets": [
+      {
+        "id": "ruleset/replay_test",
+        "kind": "ruleset",
+        "extends": "ruleset/ark_standard",
+        "quantum": 0.1
+      }
+    ],
+    "selectors": [
+      {
+        "id": "selector/replay_enemy",
+        "kind": "selector",
+        "region": {
+          "type": "all"
+        },
+        "filters": [
+          {
+            "tag": "enemy"
+          },
+          {
+            "state": "alive"
+          }
+        ],
+        "limit": 1
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/replay_burst",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "costs": [
+            {
+              "resource": "energy",
+              "amount": 20
+            }
+          ]
+        },
+        "selector": "selector/replay_enemy",
+        "timeline": [
+          {
+            "at_seconds": 0.2,
+            "repeat": {
+              "count": 3,
+              "interval_seconds": 0.2
+            },
+            "effect": {
+              "op": "damage",
+              "target": "selected",
+              "damage_type": "physical"
+            }
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/replay_guard",
+        "kind": "entity",
+        "tags": [
+          "player"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "atk": 100,
+              "def": 0,
+              "mres": 0,
+              "max_hp": 1000
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity_attribute": "max_hp",
+              "role": "health"
+            },
+            "energy": {
+              "initial": 20,
+              "capacity": 40
+            }
+          },
+          "abilities": [
+            "ability/replay_burst"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/replay_dummy",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "atk": 0,
+              "def": 80,
+              "mres": 0,
+              "max_hp": 10000
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 10000,
+              "capacity_attribute": "max_hp",
+              "role": "health"
+            }
+          },
+          "abilities": [],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scenario/replay_test",
+      "ruleset": "ruleset/replay_test",
+      "map": {
+        "rows": 2,
+        "cols": 3
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/replay_guard",
+          "instanceAlias": "guard",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/replay_dummy",
+          "instanceAlias": "dummy",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ],
+      "rules": {
+        "damage.mitigation": "rule/custom_half"
+      }
+    },
+    "rules": [
+      {
+        "id": "rule/custom_half",
+        "kind": "calculation_rule",
+        "contract": "damage.mitigation",
+        "implementation": {
+          "type": "provider",
+          "provider": "test.custom.half"
+        }
+      }
+    ]
+  },
+  "description": "Actual supplied Compiler input"
+}

@@ -1,0 +1,86 @@
+--- a/ark_sim/domains/projectiles.py
++++ b/ark_sim/domains/projectiles.py
+@@ -5,6 +5,7 @@
+ class ProjectileSystem:
+  def __init__(self,context):
+   self.ctx=context
++  self._inflight_hits={}
+   self.handlers={'domain.projectile.step':self.step,'domain.projectile.expire':self.expire}
+  def _state(self):return self.ctx.get('system/battle',('projectiles',),{'next_id':1,'instances':{}})
+  def _save(self,state):self.ctx.set('system/battle',('projectiles',),state)
+@@ -41,16 +42,36 @@
+   if self.ctx.route_hidden(x['trace_target']) and policies['target_hidden']=='cancel':return 'target_hidden'
+   return None
+  def _target_available(self,x):return self.ctx.alive(x['trace_target']) and self.ctx.selectable(x['trace_target']) and self.ctx.effect_target_available(x['trace_target'])
+- def _hit(self,x,d,target=None):
+-  target=x["trace_target"] if target is None else target
+-  if (d['max_hits'] is not None and x['hit_count']>=d['max_hits']) or (not d['can_hit_same_target'] and target in x['hit_targets']):return False
+-  if (not self.ctx.alive(target) or not self.ctx.selectable(target) or not self.ctx.effect_target_available(target)) and x['effect']['op']!='area':return False
+-  effect=thaw(x['effect'])
+-  if effect['op']=='area':effect['center_position']={k:x['position'][k] for k in ('row','col')}
+-  self.ctx.effects.execute(x['source'],[target],effect,x['ability'],x['cast'],x['cause'])
+-  x['hit_targets'].append(target);x['hit_count']+=1;self._put(x)
+-  self.ctx.emit('projectile.hit',{'projectile':x['id'],'source':x['source'],'target':target,'position':x['position'],'hit_count':x['hit_count']})
+-  return True
++ def _quota_exhausted(self,x,d,reserved=0):
++  count=x['hit_count']+reserved
++  return (d['stop_after_first'] and count>=1) or (d['max_hits'] is not None and count>=d['max_hits'])
++ def _hit(self,x,d,target=None,finish_reason='max_hit'):
++  target=x['trace_target'] if target is None else target
++  latest=self._get(x['id'])
++  if not latest or latest['state']!='active':return False
++  reservations=self._inflight_hits.get(x['id'],[])
++  if self._quota_exhausted(latest,d,len(reservations)) or (not d['can_hit_same_target'] and (target in latest['hit_targets'] or target in reservations)):return False
++  if (not self.ctx.alive(target) or not self.ctx.selectable(target) or not self.ctx.effect_target_available(target)) and latest['effect']['op']!='area':return False
++  # Reserve only call-stack quota. Packet input snapshots and public count retain
++  # their former ordering; a failed outer atomic operation rolls back all writes.
++  self._inflight_hits.setdefault(x['id'],[]).append(target)
++  try:
++   effect=thaw(latest['effect'])
++   if effect['op']=='area':effect['center_position']={k:latest['position'][k] for k in ('row','col')}
++   self.ctx.effects.execute(latest['source'],[target],effect,latest['ability'],latest['cast'],latest['cause'])
++   current=self._get(x['id'])
++   if current is None:
++    # An external lifecycle may remove an instance. Never recreate it from a
++    # captured local record, even though this packet already dispatched.
++    x['state']='invalid';return True
++   current['hit_targets'].append(target);current['hit_count']+=1;self._put(current)
++   x.clear();x.update(current)
++   self.ctx.emit('projectile.hit',{'projectile':x['id'],'source':x['source'],'target':target,'position':x['position'],'hit_count':x['hit_count']})
++   if x['state']=='active' and (d['stop_after_first'] or (d['stop_after_max'] and d['max_hits'] is not None and x['hit_count']>=d['max_hits'])):self._finish(x,finish_reason)
++   return True
++  finally:
++   pending=self._inflight_hits[x['id']];pending.remove(target)
++   if not pending:del self._inflight_hits[x['id']]
+  def _finish(self,x,reason,callbacks=True):
+   if not x or x['state']!='active':return
+   d=self._definition(x);x['state']='invalid';x['reason']=reason;self._put(x)
+@@ -86,12 +107,15 @@
+    hits=[self.ctx.session.world.resolve(ref) for ref in result['hits']]
+    if not collision.get('allow_other_targets',False) and any(ref!=x['trace_target'] for ref in hits):raise ValueError('collision profile hit outside captured trace target')
+    for hit in hits:
+-    if self._hit(x,d,hit) and d['stop_after_first']:break
++    self._hit(x,d,hit,finish_reason=('terrain_collision' if result['terrain_hit'] else 'collision_stop') if result['stop'] else 'max_hit')
++    if x['state']!='active':return
+    if result['stop']:self._finish(x,'terrain_collision' if result['terrain_hit'] else 'collision_stop');return
+    if x['hit_count'] and (d['stop_after_first'] or (d['stop_after_max'] and d['max_hits'] is not None and x['hit_count']>=d['max_hits'])):self._finish(x,'max_hit');return
+    if plan['reached']:
+     self.ctx.emit('projectile.reached',{'projectile':x['id'],'position':x['position']})
+-    if d['lifecycle']['hit_on_reach']:self._hit(x,d)
++    if d['lifecycle']['hit_on_reach']:
++     self._hit(x,d)
++     if x['state']!='active':return
+     if d['lifecycle']['finish_on_reach']:self._finish(x,'reached');return
+    self._schedule_step(x,session.time+1);self._put(x)
+  def expire(self,session,payload):
+@@ -107,7 +131,9 @@
+     # Follow/fixed placement at expiry is evaluated by the same pure motion.
+     motion=d['motion'];plan=self.ctx.calc('projectile.trajectory',{'source':self.ctx.entity(x['source']),'target':self.ctx.entity(x['trace_target']),'positions':[{'position':x['position'],'start':x['start'],'last_target':x['last_target'],'motion_state':x['motion_state']}],'trajectory_parameters':{**thaw(motion.get('parameters',{})),'age_seconds':(session.time-x['born'])*session.quantum,'delta_seconds':0,'lifetime_seconds':d['lifetime_seconds']}},source=x['source'],target=x['trace_target'],rule_id=motion['rule']);self._valid_position(plan['position']);x['position']=plan['position']
+    if d['lifecycle']['force_reach_on_expire']:self.ctx.emit('projectile.reached',{'projectile':x['id'],'position':x['position'],'expiry':True})
+-   if d['lifecycle']['hit_on_expire']:self._hit(x,d)
++   if d['lifecycle']['hit_on_expire']:
++    self._hit(x,d,finish_reason='expired')
++    if x['state']!='active':return
+    self._finish(x,'expired')
+  def tick(self,session):
+   if not self.ctx.state().get('finished'):return

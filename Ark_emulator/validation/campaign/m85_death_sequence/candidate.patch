@@ -1,0 +1,25 @@
+--- a/ark_sim\domains\death_projectiles.py
++++ b/ark_sim\domains\death_projectiles.py
+@@ -16,13 +16,22 @@
+ 
+ 
+ def emit(ctx,ref):
++    # Optional actual death epoch supports future rebirth integration without
++    # inventing a generation on legacy actors. Identity is the canonical ref.
++    ref=ctx.session.world.resolve(ref)
++    generation=ctx.get(ref,('runtime','death_generation'))
++    def current():
++        return (ctx.active(ref) and not ctx.state().get('finished',False)
++            and ctx.get(ref,('runtime','death_generation'))==generation)
+     for spec in ctx.get(ref,('lifecycle','death_projectiles'),[]):
++        if not current():return
+         validate(spec)
+         state=ctx.spatial.selection_state(ref,DEFAULT_STATE)
+         accepted=ctx.calc('lifecycle.death_emission',{'entity':ctx.entity(ref),'selection_state':state,
+             'parameters':spec['parameters'],'clock':{'time':ctx.session.time,'quantum':ctx.session.quantum}},
+             source=ref,owner=ref,rule_id=spec['rule'])
+         if type(accepted) is not bool:raise ValueError('death emission decision must be strict boolean')
++        if not current():return
+         if not accepted:
+             ctx.emit('death_projectile.rejected',{'source':ref,'projectile_definition':spec['projectile_definition']})
+             continue

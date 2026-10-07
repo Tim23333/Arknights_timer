@@ -1,0 +1,1068 @@
+{
+  "schema": "ark-sim/bounded-device-category-peer/v1",
+  "passed": true,
+  "implementation_sha256": "f98a638812a18a01d10505dadd48b01de410ac27e992230881bc01c4f9a993b9",
+  "runtime_module": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m15_category_candidate\\ark_sim\\__init__.py",
+  "input_package_sha256": "79ed4124a4dec23f199fd9edf83e6c473a166a803dd973fb02f4560a9841b24d",
+  "expected_target_ids": [
+    3,
+    4
+  ],
+  "actual_target_ids": [
+    3,
+    4
+  ],
+  "fixture_package": {
+    "schemaVersion": 2,
+    "status": "partial_device_model_tile_overlay_not_implemented",
+    "manifest": {
+      "id": "package/chapter01/emp_slice",
+      "version": "0.1",
+      "requires": [
+        "preset/ark_standard"
+      ],
+      "metadata": {
+        "native_id": "trap_002_emp",
+        "source_sha256": "a242f94040c7f96d175056e6ceffa285ea10f60bec00db1ab7f354fe0739b0cd",
+        "builder_sha256": "46cf6046a7ffa4654cea6abe01334161287ba6141f8ad0ad12705f119c0fd315",
+        "source_range_sha256": "a98344d688a8933c4dd7ddaae3cb76c4347295359a18b60b918042cc2542d9d9",
+        "client_pending": [
+          "CastSkillWithCost finish-clock/callback and category filters",
+          "native token2025/local2026 correspondence"
+        ],
+        "model_gaps": [
+          "MapDependentTrap/TrapMode live tile buildability/passability/height overlay and ownership cleanup"
+        ],
+        "formal_approval": false,
+        "category_profile": {
+          "source_target_category_mask": 1,
+          "entity_category_declaration": {
+            "NONE": 0,
+            "DEFAULT": 1,
+            "TRAP_OR_ITEM": 2,
+            "OBSTACLE": 4
+          },
+          "ordinary_entity_missing_category_default": 1,
+          "mask_test": "integer category & source mask !=0",
+          "bool_float_or_unknown_string_not_coerced": true,
+          "source_slice_sha256": "98f668b2f130a4e47e27151d92cbf3d1ad59789e147ec4adc80a98a14679e854",
+          "builder_sha256": "60169040880c6bc106277a300231b76e796db63560c018741ade8fb91b03a981",
+          "stage_import_must_preserve_native_category": true
+        }
+      }
+    },
+    "entities": [
+      {
+        "id": "unit/chapter01_emp",
+        "kind": "entity",
+        "tags": [
+          "ally",
+          "device",
+          "profession:TRAP"
+        ],
+        "metadata": {
+          "native_id": "trap_002_emp",
+          "config": {
+            "elite_phase": 0,
+            "level": 10,
+            "potential_rank": 0,
+            "favor": 0,
+            "skill_level": 1
+          },
+          "native_category": 2,
+          "native_side": 1,
+          "native_alias": null,
+          "native_tile_fields_preserved": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 4445413079553028494
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 0,
+              "m_PathID": -7340427380943275804
+            },
+            "m_Name": "",
+            "_bodyTransform": {
+              "m_FileID": 0,
+              "m_PathID": -2387472792435757784
+            },
+            "_animatorHooker": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_overrideStartEffect": "",
+            "_combat": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_attack": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_attackTrigger": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_hideUIAttackRange": 0,
+            "_rangeToShow": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_extraRangesToShow": [],
+            "_generalAbilities": [
+              {
+                "m_FileID": 0,
+                "m_PathID": 104816810223951188
+              }
+            ],
+            "_addIndexToSignalId": 0,
+            "_includeIndexZero": 0,
+            "_tileOptions": {
+              "buildableType": 0,
+              "passableMask": 2,
+              "overrideObstacleLikeMoveCost": 1,
+              "advancedBuildMask": 0,
+              "heightType": 0
+            },
+            "_keepCurrentPassableMask": 1,
+            "_rewriteTileHeightType": 0,
+            "_rewriteTileHeight": 1,
+            "_rewriteHeight": 0.4000000059604645,
+            "_rewriteTileAdvancedBuildMask": 0
+          }
+        },
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "atk": 1000,
+              "def": 0,
+              "mres": 0,
+              "attack_speed_ratio": 1,
+              "block_count": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100,
+              "role": "health"
+            },
+            "sp": {
+              "initial": 0,
+              "capacity": 5,
+              "recovery_rate": 1,
+              "recovery": {
+                "mode": "periodic",
+                "interval_seconds": 1
+              },
+              "parameters": {
+                "freeze_while_cast": true,
+                "freeze_cast_modes": [
+                  "manual"
+                ],
+                "pause_at_full": true
+              }
+            }
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/chapter01_emp/burst"
+          ],
+          "buffs": {
+            "initial": [
+              "buff/chapter01_emp/invincible"
+            ]
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "deployable": {
+            "policy": "policy/ark_ground_deploy",
+            "base_cost": 5,
+            "capacity": 0,
+            "cooldown_seconds": 5,
+            "terrain": "ground"
+          }
+        }
+      },
+      {
+        "id": "unit/peer_enemy",
+        "kind": "entity",
+        "tags": [
+          "enemy",
+          "ground"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 3000,
+              "atk": 1000,
+              "def": 0,
+              "mres": 20
+            }
+          },
+          "spatial": {},
+          "resources": {
+            "hp": {
+              "initial": 3000,
+              "capacity": 3000,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/peer_enter",
+            "ability/peer_exit",
+            "ability/peer_hit_physical",
+            "ability/peer_hit_arts",
+            "ability/peer_hit_true"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer_explicit_default",
+        "kind": "entity",
+        "tags": [
+          "enemy",
+          "ground"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 3000,
+              "atk": 1000,
+              "def": 0,
+              "mres": 20
+            }
+          },
+          "spatial": {},
+          "resources": {
+            "hp": {
+              "initial": 3000,
+              "capacity": 3000,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/peer_enter",
+            "ability/peer_exit",
+            "ability/peer_hit_physical",
+            "ability/peer_hit_arts",
+            "ability/peer_hit_true"
+          ]
+        },
+        "metadata": {
+          "native_category": 1
+        }
+      },
+      {
+        "id": "unit/peer_enemy_device",
+        "kind": "entity",
+        "tags": [
+          "enemy",
+          "ground",
+          "device"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 3000,
+              "atk": 1000,
+              "def": 0,
+              "mres": 20
+            }
+          },
+          "spatial": {},
+          "resources": {
+            "hp": {
+              "initial": 3000,
+              "capacity": 3000,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/peer_enter",
+            "ability/peer_exit",
+            "ability/peer_hit_physical",
+            "ability/peer_hit_arts",
+            "ability/peer_hit_true"
+          ]
+        },
+        "metadata": {
+          "native_category": 2
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/chapter01_emp/burst",
+        "kind": "ability",
+        "duration_seconds": 1.5,
+        "activation": {
+          "mode": "manual",
+          "costs": [
+            {
+              "resource": "sp",
+              "amount": 5
+            },
+            {
+              "resource": "dp",
+              "amount": 10,
+              "owner": "battle"
+            }
+          ],
+          "parameters": {
+            "allow_no_targets": true
+          }
+        },
+        "timeline": [
+          {
+            "at_seconds": 0.75,
+            "effect": {
+              "op": "damage",
+              "selector": "selector/chapter01_emp/enemies",
+              "damage_type": "arts",
+              "scale": 1,
+              "on_success": [
+                {
+                  "op": "apply_buff",
+                  "buff": "buff/chapter01_emp/stun"
+                }
+              ]
+            }
+          }
+        ],
+        "events": [
+          {
+            "event": "ability.finished",
+            "condition": "inputs.payload.source == context.owner.id and inputs.payload.ability == 'ability/chapter01_emp/burst'",
+            "effects": [
+              {
+                "op": "retire",
+                "target": "source",
+                "parameters": {
+                  "reason": "dead"
+                }
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "native_skill_id": "sktok_emp",
+          "clock_profile": "specified .75s packet/1.5s cast-end model; callback timing client_pending",
+          "target_profile": "resample before spell at packet .75s; all living ground enemies in grid x-4; noTarget cast allowed by root"
+        }
+      },
+      {
+        "id": "ability/peer_enter",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 0,
+            "effect": {
+              "op": "move",
+              "target": "source",
+              "position": {
+                "row": 4,
+                "col": 5
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer_exit",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 0,
+            "effect": {
+              "op": "move",
+              "target": "source",
+              "position": {
+                "row": 5,
+                "col": 7
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer_hit_physical",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "selector": "selector/peer_device",
+        "timeline": [
+          {
+            "at": 0,
+            "effect": {
+              "op": "damage",
+              "damage_type": "physical"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer_hit_arts",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "selector": "selector/peer_device",
+        "timeline": [
+          {
+            "at": 0,
+            "effect": {
+              "op": "damage",
+              "damage_type": "arts"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer_hit_true",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "selector": "selector/peer_device",
+        "timeline": [
+          {
+            "at": 0,
+            "effect": {
+              "op": "damage",
+              "damage_type": "true"
+            }
+          }
+        ]
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/chapter01_emp/invincible",
+        "kind": "buff",
+        "damage_hooks": [
+          {
+            "phase": "after",
+            "rule": "rule/chapter01_emp/invincible"
+          }
+        ]
+      },
+      {
+        "id": "buff/chapter01_emp/stun",
+        "kind": "buff",
+        "duration_seconds": 7,
+        "control": {
+          "attack": false,
+          "move": false,
+          "abilities": false
+        }
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/chapter01_emp/invincible",
+        "kind": "calculation_rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "{'accepted':False,'amount':0,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      }
+    ],
+    "selectors": [
+      {
+        "id": "selector/chapter01_emp/enemies",
+        "kind": "selector",
+        "limit": null,
+        "region": {
+          "type": "grid_offsets",
+          "offsets": [
+            [
+              1,
+              -1
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              -1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              -1,
+              -1
+            ],
+            [
+              -1,
+              0
+            ],
+            [
+              -1,
+              1
+            ]
+          ],
+          "rotate_with_facing": true
+        },
+        "filters": [
+          {
+            "tag": "enemy"
+          },
+          {
+            "tag": "ground"
+          },
+          {
+            "state": "alive"
+          },
+          {
+            "field": {
+              "scope": "definition",
+              "path": [
+                "metadata",
+                "native_category"
+              ],
+              "bits_any": 1,
+              "default": 1
+            }
+          }
+        ]
+      },
+      {
+        "id": "selector/peer_device",
+        "kind": "selector",
+        "region": {
+          "type": "all"
+        },
+        "filters": [
+          {
+            "tag": "device"
+          },
+          {
+            "state": "alive"
+          }
+        ],
+        "limit": 1
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scenario/chapter01_emp_slice",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 8,
+        "cols": 11
+      },
+      "resources": {
+        "dp": {
+          "initial": 50,
+          "capacity": 99
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/chapter01_emp",
+          "position": {
+            "row": 5,
+            "col": 5
+          },
+          "facing": "up",
+          "instanceAlias": "device",
+          "components": {
+            "resources": {
+              "sp": {
+                "initial": 5
+              }
+            }
+          }
+        },
+        {
+          "definition": "unit/peer_enemy",
+          "instanceAlias": "missing",
+          "position": {
+            "row": 4,
+            "col": 4
+          }
+        },
+        {
+          "definition": "unit/peer_explicit_default",
+          "instanceAlias": "default",
+          "position": {
+            "row": 5,
+            "col": 6
+          }
+        },
+        {
+          "definition": "unit/peer_enemy_device",
+          "instanceAlias": "enemy_device",
+          "position": {
+            "row": 4,
+            "col": 5
+          }
+        }
+      ],
+      "waves": [],
+      "objectives": {}
+    }
+  },
+  "actual": {
+    "expected": {
+      "native_targetCategory1_DEFAULT_only": true,
+      "missing_explicit_model_default1": true,
+      "excludeTRAP2": true
+    },
+    "checkpoint_equal": true,
+    "replay_equal": true,
+    "program_fingerprint": "fc17cdb69c145d94eb49d9c7c45419ca64d70c29bd94f9dbf474df094fe06aef",
+    "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+    "fixture_initial_state": {
+      "id": "scenario/chapter01_emp_slice",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 8,
+        "cols": 11
+      },
+      "resources": {
+        "dp": {
+          "initial": 50,
+          "capacity": 99
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/chapter01_emp",
+          "position": {
+            "row": 5,
+            "col": 5
+          },
+          "facing": "up",
+          "instanceAlias": "device",
+          "components": {
+            "resources": {
+              "sp": {
+                "initial": 5
+              }
+            }
+          }
+        },
+        {
+          "definition": "unit/peer_enemy",
+          "instanceAlias": "missing",
+          "position": {
+            "row": 4,
+            "col": 4
+          }
+        },
+        {
+          "definition": "unit/peer_explicit_default",
+          "instanceAlias": "default",
+          "position": {
+            "row": 5,
+            "col": 6
+          }
+        },
+        {
+          "definition": "unit/peer_enemy_device",
+          "instanceAlias": "enemy_device",
+          "position": {
+            "row": 4,
+            "col": 5
+          }
+        }
+      ],
+      "waves": [],
+      "objectives": {},
+      "kind": "scenario"
+    },
+    "commands": {
+      "schema": "ark-sim/replay/v2",
+      "program_fingerprint": "fc17cdb69c145d94eb49d9c7c45419ca64d70c29bd94f9dbf474df094fe06aef",
+      "runtime_fingerprint": "47b058345e622abd16dc78dd8f71f7e5069f007395628608b0f4a7fe778ef865",
+      "seed": 1517,
+      "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+      "until": 26,
+      "commands": [
+        {
+          "order": 1,
+          "submitted_at": 0,
+          "at": 0,
+          "action": {
+            "action": "skill",
+            "source": "device",
+            "ability": "ability/chapter01_emp/burst"
+          }
+        }
+      ]
+    },
+    "state": {
+      "finished": false,
+      "result": "running",
+      "pending_waves": 0,
+      "kills": 0,
+      "leaks": 0,
+      "damage_dealt": 1600.0,
+      "deployments": {},
+      "command_results": {}
+    },
+    "events": [
+      {
+        "id": 9,
+        "type": "resource.changed",
+        "payload": {
+          "source": null,
+          "target": 2,
+          "resource": "hp",
+          "delta": 0,
+          "value": 100
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 19,
+        "type": "resource.changed",
+        "payload": {
+          "source": null,
+          "target": 2,
+          "resource": "sp",
+          "delta": 0,
+          "value": 5
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 74,
+        "type": "buff.applied",
+        "payload": {
+          "source": 2,
+          "target": 2,
+          "buff": "buff/chapter01_emp/invincible",
+          "instance": "buff/2/1",
+          "stacks": 1
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 82,
+        "type": "resource.changed",
+        "payload": {
+          "source": null,
+          "target": 3,
+          "resource": "hp",
+          "delta": 0,
+          "value": 3000
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 96,
+        "type": "resource.changed",
+        "payload": {
+          "source": null,
+          "target": 4,
+          "resource": "hp",
+          "delta": 0,
+          "value": 3000
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 110,
+        "type": "resource.changed",
+        "payload": {
+          "source": null,
+          "target": 5,
+          "resource": "hp",
+          "delta": 0,
+          "value": 3000
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 169,
+        "type": "resource.changed",
+        "payload": {
+          "source": 2,
+          "target": 2,
+          "resource": "sp",
+          "delta": -5,
+          "value": 0,
+          "ability": "ability/chapter01_emp/burst",
+          "cast": "cast/2/1",
+          "reason": "ability_cost"
+        },
+        "time": 0,
+        "cause": 168
+      },
+      {
+        "id": 171,
+        "type": "resource.changed",
+        "payload": {
+          "source": 2,
+          "target": 1,
+          "resource": "dp",
+          "delta": -10,
+          "value": 40,
+          "ability": "ability/chapter01_emp/burst",
+          "cast": "cast/2/1",
+          "reason": "ability_cost"
+        },
+        "time": 0,
+        "cause": 168
+      },
+      {
+        "id": 172,
+        "type": "command.accepted",
+        "payload": {
+          "action": {
+            "action": "skill",
+            "source": "device",
+            "ability": "ability/chapter01_emp/burst"
+          },
+          "result": "cast/2/1"
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 188,
+        "type": "resource.changed",
+        "payload": {
+          "source": 2,
+          "target": 4,
+          "resource": "hp",
+          "delta": -800.0,
+          "value": 2200.0
+        },
+        "time": 23,
+        "cause": null
+      },
+      {
+        "id": 190,
+        "type": "damage.accepted",
+        "payload": {
+          "source": 2,
+          "target": 4,
+          "amount": 800.0,
+          "ability": "ability/chapter01_emp/burst",
+          "resource": "hp"
+        },
+        "time": 23,
+        "cause": null
+      },
+      {
+        "id": 212,
+        "type": "buff.applied",
+        "payload": {
+          "source": 2,
+          "target": 4,
+          "buff": "buff/chapter01_emp/stun",
+          "instance": "buff/4/1",
+          "stacks": 1
+        },
+        "time": 23,
+        "cause": null
+      },
+      {
+        "id": 223,
+        "type": "resource.changed",
+        "payload": {
+          "source": 2,
+          "target": 3,
+          "resource": "hp",
+          "delta": -800.0,
+          "value": 2200.0
+        },
+        "time": 23,
+        "cause": null
+      },
+      {
+        "id": 225,
+        "type": "damage.accepted",
+        "payload": {
+          "source": 2,
+          "target": 3,
+          "amount": 800.0,
+          "ability": "ability/chapter01_emp/burst",
+          "resource": "hp"
+        },
+        "time": 23,
+        "cause": null
+      },
+      {
+        "id": 247,
+        "type": "buff.applied",
+        "payload": {
+          "source": 2,
+          "target": 3,
+          "buff": "buff/chapter01_emp/stun",
+          "instance": "buff/3/1",
+          "stacks": 1
+        },
+        "time": 23,
+        "cause": null
+      }
+    ]
+  },
+  "runtime_enemy_device": {
+    "id": 5,
+    "definition_id": "unit/peer_enemy_device",
+    "tags": [
+      "device",
+      "enemy",
+      "ground"
+    ],
+    "components": {
+      "attributes": {
+        "base": {
+          "max_hp": 3000,
+          "atk": 1000,
+          "def": 0,
+          "mres": 20
+        },
+        "modifiers": []
+      },
+      "spatial": {
+        "position": {
+          "row": 4,
+          "col": 5
+        },
+        "facing": "right"
+      },
+      "resources": {
+        "hp": {
+          "current": 3000,
+          "spec": {
+            "initial": 3000,
+            "capacity": 3000,
+            "role": "health"
+          },
+          "observed_capacity": 3000,
+          "capacity_signature": "d06f9830a4ffe20587af13e6a30de64f14d83b2954af960ec5f5421154178f67"
+        }
+      },
+      "lifecycle": {
+        "policy": "policy/ark_lifecycle"
+      },
+      "abilities": [
+        "ability/peer_enter",
+        "ability/peer_exit",
+        "ability/peer_hit_physical",
+        "ability/peer_hit_arts",
+        "ability/peer_hit_true"
+      ],
+      "runtime": {
+        "alive": true,
+        "state": "alive",
+        "deployed": false,
+        "initializing": false,
+        "casts": {},
+        "cooldowns": {},
+        "next_attack": 0,
+        "blocked_by": null,
+        "rule_bindings": {}
+      },
+      "buffs": {
+        "instances": [],
+        "next_instance_id": 1
+      }
+    },
+    "version": 5
+  },
+  "definition_enemy_device": {
+    "id": "unit/peer_enemy_device",
+    "kind": "entity",
+    "tags": [
+      "enemy",
+      "ground",
+      "device"
+    ],
+    "components": {
+      "attributes": {
+        "base": {
+          "max_hp": 3000,
+          "atk": 1000,
+          "def": 0,
+          "mres": 20
+        }
+      },
+      "spatial": {},
+      "resources": {
+        "hp": {
+          "initial": 3000,
+          "capacity": 3000,
+          "role": "health"
+        }
+      },
+      "lifecycle": {
+        "policy": "policy/ark_lifecycle"
+      },
+      "abilities": [
+        "ability/peer_enter",
+        "ability/peer_exit",
+        "ability/peer_hit_physical",
+        "ability/peer_hit_arts",
+        "ability/peer_hit_true"
+      ]
+    },
+    "metadata": {
+      "native_category": 2
+    }
+  },
+  "source_hashes": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m15_peer\\category_probe.py": "9c27c6d8617fc6437b7c9f671be11cfb6c6daf015ef298b0dec28b42ae2025d4",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m15_peer\\verify.py": "703d0b81072e00fe81e2737e5e142505fc66f24172a125586db91e7b1663c4e6",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter01_devices\\emp.source.json": "7496c92a4d8772569af6a4a49802ab6fa0a9e7c7c1dc75d3890b074af63a1176",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter01_devices\\emp.category.json": "79ed4124a4dec23f199fd9edf83e6c473a166a803dd973fb02f4560a9841b24d"
+  },
+  "core_identity_stable": true,
+  "formal_approval": false,
+  "review_receipt": false,
+  "tests": [
+    {
+      "path": "tools/experiments/m15_peer/category_probe.py",
+      "source_sha256": "9c27c6d8617fc6437b7c9f671be11cfb6c6daf015ef298b0dec28b42ae2025d4",
+      "result": "passed"
+    }
+  ]
+}

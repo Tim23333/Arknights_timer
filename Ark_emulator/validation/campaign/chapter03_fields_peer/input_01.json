@@ -1,0 +1,430 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/chapter03/defup_field",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "source_locks": {
+        "packages/campaign/chapter03_plans/source.plan.json": "d7f1f3037ccbc47b7c41346ca6b73b0e653257d479a7ea5261c6c1c1ba97c5c6",
+        "D:\\Arknights\\Arknights_timer\\data\\battle\\prefabs\\[uc]tiles.ab_unpacked\\CAB-a3035ec54e4c62f1271965a646b6fe4e": "ee2e5a71e90a5478ca52864e194d0cfcafb8c4880d83fbdb03aee0351e299c2f"
+      },
+      "builder_sha256": "e08fb9fae6c922aa8dc2b300703c003227aefb8640c1bd0a421065307af59bf0",
+      "actual_source_component_path_id": 3052194825931517446,
+      "default_policy": "Virtual source side0 / ALLY1, category mask3, motion3; native switch fields preserved; owned child per occupied cell",
+      "feedback_pending": [
+        "Native tile/actor getter and coordinate rounding calibration",
+        "Native maxStack child representation"
+      ],
+      "client_verified": false
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/ch3/field/defup",
+      "kind": "entity",
+      "tags": [
+        "tile_field_owner"
+      ],
+      "components": {
+        "spatial": {},
+        "selection_state": {
+          "side": 0,
+          "motion": 1,
+          "category": 1,
+          "profession": 0,
+          "unit_type": 4,
+          "target_free": false,
+          "ally_target_free": false,
+          "heal_free": false,
+          "camouflage": false,
+          "can_select_camouflage": false,
+          "abnormal_flags": [],
+          "abnormal_combos": [],
+          "target_free_flags": [],
+          "target_free_combos": []
+        },
+        "buffs": {
+          "initial": [
+            "buff/ch3/defup_parent"
+          ]
+        }
+      }
+    },
+    {
+      "id": "unit/peer/victim",
+      "kind": "entity",
+      "tags": [
+        "player",
+        "token",
+        "victim"
+      ],
+      "components": {
+        "spatial": {},
+        "selection_state": {
+          "side": 0,
+          "category": 2,
+          "motion": 2
+        },
+        "attributes": {
+          "base": {
+            "max_hp": 10000,
+            "def": 40,
+            "mres": 40
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 10000,
+            "capacity": 10000,
+            "role": "health"
+          }
+        },
+        "buffs": {
+          "initial": [
+            "buff/peer/ratio"
+          ]
+        },
+        "abilities": [
+          "ability/next",
+          "ability/leave"
+        ]
+      }
+    },
+    {
+      "id": "unit/peer/attacker",
+      "kind": "entity",
+      "components": {
+        "spatial": {},
+        "attributes": {
+          "base": {
+            "atk": 880
+          }
+        },
+        "abilities": [
+          "ability/physical",
+          "ability/arts"
+        ]
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/ch3/defup_parent",
+      "kind": "buff",
+      "aura": {
+        "selector": "selector/ch3/defup_members",
+        "buff": "buff/ch3/defup_child"
+      }
+    },
+    {
+      "id": "buff/ch3/defup_child",
+      "kind": "buff",
+      "stacking": {
+        "mode": "independent"
+      },
+      "modifiers": [
+        {
+          "attribute": "def",
+          "layer": "flat",
+          "value": 200.0
+        }
+      ],
+      "metadata": {
+        "native_buff": {
+          "attributes": {
+            "abnormalFlags": [],
+            "abnormalImmunes": [],
+            "abnormalAntis": [],
+            "abnormalCombos": [],
+            "abnormalComboImmunes": [],
+            "attributeModifiers": [
+              {
+                "attributeType": 2,
+                "formulaItem": 0,
+                "value": 0.0,
+                "loadFromBlackboard": 1,
+                "fetchBaseValueFromSourceEntity": 0
+              }
+            ]
+          },
+          "buffKey": "tile_def",
+          "loadFromDB": 0,
+          "isDurableBuff": 0,
+          "isDamageMissable": 0,
+          "isSilenceable": 0,
+          "isStunnable": 0,
+          "isFreezable": 0,
+          "isLevitatable": 0,
+          "isGroundBoundable": 0,
+          "statusResistable": 2,
+          "templateKey": "empty",
+          "disableOverride": 0,
+          "overrideKey": "",
+          "overrideType": 0,
+          "maxStackCnt": 1,
+          "refreshRemainingTimeWhenStackMax": 0,
+          "clearAllStackCntWhenTimeUp": 0,
+          "maxValidStackCnt": -1,
+          "independentCharacterSource": 0,
+          "overrideEffectKey": "",
+          "overrideOnEventPriority": 0,
+          "onEventPriority": 0,
+          "audioSignal": "",
+          "lifeTimeType": 2,
+          "takeSnapshotWhenExtend": 0,
+          "durationKey": "",
+          "lifeTime": 0.0,
+          "triggerLifeType": 0,
+          "triggerCnt": 0,
+          "triggerInterval": -1.0,
+          "waitFirstTriggerInterval": 1,
+          "firstTriggerInterval": -1.0,
+          "priority": -1,
+          "priorityBBKeys": [],
+          "stripBlackboardParamsWithBuffKey": 0,
+          "blackboard": [],
+          "enableInitDirectionFromSource": 0
+        },
+        "source_blackboard": {
+          "def": 200.0
+        }
+      }
+    },
+    {
+      "id": "buff/peer/ratio",
+      "kind": "buff",
+      "modifiers": [
+        {
+          "attribute": "def",
+          "layer": "direct_ratio",
+          "value": 0.5
+        }
+      ]
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/ch3/defup_members",
+      "kind": "selector",
+      "region": {
+        "type": "grid_offsets",
+        "offsets": [
+          [
+            0,
+            0
+          ]
+        ],
+        "rotate_with_facing": false
+      },
+      "filters": [
+        {
+          "state": "alive"
+        }
+      ],
+      "eligibility": {
+        "rule": "rule/ch3/defup_qualification",
+        "parameters": {
+          "source_configuration": {
+            "_targetSide": 1,
+            "_targetMotion": 3,
+            "_targetCategory": 3,
+            "_enableAdvancedOptions": 0,
+            "_ignoreTargetFree": 0,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_ignoreTargetSide": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_containSomeAbnormalFlags": 0,
+            "_excludeAbnormalFlag": 0,
+            "_containAbnormalFlag": 0,
+            "_purposeMask": 0,
+            "_professionMask": 0,
+            "_checkUnitType": 0,
+            "_unitTypeMask": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_abnormalFlag": 0,
+            "_abnormalCombo": 0,
+            "_needProfessionMask": 0,
+            "_forceIgnoreCamouflage": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject",
+          "defaults": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "profession": 0,
+            "unit_type": 4,
+            "target_free": false,
+            "ally_target_free": false,
+            "heal_free": false,
+            "camouflage": false,
+            "can_select_camouflage": false,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": []
+          }
+        }
+      }
+    },
+    {
+      "id": "selector/peer/victim",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "victim"
+        }
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/ch3/defup_qualification",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.targeting.eligibility"
+      }
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/physical",
+      "kind": "ability",
+      "selector": "selector/peer/victim",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "damage",
+            "damage_type": "physical"
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/arts",
+      "kind": "ability",
+      "selector": "selector/peer/victim",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "damage",
+            "damage_type": "arts"
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/next",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "move",
+            "target": "source",
+            "position": {
+              "row": 0,
+              "col": 2
+            }
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/leave",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "move",
+            "target": "source",
+            "position": {
+              "row": 0,
+              "col": 3
+            }
+          }
+        ]
+      },
+      "timeline": []
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/peer/def200",
+    "ruleset": "ruleset/ark_standard",
+    "objectives": {},
+    "map": {
+      "rows": 1,
+      "cols": 4,
+      "tiles": [
+        {
+          "tileKey": "tile_floor",
+          "passableMask": 1,
+          "buildableType": 1
+        },
+        {
+          "tileKey": "defense_custom",
+          "passableMask": 3,
+          "buildableType": 2,
+          "blackboard": {
+            "def": 200.0
+          }
+        },
+        {
+          "tileKey": "defense_custom",
+          "passableMask": 3,
+          "buildableType": 2,
+          "blackboard": {
+            "def": 200.0
+          }
+        },
+        {
+          "tileKey": "tile_floor",
+          "passableMask": 1,
+          "buildableType": 1
+        }
+      ],
+      "tile_mechanics": {
+        "defense_custom": {
+          "type": "occupancy_buff_field",
+          "definition": "unit/ch3/field/defup",
+          "expected_blackboard": {
+            "def": 200.0
+          }
+        }
+      }
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/peer/victim",
+        "instanceAlias": "victim",
+        "position": {
+          "row": 0,
+          "col": 1
+        }
+      },
+      {
+        "definition": "unit/peer/attacker",
+        "instanceAlias": "attacker",
+        "position": {
+          "row": 0,
+          "col": 0
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+# -*- mode: python ; coding: utf-8 -*-
+
+
+a = Analysis(
+    ['D:/Arknights/Arknights_timer/backend/run.py'],
+    pathex=['D:/Arknights/Arknights_timer'],
+    binaries=[],
+    datas=[('D:/Arknights/Arknights_timer/aaa.ico', '.'), ('D:/Arknights/Arknights_timer/tools', 'tools'), ('D:/Arknights/Arknights_timer/backend/build/_static_snapshot', 'backend/app/static'), ('D:/Arknights/Arknights_timer/docs/新手使用教程.md', 'docs'), ('D:/Arknights/Arknights_timer/data/tables/enemy_handbook_table493349.bin', 'data/tables'), ('D:/Arknights/Arknights_timer/data/tables/enemy_names.json', 'data/tables'), ('D:/Arknights/Arknights_timer/data/tables/effect_frames.json', 'data/tables'), ('D:/Arknights/Arknights_timer/data/tables/character_table9fc534.bin', 'data/tables'), ('D:/Arknights/Arknights_timer/ark_parser/char_names.json', 'ark_parser'), ('D:/Arknights/Arknights_timer/backend/dist/AKTimerTool.exe', 'tools')],
+    hiddenimports=['tools.timer.ak_memory_reader', 'tools.deploy_tracker.ak_deploy_reader', 'tools.enemy_health.enemy_reader', 'tools.enemy_health.memcore', 'tools.enemy_health.enemy_db', 'tools.enemy_health.game_structs', 'tools.enemy_health.stage_export', 'numpy', 'pymem', 'PySide6', 'websockets'],
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=[],
+    noarchive=False,
+    optimize=0,
+)
+pyz = PYZ(a.pure)
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.datas,
+    [],
+    name='ArknightsTimeline_v3.6.0',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    runtime_tmpdir=None,
+    console=False,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+    version='D:/Arknights/Arknights_timer/backend/build/version_info/ArknightsTimeline_v3.6.0.txt',
+    icon=['D:/Arknights/Arknights_timer/aaa.ico'],
+)

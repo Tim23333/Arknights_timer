@@ -1,0 +1,1206 @@
+{
+  "schema": "ark-sim/bounded-control-peer-review/v1",
+  "passed": true,
+  "implementation_sha256": "18039b0bc51c4aa5946cd41e16316085ac6d81783c70c5c4103667e61e702885",
+  "runtime_module": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m13_control_nonspatial_candidate\\ark_sim\\__init__.py",
+  "cases": [
+    {
+      "case": "circle",
+      "result": "passed",
+      "error": "control/peer.steps[0].selector: control effect requires explicit spatial origin; only nonspatial all is supported",
+      "expected": "explicit control source/origin/stat context CompileError; no deferred KeyError",
+      "fixture": {
+        "schemaVersion": 2,
+        "manifest": {
+          "id": "package/m13_peer",
+          "version": "1",
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "controls": [
+          {
+            "id": "control/peer",
+            "kind": "control",
+            "clock_policy": "logical",
+            "ack_policy": "external",
+            "on_start": [
+              {
+                "op": "input_lock",
+                "target": "battle",
+                "parameters": {
+                  "key": "shared",
+                  "enabled": true
+                }
+              },
+              {
+                "op": "emit",
+                "target": "battle",
+                "event": "peer.start"
+              }
+            ],
+            "on_complete": [
+              {
+                "op": "modify_resource",
+                "target": "battle",
+                "resource": "credit",
+                "delta": 2
+              },
+              {
+                "op": "emit",
+                "target": "battle",
+                "event": "peer.done"
+              }
+            ],
+            "steps": [
+              {
+                "kind": "effects",
+                "effects": [
+                  {
+                    "op": "apply_buff",
+                    "selector": "selector/peer",
+                    "buff": "buff/peer"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "entities": [
+          {
+            "id": "unit/peer_enemy",
+            "kind": "entity",
+            "tags": [
+              "enemy",
+              "ground"
+            ],
+            "components": {
+              "attributes": {
+                "base": {
+                  "max_hp": 10,
+                  "atk": 0,
+                  "def": 0,
+                  "mres": 0
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 10,
+                  "capacity": 10,
+                  "role": "health"
+                }
+              },
+              "spatial": {},
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              }
+            }
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scenario/m13_peer",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 3,
+            "cols": 4
+          },
+          "resources": {
+            "credit": {
+              "initial": 10,
+              "capacity": 100
+            },
+            "life": {
+              "initial": 5,
+              "capacity": 5
+            }
+          },
+          "objectives": {
+            "type": "waves",
+            "life_resource": "life"
+          },
+          "timeline": {
+            "policy": "managed_clear",
+            "negative_timeout_policy": "wait_for_clear",
+            "waves": [
+              {
+                "fragments": [
+                  {
+                    "actions": [
+                      {
+                        "kind": "control",
+                        "definition": "control/peer",
+                        "instanceAlias": "notice",
+                        "delay_seconds": 0,
+                        "managed": true,
+                        "blocks_fragment": true,
+                        "blocks_wave": true
+                      }
+                    ]
+                  },
+                  {
+                    "actions": [
+                      {
+                        "kind": "spawn",
+                        "spawn": {
+                          "definition": "unit/peer_enemy",
+                          "instanceAlias": "arriving",
+                          "position": {
+                            "row": 1,
+                            "col": 1
+                          }
+                        },
+                        "managed": false,
+                        "blocks_wave": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "fragments": [
+                  {
+                    "actions": [
+                      {
+                        "kind": "effects",
+                        "effects": [
+                          {
+                            "op": "emit",
+                            "target": "battle",
+                            "event": "peer.wave2"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "selectors": [
+          {
+            "id": "selector/peer",
+            "kind": "selector",
+            "region": {
+              "type": "circle",
+              "radius": 1
+            },
+            "limit": null
+          }
+        ],
+        "buffs": [
+          {
+            "id": "buff/peer",
+            "kind": "buff",
+            "modifiers": []
+          }
+        ]
+      }
+    },
+    {
+      "case": "grid",
+      "result": "passed",
+      "error": "control/peer.steps[0].selector: control effect requires explicit spatial origin; only nonspatial all is supported",
+      "expected": "explicit control source/origin/stat context CompileError; no deferred KeyError",
+      "fixture": {
+        "schemaVersion": 2,
+        "manifest": {
+          "id": "package/m13_peer",
+          "version": "1",
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "controls": [
+          {
+            "id": "control/peer",
+            "kind": "control",
+            "clock_policy": "logical",
+            "ack_policy": "external",
+            "on_start": [
+              {
+                "op": "input_lock",
+                "target": "battle",
+                "parameters": {
+                  "key": "shared",
+                  "enabled": true
+                }
+              },
+              {
+                "op": "emit",
+                "target": "battle",
+                "event": "peer.start"
+              }
+            ],
+            "on_complete": [
+              {
+                "op": "modify_resource",
+                "target": "battle",
+                "resource": "credit",
+                "delta": 2
+              },
+              {
+                "op": "emit",
+                "target": "battle",
+                "event": "peer.done"
+              }
+            ],
+            "steps": [
+              {
+                "kind": "effects",
+                "effects": [
+                  {
+                    "op": "apply_buff",
+                    "selector": "selector/peer",
+                    "buff": "buff/peer"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "entities": [
+          {
+            "id": "unit/peer_enemy",
+            "kind": "entity",
+            "tags": [
+              "enemy",
+              "ground"
+            ],
+            "components": {
+              "attributes": {
+                "base": {
+                  "max_hp": 10,
+                  "atk": 0,
+                  "def": 0,
+                  "mres": 0
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 10,
+                  "capacity": 10,
+                  "role": "health"
+                }
+              },
+              "spatial": {},
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              }
+            }
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scenario/m13_peer",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 3,
+            "cols": 4
+          },
+          "resources": {
+            "credit": {
+              "initial": 10,
+              "capacity": 100
+            },
+            "life": {
+              "initial": 5,
+              "capacity": 5
+            }
+          },
+          "objectives": {
+            "type": "waves",
+            "life_resource": "life"
+          },
+          "timeline": {
+            "policy": "managed_clear",
+            "negative_timeout_policy": "wait_for_clear",
+            "waves": [
+              {
+                "fragments": [
+                  {
+                    "actions": [
+                      {
+                        "kind": "control",
+                        "definition": "control/peer",
+                        "instanceAlias": "notice",
+                        "delay_seconds": 0,
+                        "managed": true,
+                        "blocks_fragment": true,
+                        "blocks_wave": true
+                      }
+                    ]
+                  },
+                  {
+                    "actions": [
+                      {
+                        "kind": "spawn",
+                        "spawn": {
+                          "definition": "unit/peer_enemy",
+                          "instanceAlias": "arriving",
+                          "position": {
+                            "row": 1,
+                            "col": 1
+                          }
+                        },
+                        "managed": false,
+                        "blocks_wave": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "fragments": [
+                  {
+                    "actions": [
+                      {
+                        "kind": "effects",
+                        "effects": [
+                          {
+                            "op": "emit",
+                            "target": "battle",
+                            "event": "peer.wave2"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "selectors": [
+          {
+            "id": "selector/peer",
+            "kind": "selector",
+            "region": {
+              "type": "grid_offsets",
+              "offsets": [
+                [
+                  0,
+                  0
+                ]
+              ]
+            },
+            "limit": null
+          }
+        ],
+        "buffs": [
+          {
+            "id": "buff/peer",
+            "kind": "buff",
+            "modifiers": []
+          }
+        ]
+      }
+    },
+    {
+      "case": "manhattan",
+      "result": "passed",
+      "error": "control/peer.steps[0].selector: control effect requires explicit spatial origin; only nonspatial all is supported",
+      "expected": "explicit control source/origin/stat context CompileError; no deferred KeyError",
+      "fixture": {
+        "schemaVersion": 2,
+        "manifest": {
+          "id": "package/m13_peer",
+          "version": "1",
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "controls": [
+          {
+            "id": "control/peer",
+            "kind": "control",
+            "clock_policy": "logical",
+            "ack_policy": "external",
+            "on_start": [
+              {
+                "op": "input_lock",
+                "target": "battle",
+                "parameters": {
+                  "key": "shared",
+                  "enabled": true
+                }
+              },
+              {
+                "op": "emit",
+                "target": "battle",
+                "event": "peer.start"
+              }
+            ],
+            "on_complete": [
+              {
+                "op": "modify_resource",
+                "target": "battle",
+                "resource": "credit",
+                "delta": 2
+              },
+              {
+                "op": "emit",
+                "target": "battle",
+                "event": "peer.done"
+              }
+            ],
+            "steps": [
+              {
+                "kind": "effects",
+                "effects": [
+                  {
+                    "op": "apply_buff",
+                    "selector": "selector/peer",
+                    "buff": "buff/peer"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "entities": [
+          {
+            "id": "unit/peer_enemy",
+            "kind": "entity",
+            "tags": [
+              "enemy",
+              "ground"
+            ],
+            "components": {
+              "attributes": {
+                "base": {
+                  "max_hp": 10,
+                  "atk": 0,
+                  "def": 0,
+                  "mres": 0
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 10,
+                  "capacity": 10,
+                  "role": "health"
+                }
+              },
+              "spatial": {},
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              }
+            }
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scenario/m13_peer",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 3,
+            "cols": 4
+          },
+          "resources": {
+            "credit": {
+              "initial": 10,
+              "capacity": 100
+            },
+            "life": {
+              "initial": 5,
+              "capacity": 5
+            }
+          },
+          "objectives": {
+            "type": "waves",
+            "life_resource": "life"
+          },
+          "timeline": {
+            "policy": "managed_clear",
+            "negative_timeout_policy": "wait_for_clear",
+            "waves": [
+              {
+                "fragments": [
+                  {
+                    "actions": [
+                      {
+                        "kind": "control",
+                        "definition": "control/peer",
+                        "instanceAlias": "notice",
+                        "delay_seconds": 0,
+                        "managed": true,
+                        "blocks_fragment": true,
+                        "blocks_wave": true
+                      }
+                    ]
+                  },
+                  {
+                    "actions": [
+                      {
+                        "kind": "spawn",
+                        "spawn": {
+                          "definition": "unit/peer_enemy",
+                          "instanceAlias": "arriving",
+                          "position": {
+                            "row": 1,
+                            "col": 1
+                          }
+                        },
+                        "managed": false,
+                        "blocks_wave": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "fragments": [
+                  {
+                    "actions": [
+                      {
+                        "kind": "effects",
+                        "effects": [
+                          {
+                            "op": "emit",
+                            "target": "battle",
+                            "event": "peer.wave2"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "selectors": [
+          {
+            "id": "selector/peer",
+            "kind": "selector",
+            "region": {
+              "type": "manhattan",
+              "radius": 1
+            },
+            "limit": null
+          }
+        ],
+        "buffs": [
+          {
+            "id": "buff/peer",
+            "kind": "buff",
+            "modifiers": []
+          }
+        ]
+      }
+    },
+    {
+      "case": "default_damage",
+      "result": "passed",
+      "error": "control/peer.steps[0]: control damage pipeline requires actor source attributes; bind an explicit source-independent pipeline",
+      "expected": "explicit control source/origin/stat context CompileError; no deferred KeyError",
+      "fixture": {
+        "schemaVersion": 2,
+        "manifest": {
+          "id": "package/m13_peer",
+          "version": "1",
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "controls": [
+          {
+            "id": "control/peer",
+            "kind": "control",
+            "clock_policy": "logical",
+            "ack_policy": "external",
+            "on_start": [
+              {
+                "op": "input_lock",
+                "target": "battle",
+                "parameters": {
+                  "key": "shared",
+                  "enabled": true
+                }
+              },
+              {
+                "op": "emit",
+                "target": "battle",
+                "event": "peer.start"
+              }
+            ],
+            "on_complete": [
+              {
+                "op": "modify_resource",
+                "target": "battle",
+                "resource": "credit",
+                "delta": 2
+              },
+              {
+                "op": "emit",
+                "target": "battle",
+                "event": "peer.done"
+              }
+            ],
+            "steps": [
+              {
+                "kind": "effects",
+                "effects": [
+                  {
+                    "op": "damage",
+                    "selector": "selector/peer",
+                    "damage_type": "true"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "entities": [
+          {
+            "id": "unit/peer_enemy",
+            "kind": "entity",
+            "tags": [
+              "enemy",
+              "ground"
+            ],
+            "components": {
+              "attributes": {
+                "base": {
+                  "max_hp": 10,
+                  "atk": 0,
+                  "def": 0,
+                  "mres": 0
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 10,
+                  "capacity": 10,
+                  "role": "health"
+                }
+              },
+              "spatial": {},
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              }
+            }
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scenario/m13_peer",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 3,
+            "cols": 4
+          },
+          "resources": {
+            "credit": {
+              "initial": 10,
+              "capacity": 100
+            },
+            "life": {
+              "initial": 5,
+              "capacity": 5
+            }
+          },
+          "objectives": {
+            "type": "waves",
+            "life_resource": "life"
+          },
+          "timeline": {
+            "policy": "managed_clear",
+            "negative_timeout_policy": "wait_for_clear",
+            "waves": [
+              {
+                "fragments": [
+                  {
+                    "actions": [
+                      {
+                        "kind": "control",
+                        "definition": "control/peer",
+                        "instanceAlias": "notice",
+                        "delay_seconds": 0,
+                        "managed": true,
+                        "blocks_fragment": true,
+                        "blocks_wave": true
+                      }
+                    ]
+                  },
+                  {
+                    "actions": [
+                      {
+                        "kind": "spawn",
+                        "spawn": {
+                          "definition": "unit/peer_enemy",
+                          "instanceAlias": "arriving",
+                          "position": {
+                            "row": 1,
+                            "col": 1
+                          }
+                        },
+                        "managed": false,
+                        "blocks_wave": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "fragments": [
+                  {
+                    "actions": [
+                      {
+                        "kind": "effects",
+                        "effects": [
+                          {
+                            "op": "emit",
+                            "target": "battle",
+                            "event": "peer.wave2"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "selectors": [
+          {
+            "id": "selector/peer",
+            "kind": "selector",
+            "region": {
+              "type": "all"
+            },
+            "limit": null
+          }
+        ],
+        "buffs": [
+          {
+            "id": "buff/peer",
+            "kind": "buff",
+            "modifiers": []
+          }
+        ]
+      }
+    },
+    {
+      "case": "default_heal",
+      "result": "passed",
+      "error": "control/peer.steps[0]: control heal requires actor source attributes/origin",
+      "expected": "explicit control source/origin/stat context CompileError; no deferred KeyError",
+      "fixture": {
+        "schemaVersion": 2,
+        "manifest": {
+          "id": "package/m13_peer",
+          "version": "1",
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "controls": [
+          {
+            "id": "control/peer",
+            "kind": "control",
+            "clock_policy": "logical",
+            "ack_policy": "external",
+            "on_start": [
+              {
+                "op": "input_lock",
+                "target": "battle",
+                "parameters": {
+                  "key": "shared",
+                  "enabled": true
+                }
+              },
+              {
+                "op": "emit",
+                "target": "battle",
+                "event": "peer.start"
+              }
+            ],
+            "on_complete": [
+              {
+                "op": "modify_resource",
+                "target": "battle",
+                "resource": "credit",
+                "delta": 2
+              },
+              {
+                "op": "emit",
+                "target": "battle",
+                "event": "peer.done"
+              }
+            ],
+            "steps": [
+              {
+                "kind": "effects",
+                "effects": [
+                  {
+                    "op": "heal",
+                    "selector": "selector/peer"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "entities": [
+          {
+            "id": "unit/peer_enemy",
+            "kind": "entity",
+            "tags": [
+              "enemy",
+              "ground"
+            ],
+            "components": {
+              "attributes": {
+                "base": {
+                  "max_hp": 10,
+                  "atk": 0,
+                  "def": 0,
+                  "mres": 0
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 10,
+                  "capacity": 10,
+                  "role": "health"
+                }
+              },
+              "spatial": {},
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              }
+            }
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scenario/m13_peer",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 3,
+            "cols": 4
+          },
+          "resources": {
+            "credit": {
+              "initial": 10,
+              "capacity": 100
+            },
+            "life": {
+              "initial": 5,
+              "capacity": 5
+            }
+          },
+          "objectives": {
+            "type": "waves",
+            "life_resource": "life"
+          },
+          "timeline": {
+            "policy": "managed_clear",
+            "negative_timeout_policy": "wait_for_clear",
+            "waves": [
+              {
+                "fragments": [
+                  {
+                    "actions": [
+                      {
+                        "kind": "control",
+                        "definition": "control/peer",
+                        "instanceAlias": "notice",
+                        "delay_seconds": 0,
+                        "managed": true,
+                        "blocks_fragment": true,
+                        "blocks_wave": true
+                      }
+                    ]
+                  },
+                  {
+                    "actions": [
+                      {
+                        "kind": "spawn",
+                        "spawn": {
+                          "definition": "unit/peer_enemy",
+                          "instanceAlias": "arriving",
+                          "position": {
+                            "row": 1,
+                            "col": 1
+                          }
+                        },
+                        "managed": false,
+                        "blocks_wave": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "fragments": [
+                  {
+                    "actions": [
+                      {
+                        "kind": "effects",
+                        "effects": [
+                          {
+                            "op": "emit",
+                            "target": "battle",
+                            "event": "peer.wave2"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "selectors": [
+          {
+            "id": "selector/peer",
+            "kind": "selector",
+            "region": {
+              "type": "all"
+            },
+            "limit": null
+          }
+        ],
+        "buffs": [
+          {
+            "id": "buff/peer",
+            "kind": "buff",
+            "modifiers": []
+          }
+        ]
+      }
+    },
+    {
+      "case": "push",
+      "result": "passed",
+      "error": "control/peer.steps[0]: control push requires actor source attributes/origin",
+      "expected": "explicit control source/origin/stat context CompileError; no deferred KeyError",
+      "fixture": {
+        "schemaVersion": 2,
+        "manifest": {
+          "id": "package/m13_peer",
+          "version": "1",
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "controls": [
+          {
+            "id": "control/peer",
+            "kind": "control",
+            "clock_policy": "logical",
+            "ack_policy": "external",
+            "on_start": [
+              {
+                "op": "input_lock",
+                "target": "battle",
+                "parameters": {
+                  "key": "shared",
+                  "enabled": true
+                }
+              },
+              {
+                "op": "emit",
+                "target": "battle",
+                "event": "peer.start"
+              }
+            ],
+            "on_complete": [
+              {
+                "op": "modify_resource",
+                "target": "battle",
+                "resource": "credit",
+                "delta": 2
+              },
+              {
+                "op": "emit",
+                "target": "battle",
+                "event": "peer.done"
+              }
+            ],
+            "steps": [
+              {
+                "kind": "effects",
+                "effects": [
+                  {
+                    "op": "push",
+                    "selector": "selector/peer",
+                    "force": 1,
+                    "rules": {
+                      "movement.displacement": "rule/peer_displacement"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "entities": [
+          {
+            "id": "unit/peer_enemy",
+            "kind": "entity",
+            "tags": [
+              "enemy",
+              "ground"
+            ],
+            "components": {
+              "attributes": {
+                "base": {
+                  "max_hp": 10,
+                  "atk": 0,
+                  "def": 0,
+                  "mres": 0
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 10,
+                  "capacity": 10,
+                  "role": "health"
+                }
+              },
+              "spatial": {},
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              }
+            }
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scenario/m13_peer",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 3,
+            "cols": 4
+          },
+          "resources": {
+            "credit": {
+              "initial": 10,
+              "capacity": 100
+            },
+            "life": {
+              "initial": 5,
+              "capacity": 5
+            }
+          },
+          "objectives": {
+            "type": "waves",
+            "life_resource": "life"
+          },
+          "timeline": {
+            "policy": "managed_clear",
+            "negative_timeout_policy": "wait_for_clear",
+            "waves": [
+              {
+                "fragments": [
+                  {
+                    "actions": [
+                      {
+                        "kind": "control",
+                        "definition": "control/peer",
+                        "instanceAlias": "notice",
+                        "delay_seconds": 0,
+                        "managed": true,
+                        "blocks_fragment": true,
+                        "blocks_wave": true
+                      }
+                    ]
+                  },
+                  {
+                    "actions": [
+                      {
+                        "kind": "spawn",
+                        "spawn": {
+                          "definition": "unit/peer_enemy",
+                          "instanceAlias": "arriving",
+                          "position": {
+                            "row": 1,
+                            "col": 1
+                          }
+                        },
+                        "managed": false,
+                        "blocks_wave": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "fragments": [
+                  {
+                    "actions": [
+                      {
+                        "kind": "effects",
+                        "effects": [
+                          {
+                            "op": "emit",
+                            "target": "battle",
+                            "event": "peer.wave2"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "selectors": [
+          {
+            "id": "selector/peer",
+            "kind": "selector",
+            "region": {
+              "type": "all"
+            },
+            "limit": null
+          }
+        ],
+        "buffs": [
+          {
+            "id": "buff/peer",
+            "kind": "buff",
+            "modifiers": []
+          }
+        ],
+        "rules": [
+          {
+            "id": "rule/peer_displacement",
+            "kind": "calculation_rule",
+            "contract": "movement.displacement",
+            "implementation": {
+              "type": "graph",
+              "nodes": [
+                {
+                  "id": "delta",
+                  "expression": "{'row':0,'col':0}"
+                }
+              ],
+              "output": "nodes.delta"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "identity_stable": true,
+  "source_at_start": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m13_peer\\preflight.py": "402e31d33bd68a64c41401f83a2e1a7ff892b504273ba307a0ea0e537952eede",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m13_peer\\verify.py": "6f5b0d98143dcc7ecd8397477e204b1456ff3ed0a47350649d69cd3ce2d64f93"
+  },
+  "source_at_completion": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m13_peer\\preflight.py": "402e31d33bd68a64c41401f83a2e1a7ff892b504273ba307a0ea0e537952eede",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m13_peer\\verify.py": "6f5b0d98143dcc7ecd8397477e204b1456ff3ed0a47350649d69cd3ce2d64f93"
+  },
+  "tests": [
+    {
+      "path": "tools/experiments/m13_peer/preflight.py",
+      "source_sha256": "402e31d33bd68a64c41401f83a2e1a7ff892b504273ba307a0ea0e537952eede",
+      "result": "passed"
+    }
+  ],
+  "scope": "six unsupported battle-source control contexts rejected at compilation; no native/source or stage approval",
+  "formal_approval": false,
+  "promotion_receipt": false
+}

@@ -1,0 +1,578 @@
+{
+  "schema": "ark-sim/bounded-retire-peer-review/v1",
+  "passed": true,
+  "implementation_sha256": "177edecfbac20278c7209babd75c159a5a2e9d4b5ce0e31c1137d726c3c7c33e",
+  "runtime_module": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m15_device_candidate\\ark_sim\\__init__.py",
+  "identity_stable": true,
+  "source_at_start": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m15_peer\\retire_boundaries.py": "a8da3086f5d67a828e69e64b863b38fb4560d35541a152fa278aa36af53e9908",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m15_peer\\verify.py": "703d0b81072e00fe81e2737e5e142505fc66f24172a125586db91e7b1663c4e6",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter01_devices\\emp.partial.json": "98f668b2f130a4e47e27151d92cbf3d1ad59789e147ec4adc80a98a14679e854",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter01_devices\\emp.source.json": "7496c92a4d8772569af6a4a49802ab6fa0a9e7c7c1dc75d3890b074af63a1176"
+  },
+  "source_at_completion": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m15_peer\\retire_boundaries.py": "a8da3086f5d67a828e69e64b863b38fb4560d35541a152fa278aa36af53e9908",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m15_peer\\verify.py": "703d0b81072e00fe81e2737e5e142505fc66f24172a125586db91e7b1663c4e6",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter01_devices\\emp.partial.json": "98f668b2f130a4e47e27151d92cbf3d1ad59789e147ec4adc80a98a14679e854",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter01_devices\\emp.source.json": "7496c92a4d8772569af6a4a49802ab6fa0a9e7c7c1dc75d3890b074af63a1176"
+  },
+  "cases": [
+    {
+      "case": "owned_cleanup",
+      "result": "passed",
+      "actual": {
+        "expected": {
+          "owner_retire3_recursively_removes_child_preservesHP20_30": true,
+          "child_windup_and_finish_and_lifetime_tasks_cancelled": true
+        },
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "program_fingerprint": "d7127a5c6b7e278c0edf5921a2abca18cf058e28a386368b3ff53e849cc66825",
+        "runtime_fingerprint": "f4b0a7f11e815c516d93db5ec605ced1b1c8490a4cfee1ae284b0b258c65ace4",
+        "fixture_initial_state": {
+          "id": "scenario/chapter01_emp_slice",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 8,
+            "cols": 11
+          },
+          "resources": {
+            "dp": {
+              "initial": 50,
+              "capacity": 99
+            }
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/owner",
+              "instanceAlias": "owner",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ],
+          "waves": [],
+          "objectives": {},
+          "kind": "scenario"
+        },
+        "commands": {
+          "schema": "ark-sim/replay/v2",
+          "program_fingerprint": "d7127a5c6b7e278c0edf5921a2abca18cf058e28a386368b3ff53e849cc66825",
+          "runtime_fingerprint": "f4b0a7f11e815c516d93db5ec605ced1b1c8490a4cfee1ae284b0b258c65ace4",
+          "seed": 1517,
+          "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+          "until": 163,
+          "commands": [
+            {
+              "order": 1,
+              "submitted_at": 0,
+              "at": 0,
+              "action": {
+                "action": "skill",
+                "source": "owner",
+                "ability": "ability/summon"
+              }
+            },
+            {
+              "order": 2,
+              "submitted_at": 1,
+              "at": 1,
+              "action": {
+                "action": "skill",
+                "source": 3,
+                "ability": "ability/long_child"
+              }
+            },
+            {
+              "order": 3,
+              "submitted_at": 1,
+              "at": 3,
+              "action": {
+                "action": "skill",
+                "source": "owner",
+                "ability": "ability/remove_owner"
+              }
+            }
+          ]
+        },
+        "state": {
+          "finished": false,
+          "result": "running",
+          "pending_waves": 0,
+          "kills": 0,
+          "leaks": 0,
+          "damage_dealt": 0,
+          "deployments": {},
+          "command_results": {}
+        },
+        "events": [
+          {
+            "id": 4,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 20
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 19,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 30
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 23,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "owner",
+                "ability": "ability/summon"
+              },
+              "result": "cast/2/1"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 25,
+            "type": "ability.finished",
+            "payload": {
+              "source": 2,
+              "ability": "ability/summon",
+              "cast": "cast/2/1"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 38,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": 3,
+                "ability": "ability/long_child"
+              },
+              "result": "cast/3/1"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 51,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "owner",
+                "ability": "ability/remove_owner"
+              },
+              "result": "cast/2/2"
+            },
+            "time": 3,
+            "cause": null
+          },
+          {
+            "id": 52,
+            "type": "ability.interrupted",
+            "payload": {
+              "source": 2,
+              "ability": "ability/remove_owner",
+              "cast": "cast/2/2",
+              "reason": "removed"
+            },
+            "time": 3,
+            "cause": null
+          },
+          {
+            "id": 53,
+            "type": "ability.interrupted",
+            "payload": {
+              "source": 3,
+              "ability": "ability/long_child",
+              "cast": "cast/3/1",
+              "reason": "owner_retired"
+            },
+            "time": 3,
+            "cause": null
+          }
+        ]
+      }
+    },
+    {
+      "case": "rollback_owned_cleanup",
+      "result": "passed",
+      "actual": {
+        "expected": {
+          "failure_after_parent_and_child_retire_restores_lifetime_jobs_world_event_counters": true
+        },
+        "checkpoint_equal": "API-only",
+        "replay_equal": "API-only",
+        "program_fingerprint": "f775493235ddc3439334b665357e3cd205da81a7932789b2e9f0f25a5c877c2d",
+        "runtime_fingerprint": "b239b3ec8bf35317799d4eb7794c174f95c6d1d1df31c4471e7aaad58f848602",
+        "fixture_initial_state": {
+          "id": "scenario/chapter01_emp_slice",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 8,
+            "cols": 11
+          },
+          "resources": {
+            "dp": {
+              "initial": 50,
+              "capacity": 99
+            }
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/chapter01_emp",
+              "position": {
+                "row": 5,
+                "col": 5
+              },
+              "facing": "up",
+              "instanceAlias": "device",
+              "components": {
+                "resources": {
+                  "sp": {
+                    "initial": 5
+                  }
+                }
+              }
+            },
+            {
+              "definition": "unit/no_policy",
+              "instanceAlias": "plain",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ],
+          "waves": [],
+          "objectives": {},
+          "kind": "scenario"
+        },
+        "commands": {
+          "schema": "ark-sim/replay/v2",
+          "program_fingerprint": "f775493235ddc3439334b665357e3cd205da81a7932789b2e9f0f25a5c877c2d",
+          "runtime_fingerprint": "b239b3ec8bf35317799d4eb7794c174f95c6d1d1df31c4471e7aaad58f848602",
+          "seed": 1517,
+          "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+          "until": 0,
+          "commands": []
+        },
+        "state": {
+          "finished": false,
+          "result": "running",
+          "pending_waves": 0,
+          "kills": 0,
+          "leaks": 0,
+          "damage_dealt": 0,
+          "deployments": {},
+          "command_results": {}
+        },
+        "events": [
+          {
+            "id": 9,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 100
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 19,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 5
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 74,
+            "type": "buff.applied",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/chapter01_emp/invincible",
+              "instance": "buff/2/1",
+              "stacks": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 79,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 80
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 87,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 4,
+              "resource": "hp",
+              "delta": 0,
+              "value": 80
+            },
+            "time": 0,
+            "cause": null
+          }
+        ]
+      }
+    },
+    {
+      "case": "control_context",
+      "result": "passed",
+      "actual": {
+        "context_compile_rejections": [
+          {
+            "target": "source",
+            "error": "control/peer.steps[0]: control retirement requires an explicit actor target or nonspatial selector"
+          },
+          {
+            "target": "selected",
+            "error": "control/peer.steps[0]: control retirement requires an explicit actor target or nonspatial selector"
+          },
+          {
+            "target": "self",
+            "error": "control/peer.steps[0]: control retirement requires an explicit actor target or nonspatial selector"
+          }
+        ],
+        "selector_control_retire": {
+          "expected": {
+            "explicit_all_actor_selector_removes_only_actor_not_battle": true
+          },
+          "checkpoint_equal": true,
+          "replay_equal": true,
+          "program_fingerprint": "ce4d765c142d3ea221423e5406edf85a75f83d1fb60c1b31faa74c602b365de7",
+          "runtime_fingerprint": "b239b3ec8bf35317799d4eb7794c174f95c6d1d1df31c4471e7aaad58f848602",
+          "fixture_initial_state": {
+            "id": "scenario/chapter01_emp_slice",
+            "ruleset": "ruleset/ark_standard",
+            "map": {
+              "rows": 8,
+              "cols": 11
+            },
+            "resources": {
+              "dp": {
+                "initial": 50,
+                "capacity": 99
+              }
+            },
+            "initialEntities": [
+              {
+                "definition": "unit/chapter01_emp",
+                "position": {
+                  "row": 5,
+                  "col": 5
+                },
+                "facing": "up",
+                "instanceAlias": "device",
+                "components": {
+                  "resources": {
+                    "sp": {
+                      "initial": 5
+                    }
+                  }
+                }
+              },
+              {
+                "definition": "unit/no_policy",
+                "instanceAlias": "plain",
+                "position": {
+                  "row": 0,
+                  "col": 0
+                }
+              }
+            ],
+            "objectives": {},
+            "timeline": {
+              "policy": "managed_clear",
+              "negative_timeout_policy": "wait_for_clear",
+              "waves": [
+                {
+                  "fragments": [
+                    {
+                      "actions": [
+                        {
+                          "kind": "control",
+                          "definition": "control/peer",
+                          "instanceAlias": "retirer"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "kind": "scenario"
+          },
+          "commands": {
+            "schema": "ark-sim/replay/v2",
+            "program_fingerprint": "ce4d765c142d3ea221423e5406edf85a75f83d1fb60c1b31faa74c602b365de7",
+            "runtime_fingerprint": "b239b3ec8bf35317799d4eb7794c174f95c6d1d1df31c4471e7aaad58f848602",
+            "seed": 1517,
+            "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+            "until": 5,
+            "commands": []
+          },
+          "state": {
+            "finished": false,
+            "result": "running",
+            "pending_waves": 0,
+            "kills": 0,
+            "leaks": 0,
+            "damage_dealt": 0,
+            "deployments": {},
+            "command_results": {},
+            "timeline": {
+              "phase": "complete",
+              "wave_index": 1,
+              "fragment_index": 1,
+              "members": {},
+              "remaining_actions": 0,
+              "wake_token": 2,
+              "wake_at": null,
+              "done": true,
+              "play_start": 0,
+              "wave_start": 0,
+              "fragment_start": 0,
+              "control_pending": {},
+              "control_members": {},
+              "gate_start": 0
+            },
+            "controls": {
+              "next_instance": 2,
+              "instances": {
+                "control/1": {
+                  "id": "control/1",
+                  "definition": "control/peer",
+                  "alias": "retirer",
+                  "status": "completed",
+                  "phase": "completed",
+                  "cursor": 1,
+                  "generation": 1,
+                  "tasks": {},
+                  "locks": {},
+                  "origins": {
+                    "play_start": 0,
+                    "wave_start": 0,
+                    "fragment_start": 0,
+                    "action_start": 0
+                  },
+                  "waiting_step": null,
+                  "waiting_key": null,
+                  "prepared_at": 0,
+                  "started_at": 0,
+                  "completed_at": 0
+                }
+              },
+              "aliases": {
+                "retirer": "control/1"
+              }
+            }
+          },
+          "events": [
+            {
+              "id": 9,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 2,
+                "resource": "hp",
+                "delta": 0,
+                "value": 100
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 19,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 2,
+                "resource": "sp",
+                "delta": 0,
+                "value": 5
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 74,
+              "type": "buff.applied",
+              "payload": {
+                "source": 2,
+                "target": 2,
+                "buff": "buff/chapter01_emp/invincible",
+                "instance": "buff/2/1",
+                "stacks": 1
+              },
+              "time": 0,
+              "cause": null
+            },
+            {
+              "id": 79,
+              "type": "resource.changed",
+              "payload": {
+                "source": null,
+                "target": 3,
+                "resource": "hp",
+                "delta": 0,
+                "value": 80
+              },
+              "time": 0,
+              "cause": null
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "tests": [
+    {
+      "path": "tools/experiments/m15_peer/retire_boundaries.py",
+      "source_sha256": "a8da3086f5d67a828e69e64b863b38fb4560d35541a152fa278aa36af53e9908",
+      "result": "passed"
+    }
+  ],
+  "scope": "generic retirement ownership/tasks/atomicity/control source context; no wholeEMP/terrain approval",
+  "formal_approval": false,
+  "review_receipt": false
+}

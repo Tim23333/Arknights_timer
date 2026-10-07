@@ -1,0 +1,289 @@
+{
+  "id": "scene/ch7/patrt/mechanism",
+  "ruleset": "ruleset/ark_standard",
+  "objectives": {},
+  "map": {
+    "rows": 5,
+    "cols": 7,
+    "tiles": [
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 2,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 2,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      },
+      {
+        "buildableType": 1,
+        "passableMask": 1
+      }
+    ]
+  },
+  "resources": {
+    "life": {
+      "initial": 99999,
+      "capacity": 99999
+    },
+    "dp": {
+      "initial": 20,
+      "capacity": 99
+    }
+  },
+  "initialEntities": [
+    {
+      "definition": "unit/test/patrt/ground_far",
+      "instanceAlias": "ground_far",
+      "position": {
+        "row": 2,
+        "col": 6
+      }
+    },
+    {
+      "definition": "unit/test/patrt/high_near",
+      "instanceAlias": "high_near",
+      "position": {
+        "row": 2,
+        "col": 4
+      }
+    },
+    {
+      "definition": "unit/test/patrt/high_far",
+      "instanceAlias": "high_far",
+      "position": {
+        "row": 2,
+        "col": 5
+      }
+    }
+  ],
+  "roster": [
+    "unit/test/patrt/hero"
+  ],
+  "timeline": {
+    "policy": "managed_clear",
+    "negative_timeout_policy": "wait_for_clear",
+    "waves": [
+      {
+        "pre_delay_seconds": 0,
+        "post_delay_seconds": 1,
+        "max_wait_seconds": -1,
+        "fragments": [
+          {
+            "pre_delay_seconds": 0,
+            "actions": [
+              {
+                "kind": "spawn",
+                "spawn": {
+                  "definition": "unit/ch7/patrt/a53a85a6d0cd714f",
+                  "instanceAlias": "boss",
+                  "position": {
+                    "row": 2,
+                    "col": 2
+                  }
+                },
+                "delay_seconds": 1,
+                "managed": true,
+                "blocks_wave": true,
+                "blocks_fragment": false,
+                "count": 1,
+                "interval_seconds": 0
+              },
+              {
+                "kind": "spawn",
+                "spawn": {
+                  "definition": "unit/test/patrt/wave_member",
+                  "instanceAlias": "ally0",
+                  "position": {
+                    "row": 4,
+                    "col": 6
+                  }
+                },
+                "delay_seconds": 0,
+                "managed": true,
+                "blocks_wave": false,
+                "blocks_fragment": false,
+                "count": 1,
+                "interval_seconds": 0
+              },
+              {
+                "kind": "spawn",
+                "spawn": {
+                  "definition": "unit/test/patrt/wave_member",
+                  "instanceAlias": "future0",
+                  "position": {
+                    "row": 4,
+                    "col": 6
+                  }
+                },
+                "delay_seconds": 10,
+                "managed": true,
+                "blocks_wave": false,
+                "blocks_fragment": false,
+                "count": 1,
+                "interval_seconds": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "pre_delay_seconds": 2,
+        "post_delay_seconds": 0,
+        "max_wait_seconds": -1,
+        "fragments": [
+          {
+            "pre_delay_seconds": 0,
+            "actions": [
+              {
+                "kind": "spawn",
+                "spawn": {
+                  "definition": "unit/test/patrt/wave_member",
+                  "instanceAlias": "next1",
+                  "position": {
+                    "row": 4,
+                    "col": 6
+                  }
+                },
+                "delay_seconds": 0,
+                "managed": true,
+                "blocks_wave": false,
+                "blocks_fragment": false,
+                "count": 1,
+                "interval_seconds": 0
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "kind": "scenario"
+}

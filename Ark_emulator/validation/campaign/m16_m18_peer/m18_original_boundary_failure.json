@@ -1,0 +1,292 @@
+{
+  "schema": "ark-sim/independent-tile-rule-boundary/v1",
+  "passed": false,
+  "implementation_sha256": "283ed55d0aaab3b9d6aaeb4806209182b5b6bb746882d52403ba9ef124a3d999",
+  "runtime_module": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m18_portal_candidate\\ark_sim\\__init__.py",
+  "cases": [
+    {
+      "case": "unknown_behavior",
+      "expected_rejected": true,
+      "passed": false,
+      "actual_tile": {
+        "tileKey": "unsupported_behavior_key",
+        "buildableType": 1,
+        "passableMask": 1,
+        "blackboard": {
+          "must_not_ignore": true
+        },
+        "effects": [
+          {
+            "unknown": true
+          }
+        ],
+        "groundPassable": true,
+        "movementCost": 1
+      },
+      "error": null,
+      "fixture": {
+        "schemaVersion": 2,
+        "manifest": {
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "entities": [
+          {
+            "id": "unit/owner",
+            "kind": "entity",
+            "components": {
+              "spatial": {},
+              "terrain_overlays": [
+                {
+                  "key": "x",
+                  "priority": 0,
+                  "values": {
+                    "buildableType": 0
+                  },
+                  "rule": "rule/peer"
+                }
+              ]
+            }
+          }
+        ],
+        "rules": [
+          {
+            "id": "rule/peer",
+            "kind": "calculation_rule",
+            "contract": "terrain.tile_options",
+            "implementation": {
+              "type": "provider",
+              "provider": "peer.tile"
+            }
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scenario/peer",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 1,
+            "cols": 2,
+            "tiles": [
+              {
+                "tileKey": "tile_floor",
+                "buildableType": 1,
+                "passableMask": 1,
+                "blackboard": null,
+                "effects": null
+              },
+              {
+                "tileKey": "tile_floor",
+                "buildableType": 1,
+                "passableMask": 1,
+                "blackboard": null,
+                "effects": null
+              }
+            ]
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/owner",
+              "instanceAlias": "owner",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "numeric_partial",
+      "expected_rejected": false,
+      "passed": false,
+      "actual_tile": {
+        "buildableType": 2,
+        "passableMask": 3,
+        "groundPassable": true,
+        "movementCost": 7,
+        "physicalHeight": 0.75
+      },
+      "error": null,
+      "fixture": {
+        "schemaVersion": 2,
+        "manifest": {
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "entities": [
+          {
+            "id": "unit/owner",
+            "kind": "entity",
+            "components": {
+              "spatial": {},
+              "terrain_overlays": [
+                {
+                  "key": "x",
+                  "priority": 0,
+                  "values": {
+                    "buildableType": 0
+                  },
+                  "rule": "rule/peer"
+                }
+              ]
+            }
+          }
+        ],
+        "rules": [
+          {
+            "id": "rule/peer",
+            "kind": "calculation_rule",
+            "contract": "terrain.tile_options",
+            "implementation": {
+              "type": "provider",
+              "provider": "peer.tile"
+            }
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scenario/peer",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 1,
+            "cols": 2,
+            "tiles": [
+              {
+                "tileKey": "tile_floor",
+                "buildableType": 1,
+                "passableMask": 1,
+                "blackboard": null,
+                "effects": null
+              },
+              {
+                "tileKey": "tile_floor",
+                "buildableType": 1,
+                "passableMask": 1,
+                "blackboard": null,
+                "effects": null
+              }
+            ]
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/owner",
+              "instanceAlias": "owner",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "portal_replace",
+      "expected_rejected": true,
+      "passed": false,
+      "actual_tile": {
+        "tileKey": "custom_exit",
+        "buildableType": 1,
+        "passableMask": 1,
+        "blackboard": null,
+        "effects": null,
+        "groundPassable": true,
+        "movementCost": 1
+      },
+      "error": null,
+      "fixture": {
+        "schemaVersion": 2,
+        "manifest": {
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "entities": [
+          {
+            "id": "unit/owner",
+            "kind": "entity",
+            "components": {
+              "spatial": {},
+              "terrain_overlays": [
+                {
+                  "key": "x",
+                  "priority": 0,
+                  "values": {
+                    "buildableType": 0
+                  },
+                  "rule": "rule/peer"
+                }
+              ]
+            }
+          }
+        ],
+        "rules": [
+          {
+            "id": "rule/peer",
+            "kind": "calculation_rule",
+            "contract": "terrain.tile_options",
+            "implementation": {
+              "type": "provider",
+              "provider": "peer.tile"
+            }
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scenario/peer",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 1,
+            "cols": 2,
+            "tiles": [
+              {
+                "tileKey": "custom_entry",
+                "buildableType": 1,
+                "passableMask": 1,
+                "blackboard": null,
+                "effects": null
+              },
+              {
+                "tileKey": "custom_entry",
+                "buildableType": 1,
+                "passableMask": 1,
+                "blackboard": null,
+                "effects": null
+              }
+            ],
+            "tile_mechanics": {
+              "custom_entry": {
+                "type": "route_checkpoint_portal",
+                "role": "entry"
+              },
+              "custom_exit": {
+                "type": "route_checkpoint_portal",
+                "role": "exit"
+              }
+            }
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/owner",
+              "instanceAlias": "owner",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "tests": [
+    {
+      "path": "tools/experiments/m16_m18_peer/tile_rule_boundary.py",
+      "source_sha256": "18a6d8619e8100b4db58f4b0008ad0c63821f94c112607734b917062d1e9fdca",
+      "result": "failed"
+    }
+  ],
+  "scope": "Actual compile/create/getter boundary, no fake simulation; partial-world expected rejection for unsupported behaviors. No command replay claim for rejected/API getter fixtures",
+  "formal_approval": false
+}

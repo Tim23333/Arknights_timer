@@ -1,0 +1,2874 @@
+{
+  "schema": "ark-sim/deployed-offensive-witnesses/v1",
+  "passed": false,
+  "implementation_sha256": "bd60c068f0af7694e8e62c16868f4d310b6bb92681f8ebbf5d97814fba28ac11",
+  "input_package": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\mainline_models\\level_main_00-10.m12_projection.json",
+  "input_package_sha256": "0fbba3f0548d2efaef97d7c1be98a620e65b6408755bfddbd49a132ef72fddf4",
+  "selected_cases": [
+    "bpipe_deck_sp_and_refund_cap",
+    "angel_force_and_empty_auto",
+    "angel_retargets_after_first_death",
+    "angel_blessing_deploy_and_retire",
+    "eyja_six_limit_and_filter",
+    "eyja_empty_half_open",
+    "eyja_deploy_float_and_caster_aura_retire"
+  ],
+  "cases": {
+    "bpipe_deck_sp_and_refund_cap": {
+      "expected": {
+        "raw_cost": 13,
+        "first_refund": 13,
+        "second_refund_raw_cap": 13,
+        "redeploy_seconds": 70,
+        "second_deploy_tick": 2102
+      },
+      "program_fingerprint": "3bdff1210db549a517373db5b49a0450fd5375830beeb6951e0b9caea909ab6c",
+      "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+      "checkpoint_equal": true,
+      "replay_equal": true,
+      "tick": 2107,
+      "events": [
+        {
+          "id": 6,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 1,
+            "resource": "dp",
+            "delta": -13.0,
+            "value": 37.0
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 23,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 2316
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 41,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 2,
+            "resource": "mode",
+            "delta": 0,
+            "value": 0
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 59,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 2,
+            "resource": "sp",
+            "delta": 0,
+            "value": 25
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 123,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "sp",
+            "delta": 6.0,
+            "value": 31.0
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 234,
+          "type": "buff.applied",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/talent_bpipe_critical",
+            "instance": "buff/2/1",
+            "stacks": 1
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 344,
+          "type": "buff.applied",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/talent_bpipe_kill_dp",
+            "instance": "buff/2/2",
+            "stacks": 1
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 347,
+          "type": "command.accepted",
+          "payload": {
+            "action": {
+              "action": "deploy",
+              "entity": "unit/char_222_bpipe",
+              "alias": "bpipe",
+              "position": {
+                "row": 4,
+                "col": 4
+              },
+              "facing": "right"
+            },
+            "result": 2
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 390,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 1,
+            "resource": "dp",
+            "delta": 13.0,
+            "value": 50.0
+          },
+          "time": 2,
+          "cause": null
+        },
+        {
+          "id": 409,
+          "type": "command.accepted",
+          "payload": {
+            "action": {
+              "action": "withdraw",
+              "source": "bpipe"
+            },
+            "result": 2
+          },
+          "time": 2,
+          "cause": null
+        },
+        {
+          "id": 501,
+          "type": "buff.removed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/talent_bpipe_critical",
+            "instance": "buff/2/1"
+          },
+          "time": 2,
+          "cause": null
+        },
+        {
+          "id": 592,
+          "type": "buff.removed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/talent_bpipe_kill_dp",
+            "instance": "buff/2/2"
+          },
+          "time": 2,
+          "cause": null
+        },
+        {
+          "id": 623,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 51.0
+          },
+          "time": 29,
+          "cause": null
+        },
+        {
+          "id": 657,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 52.0
+          },
+          "time": 59,
+          "cause": null
+        },
+        {
+          "id": 691,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 53.0
+          },
+          "time": 89,
+          "cause": null
+        },
+        {
+          "id": 725,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 54.0
+          },
+          "time": 119,
+          "cause": null
+        },
+        {
+          "id": 759,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 55.0
+          },
+          "time": 149,
+          "cause": null
+        },
+        {
+          "id": 793,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 56.0
+          },
+          "time": 179,
+          "cause": null
+        },
+        {
+          "id": 827,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 57.0
+          },
+          "time": 209,
+          "cause": null
+        },
+        {
+          "id": 861,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 58.0
+          },
+          "time": 239,
+          "cause": null
+        },
+        {
+          "id": 895,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 59.0
+          },
+          "time": 269,
+          "cause": null
+        },
+        {
+          "id": 929,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 60.0
+          },
+          "time": 299,
+          "cause": null
+        },
+        {
+          "id": 963,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 61.0
+          },
+          "time": 329,
+          "cause": null
+        },
+        {
+          "id": 997,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 62.0
+          },
+          "time": 359,
+          "cause": null
+        },
+        {
+          "id": 1031,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 63.0
+          },
+          "time": 389,
+          "cause": null
+        },
+        {
+          "id": 1065,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 64.0
+          },
+          "time": 419,
+          "cause": null
+        },
+        {
+          "id": 1099,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 65.0
+          },
+          "time": 449,
+          "cause": null
+        },
+        {
+          "id": 1133,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 66.0
+          },
+          "time": 479,
+          "cause": null
+        },
+        {
+          "id": 1167,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 67.0
+          },
+          "time": 509,
+          "cause": null
+        },
+        {
+          "id": 1201,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 68.0
+          },
+          "time": 539,
+          "cause": null
+        },
+        {
+          "id": 1235,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 69.0
+          },
+          "time": 569,
+          "cause": null
+        },
+        {
+          "id": 1269,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 70.0
+          },
+          "time": 599,
+          "cause": null
+        },
+        {
+          "id": 1303,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 71.0
+          },
+          "time": 629,
+          "cause": null
+        },
+        {
+          "id": 1337,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 72.0
+          },
+          "time": 659,
+          "cause": null
+        },
+        {
+          "id": 1371,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 73.0
+          },
+          "time": 689,
+          "cause": null
+        },
+        {
+          "id": 1405,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 74.0
+          },
+          "time": 719,
+          "cause": null
+        },
+        {
+          "id": 1439,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 75.0
+          },
+          "time": 749,
+          "cause": null
+        },
+        {
+          "id": 1473,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 76.0
+          },
+          "time": 779,
+          "cause": null
+        },
+        {
+          "id": 1507,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 77.0
+          },
+          "time": 809,
+          "cause": null
+        },
+        {
+          "id": 1541,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 78.0
+          },
+          "time": 839,
+          "cause": null
+        },
+        {
+          "id": 1575,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 79.0
+          },
+          "time": 869,
+          "cause": null
+        },
+        {
+          "id": 1609,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 80.0
+          },
+          "time": 899,
+          "cause": null
+        },
+        {
+          "id": 1643,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 81.0
+          },
+          "time": 929,
+          "cause": null
+        },
+        {
+          "id": 1677,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 82.0
+          },
+          "time": 959,
+          "cause": null
+        },
+        {
+          "id": 1711,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 83.0
+          },
+          "time": 989,
+          "cause": null
+        },
+        {
+          "id": 1745,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 84.0
+          },
+          "time": 1019,
+          "cause": null
+        },
+        {
+          "id": 1779,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 85.0
+          },
+          "time": 1049,
+          "cause": null
+        },
+        {
+          "id": 1813,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 86.0
+          },
+          "time": 1079,
+          "cause": null
+        },
+        {
+          "id": 1847,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 87.0
+          },
+          "time": 1109,
+          "cause": null
+        },
+        {
+          "id": 1881,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 88.0
+          },
+          "time": 1139,
+          "cause": null
+        },
+        {
+          "id": 1915,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 89.0
+          },
+          "time": 1169,
+          "cause": null
+        },
+        {
+          "id": 1949,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 90.0
+          },
+          "time": 1199,
+          "cause": null
+        },
+        {
+          "id": 1983,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 91.0
+          },
+          "time": 1229,
+          "cause": null
+        },
+        {
+          "id": 2017,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 92.0
+          },
+          "time": 1259,
+          "cause": null
+        },
+        {
+          "id": 2051,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 93.0
+          },
+          "time": 1289,
+          "cause": null
+        },
+        {
+          "id": 2085,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 94.0
+          },
+          "time": 1319,
+          "cause": null
+        },
+        {
+          "id": 2119,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 95.0
+          },
+          "time": 1349,
+          "cause": null
+        },
+        {
+          "id": 2153,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 96.0
+          },
+          "time": 1379,
+          "cause": null
+        },
+        {
+          "id": 2187,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 97.0
+          },
+          "time": 1409,
+          "cause": null
+        },
+        {
+          "id": 2221,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 98.0
+          },
+          "time": 1439,
+          "cause": null
+        },
+        {
+          "id": 2255,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 99
+          },
+          "time": 1469,
+          "cause": null
+        },
+        {
+          "id": 2289,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 0,
+            "value": 99
+          },
+          "time": 1499,
+          "cause": null
+        },
+        {
+          "id": 2323,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 0,
+            "value": 99
+          },
+          "time": 1529,
+          "cause": null
+        },
+        {
+          "id": 2357,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 0,
+            "value": 99
+          },
+          "time": 1559,
+          "cause": null
+        },
+        {
+          "id": 2391,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 0,
+            "value": 99
+          },
+          "time": 1589,
+          "cause": null
+        },
+        {
+          "id": 2425,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 0,
+            "value": 99
+          },
+          "time": 1619,
+          "cause": null
+        },
+        {
+          "id": 2459,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 0,
+            "value": 99
+          },
+          "time": 1649,
+          "cause": null
+        },
+        {
+          "id": 2493,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 0,
+            "value": 99
+          },
+          "time": 1679,
+          "cause": null
+        },
+        {
+          "id": 2527,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 0,
+            "value": 99
+          },
+          "time": 1709,
+          "cause": null
+        },
+        {
+          "id": 2561,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 0,
+            "value": 99
+          },
+          "time": 1739,
+          "cause": null
+        },
+        {
+          "id": 2595,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 0,
+            "value": 99
+          },
+          "time": 1769,
+          "cause": null
+        },
+        {
+          "id": 2629,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 0,
+            "value": 99
+          },
+          "time": 1799,
+          "cause": null
+        },
+        {
+          "id": 2663,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 0,
+            "value": 99
+          },
+          "time": 1829,
+          "cause": null
+        },
+        {
+          "id": 2697,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 0,
+            "value": 99
+          },
+          "time": 1859,
+          "cause": null
+        },
+        {
+          "id": 2731,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 0,
+            "value": 99
+          },
+          "time": 1889,
+          "cause": null
+        },
+        {
+          "id": 2765,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 0,
+            "value": 99
+          },
+          "time": 1919,
+          "cause": null
+        },
+        {
+          "id": 2799,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 0,
+            "value": 99
+          },
+          "time": 1949,
+          "cause": null
+        },
+        {
+          "id": 2833,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 0,
+            "value": 99
+          },
+          "time": 1979,
+          "cause": null
+        },
+        {
+          "id": 2867,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 0,
+            "value": 99
+          },
+          "time": 2009,
+          "cause": null
+        },
+        {
+          "id": 2901,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 0,
+            "value": 99
+          },
+          "time": 2039,
+          "cause": null
+        },
+        {
+          "id": 2935,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 0,
+            "value": 99
+          },
+          "time": 2069,
+          "cause": null
+        },
+        {
+          "id": 2969,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 0,
+            "value": 99
+          },
+          "time": 2099,
+          "cause": null
+        },
+        {
+          "id": 2977,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 1,
+            "resource": "dp",
+            "delta": -19.5,
+            "value": 79.5
+          },
+          "time": 2102,
+          "cause": null
+        },
+        {
+          "id": 2994,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 3,
+            "resource": "hp",
+            "delta": 0,
+            "value": 2316
+          },
+          "time": 2102,
+          "cause": null
+        },
+        {
+          "id": 3012,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 3,
+            "resource": "mode",
+            "delta": 0,
+            "value": 0
+          },
+          "time": 2102,
+          "cause": null
+        },
+        {
+          "id": 3030,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 3,
+            "resource": "sp",
+            "delta": 0,
+            "value": 25
+          },
+          "time": 2102,
+          "cause": null
+        },
+        {
+          "id": 3094,
+          "type": "resource.changed",
+          "payload": {
+            "source": 3,
+            "target": 3,
+            "resource": "sp",
+            "delta": 6.0,
+            "value": 31.0
+          },
+          "time": 2102,
+          "cause": null
+        },
+        {
+          "id": 3205,
+          "type": "buff.applied",
+          "payload": {
+            "source": 3,
+            "target": 3,
+            "buff": "buff/talent_bpipe_critical",
+            "instance": "buff/3/1",
+            "stacks": 1
+          },
+          "time": 2102,
+          "cause": null
+        },
+        {
+          "id": 3315,
+          "type": "buff.applied",
+          "payload": {
+            "source": 3,
+            "target": 3,
+            "buff": "buff/talent_bpipe_kill_dp",
+            "instance": "buff/3/2",
+            "stacks": 1
+          },
+          "time": 2102,
+          "cause": null
+        },
+        {
+          "id": 3318,
+          "type": "command.accepted",
+          "payload": {
+            "action": {
+              "action": "deploy",
+              "entity": "unit/char_222_bpipe",
+              "alias": "bpipe2",
+              "position": {
+                "row": 4,
+                "col": 4
+              },
+              "facing": "right"
+            },
+            "result": 3
+          },
+          "time": 2102,
+          "cause": null
+        },
+        {
+          "id": 3359,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 1,
+            "resource": "dp",
+            "delta": 13.0,
+            "value": 92.5
+          },
+          "time": 2104,
+          "cause": null
+        },
+        {
+          "id": 3378,
+          "type": "command.accepted",
+          "payload": {
+            "action": {
+              "action": "withdraw",
+              "source": "bpipe2"
+            },
+            "result": 3
+          },
+          "time": 2104,
+          "cause": null
+        },
+        {
+          "id": 3470,
+          "type": "buff.removed",
+          "payload": {
+            "source": 3,
+            "target": 3,
+            "buff": "buff/talent_bpipe_critical",
+            "instance": "buff/3/1"
+          },
+          "time": 2104,
+          "cause": null
+        },
+        {
+          "id": 3561,
+          "type": "buff.removed",
+          "payload": {
+            "source": 3,
+            "target": 3,
+            "buff": "buff/talent_bpipe_kill_dp",
+            "instance": "buff/3/2"
+          },
+          "time": 2104,
+          "cause": null
+        }
+      ],
+      "random_samples": [],
+      "commands": {
+        "schema": "ark-sim/replay/v2",
+        "program_fingerprint": "3bdff1210db549a517373db5b49a0450fd5375830beeb6951e0b9caea909ab6c",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "seed": 11,
+        "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+        "until": 2107,
+        "commands": [
+          {
+            "order": 1,
+            "submitted_at": 0,
+            "at": 0,
+            "action": {
+              "action": "deploy",
+              "entity": "unit/char_222_bpipe",
+              "alias": "bpipe",
+              "position": {
+                "row": 4,
+                "col": 4
+              },
+              "facing": "right"
+            }
+          },
+          {
+            "order": 2,
+            "submitted_at": 0,
+            "at": 2,
+            "action": {
+              "action": "withdraw",
+              "source": "bpipe"
+            }
+          },
+          {
+            "order": 3,
+            "submitted_at": 0,
+            "at": 2102,
+            "action": {
+              "action": "deploy",
+              "entity": "unit/char_222_bpipe",
+              "alias": "bpipe2",
+              "position": {
+                "row": 4,
+                "col": 4
+              },
+              "facing": "right"
+            }
+          },
+          {
+            "order": 4,
+            "submitted_at": 0,
+            "at": 2104,
+            "action": {
+              "action": "withdraw",
+              "source": "bpipe2"
+            }
+          }
+        ]
+      },
+      "fixture_initial_state": {
+        "id": "scenario/canonical_deployed_six",
+        "ruleset": "ruleset/ark_standard",
+        "roster": [
+          "unit/char_151_myrtle",
+          "unit/char_222_bpipe",
+          "unit/char_010_chen",
+          "unit/char_107_liskam",
+          "unit/char_202_demkni",
+          "unit/char_128_plosis",
+          "unit/char_103_angel",
+          "unit/char_180_amgoat",
+          "unit/char_003_kalts",
+          "unit/char_358_lisa",
+          "unit/char_400_weedy",
+          "unit/char_179_cgbird"
+        ],
+        "map": {
+          "rows": 9,
+          "cols": 12
+        },
+        "waves": [],
+        "rules": {
+          "movement.speed": "rule/campaign_draft_move_speed",
+          "movement.path": "rule/m7_diagonal_path"
+        },
+        "resources": {
+          "dp": {
+            "initial": 50,
+            "capacity": 99,
+            "recovery_rate": 1.0,
+            "recovery": {
+              "mode": "periodic",
+              "interval_seconds": 1.0
+            }
+          },
+          "life": {
+            "initial": 10,
+            "capacity": 10
+          }
+        },
+        "parameters": {
+          "deploy_capacity": 8
+        },
+        "objectives": {},
+        "metadata": {
+          "runnable": true,
+          "native_level_id": "level_main_00-10",
+          "pending_conversion": [
+            "fixed_roster_talents_and_native_attack_clocks_not_fully_converted",
+            "selected_skill_models_partial_not_native_complete",
+            "native_control_actions_require_explicit_model",
+            "native_enemy_animation_scaling_and_client_hit_timing_pending"
+          ],
+          "model_validated": false,
+          "formal_mainline_approved": false,
+          "model_status": "partial_integration",
+          "native_ui_policy": {
+            "id": "headless_ack_zero_game_time_v1",
+            "dialogue_acknowledged_at_same_logical_tick": true,
+            "blocker_input_lock_observable": true,
+            "native_ui_wall_time_simulated": false
+          },
+          "m7_profiles": true
+        },
+        "scheduledEffects": [],
+        "seed": 953816614,
+        "initialEntities": [],
+        "kind": "scenario"
+      },
+      "entity_identities": [
+        {
+          "id": 1,
+          "definition": "system/battle"
+        },
+        {
+          "id": 2,
+          "definition": "unit/char_222_bpipe"
+        },
+        {
+          "id": 3,
+          "definition": "unit/char_222_bpipe"
+        }
+      ],
+      "actor_runtime": [
+        {
+          "id": 2,
+          "definition": "unit/char_222_bpipe",
+          "resources": {
+            "hp": 2316,
+            "mode": 0,
+            "sp": 31.0
+          },
+          "buff_instances": [],
+          "attribute_base": {
+            "max_hp": 2316,
+            "atk": 650,
+            "def": 366,
+            "mres": 0.0,
+            "attack_interval": 1.0,
+            "move_speed": 1.0,
+            "block_count": 1,
+            "deploy_cost": 13,
+            "redeploy_time": 70,
+            "mass_level": 0,
+            "sp_recovery_rate": 1.0,
+            "attack_speed_ratio": 1.0,
+            "block_cost": 1,
+            "attack_times": 1
+          },
+          "attribute_modifiers": []
+        },
+        {
+          "id": 3,
+          "definition": "unit/char_222_bpipe",
+          "resources": {
+            "hp": 2316,
+            "mode": 0,
+            "sp": 31.0
+          },
+          "buff_instances": [],
+          "attribute_base": {
+            "max_hp": 2316,
+            "atk": 650,
+            "def": 366,
+            "mres": 0.0,
+            "attack_interval": 1.0,
+            "move_speed": 1.0,
+            "block_count": 1,
+            "deploy_cost": 13,
+            "redeploy_time": 70,
+            "mass_level": 0,
+            "sp_recovery_rate": 1.0,
+            "attack_speed_ratio": 1.0,
+            "block_cost": 1,
+            "attack_times": 1
+          },
+          "attribute_modifiers": []
+        }
+      ],
+      "deck_only_scenario": {
+        "expected": {
+          "Myrtle_native_init": 10,
+          "deck_Bagpipe_bonus": 6,
+          "Bagpipe_not_deployed": true
+        },
+        "program_fingerprint": "3bdff1210db549a517373db5b49a0450fd5375830beeb6951e0b9caea909ab6c",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "tick": 3,
+        "events": [
+          {
+            "id": 6,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 1,
+              "resource": "dp",
+              "delta": -10.0,
+              "value": 40.0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 22,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1565
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 39,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 10
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 85,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 6.0,
+              "value": 16.0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 161,
+            "type": "buff.applied",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/talent_myrtle_parent",
+              "instance": "buff/2/1",
+              "stacks": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 239,
+            "type": "buff.applied",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/talent_myrtle_member",
+              "instance": "buff/2/2",
+              "stacks": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 245,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "deploy",
+                "entity": "unit/char_151_myrtle",
+                "alias": "myrtle",
+                "position": {
+                  "row": 4,
+                  "col": 4
+                },
+                "facing": "right"
+              },
+              "result": 2
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 309,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1565
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 311,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 1,
+            "cause": 291
+          },
+          {
+            "id": 353,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1565
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 355,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 2,
+            "cause": 335
+          }
+        ],
+        "random_samples": [],
+        "commands": {
+          "schema": "ark-sim/replay/v2",
+          "program_fingerprint": "3bdff1210db549a517373db5b49a0450fd5375830beeb6951e0b9caea909ab6c",
+          "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+          "seed": 11,
+          "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+          "until": 3,
+          "commands": [
+            {
+              "order": 1,
+              "submitted_at": 0,
+              "at": 0,
+              "action": {
+                "action": "deploy",
+                "entity": "unit/char_151_myrtle",
+                "alias": "myrtle",
+                "position": {
+                  "row": 4,
+                  "col": 4
+                },
+                "facing": "right"
+              }
+            }
+          ]
+        },
+        "fixture_initial_state": {
+          "id": "scenario/canonical_deployed_six",
+          "ruleset": "ruleset/ark_standard",
+          "roster": [
+            "unit/char_151_myrtle",
+            "unit/char_222_bpipe",
+            "unit/char_010_chen",
+            "unit/char_107_liskam",
+            "unit/char_202_demkni",
+            "unit/char_128_plosis",
+            "unit/char_103_angel",
+            "unit/char_180_amgoat",
+            "unit/char_003_kalts",
+            "unit/char_358_lisa",
+            "unit/char_400_weedy",
+            "unit/char_179_cgbird"
+          ],
+          "map": {
+            "rows": 9,
+            "cols": 12
+          },
+          "waves": [],
+          "rules": {
+            "movement.speed": "rule/campaign_draft_move_speed",
+            "movement.path": "rule/m7_diagonal_path"
+          },
+          "resources": {
+            "dp": {
+              "initial": 50,
+              "capacity": 99,
+              "recovery_rate": 1.0,
+              "recovery": {
+                "mode": "periodic",
+                "interval_seconds": 1.0
+              }
+            },
+            "life": {
+              "initial": 10,
+              "capacity": 10
+            }
+          },
+          "parameters": {
+            "deploy_capacity": 8
+          },
+          "objectives": {},
+          "metadata": {
+            "runnable": true,
+            "native_level_id": "level_main_00-10",
+            "pending_conversion": [
+              "fixed_roster_talents_and_native_attack_clocks_not_fully_converted",
+              "selected_skill_models_partial_not_native_complete",
+              "native_control_actions_require_explicit_model",
+              "native_enemy_animation_scaling_and_client_hit_timing_pending"
+            ],
+            "model_validated": false,
+            "formal_mainline_approved": false,
+            "model_status": "partial_integration",
+            "native_ui_policy": {
+              "id": "headless_ack_zero_game_time_v1",
+              "dialogue_acknowledged_at_same_logical_tick": true,
+              "blocker_input_lock_observable": true,
+              "native_ui_wall_time_simulated": false
+            },
+            "m7_profiles": true
+          },
+          "scheduledEffects": [],
+          "seed": 953816614,
+          "initialEntities": [],
+          "kind": "scenario"
+        },
+        "entity_identities": [
+          {
+            "id": 1,
+            "definition": "system/battle"
+          },
+          {
+            "id": 2,
+            "definition": "unit/char_151_myrtle"
+          }
+        ],
+        "actor_runtime": [
+          {
+            "id": 2,
+            "definition": "unit/char_151_myrtle",
+            "resources": {
+              "hp": 1565,
+              "sp": 16.0
+            },
+            "buff_instances": [
+              {
+                "definition": "buff/talent_myrtle_parent",
+                "source": 2,
+                "target": 2,
+                "id": "buff/2/1",
+                "stacks": 1,
+                "started_at": 0,
+                "expires_at": null,
+                "interval_units": 0,
+                "generation": 1,
+                "tasks": {},
+                "blackboard": {},
+                "aura_members": {
+                  "2": "buff/2/2"
+                }
+              },
+              {
+                "definition": "buff/talent_myrtle_member",
+                "source": 2,
+                "target": 2,
+                "id": "buff/2/2",
+                "stacks": 1,
+                "started_at": 0,
+                "expires_at": null,
+                "interval_units": 1,
+                "generation": 1,
+                "tasks": {
+                  "periodic": 19
+                },
+                "blackboard": {},
+                "aura_parent": "buff/2/1"
+              }
+            ],
+            "attribute_base": {
+              "max_hp": 1565,
+              "atk": 520,
+              "def": 350,
+              "mres": 0.0,
+              "attack_interval": 1.3,
+              "move_speed": 1.0,
+              "block_count": 1,
+              "deploy_cost": 10,
+              "redeploy_time": 70,
+              "mass_level": 0,
+              "sp_recovery_rate": 1.0,
+              "attack_speed_ratio": 1.0,
+              "block_cost": 1
+            },
+            "attribute_modifiers": []
+          }
+        ]
+      }
+    },
+    "angel_force_and_empty_auto": {
+      "expected": {
+        "manual_force_rejected": true,
+        "auto_paid_30": true,
+        "no_targets_no_fake_packets": true
+      },
+      "program_fingerprint": "eb2163283f9d9930705e3ebb344c4aa789edd824d99f6d7525f29c5b6b3b23c6",
+      "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+      "checkpoint_equal": true,
+      "replay_equal": true,
+      "tick": 33,
+      "events": [
+        {
+          "id": 17,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1598
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 35,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 2,
+            "resource": "mode",
+            "delta": 0,
+            "value": 0
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 53,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 2,
+            "resource": "sp",
+            "delta": 0,
+            "value": 30
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 210,
+          "type": "buff.applied",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/talent_angel_speed",
+            "instance": "buff/2/1",
+            "stacks": 1
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 307,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1598
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 340,
+          "type": "buff.applied",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/talent_angel_blessing_self",
+            "instance": "buff/2/2",
+            "stacks": 1
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 342,
+          "type": "command.rejected",
+          "payload": {
+            "action": {
+              "action": "skill",
+              "source": "angel",
+              "ability": "ability/campaign_angel_s3"
+            },
+            "reason": "Automatic-only ability cannot be activated by a player command"
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 425,
+          "type": "ability.started",
+          "payload": {
+            "source": 2,
+            "ability": "ability/campaign_angel_s3",
+            "cast": "cast/2/1",
+            "targets": [
+              2
+            ]
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 426,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "sp",
+            "delta": -30,
+            "value": 0,
+            "ability": "ability/campaign_angel_s3",
+            "cast": "cast/2/1",
+            "reason": "ability_cost"
+          },
+          "time": 0,
+          "cause": 425
+        },
+        {
+          "id": 444,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "mode",
+            "delta": 1,
+            "value": 1
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 555,
+          "type": "buff.applied",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/campaign_angel_overload",
+            "instance": "buff/2/3",
+            "stacks": 1
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 616,
+          "type": "resource.changed",
+          "payload": {
+            "source": 1,
+            "target": 1,
+            "resource": "dp",
+            "delta": 1.0,
+            "value": 51.0
+          },
+          "time": 29,
+          "cause": null
+        }
+      ],
+      "random_samples": [],
+      "commands": {
+        "schema": "ark-sim/replay/v2",
+        "program_fingerprint": "eb2163283f9d9930705e3ebb344c4aa789edd824d99f6d7525f29c5b6b3b23c6",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "seed": 11,
+        "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+        "until": 33,
+        "commands": [
+          {
+            "order": 1,
+            "submitted_at": 0,
+            "at": 0,
+            "action": {
+              "action": "skill",
+              "source": "angel",
+              "ability": "ability/campaign_angel_s3"
+            }
+          }
+        ]
+      },
+      "fixture_initial_state": {
+        "id": "scenario/canonical_deployed_six",
+        "ruleset": "ruleset/ark_standard",
+        "roster": [
+          "unit/char_151_myrtle",
+          "unit/char_222_bpipe",
+          "unit/char_010_chen",
+          "unit/char_107_liskam",
+          "unit/char_202_demkni",
+          "unit/char_128_plosis",
+          "unit/char_103_angel",
+          "unit/char_180_amgoat",
+          "unit/char_003_kalts",
+          "unit/char_358_lisa",
+          "unit/char_400_weedy",
+          "unit/char_179_cgbird"
+        ],
+        "map": {
+          "rows": 9,
+          "cols": 12
+        },
+        "waves": [],
+        "rules": {
+          "movement.speed": "rule/campaign_draft_move_speed",
+          "movement.path": "rule/m7_diagonal_path"
+        },
+        "resources": {
+          "dp": {
+            "initial": 50,
+            "capacity": 99,
+            "recovery_rate": 1.0,
+            "recovery": {
+              "mode": "periodic",
+              "interval_seconds": 1.0
+            }
+          },
+          "life": {
+            "initial": 10,
+            "capacity": 10
+          }
+        },
+        "parameters": {
+          "deploy_capacity": 8
+        },
+        "objectives": {},
+        "metadata": {
+          "runnable": true,
+          "native_level_id": "level_main_00-10",
+          "pending_conversion": [
+            "fixed_roster_talents_and_native_attack_clocks_not_fully_converted",
+            "selected_skill_models_partial_not_native_complete",
+            "native_control_actions_require_explicit_model",
+            "native_enemy_animation_scaling_and_client_hit_timing_pending"
+          ],
+          "model_validated": false,
+          "formal_mainline_approved": false,
+          "model_status": "partial_integration",
+          "native_ui_policy": {
+            "id": "headless_ack_zero_game_time_v1",
+            "dialogue_acknowledged_at_same_logical_tick": true,
+            "blocker_input_lock_observable": true,
+            "native_ui_wall_time_simulated": false
+          },
+          "m7_profiles": true
+        },
+        "scheduledEffects": [],
+        "seed": 953816614,
+        "initialEntities": [
+          {
+            "definition": "unit/char_103_angel",
+            "instanceAlias": "angel",
+            "position": {
+              "row": 4,
+              "col": 4
+            },
+            "facing": "right",
+            "deployed": false,
+            "components": {
+              "resources": {
+                "sp": {
+                  "initial": 30
+                }
+              }
+            }
+          }
+        ],
+        "kind": "scenario"
+      },
+      "entity_identities": [
+        {
+          "id": 1,
+          "definition": "system/battle"
+        },
+        {
+          "id": 2,
+          "definition": "unit/char_103_angel"
+        }
+      ],
+      "actor_runtime": [
+        {
+          "id": 2,
+          "definition": "unit/char_103_angel",
+          "resources": {
+            "hp": 1598,
+            "mode": 1,
+            "sp": 0
+          },
+          "buff_instances": [
+            {
+              "definition": "buff/talent_angel_speed",
+              "source": 2,
+              "target": 2,
+              "id": "buff/2/1",
+              "stacks": 1,
+              "started_at": 0,
+              "expires_at": null,
+              "interval_units": 0,
+              "generation": 1,
+              "tasks": {},
+              "blackboard": {}
+            },
+            {
+              "definition": "buff/talent_angel_blessing_self",
+              "source": 2,
+              "target": 2,
+              "id": "buff/2/2",
+              "stacks": 1,
+              "started_at": 0,
+              "expires_at": null,
+              "interval_units": 0,
+              "generation": 1,
+              "tasks": {},
+              "blackboard": {}
+            },
+            {
+              "definition": "buff/campaign_angel_overload",
+              "source": 2,
+              "target": 2,
+              "id": "buff/2/3",
+              "stacks": 1,
+              "started_at": 0,
+              "expires_at": 450,
+              "interval_units": 0,
+              "generation": 1,
+              "tasks": {
+                "expire": 15
+              },
+              "blackboard": {}
+            }
+          ],
+          "attribute_base": {
+            "max_hp": 1598,
+            "atk": 607,
+            "def": 155,
+            "mres": 0.0,
+            "attack_interval": 1.0,
+            "move_speed": 1.0,
+            "block_count": 1,
+            "deploy_cost": 14,
+            "redeploy_time": 70,
+            "mass_level": 0,
+            "sp_recovery_rate": 1.0,
+            "attack_speed_ratio": 1.0,
+            "block_cost": 1,
+            "attack_times": 1
+          },
+          "attribute_modifiers": [
+            {
+              "attribute": "attack_speed_ratio",
+              "layer": "flat",
+              "value": 0.12,
+              "buff_instance": "buff/2/1",
+              "stacks": 1,
+              "source": 2
+            },
+            {
+              "attribute": "atk",
+              "layer": "direct_ratio",
+              "value": 0.06,
+              "buff_instance": "buff/2/2",
+              "stacks": 1,
+              "source": 2
+            },
+            {
+              "attribute": "max_hp",
+              "layer": "direct_ratio",
+              "value": 0.1,
+              "buff_instance": "buff/2/2",
+              "stacks": 1,
+              "source": 2
+            },
+            {
+              "attribute": "attack_interval",
+              "layer": "flat",
+              "value": -0.11,
+              "buff_instance": "buff/2/3",
+              "stacks": 1,
+              "source": 2
+            },
+            {
+              "attribute": "attack_times",
+              "layer": "flat",
+              "value": 4.0,
+              "buff_instance": "buff/2/3",
+              "stacks": 1,
+              "source": 2
+            }
+          ]
+        }
+      ]
+    },
+    "angel_retargets_after_first_death": {
+      "expected": {
+        "captured_first_launch": 3,
+        "remaining_launches_reselect": 4,
+        "attack_event_count": 1
+      },
+      "program_fingerprint": "956794a1e72d24b5cb4538cd0954fc7edaec84ac5d65daafc7b00e8e8fa5a4e4",
+      "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+      "checkpoint_equal": true,
+      "replay_equal": true,
+      "tick": 21,
+      "events": [
+        {
+          "id": 17,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1598
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 35,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 2,
+            "resource": "mode",
+            "delta": 0,
+            "value": 0
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 53,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 2,
+            "resource": "sp",
+            "delta": 0,
+            "value": 30
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 210,
+          "type": "buff.applied",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/talent_angel_speed",
+            "instance": "buff/2/1",
+            "stacks": 1
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 307,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 2,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1598
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 340,
+          "type": "buff.applied",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/talent_angel_blessing_self",
+            "instance": "buff/2/2",
+            "stacks": 1
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 350,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 3,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 369,
+          "type": "resource.changed",
+          "payload": {
+            "source": null,
+            "target": 4,
+            "resource": "hp",
+            "delta": 0,
+            "value": 1000000
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 462,
+          "type": "ability.started",
+          "payload": {
+            "source": 2,
+            "ability": "ability/campaign_angel_s3",
+            "cast": "cast/2/1",
+            "targets": [
+              2
+            ]
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 463,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "sp",
+            "delta": -30,
+            "value": 0,
+            "ability": "ability/campaign_angel_s3",
+            "cast": "cast/2/1",
+            "reason": "ability_cost"
+          },
+          "time": 0,
+          "cause": 462
+        },
+        {
+          "id": 481,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "resource": "mode",
+            "delta": 1,
+            "value": 1
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 592,
+          "type": "buff.applied",
+          "payload": {
+            "source": 2,
+            "target": 2,
+            "buff": "buff/campaign_angel_overload",
+            "instance": "buff/2/3",
+            "stacks": 1
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 651,
+          "type": "ability.started",
+          "payload": {
+            "source": 2,
+            "ability": "ability/campaign_angel_burst",
+            "cast": "cast/2/2",
+            "targets": [
+              3
+            ]
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 677,
+          "type": "projectile.launched",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "ability": "ability/campaign_angel_burst",
+            "flight_seconds": 0.03333333333333333
+          },
+          "time": 9,
+          "cause": null
+        },
+        {
+          "id": 692,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "resource": "hp",
+            "delta": -1,
+            "value": 0
+          },
+          "time": 10,
+          "cause": null
+        },
+        {
+          "id": 695,
+          "type": "damage.accepted",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "amount": 1,
+            "ability": "ability/campaign_angel_burst",
+            "resource": "hp"
+          },
+          "time": 10,
+          "cause": null
+        },
+        {
+          "id": 696,
+          "type": "combat.kill",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "ability": "ability/campaign_angel_burst",
+            "cast": "cast/2/2",
+            "target_tags": [
+              "enemy",
+              "ground"
+            ]
+          },
+          "time": 10,
+          "cause": null
+        },
+        {
+          "id": 697,
+          "type": "attack.accepted",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "ability": "ability/campaign_angel_burst",
+            "cast": "cast/2/2",
+            "amount": 1
+          },
+          "time": 10,
+          "cause": null
+        },
+        {
+          "id": 706,
+          "type": "projectile.launched",
+          "payload": {
+            "source": 2,
+            "target": 4,
+            "ability": "ability/campaign_angel_burst",
+            "flight_seconds": 0.03333333333333333
+          },
+          "time": 11,
+          "cause": null
+        },
+        {
+          "id": 721,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 4,
+            "resource": "hp",
+            "delta": -657.7619999999879,
+            "value": 999342.238
+          },
+          "time": 12,
+          "cause": null
+        },
+        {
+          "id": 723,
+          "type": "damage.accepted",
+          "payload": {
+            "source": 2,
+            "target": 4,
+            "amount": 657.7619999999879,
+            "ability": "ability/campaign_angel_burst",
+            "resource": "hp"
+          },
+          "time": 12,
+          "cause": null
+        },
+        {
+          "id": 732,
+          "type": "projectile.launched",
+          "payload": {
+            "source": 2,
+            "target": 4,
+            "ability": "ability/campaign_angel_burst",
+            "flight_seconds": 0.03333333333333333
+          },
+          "time": 13,
+          "cause": null
+        },
+        {
+          "id": 747,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 4,
+            "resource": "hp",
+            "delta": -657.7619999999879,
+            "value": 998684.476
+          },
+          "time": 14,
+          "cause": null
+        },
+        {
+          "id": 749,
+          "type": "damage.accepted",
+          "payload": {
+            "source": 2,
+            "target": 4,
+            "amount": 657.7619999999879,
+            "ability": "ability/campaign_angel_burst",
+            "resource": "hp"
+          },
+          "time": 14,
+          "cause": null
+        },
+        {
+          "id": 758,
+          "type": "projectile.launched",
+          "payload": {
+            "source": 2,
+            "target": 4,
+            "ability": "ability/campaign_angel_burst",
+            "flight_seconds": 0.03333333333333333
+          },
+          "time": 15,
+          "cause": null
+        },
+        {
+          "id": 773,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 4,
+            "resource": "hp",
+            "delta": -657.7619999999879,
+            "value": 998026.714
+          },
+          "time": 16,
+          "cause": null
+        },
+        {
+          "id": 775,
+          "type": "damage.accepted",
+          "payload": {
+            "source": 2,
+            "target": 4,
+            "amount": 657.7619999999879,
+            "ability": "ability/campaign_angel_burst",
+            "resource": "hp"
+          },
+          "time": 16,
+          "cause": null
+        },
+        {
+          "id": 784,
+          "type": "projectile.launched",
+          "payload": {
+            "source": 2,
+            "target": 4,
+            "ability": "ability/campaign_angel_burst",
+            "flight_seconds": 0.03333333333333333
+          },
+          "time": 17,
+          "cause": null
+        },
+        {
+          "id": 785,
+          "type": "ability.finished",
+          "payload": {
+            "source": 2,
+            "ability": "ability/campaign_angel_burst",
+            "cast": "cast/2/2"
+          },
+          "time": 17,
+          "cause": null
+        },
+        {
+          "id": 800,
+          "type": "resource.changed",
+          "payload": {
+            "source": 2,
+            "target": 4,
+            "resource": "hp",
+            "delta": -657.7619999999879,
+            "value": 997368.952
+          },
+          "time": 18,
+          "cause": null
+        },
+        {
+          "id": 802,
+          "type": "damage.accepted",
+          "payload": {
+            "source": 2,
+            "target": 4,
+            "amount": 657.7619999999879,
+            "ability": "ability/campaign_angel_burst",
+            "resource": "hp"
+          },
+          "time": 18,
+          "cause": null
+        }
+      ],
+      "random_samples": [],
+      "commands": {
+        "schema": "ark-sim/replay/v2",
+        "program_fingerprint": "956794a1e72d24b5cb4538cd0954fc7edaec84ac5d65daafc7b00e8e8fa5a4e4",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "seed": 11,
+        "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+        "until": 21,
+        "commands": []
+      },
+      "fixture_initial_state": {
+        "id": "scenario/canonical_deployed_six",
+        "ruleset": "ruleset/ark_standard",
+        "roster": [
+          "unit/char_151_myrtle",
+          "unit/char_222_bpipe",
+          "unit/char_010_chen",
+          "unit/char_107_liskam",
+          "unit/char_202_demkni",
+          "unit/char_128_plosis",
+          "unit/char_103_angel",
+          "unit/char_180_amgoat",
+          "unit/char_003_kalts",
+          "unit/char_358_lisa",
+          "unit/char_400_weedy",
+          "unit/char_179_cgbird"
+        ],
+        "map": {
+          "rows": 9,
+          "cols": 12
+        },
+        "waves": [],
+        "rules": {
+          "movement.speed": "rule/campaign_draft_move_speed",
+          "movement.path": "rule/m7_diagonal_path"
+        },
+        "resources": {
+          "dp": {
+            "initial": 50,
+            "capacity": 99,
+            "recovery_rate": 1.0,
+            "recovery": {
+              "mode": "periodic",
+              "interval_seconds": 1.0
+            }
+          },
+          "life": {
+            "initial": 10,
+            "capacity": 10
+          }
+        },
+        "parameters": {
+          "deploy_capacity": 8
+        },
+        "objectives": {},
+        "metadata": {
+          "runnable": true,
+          "native_level_id": "level_main_00-10",
+          "pending_conversion": [
+            "fixed_roster_talents_and_native_attack_clocks_not_fully_converted",
+            "selected_skill_models_partial_not_native_complete",
+            "native_control_actions_require_explicit_model",
+            "native_enemy_animation_scaling_and_client_hit_timing_pending"
+          ],
+          "model_validated": false,
+          "formal_mainline_approved": false,
+          "model_status": "partial_integration",
+          "native_ui_policy": {
+            "id": "headless_ack_zero_game_time_v1",
+            "dialogue_acknowledged_at_same_logical_tick": true,
+            "blocker_input_lock_observable": true,
+            "native_ui_wall_time_simulated": false
+          },
+          "m7_profiles": true
+        },
+        "scheduledEffects": [],
+        "seed": 953816614,
+        "initialEntities": [
+          {
+            "definition": "unit/char_103_angel",
+            "instanceAlias": "angel",
+            "position": {
+              "row": 4,
+              "col": 4
+            },
+            "facing": "right",
+            "deployed": false,
+            "components": {
+              "resources": {
+                "sp": {
+                  "initial": 30
+                }
+              }
+            }
+          },
+          {
+            "definition": "unit/deployed_witness_enemy",
+            "instanceAlias": "enemy0",
+            "position": {
+              "row": 4,
+              "col": 5
+            },
+            "components": {
+              "resources": {
+                "hp": {
+                  "initial": 1
+                }
+              }
+            }
+          },
+          {
+            "definition": "unit/deployed_witness_enemy",
+            "instanceAlias": "enemy1",
+            "position": {
+              "row": 4,
+              "col": 5
+            }
+          }
+        ],
+        "kind": "scenario"
+      },
+      "entity_identities": [
+        {
+          "id": 1,
+          "definition": "system/battle"
+        },
+        {
+          "id": 2,
+          "definition": "unit/char_103_angel"
+        },
+        {
+          "id": 3,
+          "definition": "unit/deployed_witness_enemy"
+        },
+        {
+          "id": 4,
+          "definition": "unit/deployed_witness_enemy"
+        }
+      ],
+      "actor_runtime": [
+        {
+          "id": 2,
+          "definition": "unit/char_103_angel",
+          "resources": {
+            "hp": 1598,
+            "mode": 1,
+            "sp": 0
+          },
+          "buff_instances": [
+            {
+              "definition": "buff/talent_angel_speed",
+              "source": 2,
+              "target": 2,
+              "id": "buff/2/1",
+              "stacks": 1,
+              "started_at": 0,
+              "expires_at": null,
+              "interval_units": 0,
+              "generation": 1,
+              "tasks": {},
+              "blackboard": {}
+            },
+            {
+              "definition": "buff/talent_angel_blessing_self",
+              "source": 2,
+              "target": 2,
+              "id": "buff/2/2",
+              "stacks": 1,
+              "started_at": 0,
+              "expires_at": null,
+              "interval_units": 0,
+              "generation": 1,
+              "tasks": {},
+              "blackboard": {}
+            },
+            {
+              "definition": "buff/campaign_angel_overload",
+              "source": 2,
+              "target": 2,
+              "id": "buff/2/3",
+              "stacks": 1,
+              "started_at": 0,
+              "expires_at": 450,
+              "interval_units": 0,
+              "generation": 1,
+              "tasks": {
+                "expire": 20
+              },
+              "blackboard": {}
+            }
+          ],
+          "attribute_base": {
+            "max_hp": 1598,
+            "atk": 607,
+            "def": 155,
+            "mres": 0.0,
+            "attack_interval": 1.0,
+            "move_speed": 1.0,
+            "block_count": 1,
+            "deploy_cost": 14,
+            "redeploy_time": 70,
+            "mass_level": 0,
+            "sp_recovery_rate": 1.0,
+            "attack_speed_ratio": 1.0,
+            "block_cost": 1,
+            "attack_times": 1
+          },
+          "attribute_modifiers": [
+            {
+              "attribute": "attack_speed_ratio",
+              "layer": "flat",
+              "value": 0.12,
+              "buff_instance": "buff/2/1",
+              "stacks": 1,
+              "source": 2
+            },
+            {
+              "attribute": "atk",
+              "layer": "direct_ratio",
+              "value": 0.06,
+              "buff_instance": "buff/2/2",
+              "stacks": 1,
+              "source": 2
+            },
+            {
+              "attribute": "max_hp",
+              "layer": "direct_ratio",
+              "value": 0.1,
+              "buff_instance": "buff/2/2",
+              "stacks": 1,
+              "source": 2
+            },
+            {
+              "attribute": "attack_interval",
+              "layer": "flat",
+              "value": -0.11,
+              "buff_instance": "buff/2/3",
+              "stacks": 1,
+              "source": 2
+            },
+            {
+              "attribute": "attack_times",
+              "layer": "flat",
+              "value": 4.0,
+              "buff_instance": "buff/2/3",
+              "stacks": 1,
+              "source": 2
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "runtime_module": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m12_projection_candidate\\ark_sim\\__init__.py",
+  "identity_at_start": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\witness_deployed_offensive.py": "3c63bdaaea8afda4fad8275a33a909157ffdf986b2f43b25574907c0bc741b91",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\witness_deployed_six.py": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\mainline_models\\level_main_00-10.m12_projection.json": "0fbba3f0548d2efaef97d7c1be98a620e65b6408755bfddbd49a132ef72fddf4"
+  },
+  "formal_stage_approved": false,
+  "failure": {
+    "case": "angel_blessing_deploy_and_retire",
+    "error": "AssertionError()"
+  }
+}

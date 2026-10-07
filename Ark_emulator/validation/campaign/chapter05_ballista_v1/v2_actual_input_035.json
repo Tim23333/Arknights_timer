@@ -1,0 +1,244 @@
+{
+  "manifest": {
+    "requires": [
+      "preset/ark_standard"
+    ]
+  },
+  "entities": [
+    {
+      "id": "unit/source",
+      "kind": "entity",
+      "tags": [
+        "enemy"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 500,
+            "atk": 37,
+            "def": 0,
+            "mres": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 500,
+            "capacity": 500,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "abilities": [
+          "ability/fire"
+        ]
+      }
+    },
+    {
+      "id": "unit/a",
+      "kind": "entity",
+      "tags": [
+        "player",
+        "trace"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 500,
+            "atk": 37,
+            "def": 0,
+            "mres": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 500,
+            "capacity": 500,
+            "role": "health"
+          }
+        },
+        "spatial": {}
+      }
+    },
+    {
+      "id": "unit/b",
+      "kind": "entity",
+      "tags": [
+        "player",
+        "extra"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 500,
+            "atk": 37,
+            "def": 0,
+            "mres": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 500,
+            "capacity": 500,
+            "role": "health"
+          }
+        },
+        "spatial": {}
+      }
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/a",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "trace"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/motion",
+      "kind": "rule",
+      "contract": "projectile.trajectory",
+      "implementation": {
+        "type": "provider",
+        "provider": "peer.motion"
+      }
+    },
+    {
+      "id": "rule/collision",
+      "kind": "rule",
+      "contract": "projectile.collision",
+      "implementation": {
+        "type": "provider",
+        "provider": "peer.collision"
+      }
+    },
+    {
+      "id": "rule/failure",
+      "kind": "rule",
+      "contract": "resource.recovery",
+      "implementation": {
+        "type": "expression",
+        "expression": "1/0"
+      }
+    }
+  ],
+  "projectiles": [
+    {
+      "id": "projectile/peer",
+      "kind": "projectile",
+      "motion": {
+        "rule": "rule/motion"
+      },
+      "collision": {
+        "rule": "rule/collision",
+        "allow_other_targets": true
+      },
+      "lifetime_seconds": 0.2,
+      "max_hits": null,
+      "can_hit_same_target": false,
+      "stop_after_max": true,
+      "stop_after_first": true,
+      "attach_at_launch": false,
+      "lifecycle": {
+        "source_invalid": "retain",
+        "source_hidden": "retain",
+        "target_invalid": "retain_position",
+        "target_hidden": "retain_position",
+        "finish_on_reach": false,
+        "hit_on_reach": true,
+        "force_reach_on_expire": false,
+        "hit_on_expire": true
+      },
+      "on_invalid": [
+        {
+          "op": "random",
+          "stream": "imp",
+          "probability": 1,
+          "on_success": [
+            {
+              "op": "modify_resource",
+              "target": "source",
+              "resource": "hp",
+              "delta": -1
+            }
+          ]
+        },
+        {
+          "op": "modify_resource",
+          "target": "source",
+          "resource": "hp",
+          "amount_rule": "rule/failure"
+        }
+      ]
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/fire",
+      "kind": "ability",
+      "selector": "selector/a",
+      "activation": {
+        "mode": "manual",
+        "parameters": {
+          "counts_as_attack": true
+        }
+      },
+      "parameters": {
+        "wait_for_projectiles": true
+      },
+      "timeline": [
+        {
+          "at_seconds": 0,
+          "effect": {
+            "op": "damage",
+            "damage_type": "true",
+            "projectile_definition": "projectile/peer"
+          }
+        }
+      ]
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/quota_peer",
+    "ruleset": "ruleset/ark_standard",
+    "objectives": {},
+    "map": {
+      "rows": 1,
+      "cols": 3
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/source",
+        "instanceAlias": "source",
+        "position": {
+          "row": 0,
+          "col": 0
+        }
+      },
+      {
+        "definition": "unit/a",
+        "instanceAlias": "a",
+        "position": {
+          "row": 0,
+          "col": 1
+        }
+      },
+      {
+        "definition": "unit/b",
+        "instanceAlias": "b",
+        "position": {
+          "row": 0,
+          "col": 2
+        }
+      }
+    ]
+  }
+}

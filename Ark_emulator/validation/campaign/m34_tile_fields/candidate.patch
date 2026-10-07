@@ -1,0 +1,71 @@
+--- a/ark_sim/domains/abilities.py
++++ b/ark_sim/domains/abilities.py
+@@ -44,6 +44,8 @@
+     def start(self, source, ability_id, automatic=False, event_payload=None, cause=None):
+         with self.ctx.session.atomic():
+             source = self.ctx.session.world.resolve(source)
++            if 'tile_field_owner' in self.ctx.definition(source).get('tags',[]):
++                raise ActivationRejected('Static tile field is not an ability source')
+             self.ctx.buffs.prune_expired()
+             ability = self._definition(ability_id)
+             if ability_id not in self.ctx.get(source, ("abilities",), []):
+--- a/ark_sim/domains/lifecycle.py
++++ b/ark_sim/domains/lifecycle.py
+@@ -32,6 +32,8 @@
+         if alias is not None and controls is not None and (alias.startswith("control/") or controls.alias_exists(alias)):
+             raise ValueError("actor alias collides with a control alias")
+         definition = self.ctx.program.definitions[definition_id]
++        if 'tile_field_owner' in definition.get('tags',[]) and route is not None:
++            raise ValueError('static tile field route argument is forbidden')
+         if definition.get("kind") != "entity":
+             raise ValueError(f"{definition_id} is not an entity definition")
+         components = thaw(definition.get("components", {}))
+@@ -49,6 +51,9 @@
+             components["ownership"] = {"owner": self.ctx.session.world.resolve(owner),
+                 "on_owner_retire": ownership.get("on_owner_retire", on_owner_retire)}
+         lifetime_seconds = lifetime_seconds if lifetime_seconds is not None else parameters.get("lifetime_seconds")
++        from .tile_fields import validate_effective_owner
++        validate_effective_owner(self.ctx.program.definitions,definition,components,
++                                 definition.get('tags',[]) if tags is None else tags)
+         if not active and lifetime_seconds is not None and (type(lifetime_seconds) not in (int, float) or not math.isfinite(lifetime_seconds) or lifetime_seconds < 0):
+             raise ValueError('dormant lifetime must be nonnegative finite seconds')
+         self.ctx.attributes.initialize(definition, components, instance_rules=rule_overrides)
+--- a/ark_sim/domains/tile_fields.py
++++ b/ark_sim/domains/tile_fields.py
+@@ -40,6 +40,36 @@
+         initial=components.get('buffs',components.get('buff_container',{})).get('initial',[])
+         if not initial or not any(definitions[bid].get('aura') for bid in initial):
+             raise ValueError('tile field owner needs an explicit parent aura Buff')
++    def visit(value):
++        if isinstance(value,Mapping):
++            reference=value.get('definition')
++            if isinstance(reference,str) and reference in definitions and 'tile_field_owner' in definitions[reference].get('tags',[]):
++                from ..content.overlays import merge
++                definition=definitions[reference]
++                components=merge(thaw(definition.get('components',{})),thaw(value.get('components',{})))
++                if value.get('route') is not None:
++                    components.setdefault('spatial',{})['route']=thaw(value['route'])
++                if value.get('parameters',{}).get('owner') is not None:
++                    raise ValueError('static tile field instance owner parameter is forbidden')
++                validate_effective_owner(definitions,definition,components,value.get('tags',definition.get('tags',[])))
++            for key,child in value.items():
++                if key not in ('metadata','parameters','payload','inputs','expected_blackboard'):visit(child)
++        elif isinstance(value,(list,tuple)):
++            for child in value:visit(child)
++    visit(scene)
++
++
++def validate_effective_owner(definitions,definition,components,tags):
++    if 'tile_field_owner' not in definition.get('tags',[]):return
++    if 'tile_field_owner' not in tags or set(tags)&{'enemy','player','campaign_roster'}:
++        raise ValueError('static tile field runtime role cannot be overridden')
++    if set(components.get('spatial',{}))-{'coordinate_space','position','facing','parameters'}:
++        raise ValueError('static tile field effective spatial driver is forbidden')
++    if any(components.get(key) for key in ('abilities','behavior','deployable','ownership','terrain_overlays')):
++        raise ValueError('static tile field effective combat/deployment/ownership override is forbidden')
++    initial=components.get('buffs',components.get('buff_container',{})).get('initial',[])
++    if not initial or not any(definitions[bid].get('aura') for bid in initial):
++        raise ValueError('static tile field effective parent aura is absent')
+ 
+ 
+ def initialize(ctx):

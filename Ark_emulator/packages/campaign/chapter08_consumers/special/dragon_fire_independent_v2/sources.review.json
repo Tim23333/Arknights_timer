@@ -1,0 +1,389 @@
+{
+  "schema": "ark-sim/dragon-fire-independent-source-review/v1",
+  "bson": {
+    "source": {
+      "path": "data/anon_textassets/buff_template_data.dat",
+      "sha256": "0c438b57b176e0fa430b5b982a58c7b524f4121aa8dbab33d3e647aa0fc1ee59",
+      "bytes": 16030804
+    },
+    "payload_sha256": "99ec60717a95fc64e99ea50959f80217e724919b7ec8825e1f6690a42e4ca799",
+    "templates": {
+      "bena_s_2": {
+        "parsed": {
+          "templateKey": "bena_s_2",
+          "effectKey": "",
+          "onEventPriority": "DEFAULT",
+          "eventToActions": {
+            "ON_OUTPUT_DAMAGE": [
+              {
+                "$type": "Torappu.Battle.Action.Nodes+DamageViaMaxHpRatio, Assembly-CSharp",
+                "_targetType": "BUFF_OWNER",
+                "_getMaxHpFromTarget": false,
+                "_damageType": "PURE",
+                "_applyWay": "NONE",
+                "_ignoreForSp": true,
+                "_isUndeadable": false,
+                "_attackType": "NORMAL",
+                "_skipModifierEvent": true,
+                "_multiplyByKey": false,
+                "_multiplierKey": "cnt",
+                "_noSourceDamage": false
+              }
+            ]
+          }
+        },
+        "payload_offset": 694499,
+        "document_base64": "rwEAAAJ0ZW1wbGF0ZUtleQAJAAAAYmVuYV9zXzIAAmVmZmVjdEtleQABAAAAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQAA2V2ZW50VG9BY3Rpb25zAFMBAAAET05fT1VUUFVUX0RBTUFHRQA8AQAAAzAANAEAAAIkdHlwZQBBAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0RhbWFnZVZpYU1heEhwUmF0aW8sIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIACF9nZXRNYXhIcEZyb21UYXJnZXQAAAJfZGFtYWdlVHlwZQAFAAAAUFVSRQACX2FwcGx5V2F5AAUAAABOT05FAAhfaWdub3JlRm9yU3AAAQhfaXNVbmRlYWRhYmxlAAACX2F0dGFja1R5cGUABwAAAE5PUk1BTAAIX3NraXBNb2RpZmllckV2ZW50AAEIX211bHRpcGx5QnlLZXkAAAJfbXVsdGlwbGllcktleQAEAAAAY250AAhfbm9Tb3VyY2VEYW1hZ2UAAAAAAAA=",
+        "document_sha256": "1a8ce78f0086de043e3525a0efe7dcaee3e65bf0e5a87a40c35795c8bd16da8f"
+      },
+      "bena_stand[resetblock]": {
+        "parsed": {
+          "templateKey": "bena_stand[resetblock]",
+          "effectKey": "",
+          "onEventPriority": "DEFAULT",
+          "eventToActions": {
+            "ON_BUFF_START": [
+              {
+                "$type": "Torappu.Battle.Action.Nodes+FinishBuffsById, Assembly-CSharp",
+                "_buffKey": "bena_stand[blockzero]",
+                "_loadFromBlackboard": false,
+                "_decCntIfStack": false,
+                "_updateOverrideMap": true,
+                "_targetType": "BUFF_OWNER",
+                "_checkBuffSource": false,
+                "_sourceType": "BUFF_SOURCE",
+                "_alsoClearNullSource": false,
+                "_finishHostBuff": false,
+                "_decCntKey": null,
+                "_decCnt": 1
+              }
+            ]
+          }
+        },
+        "payload_offset": 694954,
+        "document_base64": "wQEAAAJ0ZW1wbGF0ZUtleQAXAAAAYmVuYV9zdGFuZFtyZXNldGJsb2NrXQACZWZmZWN0S2V5AAEAAAAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAADZXZlbnRUb0FjdGlvbnMAVwEAAARPTl9CVUZGX1NUQVJUAEMBAAADMAA7AQAAAiR0eXBlAD0AAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrRmluaXNoQnVmZnNCeUlkLCBBc3NlbWJseS1DU2hhcnAAAl9idWZmS2V5ABYAAABiZW5hX3N0YW5kW2Jsb2NremVyb10ACF9sb2FkRnJvbUJsYWNrYm9hcmQAAAhfZGVjQ250SWZTdGFjawAACF91cGRhdGVPdmVycmlkZU1hcAABAl90YXJnZXRUeXBlAAsAAABCVUZGX09XTkVSAAhfY2hlY2tCdWZmU291cmNlAAACX3NvdXJjZVR5cGUADAAAAEJVRkZfU09VUkNFAAhfYWxzb0NsZWFyTnVsbFNvdXJjZQAACF9maW5pc2hIb3N0QnVmZgAACl9kZWNDbnRLZXkAEF9kZWNDbnQAAQAAAAAAAAA=",
+        "document_sha256": "873c19f76bf52e2d601e35817df77db19caead863ae3cfb73cc4ccad50e9a7d6"
+      },
+      "bena_standin[switch]": {
+        "parsed": {
+          "templateKey": "bena_standin[switch]",
+          "effectKey": "",
+          "onEventPriority": "DEFAULT",
+          "eventToActions": {
+            "ON_BUFF_START": [
+              {
+                "$type": "Torappu.Battle.Action.Nodes+SpShowBuff, Assembly-CSharp",
+                "_targetType": "BUFF_OWNER",
+                "_spShowBuffKey": "",
+                "_isSelf": true,
+                "_isSkillCountDown": false,
+                "_advancedShowType": "NONE"
+              }
+            ],
+            "ON_BUFF_FINISH": [
+              {
+                "$type": "Torappu.Battle.Action.Nodes+TriggerAbility, Assembly-CSharp",
+                "_ownerType": "BUFF_OWNER",
+                "_targetType": "BUFF_OWNER",
+                "_abilityName": "bena_trait_ability[switch2normal]",
+                "_checkCanUseAblityFlag": false,
+                "_castDirectly": true,
+                "_useFirstActiveAbility": false,
+                "_useCastResult": false,
+                "_triggerHostAbility": false,
+                "_notInterruptAbilityIfCasting": false
+              }
+            ]
+          }
+        },
+        "payload_offset": 690170,
+        "document_base64": "jwIAAAJ0ZW1wbGF0ZUtleQAVAAAAYmVuYV9zdGFuZGluW3N3aXRjaF0AAmVmZmVjdEtleQABAAAAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQAA2V2ZW50VG9BY3Rpb25zACcCAAAET05fQlVGRl9TVEFSVAC7AAAAAzAAswAAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK1NwU2hvd0J1ZmYsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIAAl9zcFNob3dCdWZmS2V5AAEAAAAACF9pc1NlbGYAAQhfaXNTa2lsbENvdW50RG93bgAAAl9hZHZhbmNlZFNob3dUeXBlAAUAAABOT05FAAAABE9OX0JVRkZfRklOSVNIAEgBAAADMABAAQAAAiR0eXBlADwAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrVHJpZ2dlckFiaWxpdHksIEFzc2VtYmx5LUNTaGFycAACX293bmVyVHlwZQALAAAAQlVGRl9PV05FUgACX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIAAl9hYmlsaXR5TmFtZQAiAAAAYmVuYV90cmFpdF9hYmlsaXR5W3N3aXRjaDJub3JtYWxdAAhfY2hlY2tDYW5Vc2VBYmxpdHlGbGFnAAAIX2Nhc3REaXJlY3RseQABCF91c2VGaXJzdEFjdGl2ZUFiaWxpdHkAAAhfdXNlQ2FzdFJlc3VsdAAACF90cmlnZ2VySG9zdEFiaWxpdHkAAAhfbm90SW50ZXJydXB0QWJpbGl0eUlmQ2FzdGluZwAAAAAAAA==",
+        "document_sha256": "e13bdae7a041e7c689fada3015d11372a79c46522b26dad4f8c033426326f7c9"
+      },
+      "bena_switchbegin": {
+        "parsed": {
+          "templateKey": "bena_switchbegin",
+          "effectKey": "",
+          "onEventPriority": "DEFAULT",
+          "eventToActions": {
+            "ON_BUFF_START": [
+              {
+                "$type": "Torappu.Battle.Action.Nodes+ClearAllBuffs, Assembly-CSharp",
+                "_targetType": "TARGET",
+                "_retainedBuffsWhenClear": [
+                  "bena_switchbegin",
+                  "bena_tr"
+                ],
+                "_alsoRemoveDurableBuff": false
+              },
+              {
+                "$type": "Torappu.Battle.Action.Nodes+OnRallyPointLikeReborn, Assembly-CSharp",
+                "_targetType": "TARGET"
+              },
+              {
+                "$type": "Torappu.Battle.Action.Nodes+InterruptCharacterAbility, Assembly-CSharp",
+                "_charFrom": "BUFF_OWNER",
+                "_abilityName": "bena_skill",
+                "_needStopAffect": true
+              },
+              {
+                "$type": "Torappu.Battle.Action.Nodes+ClearCharacterSp, Assembly-CSharp",
+                "_forceFlag": false,
+                "_charFrom": "BUFF_OWNER"
+              }
+            ]
+          }
+        },
+        "payload_offset": 690843,
+        "document_base64": "ywIAAAJ0ZW1wbGF0ZUtleQARAAAAYmVuYV9zd2l0Y2hiZWdpbgACZWZmZWN0S2V5AAEAAAAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAADZXZlbnRUb0FjdGlvbnMAZwIAAARPTl9CVUZGX1NUQVJUAFMCAAADMADBAAAAAiR0eXBlADsAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ2xlYXJBbGxCdWZmcywgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQAHAAAAVEFSR0VUAARfcmV0YWluZWRCdWZmc1doZW5DbGVhcgAsAAAAAjAAEQAAAGJlbmFfc3dpdGNoYmVnaW4AAjEACAAAAGJlbmFfdHIAAAhfYWxzb1JlbW92ZUR1cmFibGVCdWZmAAAAAzEAbAAAAAIkdHlwZQBEAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK09uUmFsbHlQb2ludExpa2VSZWJvcm4sIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUABwAAAFRBUkdFVAAAAzIAoAAAAAIkdHlwZQBHAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0ludGVycnVwdENoYXJhY3RlckFiaWxpdHksIEFzc2VtYmx5LUNTaGFycAACX2NoYXJGcm9tAAsAAABCVUZGX09XTkVSAAJfYWJpbGl0eU5hbWUACwAAAGJlbmFfc2tpbGwACF9uZWVkU3RvcEFmZmVjdAABAAMzAHUAAAACJHR5cGUAPgAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDbGVhckNoYXJhY3RlclNwLCBBc3NlbWJseS1DU2hhcnAACF9mb3JjZUZsYWcAAAJfY2hhckZyb20ACwAAAEJVRkZfT1dORVIAAAAAAA==",
+        "document_sha256": "50d661b4f1528388324153585ffc010366624f46a02dc1a18ddf5d67b89bd1e6"
+      },
+      "bena_switchend": {
+        "parsed": {
+          "templateKey": "bena_switchend",
+          "effectKey": "",
+          "onEventPriority": "DEFAULT",
+          "eventToActions": {
+            "ON_BUFF_START": [
+              {
+                "$type": "Torappu.Battle.Action.Nodes+ClearAllBuffs, Assembly-CSharp",
+                "_targetType": "BUFF_OWNER",
+                "_retainedBuffsWhenClear": [
+                  "bena_switchend",
+                  "bena_tr",
+                  "bena_stand[blockzero]"
+                ],
+                "_alsoRemoveDurableBuff": false
+              },
+              {
+                "$type": "Torappu.Battle.Action.Nodes+OnRallyPointLikeReborn, Assembly-CSharp",
+                "_targetType": "BUFF_OWNER"
+              },
+              {
+                "$type": "Torappu.Battle.Action.Nodes+SwitchMode, Assembly-CSharp",
+                "_modeIndex": 0,
+                "_loadModeFromBlackboard": true,
+                "_restoreDefault": false,
+                "_restartFSM": true,
+                "_targetType": "TARGET"
+              }
+            ]
+          }
+        },
+        "payload_offset": 691574,
+        "document_base64": "fgIAAAJ0ZW1wbGF0ZUtleQAPAAAAYmVuYV9zd2l0Y2hlbmQAAmVmZmVjdEtleQABAAAAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQAA2V2ZW50VG9BY3Rpb25zABwCAAAET05fQlVGRl9TVEFSVAAIAgAAAzAA4AAAAAIkdHlwZQA7AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NsZWFyQWxsQnVmZnMsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUACwAAAEJVRkZfT1dORVIABF9yZXRhaW5lZEJ1ZmZzV2hlbkNsZWFyAEcAAAACMAAPAAAAYmVuYV9zd2l0Y2hlbmQAAjEACAAAAGJlbmFfdHIAAjIAFgAAAGJlbmFfc3RhbmRbYmxvY2t6ZXJvXQAACF9hbHNvUmVtb3ZlRHVyYWJsZUJ1ZmYAAAADMQBwAAAAAiR0eXBlAEQAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrT25SYWxseVBvaW50TGlrZVJlYm9ybiwgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQALAAAAQlVGRl9PV05FUgAAAzIAqgAAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK1N3aXRjaE1vZGUsIEFzc2VtYmx5LUNTaGFycAAQX21vZGVJbmRleAAAAAAACF9sb2FkTW9kZUZyb21CbGFja2JvYXJkAAEIX3Jlc3RvcmVEZWZhdWx0AAAIX3Jlc3RhcnRGU00AAQJfdGFyZ2V0VHlwZQAHAAAAVEFSR0VUAAAAAAA=",
+        "document_sha256": "e1a0d0e3a4f2c337380191ccb3c419dd0b7180bc89bc46b0ec3c8c12e2b2276c"
+      },
+      "bena_tr": {
+        "parsed": {
+          "templateKey": "bena_tr",
+          "effectKey": "",
+          "onEventPriority": "DEFAULT",
+          "eventToActions": {
+            "ON_BEFORE_TRY_SET_HP_ZERO": [
+              {
+                "$type": "Torappu.Battle.Action.Nodes+IfElse, Assembly-CSharp",
+                "_conditionNode": {
+                  "$type": "Torappu.Battle.Action.Nodes+CheckUnitCurrentMode, Assembly-CSharp",
+                  "_targetType": "BUFF_OWNER",
+                  "_checkCurModeIndex": 1,
+                  "_loadCurModeBbKey": ""
+                },
+                "_succeedNodes": [
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+FinishDerivedBuff, Assembly-CSharp",
+                    "_updateOverrideMap": true
+                  }
+                ],
+                "_failNodes": [
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+ConsumeTrySetHpZeroModifier, Assembly-CSharp",
+                    "_blockThisHpSet": false,
+                    "_dontConsumeWhenUndeadable": true
+                  },
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+CreateBuff, Assembly-CSharp",
+                    "_buff": {
+                      "attributes": {
+                        "abnormalFlags": [
+                          "UNDEADABLE"
+                        ],
+                        "abnormalImmunes": [],
+                        "abnormalAntis": [],
+                        "abnormalCombos": [],
+                        "abnormalComboImmunes": [],
+                        "attributeModifiers": []
+                      },
+                      "buffKey": "bena_tr_undead",
+                      "loadFromDB": false,
+                      "isDurableBuff": false,
+                      "isDamageMissable": false,
+                      "isSilenceable": false,
+                      "isStunnable": false,
+                      "isFreezable": false,
+                      "isLevitatable": false,
+                      "isGroundBoundable": false,
+                      "statusResistable": "AUTOMATIC",
+                      "templateKey": "empty",
+                      "disableOverride": false,
+                      "overrideKey": null,
+                      "overrideType": "UNIQUE",
+                      "maxStackCnt": 1,
+                      "refreshRemainingTimeWhenStackMax": false,
+                      "clearAllStackCntWhenTimeUp": false,
+                      "maxValidStackCnt": -1,
+                      "independentCharacterSource": false,
+                      "overrideEffectKey": null,
+                      "overrideOnEventPriority": false,
+                      "onEventPriority": "DEFAULT",
+                      "audioSignal": null,
+                      "lifeTimeType": "INFINITY",
+                      "takeSnapshotWhenExtend": false,
+                      "durationKey": null,
+                      "lifeTime": 0.0,
+                      "triggerLifeType": "IMMEDIATELY",
+                      "triggerCnt": 0,
+                      "triggerInterval": -1.0,
+                      "waitFirstTriggerInterval": true,
+                      "firstTriggerInterval": -1.0,
+                      "priority": -1,
+                      "priorityBBKeys": [],
+                      "stripBlackboardParamsWithBuffKey": false,
+                      "blackboard": [],
+                      "enableInitDirectionFromSource": false
+                    },
+                    "_buffOwner": "BUFF_OWNER",
+                    "_useSpecialBuffSource": false,
+                    "_specialBuffSource": "BUFF_SOURCE",
+                    "_isDerivedBuff": true,
+                    "_finishDerivedBuffIfParentFinish": true,
+                    "_inherateSourceProjectileFromParentBuff": false,
+                    "_hookEffectKeyFromSourceProjectile": false
+                  },
+                  {
+                    "$type": "Torappu.Battle.Action.Nodes+TriggerAbility, Assembly-CSharp",
+                    "_ownerType": "BUFF_OWNER",
+                    "_targetType": "BUFF_OWNER",
+                    "_abilityName": "bena_trait_ability[switch2stand]",
+                    "_checkCanUseAblityFlag": false,
+                    "_castDirectly": true,
+                    "_useFirstActiveAbility": false,
+                    "_useCastResult": false,
+                    "_triggerHostAbility": false,
+                    "_notInterruptAbilityIfCasting": false
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "payload_offset": 692221,
+        "document_base64": "3AgAAAJ0ZW1wbGF0ZUtleQAIAAAAYmVuYV90cgACZWZmZWN0S2V5AAEAAAAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAADZXZlbnRUb0FjdGlvbnMAgQgAAARPTl9CRUZPUkVfVFJZX1NFVF9IUF9aRVJPAGEIAAADMABZCAAAAiR0eXBlADQAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrSWZFbHNlLCBBc3NlbWJseS1DU2hhcnAAA19jb25kaXRpb25Ob2RlAJ4AAAACJHR5cGUAQgAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDaGVja1VuaXRDdXJyZW50TW9kZSwgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQALAAAAQlVGRl9PV05FUgAQX2NoZWNrQ3VyTW9kZUluZGV4AAEAAAACX2xvYWRDdXJNb2RlQmJLZXkAAQAAAAAABF9zdWNjZWVkTm9kZXMAbAAAAAMwAGQAAAACJHR5cGUAPwAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytGaW5pc2hEZXJpdmVkQnVmZiwgQXNzZW1ibHktQ1NoYXJwAAhfdXBkYXRlT3ZlcnJpZGVNYXAAAQAABF9mYWlsTm9kZXMA4AYAAAMwAIgAAAACJHR5cGUASQAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDb25zdW1lVHJ5U2V0SHBaZXJvTW9kaWZpZXIsIEFzc2VtYmx5LUNTaGFycAAIX2Jsb2NrVGhpc0hwU2V0AAAIX2RvbnRDb25zdW1lV2hlblVuZGVhZGFibGUAAQADMQALBQAAAiR0eXBlADgAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQ3JlYXRlQnVmZiwgQXNzZW1ibHktQ1NoYXJwAANfYnVmZgDiAwAAA2F0dHJpYnV0ZXMAngAAAARhYm5vcm1hbEZsYWdzABcAAAACMAALAAAAVU5ERUFEQUJMRQAABGFibm9ybWFsSW1tdW5lcwAFAAAAAARhYm5vcm1hbEFudGlzAAUAAAAABGFibm9ybWFsQ29tYm9zAAUAAAAABGFibm9ybWFsQ29tYm9JbW11bmVzAAUAAAAABGF0dHJpYnV0ZU1vZGlmaWVycwAFAAAAAAACYnVmZktleQAPAAAAYmVuYV90cl91bmRlYWQACGxvYWRGcm9tREIAAAhpc0R1cmFibGVCdWZmAAAIaXNEYW1hZ2VNaXNzYWJsZQAACGlzU2lsZW5jZWFibGUAAAhpc1N0dW5uYWJsZQAACGlzRnJlZXphYmxlAAAIaXNMZXZpdGF0YWJsZQAACGlzR3JvdW5kQm91bmRhYmxlAAACc3RhdHVzUmVzaXN0YWJsZQAKAAAAQVVUT01BVElDAAJ0ZW1wbGF0ZUtleQAGAAAAZW1wdHkACGRpc2FibGVPdmVycmlkZQAACm92ZXJyaWRlS2V5AAJvdmVycmlkZVR5cGUABwAAAFVOSVFVRQAQbWF4U3RhY2tDbnQAAQAAAAhyZWZyZXNoUmVtYWluaW5nVGltZVdoZW5TdGFja01heAAACGNsZWFyQWxsU3RhY2tDbnRXaGVuVGltZVVwAAAQbWF4VmFsaWRTdGFja0NudAD/////CGluZGVwZW5kZW50Q2hhcmFjdGVyU291cmNlAAAKb3ZlcnJpZGVFZmZlY3RLZXkACG92ZXJyaWRlT25FdmVudFByaW9yaXR5AAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAAphdWRpb1NpZ25hbAACbGlmZVRpbWVUeXBlAAkAAABJTkZJTklUWQAIdGFrZVNuYXBzaG90V2hlbkV4dGVuZAAACmR1cmF0aW9uS2V5AAFsaWZlVGltZQAAAAAAAAAAAAJ0cmlnZ2VyTGlmZVR5cGUADAAAAElNTUVESUFURUxZABB0cmlnZ2VyQ250AAAAAAABdHJpZ2dlckludGVydmFsAAAAAAAAAPC/CHdhaXRGaXJzdFRyaWdnZXJJbnRlcnZhbAABAWZpcnN0VHJpZ2dlckludGVydmFsAAAAAAAAAPC/EHByaW9yaXR5AP////8EcHJpb3JpdHlCQktleXMABQAAAAAIc3RyaXBCbGFja2JvYXJkUGFyYW1zV2l0aEJ1ZmZLZXkAAARibGFja2JvYXJkAAUAAAAACGVuYWJsZUluaXREaXJlY3Rpb25Gcm9tU291cmNlAAAAAl9idWZmT3duZXIACwAAAEJVRkZfT1dORVIACF91c2VTcGVjaWFsQnVmZlNvdXJjZQAAAl9zcGVjaWFsQnVmZlNvdXJjZQAMAAAAQlVGRl9TT1VSQ0UACF9pc0Rlcml2ZWRCdWZmAAEIX2ZpbmlzaERlcml2ZWRCdWZmSWZQYXJlbnRGaW5pc2gAAQhfaW5oZXJhdGVTb3VyY2VQcm9qZWN0aWxlRnJvbVBhcmVudEJ1ZmYAAAhfaG9va0VmZmVjdEtleUZyb21Tb3VyY2VQcm9qZWN0aWxlAAAAAzIAPwEAAAIkdHlwZQA8AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK1RyaWdnZXJBYmlsaXR5LCBBc3NlbWJseS1DU2hhcnAAAl9vd25lclR5cGUACwAAAEJVRkZfT1dORVIAAl90YXJnZXRUeXBlAAsAAABCVUZGX09XTkVSAAJfYWJpbGl0eU5hbWUAIQAAAGJlbmFfdHJhaXRfYWJpbGl0eVtzd2l0Y2gyc3RhbmRdAAhfY2hlY2tDYW5Vc2VBYmxpdHlGbGFnAAAIX2Nhc3REaXJlY3RseQABCF91c2VGaXJzdEFjdGl2ZUFiaWxpdHkAAAhfdXNlQ2FzdFJlc3VsdAAACF90cmlnZ2VySG9zdEFiaWxpdHkAAAhfbm90SW50ZXJydXB0QWJpbGl0eUlmQ2FzdGluZwAAAAAAAAAA",
+        "document_sha256": "b60ece6986189c46b5ac5772000d1a7a940614fcf95f4b42293cd554f53efc18"
+      },
+      "dragon_fire[damage]": {
+        "parsed": {
+          "templateKey": "dragon_fire[damage]",
+          "effectKey": "",
+          "onEventPriority": "DEFAULT",
+          "eventToActions": {
+            "ON_BUFF_START": [
+              {
+                "$type": "Torappu.Battle.Action.Nodes+BleedingDamageIncreasingReset, Assembly-CSharp"
+              }
+            ],
+            "ON_BUFF_TRIGGER": [
+              {
+                "$type": "Torappu.Battle.Action.Nodes+BleedingDamagePerSec, Assembly-CSharp",
+                "_damageType": "PURE",
+                "_damageKey": "addOnDamage",
+                "_baseDamageKey": "baseDamage",
+                "_durationToIncreaseKey": "addOnDuration",
+                "_ignoreForSp": true,
+                "_attackType": "BUFF",
+                "_isEnvDamage": false,
+                "_isRatioToMaxHp": false,
+                "_isIncreasingToCap": true,
+                "_skipModifierEvent": false,
+                "_elementDamageType": "NONE"
+              }
+            ]
+          }
+        },
+        "payload_offset": 51104,
+        "document_base64": "UQIAAAJ0ZW1wbGF0ZUtleQAUAAAAZHJhZ29uX2ZpcmVbZGFtYWdlXQACZWZmZWN0S2V5AAEAAAAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAADZXZlbnRUb0FjdGlvbnMA6gEAAARPTl9CVUZGX1NUQVJUAGMAAAADMABbAAAAAiR0eXBlAEsAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrQmxlZWRpbmdEYW1hZ2VJbmNyZWFzaW5nUmVzZXQsIEFzc2VtYmx5LUNTaGFycAAAAARPTl9CVUZGX1RSSUdHRVIAYgEAAAMwAFoBAAACJHR5cGUAQgAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytCbGVlZGluZ0RhbWFnZVBlclNlYywgQXNzZW1ibHktQ1NoYXJwAAJfZGFtYWdlVHlwZQAFAAAAUFVSRQACX2RhbWFnZUtleQAMAAAAYWRkT25EYW1hZ2UAAl9iYXNlRGFtYWdlS2V5AAsAAABiYXNlRGFtYWdlAAJfZHVyYXRpb25Ub0luY3JlYXNlS2V5AA4AAABhZGRPbkR1cmF0aW9uAAhfaWdub3JlRm9yU3AAAQJfYXR0YWNrVHlwZQAFAAAAQlVGRgAIX2lzRW52RGFtYWdlAAAIX2lzUmF0aW9Ub01heEhwAAAIX2lzSW5jcmVhc2luZ1RvQ2FwAAEIX3NraXBNb2RpZmllckV2ZW50AAACX2VsZW1lbnREYW1hZ2VUeXBlAAUAAABOT05FAAAAAAA=",
+        "document_sha256": "db04af216b2a2392309cd270a94155debbe1b349103b5d9be8f7d9518e8e1e45"
+      },
+      "dragon_fire[timer]": {
+        "parsed": {
+          "templateKey": "dragon_fire[timer]",
+          "effectKey": "",
+          "onEventPriority": "DEFAULT",
+          "eventToActions": {
+            "ON_BUFF_START": [
+              {
+                "$type": "Torappu.Battle.Action.Nodes+CheckContainsBuff, Assembly-CSharp",
+                "_targetType": "BUFF_OWNER",
+                "_buffKeys": [
+                  "dragon_fire[damage]"
+                ],
+                "isAND": true,
+                "_loadFromBlackboard": false,
+                "_checkBuffSource": false,
+                "_buffSourceType": "BUFF_SOURCE",
+                "_checkSourceHost": false
+              },
+              {
+                "$type": "Torappu.Battle.Action.Nodes+IfNot, Assembly-CSharp"
+              },
+              {
+                "$type": "Torappu.Battle.Action.Nodes+CreateBuffById, Assembly-CSharp",
+                "_buffKey": "dragon_fire[damage]",
+                "_buffOwner": "BUFF_OWNER",
+                "_isDerivedBuff": true,
+                "_loadFromBlackboard": false,
+                "_finishDerivedBuffIfParentFinish": false
+              }
+            ]
+          }
+        },
+        "payload_offset": 51717,
+        "document_base64": "mQIAAAJ0ZW1wbGF0ZUtleQATAAAAZHJhZ29uX2ZpcmVbdGltZXJdAAJlZmZlY3RLZXkAAQAAAAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAANldmVudFRvQWN0aW9ucwAzAgAABE9OX0JVRkZfU1RBUlQAHwIAAAMwAPsAAAACJHR5cGUAPwAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDaGVja0NvbnRhaW5zQnVmZiwgQXNzZW1ibHktQ1NoYXJwAAJfdGFyZ2V0VHlwZQALAAAAQlVGRl9PV05FUgAEX2J1ZmZLZXlzACAAAAACMAAUAAAAZHJhZ29uX2ZpcmVbZGFtYWdlXQAACGlzQU5EAAEIX2xvYWRGcm9tQmxhY2tib2FyZAAACF9jaGVja0J1ZmZTb3VyY2UAAAJfYnVmZlNvdXJjZVR5cGUADAAAAEJVRkZfU09VUkNFAAhfY2hlY2tTb3VyY2VIb3N0AAAAAzEAQwAAAAIkdHlwZQAzAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0lmTm90LCBBc3NlbWJseS1DU2hhcnAAAAMyANMAAAACJHR5cGUAPAAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytDcmVhdGVCdWZmQnlJZCwgQXNzZW1ibHktQ1NoYXJwAAJfYnVmZktleQAUAAAAZHJhZ29uX2ZpcmVbZGFtYWdlXQACX2J1ZmZPd25lcgALAAAAQlVGRl9PV05FUgAIX2lzRGVyaXZlZEJ1ZmYAAQhfbG9hZEZyb21CbGFja2JvYXJkAAAIX2ZpbmlzaERlcml2ZWRCdWZmSWZQYXJlbnRGaW5pc2gAAAAAAAA=",
+        "document_sha256": "1908a6a766f658a6d3bb1c6693d13c5a5ffb1e83775303ba7d290b6af312bf4e"
+      }
+    },
+    "missing_templates": [],
+    "native_method_bodies_recovered": false
+  },
+  "enum_source": {
+    "path": "D:\\Arknights\\Arknights_timer\\Ark_data\\Il2CppDumper_current\\dump.cs",
+    "sha256": "18c43dde9466317c45a786a0e4fa35cd8894d128592adda4394704bf99ea477b",
+    "override_excerpt": "public enum BuffData.OverrideType // TypeDefIndex: 4057\n{\n\t// Fields\n\tpublic int value__; // 0x0\n\tpublic const BuffData.OverrideType DEFAULT = 0;\n\tpublic const BuffData.OverrideType STACK = 1;\n\tpublic const BuffData.OverrideType UNIQUE = 2;\n\tpublic const BuffData.OverrideType EXTEND = 3;\n\tpublic const BuffData.OverrideType EXTEND_TIME = 4;\n}"
+  },
+  "primary_source_relationships": [
+    "Parent ON_START only creates derived child when child not already present; finishDerivedBuffIfParentFinishFalse keeps child through parent expiry. This does not prove no damage-rate reset.",
+    "Child ON_START is BleedingDamageIncreasingReset; trigger1s/infinite lifetime, PURE BUFF ignoreSPtrue and skipModifierfalse. Exact first tick arithmetic/body is not recovered.",
+    "Bena switchbegin/switchend ClearAllBuffs retain only named Bena keys and alsoRemoveDurableFalse. Both dragon_fire and derived child are isDurableFalse, so their infinity lifetime is not immunity to clear. New child after such clearing necessarily re-enters ON_START reset.",
+    "Bena_s_2 uses DamageViaMaxHpRatio with skipModifiertrue, separate from dragon_fire skipModifierfalse; do not infer identical modifier bypass or source attribution."
+  ],
+  "external_reference": {
+    "url": "https://prts.wiki/w/%E5%A1%94%E9%9C%B2%E6%8B%89",
+    "retrieved_date": "2026-10-04",
+    "evidence_origin": "web search page excerpt; not an asserted raw HTML byte snapshot",
+    "paraphrase": "The current reference page describes a nonstacking burn that refreshes its duration on repeated application, fixed damage rising from50 to230 over30 seconds, and damage-rate reset when the effect ends. Resistance changes duration while tick and ramp intervals remain fixed.",
+    "version_policy": "External current-page behavior corroborates fixed source enum/BB, but native body and exact packet phase remain replaceable and client-unverified."
+  },
+  "source_policy_assessment": {
+    "v1_v2": "Rejected repeat-noop and permanent230 after a timer gap by exact EXTEND3 plus reference behavior; actual full counters saved in peer report.",
+    "v3": "Corrected refresh/reset tested under3992 in six fresh independent scenes and complete CP/head/event domain. Same-child refresh generation restart is a reference translation of reset; not native ON_START invocation certified.",
+    "remaining": "Dynamic status changes to remaining timer lifetime and first packet/phase native body unresolved; no complete Boss/stage assertion."
+  },
+  "actual_report": {
+    "path": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\special\\dragon_fire_independent_v2\\report.json",
+    "sha256": "2b1da9d485f91aeb71cd02a82df508eaa1b8324002a0ef84119fb68b92c52126"
+  },
+  "guards": {
+    "root_v3": "d8c834d1d832b88a0c933e8169a2c0713e36a9454dc126144f2d940f09b3a0ab"
+  },
+  "client_verified": false
+}

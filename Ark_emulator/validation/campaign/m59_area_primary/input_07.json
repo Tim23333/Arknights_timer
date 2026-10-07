@@ -1,0 +1,338 @@
+{
+  "manifest": {
+    "requires": [
+      "preset/ark_standard"
+    ]
+  },
+  "entities": [
+    {
+      "id": "unit/source",
+      "kind": "entity",
+      "tags": [
+        "enemy"
+      ],
+      "components": {
+        "spatial": {},
+        "selection_state": {
+          "side": 1,
+          "motion": 1,
+          "category": 1,
+          "profession": 0,
+          "unit_type": 1,
+          "abnormal_flags": [],
+          "abnormal_combos": [],
+          "target_free_flags": [],
+          "target_free_combos": [],
+          "target_free": false,
+          "ally_target_free": false,
+          "heal_free": false,
+          "camouflage": false,
+          "can_select_camouflage": false
+        },
+        "attributes": {
+          "base": {
+            "atk": 100
+          }
+        },
+        "abilities": [
+          "ability/area"
+        ]
+      }
+    },
+    {
+      "id": "unit/target",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "spatial": {},
+        "selection_state": {
+          "side": 0,
+          "motion": 1,
+          "category": 1,
+          "profession": 0,
+          "unit_type": 1,
+          "abnormal_flags": [],
+          "abnormal_combos": [],
+          "target_free_flags": [],
+          "target_free_combos": [],
+          "target_free": false,
+          "ally_target_free": false,
+          "heal_free": false,
+          "camouflage": false,
+          "can_select_camouflage": false
+        },
+        "attributes": {
+          "base": {
+            "max_hp": 1000,
+            "def": 0,
+            "mres": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 1000,
+            "capacity": 1000,
+            "role": "health"
+          }
+        },
+        "abilities": [
+          "ability/free",
+          "ability/dead",
+          "ability/hide9",
+          "ability/immune"
+        ]
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/area",
+      "kind": "rule",
+      "contract": "area.members",
+      "dependencies": [
+        "rule/elig"
+      ],
+      "parameters": {
+        "offsets": [
+          [
+            0,
+            0
+          ]
+        ],
+        "eligibility": {
+          "rule": "rule/elig",
+          "parameters": {
+            "source_configuration": {
+              "_targetSide": 2,
+              "_targetMotion": 3,
+              "_targetCategory": 1,
+              "_ignoreTargetFree": 0,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_needProfessionMask": 0,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 1,
+              "_checkUnitType": 0
+            },
+            "defaults": {
+              "side": 0,
+              "motion": 1,
+              "category": 1,
+              "profession": 0,
+              "unit_type": 1,
+              "abnormal_flags": [],
+              "abnormal_combos": [],
+              "target_free_flags": [],
+              "target_free_combos": [],
+              "target_free": false,
+              "ally_target_free": false,
+              "heal_free": false,
+              "camouflage": false,
+              "can_select_camouflage": false
+            },
+            "side_policy": "relative_ally_enemy",
+            "neutral_policy": "reject"
+          }
+        },
+        "include_primary": true
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.area.qualified_cell_offsets"
+      }
+    },
+    {
+      "id": "rule/elig",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.targeting.eligibility"
+      }
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/main",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "primary"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/area",
+      "kind": "ability",
+      "selector": "selector/main",
+      "activation": {
+        "mode": "manual"
+      },
+      "timeline": [
+        {
+          "at_seconds": 0,
+          "effect": {
+            "op": "area",
+            "center": "target",
+            "membership_rule": "rule/area",
+            "effects": [
+              {
+                "op": "damage",
+                "damage_type": "true"
+              }
+            ],
+            "center_position": {
+              "row": 0,
+              "col": 0
+            }
+          }
+        }
+      ],
+      "target_capture": "at_cast"
+    },
+    {
+      "id": "ability/free",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/free"
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/dead",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "retire",
+            "target": "source",
+            "parameters": {
+              "reason": "withdrawn"
+            }
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/hide9",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/hidden"
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/immune",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/immune"
+          }
+        ]
+      },
+      "timeline": []
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/qualified/area",
+    "ruleset": "ruleset/ark_standard",
+    "objectives": {},
+    "map": {
+      "rows": 6,
+      "cols": 6
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/source",
+        "instanceAlias": "source",
+        "position": {
+          "row": 0,
+          "col": 0
+        }
+      },
+      {
+        "definition": "unit/target",
+        "instanceAlias": "main",
+        "tags": [
+          "player",
+          "primary"
+        ],
+        "position": {
+          "row": 3,
+          "col": 3
+        },
+        "components": {
+          "selection_state": {
+            "category": 4
+          }
+        }
+      },
+      {
+        "definition": "unit/target",
+        "instanceAlias": "other",
+        "position": {
+          "row": 4,
+          "col": 4
+        }
+      }
+    ]
+  },
+  "buffs": [
+    {
+      "id": "buff/free",
+      "kind": "buff",
+      "selection_flags": {
+        "target_free": true
+      }
+    },
+    {
+      "id": "buff/hidden",
+      "kind": "buff",
+      "selection_flags": {
+        "abnormal_flags": [
+          9
+        ]
+      }
+    },
+    {
+      "id": "buff/immune",
+      "kind": "buff",
+      "duration_seconds": 0.1,
+      "selection_flags": {
+        "abnormal_immunes": [
+          9
+        ]
+      }
+    }
+  ]
+}

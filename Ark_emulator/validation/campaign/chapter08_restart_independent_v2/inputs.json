@@ -1,0 +1,1408 @@
+[
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/restart",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "behaviors": [
+      {
+        "id": "behavior/peer/machine",
+        "kind": "behavior",
+        "initial": "a",
+        "states": {
+          "a": {
+            "on_exit": []
+          },
+          "b": {
+            "on_enter": []
+          }
+        }
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/actor",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "behavior": {
+            "machine": "behavior/peer/machine"
+          },
+          "abilities": [
+            "ability/peer/long",
+            "ability/peer/other"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/restart"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/long",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at_seconds": 0.5,
+            "effect": {
+              "op": "emit",
+              "event": "peer.long.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/other",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at_seconds": 0.6,
+            "effect": {
+              "op": "emit",
+              "event": "peer.other.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/restart",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "restart_behavior",
+              "target": 2,
+              "state": "b",
+              "parameters": {
+                "abilities": [
+                  "ability/peer/long"
+                ],
+                "reset_attack_clock": true,
+                "initial_cooldowns": {
+                  "ability/peer/long": 0.11
+                },
+                "reason": "independent boundary"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/restart",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/actor",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/restart",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "behaviors": [
+      {
+        "id": "behavior/peer/machine",
+        "kind": "behavior",
+        "initial": "a",
+        "states": {
+          "a": {
+            "on_exit": []
+          },
+          "b": {
+            "on_enter": []
+          }
+        }
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/actor",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "behavior": {
+            "machine": "behavior/peer/machine"
+          },
+          "abilities": [
+            "ability/peer/long",
+            "ability/peer/other"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/restart"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/long",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at_seconds": 0.5,
+            "effect": {
+              "op": "emit",
+              "event": "peer.long.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/other",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at_seconds": 0.6,
+            "effect": {
+              "op": "emit",
+              "event": "peer.other.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/restart",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "restart_behavior",
+              "target": 2,
+              "state": "b",
+              "parameters": {
+                "abilities": [
+                  "ability/peer/long"
+                ],
+                "reset_attack_clock": true,
+                "initial_cooldowns": {
+                  "ability/peer/long": 0.11
+                },
+                "reason": "independent boundary"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/restart",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/actor",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/restart",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "behaviors": [
+      {
+        "id": "behavior/peer/machine",
+        "kind": "behavior",
+        "initial": "a",
+        "states": {
+          "a": {
+            "on_exit": []
+          },
+          "b": {
+            "on_enter": []
+          }
+        }
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/actor",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "behavior": {
+            "machine": "behavior/peer/machine"
+          },
+          "abilities": [
+            "ability/peer/long",
+            "ability/peer/other"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/restart"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/long",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at_seconds": 0.5,
+            "effect": {
+              "op": "emit",
+              "event": "peer.long.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/other",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at_seconds": 0.6,
+            "effect": {
+              "op": "emit",
+              "event": "peer.other.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/restart",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "restart_behavior",
+              "target": 2,
+              "state": "b",
+              "parameters": {
+                "abilities": [
+                  "ability/peer/long"
+                ],
+                "reset_attack_clock": true,
+                "initial_cooldowns": {
+                  "ability/peer/long": 0.11
+                },
+                "reason": "independent boundary"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/restart",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/actor",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/restart",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "behaviors": [
+      {
+        "id": "behavior/peer/machine",
+        "kind": "behavior",
+        "initial": "a",
+        "states": {
+          "a": {
+            "on_exit": []
+          },
+          "b": {
+            "on_enter": []
+          }
+        }
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/actor",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "behavior": {
+            "machine": "behavior/peer/machine"
+          },
+          "abilities": [
+            "ability/peer/long",
+            "ability/peer/other"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/restart"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/long",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at_seconds": 0.5,
+            "effect": {
+              "op": "emit",
+              "event": "peer.long.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/other",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at_seconds": 0.6,
+            "effect": {
+              "op": "emit",
+              "event": "peer.other.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/restart",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "restart_behavior",
+              "target": 2,
+              "state": "b",
+              "parameters": {
+                "abilities": [
+                  "ability/peer/long"
+                ],
+                "reset_attack_clock": true,
+                "initial_cooldowns": {
+                  "ability/peer/long": 0.11
+                },
+                "reason": "independent boundary"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/restart",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/actor",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/restart",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "behaviors": [
+      {
+        "id": "behavior/peer/machine",
+        "kind": "behavior",
+        "initial": "a",
+        "states": {
+          "a": {
+            "on_exit": []
+          },
+          "b": {
+            "on_enter": []
+          }
+        }
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/actor",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "behavior": {
+            "machine": "behavior/peer/machine"
+          },
+          "abilities": [
+            "ability/peer/long",
+            "ability/peer/other"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/restart"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/long",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at_seconds": 0.5,
+            "effect": {
+              "op": "emit",
+              "event": "peer.long.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/other",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at_seconds": 0.6,
+            "effect": {
+              "op": "emit",
+              "event": "peer.other.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/restart",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "restart_behavior",
+              "target": 2,
+              "state": "b",
+              "parameters": {
+                "abilities": [
+                  "ability/peer/long"
+                ],
+                "reset_attack_clock": true,
+                "initial_cooldowns": {
+                  "ability/peer/long": 0.11
+                },
+                "reason": "independent boundary"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/restart",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/actor",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/restart",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "behaviors": [
+      {
+        "id": "behavior/peer/machine",
+        "kind": "behavior",
+        "initial": "a",
+        "states": {
+          "a": {
+            "on_exit": []
+          },
+          "b": {
+            "on_enter": []
+          }
+        }
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/actor",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "behavior": {
+            "machine": "behavior/peer/machine"
+          },
+          "abilities": [
+            "ability/peer/long",
+            "ability/peer/other"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/restart"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/long",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at_seconds": 0.5,
+            "effect": {
+              "op": "emit",
+              "event": "peer.long.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/other",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at_seconds": 0.6,
+            "effect": {
+              "op": "emit",
+              "event": "peer.other.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/restart",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "restart_behavior",
+              "target": 2,
+              "state": "b",
+              "parameters": {
+                "abilities": [
+                  "ability/peer/long"
+                ],
+                "reset_attack_clock": true,
+                "initial_cooldowns": {
+                  "ability/peer/long": 0.11
+                },
+                "reason": "independent boundary"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/restart",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/actor",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/restart",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "behaviors": [
+      {
+        "id": "behavior/peer/machine",
+        "kind": "behavior",
+        "initial": "a",
+        "states": {
+          "a": {
+            "on_exit": [
+              {
+                "op": "retire",
+                "target": "self",
+                "reason": "independent callback"
+              },
+              {
+                "op": "emit",
+                "event": "peer.after.retire"
+              }
+            ]
+          },
+          "b": {
+            "on_enter": []
+          }
+        }
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/actor",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "behavior": {
+            "machine": "behavior/peer/machine"
+          },
+          "abilities": [
+            "ability/peer/long",
+            "ability/peer/other"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/restart"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/long",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at_seconds": 0.5,
+            "effect": {
+              "op": "emit",
+              "event": "peer.long.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/other",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at_seconds": 0.6,
+            "effect": {
+              "op": "emit",
+              "event": "peer.other.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/restart",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "restart_behavior",
+              "target": 2,
+              "state": "b",
+              "parameters": {
+                "abilities": [
+                  "ability/peer/long"
+                ],
+                "reset_attack_clock": true,
+                "initial_cooldowns": {
+                  "ability/peer/long": 0.11
+                },
+                "reason": "independent boundary"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/restart",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/actor",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/restart",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "behaviors": [
+      {
+        "id": "behavior/peer/machine",
+        "kind": "behavior",
+        "initial": "a",
+        "states": {
+          "a": {
+            "on_exit": []
+          },
+          "b": {
+            "on_enter": [
+              {
+                "op": "retire",
+                "target": "self",
+                "reason": "independent callback"
+              },
+              {
+                "op": "emit",
+                "event": "peer.after.retire"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/actor",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "behavior": {
+            "machine": "behavior/peer/machine"
+          },
+          "abilities": [
+            "ability/peer/long",
+            "ability/peer/other"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/restart"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/long",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at_seconds": 0.5,
+            "effect": {
+              "op": "emit",
+              "event": "peer.long.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/other",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at_seconds": 0.6,
+            "effect": {
+              "op": "emit",
+              "event": "peer.other.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/restart",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "restart_behavior",
+              "target": 2,
+              "state": "b",
+              "parameters": {
+                "abilities": [
+                  "ability/peer/long"
+                ],
+                "reset_attack_clock": true,
+                "initial_cooldowns": {
+                  "ability/peer/long": 0.11
+                },
+                "reason": "independent boundary"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/restart",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/actor",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/restart",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "behaviors": [
+      {
+        "id": "behavior/peer/machine",
+        "kind": "behavior",
+        "initial": "a",
+        "states": {
+          "a": {
+            "on_exit": [
+              {
+                "op": "restart_behavior",
+                "target": 2,
+                "state": "b",
+                "parameters": {
+                  "abilities": [
+                    "ability/peer/long"
+                  ],
+                  "reset_attack_clock": true,
+                  "initial_cooldowns": {
+                    "ability/peer/long": 0.11
+                  },
+                  "reason": "independent boundary"
+                }
+              }
+            ]
+          },
+          "b": {
+            "on_enter": []
+          }
+        }
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/actor",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "behavior": {
+            "machine": "behavior/peer/machine"
+          },
+          "abilities": [
+            "ability/peer/long",
+            "ability/peer/other"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/restart"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/long",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at_seconds": 0.5,
+            "effect": {
+              "op": "emit",
+              "event": "peer.long.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/other",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at_seconds": 0.6,
+            "effect": {
+              "op": "emit",
+              "event": "peer.other.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/restart",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "restart_behavior",
+              "target": 2,
+              "state": "b",
+              "parameters": {
+                "abilities": [
+                  "ability/peer/long"
+                ],
+                "reset_attack_clock": true,
+                "initial_cooldowns": {
+                  "ability/peer/long": 0.11
+                },
+                "reason": "independent boundary"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/restart",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/actor",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/restart",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "behaviors": [
+      {
+        "id": "behavior/peer/machine",
+        "kind": "behavior",
+        "initial": "a",
+        "states": {
+          "a": {
+            "on_exit": []
+          },
+          "b": {
+            "on_enter": [
+              {
+                "op": "emit",
+                "event": "peer.before.fault"
+              },
+              {
+                "op": "modify_resource",
+                "resource": "missing",
+                "amount": 1
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/actor",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "behavior": {
+            "machine": "behavior/peer/machine"
+          },
+          "abilities": [
+            "ability/peer/long",
+            "ability/peer/other"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/restart"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/long",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at_seconds": 0.5,
+            "effect": {
+              "op": "emit",
+              "event": "peer.long.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/other",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at_seconds": 0.6,
+            "effect": {
+              "op": "emit",
+              "event": "peer.other.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/restart",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "restart_behavior",
+              "target": 2,
+              "state": "b",
+              "parameters": {
+                "abilities": [
+                  "ability/peer/long"
+                ],
+                "reset_attack_clock": true,
+                "initial_cooldowns": {
+                  "ability/peer/long": 0.11
+                },
+                "reason": "independent boundary"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/restart",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/actor",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  }
+]

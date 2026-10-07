@@ -1,0 +1,1134 @@
+[
+  {
+    "package": {
+      "schemaVersion": 2,
+      "manifest": {
+        "id": "package/peer/consumer/mine_radius",
+        "requires": [
+          "preset/ark_standard"
+        ]
+      },
+      "rules": [
+        {
+          "id": "rule/peer/sp",
+          "kind": "rule",
+          "contract": "resource.recovery",
+          "implementation": {
+            "type": "expression",
+            "expression": "inputs.current+inputs.parameters.amount"
+          }
+        }
+      ],
+      "buffs": [
+        {
+          "id": "buff/ch7/source/ore_immune",
+          "kind": "buff"
+        },
+        {
+          "id": "buff/ch7/source/ore_listener",
+          "kind": "buff"
+        }
+      ],
+      "entities": [
+        {
+          "id": "unit/peer/edge",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/outer",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/air",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 2,
+              "category": 1,
+              "unit_type": 1
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/camo",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1,
+              "camouflage": true
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/free",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1,
+              "target_free": true
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        }
+      ],
+      "abilities": [],
+      "behaviors": [
+        {
+          "id": "behavior/peer/modes",
+          "kind": "behavior",
+          "initial": "mode0",
+          "states": {
+            "mode0": {},
+            "mode1": {}
+          }
+        }
+      ],
+      "scenarioDraft": {
+        "id": "scene/peer/mine_radius",
+        "ruleset": "ruleset/ark_standard",
+        "map": {
+          "rows": 7,
+          "cols": 7
+        },
+        "objectives": {},
+        "resources": {
+          "dp": {
+            "initial": 100,
+            "capacity": 100
+          },
+          "deployment_capacity": {
+            "initial": 0,
+            "capacity": 0
+          },
+          "stock_ch7_mine": {
+            "initial": 15,
+            "capacity": 15
+          }
+        },
+        "initialEntities": [
+          {
+            "definition": "unit/ch7/predefined/mine/level1",
+            "instanceAlias": "mine",
+            "position": {
+              "row": 0,
+              "col": 0
+            },
+            "components": {
+              "resources": {
+                "sp": {
+                  "initial": 25
+                }
+              },
+              "behavior": {
+                "state": "mode1"
+              }
+            }
+          },
+          {
+            "definition": "unit/peer/edge",
+            "instanceAlias": "edge",
+            "position": {
+              "row": 0,
+              "col": 0.550000011920929
+            }
+          },
+          {
+            "definition": "unit/peer/outer",
+            "instanceAlias": "outer",
+            "position": {
+              "row": 0,
+              "col": 0.550000021920929
+            }
+          },
+          {
+            "definition": "unit/peer/air",
+            "instanceAlias": "air",
+            "position": {
+              "row": 0,
+              "col": 0.1
+            }
+          },
+          {
+            "definition": "unit/peer/camo",
+            "instanceAlias": "camo",
+            "position": {
+              "row": 0,
+              "col": 0.2
+            }
+          },
+          {
+            "definition": "unit/peer/free",
+            "instanceAlias": "free",
+            "position": {
+              "row": 0,
+              "col": 0.3
+            }
+          }
+        ]
+      }
+    },
+    "modules": [
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_predefines_consumer\\mine.module.v2.json"
+    ]
+  },
+  {
+    "package": {
+      "schemaVersion": 2,
+      "manifest": {
+        "id": "package/peer/consumer/mine_clock",
+        "requires": [
+          "preset/ark_standard"
+        ]
+      },
+      "rules": [
+        {
+          "id": "rule/peer/sp",
+          "kind": "rule",
+          "contract": "resource.recovery",
+          "implementation": {
+            "type": "expression",
+            "expression": "inputs.current+inputs.parameters.amount"
+          }
+        }
+      ],
+      "buffs": [
+        {
+          "id": "buff/ch7/source/ore_immune",
+          "kind": "buff"
+        },
+        {
+          "id": "buff/ch7/source/ore_listener",
+          "kind": "buff"
+        }
+      ],
+      "entities": [
+        {
+          "id": "unit/peer/a",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        }
+      ],
+      "abilities": [],
+      "behaviors": [
+        {
+          "id": "behavior/peer/modes",
+          "kind": "behavior",
+          "initial": "mode0",
+          "states": {
+            "mode0": {},
+            "mode1": {}
+          }
+        }
+      ],
+      "scenarioDraft": {
+        "id": "scene/peer/mine_clock",
+        "ruleset": "ruleset/ark_standard",
+        "map": {
+          "rows": 7,
+          "cols": 7
+        },
+        "objectives": {},
+        "resources": {
+          "dp": {
+            "initial": 100,
+            "capacity": 100
+          },
+          "deployment_capacity": {
+            "initial": 0,
+            "capacity": 0
+          },
+          "stock_ch7_mine": {
+            "initial": 15,
+            "capacity": 15
+          }
+        },
+        "initialEntities": [
+          {
+            "definition": "unit/ch7/predefined/mine/level1",
+            "instanceAlias": "mine",
+            "position": {
+              "row": 0,
+              "col": 0
+            }
+          },
+          {
+            "definition": "unit/peer/a",
+            "instanceAlias": "a",
+            "position": {
+              "row": 0,
+              "col": 0.5
+            }
+          }
+        ]
+      }
+    },
+    "modules": [
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_predefines_consumer\\mine.module.v2.json"
+    ]
+  },
+  {
+    "package": {
+      "schemaVersion": 2,
+      "manifest": {
+        "id": "package/peer/consumer/mine_cards15",
+        "requires": [
+          "preset/ark_standard"
+        ]
+      },
+      "rules": [
+        {
+          "id": "rule/peer/sp",
+          "kind": "rule",
+          "contract": "resource.recovery",
+          "implementation": {
+            "type": "expression",
+            "expression": "inputs.current+inputs.parameters.amount"
+          }
+        }
+      ],
+      "buffs": [
+        {
+          "id": "buff/ch7/source/ore_immune",
+          "kind": "buff"
+        },
+        {
+          "id": "buff/ch7/source/ore_listener",
+          "kind": "buff"
+        }
+      ],
+      "entities": [],
+      "abilities": [],
+      "behaviors": [
+        {
+          "id": "behavior/peer/modes",
+          "kind": "behavior",
+          "initial": "mode0",
+          "states": {
+            "mode0": {},
+            "mode1": {}
+          }
+        }
+      ],
+      "scenarioDraft": {
+        "id": "scene/peer/mine_cards15",
+        "ruleset": "ruleset/ark_standard",
+        "map": {
+          "rows": 7,
+          "cols": 7,
+          "tiles": [
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            },
+            {
+              "tileKey": "tile_floor",
+              "buildableType": 1,
+              "heightType": 0,
+              "passableMask": 1,
+              "advancedBuildMask": 1
+            }
+          ]
+        },
+        "objectives": {},
+        "resources": {
+          "dp": {
+            "initial": 100,
+            "capacity": 100
+          },
+          "deployment_capacity": {
+            "initial": 0,
+            "capacity": 0
+          },
+          "stock_ch7_mine": {
+            "initial": 15,
+            "capacity": 15
+          }
+        },
+        "initialEntities": []
+      }
+    },
+    "modules": [
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_predefines_consumer\\mine.module.v2.json"
+    ]
+  },
+  {
+    "package": {
+      "schemaVersion": 2,
+      "manifest": {
+        "id": "package/peer/consumer/mine_cancel",
+        "requires": [
+          "preset/ark_standard"
+        ]
+      },
+      "rules": [
+        {
+          "id": "rule/peer/sp",
+          "kind": "rule",
+          "contract": "resource.recovery",
+          "implementation": {
+            "type": "expression",
+            "expression": "inputs.current+inputs.parameters.amount"
+          }
+        }
+      ],
+      "buffs": [
+        {
+          "id": "buff/ch7/source/ore_immune",
+          "kind": "buff"
+        },
+        {
+          "id": "buff/ch7/source/ore_listener",
+          "kind": "buff"
+        }
+      ],
+      "entities": [],
+      "abilities": [],
+      "behaviors": [
+        {
+          "id": "behavior/peer/modes",
+          "kind": "behavior",
+          "initial": "mode0",
+          "states": {
+            "mode0": {},
+            "mode1": {}
+          }
+        }
+      ],
+      "scenarioDraft": {
+        "id": "scene/peer/mine_cancel",
+        "ruleset": "ruleset/ark_standard",
+        "map": {
+          "rows": 7,
+          "cols": 7
+        },
+        "objectives": {},
+        "resources": {
+          "dp": {
+            "initial": 100,
+            "capacity": 100
+          },
+          "deployment_capacity": {
+            "initial": 0,
+            "capacity": 0
+          },
+          "stock_ch7_mine": {
+            "initial": 15,
+            "capacity": 15
+          }
+        },
+        "initialEntities": []
+      }
+    },
+    "modules": [
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_predefines_consumer\\mine.module.v2.json"
+    ]
+  },
+  {
+    "package": {
+      "schemaVersion": 2,
+      "manifest": {
+        "id": "package/peer/consumer/ore_natural",
+        "requires": [
+          "preset/ark_standard"
+        ]
+      },
+      "rules": [
+        {
+          "id": "rule/peer/sp",
+          "kind": "rule",
+          "contract": "resource.recovery",
+          "implementation": {
+            "type": "expression",
+            "expression": "inputs.current+inputs.parameters.amount"
+          }
+        }
+      ],
+      "buffs": [
+        {
+          "id": "buff/ch7/source/ore_immune",
+          "kind": "buff"
+        },
+        {
+          "id": "buff/ch7/source/ore_listener",
+          "kind": "buff"
+        }
+      ],
+      "entities": [
+        {
+          "id": "unit/peer/a",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        }
+      ],
+      "abilities": [],
+      "behaviors": [
+        {
+          "id": "behavior/peer/modes",
+          "kind": "behavior",
+          "initial": "mode0",
+          "states": {
+            "mode0": {},
+            "mode1": {}
+          }
+        }
+      ],
+      "scenarioDraft": {
+        "id": "scene/peer/ore_natural",
+        "ruleset": "ruleset/ark_standard",
+        "map": {
+          "rows": 7,
+          "cols": 7
+        },
+        "objectives": {},
+        "resources": {
+          "dp": {
+            "initial": 100,
+            "capacity": 100
+          },
+          "deployment_capacity": {
+            "initial": 0,
+            "capacity": 0
+          },
+          "stock_ch7_mine": {
+            "initial": 15,
+            "capacity": 15
+          }
+        },
+        "initialEntities": [
+          {
+            "definition": "unit/ch7/predefined/ore/level1",
+            "instanceAlias": "ore",
+            "position": {
+              "row": 3,
+              "col": 3
+            },
+            "components": {
+              "resources": {
+                "sp": {
+                  "initial": 0
+                }
+              }
+            }
+          },
+          {
+            "definition": "unit/peer/a",
+            "instanceAlias": "a",
+            "position": {
+              "row": 3,
+              "col": 4
+            }
+          }
+        ]
+      }
+    },
+    "modules": [
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_predefines_consumer\\ore.module.v3.json"
+    ]
+  }
+]

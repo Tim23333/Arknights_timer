@@ -1,0 +1,102 @@
+{
+  "schema": "ark-sim/model-validation/v2",
+  "date": "2026-10-02",
+  "scope": "Independent model expectations and deterministic continuation; no client frame oracle",
+  "passed": true,
+  "custom_rulesets": {
+    "ruleset/ark_standard": {
+      "damage": 850.0,
+      "expected": 850,
+      "replay_equal": true,
+      "program_fingerprint": "8e8772e6466cc2913ffcb9f0df45da4b6076b50c943b189c5b600d66d4910371",
+      "state_sha256": "7bb35a48d0e64016e6dd66d138c3c77971a4a6ba95d5cf61bb43636720e5f321",
+      "events_sha256": "bff01a03471f87ab3617f055bc89034ba7ecdf4ea3245c052a3dcb8360024baf",
+      "event_count": 581
+    },
+    "ruleset/custom_balance": {
+      "damage": 60.0,
+      "expected": 60,
+      "replay_equal": true,
+      "program_fingerprint": "0d9c695fe3f704e800fb88cbcae588f311c1313e863de8b00b50b9ab0c9d9dff",
+      "state_sha256": "f192b3632692d8904119c1a01df9e33ff916c74743aa111f85a5119f8ea08f3e",
+      "events_sha256": "c679f24667f49ce764cdcf729a32a892c8c5086a9990c53f360ef9f4e745231d",
+      "event_count": 577
+    }
+  },
+  "level_00_01": {
+    "status": "model_validated",
+    "client_frame_validation": "pending",
+    "content_sha256": "74f1bf9a2721694bc732cf51e09696ab552a27a5c66a07a3ba75537083054584",
+    "commands_sha256": "f4aee6f7fd1673d96c908b2c22c8fa63f10c9365e2e9ca5b27f650dee4c59de5",
+    "program_fingerprint": "15af1685615acc7eb3a2fe8e3a186220b602619ceba0fbfb554534f42de5bdb3",
+    "runtime_fingerprint": "1ab56ab42170ef4eeca4c8119b57670e8a32af370ce6bf5bce4f767eedd9328e",
+    "quantum": 0.03333333333333333,
+    "final_state": {
+      "finished": true,
+      "result": "victory",
+      "pending_waves": 0,
+      "kills": 11,
+      "leaks": 0,
+      "damage_dealt": 7160.0,
+      "deployments": {
+        "unit/char_502_nblade": {
+          "count": 1,
+          "ready_at": 0
+        },
+        "unit/char_124_kroos": {
+          "count": 1,
+          "ready_at": 0
+        }
+      },
+      "command_results": {},
+      "finished_at": 2408
+    },
+    "end_time": 2550,
+    "finished_seconds": 80.26666666666667,
+    "commands_observed": [
+      {
+        "id": 35,
+        "type": "command.accepted",
+        "payload": {
+          "action": {
+            "action": "deploy",
+            "entity": "unit/char_502_nblade",
+            "row": 3,
+            "col": 3,
+            "facing": "right",
+            "alias": "nblade"
+          },
+          "result": 2
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 1375,
+        "type": "command.accepted",
+        "payload": {
+          "action": {
+            "action": "deploy",
+            "entity": "unit/char_124_kroos",
+            "row": 1,
+            "col": 3,
+            "facing": "down",
+            "alias": "kroos"
+          },
+          "result": 4
+        },
+        "time": 180,
+        "cause": null
+      }
+    ],
+    "observations": {
+      "state_sha256": "69be754b6d4b8082c83a1de3aa911020f2fcf74c144477951d0b958dd4ab3a73",
+      "events_sha256": "ec2b2eb7fbb45f20e1fdef5c9a3e173fcd8103ef98d48cb9aaecc833c9a208ce",
+      "event_count": 172804
+    },
+    "checkpoint_at": 300,
+    "checkpoint_resume_equal": true,
+    "replay_equal": true,
+    "replay_file": "ark_sim/validation/reports/v2_baseline_20261002.replay.json"
+  }
+}

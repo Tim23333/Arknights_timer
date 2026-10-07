@@ -1,0 +1,3 @@
+"""Preserve first dependency-preflight failure; new builder declares area child rule."""
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2];p=ROOT/'tools/chapter06_predefines/build_frost_module.py';s=p.read_text();old="'id':'rule/ch6/predefined/frosts/area','kind':'rule','contract':'area.members'";new="'id':'rule/ch6/predefined/frosts/area','kind':'rule','dependencies':['rule/ch6/predefined/frosts/eligibility'],'contract':'area.members'";assert s.count(old)==1;s=s.replace(old,new);out=p.with_name('build_frost_module_v2.py');assert not out.exists();out.write_text(s,encoding='utf8',newline='');print(out)

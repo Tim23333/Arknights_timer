@@ -1,0 +1,32 @@
+--- ark_sim/adapters/api.py
++++ ark_sim/adapters/api.py
+@@ -210,7 +210,8 @@
+         position = action.get("position") or {"row": action.get("row"), "col": action.get("col")}
+         plan = prepare(self.ctx, definition_id, position, action.get("facing", "right"))
+         if plan["resource"]:
+-            self.ctx.resources.adjust("system/battle", plan["resource"], -plan["cost"])
++            actual_paid=self.ctx.resources.adjust("system/battle", plan["resource"], -plan["cost"])
++            if actual_paid!=-plan["cost"]:raise ValueError("deployment cost payment must be exact")
+         ref = self.ctx.lifecycle.create(definition_id, position, plan["facing"], alias=action.get("alias"), deployed=True)
+         record(self.ctx, ref, plan)
+         return ref
+--- ark_sim/domains/deployment.py
++++ ark_sim/domains/deployment.py
+@@ -59,6 +59,12 @@
+ 
+ 
+ def record(context, ref, plan, paid_cost=None):
++    with context.session.atomic():
++        return _record(context,ref,plan,paid_cost)
++
++
++def _record(context, ref, plan, paid_cost=None):
++    if context.get(ref,("runtime","deployment_recorded"),False):raise ValueError("deployment already recorded")
+     stock=plan.get("stock_payment")
+     if stock is not None:
+         if context.resources.current("system/battle",stock["resource"])<stock["amount"]:raise ValueError("insufficient deployment stock")
+@@ -72,3 +78,4 @@
+     state = context.state()
+     state["deployments"][plan["history_key"]] = history
+     context.state_update(**state)
++    context.set(ref,("runtime","deployment_recorded"),True)

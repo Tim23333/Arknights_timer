@@ -1,0 +1,66 @@
+--- ark_sim/content/compiler.py
++++ ark_sim/content/compiler.py
+@@ -418,6 +418,10 @@
+             if entity.get("kind") != "entity":
+                 continue
+             resources = entity.get("components", {}).get("resources", {})
++            stock=entity.get("components",{}).get("deployable",{}).get("stock")
++            if stock is not None:
++                if stock["resource"] not in (scenario or {}).get("resources",{}):raise CompileError(identifier+": deployment stock resource is absent")
++                if stock.get("rule") and definitions[stock["rule"]].get("contract")!="resource.cost":raise CompileError(identifier+": stock rule must implement resource.cost")
+             check_freeze(resources, entity.get("components", {}).get("abilities", []), identifier)
+             for ability_id in entity.get("components", {}).get("abilities", []):
+                 ability = definitions[ability_id]
+--- ark_sim/content/schemas.py
++++ ark_sim/content/schemas.py
+@@ -26,7 +26,7 @@
+     "resources": None,
+     "terrain_overlays": None,
+     "abilities": None,
+-    "deployable": {"policy", "cost", "base_cost", "cooldown_seconds", "refund_ratio", "terrain", "capacity", "rules", "parameters", "deployed", "initial_state"},
++    "deployable": {"stock", "policy", "cost", "base_cost", "cooldown_seconds", "refund_ratio", "terrain", "capacity", "rules", "parameters", "deployed", "initial_state"},
+     "behavior": {"machine", "state", "rules", "parameters"},
+     "lifecycle": {"policy", "initial_state", "rules", "parameters", "leak_loss", "revive"},
+     "spatial": {"motion_mode", "coordinate_space", "position", "facing", "route", "route_id", "speed", "blocking", "occupancy", "radius", "projectile", "rules", "parameters", "wait_seconds", "movement", "steering", "timing_origins", "terrain", "block_capacity", "block_cost"},
+@@ -293,6 +293,12 @@
+                 except (ValueError, TypeError) as error: raise ContentError(identifier+": "+str(error)) from error
+                 if layer["key"] in keys: raise ContentError(identifier+": duplicate terrain owner key")
+                 keys.add(layer["key"])
++        stock=components.get("deployable",{}).get("stock")
++        if stock is not None:
++            fields(stock,{"resource","amount","rule"},identifier+".deployable.stock")
++            if not isinstance(stock.get("resource"),str) or not stock["resource"] or type(stock.get("amount")) is not int or stock["amount"]<=0:
++                raise ContentError(identifier+": stock requires nonempty battle resource and positive integer amount")
++            if "rule" in stock and (not isinstance(stock["rule"],str) or not stock["rule"]):raise ContentError(identifier+": stock rule must be nonempty ID")
+         advanced = components.get("deployable", {}).get("parameters", {}).get("advanced_build_mask")
+         if advanced is not None and (type(advanced) is not int or advanced <= 0):
+             raise ContentError(identifier+": advanced_build_mask requires a positive integer mask")
+--- ark_sim/domains/deployment.py
++++ ark_sim/domains/deployment.py
+@@ -45,11 +45,25 @@
+         component=deployable.get("rules", {}), scope_extra=scope, extra={"source": prototype})
+     if not decision["accepted"]:
+         raise ValueError(decision["reason"])
++    stock=deployable.get("stock")
++    stock_payment=None
++    if stock is not None:
++        amount=context.calc("resource.cost",{"ability":{},"attributes":base,"cost_parameters":{"amount":stock["amount"]}},
++            component=deployable.get("rules",{}),scope_extra=scope,rule_id=stock.get("rule"),extra={"source":prototype})
++        if type(amount) is not int or amount<0:raise ValueError("deployment stock cost must be a nonnegative integer")
++        shared_cost=cost if not paid and stock["resource"]==resource else 0
++        if context.resources.current("system/battle",stock["resource"])<amount+shared_cost:raise ValueError("insufficient deployment stock")
++        stock_payment={"resource":stock["resource"],"amount":amount}
+     return {"definition": definition_id, "position": position, "facing": facing, "owner": owner,
+-            "deployable": deployable, "cost": cost, "resource": resource, "history_key": key, "history": history}
++            "deployable": deployable, "cost": cost, "resource": resource, "history_key": key, "history": history, "stock_payment":stock_payment}
+ 
+ 
+ def record(context, ref, plan, paid_cost=None):
++    stock=plan.get("stock_payment")
++    if stock is not None:
++        if context.resources.current("system/battle",stock["resource"])<stock["amount"]:raise ValueError("insufficient deployment stock")
++        actual=context.resources.adjust("system/battle",stock["resource"],-stock["amount"],source=ref)
++        if actual!=-stock["amount"]:raise ValueError("deployment stock payment must be exact")
+     deployable = thaw(plan["deployable"])
+     deployable["paid_cost"] = plan["cost"] if paid_cost is None else paid_cost
+     deployable.setdefault("parameters", {})["history_key"] = plan["history_key"]

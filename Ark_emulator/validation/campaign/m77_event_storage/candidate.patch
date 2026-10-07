@@ -1,0 +1,30 @@
+--- m71/kernel/journal.py
++++ m77/kernel/journal.py
+@@ -4,6 +4,7 @@
+ append serializes the complete validated value; no object identity cache exists.
+ """
+ from array import array
++from collections.abc import Mapping
+ from pathlib import Path
+ import hashlib
+ import json
+@@ -107,8 +108,17 @@
+ 
+     @classmethod
+     def from_reference(cls, reference):
+-        if reference.get("schema") != cls.SCHEMA:
+-            raise ValueError("Unsupported event journal reference")
++        if (not isinstance(reference, Mapping) or set(reference)!={'schema','path','sha256','bytes','count'}
++                or reference.get('schema') != cls.SCHEMA):
++            raise ValueError("Unsupported event journal reference fields/schema")
++        for key in ('bytes','count'):
++            if type(reference[key]) is not int or reference[key] < 0:
++                raise ValueError('Event journal reference '+key+' must be a nonnegative integer')
++        digest_value=reference['sha256']
++        if type(digest_value) is not str or len(digest_value)!=64 or any(c not in '0123456789abcdef' for c in digest_value):
++            raise ValueError('Event journal reference SHA256 must be canonical lowercase hex')
++        if type(reference['path']) is not str or not reference['path']:
++            raise ValueError('Event journal reference path must be nonempty absolute string')
+         path = Path(reference["path"])
+         if not path.is_absolute():
+             raise ValueError("Event journal reference path must be absolute")

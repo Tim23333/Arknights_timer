@@ -1,0 +1,2839 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/ch8/bsnake/skills_v3",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "required_runtime": "20e8126120668fece832e8b6e23fd53a68fb013656a4476b5ad8e53850f6dd30",
+      "source_locks": {
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\bsnake\\skills.source.v1.json": "8e2f04a17a08add94fdb683e51c1b23669dbcb0cd2d4ab0b1391df22dc875d2a",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\bsnake\\source.closure.v1.json": "742d78443641451c8b54bdf75281c33cd04c198eaee373ca95991e380f05469d",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\bsnake\\requirements.v2.json": "227a6ac5fc0d581a8c5e90241d05a24b26c4cf4bf8ed67b14dc9a505234d9dd2",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\boss\\dragon_fire.module.v12.joint.json": "a56cf27ee1c4e1a1a5a63343e90498e0a88120bea5800ed80c834d26cd25d7af",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_emulator\\data_range_table.json": "4d974598394630a1ad465b954321254397f514c7fb26cba944d320ac18b874d0",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_bsnake_skills\\build_v1.py": "8220e1fbee4d72f09b3ee9f2577273965e3a4ea447ef6611550056bffa24d00c",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_bsnake_skills\\policies_v1.py": "1a853d4ae1bc87b82c38e42ce911debd7929c2a4183d123dd8022d29f646ef16",
+        "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_tables\\range_table.json": "a98344d688a8933c4dd7ddaae3cb76c4347295359a18b60b918042cc2542d9d9",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\bsnake\\range.source.v1.json": "e77b3b7af6502cc694d2c4e439a9d2375008f96a361977e889dd7f16f7bde96f",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\bsnake\\skills.module.v1.json": "fcc1102ba486280037ed74684a9bcb43b00689596cd4ae1142aca165c4ee791a",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_bsnake_skills\\build_v2.py": "735d8339aae8fbaf9b578d702dbbf0d6fe3b8990a20a6995e536248742a95388",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\bsnake\\skills.module.v2.json": "430a71b1bba5112d60e954a934d96f93aec76ae191f639730bb01ea0036b344d",
+        "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_bsnake_skills\\build_v3.py": "d4d8bfdf510838545915184daf1055e44f7a5a4c656e27231b8ad9a6b9ab80af"
+      },
+      "owner": "unit/ch8/bsnake/cadb87696bef4de2",
+      "owned_ability_bindings": [
+        "ability/ch8/bsnake/ignite/phase0",
+        "ability/ch8/bsnake/explode/phase0",
+        "ability/ch8/bsnake/ignite/phase1",
+        "ability/ch8/bsnake/explode/phase1"
+      ],
+      "source_body_verified": false,
+      "client_verified": false,
+      "reference_policies": [
+        "TimeMode1 affectedBySlowDown1: animation windup/fullbusy divided by ASPD with replaceable minimum .01; source interval remains unscaled and starts cast begin.",
+        "postFilter0 stable actorID tie; postFilter4 lexicographic effective HATE DESC then actorID; no finite score constant.",
+        "BSON null rangeId/useRadius false consumes inline BB range_id x-5 with exact fixed56 table. Runtime project_cell geometry and node method body remain reference.",
+        "ON_OWNER_FINISH maps target lifecycle cleanup to on_remove; alive owner executes AdvancedApplyDamage then clear parent; dead owner only qualified AoE. Callback runs once per actual marker removal.",
+        "Qualified cell grid uses project_cell geometry; excludeTarget true removes center cell, body spatial footprint deferred to client."
+      ],
+      "arbitration_entries": [
+        {
+          "ability": "ability/ch8/bsnake/ignite/phase0",
+          "priority": 10,
+          "attack_clock": false,
+          "require_attack_control": false,
+          "condition": "inputs.source.components.resources.mode.current == 0",
+          "parameters": {}
+        },
+        {
+          "ability": "ability/ch8/bsnake/explode/phase0",
+          "priority": 10,
+          "attack_clock": false,
+          "require_attack_control": false,
+          "condition": "inputs.source.components.resources.mode.current == 0",
+          "parameters": {}
+        },
+        {
+          "ability": "ability/ch8/bsnake/ignite/phase1",
+          "priority": 10,
+          "attack_clock": false,
+          "require_attack_control": false,
+          "condition": "inputs.source.components.resources.mode.current == 1",
+          "parameters": {}
+        },
+        {
+          "ability": "ability/ch8/bsnake/explode/phase1",
+          "priority": 10,
+          "attack_clock": false,
+          "require_attack_control": false,
+          "condition": "inputs.source.components.resources.mode.current == 1",
+          "parameters": {}
+        }
+      ],
+      "range_source": {
+        "schema": "ark-sim/pinned-range-table/v1",
+        "url": "https://raw.githubusercontent.com/ArknightsAssets/ArknightsGamedata/56aee3d6c5a29c3a0d192456d70d14252cbb0804/cn/gamedata/excel/range_table.json",
+        "commit": "56aee3d6c5a29c3a0d192456d70d14252cbb0804",
+        "sha256": "a98344d688a8933c4dd7ddaae3cb76c4347295359a18b60b918042cc2542d9d9",
+        "path": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_tables\\range_table.json",
+        "size": 74622,
+        "selected_x5": {
+          "id": "x-5",
+          "direction": 1,
+          "grids": [
+            {
+              "row": 1,
+              "col": 0
+            },
+            {
+              "row": 0,
+              "col": -1
+            },
+            {
+              "row": 0,
+              "col": 0
+            },
+            {
+              "row": 0,
+              "col": 1
+            },
+            {
+              "row": -1,
+              "col": 0
+            }
+          ]
+        },
+        "offline_historical_x5": {
+          "id": "x-5",
+          "direction": 1,
+          "grids": [
+            {
+              "row": 1,
+              "col": 0
+            },
+            {
+              "row": 0,
+              "col": -1
+            },
+            {
+              "row": 0,
+              "col": 0
+            },
+            {
+              "row": 0,
+              "col": 1
+            },
+            {
+              "row": -1,
+              "col": 0
+            }
+          ]
+        },
+        "x5_matches_offline": true
+      },
+      "fixture": "Native Boss base fields preserved; target fixtures only, no normal consumer/phase/rebirth/stage claim. Skill selected independently to isolate source clock."
+    }
+  },
+  "abilities": [
+    {
+      "id": "ability/ch8/bsnake/ignite/phase0",
+      "kind": "ability",
+      "selector": "selector/ch8/bsnake/ignite/phase0",
+      "initial_cooldown_seconds": 19.0,
+      "cooldown_seconds": 19.0,
+      "duration_seconds": 1.9666666666666666,
+      "activation": {
+        "mode": "manual",
+        "condition": "inputs.resources.mode.current == 0",
+        "parameters": {
+          "auto_only": true,
+          "auto_when_ready": true,
+          "requires_targets": true,
+          "blocks_attacks": true
+        }
+      },
+      "target_capture": "each_hit",
+      "timeline": [
+        {
+          "at_seconds": 1.1666666666666667,
+          "effect": {
+            "op": "buff_application",
+            "application_rule": "rule/ch8/dragon_fire/application",
+            "allowed": [
+              "buff/ch8/source/dragon_fire",
+              "buff/ch8/source/dragon_fire[damage]"
+            ]
+          }
+        }
+      ],
+      "rules": {
+        "ability.windup": "rule/ch8/bsnake/skills/ignite/0/windup",
+        "ability.duration": "rule/ch8/bsnake/skills/ignite/0/duration",
+        "ability.recovery": "rule/ch8/bsnake/skills/ignite/0/recovery",
+        "targeting.selection": "rule/ch8/bsnake/skills/ignite/0/selection"
+      },
+      "metadata": {
+        "native_skill": {
+          "prefabKey": "Ignite",
+          "priority": 0,
+          "cooldown": 19.0,
+          "initCooldown": 19.0,
+          "spCost": 0,
+          "blackboard": [
+            {
+              "key": "dragon_fire.duration",
+              "value": 30.5,
+              "valueStr": null
+            },
+            {
+              "key": "dragon_fire.baseDamage",
+              "value": 50.0,
+              "valueStr": null
+            },
+            {
+              "key": "dragon_fire.addOnDamage",
+              "value": 180.0,
+              "valueStr": null
+            },
+            {
+              "key": "dragon_fire.addOnDuration",
+              "value": 30.0,
+              "valueStr": null
+            }
+          ]
+        },
+        "native_component": {
+          "mode": 0,
+          "component_path_id": -3330325490058234492,
+          "component": {
+            "script_path_id": 2165892974539515790,
+            "gameobject_path_id": -3465382693401496188,
+            "gameobject_name": "Ignite",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -3465382693401496188
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 2165892974539515790
+              },
+              "m_Name": "",
+              "_selector": {
+                "m_FileID": 0,
+                "m_PathID": 4256918081662383492
+              },
+              "_metadata": {
+                "namedAsAlias": "",
+                "blackboardPrefix": ""
+              },
+              "_interruptAbilityOnDetach": 0,
+              "_attachPassiveBuffsOnDummy": 1,
+              "_ignoreIfOwnerDead": 0,
+              "_forceAsDmgOrHealAbility": 0,
+              "_waitForAttackEvent": 1,
+              "_interuptIfTargetDead": 0,
+              "_resetCdStrategy": 1,
+              "_selectTargetSource": 1,
+              "_selectTargetTiming": 1,
+              "_timeMode": 1,
+              "_alwaysIncludeTarget": 0,
+              "_allowNoTarget": 1,
+              "_animKey": "Skill_1",
+              "_endAnimKey": "Idle",
+              "_downAnimKey": "",
+              "_downEndAnimKey": "",
+              "_upAnimKey": "",
+              "_upEndAnimKey": "",
+              "_cooldown": 0.0,
+              "_cooldownKey": "duration",
+              "_preDelay": 0.0,
+              "_escapeTime": 0.0,
+              "_faceToTarget": 1,
+              "_faceToDefault": 0,
+              "_faceToFront": 0,
+              "_faceToFirstCastTarget": 0,
+              "_checkFaceToFirstCastTargetDownAttack": 0,
+              "_forceFaceToDirection": 0,
+              "_activeBuffs": [
+                {
+                  "attributes": {
+                    "abnormalFlags": [],
+                    "abnormalImmunes": [],
+                    "abnormalAntis": [],
+                    "abnormalCombos": [],
+                    "abnormalComboImmunes": [],
+                    "attributeModifiers": []
+                  },
+                  "buffKey": "dragon_fire",
+                  "loadFromDB": 1,
+                  "isDurableBuff": 0,
+                  "isDamageMissable": 0,
+                  "isSilenceable": 0,
+                  "isStunnable": 0,
+                  "isFreezable": 0,
+                  "isLevitatable": 0,
+                  "isGroundBoundable": 0,
+                  "statusResistable": 2,
+                  "templateKey": "empty",
+                  "disableOverride": 0,
+                  "overrideKey": "",
+                  "overrideType": 0,
+                  "maxStackCnt": 1,
+                  "refreshRemainingTimeWhenStackMax": 0,
+                  "clearAllStackCntWhenTimeUp": 0,
+                  "maxValidStackCnt": -1,
+                  "independentCharacterSource": 0,
+                  "overrideEffectKey": "",
+                  "overrideOnEventPriority": 0,
+                  "onEventPriority": 0,
+                  "audioSignal": "",
+                  "lifeTimeType": 1,
+                  "takeSnapshotWhenExtend": 0,
+                  "durationKey": "",
+                  "lifeTime": 0.0,
+                  "triggerLifeType": 0,
+                  "triggerCnt": 0,
+                  "triggerInterval": -1.0,
+                  "waitFirstTriggerInterval": 1,
+                  "firstTriggerInterval": -1.0,
+                  "priority": -1,
+                  "priorityBBKeys": [],
+                  "stripBlackboardParamsWithBuffKey": 0,
+                  "blackboard": [],
+                  "enableInitDirectionFromSource": 0
+                }
+              ],
+              "_maxAnimScale": 1.0,
+              "_onlyPlayEndAnimWhenIsLastAbility": 0,
+              "_ignorePalsyInterrupt": 0,
+              "_affectedBySlowDown": 1,
+              "_actions": {
+                "SerializedState": "[]",
+                "SerializedObjectReferences": []
+              },
+              "_attackType": 0,
+              "_useDynamicAttackType": 0
+            },
+            "script_key": "CAB-658d74aab777086fc32b93f385be999a:2165892974539515790",
+            "native_class": "AnimatedActionToTargetAbility"
+          },
+          "selector": {
+            "script_path_id": 6959540303033999559,
+            "gameobject_path_id": -3465382693401496188,
+            "gameobject_name": "Ignite",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -3465382693401496188
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 6959540303033999559
+              },
+              "m_Name": "",
+              "_targetSide": 2,
+              "_targetMotion": 3,
+              "_targetCategory": 1,
+              "_postFilter": 4,
+              "_ignoreTargetFree": 0,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_abnormalFlag": 20,
+              "_abnormalCombo": 1,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 0,
+              "_needProfessionMask": 0,
+              "_professionMask": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_excludeAbnormalFlag": 46,
+              "_limitTargetNum": 1,
+              "_maxTargetKey": "max_target",
+              "_maxNum": 2,
+              "_excludeOwner": 0,
+              "_sortByTauntAtLast": 0,
+              "_ignoreHitRange": 0,
+              "_checkUnitType": 0,
+              "_unitTypeMask": 0,
+              "_abilityInputTargetAsSortSource": 0,
+              "_tagExcluded": 1,
+              "_filterTag": "",
+              "_filterTagList": [],
+              "_buffKeyExcluded": 1,
+              "_buffKey": "dragon_fire",
+              "_buffs": [],
+              "_checkOrInsteadOfAnd": 0,
+              "_filterBuffSource": 0,
+              "_filterTokenHost": 0
+            },
+            "script_key": "CAB-658d74aab777086fc32b93f385be999a:6959540303033999559",
+            "native_class": "AdvancedSelectorWithTagAndBuffKey"
+          },
+          "animation": {
+            "key": "Skill_1_A",
+            "animation_name": "Skill_1_A",
+            "mapping": {
+              "animKey": "Skill_1_A",
+              "animName": "Skill_1_A",
+              "loop": 0,
+              "speed": 1.0,
+              "ignoreMissing": 0
+            },
+            "duration": {
+              "source_seconds_float32": 1.9666666984558105,
+              "seconds": 1.9666666666666666,
+              "frame": 59,
+              "exact_authored_frame": true
+            },
+            "events": [
+              {
+                "name": "OnAttack",
+                "source_seconds_float32": 1.1666666269302368,
+                "seconds": 1.1666666666666667,
+                "frame": 35,
+                "exact_authored_frame": true
+              }
+            ],
+            "status": "native_binding_resolved"
+          }
+        }
+      }
+    },
+    {
+      "id": "ability/ch8/bsnake/explode/phase0",
+      "kind": "ability",
+      "selector": "selector/ch8/bsnake/explode/phase0",
+      "initial_cooldown_seconds": 35.0,
+      "cooldown_seconds": 35.0,
+      "duration_seconds": 1.9666666666666666,
+      "activation": {
+        "mode": "manual",
+        "condition": "inputs.resources.mode.current == 0",
+        "parameters": {
+          "auto_only": true,
+          "auto_when_ready": true,
+          "requires_targets": true,
+          "blocks_attacks": true
+        }
+      },
+      "target_capture": "at_cast",
+      "timeline": [
+        {
+          "at_seconds": 1.0333333333333334,
+          "effect": {
+            "op": "apply_buff",
+            "buff": "buff/ch8/source/bsnake_s_2"
+          }
+        }
+      ],
+      "rules": {
+        "ability.windup": "rule/ch8/bsnake/skills/explode/0/windup",
+        "ability.duration": "rule/ch8/bsnake/skills/explode/0/duration",
+        "ability.recovery": "rule/ch8/bsnake/skills/explode/0/recovery",
+        "targeting.selection": "rule/ch8/bsnake/skills/explode/0/selection"
+      },
+      "metadata": {
+        "native_skill": {
+          "prefabKey": "DragonFireExplode",
+          "priority": 0,
+          "cooldown": 35.0,
+          "initCooldown": 35.0,
+          "spCost": 0,
+          "blackboard": [
+            {
+              "key": "atk_scale",
+              "value": 1.0,
+              "valueStr": null
+            },
+            {
+              "key": "dragon_fire.duration",
+              "value": 30.5,
+              "valueStr": null
+            },
+            {
+              "key": "dragon_fire.baseDamage",
+              "value": 50.0,
+              "valueStr": null
+            },
+            {
+              "key": "dragon_fire.addOnDamage",
+              "value": 180.0,
+              "valueStr": null
+            },
+            {
+              "key": "dragon_fire.addOnDuration",
+              "value": 30.0,
+              "valueStr": null
+            }
+          ]
+        },
+        "native_component": {
+          "mode": 0,
+          "component_path_id": -3592289509169269372,
+          "component": {
+            "script_path_id": 8145049199648393782,
+            "gameobject_path_id": -6170102682878315132,
+            "gameobject_name": "DragonFireExplode",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -6170102682878315132
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 8145049199648393782
+              },
+              "m_Name": "",
+              "_selector": {
+                "m_FileID": 0,
+                "m_PathID": -5092837950767925884
+              },
+              "_metadata": {
+                "namedAsAlias": "",
+                "blackboardPrefix": ""
+              },
+              "_interruptAbilityOnDetach": 0,
+              "_attachPassiveBuffsOnDummy": 1,
+              "_ignoreIfOwnerDead": 0,
+              "_forceAsDmgOrHealAbility": 0,
+              "_waitForAttackEvent": 1,
+              "_interuptIfTargetDead": 0,
+              "_resetCdStrategy": 1,
+              "_selectTargetSource": 1,
+              "_selectTargetTiming": 0,
+              "_timeMode": 1,
+              "_alwaysIncludeTarget": 0,
+              "_allowNoTarget": 1,
+              "_animKey": "Skill_2",
+              "_endAnimKey": "Idle",
+              "_downAnimKey": "",
+              "_downEndAnimKey": "",
+              "_upAnimKey": "",
+              "_upEndAnimKey": "",
+              "_cooldown": 0.0,
+              "_cooldownKey": "duration",
+              "_preDelay": 0.0,
+              "_escapeTime": 0.0,
+              "_faceToTarget": 1,
+              "_faceToDefault": 0,
+              "_faceToFront": 0,
+              "_faceToFirstCastTarget": 0,
+              "_checkFaceToFirstCastTargetDownAttack": 0,
+              "_forceFaceToDirection": 0,
+              "_activeBuffs": [
+                {
+                  "attributes": {
+                    "abnormalFlags": [],
+                    "abnormalImmunes": [],
+                    "abnormalAntis": [],
+                    "abnormalCombos": [],
+                    "abnormalComboImmunes": [],
+                    "attributeModifiers": []
+                  },
+                  "buffKey": "bsnake_s_2",
+                  "loadFromDB": 0,
+                  "isDurableBuff": 0,
+                  "isDamageMissable": 0,
+                  "isSilenceable": 0,
+                  "isStunnable": 0,
+                  "isFreezable": 0,
+                  "isLevitatable": 0,
+                  "isGroundBoundable": 0,
+                  "statusResistable": 2,
+                  "templateKey": "enemy_bsnake_s_2",
+                  "disableOverride": 0,
+                  "overrideKey": "",
+                  "overrideType": 0,
+                  "maxStackCnt": 1,
+                  "refreshRemainingTimeWhenStackMax": 0,
+                  "clearAllStackCntWhenTimeUp": 0,
+                  "maxValidStackCnt": -1,
+                  "independentCharacterSource": 0,
+                  "overrideEffectKey": "",
+                  "overrideOnEventPriority": 0,
+                  "onEventPriority": 0,
+                  "audioSignal": "",
+                  "lifeTimeType": 1,
+                  "takeSnapshotWhenExtend": 0,
+                  "durationKey": "",
+                  "lifeTime": 0.029999999329447746,
+                  "triggerLifeType": 0,
+                  "triggerCnt": 0,
+                  "triggerInterval": -1.0,
+                  "waitFirstTriggerInterval": 1,
+                  "firstTriggerInterval": -1.0,
+                  "priority": -1,
+                  "priorityBBKeys": [],
+                  "stripBlackboardParamsWithBuffKey": 0,
+                  "blackboard": [
+                    {
+                      "key": "range_id",
+                      "value": 0.0,
+                      "valueStr": "x-5"
+                    }
+                  ],
+                  "enableInitDirectionFromSource": 0
+                }
+              ],
+              "_maxAnimScale": 1.0,
+              "_onlyPlayEndAnimWhenIsLastAbility": 0,
+              "_ignorePalsyInterrupt": 0,
+              "_affectedBySlowDown": 1
+            },
+            "script_key": "CAB-658d74aab777086fc32b93f385be999a:8145049199648393782",
+            "native_class": "EmptyAnimatedAbility"
+          },
+          "selector": {
+            "script_path_id": 6959540303033999559,
+            "gameobject_path_id": 7891601597383865732,
+            "gameobject_name": "Selector",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 7891601597383865732
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 6959540303033999559
+              },
+              "m_Name": "",
+              "_targetSide": 2,
+              "_targetMotion": 3,
+              "_targetCategory": 1,
+              "_postFilter": 0,
+              "_ignoreTargetFree": 0,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_abnormalFlag": 20,
+              "_abnormalCombo": 1,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 0,
+              "_needProfessionMask": 0,
+              "_professionMask": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_excludeAbnormalFlag": 46,
+              "_limitTargetNum": 1,
+              "_maxTargetKey": "max_target",
+              "_maxNum": 2,
+              "_excludeOwner": 0,
+              "_sortByTauntAtLast": 0,
+              "_ignoreHitRange": 0,
+              "_checkUnitType": 0,
+              "_unitTypeMask": 0,
+              "_abilityInputTargetAsSortSource": 0,
+              "_tagExcluded": 1,
+              "_filterTag": "",
+              "_filterTagList": [],
+              "_buffKeyExcluded": 0,
+              "_buffKey": "dragon_fire",
+              "_buffs": [],
+              "_checkOrInsteadOfAnd": 0,
+              "_filterBuffSource": 0,
+              "_filterTokenHost": 0
+            },
+            "script_key": "CAB-658d74aab777086fc32b93f385be999a:6959540303033999559",
+            "native_class": "AdvancedSelectorWithTagAndBuffKey"
+          },
+          "animation": {
+            "key": "Skill_2_A",
+            "animation_name": "Skill_2_A",
+            "mapping": {
+              "animKey": "Skill_2_A",
+              "animName": "Skill_2_A",
+              "loop": 0,
+              "speed": 1.0,
+              "ignoreMissing": 0
+            },
+            "duration": {
+              "source_seconds_float32": 1.9666666984558105,
+              "seconds": 1.9666666666666666,
+              "frame": 59,
+              "exact_authored_frame": true
+            },
+            "events": [
+              {
+                "name": "OnAttack",
+                "source_seconds_float32": 1.0333333015441895,
+                "seconds": 1.0333333333333334,
+                "frame": 31,
+                "exact_authored_frame": true
+              }
+            ],
+            "status": "native_binding_resolved"
+          }
+        }
+      }
+    },
+    {
+      "id": "ability/ch8/bsnake/ignite/phase1",
+      "kind": "ability",
+      "selector": "selector/ch8/bsnake/ignite/phase1",
+      "initial_cooldown_seconds": 19.0,
+      "cooldown_seconds": 19.0,
+      "duration_seconds": 1.9666666666666666,
+      "activation": {
+        "mode": "manual",
+        "condition": "inputs.resources.mode.current == 1",
+        "parameters": {
+          "auto_only": true,
+          "auto_when_ready": true,
+          "requires_targets": true,
+          "blocks_attacks": true
+        }
+      },
+      "target_capture": "each_hit",
+      "timeline": [
+        {
+          "at_seconds": 1.1666666666666667,
+          "effect": {
+            "op": "buff_application",
+            "application_rule": "rule/ch8/dragon_fire/application",
+            "allowed": [
+              "buff/ch8/source/dragon_fire",
+              "buff/ch8/source/dragon_fire[damage]"
+            ]
+          }
+        }
+      ],
+      "rules": {
+        "ability.windup": "rule/ch8/bsnake/skills/ignite/1/windup",
+        "ability.duration": "rule/ch8/bsnake/skills/ignite/1/duration",
+        "ability.recovery": "rule/ch8/bsnake/skills/ignite/1/recovery",
+        "targeting.selection": "rule/ch8/bsnake/skills/ignite/1/selection"
+      },
+      "metadata": {
+        "native_skill": {
+          "prefabKey": "Ignite",
+          "priority": 0,
+          "cooldown": 19.0,
+          "initCooldown": 19.0,
+          "spCost": 0,
+          "blackboard": [
+            {
+              "key": "dragon_fire.duration",
+              "value": 30.5,
+              "valueStr": null
+            },
+            {
+              "key": "dragon_fire.baseDamage",
+              "value": 50.0,
+              "valueStr": null
+            },
+            {
+              "key": "dragon_fire.addOnDamage",
+              "value": 180.0,
+              "valueStr": null
+            },
+            {
+              "key": "dragon_fire.addOnDuration",
+              "value": 30.0,
+              "valueStr": null
+            }
+          ]
+        },
+        "native_component": {
+          "mode": 1,
+          "component_path_id": -8566635987498338940,
+          "component": {
+            "script_path_id": 2165892974539515790,
+            "gameobject_path_id": -3400597014741486204,
+            "gameobject_name": "Ignite",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -3400597014741486204
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 2165892974539515790
+              },
+              "m_Name": "",
+              "_selector": {
+                "m_FileID": 0,
+                "m_PathID": 6817851728011752836
+              },
+              "_metadata": {
+                "namedAsAlias": "",
+                "blackboardPrefix": ""
+              },
+              "_interruptAbilityOnDetach": 0,
+              "_attachPassiveBuffsOnDummy": 1,
+              "_ignoreIfOwnerDead": 0,
+              "_forceAsDmgOrHealAbility": 0,
+              "_waitForAttackEvent": 1,
+              "_interuptIfTargetDead": 0,
+              "_resetCdStrategy": 1,
+              "_selectTargetSource": 1,
+              "_selectTargetTiming": 1,
+              "_timeMode": 1,
+              "_alwaysIncludeTarget": 0,
+              "_allowNoTarget": 1,
+              "_animKey": "Skill_1",
+              "_endAnimKey": "Idle",
+              "_downAnimKey": "",
+              "_downEndAnimKey": "",
+              "_upAnimKey": "",
+              "_upEndAnimKey": "",
+              "_cooldown": 0.0,
+              "_cooldownKey": "duration",
+              "_preDelay": 0.0,
+              "_escapeTime": 0.0,
+              "_faceToTarget": 1,
+              "_faceToDefault": 0,
+              "_faceToFront": 0,
+              "_faceToFirstCastTarget": 0,
+              "_checkFaceToFirstCastTargetDownAttack": 0,
+              "_forceFaceToDirection": 0,
+              "_activeBuffs": [
+                {
+                  "attributes": {
+                    "abnormalFlags": [],
+                    "abnormalImmunes": [],
+                    "abnormalAntis": [],
+                    "abnormalCombos": [],
+                    "abnormalComboImmunes": [],
+                    "attributeModifiers": []
+                  },
+                  "buffKey": "dragon_fire",
+                  "loadFromDB": 1,
+                  "isDurableBuff": 0,
+                  "isDamageMissable": 0,
+                  "isSilenceable": 0,
+                  "isStunnable": 0,
+                  "isFreezable": 0,
+                  "isLevitatable": 0,
+                  "isGroundBoundable": 0,
+                  "statusResistable": 2,
+                  "templateKey": "empty",
+                  "disableOverride": 0,
+                  "overrideKey": "",
+                  "overrideType": 0,
+                  "maxStackCnt": 1,
+                  "refreshRemainingTimeWhenStackMax": 0,
+                  "clearAllStackCntWhenTimeUp": 0,
+                  "maxValidStackCnt": -1,
+                  "independentCharacterSource": 0,
+                  "overrideEffectKey": "",
+                  "overrideOnEventPriority": 0,
+                  "onEventPriority": 0,
+                  "audioSignal": "",
+                  "lifeTimeType": 1,
+                  "takeSnapshotWhenExtend": 0,
+                  "durationKey": "",
+                  "lifeTime": 0.0,
+                  "triggerLifeType": 0,
+                  "triggerCnt": 0,
+                  "triggerInterval": -1.0,
+                  "waitFirstTriggerInterval": 1,
+                  "firstTriggerInterval": -1.0,
+                  "priority": -1,
+                  "priorityBBKeys": [],
+                  "stripBlackboardParamsWithBuffKey": 0,
+                  "blackboard": [],
+                  "enableInitDirectionFromSource": 0
+                }
+              ],
+              "_maxAnimScale": -1.0,
+              "_onlyPlayEndAnimWhenIsLastAbility": 0,
+              "_ignorePalsyInterrupt": 0,
+              "_affectedBySlowDown": 1,
+              "_actions": {
+                "SerializedState": "[]",
+                "SerializedObjectReferences": []
+              },
+              "_attackType": 0,
+              "_useDynamicAttackType": 0
+            },
+            "script_key": "CAB-658d74aab777086fc32b93f385be999a:2165892974539515790",
+            "native_class": "AnimatedActionToTargetAbility"
+          },
+          "selector": {
+            "script_path_id": 6959540303033999559,
+            "gameobject_path_id": -3400597014741486204,
+            "gameobject_name": "Ignite",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -3400597014741486204
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 6959540303033999559
+              },
+              "m_Name": "",
+              "_targetSide": 2,
+              "_targetMotion": 3,
+              "_targetCategory": 1,
+              "_postFilter": 4,
+              "_ignoreTargetFree": 0,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_abnormalFlag": 20,
+              "_abnormalCombo": 1,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 0,
+              "_needProfessionMask": 0,
+              "_professionMask": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_excludeAbnormalFlag": 46,
+              "_limitTargetNum": 1,
+              "_maxTargetKey": "max_target",
+              "_maxNum": 2,
+              "_excludeOwner": 0,
+              "_sortByTauntAtLast": 0,
+              "_ignoreHitRange": 0,
+              "_checkUnitType": 0,
+              "_unitTypeMask": 0,
+              "_abilityInputTargetAsSortSource": 0,
+              "_tagExcluded": 1,
+              "_filterTag": "",
+              "_filterTagList": [],
+              "_buffKeyExcluded": 1,
+              "_buffKey": "dragon_fire",
+              "_buffs": [],
+              "_checkOrInsteadOfAnd": 0,
+              "_filterBuffSource": 0,
+              "_filterTokenHost": 0
+            },
+            "script_key": "CAB-658d74aab777086fc32b93f385be999a:6959540303033999559",
+            "native_class": "AdvancedSelectorWithTagAndBuffKey"
+          },
+          "animation": {
+            "key": "Skill_1_B",
+            "animation_name": "Skill_1_B",
+            "mapping": {
+              "animKey": "Skill_1_B",
+              "animName": "Skill_1_B",
+              "loop": 0,
+              "speed": 1.0,
+              "ignoreMissing": 0
+            },
+            "duration": {
+              "source_seconds_float32": 1.9666666984558105,
+              "seconds": 1.9666666666666666,
+              "frame": 59,
+              "exact_authored_frame": true
+            },
+            "events": [
+              {
+                "name": "OnAttack",
+                "source_seconds_float32": 1.1666666269302368,
+                "seconds": 1.1666666666666667,
+                "frame": 35,
+                "exact_authored_frame": true
+              }
+            ],
+            "status": "native_binding_resolved"
+          }
+        }
+      }
+    },
+    {
+      "id": "ability/ch8/bsnake/explode/phase1",
+      "kind": "ability",
+      "selector": "selector/ch8/bsnake/explode/phase1",
+      "initial_cooldown_seconds": 35.0,
+      "cooldown_seconds": 35.0,
+      "duration_seconds": 1.9666666666666666,
+      "activation": {
+        "mode": "manual",
+        "condition": "inputs.resources.mode.current == 1",
+        "parameters": {
+          "auto_only": true,
+          "auto_when_ready": true,
+          "requires_targets": true,
+          "blocks_attacks": true
+        }
+      },
+      "target_capture": "at_cast",
+      "timeline": [
+        {
+          "at_seconds": 1.0333333333333334,
+          "effect": {
+            "op": "apply_buff",
+            "buff": "buff/ch8/source/bsnake_s_2"
+          }
+        }
+      ],
+      "rules": {
+        "ability.windup": "rule/ch8/bsnake/skills/explode/1/windup",
+        "ability.duration": "rule/ch8/bsnake/skills/explode/1/duration",
+        "ability.recovery": "rule/ch8/bsnake/skills/explode/1/recovery",
+        "targeting.selection": "rule/ch8/bsnake/skills/explode/1/selection"
+      },
+      "metadata": {
+        "native_skill": {
+          "prefabKey": "DragonFireExplode",
+          "priority": 0,
+          "cooldown": 35.0,
+          "initCooldown": 35.0,
+          "spCost": 0,
+          "blackboard": [
+            {
+              "key": "atk_scale",
+              "value": 1.0,
+              "valueStr": null
+            },
+            {
+              "key": "dragon_fire.duration",
+              "value": 30.5,
+              "valueStr": null
+            },
+            {
+              "key": "dragon_fire.baseDamage",
+              "value": 50.0,
+              "valueStr": null
+            },
+            {
+              "key": "dragon_fire.addOnDamage",
+              "value": 180.0,
+              "valueStr": null
+            },
+            {
+              "key": "dragon_fire.addOnDuration",
+              "value": 30.0,
+              "valueStr": null
+            }
+          ]
+        },
+        "native_component": {
+          "mode": 1,
+          "component_path_id": 612212030341739908,
+          "component": {
+            "script_path_id": 8145049199648393782,
+            "gameobject_path_id": -2310946549518731900,
+            "gameobject_name": "DragonFireExplode",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -2310946549518731900
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 8145049199648393782
+              },
+              "m_Name": "",
+              "_selector": {
+                "m_FileID": 0,
+                "m_PathID": 5517592899093296516
+              },
+              "_metadata": {
+                "namedAsAlias": "",
+                "blackboardPrefix": ""
+              },
+              "_interruptAbilityOnDetach": 0,
+              "_attachPassiveBuffsOnDummy": 1,
+              "_ignoreIfOwnerDead": 0,
+              "_forceAsDmgOrHealAbility": 0,
+              "_waitForAttackEvent": 1,
+              "_interuptIfTargetDead": 0,
+              "_resetCdStrategy": 1,
+              "_selectTargetSource": 1,
+              "_selectTargetTiming": 0,
+              "_timeMode": 1,
+              "_alwaysIncludeTarget": 0,
+              "_allowNoTarget": 1,
+              "_animKey": "Skill_2",
+              "_endAnimKey": "Idle",
+              "_downAnimKey": "",
+              "_downEndAnimKey": "",
+              "_upAnimKey": "",
+              "_upEndAnimKey": "",
+              "_cooldown": 0.0,
+              "_cooldownKey": "duration",
+              "_preDelay": 0.0,
+              "_escapeTime": 0.0,
+              "_faceToTarget": 1,
+              "_faceToDefault": 0,
+              "_faceToFront": 0,
+              "_faceToFirstCastTarget": 0,
+              "_checkFaceToFirstCastTargetDownAttack": 0,
+              "_forceFaceToDirection": 0,
+              "_activeBuffs": [
+                {
+                  "attributes": {
+                    "abnormalFlags": [],
+                    "abnormalImmunes": [],
+                    "abnormalAntis": [],
+                    "abnormalCombos": [],
+                    "abnormalComboImmunes": [],
+                    "attributeModifiers": []
+                  },
+                  "buffKey": "bsnake_s_2",
+                  "loadFromDB": 0,
+                  "isDurableBuff": 0,
+                  "isDamageMissable": 0,
+                  "isSilenceable": 0,
+                  "isStunnable": 0,
+                  "isFreezable": 0,
+                  "isLevitatable": 0,
+                  "isGroundBoundable": 0,
+                  "statusResistable": 2,
+                  "templateKey": "enemy_bsnake_s_2",
+                  "disableOverride": 0,
+                  "overrideKey": "",
+                  "overrideType": 0,
+                  "maxStackCnt": 1,
+                  "refreshRemainingTimeWhenStackMax": 0,
+                  "clearAllStackCntWhenTimeUp": 0,
+                  "maxValidStackCnt": -1,
+                  "independentCharacterSource": 0,
+                  "overrideEffectKey": "",
+                  "overrideOnEventPriority": 0,
+                  "onEventPriority": 0,
+                  "audioSignal": "",
+                  "lifeTimeType": 1,
+                  "takeSnapshotWhenExtend": 0,
+                  "durationKey": "",
+                  "lifeTime": 0.029999999329447746,
+                  "triggerLifeType": 0,
+                  "triggerCnt": 0,
+                  "triggerInterval": -1.0,
+                  "waitFirstTriggerInterval": 1,
+                  "firstTriggerInterval": -1.0,
+                  "priority": -1,
+                  "priorityBBKeys": [],
+                  "stripBlackboardParamsWithBuffKey": 0,
+                  "blackboard": [
+                    {
+                      "key": "range_id",
+                      "value": 0.0,
+                      "valueStr": "x-5"
+                    }
+                  ],
+                  "enableInitDirectionFromSource": 0
+                }
+              ],
+              "_maxAnimScale": 1.0,
+              "_onlyPlayEndAnimWhenIsLastAbility": 0,
+              "_ignorePalsyInterrupt": 0,
+              "_affectedBySlowDown": 1
+            },
+            "script_key": "CAB-658d74aab777086fc32b93f385be999a:8145049199648393782",
+            "native_class": "EmptyAnimatedAbility"
+          },
+          "selector": {
+            "script_path_id": 6959540303033999559,
+            "gameobject_path_id": -8799189893857512060,
+            "gameobject_name": "Selector",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -8799189893857512060
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 6959540303033999559
+              },
+              "m_Name": "",
+              "_targetSide": 2,
+              "_targetMotion": 3,
+              "_targetCategory": 1,
+              "_postFilter": 0,
+              "_ignoreTargetFree": 0,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_abnormalFlag": 20,
+              "_abnormalCombo": 1,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 0,
+              "_needProfessionMask": 0,
+              "_professionMask": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_excludeAbnormalFlag": 46,
+              "_limitTargetNum": 1,
+              "_maxTargetKey": "max_target",
+              "_maxNum": 2,
+              "_excludeOwner": 0,
+              "_sortByTauntAtLast": 0,
+              "_ignoreHitRange": 0,
+              "_checkUnitType": 0,
+              "_unitTypeMask": 0,
+              "_abilityInputTargetAsSortSource": 0,
+              "_tagExcluded": 1,
+              "_filterTag": "",
+              "_filterTagList": [],
+              "_buffKeyExcluded": 0,
+              "_buffKey": "dragon_fire",
+              "_buffs": [],
+              "_checkOrInsteadOfAnd": 0,
+              "_filterBuffSource": 0,
+              "_filterTokenHost": 0
+            },
+            "script_key": "CAB-658d74aab777086fc32b93f385be999a:6959540303033999559",
+            "native_class": "AdvancedSelectorWithTagAndBuffKey"
+          },
+          "animation": {
+            "key": "Skill_2_B",
+            "animation_name": "Skill_2_B",
+            "mapping": {
+              "animKey": "Skill_2_B",
+              "animName": "Skill_2_B",
+              "loop": 0,
+              "speed": 1.0,
+              "ignoreMissing": 0
+            },
+            "duration": {
+              "source_seconds_float32": 1.9666666984558105,
+              "seconds": 1.9666666666666666,
+              "frame": 59,
+              "exact_authored_frame": true
+            },
+            "events": [
+              {
+                "name": "OnAttack",
+                "source_seconds_float32": 1.0333333015441895,
+                "seconds": 1.0333333333333334,
+                "frame": 31,
+                "exact_authored_frame": true
+              }
+            ],
+            "status": "native_binding_resolved"
+          }
+        }
+      }
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/ch8/bsnake/ignite/phase0",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 2,
+      "eligibility": {
+        "rule": "rule/ch8/bsnake/skills/ignite/0/eligibility",
+        "parameters": {
+          "source_configuration": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -3465382693401496188
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 6959540303033999559
+            },
+            "m_Name": "",
+            "_targetSide": 2,
+            "_targetMotion": 3,
+            "_targetCategory": 1,
+            "_postFilter": 4,
+            "_ignoreTargetFree": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_abnormalFlag": 20,
+            "_abnormalCombo": 1,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_needProfessionMask": 0,
+            "_professionMask": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_excludeAbnormalFlag": 46,
+            "_limitTargetNum": 1,
+            "_maxTargetKey": "max_target",
+            "_maxNum": 2,
+            "_excludeOwner": 0,
+            "_sortByTauntAtLast": 0,
+            "_ignoreHitRange": 0,
+            "_checkUnitType": 0,
+            "_unitTypeMask": 0,
+            "_abilityInputTargetAsSortSource": 0,
+            "_tagExcluded": 1,
+            "_filterTag": "",
+            "_filterTagList": [],
+            "_buffKeyExcluded": 1,
+            "_buffKey": "dragon_fire",
+            "_buffs": [],
+            "_checkOrInsteadOfAnd": 0,
+            "_filterBuffSource": 0,
+            "_filterTokenHost": 0
+          },
+          "defaults": {
+            "ally_target_free": false,
+            "heal_free": false,
+            "can_select_camouflage": false,
+            "camouflage": false,
+            "target_free": false,
+            "motion": 0,
+            "category": 0,
+            "profession": 0,
+            "unit_type": 0,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "abnormal_immunes": [],
+            "side": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject"
+        }
+      }
+    },
+    {
+      "id": "selector/ch8/bsnake/explode/phase0",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 2,
+      "eligibility": {
+        "rule": "rule/ch8/bsnake/skills/explode/0/eligibility",
+        "parameters": {
+          "source_configuration": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 7891601597383865732
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 6959540303033999559
+            },
+            "m_Name": "",
+            "_targetSide": 2,
+            "_targetMotion": 3,
+            "_targetCategory": 1,
+            "_postFilter": 0,
+            "_ignoreTargetFree": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_abnormalFlag": 20,
+            "_abnormalCombo": 1,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_needProfessionMask": 0,
+            "_professionMask": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_excludeAbnormalFlag": 46,
+            "_limitTargetNum": 1,
+            "_maxTargetKey": "max_target",
+            "_maxNum": 2,
+            "_excludeOwner": 0,
+            "_sortByTauntAtLast": 0,
+            "_ignoreHitRange": 0,
+            "_checkUnitType": 0,
+            "_unitTypeMask": 0,
+            "_abilityInputTargetAsSortSource": 0,
+            "_tagExcluded": 1,
+            "_filterTag": "",
+            "_filterTagList": [],
+            "_buffKeyExcluded": 0,
+            "_buffKey": "dragon_fire",
+            "_buffs": [],
+            "_checkOrInsteadOfAnd": 0,
+            "_filterBuffSource": 0,
+            "_filterTokenHost": 0
+          },
+          "defaults": {
+            "ally_target_free": false,
+            "heal_free": false,
+            "can_select_camouflage": false,
+            "camouflage": false,
+            "target_free": false,
+            "motion": 0,
+            "category": 0,
+            "profession": 0,
+            "unit_type": 0,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "abnormal_immunes": [],
+            "side": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject"
+        }
+      }
+    },
+    {
+      "id": "selector/ch8/bsnake/ignite/phase1",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 2,
+      "eligibility": {
+        "rule": "rule/ch8/bsnake/skills/ignite/1/eligibility",
+        "parameters": {
+          "source_configuration": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -3400597014741486204
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 6959540303033999559
+            },
+            "m_Name": "",
+            "_targetSide": 2,
+            "_targetMotion": 3,
+            "_targetCategory": 1,
+            "_postFilter": 4,
+            "_ignoreTargetFree": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_abnormalFlag": 20,
+            "_abnormalCombo": 1,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_needProfessionMask": 0,
+            "_professionMask": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_excludeAbnormalFlag": 46,
+            "_limitTargetNum": 1,
+            "_maxTargetKey": "max_target",
+            "_maxNum": 2,
+            "_excludeOwner": 0,
+            "_sortByTauntAtLast": 0,
+            "_ignoreHitRange": 0,
+            "_checkUnitType": 0,
+            "_unitTypeMask": 0,
+            "_abilityInputTargetAsSortSource": 0,
+            "_tagExcluded": 1,
+            "_filterTag": "",
+            "_filterTagList": [],
+            "_buffKeyExcluded": 1,
+            "_buffKey": "dragon_fire",
+            "_buffs": [],
+            "_checkOrInsteadOfAnd": 0,
+            "_filterBuffSource": 0,
+            "_filterTokenHost": 0
+          },
+          "defaults": {
+            "ally_target_free": false,
+            "heal_free": false,
+            "can_select_camouflage": false,
+            "camouflage": false,
+            "target_free": false,
+            "motion": 0,
+            "category": 0,
+            "profession": 0,
+            "unit_type": 0,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "abnormal_immunes": [],
+            "side": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject"
+        }
+      }
+    },
+    {
+      "id": "selector/ch8/bsnake/explode/phase1",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 2,
+      "eligibility": {
+        "rule": "rule/ch8/bsnake/skills/explode/1/eligibility",
+        "parameters": {
+          "source_configuration": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -8799189893857512060
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 6959540303033999559
+            },
+            "m_Name": "",
+            "_targetSide": 2,
+            "_targetMotion": 3,
+            "_targetCategory": 1,
+            "_postFilter": 0,
+            "_ignoreTargetFree": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_abnormalFlag": 20,
+            "_abnormalCombo": 1,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_needProfessionMask": 0,
+            "_professionMask": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_excludeAbnormalFlag": 46,
+            "_limitTargetNum": 1,
+            "_maxTargetKey": "max_target",
+            "_maxNum": 2,
+            "_excludeOwner": 0,
+            "_sortByTauntAtLast": 0,
+            "_ignoreHitRange": 0,
+            "_checkUnitType": 0,
+            "_unitTypeMask": 0,
+            "_abilityInputTargetAsSortSource": 0,
+            "_tagExcluded": 1,
+            "_filterTag": "",
+            "_filterTagList": [],
+            "_buffKeyExcluded": 0,
+            "_buffKey": "dragon_fire",
+            "_buffs": [],
+            "_checkOrInsteadOfAnd": 0,
+            "_filterBuffSource": 0,
+            "_filterTokenHost": 0
+          },
+          "defaults": {
+            "ally_target_free": false,
+            "heal_free": false,
+            "can_select_camouflage": false,
+            "camouflage": false,
+            "target_free": false,
+            "motion": 0,
+            "category": 0,
+            "profession": 0,
+            "unit_type": 0,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "abnormal_immunes": [],
+            "side": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject"
+        }
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/ch8/bsnake/skills/typed",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.targeting.eligibility"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/skills/area",
+      "kind": "rule",
+      "contract": "area.members",
+      "dependencies": [
+        "rule/ch8/bsnake/skills/typed"
+      ],
+      "parameters": {
+        "offsets": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            -1
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            -1,
+            0
+          ]
+        ],
+        "eligibility": {
+          "rule": "rule/ch8/bsnake/skills/typed",
+          "parameters": {
+            "source_configuration": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 7891601597383865732
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 6959540303033999559
+              },
+              "m_Name": "",
+              "_targetSide": 2,
+              "_targetMotion": 3,
+              "_targetCategory": 1,
+              "_postFilter": 0,
+              "_ignoreTargetFree": 0,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_abnormalFlag": 20,
+              "_abnormalCombo": 1,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 0,
+              "_needProfessionMask": 0,
+              "_professionMask": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_excludeAbnormalFlag": 46,
+              "_limitTargetNum": 1,
+              "_maxTargetKey": "max_target",
+              "_maxNum": 2,
+              "_excludeOwner": 0,
+              "_sortByTauntAtLast": 0,
+              "_ignoreHitRange": 0,
+              "_checkUnitType": 0,
+              "_unitTypeMask": 0,
+              "_abilityInputTargetAsSortSource": 0,
+              "_tagExcluded": 1,
+              "_filterTag": "",
+              "_filterTagList": [],
+              "_buffKeyExcluded": 0,
+              "_buffKey": "dragon_fire",
+              "_buffs": [],
+              "_checkOrInsteadOfAnd": 0,
+              "_filterBuffSource": 0,
+              "_filterTokenHost": 0
+            },
+            "defaults": {
+              "ally_target_free": false,
+              "heal_free": false,
+              "can_select_camouflage": false,
+              "camouflage": false,
+              "target_free": false,
+              "motion": 0,
+              "category": 0,
+              "profession": 0,
+              "unit_type": 0,
+              "abnormal_flags": [],
+              "abnormal_combos": [],
+              "target_free_flags": [],
+              "target_free_combos": [],
+              "abnormal_immunes": [],
+              "side": 0
+            },
+            "side_policy": "relative_ally_enemy",
+            "neutral_policy": "reject"
+          }
+        }
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.area.qualified_cell_offsets"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/skills/ignite/0/eligibility",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "dependencies": [
+        "rule/ch8/bsnake/skills/typed"
+      ],
+      "parameters": {
+        "base": "rule/ch8/bsnake/skills/typed",
+        "timer": "buff/ch8/source/dragon_fire",
+        "exclude": true
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c8.bsnake.skills.eligibility"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/skills/ignite/0/selection",
+      "kind": "rule",
+      "contract": "targeting.selection",
+      "parameters": {
+        "hate": true
+      },
+      "dependencies": [
+        "rule/ark_attribute_layers"
+      ],
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c8.bsnake.skills.selection"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/skills/ignite/0/windup",
+      "kind": "rule",
+      "contract": "ability.windup",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.timing_parameters.seconds/max(inputs.attributes.attack_speed_ratio,.01)"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/skills/ignite/0/duration",
+      "kind": "rule",
+      "contract": "ability.duration",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.duration_parameters.seconds/max(inputs.attributes.attack_speed_ratio,.01)"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/skills/ignite/0/recovery",
+      "kind": "rule",
+      "contract": "ability.recovery",
+      "parameters": {
+        "full_seconds": 1.9666666666666666
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c8.bsnake.skills.recovery"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/skills/explode/0/eligibility",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "dependencies": [
+        "rule/ch8/bsnake/skills/typed"
+      ],
+      "parameters": {
+        "base": "rule/ch8/bsnake/skills/typed",
+        "timer": "buff/ch8/source/dragon_fire",
+        "exclude": false
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c8.bsnake.skills.eligibility"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/skills/explode/0/selection",
+      "kind": "rule",
+      "contract": "targeting.selection",
+      "parameters": {
+        "hate": false
+      },
+      "dependencies": [
+        "rule/ark_attribute_layers"
+      ],
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c8.bsnake.skills.selection"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/skills/explode/0/windup",
+      "kind": "rule",
+      "contract": "ability.windup",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.timing_parameters.seconds/max(inputs.attributes.attack_speed_ratio,.01)"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/skills/explode/0/duration",
+      "kind": "rule",
+      "contract": "ability.duration",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.duration_parameters.seconds/max(inputs.attributes.attack_speed_ratio,.01)"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/skills/explode/0/recovery",
+      "kind": "rule",
+      "contract": "ability.recovery",
+      "parameters": {
+        "full_seconds": 1.9666666666666666
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c8.bsnake.skills.recovery"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/skills/ignite/1/eligibility",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "dependencies": [
+        "rule/ch8/bsnake/skills/typed"
+      ],
+      "parameters": {
+        "base": "rule/ch8/bsnake/skills/typed",
+        "timer": "buff/ch8/source/dragon_fire",
+        "exclude": true
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c8.bsnake.skills.eligibility"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/skills/ignite/1/selection",
+      "kind": "rule",
+      "contract": "targeting.selection",
+      "parameters": {
+        "hate": true
+      },
+      "dependencies": [
+        "rule/ark_attribute_layers"
+      ],
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c8.bsnake.skills.selection"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/skills/ignite/1/windup",
+      "kind": "rule",
+      "contract": "ability.windup",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.timing_parameters.seconds/max(inputs.attributes.attack_speed_ratio,.01)"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/skills/ignite/1/duration",
+      "kind": "rule",
+      "contract": "ability.duration",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.duration_parameters.seconds/max(inputs.attributes.attack_speed_ratio,.01)"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/skills/ignite/1/recovery",
+      "kind": "rule",
+      "contract": "ability.recovery",
+      "parameters": {
+        "full_seconds": 1.9666666666666666
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c8.bsnake.skills.recovery"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/skills/explode/1/eligibility",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "dependencies": [
+        "rule/ch8/bsnake/skills/typed"
+      ],
+      "parameters": {
+        "base": "rule/ch8/bsnake/skills/typed",
+        "timer": "buff/ch8/source/dragon_fire",
+        "exclude": false
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c8.bsnake.skills.eligibility"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/skills/explode/1/selection",
+      "kind": "rule",
+      "contract": "targeting.selection",
+      "parameters": {
+        "hate": false
+      },
+      "dependencies": [
+        "rule/ark_attribute_layers"
+      ],
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c8.bsnake.skills.selection"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/skills/explode/1/windup",
+      "kind": "rule",
+      "contract": "ability.windup",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.timing_parameters.seconds/max(inputs.attributes.attack_speed_ratio,.01)"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/skills/explode/1/duration",
+      "kind": "rule",
+      "contract": "ability.duration",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.duration_parameters.seconds/max(inputs.attributes.attack_speed_ratio,.01)"
+      }
+    },
+    {
+      "id": "rule/ch8/bsnake/skills/explode/1/recovery",
+      "kind": "rule",
+      "contract": "ability.recovery",
+      "parameters": {
+        "full_seconds": 1.9666666666666666
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c8.bsnake.skills.recovery"
+      }
+    },
+    {
+      "id": "rule/ch8/dragon_fire/application",
+      "kind": "rule",
+      "contract": "buff.application",
+      "parameters": {
+        "timer": "buff/ch8/source/dragon_fire",
+        "child": "buff/ch8/source/dragon_fire[damage]",
+        "duration": 30.5,
+        "base": 50.0,
+        "addition": 180.0,
+        "increase_duration": 30.0,
+        "duration_attribute": "model_unused_fixed_rate_attribute",
+        "minimum_multiplier": 1,
+        "maximum_multiplier": 1
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c8.dragon_fire.application_extend_reset"
+      }
+    },
+    {
+      "id": "rule/ch8/dragon_fire/pipeline",
+      "kind": "rule",
+      "contract": "damage.pipeline",
+      "parameters": {
+        "timer": "buff/ch8/source/dragon_fire",
+        "child": "buff/ch8/source/dragon_fire[damage]",
+        "duration": 30.5,
+        "base": 50.0,
+        "addition": 180.0,
+        "increase_duration": 30.0
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c8.dragon_fire.pipeline"
+      }
+    },
+    {
+      "id": "rule/ch8/dragon_fire/dynamic_rate",
+      "kind": "rule",
+      "contract": "buff.lifetime_rate",
+      "parameters": {
+        "attribute": "one_minus_status_resistance",
+        "minimum": 0.001,
+        "maximum": 1000
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c8.dynamic_buff_rate"
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/ch8/source/bsnake_s_2",
+      "kind": "buff",
+      "duration_seconds": 0.029999999329447746,
+      "stacking": {
+        "mode": "max",
+        "max_stacks": 1
+      },
+      "on_remove": [
+        {
+          "op": "damage",
+          "damage_type": "arts",
+          "scale": 1,
+          "read_mode": {
+            "source_attributes": "at_hit",
+            "target_attributes": "at_hit"
+          },
+          "damage_flags": {
+            "source_attack_type": "NORMAL",
+            "ignore_for_sp": false
+          },
+          "condition": "inputs.targets[0].components.runtime.alive"
+        },
+        {
+          "op": "remove_buff",
+          "buff": "buff/ch8/source/dragon_fire",
+          "condition": "inputs.targets[0].components.runtime.alive"
+        },
+        {
+          "op": "area",
+          "center": "target",
+          "membership_rule": "rule/ch8/bsnake/skills/area",
+          "effects": [
+            {
+              "op": "damage",
+              "damage_type": "arts",
+              "scale": 1,
+              "read_mode": {
+                "source_attributes": "at_hit",
+                "target_attributes": "at_hit"
+              },
+              "damage_flags": {
+                "source_attack_type": "NORMAL",
+                "ignore_for_sp": false
+              }
+            },
+            {
+              "op": "apply_buff",
+              "buff": "buff/ch8/source/bsnake_s_2[reignite]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "buff/ch8/source/bsnake_s_2[reignite]",
+      "kind": "buff",
+      "duration_seconds": 0.029999999329447746,
+      "stacking": {
+        "mode": "max",
+        "max_stacks": 1
+      },
+      "on_remove": [
+        {
+          "op": "buff_application",
+          "application_rule": "rule/ch8/dragon_fire/application",
+          "allowed": [
+            "buff/ch8/source/dragon_fire",
+            "buff/ch8/source/dragon_fire[damage]"
+          ],
+          "condition": "inputs.targets[0].components.runtime.alive"
+        }
+      ]
+    },
+    {
+      "id": "buff/ch8/source/dragon_fire",
+      "kind": "buff",
+      "duration_seconds": 30.5,
+      "stacking": {
+        "mode": "refresh",
+        "max_stacks": 1,
+        "identity": [
+          "definition",
+          "target"
+        ]
+      },
+      "metadata": {
+        "native_key": "dragon_fire",
+        "native_DBrow": {
+          "entry_offset": 19092,
+          "row_offset": 19180,
+          "field_offsets": [
+            19232,
+            19228,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            19195,
+            19220,
+            null,
+            null,
+            19200,
+            19208,
+            null,
+            null,
+            19204,
+            null,
+            null,
+            null,
+            null,
+            null,
+            19215,
+            null,
+            19224,
+            null,
+            null,
+            null,
+            19188,
+            19187,
+            19216,
+            19196,
+            null,
+            19194
+          ],
+          "decoded": {
+            "attributes": {
+              "field_index": 0,
+              "offset": 19232,
+              "value": {
+                "raw_empty_table": true,
+                "row_offset": 19292,
+                "field_offsets": []
+              },
+              "schema_default_when_offset_absent": false
+            },
+            "buffKey": {
+              "field_index": 1,
+              "offset": 19228,
+              "value": "dragon_fire",
+              "schema_default_when_offset_absent": false
+            },
+            "loadFromDB": {
+              "field_index": 2,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "isDurableBuff": {
+              "field_index": 3,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "isDamageMissable": {
+              "field_index": 4,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "isSilenceable": {
+              "field_index": 5,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "isStunnable": {
+              "field_index": 6,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "isFreezable": {
+              "field_index": 7,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "isLevitatable": {
+              "field_index": 8,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "isGroundBoundable": {
+              "field_index": 9,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "statusResistable": {
+              "field_index": 10,
+              "offset": 19195,
+              "value": 1,
+              "schema_default_when_offset_absent": false
+            },
+            "templateKey": {
+              "field_index": 11,
+              "offset": 19220,
+              "value": "dragon_fire[timer]",
+              "schema_default_when_offset_absent": false
+            },
+            "disableOverride": {
+              "field_index": 12,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "overrideKey": {
+              "field_index": 13,
+              "offset": null,
+              "value": null,
+              "schema_default_when_offset_absent": true
+            },
+            "overrideType": {
+              "field_index": 14,
+              "offset": 19200,
+              "value": 3,
+              "schema_default_when_offset_absent": false
+            },
+            "maxStackCnt": {
+              "field_index": 15,
+              "offset": 19208,
+              "value": 1,
+              "schema_default_when_offset_absent": false
+            },
+            "refreshRemainingTimeWhenStackMax": {
+              "field_index": 16,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "clearAllStackCntWhenTimeUp": {
+              "field_index": 17,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "maxValidStackCnt": {
+              "field_index": 18,
+              "offset": 19204,
+              "value": -1,
+              "schema_default_when_offset_absent": false
+            },
+            "independentCharacterSource": {
+              "field_index": 19,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "overrideEffectKey": {
+              "field_index": 20,
+              "offset": null,
+              "value": null,
+              "schema_default_when_offset_absent": true
+            },
+            "overrideOnEventPriority": {
+              "field_index": 21,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "onEventPriority": {
+              "field_index": 22,
+              "offset": null,
+              "value": 0,
+              "schema_default_when_offset_absent": true
+            },
+            "audioSignal": {
+              "field_index": 23,
+              "offset": null,
+              "value": null,
+              "schema_default_when_offset_absent": true
+            },
+            "lifeTimeType": {
+              "field_index": 24,
+              "offset": 19215,
+              "value": 1,
+              "schema_default_when_offset_absent": false
+            },
+            "takeSnapshotWhenExtend": {
+              "field_index": 25,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "durationKey": {
+              "field_index": 26,
+              "offset": 19224,
+              "value": "duration",
+              "schema_default_when_offset_absent": false
+            },
+            "lifeTime": {
+              "field_index": 27,
+              "offset": null,
+              "value": 0,
+              "schema_default_when_offset_absent": true
+            },
+            "triggerLifeType": {
+              "field_index": 28,
+              "offset": null,
+              "value": 0,
+              "schema_default_when_offset_absent": true
+            },
+            "triggerCnt": {
+              "field_index": 29,
+              "offset": null,
+              "value": 0,
+              "schema_default_when_offset_absent": true
+            },
+            "triggerInterval": {
+              "field_index": 30,
+              "offset": 19188,
+              "value": -1.0,
+              "schema_default_when_offset_absent": false
+            },
+            "waitFirstTriggerInterval": {
+              "field_index": 31,
+              "offset": 19187,
+              "value": true,
+              "schema_default_when_offset_absent": false
+            },
+            "firstTriggerInterval": {
+              "field_index": 32,
+              "offset": 19216,
+              "value": -1.0,
+              "schema_default_when_offset_absent": false
+            },
+            "priority": {
+              "field_index": 33,
+              "offset": 19196,
+              "value": -1,
+              "schema_default_when_offset_absent": false
+            }
+          },
+          "unknown_extra_field_offsets": [
+            null,
+            19194
+          ]
+        }
+      },
+      "lifetime": {
+        "rule": "rule/ch8/dragon_fire/dynamic_rate",
+        "parameters": {},
+        "count_when_inactive": true
+      }
+    },
+    {
+      "id": "buff/ch8/source/dragon_fire[damage]",
+      "kind": "buff",
+      "interval_seconds": 1,
+      "stacking": {
+        "mode": "refresh",
+        "max_stacks": 1,
+        "identity": [
+          "definition",
+          "target"
+        ]
+      },
+      "removal": {
+        "on_source_death": "retain",
+        "on_target_death": "remove"
+      },
+      "effects": [
+        {
+          "op": "damage",
+          "damage_type": "true",
+          "rules": {
+            "damage.pipeline": "rule/ch8/dragon_fire/pipeline"
+          },
+          "damage_flags": {
+            "source_attack_type": "BUFF",
+            "ignore_for_sp": true
+          }
+        }
+      ],
+      "metadata": {
+        "native_key": "dragon_fire[damage]",
+        "native_DBrow": {
+          "entry_offset": 18848,
+          "row_offset": 18932,
+          "field_offsets": [
+            18980,
+            18976,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            18947,
+            18968,
+            null,
+            null,
+            null,
+            18956,
+            null,
+            null,
+            18952,
+            null,
+            18972,
+            null,
+            null,
+            null,
+            18963,
+            null,
+            null,
+            null,
+            18939,
+            null,
+            18940,
+            18938,
+            18964,
+            18948
+          ],
+          "decoded": {
+            "attributes": {
+              "field_index": 0,
+              "offset": 18980,
+              "value": {
+                "raw_empty_table": true,
+                "row_offset": 19064,
+                "field_offsets": []
+              },
+              "schema_default_when_offset_absent": false
+            },
+            "buffKey": {
+              "field_index": 1,
+              "offset": 18976,
+              "value": "dragon_fire[damage]",
+              "schema_default_when_offset_absent": false
+            },
+            "loadFromDB": {
+              "field_index": 2,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "isDurableBuff": {
+              "field_index": 3,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "isDamageMissable": {
+              "field_index": 4,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "isSilenceable": {
+              "field_index": 5,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "isStunnable": {
+              "field_index": 6,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "isFreezable": {
+              "field_index": 7,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "isLevitatable": {
+              "field_index": 8,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "isGroundBoundable": {
+              "field_index": 9,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "statusResistable": {
+              "field_index": 10,
+              "offset": 18947,
+              "value": 2,
+              "schema_default_when_offset_absent": false
+            },
+            "templateKey": {
+              "field_index": 11,
+              "offset": 18968,
+              "value": "dragon_fire[damage]",
+              "schema_default_when_offset_absent": false
+            },
+            "disableOverride": {
+              "field_index": 12,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "overrideKey": {
+              "field_index": 13,
+              "offset": null,
+              "value": null,
+              "schema_default_when_offset_absent": true
+            },
+            "overrideType": {
+              "field_index": 14,
+              "offset": null,
+              "value": 0,
+              "schema_default_when_offset_absent": true
+            },
+            "maxStackCnt": {
+              "field_index": 15,
+              "offset": 18956,
+              "value": 1,
+              "schema_default_when_offset_absent": false
+            },
+            "refreshRemainingTimeWhenStackMax": {
+              "field_index": 16,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "clearAllStackCntWhenTimeUp": {
+              "field_index": 17,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "maxValidStackCnt": {
+              "field_index": 18,
+              "offset": 18952,
+              "value": -1,
+              "schema_default_when_offset_absent": false
+            },
+            "independentCharacterSource": {
+              "field_index": 19,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "overrideEffectKey": {
+              "field_index": 20,
+              "offset": 18972,
+              "value": "enemy_bsnake_skill_01_buff",
+              "schema_default_when_offset_absent": false
+            },
+            "overrideOnEventPriority": {
+              "field_index": 21,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "onEventPriority": {
+              "field_index": 22,
+              "offset": null,
+              "value": 0,
+              "schema_default_when_offset_absent": true
+            },
+            "audioSignal": {
+              "field_index": 23,
+              "offset": null,
+              "value": null,
+              "schema_default_when_offset_absent": true
+            },
+            "lifeTimeType": {
+              "field_index": 24,
+              "offset": 18963,
+              "value": 2,
+              "schema_default_when_offset_absent": false
+            },
+            "takeSnapshotWhenExtend": {
+              "field_index": 25,
+              "offset": null,
+              "value": false,
+              "schema_default_when_offset_absent": true
+            },
+            "durationKey": {
+              "field_index": 26,
+              "offset": null,
+              "value": null,
+              "schema_default_when_offset_absent": true
+            },
+            "lifeTime": {
+              "field_index": 27,
+              "offset": null,
+              "value": 0,
+              "schema_default_when_offset_absent": true
+            },
+            "triggerLifeType": {
+              "field_index": 28,
+              "offset": 18939,
+              "value": 2,
+              "schema_default_when_offset_absent": false
+            },
+            "triggerCnt": {
+              "field_index": 29,
+              "offset": null,
+              "value": 0,
+              "schema_default_when_offset_absent": true
+            },
+            "triggerInterval": {
+              "field_index": 30,
+              "offset": 18940,
+              "value": 1.0,
+              "schema_default_when_offset_absent": false
+            },
+            "waitFirstTriggerInterval": {
+              "field_index": 31,
+              "offset": 18938,
+              "value": true,
+              "schema_default_when_offset_absent": false
+            },
+            "firstTriggerInterval": {
+              "field_index": 32,
+              "offset": 18964,
+              "value": -1.0,
+              "schema_default_when_offset_absent": false
+            },
+            "priority": {
+              "field_index": 33,
+              "offset": 18948,
+              "value": -1,
+              "schema_default_when_offset_absent": false
+            }
+          },
+          "unknown_extra_field_offsets": []
+        }
+      }
+    }
+  ],
+  "entities": [
+    {
+      "id": "unit/ch8/bsnake/cadb87696bef4de2",
+      "kind": "entity",
+      "tags": [
+        "enemy"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 50000,
+            "atk": 770,
+            "def": 800,
+            "mres": 50,
+            "attack_speed_ratio": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 50000,
+            "capacity": 50000,
+            "role": "health"
+          },
+          "mode": {
+            "initial": 0,
+            "capacity": 3
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "side": 1,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 2
+        },
+        "abilities": [
+          "ability/ch8/bsnake/ignite/phase0"
+        ],
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    },
+    {
+      "id": "unit/fixture/primary",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 30000,
+            "atk": 0,
+            "def": 999,
+            "mres": 20,
+            "taunt_level": 10,
+            "one_minus_status_resistance": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 30000,
+            "capacity": 30000,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "side": 0,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 1
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "buffs": {
+          "initial": [
+            "buff/ch8/source/dragon_fire",
+            "buff/ch8/source/dragon_fire[damage]"
+          ]
+        }
+      }
+    },
+    {
+      "id": "unit/fixture/adjacent",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 30000,
+            "atk": 0,
+            "def": 999,
+            "mres": 40,
+            "taunt_level": 5,
+            "one_minus_status_resistance": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 30000,
+            "capacity": 30000,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "side": 0,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 1,
+          "camouflage": true
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    },
+    {
+      "id": "unit/fixture/other",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 30000,
+            "atk": 0,
+            "def": 999,
+            "mres": 60,
+            "taunt_level": 1,
+            "one_minus_status_resistance": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 30000,
+            "capacity": 30000,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "side": 0,
+          "motion": 2,
+          "category": 1,
+          "unit_type": 1
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    },
+    {
+      "id": "unit/fixture/outside",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 30000,
+            "atk": 0,
+            "def": 999,
+            "mres": 0,
+            "taunt_level": 0,
+            "one_minus_status_resistance": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 30000,
+            "capacity": 30000,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "side": 0,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 1
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/bsnake/skills/ignite/0",
+    "ruleset": "ruleset/ark_standard",
+    "map": {
+      "rows": 7,
+      "cols": 7
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/ch8/bsnake/cadb87696bef4de2",
+        "instanceAlias": "boss",
+        "position": {
+          "row": 3,
+          "col": 1
+        }
+      },
+      {
+        "definition": "unit/fixture/primary",
+        "instanceAlias": "primary",
+        "position": {
+          "row": 3,
+          "col": 3
+        }
+      },
+      {
+        "definition": "unit/fixture/adjacent",
+        "instanceAlias": "adjacent",
+        "position": {
+          "row": 3,
+          "col": 4
+        }
+      },
+      {
+        "definition": "unit/fixture/other",
+        "instanceAlias": "other",
+        "position": {
+          "row": 2,
+          "col": 3
+        }
+      },
+      {
+        "definition": "unit/fixture/outside",
+        "instanceAlias": "outside",
+        "position": {
+          "row": 4,
+          "col": 4
+        }
+      }
+    ]
+  }
+}

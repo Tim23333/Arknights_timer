@@ -1,0 +1,6711 @@
+{
+  "schema": "ark-sim/campaign-mechanism-test-evidence/v1",
+  "passed": true,
+  "implementation_sha256": "f8b99ec021be6023d5202307574030e074acdbb1ca583ae6ad7775ef7876d263",
+  "tests": [
+    {
+      "path": "tests_v2/test_canonical_roster_trio.py",
+      "source_sha256": "3544a03881a29b9ef0d2fca050d5b066098fbbc6ecd54f3daac6f6c21b1509a2",
+      "result": "passed"
+    },
+    {
+      "path": "tools/witness_canonical_roster_trio.py",
+      "source_sha256": "41c4c565926749d7ca5894c9a1ec76ec4b07c25d2c0d8eb7424ac67f9a920efc",
+      "result": "passed"
+    }
+  ],
+  "helper_source_sha256": "41c4c565926749d7ca5894c9a1ec76ec4b07c25d2c0d8eb7424ac67f9a920efc",
+  "input_package": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\mainline_models\\level_main_00-10.m8_roster.json",
+  "input_package_sha256": "7604b67eb0d226f96e15bf567799dd8daf97857718b62a075ba5615c5c13b49a",
+  "source_hashes": {
+    "packages/campaign/operators.normalized.json": "1611fac32beb58d7aeb9e28ffb6cd4ebcfc3a5e6f955157a5dc3fab7ebb6824b",
+    "packages/campaign/skills.chen.json": "04df7b6f7f40f43687c03b0186e02f4e0407ee566231f43b2455d2741719dde6",
+    "packages/campaign/skills.liskam.json": "15324d6b526a3c4f3d449aed211cc41f06fc4357ad44ac92c043ef86a76305a2",
+    "packages/campaign/skills.lisa.json": "4d835814caed7aed144fdd1b5f045539c524758ca38b720aba7fe5f8b6dc31be",
+    "packages/campaign/talents.attack.json": "bb0e679cdd1e266ee7248f728029a7ce67cb2cf5151ba378205dcff3a7186204",
+    "packages/campaign/talents.support.json": "46e28d0783d6bdeaa3b528a08ea1e7888b51785314ca4fa0a8ccfcc788db36d0"
+  },
+  "fixed_configs": {
+    "char_010_chen": {
+      "elite_phase": 2,
+      "equipment_id": null,
+      "equipment_level": 0,
+      "level": 70,
+      "mastery": 3,
+      "potential": 1,
+      "potential_rank": 0,
+      "skill_id": "skchr_chen_1",
+      "skill_level_index": 9,
+      "skill_rank": 7,
+      "trust_percent": 100
+    },
+    "char_107_liskam": {
+      "elite_phase": 2,
+      "equipment_id": null,
+      "equipment_level": 0,
+      "level": 70,
+      "mastery": 3,
+      "potential": 1,
+      "potential_rank": 0,
+      "skill_id": "skchr_liskam_1",
+      "skill_level_index": 9,
+      "skill_rank": 7,
+      "trust_percent": 100
+    },
+    "char_358_lisa": {
+      "elite_phase": 2,
+      "equipment_id": null,
+      "equipment_level": 0,
+      "level": 70,
+      "mastery": 3,
+      "potential": 1,
+      "potential_rank": 0,
+      "skill_id": "skchr_lisa_3",
+      "skill_level_index": 9,
+      "skill_rank": 7,
+      "trust_percent": 100
+    }
+  },
+  "pytest_exit_code": 0,
+  "pytest_output": "....................                                                     [100%]\n20 passed in 260.24s (0:04:20)\n",
+  "selected_cases": [
+    "config_sources",
+    "chen_attack_once_two_hits",
+    "chen_auto_skill_stun",
+    "chen_periodic_source_retire",
+    "chen_dodge_and_arts",
+    "lisk_two_source_gains",
+    "lisk_neighbor_empty",
+    "lisk_neighbor_random",
+    "lisk_automatic_payment",
+    "lisk_two_neighbors",
+    "lisk_shield_physical",
+    "lisk_shield_arts",
+    "lisk_shield_true",
+    "lisk_freeze_and_expiry",
+    "lisa_highest_sp_retire",
+    "lisk_blocked_neighbor_profile",
+    "lisa_fragility_and_retire",
+    "lisa_s3_regeneration_freeze",
+    "lisa_half_open",
+    "lisa_live_member_exit"
+  ],
+  "cases": [
+    {
+      "case": "config_sources",
+      "result": "passed",
+      "actual": {
+        "fixed_config_checked": 3,
+        "source_numerics": "independent constants matched normalized source; no actual-derived expectations"
+      }
+    },
+    {
+      "case": "chen_attack_once_two_hits",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "420167979cd15ab3fa7cfa88786a10b7210a2d164f9c15408263ba0cb9d0d398",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 33,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 17,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 2724
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 35,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 316,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 405,
+            "type": "ability.started",
+            "payload": {
+              "source": 2,
+              "ability": "ability/campaign_chen_normal",
+              "cast": "cast/2/1",
+              "targets": [
+                3
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 443,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "resource": "hp",
+              "delta": -659.4000000000233,
+              "value": 999340.6
+            },
+            "time": 13,
+            "cause": null
+          },
+          {
+            "id": 445,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "amount": 659.4000000000233,
+              "ability": "ability/campaign_chen_normal",
+              "resource": "hp"
+            },
+            "time": 13,
+            "cause": null
+          },
+          {
+            "id": 446,
+            "type": "attack.accepted",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "ability": "ability/campaign_chen_normal",
+              "cast": "cast/2/1",
+              "amount": 659.4000000000233
+            },
+            "time": 13,
+            "cause": null
+          },
+          {
+            "id": 493,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 1.0
+            },
+            "time": 13,
+            "cause": null
+          },
+          {
+            "id": 530,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 11.0
+            },
+            "time": 29,
+            "cause": null
+          },
+          {
+            "id": 545,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "resource": "hp",
+              "delta": -659.4000000000233,
+              "value": 998681.2
+            },
+            "time": 30,
+            "cause": null
+          },
+          {
+            "id": 547,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "amount": 659.4000000000233,
+              "ability": "ability/campaign_chen_normal",
+              "resource": "hp"
+            },
+            "time": 30,
+            "cause": null
+          },
+          {
+            "id": 548,
+            "type": "ability.finished",
+            "payload": {
+              "source": 2,
+              "ability": "ability/campaign_chen_normal",
+              "cast": "cast/2/1"
+            },
+            "time": 30,
+            "cause": null
+          }
+        ],
+        "random_samples": [],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 11.0,
+            "life": 10
+          },
+          "unit/char_010_chen": {
+            "hp": 2724,
+            "sp": 1.0
+          },
+          "unit/witness_enemy": {
+            "hp": 998681.2
+          }
+        }
+      }
+    },
+    {
+      "case": "chen_auto_skill_stun",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "e4b680ea5d7c2b7360794a9602c4fbb073f4b91de36cd54d40b2e79b39995504",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 63,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 17,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 2724
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 35,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 4
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 316,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 326,
+            "type": "command.rejected",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "chen",
+                "ability": "ability/campaign_chen_s1"
+              },
+              "reason": "Automatic-only ability cannot be activated by a player command"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 419,
+            "type": "ability.started",
+            "payload": {
+              "source": 2,
+              "ability": "ability/campaign_chen_s1",
+              "cast": "cast/2/1",
+              "targets": [
+                3
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 420,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": -4,
+              "value": 0,
+              "ability": "ability/campaign_chen_s1",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 0,
+            "cause": 419
+          },
+          {
+            "id": 465,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "resource": "hp",
+              "delta": -2110.079999999958,
+              "value": 997889.92
+            },
+            "time": 16,
+            "cause": null
+          },
+          {
+            "id": 467,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "amount": 2110.079999999958,
+              "ability": "ability/campaign_chen_s1",
+              "resource": "hp"
+            },
+            "time": 16,
+            "cause": null
+          },
+          {
+            "id": 500,
+            "type": "attack.accepted",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "ability": "ability/campaign_chen_s1",
+              "cast": "cast/2/1",
+              "amount": 2110.079999999958
+            },
+            "time": 16,
+            "cause": null
+          },
+          {
+            "id": 501,
+            "type": "ability.finished",
+            "payload": {
+              "source": 2,
+              "ability": "ability/campaign_chen_s1",
+              "cast": "cast/2/1"
+            },
+            "time": 16,
+            "cause": null
+          },
+          {
+            "id": 545,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 11.0
+            },
+            "time": 29,
+            "cause": null
+          },
+          {
+            "id": 642,
+            "type": "ability.started",
+            "payload": {
+              "source": 2,
+              "ability": "ability/campaign_chen_normal",
+              "cast": "cast/2/2",
+              "targets": [
+                3
+              ]
+            },
+            "time": 39,
+            "cause": null
+          },
+          {
+            "id": 680,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "resource": "hp",
+              "delta": -659.4000000000233,
+              "value": 997230.52
+            },
+            "time": 52,
+            "cause": null
+          },
+          {
+            "id": 682,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "amount": 659.4000000000233,
+              "ability": "ability/campaign_chen_normal",
+              "resource": "hp"
+            },
+            "time": 52,
+            "cause": null
+          },
+          {
+            "id": 683,
+            "type": "attack.accepted",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "ability": "ability/campaign_chen_normal",
+              "cast": "cast/2/2",
+              "amount": 659.4000000000233
+            },
+            "time": 52,
+            "cause": null
+          },
+          {
+            "id": 730,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 1.0
+            },
+            "time": 52,
+            "cause": null
+          },
+          {
+            "id": 749,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 12.0
+            },
+            "time": 59,
+            "cause": null
+          },
+          {
+            "id": 765,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "buff": "buff/campaign_chen_stun",
+              "instance": "buff/3/1"
+            },
+            "time": 61,
+            "cause": null
+          }
+        ],
+        "random_samples": [],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 12.0,
+            "life": 10
+          },
+          "unit/char_010_chen": {
+            "hp": 2724,
+            "sp": 1.0
+          },
+          "unit/witness_enemy": {
+            "hp": 997230.52
+          }
+        }
+      }
+    },
+    {
+      "case": "chen_periodic_source_retire",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "6c929b5bfec7ba53952e7fa294c6f8d9b08bbc8a06424d56b27ccba6000c0567",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 243,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 17,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 2724
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 35,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 324,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3124
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 341,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "shield_charge",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 358,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 625,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 4,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 642,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 4,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 1764,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 11.0
+            },
+            "time": 29,
+            "cause": null
+          },
+          {
+            "id": 1809,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 4,
+              "resource": "sp",
+              "delta": 1.4,
+              "value": 1.4
+            },
+            "time": 29,
+            "cause": null
+          },
+          {
+            "id": 2669,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 12.0
+            },
+            "time": 59,
+            "cause": null
+          },
+          {
+            "id": 2714,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 4,
+              "resource": "sp",
+              "delta": 1.4,
+              "value": 2.8
+            },
+            "time": 59,
+            "cause": null
+          },
+          {
+            "id": 3574,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 13.0
+            },
+            "time": 89,
+            "cause": null
+          },
+          {
+            "id": 3619,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 4,
+              "resource": "sp",
+              "delta": 1.3999999999999995,
+              "value": 4.199999999999999
+            },
+            "time": 89,
+            "cause": null
+          },
+          {
+            "id": 4479,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 14.0
+            },
+            "time": 119,
+            "cause": null
+          },
+          {
+            "id": 4524,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 4,
+              "resource": "sp",
+              "delta": 1.4000000000000004,
+              "value": 5.6
+            },
+            "time": 119,
+            "cause": null
+          },
+          {
+            "id": 4584,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 1.0
+            },
+            "time": 120,
+            "cause": null
+          },
+          {
+            "id": 4601,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 1.0
+            },
+            "time": 120,
+            "cause": null
+          },
+          {
+            "id": 4611,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": "system/battle",
+              "resource": "dp",
+              "delta": 0.0,
+              "value": 14.0
+            },
+            "time": 121,
+            "cause": null
+          },
+          {
+            "id": 4719,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/talent_chen_stats",
+              "instance": "buff/2/1"
+            },
+            "time": 121,
+            "cause": null
+          },
+          {
+            "id": 4780,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/talent_chen_parent",
+              "instance": "buff/2/2"
+            },
+            "time": 121,
+            "cause": null
+          },
+          {
+            "id": 4841,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/talent_chen_dodge",
+              "instance": "buff/2/3"
+            },
+            "time": 121,
+            "cause": null
+          },
+          {
+            "id": 5607,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 15.0
+            },
+            "time": 149,
+            "cause": null
+          },
+          {
+            "id": 5652,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 4,
+              "resource": "sp",
+              "delta": 1.4000000000000004,
+              "value": 7.0
+            },
+            "time": 149,
+            "cause": null
+          },
+          {
+            "id": 6482,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 16.0
+            },
+            "time": 179,
+            "cause": null
+          },
+          {
+            "id": 6527,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 4,
+              "resource": "sp",
+              "delta": 1.4000000000000004,
+              "value": 8.4
+            },
+            "time": 179,
+            "cause": null
+          },
+          {
+            "id": 7357,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 17.0
+            },
+            "time": 209,
+            "cause": null
+          },
+          {
+            "id": 7402,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 4,
+              "resource": "sp",
+              "delta": 1.4000000000000004,
+              "value": 9.8
+            },
+            "time": 209,
+            "cause": null
+          },
+          {
+            "id": 8232,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 18.0
+            },
+            "time": 239,
+            "cause": null
+          },
+          {
+            "id": 8277,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 4,
+              "resource": "sp",
+              "delta": 1.4000000000000004,
+              "value": 11.200000000000001
+            },
+            "time": 239,
+            "cause": null
+          }
+        ],
+        "random_samples": [],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 18.0,
+            "life": 10
+          },
+          "unit/char_010_chen": {
+            "hp": 2724,
+            "sp": 1.0
+          },
+          "unit/char_107_liskam": {
+            "hp": 3124,
+            "shield_charge": 0,
+            "sp": 1.0
+          },
+          "unit/char_358_lisa": {
+            "hp": 1413,
+            "sp": 11.200000000000001
+          }
+        }
+      }
+    },
+    {
+      "case": "chen_dodge_and_arts",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "8bb461f4807c29f60aab807f0e290535f8f776b6548f1aca2ae21d0fdc6735f6",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 4,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 17,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 2724
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 35,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 316,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 352,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_physical",
+              "cast": "cast/3/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 364,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_physical",
+              "cast": "cast/3/1"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 391,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_arts",
+              "cast": "cast/3/2",
+              "targets": [
+                2
+              ]
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 415,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 2624.0
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 417,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "amount": 100.0,
+              "ability": "ability/witness_hit_arts",
+              "resource": "hp"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 418,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_arts",
+              "cast": "cast/3/2"
+            },
+            "time": 1,
+            "cause": null
+          }
+        ],
+        "random_samples": [
+          {
+            "sequence": 1,
+            "stream": "imp",
+            "index": 1,
+            "value": 0.008673620625579415,
+            "time": 0
+          }
+        ],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 10,
+            "life": 10
+          },
+          "unit/char_010_chen": {
+            "hp": 2624.0,
+            "sp": 0
+          },
+          "unit/witness_enemy": {
+            "hp": 1000000
+          }
+        }
+      }
+    },
+    {
+      "case": "lisk_two_source_gains",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "238f0053b90065a11cc1ffcf7fa090b0ff81a7c800420a54025818b5fa51185b",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 4,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 16,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3124
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 33,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 50,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 309,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 354,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_two_hits",
+              "cast": "cast/3/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 379,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 3024.0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 381,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "amount": 100.0,
+              "ability": "ability/witness_two_hits",
+              "resource": "hp"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 411,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1,
+              "value": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 429,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 2.0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 454,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 2924.0
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 456,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "amount": 100.0,
+              "ability": "ability/witness_two_hits",
+              "resource": "hp"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 457,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_two_hits",
+              "cast": "cast/3/1"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 487,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 3.0
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 505,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 4.0
+            },
+            "time": 1,
+            "cause": null
+          }
+        ],
+        "random_samples": [],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 10,
+            "life": 10
+          },
+          "unit/char_107_liskam": {
+            "hp": 2924.0,
+            "shield_charge": 0,
+            "sp": 4.0
+          },
+          "unit/witness_enemy": {
+            "hp": 1000000
+          }
+        }
+      }
+    },
+    {
+      "case": "lisk_neighbor_empty",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "238f0053b90065a11cc1ffcf7fa090b0ff81a7c800420a54025818b5fa51185b",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 3,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 16,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3124
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 33,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 50,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 309,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 345,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 370,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 3024.0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 372,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "amount": 100.0,
+              "ability": "ability/witness_hit_true",
+              "resource": "hp"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 373,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/1"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 403,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1,
+              "value": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 421,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 2.0
+            },
+            "time": 0,
+            "cause": null
+          }
+        ],
+        "random_samples": [],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 10,
+            "life": 10
+          },
+          "unit/char_107_liskam": {
+            "hp": 3024.0,
+            "shield_charge": 0,
+            "sp": 2.0
+          },
+          "unit/witness_enemy": {
+            "hp": 1000000
+          }
+        }
+      }
+    },
+    {
+      "case": "lisk_neighbor_random",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "e80370e7ad81fc464899cbb7e271d7f029aae412d4c4d259d64d633864894ce4",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 3,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 16,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3124
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 33,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 50,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 318,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 2724
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 336,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 625,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 4,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 642,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 4,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 919,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 5,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 965,
+            "type": "ability.started",
+            "payload": {
+              "source": 5,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/5/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 1012,
+            "type": "resource.changed",
+            "payload": {
+              "source": 5,
+              "target": 2,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 3024.0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 1014,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 5,
+              "target": 2,
+              "amount": 100.0,
+              "ability": "ability/witness_hit_true",
+              "resource": "hp"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 1015,
+            "type": "ability.finished",
+            "payload": {
+              "source": 5,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/5/1"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 1045,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1,
+              "value": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 1063,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 2.0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 1084,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 1.0
+            },
+            "time": 0,
+            "cause": null
+          }
+        ],
+        "random_samples": [
+          {
+            "sequence": 1,
+            "stream": "imp",
+            "index": 1,
+            "value": 0.5838338137853468,
+            "time": 0
+          }
+        ],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 10,
+            "life": 10
+          },
+          "unit/char_107_liskam": {
+            "hp": 3024.0,
+            "shield_charge": 0,
+            "sp": 2.0
+          },
+          "unit/char_010_chen": {
+            "hp": 2724,
+            "sp": 1.0
+          },
+          "unit/char_358_lisa": {
+            "hp": 1413,
+            "sp": 0
+          },
+          "unit/witness_enemy": {
+            "hp": 1000000
+          }
+        }
+      }
+    },
+    {
+      "case": "lisk_automatic_payment",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "238f0053b90065a11cc1ffcf7fa090b0ff81a7c800420a54025818b5fa51185b",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 12,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 16,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3124
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 33,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 50,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 309,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 345,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 370,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 3024.0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 372,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "amount": 100.0,
+              "ability": "ability/witness_hit_true",
+              "resource": "hp"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 373,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/1"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 403,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1,
+              "value": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 421,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 2.0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 451,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/2",
+              "targets": [
+                2
+              ]
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 474,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 2924.0
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 476,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "amount": 100.0,
+              "ability": "ability/witness_hit_true",
+              "resource": "hp"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 477,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/2"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 507,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 3.0
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 525,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 4.0
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 555,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/3",
+              "targets": [
+                2
+              ]
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 578,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 2824.0
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 580,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "amount": 100.0,
+              "ability": "ability/witness_hit_true",
+              "resource": "hp"
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 581,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/3"
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 611,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 5.0
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 629,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 6.0
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 659,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/4",
+              "targets": [
+                2
+              ]
+            },
+            "time": 3,
+            "cause": null
+          },
+          {
+            "id": 682,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 2724.0
+            },
+            "time": 3,
+            "cause": null
+          },
+          {
+            "id": 684,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "amount": 100.0,
+              "ability": "ability/witness_hit_true",
+              "resource": "hp"
+            },
+            "time": 3,
+            "cause": null
+          },
+          {
+            "id": 685,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/4"
+            },
+            "time": 3,
+            "cause": null
+          },
+          {
+            "id": 715,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 7.0
+            },
+            "time": 3,
+            "cause": null
+          },
+          {
+            "id": 733,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 8.0
+            },
+            "time": 3,
+            "cause": null
+          },
+          {
+            "id": 763,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/5",
+              "targets": [
+                2
+              ]
+            },
+            "time": 4,
+            "cause": null
+          },
+          {
+            "id": 786,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 2624.0
+            },
+            "time": 4,
+            "cause": null
+          },
+          {
+            "id": 788,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "amount": 100.0,
+              "ability": "ability/witness_hit_true",
+              "resource": "hp"
+            },
+            "time": 4,
+            "cause": null
+          },
+          {
+            "id": 789,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/5"
+            },
+            "time": 4,
+            "cause": null
+          },
+          {
+            "id": 819,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 9.0
+            },
+            "time": 4,
+            "cause": null
+          },
+          {
+            "id": 837,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 10.0
+            },
+            "time": 4,
+            "cause": null
+          },
+          {
+            "id": 867,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/6",
+              "targets": [
+                2
+              ]
+            },
+            "time": 5,
+            "cause": null
+          },
+          {
+            "id": 890,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 2524.0
+            },
+            "time": 5,
+            "cause": null
+          },
+          {
+            "id": 892,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "amount": 100.0,
+              "ability": "ability/witness_hit_true",
+              "resource": "hp"
+            },
+            "time": 5,
+            "cause": null
+          },
+          {
+            "id": 893,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/6"
+            },
+            "time": 5,
+            "cause": null
+          },
+          {
+            "id": 923,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 11.0
+            },
+            "time": 5,
+            "cause": null
+          },
+          {
+            "id": 941,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 12.0
+            },
+            "time": 5,
+            "cause": null
+          },
+          {
+            "id": 971,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/7",
+              "targets": [
+                2
+              ]
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 994,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 2424.0
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 996,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "amount": 100.0,
+              "ability": "ability/witness_hit_true",
+              "resource": "hp"
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 997,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/7"
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 1027,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 13.0
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 1045,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 14.0
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 1075,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/8",
+              "targets": [
+                2
+              ]
+            },
+            "time": 7,
+            "cause": null
+          },
+          {
+            "id": 1098,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 2324.0
+            },
+            "time": 7,
+            "cause": null
+          },
+          {
+            "id": 1100,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "amount": 100.0,
+              "ability": "ability/witness_hit_true",
+              "resource": "hp"
+            },
+            "time": 7,
+            "cause": null
+          },
+          {
+            "id": 1101,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/8"
+            },
+            "time": 7,
+            "cause": null
+          },
+          {
+            "id": 1131,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 15.0
+            },
+            "time": 7,
+            "cause": null
+          },
+          {
+            "id": 1149,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 16.0
+            },
+            "time": 7,
+            "cause": null
+          },
+          {
+            "id": 1179,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/9",
+              "targets": [
+                2
+              ]
+            },
+            "time": 8,
+            "cause": null
+          },
+          {
+            "id": 1202,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 2224.0
+            },
+            "time": 8,
+            "cause": null
+          },
+          {
+            "id": 1204,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "amount": 100.0,
+              "ability": "ability/witness_hit_true",
+              "resource": "hp"
+            },
+            "time": 8,
+            "cause": null
+          },
+          {
+            "id": 1205,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/9"
+            },
+            "time": 8,
+            "cause": null
+          },
+          {
+            "id": 1235,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 17.0
+            },
+            "time": 8,
+            "cause": null
+          },
+          {
+            "id": 1253,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 18
+            },
+            "time": 8,
+            "cause": null
+          },
+          {
+            "id": 1335,
+            "type": "ability.started",
+            "payload": {
+              "source": 2,
+              "ability": "ability/liskam_s1",
+              "cast": "cast/2/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 9,
+            "cause": null
+          },
+          {
+            "id": 1336,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": -18,
+              "value": 0,
+              "ability": "ability/liskam_s1",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 9,
+            "cause": 1335
+          },
+          {
+            "id": 1456,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 1,
+              "value": 1
+            },
+            "time": 9,
+            "cause": null
+          }
+        ],
+        "random_samples": [],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 10,
+            "life": 10
+          },
+          "unit/char_107_liskam": {
+            "hp": 2224.0,
+            "shield_charge": 1,
+            "sp": 0
+          },
+          "unit/witness_enemy": {
+            "hp": 1000000
+          }
+        }
+      }
+    },
+    {
+      "case": "lisk_two_neighbors",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "62e1901df7bbdf78ba1baf392cfa1c16b898cb7b0216eeb74a662e70582d47eb",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 3,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 16,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3124
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 33,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 50,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 318,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 2724
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 336,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 625,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 4,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 642,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 4,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 919,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 5,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 965,
+            "type": "ability.started",
+            "payload": {
+              "source": 5,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/5/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 1012,
+            "type": "resource.changed",
+            "payload": {
+              "source": 5,
+              "target": 2,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 3024.0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 1014,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 5,
+              "target": 2,
+              "amount": 100.0,
+              "ability": "ability/witness_hit_true",
+              "resource": "hp"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 1015,
+            "type": "ability.finished",
+            "payload": {
+              "source": 5,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/5/1"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 1045,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1,
+              "value": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 1063,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 2.0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 1085,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 1.0
+            },
+            "time": 0,
+            "cause": null
+          }
+        ],
+        "random_samples": [
+          {
+            "sequence": 1,
+            "stream": "imp",
+            "index": 1,
+            "value": 0.008673620625579415,
+            "time": 0
+          }
+        ],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 10,
+            "life": 10
+          },
+          "unit/char_107_liskam": {
+            "hp": 3024.0,
+            "shield_charge": 0,
+            "sp": 2.0
+          },
+          "unit/char_010_chen": {
+            "hp": 2724,
+            "sp": 1.0
+          },
+          "unit/char_358_lisa": {
+            "hp": 1413,
+            "sp": 0
+          },
+          "unit/witness_enemy": {
+            "hp": 1000000
+          }
+        }
+      }
+    },
+    {
+      "case": "lisk_shield_physical",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "4a057a6c07f50100d94bd8fe39da9a4fe726c1f471d88f8b225b801be353f195",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 4,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 16,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3124
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 33,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 50,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 18
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 309,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 319,
+            "type": "command.rejected",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "lisk",
+                "ability": "ability/liskam_s1"
+              },
+              "reason": "Automatic-only ability cannot be activated by a player command"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 400,
+            "type": "ability.started",
+            "payload": {
+              "source": 2,
+              "ability": "ability/liskam_s1",
+              "cast": "cast/2/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 401,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": -18,
+              "value": 0,
+              "ability": "ability/liskam_s1",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 0,
+            "cause": 400
+          },
+          {
+            "id": 521,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 1,
+              "value": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 549,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_physical",
+              "cast": "cast/3/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 573,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": -1
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 575,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "amount": 0,
+              "ability": "ability/witness_hit_physical",
+              "resource": "hp"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 576,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_physical",
+              "cast": "cast/3/1"
+            },
+            "time": 1,
+            "cause": null
+          }
+        ],
+        "random_samples": [],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 10,
+            "life": 10
+          },
+          "unit/char_107_liskam": {
+            "hp": 3124,
+            "shield_charge": 0,
+            "sp": 0
+          },
+          "unit/witness_enemy": {
+            "hp": 1000000
+          }
+        }
+      }
+    },
+    {
+      "case": "lisk_shield_arts",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "4a057a6c07f50100d94bd8fe39da9a4fe726c1f471d88f8b225b801be353f195",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 4,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 16,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3124
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 33,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 50,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 18
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 309,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 319,
+            "type": "command.rejected",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "lisk",
+                "ability": "ability/liskam_s1"
+              },
+              "reason": "Automatic-only ability cannot be activated by a player command"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 400,
+            "type": "ability.started",
+            "payload": {
+              "source": 2,
+              "ability": "ability/liskam_s1",
+              "cast": "cast/2/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 401,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": -18,
+              "value": 0,
+              "ability": "ability/liskam_s1",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 0,
+            "cause": 400
+          },
+          {
+            "id": 521,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 1,
+              "value": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 549,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_arts",
+              "cast": "cast/3/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 573,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": -1
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 575,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "amount": 0,
+              "ability": "ability/witness_hit_arts",
+              "resource": "hp"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 576,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_arts",
+              "cast": "cast/3/1"
+            },
+            "time": 1,
+            "cause": null
+          }
+        ],
+        "random_samples": [],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 10,
+            "life": 10
+          },
+          "unit/char_107_liskam": {
+            "hp": 3124,
+            "shield_charge": 0,
+            "sp": 0
+          },
+          "unit/witness_enemy": {
+            "hp": 1000000
+          }
+        }
+      }
+    },
+    {
+      "case": "lisk_shield_true",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "4a057a6c07f50100d94bd8fe39da9a4fe726c1f471d88f8b225b801be353f195",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 4,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 16,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3124
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 33,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 50,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 18
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 309,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 319,
+            "type": "command.rejected",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "lisk",
+                "ability": "ability/liskam_s1"
+              },
+              "reason": "Automatic-only ability cannot be activated by a player command"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 400,
+            "type": "ability.started",
+            "payload": {
+              "source": 2,
+              "ability": "ability/liskam_s1",
+              "cast": "cast/2/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 401,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": -18,
+              "value": 0,
+              "ability": "ability/liskam_s1",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 0,
+            "cause": 400
+          },
+          {
+            "id": 521,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 1,
+              "value": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 549,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 573,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": -1
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 575,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "amount": 0,
+              "ability": "ability/witness_hit_true",
+              "resource": "hp"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 576,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/1"
+            },
+            "time": 1,
+            "cause": null
+          }
+        ],
+        "random_samples": [],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 10,
+            "life": 10
+          },
+          "unit/char_107_liskam": {
+            "hp": 3124,
+            "shield_charge": 0,
+            "sp": 0
+          },
+          "unit/witness_enemy": {
+            "hp": 1000000
+          }
+        }
+      }
+    },
+    {
+      "case": "lisk_freeze_and_expiry",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "8a0a2ffba5579dbd5b41e5a4f43ff4cc18f444a7b453ada07a00d8e68f9f06a1",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 244,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 16,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3124
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 33,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 50,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 18
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 318,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 2724
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 336,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 617,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 4,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 708,
+            "type": "ability.started",
+            "payload": {
+              "source": 2,
+              "ability": "ability/liskam_s1",
+              "cast": "cast/2/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 709,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": -18,
+              "value": 0,
+              "ability": "ability/liskam_s1",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 0,
+            "cause": 708
+          },
+          {
+            "id": 829,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 1,
+              "value": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 919,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 11.0
+            },
+            "time": 29,
+            "cause": null
+          },
+          {
+            "id": 1013,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 12.0
+            },
+            "time": 59,
+            "cause": null
+          },
+          {
+            "id": 1107,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 13.0
+            },
+            "time": 89,
+            "cause": null
+          },
+          {
+            "id": 1201,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 14.0
+            },
+            "time": 119,
+            "cause": null
+          },
+          {
+            "id": 1228,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 3,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 1.0
+            },
+            "time": 120,
+            "cause": null
+          },
+          {
+            "id": 1319,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 15.0
+            },
+            "time": 149,
+            "cause": null
+          },
+          {
+            "id": 1413,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 16.0
+            },
+            "time": 179,
+            "cause": null
+          },
+          {
+            "id": 1507,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 17.0
+            },
+            "time": 209,
+            "cause": null
+          },
+          {
+            "id": 1620,
+            "type": "ability.started",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/4/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 238,
+            "cause": null
+          },
+          {
+            "id": 1645,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": -1
+            },
+            "time": 238,
+            "cause": null
+          },
+          {
+            "id": 1647,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 4,
+              "target": 2,
+              "amount": 0,
+              "ability": "ability/witness_hit_true",
+              "resource": "hp"
+            },
+            "time": 238,
+            "cause": null
+          },
+          {
+            "id": 1648,
+            "type": "ability.finished",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/4/1"
+            },
+            "time": 238,
+            "cause": null
+          },
+          {
+            "id": 1675,
+            "type": "ability.started",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/4/2",
+              "targets": [
+                2
+              ]
+            },
+            "time": 239,
+            "cause": null
+          },
+          {
+            "id": 1681,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 18.0
+            },
+            "time": 239,
+            "cause": null
+          },
+          {
+            "id": 1703,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 2,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 3024.0
+            },
+            "time": 239,
+            "cause": null
+          },
+          {
+            "id": 1705,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 4,
+              "target": 2,
+              "amount": 100.0,
+              "ability": "ability/witness_hit_true",
+              "resource": "hp"
+            },
+            "time": 239,
+            "cause": null
+          },
+          {
+            "id": 1706,
+            "type": "ability.finished",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/4/2"
+            },
+            "time": 239,
+            "cause": null
+          },
+          {
+            "id": 1727,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 2.0
+            },
+            "time": 239,
+            "cause": null
+          },
+          {
+            "id": 1813,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/liskam_def",
+              "instance": "buff/2/3"
+            },
+            "time": 240,
+            "cause": null
+          },
+          {
+            "id": 1832,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 240,
+            "cause": null
+          },
+          {
+            "id": 1834,
+            "type": "ability.finished",
+            "payload": {
+              "source": 2,
+              "ability": "ability/liskam_s1",
+              "cast": "cast/2/1"
+            },
+            "time": 240,
+            "cause": null
+          },
+          {
+            "id": 1856,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 3,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 3.0
+            },
+            "time": 240,
+            "cause": null
+          },
+          {
+            "id": 1873,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 1.0
+            },
+            "time": 240,
+            "cause": null
+          },
+          {
+            "id": 1901,
+            "type": "ability.started",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/4/3",
+              "targets": [
+                2
+              ]
+            },
+            "time": 241,
+            "cause": null
+          },
+          {
+            "id": 1925,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 2,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 2924.0
+            },
+            "time": 241,
+            "cause": null
+          },
+          {
+            "id": 1927,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 4,
+              "target": 2,
+              "amount": 100.0,
+              "ability": "ability/witness_hit_true",
+              "resource": "hp"
+            },
+            "time": 241,
+            "cause": null
+          },
+          {
+            "id": 1928,
+            "type": "ability.finished",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/4/3"
+            },
+            "time": 241,
+            "cause": null
+          },
+          {
+            "id": 1958,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 2.0
+            },
+            "time": 241,
+            "cause": null
+          },
+          {
+            "id": 1976,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 3.0
+            },
+            "time": 241,
+            "cause": null
+          },
+          {
+            "id": 1997,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 4
+            },
+            "time": 241,
+            "cause": null
+          }
+        ],
+        "random_samples": [
+          {
+            "sequence": 1,
+            "stream": "imp",
+            "index": 1,
+            "value": 0.5838338137853468,
+            "time": 239
+          },
+          {
+            "sequence": 2,
+            "stream": "imp",
+            "index": 2,
+            "value": 0.9398339704646984,
+            "time": 241
+          }
+        ],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 18.0,
+            "life": 10
+          },
+          "unit/char_107_liskam": {
+            "hp": 2924.0,
+            "shield_charge": 0,
+            "sp": 3.0
+          },
+          "unit/char_010_chen": {
+            "hp": 2724,
+            "sp": 4
+          },
+          "unit/witness_enemy": {
+            "hp": 1000000
+          }
+        }
+      }
+    },
+    {
+      "case": "lisa_highest_sp_retire",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "970647ab7554d9bd4687a4c00afa459dca977e79755f5316a647741b1106eadd",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 62,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 16,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 33,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 318,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1567
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 335,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "sp",
+              "delta": 0,
+              "value": 85
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 352,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "mode",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 1785,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 11.0
+            },
+            "time": 29,
+            "cause": null
+          },
+          {
+            "id": 1830,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.4,
+              "value": 1.4
+            },
+            "time": 29,
+            "cause": null
+          },
+          {
+            "id": 1862,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 3,
+              "resource": "sp",
+              "delta": 1.2999999999999972,
+              "value": 86.3
+            },
+            "time": 29,
+            "cause": null
+          },
+          {
+            "id": 1887,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": "system/battle",
+              "resource": "dp",
+              "delta": 0.0,
+              "value": 11.0
+            },
+            "time": 30,
+            "cause": null
+          },
+          {
+            "id": 1944,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/support_lisa_sp",
+              "instance": "buff/2/2"
+            },
+            "time": 30,
+            "cause": null
+          },
+          {
+            "id": 2001,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/support_lisa_sp_emitter",
+              "instance": "buff/2/1"
+            },
+            "time": 30,
+            "cause": null
+          },
+          {
+            "id": 2058,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/support_lisa_passive_emitter",
+              "instance": "buff/2/3"
+            },
+            "time": 30,
+            "cause": null
+          },
+          {
+            "id": 2118,
+            "type": "buff.removed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "buff": "buff/support_plosis_sp",
+              "instance": "buff/2/4"
+            },
+            "time": 30,
+            "cause": null
+          },
+          {
+            "id": 2402,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 12.0
+            },
+            "time": 59,
+            "cause": null
+          },
+          {
+            "id": 2433,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 3,
+              "resource": "sp",
+              "delta": 1.2999999999999972,
+              "value": 87.6
+            },
+            "time": 59,
+            "cause": null
+          }
+        ],
+        "random_samples": [],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 12.0,
+            "life": 10
+          },
+          "unit/char_358_lisa": {
+            "hp": 1413,
+            "sp": 1.4
+          },
+          "unit/char_128_plosis": {
+            "hp": 1567,
+            "sp": 87.6,
+            "mode": 0
+          }
+        }
+      }
+    },
+    {
+      "case": "lisk_blocked_neighbor_profile",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "2fd554bf613bc518890fecfe51e881649aa5a80ffaec6153949bc7552ee8e4fd",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 5,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 16,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3124
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 33,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 50,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 18
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 317,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 334,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 611,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 4,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 727,
+            "type": "ability.started",
+            "payload": {
+              "source": 2,
+              "ability": "ability/liskam_s1",
+              "cast": "cast/2/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 728,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": -18,
+              "value": 0,
+              "ability": "ability/liskam_s1",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 0,
+            "cause": 727
+          },
+          {
+            "id": 853,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 1,
+              "value": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 891,
+            "type": "ability.started",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/4/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 936,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": -1
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 938,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 4,
+              "target": 2,
+              "amount": 0,
+              "ability": "ability/witness_hit_true",
+              "resource": "hp"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 939,
+            "type": "ability.finished",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/4/1"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 971,
+            "type": "ability.started",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/4/2",
+              "targets": [
+                2
+              ]
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 1015,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 2,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 3024.0
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 1017,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 4,
+              "target": 2,
+              "amount": 100.0,
+              "ability": "ability/witness_hit_true",
+              "resource": "hp"
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 1018,
+            "type": "ability.finished",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/4/2"
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 1038,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 1.0
+            },
+            "time": 2,
+            "cause": null
+          }
+        ],
+        "random_samples": [
+          {
+            "sequence": 1,
+            "stream": "imp",
+            "index": 1,
+            "value": 0.5838338137853468,
+            "time": 2
+          }
+        ],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 10,
+            "life": 10
+          },
+          "unit/char_107_liskam": {
+            "hp": 3024.0,
+            "shield_charge": 0,
+            "sp": 0
+          },
+          "unit/char_358_lisa": {
+            "hp": 1413,
+            "sp": 1.0
+          },
+          "unit/witness_enemy": {
+            "hp": 1000000
+          }
+        }
+      }
+    },
+    {
+      "case": "lisa_fragility_and_retire",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "e99dc98071ad0799e0e43fc76015d767ddcacce14aef1b2bf4069499998d1fe2",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 6,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 16,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 33,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 310,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 385,
+            "type": "ability.started",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_packet",
+              "cast": "cast/4/1",
+              "targets": [
+                3
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 460,
+            "type": "ability.started",
+            "payload": {
+              "source": 2,
+              "ability": "ability/char_358_lisa/normal_attack",
+              "cast": "cast/2/1",
+              "targets": [
+                3
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 478,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "resource": "hp",
+              "delta": -100,
+              "value": 999900
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 480,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "amount": 100,
+              "ability": "ability/witness_packet",
+              "resource": "hp"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 481,
+            "type": "ability.finished",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_packet",
+              "cast": "cast/4/1"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 502,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_slow",
+              "cast": "cast/3/1",
+              "targets": [
+                3
+              ]
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 547,
+            "type": "ability.started",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_packet",
+              "cast": "cast/4/2",
+              "targets": [
+                3
+              ]
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 572,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_slow",
+              "cast": "cast/3/1"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 585,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "resource": "hp",
+              "delta": -120.0,
+              "value": 999780.0
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 587,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "amount": 120.0,
+              "ability": "ability/witness_packet",
+              "resource": "hp"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 588,
+            "type": "ability.finished",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_packet",
+              "cast": "cast/4/2"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 598,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": "system/battle",
+              "resource": "dp",
+              "delta": 0.0,
+              "value": 10.0
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 656,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/support_lisa_sp",
+              "instance": "buff/2/2"
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 713,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/support_lisa_sp_emitter",
+              "instance": "buff/2/1"
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 726,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "buff": "buff/support_lisa_passive_member",
+              "instance": "buff/3/1"
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 783,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/support_lisa_passive_emitter",
+              "instance": "buff/2/3"
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 817,
+            "type": "ability.started",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_packet",
+              "cast": "cast/4/3",
+              "targets": [
+                3
+              ]
+            },
+            "time": 3,
+            "cause": null
+          },
+          {
+            "id": 831,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 999680.0
+            },
+            "time": 3,
+            "cause": null
+          },
+          {
+            "id": 833,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "amount": 100.0,
+              "ability": "ability/witness_packet",
+              "resource": "hp"
+            },
+            "time": 3,
+            "cause": null
+          },
+          {
+            "id": 834,
+            "type": "ability.finished",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_packet",
+              "cast": "cast/4/3"
+            },
+            "time": 3,
+            "cause": null
+          }
+        ],
+        "random_samples": [],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 10.0,
+            "life": 10
+          },
+          "unit/char_358_lisa": {
+            "hp": 1413,
+            "sp": 0
+          },
+          "unit/witness_enemy": {
+            "hp": 999680.0
+          },
+          "unit/witness_probe": {}
+        }
+      }
+    },
+    {
+      "case": "lisa_s3_regeneration_freeze",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "bfbc048bb081aeab59ffb1315fed209249b969884d2a07720aeb661b9576c79d",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 33,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 16,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 500
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 33,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 70
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 310,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 430,
+            "type": "ability.started",
+            "payload": {
+              "source": 2,
+              "ability": "ability/lisa_s3",
+              "cast": "cast/2/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 431,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": -70,
+              "value": 0,
+              "ability": "ability/lisa_s3",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 0,
+            "cause": 430
+          },
+          {
+            "id": 563,
+            "type": "ability.started",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_packet",
+              "cast": "cast/4/1",
+              "targets": [
+                3
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 590,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "resource": "hp",
+              "delta": -140.0,
+              "value": 999860.0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 592,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "amount": 140.0,
+              "ability": "ability/witness_packet",
+              "resource": "hp"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 593,
+            "type": "ability.finished",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_packet",
+              "cast": "cast/4/1"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 1167,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 11.0
+            },
+            "time": 29,
+            "cause": null
+          },
+          {
+            "id": 1219,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 115.20000000000005,
+              "value": 615.2
+            },
+            "time": 30,
+            "cause": null
+          },
+          {
+            "id": 1221,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 115.20000000000005
+            },
+            "time": 30,
+            "cause": 1198
+          }
+        ],
+        "random_samples": [],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 11.0,
+            "life": 10
+          },
+          "unit/char_358_lisa": {
+            "hp": 615.2,
+            "sp": 0
+          },
+          "unit/witness_enemy": {
+            "hp": 999860.0
+          },
+          "unit/witness_probe": {}
+        }
+      }
+    },
+    {
+      "case": "lisa_half_open",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "800079af121315eb681a1053537f5c87edb6d4434ae7f390f23a381f73b43c22",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 1053,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 16,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 33,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 70
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 310,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 430,
+            "type": "ability.started",
+            "payload": {
+              "source": 2,
+              "ability": "ability/lisa_s3",
+              "cast": "cast/2/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 431,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": -70,
+              "value": 0,
+              "ability": "ability/lisa_s3",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 0,
+            "cause": 430
+          },
+          {
+            "id": 1135,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 11.0
+            },
+            "time": 29,
+            "cause": null
+          },
+          {
+            "id": 1187,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 30,
+            "cause": null
+          },
+          {
+            "id": 1189,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 30,
+            "cause": 1166
+          },
+          {
+            "id": 1763,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 12.0
+            },
+            "time": 59,
+            "cause": null
+          },
+          {
+            "id": 1815,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 60,
+            "cause": null
+          },
+          {
+            "id": 1817,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 60,
+            "cause": 1794
+          },
+          {
+            "id": 2391,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 13.0
+            },
+            "time": 89,
+            "cause": null
+          },
+          {
+            "id": 2443,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 90,
+            "cause": null
+          },
+          {
+            "id": 2445,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 90,
+            "cause": 2422
+          },
+          {
+            "id": 3019,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 14.0
+            },
+            "time": 119,
+            "cause": null
+          },
+          {
+            "id": 3071,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 120,
+            "cause": null
+          },
+          {
+            "id": 3073,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 120,
+            "cause": 3050
+          },
+          {
+            "id": 3647,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 15.0
+            },
+            "time": 149,
+            "cause": null
+          },
+          {
+            "id": 3699,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 150,
+            "cause": null
+          },
+          {
+            "id": 3701,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 150,
+            "cause": 3678
+          },
+          {
+            "id": 4275,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 16.0
+            },
+            "time": 179,
+            "cause": null
+          },
+          {
+            "id": 4327,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 180,
+            "cause": null
+          },
+          {
+            "id": 4329,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 180,
+            "cause": 4306
+          },
+          {
+            "id": 4903,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 17.0
+            },
+            "time": 209,
+            "cause": null
+          },
+          {
+            "id": 4955,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 210,
+            "cause": null
+          },
+          {
+            "id": 4957,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 210,
+            "cause": 4934
+          },
+          {
+            "id": 5531,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 18.0
+            },
+            "time": 239,
+            "cause": null
+          },
+          {
+            "id": 5583,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 240,
+            "cause": null
+          },
+          {
+            "id": 5585,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 240,
+            "cause": 5562
+          },
+          {
+            "id": 6159,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 19.0
+            },
+            "time": 269,
+            "cause": null
+          },
+          {
+            "id": 6211,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 270,
+            "cause": null
+          },
+          {
+            "id": 6213,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 270,
+            "cause": 6190
+          },
+          {
+            "id": 6787,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 20.0
+            },
+            "time": 299,
+            "cause": null
+          },
+          {
+            "id": 6839,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 300,
+            "cause": null
+          },
+          {
+            "id": 6841,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 300,
+            "cause": 6818
+          },
+          {
+            "id": 7415,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 21.0
+            },
+            "time": 329,
+            "cause": null
+          },
+          {
+            "id": 7467,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 330,
+            "cause": null
+          },
+          {
+            "id": 7469,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 330,
+            "cause": 7446
+          },
+          {
+            "id": 8043,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 22.0
+            },
+            "time": 359,
+            "cause": null
+          },
+          {
+            "id": 8095,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 360,
+            "cause": null
+          },
+          {
+            "id": 8097,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 360,
+            "cause": 8074
+          },
+          {
+            "id": 8671,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 23.0
+            },
+            "time": 389,
+            "cause": null
+          },
+          {
+            "id": 8723,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 390,
+            "cause": null
+          },
+          {
+            "id": 8725,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 390,
+            "cause": 8702
+          },
+          {
+            "id": 9299,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 24.0
+            },
+            "time": 419,
+            "cause": null
+          },
+          {
+            "id": 9351,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 420,
+            "cause": null
+          },
+          {
+            "id": 9353,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 420,
+            "cause": 9330
+          },
+          {
+            "id": 9927,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 25.0
+            },
+            "time": 449,
+            "cause": null
+          },
+          {
+            "id": 9979,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 450,
+            "cause": null
+          },
+          {
+            "id": 9981,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 450,
+            "cause": 9958
+          },
+          {
+            "id": 10555,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 26.0
+            },
+            "time": 479,
+            "cause": null
+          },
+          {
+            "id": 10607,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 480,
+            "cause": null
+          },
+          {
+            "id": 10609,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 480,
+            "cause": 10586
+          },
+          {
+            "id": 11183,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 27.0
+            },
+            "time": 509,
+            "cause": null
+          },
+          {
+            "id": 11235,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 510,
+            "cause": null
+          },
+          {
+            "id": 11237,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 510,
+            "cause": 11214
+          },
+          {
+            "id": 11811,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 28.0
+            },
+            "time": 539,
+            "cause": null
+          },
+          {
+            "id": 11863,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 540,
+            "cause": null
+          },
+          {
+            "id": 11865,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 540,
+            "cause": 11842
+          },
+          {
+            "id": 12439,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 29.0
+            },
+            "time": 569,
+            "cause": null
+          },
+          {
+            "id": 12491,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 570,
+            "cause": null
+          },
+          {
+            "id": 12493,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 570,
+            "cause": 12470
+          },
+          {
+            "id": 13067,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 30.0
+            },
+            "time": 599,
+            "cause": null
+          },
+          {
+            "id": 13119,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 600,
+            "cause": null
+          },
+          {
+            "id": 13121,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 600,
+            "cause": 13098
+          },
+          {
+            "id": 13695,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 31.0
+            },
+            "time": 629,
+            "cause": null
+          },
+          {
+            "id": 13747,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 630,
+            "cause": null
+          },
+          {
+            "id": 13749,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 630,
+            "cause": 13726
+          },
+          {
+            "id": 14323,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 32.0
+            },
+            "time": 659,
+            "cause": null
+          },
+          {
+            "id": 14375,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 660,
+            "cause": null
+          },
+          {
+            "id": 14377,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 660,
+            "cause": 14354
+          },
+          {
+            "id": 14951,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 33.0
+            },
+            "time": 689,
+            "cause": null
+          },
+          {
+            "id": 15003,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 690,
+            "cause": null
+          },
+          {
+            "id": 15005,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 690,
+            "cause": 14982
+          },
+          {
+            "id": 15579,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 34.0
+            },
+            "time": 719,
+            "cause": null
+          },
+          {
+            "id": 15631,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 720,
+            "cause": null
+          },
+          {
+            "id": 15633,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 720,
+            "cause": 15610
+          },
+          {
+            "id": 16207,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 35.0
+            },
+            "time": 749,
+            "cause": null
+          },
+          {
+            "id": 16259,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 750,
+            "cause": null
+          },
+          {
+            "id": 16261,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 750,
+            "cause": 16238
+          },
+          {
+            "id": 16835,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 36.0
+            },
+            "time": 779,
+            "cause": null
+          },
+          {
+            "id": 16887,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 780,
+            "cause": null
+          },
+          {
+            "id": 16889,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 780,
+            "cause": 16866
+          },
+          {
+            "id": 17463,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 37.0
+            },
+            "time": 809,
+            "cause": null
+          },
+          {
+            "id": 17515,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 810,
+            "cause": null
+          },
+          {
+            "id": 17517,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 810,
+            "cause": 17494
+          },
+          {
+            "id": 18091,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 38.0
+            },
+            "time": 839,
+            "cause": null
+          },
+          {
+            "id": 18143,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 840,
+            "cause": null
+          },
+          {
+            "id": 18145,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 840,
+            "cause": 18122
+          },
+          {
+            "id": 18719,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 39.0
+            },
+            "time": 869,
+            "cause": null
+          },
+          {
+            "id": 18771,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 870,
+            "cause": null
+          },
+          {
+            "id": 18773,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 870,
+            "cause": 18750
+          },
+          {
+            "id": 19347,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 40.0
+            },
+            "time": 899,
+            "cause": null
+          },
+          {
+            "id": 19399,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 900,
+            "cause": null
+          },
+          {
+            "id": 19401,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 900,
+            "cause": 19378
+          },
+          {
+            "id": 19975,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 41.0
+            },
+            "time": 929,
+            "cause": null
+          },
+          {
+            "id": 20027,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 930,
+            "cause": null
+          },
+          {
+            "id": 20029,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 930,
+            "cause": 20006
+          },
+          {
+            "id": 20603,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 42.0
+            },
+            "time": 959,
+            "cause": null
+          },
+          {
+            "id": 20655,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 960,
+            "cause": null
+          },
+          {
+            "id": 20657,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 960,
+            "cause": 20634
+          },
+          {
+            "id": 21231,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 43.0
+            },
+            "time": 989,
+            "cause": null
+          },
+          {
+            "id": 21283,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 990,
+            "cause": null
+          },
+          {
+            "id": 21285,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 990,
+            "cause": 21262
+          },
+          {
+            "id": 21859,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 44.0
+            },
+            "time": 1019,
+            "cause": null
+          },
+          {
+            "id": 21911,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 1020,
+            "cause": null
+          },
+          {
+            "id": 21913,
+            "type": "regeneration.accepted",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "amount": 0
+            },
+            "time": 1020,
+            "cause": 21890
+          },
+          {
+            "id": 22497,
+            "type": "ability.started",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_packet",
+              "cast": "cast/4/1",
+              "targets": [
+                3
+              ]
+            },
+            "time": 1049,
+            "cause": null
+          },
+          {
+            "id": 22503,
+            "type": "resource.changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "resource": "dp",
+              "delta": 1.0,
+              "value": 45.0
+            },
+            "time": 1049,
+            "cause": null
+          },
+          {
+            "id": 22526,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "resource": "hp",
+              "delta": -140.0,
+              "value": 999860.0
+            },
+            "time": 1049,
+            "cause": null
+          },
+          {
+            "id": 22528,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "amount": 140.0,
+              "ability": "ability/witness_packet",
+              "resource": "hp"
+            },
+            "time": 1049,
+            "cause": null
+          },
+          {
+            "id": 22529,
+            "type": "ability.finished",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_packet",
+              "cast": "cast/4/1"
+            },
+            "time": 1049,
+            "cause": null
+          },
+          {
+            "id": 22542,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "buff": "buff/support_lisa_s3_member",
+              "instance": "buff/3/2"
+            },
+            "time": 1050,
+            "cause": null
+          },
+          {
+            "id": 22599,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/support_lisa_s3_emitter",
+              "instance": "buff/2/4"
+            },
+            "time": 1050,
+            "cause": null
+          },
+          {
+            "id": 22620,
+            "type": "ability.started",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_packet",
+              "cast": "cast/4/2",
+              "targets": [
+                3
+              ]
+            },
+            "time": 1050,
+            "cause": null
+          },
+          {
+            "id": 22630,
+            "type": "ability.finished",
+            "payload": {
+              "source": 2,
+              "ability": "ability/lisa_s3",
+              "cast": "cast/2/1"
+            },
+            "time": 1050,
+            "cause": null
+          },
+          {
+            "id": 22642,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 999760.0
+            },
+            "time": 1050,
+            "cause": null
+          },
+          {
+            "id": 22644,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "amount": 100.0,
+              "ability": "ability/witness_packet",
+              "resource": "hp"
+            },
+            "time": 1050,
+            "cause": null
+          },
+          {
+            "id": 22645,
+            "type": "ability.finished",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_packet",
+              "cast": "cast/4/2"
+            },
+            "time": 1050,
+            "cause": null
+          },
+          {
+            "id": 22723,
+            "type": "ability.started",
+            "payload": {
+              "source": 2,
+              "ability": "ability/char_358_lisa/normal_attack",
+              "cast": "cast/2/2",
+              "targets": [
+                3
+              ]
+            },
+            "time": 1051,
+            "cause": null
+          }
+        ],
+        "random_samples": [],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 45.0,
+            "life": 10
+          },
+          "unit/char_358_lisa": {
+            "hp": 1413,
+            "sp": 0
+          },
+          "unit/witness_enemy": {
+            "hp": 999760.0
+          },
+          "unit/witness_probe": {}
+        }
+      }
+    },
+    {
+      "case": "lisa_live_member_exit",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "3e5e3d1dbdb51ac4326d080676094af1d3c03b47dcc1aa53944235c108dcfabb",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 7,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 16,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 33,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 70
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 310,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 430,
+            "type": "ability.started",
+            "payload": {
+              "source": 2,
+              "ability": "ability/lisa_s3",
+              "cast": "cast/2/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 431,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": -70,
+              "value": 0,
+              "ability": "ability/lisa_s3",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 0,
+            "cause": 430
+          },
+          {
+            "id": 594,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_move_out",
+              "cast": "cast/3/1",
+              "targets": [
+                3
+              ]
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 625,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "buff": "buff/support_lisa_passive_member",
+              "instance": "buff/3/1"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 640,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "buff": "buff/support_lisa_s3_member",
+              "instance": "buff/3/2"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 642,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_move_out",
+              "cast": "cast/3/1"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 664,
+            "type": "ability.started",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_packet",
+              "cast": "cast/4/1",
+              "targets": [
+                3
+              ]
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 686,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "resource": "hp",
+              "delta": -100,
+              "value": 999900
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 688,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "amount": 100,
+              "ability": "ability/witness_packet",
+              "resource": "hp"
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 689,
+            "type": "ability.finished",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_packet",
+              "cast": "cast/4/1"
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 720,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_move_in",
+              "cast": "cast/3/2",
+              "targets": [
+                3
+              ]
+            },
+            "time": 3,
+            "cause": null
+          },
+          {
+            "id": 804,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_move_in",
+              "cast": "cast/3/2"
+            },
+            "time": 3,
+            "cause": null
+          },
+          {
+            "id": 828,
+            "type": "ability.started",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_packet",
+              "cast": "cast/4/2",
+              "targets": [
+                3
+              ]
+            },
+            "time": 4,
+            "cause": null
+          },
+          {
+            "id": 853,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "resource": "hp",
+              "delta": -140.0,
+              "value": 999760.0
+            },
+            "time": 4,
+            "cause": null
+          },
+          {
+            "id": 855,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "amount": 140.0,
+              "ability": "ability/witness_packet",
+              "resource": "hp"
+            },
+            "time": 4,
+            "cause": null
+          },
+          {
+            "id": 856,
+            "type": "ability.finished",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_packet",
+              "cast": "cast/4/2"
+            },
+            "time": 4,
+            "cause": null
+          }
+        ],
+        "random_samples": [],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 10,
+            "life": 10
+          },
+          "unit/char_358_lisa": {
+            "hp": 1413,
+            "sp": 0
+          },
+          "unit/witness_enemy": {
+            "hp": 999760.0
+          },
+          "unit/witness_probe": {}
+        }
+      }
+    }
+  ],
+  "shield_source_witness": {
+    "path": "D:\\Arknights\\Arknights_timer\\data\\anon_textassets\\buff_template_data.dat",
+    "file_sha256": "0c438b57b176e0fa430b5b982a58c7b524f4121aa8dbab33d3e647aa0fc1ee59",
+    "template": "damage_block_once",
+    "bson_offset": 148552,
+    "bson_document_sha256": "40026ba797109a7ef485e4077fef29a60dfe443dc9cad7f1155945482aea4e7b",
+    "bson_document_base64": "LQIAAAJ0ZW1wbGF0ZUtleQASAAAAZGFtYWdlX2Jsb2NrX29uY2UAAmVmZmVjdEtleQABAAAAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQAA2V2ZW50VG9BY3Rpb25zAMgBAAAET05fVEFLRV9EQU1BR0UAswEAAAMwADoBAAACJHR5cGUAOQAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytCbG9ja0RhbWFnZSwgQXNzZW1ibHktQ1NoYXJwAAhfZmlsdGVyRGFtYWdlVHlwZQAAAl9kYW1hZ2VNYXNrAAUAAABOT05FAAhfdXNlRHluYW1pY1ZhcgAACF9hbGxvd05lZ2F0aXZlRHluYW1pY1ZhcgAACF91c2VGaXhlZFZhbHVlAAAIX3Nob3dEYW1hZ2VOdW1iZXIAAApfc3BlY2lmeUJsb2NrRWZmZWN0AAhfdXNlU291cmNlAAACX3NvdXJjZVR5cGUABwAAAFNPVVJDRQAIX2ZpbHRlckFwcGx5V2F5AAACX2FwcGx5V2F5RmlsdGVyAAUAAABOT05FAAhfc2hvd1NoaWVsZFVJAAAAAzEAbgAAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0ZpbmlzaEJ1ZmYsIEFzc2VtYmx5LUNTaGFycAAIX2RlY0NudElmU3RhY2sAAAhfdXBkYXRlT3ZlcnJpZGVNYXAAAQAAAAA=",
+    "parsed": {
+      "templateKey": "damage_block_once",
+      "effectKey": "",
+      "onEventPriority": "DEFAULT",
+      "eventToActions": {
+        "ON_TAKE_DAMAGE": [
+          {
+            "$type": "Torappu.Battle.Action.Nodes+BlockDamage, Assembly-CSharp",
+            "_filterDamageType": false,
+            "_damageMask": "NONE",
+            "_useDynamicVar": false,
+            "_allowNegativeDynamicVar": false,
+            "_useFixedValue": false,
+            "_showDamageNumber": false,
+            "_specifyBlockEffect": null,
+            "_useSource": false,
+            "_sourceType": "SOURCE",
+            "_filterApplyWay": false,
+            "_applyWayFilter": "NONE",
+            "_showShieldUI": false
+          },
+          {
+            "$type": "Torappu.Battle.Action.Nodes+FinishBuff, Assembly-CSharp",
+            "_decCntIfStack": false,
+            "_updateOverrideMap": true
+          }
+        ]
+      }
+    },
+    "native_packet_SP_order_method_body_verified": false,
+    "SP_profile": "source defense spType increment1 plus independent talent self1; accepted-packet model; blocked-hit native order client_pending"
+  },
+  "scope": "three canonical mechanisms only; no full stage or roster acceptance",
+  "formal_approval": false,
+  "review_receipt": false,
+  "client_pending_preserved": true
+}

@@ -1,0 +1,124 @@
+{
+  "role": "Source capability decomposition only; actual consumer implementations pending",
+  "plan": {
+    "path": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_consumption_plan\\source.consumption.plan.json",
+    "sha": "298deaf0dc7ed9a1068d1dfe75c8b90a9e1c3f8ae0a967f3baa28ff3f87064f1"
+  },
+  "fixed_source_freeze": {
+    "path": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\validation\\campaign\\chapter07_sources_v2\\freeze.json",
+    "sha": "540a8492846277b90c48f97ec4c9717abe3858ab955e25623e2bc6128b1f1478"
+  },
+  "source_counts": {
+    "variants": 12,
+    "modes": 17,
+    "bound_EnemySkill_components": 6,
+    "source_selectors_ranges": 29,
+    "inline_buffs": 39,
+    "BSON_template_bindings": 19
+  },
+  "source_conflicts": [
+    {
+      "variant": "enemy_1506_patrt@0/a53a85a6d0cd714f",
+      "native_component_GO": "ThrowSpear[Rage]",
+      "fixed_DB_candidates_by_case_only": [
+        {
+          "prefabKey": "throwspear[Rage]",
+          "priority": 0,
+          "cooldown": 20.0,
+          "initCooldown": 15.0,
+          "spCost": 0,
+          "blackboard": [
+            {
+              "key": "atk_scale",
+              "value": 1.35,
+              "valueStr": null
+            }
+          ]
+        }
+      ],
+      "policy": "Native ThrowSpear[Rage] differs exact case from DB throwspear[Rage]. A unique case-only candidate is evidence for explicit replaceable name-binding policy, not an automatic/silent alias or executed consumer."
+    }
+  ],
+  "source_input_pins": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_sources\\native.reference.json": "8bd457cc8f24d154b304a8cf0a946b9e2a83ae1dcfc01a08073a97364dc1119e",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_plans\\source.plan.json": "e5a60611432f7413689af811a069fb33aac57123bd58190f51161f8a01129339",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_predefines\\source.v4.reference.json": "9ab8b1049f5e0c9d34977563ccd8ac394044f77ff8da44b9cb717f52a1b9dfcb"
+  },
+  "task_splits": [
+    {
+      "id": "ordinary_melee_taunt_statmods",
+      "variants": [
+        "enemy_1081_sotisd@0/4d0de45d2830fb52",
+        "enemy_1078_sotisc@0/7b343c1f4188e39f",
+        "enemy_1077_sotihd@0/11aeb9d877d72938",
+        "enemy_1083_sotiab@0/3051a8cb970a72c6",
+        "enemy_1083_sotiab_2@0/2d82af38f31d6571"
+      ],
+      "minimum_author_work": "Exact base+mode0 melee frames/blocked qualifier/silence immunity/taunt or literal source stat listener Buffs. Independent HP/ATK/DEF/frame/damage/root-only scopes."
+    },
+    {
+      "id": "ranged_sotisp_mortar",
+      "variants": [
+        "enemy_1079_sotisp@0/13ad905feaa233c3",
+        "enemy_1082_soticn@0/304d5222d69cf371"
+      ],
+      "minimum_author_work": "Source projectiles and exact selector/PPtr, frames21/16, passive switch/mod listeners and both sotisp modes. Preserve reference min/free/camo/block qualifications, no death flags borrowed."
+    },
+    {
+      "id": "multi_mode_demon_casters",
+      "variants": [
+        "enemy_1084_sotidm@0/36d5cfd40d4f58cb",
+        "enemy_1085_sotiwz@0/e124b5c8af77c515",
+        "enemy_1085_sotiwz_2@0/eaaf6bc64dae9f1c"
+      ],
+      "minimum_author_work": "Actual2modes/listener conditions/Immo trigger and skill source raw cooldown5/SP0, per-state selector/applicability; NeverTrigger ordinary path must remain inactive, not made auto."
+    },
+    {
+      "id": "source_global_support_aura",
+      "variants": [
+        "enemy_1080_sotidp@0/ec07f90cc02c1801"
+      ],
+      "minimum_author_work": "Exact globalvalidator/source BB atk+.1/DEF+100 aura and detach/clear/rebirth handling, selfOption policy raw."
+    },
+    {
+      "id": "Patriot_complete_source_consumer",
+      "variants": [
+        "enemy_1506_patrt@0/a53a85a6d0cd714f"
+      ],
+      "minimum_author_work": "Source2modes/four melee packets/source throw spear/Immo/Rage/reborn60+15 invul/_hpRechargeRatio/rawshield/rally aura/ore interaction/wave release. No imported Frost timing or arbitrary shield assumptions."
+    },
+    {
+      "id": "ore_mine_predefines_and_native_controls",
+      "minimum_author_work": "Frozen20250327 mixed-version ore/mine realentities/stock15/cost/selectedskills/TrapMode/NoSourcePure damage and sourceBSON; 7-17#1/#2/7-18aliasnull; Story/preview/display/nativeroute full join after consumers.",
+      "source_package": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_predefines\\source.v4.reference.json",
+      "source_sha": "9ab8b1049f5e0c9d34977563ccd8ac394044f77ff8da44b9cb717f52a1b9dfcb"
+    }
+  ],
+  "existing_generic_interfaces_are_reuse_candidates_only": true,
+  "possible_new_generic_capabilities_to_prove": [
+    {
+      "name": "Named lifetime/buff event transition listener with ordered CreateBuff/FinishBuff across active mode state",
+      "source": "enemy_strength_talent_start_listener/finish_listener and sotisp_trigger/revert BSON",
+      "existing_reuse": "Buff event hooks/effects/behavior/owned leases; prove callback/phase semantics before adding core"
+    },
+    {
+      "name": "Reborn handling ability interval and transient global buff application/source shield state",
+      "source": "Patriot RebornTalent(useAbilityToHandle Reborning)/60s source wait/15s invul/_hpRechargeRatio .8500000238418579 and ore blackboards",
+      "existing_reuse": "Rebirth + generic skill arbiter + aura/lifecycle effects; new source content coupling required, no demonstrated core deficit yet"
+    },
+    {
+      "name": "Ore/mines dormant modes/build-stock-trigger/self-retirement and source PURE damage",
+      "source": "trap_011_ore/trap_012_mine sourcePPtrs/BSON/stock15",
+      "existing_reuse": "Card/deploy stock/resources, tile ownership, cast BuffUID controls, NoSourceDamage; trigger target policy must be source-authored and independently tested"
+    }
+  ],
+  "conditions_for_actual_consumer_acceptance": [
+    "Exact native stats/selectedmode/OnAttack/cooldown/SP/cost and target masks/source immunity numeric checks",
+    "Normal/blocked/multiplecaster/control/death/retainedpayload mode transitions with actualpacket events",
+    "Actual ordered disk CP and public fromhead replay with complete event/source guards",
+    "Unknown source/formula/native body parameters remain explicit pending, no empty emit/module registration accepted as implementation"
+  ],
+  "confirmed_new_core_feature_added": false,
+  "consumer_or_stage_executed": false,
+  "client_verified": false
+}

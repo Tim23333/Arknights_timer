@@ -1,0 +1,3558 @@
+[
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wavetrack",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/restore",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/protect",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "on_remove": [
+          {
+            "op": "finish_timeline_wave",
+            "target": "source",
+            "parameters": {
+              "finish_and_skip": false,
+              "track_source_at_next_wave": false,
+              "track_source_wave_delta": 0,
+              "track_all_managed_at_next_wave": false
+            }
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 2500,
+              "atk": 53,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 2500,
+              "capacity": 2500,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/peer/false",
+            "ability/peer/true"
+          ],
+          "rebirth": {
+            "resource": "hp",
+            "max_count": 1,
+            "delay_seconds": 0.5,
+            "restore_ratio": 0.5,
+            "restore_rule": "rule/peer/restore",
+            "retain_buffs": [
+              "buff/peer/protect"
+            ],
+            "on_begin": [
+              {
+                "op": "apply_buff",
+                "target": "self",
+                "buff": "buff/peer/protect"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "unit/peer/late",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "atk": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/kill",
+            "ability/peer/foreign"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/false",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/true",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "instant_kill",
+              "target": 3,
+              "parameters": {
+                "cause": "peer_track",
+                "skip_rebirth": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/foreign",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/wavetrack",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 4
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ],
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0,
+            "post_delay_seconds": 0.13333333333333333,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.03333333333333333,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.06666666666666667,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/source",
+                      "position": {
+                        "row": 0,
+                        "col": 1
+                      },
+                      "instanceAlias": "managed_source"
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.3,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": false,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 2
+                      },
+                      "instanceAlias": "late_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "pre_delay_seconds": 0.1,
+            "post_delay_seconds": 0,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.06666666666666667,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 3
+                      },
+                      "instanceAlias": "next_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wavetrack",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/restore",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/protect",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "on_remove": [
+          {
+            "op": "finish_timeline_wave",
+            "target": "source",
+            "parameters": {
+              "finish_and_skip": false,
+              "track_source_at_next_wave": true,
+              "track_source_wave_delta": 0,
+              "track_all_managed_at_next_wave": false
+            }
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 2500,
+              "atk": 53,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 2500,
+              "capacity": 2500,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/peer/false",
+            "ability/peer/true"
+          ],
+          "rebirth": {
+            "resource": "hp",
+            "max_count": 1,
+            "delay_seconds": 0.5,
+            "restore_ratio": 0.5,
+            "restore_rule": "rule/peer/restore",
+            "retain_buffs": [
+              "buff/peer/protect"
+            ],
+            "on_begin": [
+              {
+                "op": "apply_buff",
+                "target": "self",
+                "buff": "buff/peer/protect"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "unit/peer/late",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "atk": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/kill",
+            "ability/peer/foreign"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/false",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/true",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": true,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "instant_kill",
+              "target": 3,
+              "parameters": {
+                "cause": "peer_track",
+                "skip_rebirth": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/foreign",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": true,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/wavetrack",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 4
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ],
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0,
+            "post_delay_seconds": 0.13333333333333333,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.03333333333333333,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.06666666666666667,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/source",
+                      "position": {
+                        "row": 0,
+                        "col": 1
+                      },
+                      "instanceAlias": "managed_source"
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.3,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": false,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 2
+                      },
+                      "instanceAlias": "late_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "pre_delay_seconds": 0.1,
+            "post_delay_seconds": 0,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.06666666666666667,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 3
+                      },
+                      "instanceAlias": "next_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wavetrack",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/restore",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/protect",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "on_remove": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 2500,
+              "atk": 53,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 2500,
+              "capacity": 2500,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/peer/false",
+            "ability/peer/true"
+          ],
+          "rebirth": {
+            "resource": "hp",
+            "max_count": 1,
+            "delay_seconds": 0.5,
+            "restore_ratio": 0.5,
+            "restore_rule": "rule/peer/restore",
+            "retain_buffs": [
+              "buff/peer/protect"
+            ],
+            "on_begin": [
+              {
+                "op": "apply_buff",
+                "target": "self",
+                "buff": "buff/peer/protect"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "unit/peer/late",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "atk": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/kill",
+            "ability/peer/foreign"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/false",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/true",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": true,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "instant_kill",
+              "target": 3,
+              "parameters": {
+                "cause": "peer_track",
+                "skip_rebirth": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/foreign",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": true,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/wavetrack",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 4
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ],
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0,
+            "post_delay_seconds": 0.13333333333333333,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.03333333333333333,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.06666666666666667,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/source",
+                      "position": {
+                        "row": 0,
+                        "col": 1
+                      },
+                      "instanceAlias": "managed_source"
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.3,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": false,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 2
+                      },
+                      "instanceAlias": "late_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "pre_delay_seconds": 0.1,
+            "post_delay_seconds": 0,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.06666666666666667,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 3
+                      },
+                      "instanceAlias": "next_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wavetrack",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/restore",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/protect",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "on_remove": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 2500,
+              "atk": 53,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 2500,
+              "capacity": 2500,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/peer/false",
+            "ability/peer/true"
+          ],
+          "rebirth": {
+            "resource": "hp",
+            "max_count": 1,
+            "delay_seconds": 0.5,
+            "restore_ratio": 0.5,
+            "restore_rule": "rule/peer/restore",
+            "retain_buffs": [
+              "buff/peer/protect"
+            ],
+            "on_begin": [
+              {
+                "op": "apply_buff",
+                "target": "self",
+                "buff": "buff/peer/protect"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "unit/peer/late",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "atk": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/kill",
+            "ability/peer/foreign"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/false",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/true",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": true,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "instant_kill",
+              "target": 3,
+              "parameters": {
+                "cause": "peer_track",
+                "skip_rebirth": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/foreign",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": true,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/wavetrack",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 4
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ],
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0,
+            "post_delay_seconds": 0.13333333333333333,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.03333333333333333,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.06666666666666667,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/source",
+                      "position": {
+                        "row": 0,
+                        "col": 1
+                      },
+                      "instanceAlias": "managed_source"
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.3,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": false,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 2
+                      },
+                      "instanceAlias": "late_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "pre_delay_seconds": 0.1,
+            "post_delay_seconds": 0,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.06666666666666667,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 3
+                      },
+                      "instanceAlias": "next_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wavetrack",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/restore",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/protect",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "on_remove": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 2500,
+              "atk": 53,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 2500,
+              "capacity": 2500,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/peer/false",
+            "ability/peer/true"
+          ],
+          "rebirth": {
+            "resource": "hp",
+            "max_count": 1,
+            "delay_seconds": 0.5,
+            "restore_ratio": 0.5,
+            "restore_rule": "rule/peer/restore",
+            "retain_buffs": [
+              "buff/peer/protect"
+            ],
+            "on_begin": [
+              {
+                "op": "apply_buff",
+                "target": "self",
+                "buff": "buff/peer/protect"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "unit/peer/late",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "atk": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/kill",
+            "ability/peer/foreign"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/false",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/true",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": true,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "instant_kill",
+              "target": 3,
+              "parameters": {
+                "cause": "peer_track",
+                "skip_rebirth": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/foreign",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": true,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/wavetrack",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 4
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ],
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0,
+            "post_delay_seconds": 0.13333333333333333,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.03333333333333333,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.06666666666666667,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/source",
+                      "position": {
+                        "row": 0,
+                        "col": 1
+                      },
+                      "instanceAlias": "managed_source"
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.3,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": false,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 2
+                      },
+                      "instanceAlias": "late_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "pre_delay_seconds": 0.1,
+            "post_delay_seconds": 0,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.06666666666666667,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 3
+                      },
+                      "instanceAlias": "next_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wavetrack",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/restore",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/protect",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "on_remove": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 2500,
+              "atk": 53,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 2500,
+              "capacity": 2500,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/peer/false",
+            "ability/peer/true"
+          ],
+          "rebirth": {
+            "resource": "hp",
+            "max_count": 1,
+            "delay_seconds": 0.5,
+            "restore_ratio": 0.5,
+            "restore_rule": "rule/peer/restore",
+            "retain_buffs": [
+              "buff/peer/protect"
+            ],
+            "on_begin": [
+              {
+                "op": "apply_buff",
+                "target": "self",
+                "buff": "buff/peer/protect"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "unit/peer/late",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "atk": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/kill",
+            "ability/peer/foreign"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/false",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/true",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": true,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "instant_kill",
+              "target": 3,
+              "parameters": {
+                "cause": "peer_track",
+                "skip_rebirth": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/foreign",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": true,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/wavetrack",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 4
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ],
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0,
+            "post_delay_seconds": 0.13333333333333333,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.03333333333333333,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.06666666666666667,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/source",
+                      "position": {
+                        "row": 0,
+                        "col": 1
+                      },
+                      "instanceAlias": "managed_source"
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.1,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": false,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 2
+                      },
+                      "instanceAlias": "late_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "pre_delay_seconds": 0.1,
+            "post_delay_seconds": 0,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.06666666666666667,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 3
+                      },
+                      "instanceAlias": "next_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wavetrack",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/restore",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/protect",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "on_remove": [
+          {
+            "op": "finish_timeline_wave",
+            "target": "source",
+            "parameters": {
+              "finish_and_skip": false,
+              "track_source_at_next_wave": true,
+              "track_source_wave_delta": 0,
+              "track_all_managed_at_next_wave": false
+            }
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 2500,
+              "atk": 53,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 2500,
+              "capacity": 2500,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/peer/false",
+            "ability/peer/true"
+          ],
+          "rebirth": {
+            "resource": "hp",
+            "max_count": 1,
+            "delay_seconds": 0.5,
+            "restore_ratio": 0.5,
+            "restore_rule": "rule/peer/restore",
+            "retain_buffs": [
+              "buff/peer/protect"
+            ],
+            "on_begin": [
+              {
+                "op": "apply_buff",
+                "target": "self",
+                "buff": "buff/peer/protect"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "unit/peer/late",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "atk": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/kill",
+            "ability/peer/foreign"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/false",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/true",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": true,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "instant_kill",
+              "target": 3,
+              "parameters": {
+                "cause": "peer_track",
+                "skip_rebirth": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/foreign",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": true,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/wavetrack",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 4
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ],
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0,
+            "post_delay_seconds": 0.13333333333333333,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.03333333333333333,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.06666666666666667,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/source",
+                      "position": {
+                        "row": 0,
+                        "col": 1
+                      },
+                      "instanceAlias": "managed_source"
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.3,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": false,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 2
+                      },
+                      "instanceAlias": "late_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wavetrack",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/restore",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/protect",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "on_remove": [
+          {
+            "op": "finish_timeline_wave",
+            "target": "source",
+            "parameters": {
+              "finish_and_skip": false,
+              "track_source_at_next_wave": true,
+              "track_source_wave_delta": 0,
+              "track_all_managed_at_next_wave": false
+            }
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 2500,
+              "atk": 53,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 2500,
+              "capacity": 2500,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/peer/false",
+            "ability/peer/true"
+          ],
+          "rebirth": {
+            "resource": "hp",
+            "max_count": 1,
+            "delay_seconds": 0.5,
+            "restore_ratio": 0.5,
+            "restore_rule": "rule/peer/restore",
+            "retain_buffs": [
+              "buff/peer/protect"
+            ],
+            "on_begin": [
+              {
+                "op": "apply_buff",
+                "target": "self",
+                "buff": "buff/peer/protect"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "unit/peer/late",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "atk": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/kill",
+            "ability/peer/foreign",
+            "ability/peer/retire"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/false",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/true",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": true,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "instant_kill",
+              "target": 3,
+              "parameters": {
+                "cause": "peer_track",
+                "skip_rebirth": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/foreign",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": true,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/retire",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 3,
+              "parameters": {
+                "reason": "withdrawn"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/wavetrack",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 4
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ],
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0,
+            "post_delay_seconds": 0.13333333333333333,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.03333333333333333,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.06666666666666667,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/source",
+                      "position": {
+                        "row": 0,
+                        "col": 1
+                      },
+                      "instanceAlias": "managed_source"
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.3,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": false,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 2
+                      },
+                      "instanceAlias": "late_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "pre_delay_seconds": 0.1,
+            "post_delay_seconds": 0,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.06666666666666667,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 3
+                      },
+                      "instanceAlias": "next_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wavetrack",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/restore",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/protect",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "on_remove": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 2500,
+              "atk": 53,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 2500,
+              "capacity": 2500,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/peer/false",
+            "ability/peer/true"
+          ],
+          "rebirth": {
+            "resource": "hp",
+            "max_count": 1,
+            "delay_seconds": 0.5,
+            "restore_ratio": 0.5,
+            "restore_rule": "rule/peer/restore",
+            "retain_buffs": [
+              "buff/peer/protect"
+            ],
+            "on_begin": [
+              {
+                "op": "apply_buff",
+                "target": "self",
+                "buff": "buff/peer/protect"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "unit/peer/late",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "atk": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/kill",
+            "ability/peer/foreign"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/false",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/true",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": true,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "instant_kill",
+              "target": 3,
+              "parameters": {
+                "cause": "peer_track",
+                "skip_rebirth": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/foreign",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": true,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/wavetrack",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 4
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ],
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0,
+            "post_delay_seconds": 0.13333333333333333,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.03333333333333333,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.06666666666666667,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/source",
+                      "position": {
+                        "row": 0,
+                        "col": 1
+                      },
+                      "instanceAlias": "managed_source"
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.3,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": false,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 2
+                      },
+                      "instanceAlias": "late_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "pre_delay_seconds": 0.1,
+            "post_delay_seconds": 0,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.06666666666666667,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 3
+                      },
+                      "instanceAlias": "next_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wavetrack",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/restore",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/protect",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "on_remove": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 2500,
+              "atk": 53,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 2500,
+              "capacity": 2500,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/peer/false",
+            "ability/peer/true"
+          ],
+          "rebirth": {
+            "resource": "hp",
+            "max_count": 1,
+            "delay_seconds": 0.5,
+            "restore_ratio": 0.5,
+            "restore_rule": "rule/peer/restore",
+            "retain_buffs": [
+              "buff/peer/protect"
+            ],
+            "on_begin": [
+              {
+                "op": "apply_buff",
+                "target": "self",
+                "buff": "buff/peer/protect"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "unit/peer/late",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "atk": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/kill",
+            "ability/peer/foreign"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/false",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/true",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": true,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "instant_kill",
+              "target": 3,
+              "parameters": {
+                "cause": "peer_track",
+                "skip_rebirth": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/foreign",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": true,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/wavetrack",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 4
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ],
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0,
+            "post_delay_seconds": 0.13333333333333333,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.03333333333333333,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.06666666666666667,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/source",
+                      "position": {
+                        "row": 0,
+                        "col": 1
+                      },
+                      "instanceAlias": "managed_source"
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.3,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": false,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 2
+                      },
+                      "instanceAlias": "late_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "pre_delay_seconds": 0.1,
+            "post_delay_seconds": 0,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.06666666666666667,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 3
+                      },
+                      "instanceAlias": "next_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wavetrack",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/restore",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/protect",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "on_remove": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 2500,
+              "atk": 53,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 2500,
+              "capacity": 2500,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/peer/false",
+            "ability/peer/true"
+          ],
+          "rebirth": {
+            "resource": "hp",
+            "max_count": 1,
+            "delay_seconds": 0.5,
+            "restore_ratio": 0.5,
+            "restore_rule": "rule/peer/restore",
+            "retain_buffs": [
+              "buff/peer/protect"
+            ],
+            "on_begin": [
+              {
+                "op": "apply_buff",
+                "target": "self",
+                "buff": "buff/peer/protect"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "unit/peer/late",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "atk": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/kill",
+            "ability/peer/foreign"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/false",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/true",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": true,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            },
+            {
+              "op": "modify_resource",
+              "resource": "absent",
+              "amount": 1
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "instant_kill",
+              "target": 3,
+              "parameters": {
+                "cause": "peer_track",
+                "skip_rebirth": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/foreign",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": true,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/wavetrack",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 4
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ],
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0,
+            "post_delay_seconds": 0.13333333333333333,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.03333333333333333,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.06666666666666667,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/source",
+                      "position": {
+                        "row": 0,
+                        "col": 1
+                      },
+                      "instanceAlias": "managed_source"
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.3,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": false,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 2
+                      },
+                      "instanceAlias": "late_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "pre_delay_seconds": 0.1,
+            "post_delay_seconds": 0,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.06666666666666667,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 3
+                      },
+                      "instanceAlias": "next_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wavetrack",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/restore",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/protect",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "on_remove": [
+          {
+            "op": "finish_timeline_wave",
+            "target": "source",
+            "parameters": {
+              "finish_and_skip": false,
+              "track_source_at_next_wave": true,
+              "track_source_wave_delta": 0,
+              "track_all_managed_at_next_wave": false
+            }
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/watch",
+        "kind": "buff",
+        "removal": {
+          "on_target_death": "retain"
+        },
+        "events": [
+          {
+            "event": "timeline.finish_requested",
+            "effects": [
+              {
+                "op": "retire",
+                "target": "self",
+                "parameters": {
+                  "reason": "withdrawn"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 2500,
+              "atk": 53,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 2500,
+              "capacity": 2500,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/peer/false",
+            "ability/peer/true"
+          ],
+          "rebirth": {
+            "resource": "hp",
+            "max_count": 1,
+            "delay_seconds": 0.5,
+            "restore_ratio": 0.5,
+            "restore_rule": "rule/peer/restore",
+            "retain_buffs": [
+              "buff/peer/protect",
+              "buff/peer/watch"
+            ],
+            "on_begin": [
+              {
+                "op": "apply_buff",
+                "target": "self",
+                "buff": "buff/peer/protect"
+              }
+            ]
+          },
+          "buffs": {
+            "initial": [
+              "buff/peer/watch"
+            ]
+          }
+        }
+      },
+      {
+        "id": "unit/peer/late",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "atk": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/kill",
+            "ability/peer/foreign"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/false",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/true",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": true,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "instant_kill",
+              "target": 3,
+              "parameters": {
+                "cause": "peer_track",
+                "skip_rebirth": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/foreign",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": true,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/wavetrack",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 4
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ],
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0,
+            "post_delay_seconds": 0.13333333333333333,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.03333333333333333,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.06666666666666667,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/source",
+                      "position": {
+                        "row": 0,
+                        "col": 1
+                      },
+                      "instanceAlias": "managed_source"
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0.3,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": false,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 2
+                      },
+                      "instanceAlias": "late_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "pre_delay_seconds": 0.1,
+            "post_delay_seconds": 0,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0.06666666666666667,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "count": 1,
+                    "delay_seconds": 0,
+                    "interval_seconds": 0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/peer/late",
+                      "position": {
+                        "row": 0,
+                        "col": 3
+                      },
+                      "instanceAlias": "next_birth"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+]

@@ -1,0 +1,13 @@
+"""New V4 formula audit of sealed originals; every consumed source is guarded."""
+import argparse,hashlib,json,sys
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT))
+from tools.trace_audit.stream_oracle_v4 import audit
+def sha(p):
+ h=hashlib.sha256()
+ with p.open('rb') as f:
+  for b in iter(lambda:f.read(1048576),b''):h.update(b)
+ return h.hexdigest()
+def main():
+ ap=argparse.ArgumentParser();ap.add_argument('--stage',choices=['05-09','05-10'],required=True);a=ap.parse_args();original=Path('E:/ArkSimEvidence/campaign')/(a.stage.replace('-','_')+'_8fa4e36752e92f7d')/'public_v1.original.json';r=json.loads(original.read_bytes());assert r['process_complete'] and r['forward_error'] is None;journal=Path(r['journal']['path']);assert journal.stat().st_size==r['journal']['bytes'] and sha(journal)==r['journal']['sha256'];prepared=json.loads((ROOT/'validation/campaign/chapter05_public_v3/prepared_commands.json').read_bytes());row=next(x for x in prepared['cases'] if x['native_id']=='level_main_'+a.stage);package=Path(row['overlay']);commands=Path(row['commands']);pins=ROOT/'validation/trace_audit/source_golden_v2/oracle_pins.json';helpers=[ROOT/'tools/trace_audit'/name for name in ('stream_oracle_v1.py','stream_oracle_v4_math.py','stream_oracle_v4_identity.py','stream_oracle_v4.py')]+[ROOT/'tools/compare_campaign_trace.py',Path(__file__)];paths=[original,journal,package,commands,pins]+helpers;before={str(p):sha(p) for p in paths};assert before[str(package)]==r['package_sha256']==row['overlay_sha'] and before[str(commands)]==r['commands_sha256']==row['commands_sha'];result=audit(journal,json.loads(pins.read_bytes())['rules']);after={str(p):sha(p) for p in paths};assert before==after and result['counts']['events']==r['journal']['events'];result.update({'source_original_report':str(original),'source_journal_reference':r['journal'],'all_consumed_source_before':before,'all_consumed_source_after':after,'source_identity_stable':True,'full_sealed_trace_processed':True,'source_actor_ledger_does_not_imply_numeric_full_acceptance':True,'actual_process_CP_replay_acceptance_separate':True});out=ROOT/'validation/trace_audit'/(a.stage+'.sealed_original_full.v4.json');assert not out.exists();out.write_text(json.dumps(result,indent=2)+'\n',encoding='utf8',newline='');print(json.dumps({'sha':sha(out),'events':result['counts']['events'],'identity':result['identity_counts'],'aggregate':result['aggregate_provider_calls_checked'],'failures':result['failures'][:8],'numeric_full':result['all_fields_independently_verified']}));raise SystemExit(0 if result['source_formula_consistent'] else 1)
+if __name__=='__main__':main()

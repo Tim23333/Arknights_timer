@@ -1,0 +1,367 @@
+--- a/ark_sim/adapters/api.py
++++ b/ark_sim/adapters/api.py
+@@ -15,6 +15,7 @@
+ from ark_sim.domains.lifecycle import LifecycleSystem
+ from ark_sim.domains.timeline import TimelineSystem
+ from ark_sim.domains.controls import ControlSystem
++from ark_sim.domains.projectiles import ProjectileSystem
+ 
+ 
+ def implementation_digest():
+@@ -39,6 +40,8 @@
+         self.ctx.spatial = SpatialSystem(self.ctx)
+         self.ctx.movement = MovementSystem(self.ctx)
+         self.ctx.lifecycle = LifecycleSystem(self.ctx)
++        if any(d.get("kind") == "projectile" for d in program.definitions.values()):
++            self.ctx.projectiles = ProjectileSystem(self.ctx)
+         if program.scenario.get("timeline") is not None:
+             self.ctx.timeline = TimelineSystem(self.ctx)
+             if any(a["kind"] == "control" for w in program.scenario["timeline"]["waves"] for f in w["fragments"] for a in f["actions"]):
+@@ -96,6 +99,9 @@
+         if self.ctx.timeline is not None:
+             for name, handler in self.ctx.timeline.handlers.items():
+                 self.session.register_handler(name, handler)
++        if self.ctx.projectiles is not None:
++            for name,handler in self.ctx.projectiles.handlers.items(): self.session.register_handler(name,handler)
++            self.session.add_system(self.ctx.projectiles.tick, phase=0)
+         if self.ctx.controls is not None:
+             for name, handler in self.ctx.controls.handlers.items(): self.session.register_handler(name, handler)
+             self.session.add_system(self.ctx.controls.tick, phase=0)
+--- a/ark_sim/content/capabilities.py
++++ b/ark_sim/content/capabilities.py
+@@ -49,6 +49,11 @@
+ 
+     def effect(item, path, scopes):
+         local = [*scopes, item.get("rules", {})]
++        if item.get("projectile_definition"):
++            projectile=definitions[item["projectile_definition"]]
++            if projectile.get("kind") != "projectile": raise ContentError(path+": projectile reference kind required")
++            require("time.quantize", path)
++
+         op = item.get("op")
+         if op == "damage":
+             require("damage.pipeline", path, local)
+@@ -72,6 +77,7 @@
+ 
+     def control_effect(item, path):
+         """Controls use the nonspatial battle source, without fabricated stats."""
++        if item.get("projectile_definition"): raise ContentError(path+": projectile launch requires actor spatial source")
+         if item.get("selector"):
+             selected = definitions[item["selector"]]
+             if selected.get("region", {}).get("type") != "all":
+@@ -205,6 +211,11 @@
+             ability(identifier, identifier, [])
+         elif kind == "selector" and identifier not in selectors_seen:
+             selector(identifier, identifier, [])
++        elif kind == "projectile":
++            require("projectile.trajectory", identifier+".motion", scopes, definition["motion"]["rule"])
++            require("projectile.collision", identifier+".collision", scopes, definition["collision"]["rule"])
++            require("time.quantize", identifier)
++            for index,item in enumerate(definition.get("on_invalid", [])): effect(item, f"{identifier}.on_invalid[{index}]", scopes)
+         elif kind == "buff":
+             for hook in definition.get("damage_hooks", []):
+                 require("damage.request" if hook["phase"] == "before" else "damage.pipeline",
+--- a/ark_sim/content/compiler.py
++++ b/ark_sim/content/compiler.py
+@@ -340,7 +340,7 @@
+ 
+     @staticmethod
+     def _validate_reference_kinds(definitions):
+-        expected = {"definition": {"entity"}, "ability": {"ability"}, "buff": {"buff"},
++        expected = {"projectile_definition": {"projectile"}, "definition": {"entity"}, "ability": {"ability"}, "buff": {"buff"},
+                     "selector": {"selector"}, "machine": {"behavior"}, "policy": {"policy", "rule", "calculation_rule"},
+                     "ruleset": {"ruleset"}, "recovery_rule": {"rule", "calculation_rule"},
+                     "interval_rule": {"rule", "calculation_rule"}, "duration_rule": {"rule", "calculation_rule"},
+--- a/ark_sim/content/dependencies.py
++++ b/ark_sim/content/dependencies.py
+@@ -3,7 +3,7 @@
+ from .repository import ContentError
+ 
+ 
+-REFERENCE_KEYS = {"definition", "ability", "buff", "selector", "machine", "policy",
++REFERENCE_KEYS = {"projectile_definition", "definition", "ability", "buff", "selector", "machine", "policy",
+                   "rule", "ruleset", "extends", "prototype", "behavior"}
+ REFERENCE_LISTS = {"abilities", "requires", "dependencies", "externals", "allowed", "roster", "recovery_freeze_abilities", "interrupt_abilities"}
+ 
+--- a/ark_sim/content/repository.py
++++ b/ark_sim/content/repository.py
+@@ -6,7 +6,7 @@
+ from ..contracts.models import thaw
+ 
+ 
+-COLLECTIONS = {"entities": "entity", "abilities": "ability", "buffs": "buff", "controls": "control",
++COLLECTIONS = {"projectiles": "projectile", "entities": "entity", "abilities": "ability", "buffs": "buff", "controls": "control",
+                "selectors": "selector", "behaviors": "behavior", "policies": "policy",
+                "rules": "calculation_rule", "rulesets": "ruleset", "presets": "preset",
+                "scenarios": "scenario", "definitions": None}
+--- a/ark_sim/content/schemas.py
++++ b/ark_sim/content/schemas.py
+@@ -6,7 +6,7 @@
+ 
+ 
+ COMMON = {"id", "kind", "version", "extends", "metadata", "rules", "dependencies", "dynamicReferences"}
+-FIELDS = {
++FIELDS = {"projectile": {"motion", "collision", "lifetime_seconds", "max_hits", "can_hit_same_target", "stop_after_max", "stop_after_first", "attach_at_launch", "lifecycle", "on_invalid"},
+     "control": {"clock_policy", "ack_policy", "steps", "on_start", "on_complete", "on_cancel"},
+     "entity": {"tags", "components", "growth", "talents", "equipment", "progression"},
+     "ability": {"activation", "selector", "timeline", "target_capture", "interrupt_policy", "success_definition", "duration_seconds", "cooldown_seconds", "events", "parameters"},
+@@ -34,7 +34,7 @@
+     "deck": {"on_create"},
+ }
+ RESOURCE_FIELDS = {"initial", "capacity", "capacity_attribute", "capacity_change_rule", "recovery_rule", "recovery_rate", "recovery", "rules", "parameters", "bounds_rule", "capacity_rule", "role", "events", "recovery_freeze_abilities", "recovery_freeze_rule"}
+-EFFECT_FIELDS = {"op", "target", "rules", "read_mode", "damage_type", "scale", "additions", "amount", "delta", "value", "amount_rule", "resource", "buff", "definition", "position", "facing", "tags", "on_success", "on_failure", "effects", "condition", "parameters", "event", "payload", "type", "state", "machine", "distance", "offset", "direction", "kind", "at_seconds", "delay_seconds", "effect", "stacks", "selector", "lifetime_seconds", "remove_all", "metadata", "duration_seconds", "center", "radius", "filters", "owner", "ability", "force", "stream", "probability"}
++EFFECT_FIELDS = {"projectile_definition", "center_position", "op", "target", "rules", "read_mode", "damage_type", "scale", "additions", "amount", "delta", "value", "amount_rule", "resource", "buff", "definition", "position", "facing", "tags", "on_success", "on_failure", "effects", "condition", "parameters", "event", "payload", "type", "state", "machine", "distance", "offset", "direction", "kind", "at_seconds", "delay_seconds", "effect", "stacks", "selector", "lifetime_seconds", "remove_all", "metadata", "duration_seconds", "center", "radius", "filters", "owner", "ability", "force", "stream", "probability"}
+ DEFAULT_CAPABILITIES = {
+     "effects": {"damage", "heal", "regenerate", "modify_resource", "apply_buff", "remove_buff", "spawn", "emit", "move", "state", "schedule", "transition", "area", "trigger_ability", "push", "random", "input_lock", "retire"},
+     "activations": {"manual", "automatic_attack", "on_deploy", "passive"},
+@@ -79,6 +79,12 @@
+     for field in required.get(effect["op"], ()):
+         if field not in effect:
+             raise ContentError(f"{path}.{field}: required by {effect['op']} effect")
++    if "projectile_definition" in effect:
++        if effect["op"] not in {"damage", "heal", "area"} or not isinstance(effect["projectile_definition"], str) or not effect["projectile_definition"]:
++            raise ContentError(path+".projectile_definition: damage/heal/area exact projectile reference required")
++    if "center_position" in effect:
++        if effect["op"] != "area": raise ContentError(path+".center_position: area only")
++        validate_position(effect["center_position"], path+".center_position")
+     if effect["op"] == "modify_resource":
+         if len(set(effect) & {"delta", "amount", "value", "amount_rule"}) != 1:
+             raise ContentError(f"{path}: modify_resource requires exactly one of delta, amount, value, or amount_rule")
+@@ -178,7 +184,26 @@
+     if kind not in FIELDS:
+         raise ContentError(f"{identifier}: unsupported definition kind {kind!r}")
+     fields(definition, COMMON | FIELDS[kind], identifier)
+-    if kind == "control":
++    if kind == "projectile":
++        for name in ("motion", "collision"):
++            if name not in definition: raise ContentError(f"{identifier}.{name}: required")
++            fields(definition[name], {"rule", "parameters"} | ({"allow_other_targets"} if name=="collision" else set()), f"{identifier}.{name}")
++            if not isinstance(definition[name].get("rule"), str) or not definition[name]["rule"]: raise ContentError(f"{identifier}.{name}.rule: exact rule required")
++        if "allow_other_targets" in definition["collision"] and type(definition["collision"]["allow_other_targets"]) is not bool: raise ContentError(identifier+".collision.allow_other_targets: boolean required")
++        number(definition.get("lifetime_seconds"), identifier+".lifetime_seconds", 0)
++        if type(definition.get("max_hits")) is not int or definition["max_hits"] < 0: raise ContentError(identifier+".max_hits: nonnegative integer required")
++        for name in ("can_hit_same_target", "stop_after_max", "stop_after_first", "attach_at_launch"):
++            if type(definition.get(name)) is not bool: raise ContentError(identifier+"."+name+": explicit boolean required")
++        policy=definition.get("lifecycle", {})
++        fields(policy, {"source_invalid", "source_hidden", "target_invalid", "target_hidden", "finish_on_reach", "hit_on_reach", "force_reach_on_expire", "hit_on_expire"}, identifier+".lifecycle")
++        for name in ("source_invalid", "source_hidden"):
++            if policy.get(name) not in {"retain", "cancel"}: raise ContentError(identifier+".lifecycle."+name+": explicit retain/cancel policy required")
++        for name in ("target_invalid", "target_hidden"):
++            if policy.get(name) not in {"retain_position", "cancel"}: raise ContentError(identifier+".lifecycle."+name+": explicit retain_position/cancel policy required")
++        for name in ("finish_on_reach", "hit_on_reach", "force_reach_on_expire", "hit_on_expire"):
++            if type(policy.get(name)) is not bool: raise ContentError(identifier+".lifecycle."+name+": explicit boolean required")
++        for index,item in enumerate(definition.get("on_invalid", [])): validate_effect(item, f"{identifier}.on_invalid[{index}]", capabilities)
++    elif kind == "control":
+         if definition.get("rules"): raise ContentError(f"{identifier}.rules: bind individual effect rules; control owner rule scope is unsupported")
+         if definition.get("clock_policy") != "logical": raise ContentError(f"{identifier}.clock_policy: explicit logical required")
+         if definition.get("ack_policy") not in {"external", "immediate"}: raise ContentError(f"{identifier}.ack_policy: explicit external or immediate required")
+--- a/ark_sim/domains/context.py
++++ b/ark_sim/domains/context.py
+@@ -60,6 +60,7 @@
+         self.controls = None
+         self._notifying = 0
+         self.last_calculation_event_id = None
++        self.projectiles = None
+ 
+     def entity(self, ref):
+         return self.session.world.get(ref)
+--- a/ark_sim/domains/effects.py
++++ b/ark_sim/domains/effects.py
+@@ -45,7 +45,7 @@
+             health_delta = operation == "modify_resource" and (
+                 self.ctx.get(target, ("resources", effect.get("resource"), "spec", "role")) == "health" or
+                 effect.get("resource") == self.ctx.program.ruleset.get("parameters", {}).get("health_resource"))
+-            if (health_delta or operation in {"damage", "heal", "regenerate", "apply_buff", "area", "push", "move", "displace", "trigger_ability"}) and not getattr(self.ctx, "effect_target_available", lambda ref: True)(target):
++            if not (operation == "area" and effect.get("center_position") is not None) and (health_delta or operation in {"damage", "heal", "regenerate", "apply_buff", "area", "push", "move", "displace", "trigger_ability"}) and not getattr(self.ctx, "effect_target_available", lambda ref: True)(target):
+                 self.ctx.emit("effect.visibility_rejected", {"source": source, "target": target, "operation": operation}, cause)
+                 continue
+             if operation == "random":
+@@ -64,7 +64,7 @@
+                 if self._projectile(source, target, effect, ability, cast, cause):
+                     continue
+                 center = source if effect.get("center", "target") == "source" else target
+-                position = self.ctx.get(center, ("spatial", "position"))
++                position = effect.get("center_position") or self.ctx.get(center, ("spatial", "position"))
+                 members = []
+                 for entity in self.ctx.session.world.entities():
+                     pos = entity["components"].get("spatial", {}).get("position")
+@@ -234,6 +234,8 @@
+             if cast_id in claims:
+                 return False
+             outstanding = set(runtime.get("casts", {}))
++            if getattr(self.ctx, "projectiles", None) is not None:
++                outstanding.update(self.ctx.projectiles.active_casts(source))
+             for task in self.ctx.session.scheduler.pending:
+                 payload = task.get("payload", {})
+                 if payload.get("source") != source:
+@@ -256,6 +258,9 @@
+                 self.ctx.abilities.projectile_finished(payload["source"], cast.get("id"))
+ 
+     def _projectile(self, source, target, effect, ability, cast, cause):
++        if effect.get("projectile_definition"):
++            self.ctx.projectiles.launch(source,target,effect,ability,cast,cause)
++            return True
+         parameters = ability.get("parameters", {})
+         speed = parameters.get("projectile_speed", 0)
+         if not speed or cast.get("projectile_impact"):
+--- a/ark_sim/domains/projectile_profiles.py
++++ b/ark_sim/domains/projectile_profiles.py
+@@ -0,0 +1,27 @@
++"""Replaceable mathematical profiles; no native steering/body claims."""
++import math
++
++def trajectory(inputs,params,context):
++ p={**params,**inputs['trajectory_parameters']};record=inputs['positions'][0];current=record['position'];start=record['start'];target=record['last_target'];mode=p['mode'];state=dict(record.get('motion_state',{}))
++ if mode=='fixed':return {'position':dict(current),'reached':False,'motion_state':state}
++ if mode=='follow':return {'position':dict(target),'reached':False,'motion_state':state}
++ if mode!='homing':raise ValueError('unknown mathematical motion mode')
++ speed=p['speed'];dt=p['delta_seconds'];distance=math.hypot(target['row']-current['row'],target['col']-current['col']);reached=distance<=speed*dt+p.get('arrival_tolerance',1e-12);step=distance if reached else min(distance,speed*dt);fraction=step/distance if distance else 0
++ point={'row':current['row']+(target['row']-current['row'])*fraction,'col':current['col']+(target['col']-current['col'])*fraction}
++ traveled=state.get('traveled',0)+step;length=state.get('launch_length',math.hypot(target['row']-start['row'],target['col']-start['col']));u=min(1,traveled/length) if length else 1
++ if reached:point={'row':target['row'],'col':target['col']}
++ point['height']=4*p.get('raise_height',0)*u*(1-u) if length>=p.get('height_threshold',0) else 0
++ return {'position':point,'reached':reached,'motion_state':{'traveled':traveled,'launch_length':length}}
++
++def collision(inputs,params,context):
++ params={**params,**inputs['spatial_state'].get('parameters',{})}
++ if not params.get('enabled',True):return {'hits':[],'terrain_hit':False,'stop':False}
++ p=inputs['projectile'];a=p['previous_position'];b=p['position'];last=p['previous_target_position'];target=p['target_position'];hits=[]
++ for entity in inputs['entities']:
++  if entity['id']!=p['trace_target'] or not p['target_available']:continue
++  r0=(a['row']-last['row'],a['col']-last['col']);rv=((b['row']-a['row'])-(target['row']-last['row']),(b['col']-a['col'])-(target['col']-last['col']))
++  denom=rv[0]**2+rv[1]**2;t=max(0,min(1,-(r0[0]*rv[0]+r0[1]*rv[1])/denom)) if denom else 0
++  if math.hypot(r0[0]+t*rv[0],r0[1]+t*rv[1])<=params.get('radius',0):hits.append(entity['id'])
++ return {'hits':hits,'terrain_hit':False,'stop':False}
++trajectory.version='projectile-planar-homing-parabola-v1'
++collision.version='swept-relative-trace-point-v1'
+--- a/ark_sim/domains/projectiles.py
++++ b/ark_sim/domains/projectiles.py
+@@ -0,0 +1,115 @@
++"""Generic persistent projectiles/attachments, opt-in content only."""
++import math
++from ark_sim.contracts import thaw
++
++class ProjectileSystem:
++ def __init__(self,context):
++  self.ctx=context
++  self.handlers={'domain.projectile.step':self.step,'domain.projectile.expire':self.expire}
++ def _state(self):return self.ctx.get('system/battle',('projectiles',),{'next_id':1,'instances':{}})
++ def _save(self,state):self.ctx.set('system/battle',('projectiles',),state)
++ def _put(self,instance):
++  state=self._state();state['instances'][instance['id']]=instance;self._save(state)
++ def _get(self,key):return self._state()['instances'].get(key)
++ def active_casts(self,source):
++  return {x['cast'].get('id') for x in self._state()['instances'].values() if x['state']=='active' and x['source']==source and x['cast'].get('id')}
++ def _definition(self,instance):return self.ctx.program.definitions[instance['definition']]
++ def _position(self,ref):return self.ctx.get(ref,('spatial','position'))
++ def _valid_position(self,value):
++  if not isinstance(value,dict) or not {'row','col'}<=set(value) or any(type(value[k]) not in (int,float) or not math.isfinite(value[k]) for k in ('row','col')):raise ValueError('projectile trajectory requires finite row/col')
++  if 'height' in value and (type(value['height']) not in (int,float) or not math.isfinite(value['height'])):raise ValueError('invalid projectile height')
++ def _schedule_step(self,x,when):
++  job=self.ctx.session.schedule('domain.projectile.step',{'projectile':x['id']},when,phase=self.ctx.effect_phase);x['jobs'].append(job)
++ def launch(self,source,target,effect,ability,cast,cause):
++  with self.ctx.session.atomic():
++   source=self.ctx.session.world.resolve(source);target=self.ctx.session.world.resolve(target);d=self.ctx.program.definitions[effect['projectile_definition']];a=self._position(source);b=self._position(target)
++   self._valid_position(a);self._valid_position(b)
++   state=self._state();key='projectile/'+str(state['next_id']);state['next_id']+=1
++   packet=thaw(effect);packet.pop('projectile_definition');c=thaw(cast);c['projectile_impact']=True;c['launch_snapshot']=self.ctx.capture_view(source);c['launch_target_snapshots']={str(target):self.ctx.capture_view(target)}
++   now=self.ctx.session.time;life=self.ctx.quantize(d['lifetime_seconds']);wait=ability.get('parameters',{}).get('wait_for_projectiles',False)
++   if wait:self.ctx.abilities.projectile_started(source,c.get('id'))
++   x={'id':key,'definition':d['id'],'source':source,'trace_target':target,'attachment_target':target,'position':b if d.get('attach_at_launch') else a,'start':a,'last_target':b,'previous_target':b,'born':now,'expires':now+life,'last_tick':now,'motion_state':{},'state':'active','jobs':[],'hit_targets':[],'hit_count':0,'cast':c,'ability':thaw(ability),'effect':packet,'cause':cause,'waiting_cast':wait}
++   motion=d['motion'];plan=self.ctx.calc('projectile.trajectory',{'source':self.ctx.entity(source),'target':self.ctx.entity(target),'positions':[{'position':x['position'],'start':x['start'],'last_target':x['last_target'],'motion_state':{}}],'trajectory_parameters':{**thaw(motion.get('parameters',{})),'age_seconds':0,'delta_seconds':0,'lifetime_seconds':d['lifetime_seconds']}},source=source,target=target,rule_id=motion['rule']);self._valid_position(plan.get('position'));x['position']=plan['position'];x['motion_state']=plan.get('motion_state',{})
++   x['jobs'].append(self.ctx.session.schedule('domain.projectile.expire',{'projectile':key},x['expires'],phase=self.ctx.effect_phase));self._schedule_step(x,now+1);state['instances'][key]=x;self._save(state)
++   self.ctx.emit('projectile.launched',{'projectile':key,'definition':d['id'],'source':source,'target':target,'attachment_target':target,'ability':ability.get('id'),'position':x['position'],'expires':x['expires']},cause)
++   return key
++ def _invalid_policy(self,x,d):
++  policies=d['lifecycle']
++  if not self.ctx.alive(x['source']) and policies['source_invalid']=='cancel':return 'source_invalid'
++  if self.ctx.route_hidden(x['source']) and policies['source_hidden']=='cancel':return 'source_hidden'
++  if not self.ctx.alive(x['trace_target']) and policies['target_invalid']=='cancel':return 'target_invalid'
++  if self.ctx.route_hidden(x['trace_target']) and policies['target_hidden']=='cancel':return 'target_hidden'
++  return None
++ def _target_available(self,x):return self.ctx.alive(x['trace_target']) and self.ctx.selectable(x['trace_target']) and self.ctx.effect_target_available(x['trace_target'])
++ def _hit(self,x,d,target=None):
++  target=x["trace_target"] if target is None else target
++  if x['hit_count']>=d['max_hits'] or (not d['can_hit_same_target'] and target in x['hit_targets']):return False
++  if (not self.ctx.alive(target) or not self.ctx.selectable(target) or not self.ctx.effect_target_available(target)) and x['effect']['op']!='area':return False
++  effect=thaw(x['effect'])
++  if effect['op']=='area':effect['center_position']={k:x['position'][k] for k in ('row','col')}
++  self.ctx.effects.execute(x['source'],[target],effect,x['ability'],x['cast'],x['cause'])
++  x['hit_targets'].append(target);x['hit_count']+=1;self._put(x)
++  self.ctx.emit('projectile.hit',{'projectile':x['id'],'source':x['source'],'target':target,'position':x['position'],'hit_count':x['hit_count']})
++  return True
++ def _finish(self,x,reason,callbacks=True):
++  if not x or x['state']!='active':return
++  d=self._definition(x);x['state']='invalid';x['reason']=reason;self._put(x)
++  pending={t['id'] for t in self.ctx.session.scheduler.pending}
++  for job in x['jobs']:
++   if job in pending:self.ctx.session.cancel(job)
++  x['jobs']=[];self._put(x)
++  self.ctx.emit('projectile.invalid',{'projectile':x['id'],'source':x['source'],'target':x['trace_target'],'reason':reason,'position':x['position']})
++  if callbacks:
++   for e in d.get('on_invalid',[]):self.ctx.effects.execute(x['source'],[x['trace_target']],thaw(e),x['ability'],x['cast'],x['cause'])
++  if x['waiting_cast']:self.ctx.abilities.projectile_finished(x['source'],x['cast'].get('id'))
++  # Retain compact identity/history, not recursive actor/cast snapshots.
++  for field in ('cast','ability','effect'):x.pop(field,None)
++  self._put(x)
++ def step(self,session,payload):
++  with session.atomic():
++   x=self._get(payload['projectile'])
++   if x and x['state']=='active':x['jobs']=[job for job in x['jobs'] if job in {t['id'] for t in session.scheduler.pending}]
++   if not x or x['state']!='active':return
++   if self.ctx.state().get('finished'):self._finish(x,'battle_terminal',False);return
++   d=self._definition(x);invalid=self._invalid_policy(x,d)
++   if invalid:self._finish(x,invalid);return
++   if session.time>=x['expires']:return
++   previous=thaw(x['position']);previous_target=thaw(x['previous_target']);available=self._target_available(x)
++   if available:x['last_target']=self._position(x['trace_target'])
++   motion=d['motion'];params={**thaw(motion.get('parameters',{})),'age_seconds':(session.time-x['born'])*session.quantum,'delta_seconds':(session.time-x['last_tick'])*session.quantum,'lifetime_seconds':d['lifetime_seconds']}
++   plan=self.ctx.calc('projectile.trajectory',{'source':self.ctx.entity(x['source']),'target':self.ctx.entity(x['trace_target']),'positions':[{'position':x['position'],'start':x['start'],'last_target':x['last_target'],'motion_state':x['motion_state']}],'trajectory_parameters':params},source=x['source'],target=x['trace_target'],rule_id=motion['rule'])
++   self._valid_position(plan.get('position'));assert type(plan.get('reached')) is bool,'projectile reached must be boolean'
++   x['position']=plan['position'];x['motion_state']=plan.get('motion_state',{});x['last_tick']=session.time;x['previous_target']=x['last_target'];self._put(x)
++   collision=d['collision'];data={'previous_position':previous,'position':x['position'],'previous_target_position':previous_target,'target_position':x['last_target'],'trace_target':x['trace_target'],'target_available':available}
++   result=self.ctx.calc('projectile.collision',{'projectile':data,'entities':[entity for entity in self.ctx.session.world.entities() if entity['components'].get('spatial',{}).get('position') is not None],'spatial_state':{'map':self.ctx.spatial.map_definition,'parameters':thaw(collision.get('parameters',{}))}},source=x['source'],target=x['trace_target'],rule_id=collision['rule'],extra=thaw(collision.get('parameters',{})))
++   if not isinstance(result,dict) or type(result.get('stop')) is not bool or type(result.get('terrain_hit')) is not bool or not isinstance(result.get('hits'),list):raise ValueError('invalid projectile collision plan')
++   hits=[self.ctx.session.world.resolve(ref) for ref in result['hits']]
++   if not collision.get('allow_other_targets',False) and any(ref!=x['trace_target'] for ref in hits):raise ValueError('collision profile hit outside captured trace target')
++   for hit in hits:self._hit(x,d,hit)
++   if result['stop']:self._finish(x,'terrain_collision' if result['terrain_hit'] else 'collision_stop');return
++   if x['hit_count'] and (d['stop_after_first'] or (d['stop_after_max'] and x['hit_count']>=d['max_hits'])):self._finish(x,'max_hit');return
++   if plan['reached']:
++    self.ctx.emit('projectile.reached',{'projectile':x['id'],'position':x['position']})
++    if d['lifecycle']['hit_on_reach']:self._hit(x,d)
++    if d['lifecycle']['finish_on_reach']:self._finish(x,'reached');return
++   self._schedule_step(x,session.time+1);self._put(x)
++ def expire(self,session,payload):
++  with session.atomic():
++   x=self._get(payload['projectile'])
++   if x and x['state']=='active':x['jobs']=[job for job in x['jobs'] if job in {t['id'] for t in session.scheduler.pending}]
++   if not x or x['state']!='active':return
++   if self.ctx.state().get('finished'):self._finish(x,'battle_terminal',False);return
++   d=self._definition(x);invalid=self._invalid_policy(x,d)
++   if invalid:self._finish(x,invalid);return
++   if self._target_available(x):
++    x['last_target']=self._position(x['trace_target'])
++    # Follow/fixed placement at expiry is evaluated by the same pure motion.
++    motion=d['motion'];plan=self.ctx.calc('projectile.trajectory',{'source':self.ctx.entity(x['source']),'target':self.ctx.entity(x['trace_target']),'positions':[{'position':x['position'],'start':x['start'],'last_target':x['last_target'],'motion_state':x['motion_state']}],'trajectory_parameters':{**thaw(motion.get('parameters',{})),'age_seconds':(session.time-x['born'])*session.quantum,'delta_seconds':0,'lifetime_seconds':d['lifetime_seconds']}},source=x['source'],target=x['trace_target'],rule_id=motion['rule']);self._valid_position(plan['position']);x['position']=plan['position']
++   if d['lifecycle']['force_reach_on_expire']:self.ctx.emit('projectile.reached',{'projectile':x['id'],'position':x['position'],'expiry':True})
++   if d['lifecycle']['hit_on_expire']:self._hit(x,d)
++   self._finish(x,'expired')
++ def tick(self,session):
++  if not self.ctx.state().get('finished'):return
++  with session.atomic():
++   for x in list(self._state()['instances'].values()):
++    if x['state']=='active':self._finish(x,'battle_terminal',False)
+--- a/ark_sim/domains/providers.py
++++ b/ark_sim/domains/providers.py
+@@ -1,7 +1,9 @@
+ """Implemented provider registry; game formulas live in a preset module."""
+ from ark_sim.presets import providers as ark
+ 
+-BUILTIN_PROVIDERS = {
++from . import projectile_profiles
++
++BUILTIN_PROVIDERS = {"model.projectile.trajectory": projectile_profiles.trajectory, "model.projectile.collision": projectile_profiles.collision,
+     "ark.movement.checkpoint_cartesian": ark.checkpoint_cartesian_position,
+     "ark.movement.living_transition": ark.living_route_transition,
+     "ark.spawn.uniform_rect": ark.spawn_uniform_rect,

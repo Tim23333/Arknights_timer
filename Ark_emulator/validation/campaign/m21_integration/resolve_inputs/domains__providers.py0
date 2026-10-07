@@ -1,0 +1,40 @@
+"""Implemented provider registry; game formulas live in a preset module."""
+from ark_sim.presets import providers as ark
+
+BUILTIN_PROVIDERS = {
+    "ark.terrain.tile_options": ark.terrain_tile_options,
+    "ark.movement.checkpoint_cartesian": ark.checkpoint_cartesian_position,
+    "ark.movement.living_transition": ark.living_route_transition,
+    "ark.spawn.uniform_rect": ark.spawn_uniform_rect,
+    "ark.movement.steering_velocity": ark.steering_velocity,
+    "ark.attributes.layers": ark.attribute_layers,
+    "ark.attributes.time_layers": ark.time_attribute_layers,
+    "ark.attributes.aggregate": ark.aggregate_layer,
+    "ark.resource.bounds": ark.resource_bounds,
+    "ark.resource.capacity_change": ark.capacity_change,
+    "ark.deploy.ground": ark.ground_deploy,
+    "ark.lifecycle.standard": ark.lifecycle,
+    "ark.lifecycle.result": ark.battle_result,
+    "ark.targeting.score": ark.targeting_score,
+    "ark.targeting.selection": ark.targeting_selection,
+    "ark.behavior.player_combat": ark.player_behavior,
+    "ark.behavior.ground_melee": ark.ground_behavior,
+    "ark.selector.grid": ark.selector_grid,
+    "ark.spatial.route": ark.spatial_route,
+    "ark.spatial.blocking": ark.spatial_blocking,
+    "ark.damage.pipeline": ark.damage_pipeline,
+    "ark.damage.settlement_scale": ark.settlement_scale,
+}
+
+for _function in BUILTIN_PROVIDERS.values():
+    _function.version = "ark-preset/1"
+
+# Fingerprinted provider descriptors declare when effective attributes can
+# change without an entity mutation. Custom providers remain conservative.
+for _name in ("ark.attributes.layers", "ark.attributes.time_layers"):
+    _callback = BUILTIN_PROVIDERS[_name]
+    BUILTIN_PROVIDERS[_name] = {"callable": _callback, "version": _callback.version,
+                              "attribute_time_dependency": "modifiers"}
+_aggregate = BUILTIN_PROVIDERS["ark.attributes.aggregate"]
+BUILTIN_PROVIDERS["ark.attributes.aggregate"] = {"callable": _aggregate, "version": _aggregate.version,
+                                                "time_dependency": "static"}

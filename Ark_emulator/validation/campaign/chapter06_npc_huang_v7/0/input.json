@@ -1,0 +1,694 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/ch6/npc/huang_complete_reference",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "source_locks": {
+        "packages\\campaign\\chapter06_predefines\\source.reference.json": "7d27130c475a332f29d9b21a853d7b28a81785e3cf9a322f9c03c9c54089c66f",
+        "packages\\campaign\\chapter06_npcs\\inputs.reference.json": "0f00d6a763541c0f67bea1cd7acfb12a06c27b244c0021bdd1e62c63695c87a2",
+        "packages\\campaign\\chapter06_npcs\\huang_talents.v5.model.json": "820d1efc70380949e9dec8a60d26a7305270728e76dc4c3191c888db08f891ba"
+      },
+      "builder_sha": "82d5173c44cc8adc39be45ee22317ae480dae9aaa4f48f9c3a6917f9396c102f",
+      "policies": {
+        "one_shot": "Source UNDEADABLE6 keeps HP>=1 until below25% event applies 50%maxHP heal, 6s lock and removes the real parent handle.",
+        "ordering": "Full damage settlement before owner damage event; deferred reaction is explicit model policy, no native same-frame callback body claim.",
+        "resistance": "Source15s first trigger installs -0.5 one_minus_status_resistance once, independent of no selected skill.",
+        "scope": "Native E2L25 no-potential/no-skill Blaze passive effects only; ordinary attack authored separately."
+      },
+      "complete_source_policies": false,
+      "whole_stage_executed": false,
+      "client_verified": false,
+      "native_no_selected_skill": true,
+      "native_config": {
+        "position": {
+          "row": 3,
+          "col": 3
+        },
+        "direction": "RIGHT",
+        "hidden": true,
+        "alias": null,
+        "uniEquipIds": null,
+        "showSpIllust": false,
+        "masterInfos": null,
+        "inst": {
+          "characterKey": "char_017_huang",
+          "level": 25,
+          "phase": "PHASE_2",
+          "favorPoint": 0,
+          "potentialRank": 0
+        },
+        "skillIndex": -1,
+        "mainSkillLvl": 1,
+        "skinId": null,
+        "tmplId": null,
+        "overrideSkillBlackboard": null,
+        "overrideTalents": null
+      },
+      "selector_source": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -1175145734775623267
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 840206743537877183
+        },
+        "m_Name": "",
+        "_targetSide": 2,
+        "_targetMotion": 1,
+        "_targetCategory": 1,
+        "_postFilter": 4,
+        "_ignoreTargetFree": 0,
+        "_onlyIgnoreSomeOfTargetFreeCase": 0,
+        "_abnormalFlag": 29,
+        "_abnormalCombo": 2,
+        "_ignoreAllyTargetFree": 0,
+        "_ignoreHealFree": 0,
+        "_ignoreMotionMode": 0,
+        "_forceIgnoreCamouflage": 0,
+        "_needProfessionMask": 0,
+        "_professionMask": 0,
+        "_excludeSomeAbnormalFlags": 0,
+        "_excludeAbnormalFlag": 46,
+        "_limitTargetNum": 0,
+        "_maxTargetKey": "max_target",
+        "_maxNum": 1,
+        "_excludeOwner": 0,
+        "_sortByTauntAtLast": 0,
+        "_ignoreHitRange": 0,
+        "_checkUnitType": 0,
+        "_unitTypeMask": 0,
+        "_abilityInputTargetAsSortSource": 0,
+        "_limitedMaxTargetNumToBlockedCnt": 1,
+        "_allowZeroBlockCntLimit": 0
+      },
+      "ordinary_attack_source": {
+        "script_path_id": 4381884627089348317,
+        "gameobject_path_id": -8319381498112953955,
+        "gameobject_name": "Attack",
+        "raw": {
+          "m_GameObject": {
+            "m_FileID": 0,
+            "m_PathID": -8319381498112953955
+          },
+          "m_Enabled": 1,
+          "m_Script": {
+            "m_FileID": 1,
+            "m_PathID": 4381884627089348317
+          },
+          "m_Name": "",
+          "_selector": {
+            "m_FileID": 0,
+            "m_PathID": 8461021441099313565
+          },
+          "_metadata": {
+            "namedAsAlias": "",
+            "blackboardPrefix": ""
+          },
+          "_interruptAbilityOnDetach": 0,
+          "_attachPassiveBuffsOnDummy": 1,
+          "_ignoreIfOwnerDead": 0,
+          "_forceAsDmgOrHealAbility": 0,
+          "_waitForAttackEvent": 1,
+          "_interuptIfTargetDead": 0,
+          "_resetCdStrategy": 1,
+          "_selectTargetSource": 1,
+          "_selectTargetTiming": 0,
+          "_timeMode": 0,
+          "_alwaysIncludeTarget": 1,
+          "_allowNoTarget": 0,
+          "_animKey": "Attack",
+          "_endAnimKey": "Idle",
+          "_downAnimKey": "",
+          "_downEndAnimKey": "",
+          "_upAnimKey": "",
+          "_upEndAnimKey": "",
+          "_cooldown": 0.0,
+          "_cooldownKey": "duration",
+          "_preDelay": 0.0,
+          "_escapeTime": 0.0,
+          "_faceToTarget": 1,
+          "_faceToDefault": 0,
+          "_faceToFront": 0,
+          "_faceToFirstCastTarget": 0,
+          "_checkFaceToFirstCastTargetDownAttack": 0,
+          "_forceFaceToDirection": 0,
+          "_activeBuffs": [],
+          "_maxAnimScale": 2.0,
+          "_onlyPlayEndAnimWhenIsLastAbility": 0,
+          "_ignorePalsyInterrupt": 0,
+          "_affectedBySlowDown": 0,
+          "_atkScale": 1.0,
+          "_atkScaleKey": "atk_scale",
+          "_attackType": 1,
+          "_elementDamageType": 0,
+          "_epDamageRatio": 0.0,
+          "_useDynamicAttackType": 0,
+          "_deliveryParaWhenReplaceActionNode": 0,
+          "_damageType": 1,
+          "_extraDamageType": 0,
+          "_alwaysPutIncludeTargetFirst": 0
+        },
+        "script_key": "CAB-658d74aab777086fc32b93f385be999a:4381884627089348317",
+        "native_class": "MeleeAttack"
+      },
+      "pending_policies": [
+        "Actual max animation scale2 clamp calibration",
+        "BlockedOrAdvancedSelector native order vs generic ordering",
+        "Death/HP floor hook native callback ordering"
+      ]
+    }
+  },
+  "rules": [
+    {
+      "id": "rule/ch6/npc/huang_eligible",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.targeting.eligibility"
+      }
+    },
+    {
+      "id": "rule/ch6/npc/huang_windup",
+      "kind": "calculation_rule",
+      "contract": "ability.windup",
+      "parameters": {
+        "minimum_speed": 0.01
+      },
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.timing_parameters.seconds/max(inputs.attributes.attack_speed_ratio,params.minimum_speed)"
+      }
+    },
+    {
+      "id": "rule/ch6/npc/huang_undead",
+      "kind": "calculation_rule",
+      "contract": "damage.pipeline",
+      "implementation": {
+        "type": "graph",
+        "nodes": [
+          {
+            "id": "settled",
+            "expression": "{'accepted':inputs.effect.settlement.accepted,'amount':min(inputs.effect.settlement.amount,max(0,inputs.target.components.resources.hp.current-1)),'allocations':[],'events':[]}"
+          }
+        ],
+        "output": "nodes.settled"
+      }
+    },
+    {
+      "id": "rule/ch6/npc/huang_hp_lock",
+      "kind": "calculation_rule",
+      "contract": "damage.pipeline",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c6.npc_hp_lock"
+      },
+      "parameters": {
+        "ratio": 0.5
+      },
+      "dependencies": [
+        "rule/ark_attribute_layers"
+      ]
+    },
+    {
+      "id": "rule/ch6/npc/huang_heal_power",
+      "kind": "rule",
+      "contract": "healing.base",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c6.npc_maxhp_heal"
+      },
+      "parameters": {
+        "ratio": 0.5
+      },
+      "dependencies": [
+        "rule/ark_attribute_layers"
+      ]
+    },
+    {
+      "id": "rule/ch6/npc/huang_low_hp",
+      "kind": "calculation_rule",
+      "contract": "buff.application",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c6.npc_low_hp"
+      },
+      "parameters": {
+        "reaction": "buff/ch6/npc/huang_reaction",
+        "threshold": 0.25
+      }
+    },
+    {
+      "id": "rule/ch6/npc/huang_heal_eligible",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c6.npc_owner_heal"
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/ch6/npc/huang_once",
+      "kind": "buff",
+      "selection_flags": {
+        "abnormal_flags": [
+          6
+        ]
+      },
+      "damage_hooks": [
+        {
+          "phase": "after",
+          "rule": "rule/ch6/npc/huang_undead"
+        }
+      ],
+      "events": [
+        {
+          "event": "damage.accepted",
+          "condition": "inputs.payload.target == context.owner.id",
+          "effects": [
+            {
+              "op": "buff_application",
+              "application_rule": "rule/ch6/npc/huang_low_hp",
+              "allowed": [
+                "buff/ch6/npc/huang_reaction"
+              ]
+            }
+          ]
+        },
+        {
+          "event": "buff.applied",
+          "condition": "inputs.payload.target == context.owner.id and inputs.payload.buff == 'buff/ch6/npc/huang_reaction'",
+          "effects": [
+            {
+              "op": "remove_buff",
+              "buff": "buff/ch6/npc/huang_once"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "buff/ch6/npc/huang_lock",
+      "kind": "buff",
+      "duration_seconds": 6,
+      "damage_hooks": [
+        {
+          "phase": "after",
+          "rule": "rule/ch6/npc/huang_hp_lock"
+        }
+      ]
+    },
+    {
+      "id": "buff/ch6/npc/huang_resistance",
+      "kind": "buff",
+      "modifiers": [
+        {
+          "attribute": "one_minus_status_resistance",
+          "layer": "flat",
+          "value": -0.5
+        }
+      ]
+    },
+    {
+      "id": "buff/ch6/npc/huang_resistance_wait",
+      "kind": "buff",
+      "interval_seconds": 15,
+      "effects": [
+        {
+          "op": "apply_buff",
+          "buff": "buff/ch6/npc/huang_resistance"
+        },
+        {
+          "op": "remove_buff",
+          "buff": "buff/ch6/npc/huang_resistance_wait"
+        }
+      ]
+    },
+    {
+      "id": "buff/ch6/npc/huang_reaction",
+      "kind": "buff",
+      "effects": [
+        {
+          "op": "heal",
+          "rules": {
+            "healing.base": "rule/ch6/npc/huang_heal_power"
+          },
+          "selector": "selector/ch6/npc/huang_heal_self",
+          "parameters": {
+            "healing": true
+          }
+        },
+        {
+          "op": "apply_buff",
+          "buff": "buff/ch6/npc/huang_lock"
+        }
+      ]
+    }
+  ],
+  "entities": [
+    {
+      "id": "unit/ch6/npc/char_017_huang",
+      "kind": "entity",
+      "tags": [
+        "player",
+        "ground",
+        "native_npc"
+      ],
+      "metadata": {
+        "native_character": "char_017_huang",
+        "native_instance": {
+          "position": {
+            "row": 3,
+            "col": 3
+          },
+          "direction": "RIGHT",
+          "hidden": true,
+          "alias": null,
+          "uniEquipIds": null,
+          "showSpIllust": false,
+          "masterInfos": null,
+          "inst": {
+            "characterKey": "char_017_huang",
+            "level": 25,
+            "phase": "PHASE_2",
+            "favorPoint": 0,
+            "potentialRank": 0
+          },
+          "skillIndex": -1,
+          "mainSkillLvl": 1,
+          "skinId": null,
+          "tmplId": null,
+          "overrideSkillBlackboard": null,
+          "overrideTalents": null
+        }
+      },
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 2305,
+            "atk": 631,
+            "def": 321,
+            "mres": 0.0,
+            "attack_interval": 1.2,
+            "attack_speed_ratio": 1,
+            "block_count": 3,
+            "one_minus_status_resistance": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 2305,
+            "capacity_attribute": "max_hp",
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "target_free": false,
+          "can_select_camouflage": false,
+          "ally_target_free": false,
+          "heal_free": false,
+          "camouflage": false,
+          "motion": 1,
+          "category": 1,
+          "profession": 0,
+          "unit_type": 1,
+          "abnormal_flags": [],
+          "abnormal_combos": [],
+          "target_free_flags": [],
+          "target_free_combos": [],
+          "abnormal_immunes": [],
+          "side": 0
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "abilities": [
+          "ability/ch6/npc/huang_normal"
+        ],
+        "buffs": {
+          "initial": [
+            "buff/ch6/npc/huang_once",
+            "buff/ch6/npc/huang_resistance_wait"
+          ]
+        }
+      }
+    },
+    {
+      "id": "unit/peer/dealer",
+      "kind": "entity",
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 100,
+            "atk": 10000
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "abilities": [
+          "ability/peer/hit"
+        ],
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/ch6/npc/huang",
+      "kind": "selector",
+      "region": {
+        "type": "grid_offsets",
+        "offsets": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      "filters": [
+        {
+          "tag": "enemy"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit_attribute": "block_count",
+      "parameters": {
+        "include_blocked": true
+      },
+      "eligibility": {
+        "rule": "rule/ch6/npc/huang_eligible",
+        "parameters": {
+          "source_configuration": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -1175145734775623267
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 840206743537877183
+            },
+            "m_Name": "",
+            "_targetSide": 2,
+            "_targetMotion": 1,
+            "_targetCategory": 1,
+            "_postFilter": 4,
+            "_ignoreTargetFree": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_abnormalFlag": 29,
+            "_abnormalCombo": 2,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_needProfessionMask": 0,
+            "_professionMask": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_excludeAbnormalFlag": 46,
+            "_limitTargetNum": 0,
+            "_maxTargetKey": "max_target",
+            "_maxNum": 1,
+            "_excludeOwner": 0,
+            "_sortByTauntAtLast": 0,
+            "_ignoreHitRange": 0,
+            "_checkUnitType": 0,
+            "_unitTypeMask": 0,
+            "_abilityInputTargetAsSortSource": 0,
+            "_limitedMaxTargetNumToBlockedCnt": 1,
+            "_allowZeroBlockCntLimit": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject",
+          "defaults": {
+            "target_free": false,
+            "can_select_camouflage": false,
+            "ally_target_free": false,
+            "heal_free": false,
+            "camouflage": false,
+            "motion": 1,
+            "category": 1,
+            "profession": 0,
+            "unit_type": 1,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "abnormal_immunes": [],
+            "side": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "selector/ch6/npc/huang_heal_self",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1,
+      "eligibility": {
+        "rule": "rule/ch6/npc/huang_heal_eligible",
+        "parameters": {
+          "source_configuration": {
+            "_targetSide": 1,
+            "_targetCategory": 7,
+            "_targetMotion": 3,
+            "_professionMask": 0,
+            "_unitTypeMask": 0,
+            "_ignoreTargetFree": 1,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_needProfessionMask": 0,
+            "_ignoreAllyTargetFree": 1,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 1,
+            "_forceIgnoreCamouflage": 1,
+            "_checkUnitType": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject",
+          "defaults": {
+            "camouflage": false,
+            "ally_target_free": false,
+            "can_select_camouflage": false,
+            "target_free": false,
+            "heal_free": false,
+            "motion": 1,
+            "category": 1,
+            "profession": 0,
+            "unit_type": 1,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "abnormal_immunes": [],
+            "side": 0
+          }
+        }
+      }
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/ch6/npc/huang_normal",
+      "kind": "ability",
+      "activation": {
+        "mode": "automatic_attack",
+        "settle_blocking": true,
+        "parameters": {
+          "auto_only": true
+        }
+      },
+      "rules": {
+        "ability.windup": "rule/ch6/npc/huang_windup"
+      },
+      "selector": "selector/ch6/npc/huang",
+      "target_capture": "at_cast",
+      "timeline": [
+        {
+          "at_seconds": 0.3333333333333333,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1,
+            "damage_flags": {
+              "source_attack_type": "NORMAL",
+              "ignore_for_sp": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/peer/hit",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "damage",
+            "target": 2,
+            "damage_type": "true",
+            "scale": 1
+          }
+        ]
+      },
+      "timeline": []
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/peer/huang",
+    "ruleset": "ruleset/ark_standard",
+    "map": {
+      "rows": 2,
+      "cols": 5
+    },
+    "objectives": {},
+    "resources": {},
+    "initialEntities": [
+      {
+        "definition": "unit/ch6/npc/char_017_huang",
+        "instanceAlias": "native_npc",
+        "position": {
+          "row": 0,
+          "col": 0
+        }
+      },
+      {
+        "definition": "unit/peer/dealer",
+        "instanceAlias": "dealer",
+        "position": {
+          "row": 1,
+          "col": 4
+        }
+      }
+    ]
+  }
+}

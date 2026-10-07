@@ -1,0 +1,102 @@
+{
+  "schema": "ark-sim/model-validation/v2",
+  "date": "2026-10-02",
+  "scope": "Independent model expectations and deterministic continuation; no client frame oracle",
+  "passed": true,
+  "custom_rulesets": {
+    "ruleset/ark_standard": {
+      "damage": 850.0,
+      "expected": 850,
+      "replay_equal": true,
+      "program_fingerprint": "2d3087033be1176ba90a8dbbe253e046b180bce157511e329a79826c512f0345",
+      "state_sha256": "882ed27228f60103d0611070892eb9ee7548484d0c1d8c328ede664349094611",
+      "events_sha256": "0ab2ae43d0db8b5c43491c56f7abeed178dfe943293119fc24965260687e2879",
+      "event_count": 612
+    },
+    "ruleset/custom_balance": {
+      "damage": 60.0,
+      "expected": 60,
+      "replay_equal": true,
+      "program_fingerprint": "a58b9684a23bf96e17b23409c25293e9a8bb40f388b0d911b912ba116f9414fc",
+      "state_sha256": "404ffec137fa05a8a5e20d97666d4574397021e7eae4ecf7ada29040204e20f2",
+      "events_sha256": "9e3a82cae7a51b1ed1f60d270d345b6b12c7aaadde5d73c4789eea208919c9fa",
+      "event_count": 608
+    }
+  },
+  "level_00_01": {
+    "status": "model_validated",
+    "client_frame_validation": "pending",
+    "content_sha256": "74f1bf9a2721694bc732cf51e09696ab552a27a5c66a07a3ba75537083054584",
+    "commands_sha256": "f4aee6f7fd1673d96c908b2c22c8fa63f10c9365e2e9ca5b27f650dee4c59de5",
+    "program_fingerprint": "4d330b12e44de0ff63890a25a153b22f023b7a766e164449b614b9723e9f61f3",
+    "runtime_fingerprint": "484d3af8e3151a687eb6a3dee5e0a5c509d2316dc238a8aa56a53cdf26d92b13",
+    "quantum": 0.03333333333333333,
+    "final_state": {
+      "finished": true,
+      "result": "victory",
+      "pending_waves": 0,
+      "kills": 11,
+      "leaks": 0,
+      "damage_dealt": 7160.0,
+      "deployments": {
+        "unit/char_502_nblade": {
+          "count": 1,
+          "ready_at": 0
+        },
+        "unit/char_124_kroos": {
+          "count": 1,
+          "ready_at": 0
+        }
+      },
+      "command_results": {},
+      "finished_at": 2408
+    },
+    "end_time": 2550,
+    "finished_seconds": 80.26666666666667,
+    "commands_observed": [
+      {
+        "id": 35,
+        "type": "command.accepted",
+        "payload": {
+          "action": {
+            "action": "deploy",
+            "entity": "unit/char_502_nblade",
+            "row": 3,
+            "col": 3,
+            "facing": "right",
+            "alias": "nblade"
+          },
+          "result": 2
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 1585,
+        "type": "command.accepted",
+        "payload": {
+          "action": {
+            "action": "deploy",
+            "entity": "unit/char_124_kroos",
+            "row": 1,
+            "col": 3,
+            "facing": "down",
+            "alias": "kroos"
+          },
+          "result": 4
+        },
+        "time": 180,
+        "cause": null
+      }
+    ],
+    "observations": {
+      "state_sha256": "7d2b19d34b9b02d1570a3f7ccec6e8d1285626caeab93ad86d126550fef173ee",
+      "events_sha256": "bc6f1df0d80c6f99d21dbdfd1546c0d78ea3acb253b26a0d5967e6817145a635",
+      "event_count": 181638
+    },
+    "checkpoint_at": 300,
+    "checkpoint_resume_equal": true,
+    "replay_equal": true,
+    "replay_file": "validation/campaign/m6_final_baseline_20261002.replay.json"
+  }
+}

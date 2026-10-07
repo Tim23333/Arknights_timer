@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "pending_model_gaps": []
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/flow",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 17,
+            "move_speed": 30
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 17,
+            "capacity": 17,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle",
+          "leak_loss": 1
+        }
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scenario/peer_stream",
+    "ruleset": "ruleset/ark_standard",
+    "seed": 71,
+    "map": {
+      "rows": 1,
+      "cols": 3
+    },
+    "resources": {
+      "life": {
+        "initial": 99999,
+        "capacity": 99999
+      }
+    },
+    "objectives": {
+      "type": "waves",
+      "life_resource": "life"
+    },
+    "metadata": {
+      "runthrough_profile": {
+        "base_life_resource": "life",
+        "peer_probe": true
+      }
+    },
+    "timeline": {
+      "policy": "managed_clear",
+      "negative_timeout_policy": "wait_for_clear",
+      "waves": [
+        {
+          "fragments": [
+            {
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "count": 2,
+                  "interval_seconds": 0.06666666666666667,
+                  "spawn": {
+                    "definition": "unit/flow",
+                    "position": {
+                      "row": 0,
+                      "col": 0
+                    },
+                    "route": {
+                      "motionMode": "WALK",
+                      "startPosition": {
+                        "row": 0,
+                        "col": 0
+                      },
+                      "endPosition": {
+                        "row": 0,
+                        "col": 2
+                      },
+                      "checkpoints": []
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

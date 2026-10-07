@@ -1,0 +1,235 @@
+{
+  "manifest": {
+    "requires": [
+      "preset/ark_standard"
+    ]
+  },
+  "entities": [
+    {
+      "id": "unit/caster",
+      "kind": "entity",
+      "tags": [
+        "caster"
+      ],
+      "components": {
+        "spatial": {},
+        "attributes": {
+          "base": {
+            "max_hp": 400,
+            "atk": 37,
+            "def": 0,
+            "mres": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 400,
+            "capacity": 400,
+            "role": "health"
+          }
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "abilities": [
+          "ability/area"
+        ]
+      }
+    },
+    {
+      "id": "unit/victim",
+      "kind": "entity",
+      "tags": [
+        "victim"
+      ],
+      "components": {
+        "spatial": {},
+        "attributes": {
+          "base": {
+            "max_hp": 1000,
+            "atk": 0,
+            "def": 0,
+            "mres": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 1000,
+            "capacity": 1000,
+            "role": "health"
+          }
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/area",
+      "kind": "rule",
+      "contract": "area.members",
+      "implementation": {
+        "type": "expression",
+        "expression": "[inputs.candidates[0].id,inputs.candidates[0].id]"
+      }
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/main",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "primary"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/area",
+      "kind": "ability",
+      "selector": "selector/main",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "area",
+            "center": "target",
+            "membership_rule": "rule/area",
+            "parameters": {
+              "offsets": [
+                [
+                  -1,
+                  -1
+                ],
+                [
+                  -1,
+                  0
+                ],
+                [
+                  -1,
+                  1
+                ],
+                [
+                  0,
+                  -1
+                ],
+                [
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  -1
+                ],
+                [
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  1
+                ]
+              ]
+            },
+            "filters": [
+              {
+                "tag": "victim"
+              }
+            ],
+            "effects": [
+              {
+                "op": "damage",
+                "damage_type": "true"
+              }
+            ]
+          }
+        ]
+      },
+      "timeline": []
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/area/peer",
+    "ruleset": "ruleset/ark_standard",
+    "objectives": {},
+    "map": {
+      "rows": 7,
+      "cols": 7
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/caster",
+        "instanceAlias": "src",
+        "position": {
+          "row": 0,
+          "col": 0
+        }
+      },
+      {
+        "definition": "unit/victim",
+        "instanceAlias": "main",
+        "tags": [
+          "victim",
+          "primary"
+        ],
+        "position": {
+          "row": 3,
+          "col": 3
+        },
+        "components": {}
+      },
+      {
+        "definition": "unit/victim",
+        "instanceAlias": "flycorner",
+        "tags": [
+          "victim"
+        ],
+        "position": {
+          "row": 4.49,
+          "col": 4.49
+        },
+        "components": {
+          "spatial": {
+            "motion_mode": 1
+          }
+        }
+      },
+      {
+        "definition": "unit/victim",
+        "instanceAlias": "outside",
+        "tags": [
+          "victim"
+        ],
+        "position": {
+          "row": 4.5,
+          "col": 4.5
+        },
+        "components": {}
+      },
+      {
+        "definition": "unit/victim",
+        "instanceAlias": "othercorner",
+        "tags": [
+          "victim"
+        ],
+        "position": {
+          "row": 1.5,
+          "col": 1.5
+        },
+        "components": {}
+      }
+    ]
+  }
+}

@@ -1,0 +1,1626 @@
+[
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/exit",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/story",
+        "kind": "entity",
+        "tags": [
+          "player"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 95000,
+              "atk": 0,
+              "def": 0,
+              "mres": 0,
+              "move_speed": 2,
+              "block_count": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 95000,
+              "capacity": 95000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle",
+            "leak_loss": 1,
+            "exit_rule": "rule/peer/exit",
+            "exit_parameters": {
+              "source_unharmful": true
+            }
+          }
+        }
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/exit",
+        "kind": "calculation_rule",
+        "contract": "lifecycle.exit",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'base_life_loss': 0, 'kills_delta': 1, 'leaks_delta': 0}"
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/exit",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 3
+      },
+      "parameters": {
+        "deploy_capacity": 0
+      },
+      "objectives": {
+        "life_resource": "life"
+      },
+      "resources": {
+        "life": {
+          "initial": 5,
+          "capacity": 5
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/story",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/exit",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/story",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 95000,
+              "atk": 0,
+              "def": 0,
+              "mres": 0,
+              "move_speed": 2,
+              "block_count": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 95000,
+              "capacity": 95000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle",
+            "leak_loss": 1,
+            "exit_rule": "rule/peer/exit",
+            "exit_parameters": {
+              "source_unharmful": true
+            }
+          },
+          "buffs": {
+            "initial": [
+              "buff/peer/exit_parent"
+            ]
+          }
+        }
+      },
+      {
+        "id": "unit/peer/watcher",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity_attribute": "max_hp",
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/exit",
+        "kind": "calculation_rule",
+        "contract": "lifecycle.exit",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'base_life_loss': 0, 'kills_delta': 1, 'leaks_delta': 0}"
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/exit",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 3
+      },
+      "parameters": {
+        "deploy_capacity": 0
+      },
+      "objectives": {
+        "life_resource": "life"
+      },
+      "resources": {
+        "life": {
+          "initial": 5,
+          "capacity": 5
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/story",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          },
+          "route": {
+            "motionMode": 0,
+            "startPosition": {
+              "row": 0,
+              "col": 0
+            },
+            "endPosition": {
+              "row": 0,
+              "col": 1
+            },
+            "checkpoints": []
+          }
+        },
+        {
+          "definition": "unit/peer/watcher",
+          "instanceAlias": "watcher",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        }
+      ]
+    },
+    "buffs": [
+      {
+        "id": "buff/peer/exit_parent",
+        "kind": "buff",
+        "on_remove": [
+          {
+            "op": "apply_buff",
+            "target": 3,
+            "buff": "buff/peer/capacity"
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/capacity",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "max_hp",
+            "layer": "flat",
+            "value": 100
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/exit",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/story",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 95000,
+              "atk": 0,
+              "def": 0,
+              "mres": 0,
+              "move_speed": 2,
+              "block_count": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 95000,
+              "capacity": 95000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle",
+            "leak_loss": 1,
+            "exit_rule": "rule/peer/exit",
+            "exit_parameters": {
+              "source_unharmful": true
+            }
+          }
+        }
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/exit",
+        "kind": "calculation_rule",
+        "contract": "lifecycle.exit",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'base_life_loss': 0, 'kills_delta': 1, 'leaks_delta': 0}"
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/exit",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 3
+      },
+      "parameters": {
+        "deploy_capacity": 0
+      },
+      "objectives": {
+        "life_resource": "life"
+      },
+      "resources": {
+        "life": {
+          "initial": 5,
+          "capacity": 5
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/story",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          },
+          "route": {
+            "motionMode": 0,
+            "startPosition": {
+              "row": 0,
+              "col": 0
+            },
+            "endPosition": {
+              "row": 0,
+              "col": 1
+            },
+            "checkpoints": []
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/exit",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/story",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 95000,
+              "atk": 0,
+              "def": 0,
+              "mres": 0,
+              "move_speed": 2,
+              "block_count": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 95000,
+              "capacity": 95000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle",
+            "leak_loss": 1
+          }
+        }
+      }
+    ],
+    "rules": [],
+    "scenarioDraft": {
+      "id": "scene/peer/exit",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 3
+      },
+      "parameters": {
+        "deploy_capacity": 0
+      },
+      "objectives": {
+        "life_resource": "life"
+      },
+      "resources": {
+        "life": {
+          "initial": 5,
+          "capacity": 5
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/story",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          },
+          "route": {
+            "motionMode": 0,
+            "startPosition": {
+              "row": 0,
+              "col": 0
+            },
+            "endPosition": {
+              "row": 0,
+              "col": 1
+            },
+            "checkpoints": []
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/exit",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/story",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 95000,
+              "atk": 0,
+              "def": 0,
+              "mres": 0,
+              "move_speed": 2,
+              "block_count": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 95000,
+              "capacity": 95000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle",
+            "leak_loss": 1,
+            "exit_rule": "rule/peer/exit",
+            "exit_parameters": {
+              "source_unharmful": true
+            }
+          }
+        }
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/exit",
+        "kind": "calculation_rule",
+        "contract": "lifecycle.exit",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'base_life_loss': 0, 'kills_delta': 1, 'leaks_delta': 0}"
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/exit",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 3
+      },
+      "parameters": {
+        "deploy_capacity": 0
+      },
+      "objectives": {
+        "life_resource": "life"
+      },
+      "resources": {
+        "life": {
+          "initial": 5,
+          "capacity": 5
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/story",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/exit",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/story",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 95000,
+              "atk": 0,
+              "def": 0,
+              "mres": 0,
+              "move_speed": 2,
+              "block_count": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 95000,
+              "capacity": 95000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle",
+            "leak_loss": 1,
+            "exit_rule": "rule/peer/exit",
+            "exit_parameters": {
+              "source_unharmful": true
+            }
+          }
+        }
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/exit",
+        "kind": "calculation_rule",
+        "contract": "lifecycle.exit",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'base_life_loss': True, 'kills_delta': 1, 'leaks_delta': 0}"
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/exit",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 3
+      },
+      "parameters": {
+        "deploy_capacity": 0
+      },
+      "objectives": {
+        "life_resource": "life"
+      },
+      "resources": {
+        "life": {
+          "initial": 5,
+          "capacity": 5
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/story",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/exit",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/story",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 95000,
+              "atk": 0,
+              "def": 0,
+              "mres": 0,
+              "move_speed": 2,
+              "block_count": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 95000,
+              "capacity": 95000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle",
+            "leak_loss": 1,
+            "exit_rule": "rule/peer/exit",
+            "exit_parameters": {
+              "source_unharmful": true
+            }
+          }
+        }
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/exit",
+        "kind": "calculation_rule",
+        "contract": "lifecycle.exit",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'base_life_loss': -1, 'kills_delta': 1, 'leaks_delta': 0}"
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/exit",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 3
+      },
+      "parameters": {
+        "deploy_capacity": 0
+      },
+      "objectives": {
+        "life_resource": "life"
+      },
+      "resources": {
+        "life": {
+          "initial": 5,
+          "capacity": 5
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/story",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/exit",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/story",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 95000,
+              "atk": 0,
+              "def": 0,
+              "mres": 0,
+              "move_speed": 2,
+              "block_count": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 95000,
+              "capacity": 95000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle",
+            "leak_loss": 1,
+            "exit_rule": "rule/peer/exit",
+            "exit_parameters": {
+              "source_unharmful": true
+            }
+          }
+        }
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/exit",
+        "kind": "calculation_rule",
+        "contract": "lifecycle.exit",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'base_life_loss': 0, 'kills_delta': True, 'leaks_delta': 0}"
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/exit",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 3
+      },
+      "parameters": {
+        "deploy_capacity": 0
+      },
+      "objectives": {
+        "life_resource": "life"
+      },
+      "resources": {
+        "life": {
+          "initial": 5,
+          "capacity": 5
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/story",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/exit",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/story",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 95000,
+              "atk": 0,
+              "def": 0,
+              "mres": 0,
+              "move_speed": 2,
+              "block_count": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 95000,
+              "capacity": 95000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle",
+            "leak_loss": 1,
+            "exit_rule": "rule/peer/exit",
+            "exit_parameters": {
+              "source_unharmful": true
+            }
+          }
+        }
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/exit",
+        "kind": "calculation_rule",
+        "contract": "lifecycle.exit",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'base_life_loss': 0, 'kills_delta': 1, 'leaks_delta': False}"
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/exit",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 3
+      },
+      "parameters": {
+        "deploy_capacity": 0
+      },
+      "objectives": {
+        "life_resource": "life"
+      },
+      "resources": {
+        "life": {
+          "initial": 5,
+          "capacity": 5
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/story",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/exit",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/story",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 95000,
+              "atk": 0,
+              "def": 0,
+              "mres": 0,
+              "move_speed": 2,
+              "block_count": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 95000,
+              "capacity": 95000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle",
+            "leak_loss": 1,
+            "exit_rule": "rule/peer/exit",
+            "exit_parameters": {
+              "source_unharmful": true
+            }
+          }
+        }
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/exit",
+        "kind": "calculation_rule",
+        "contract": "lifecycle.exit",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'base_life_loss': 0, 'kills_delta': 2, 'leaks_delta': 0}"
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/exit",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 3
+      },
+      "parameters": {
+        "deploy_capacity": 0
+      },
+      "objectives": {
+        "life_resource": "life"
+      },
+      "resources": {
+        "life": {
+          "initial": 5,
+          "capacity": 5
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/story",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/exit",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/story",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 95000,
+              "atk": 0,
+              "def": 0,
+              "mres": 0,
+              "move_speed": 2,
+              "block_count": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 95000,
+              "capacity": 95000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle",
+            "leak_loss": 1,
+            "exit_rule": "rule/peer/exit",
+            "exit_parameters": {
+              "source_unharmful": true
+            }
+          }
+        }
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/exit",
+        "kind": "calculation_rule",
+        "contract": "lifecycle.exit",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'base_life_loss': 0, 'kills_delta': 1, 'leaks_delta': -1}"
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/exit",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 3
+      },
+      "parameters": {
+        "deploy_capacity": 0
+      },
+      "objectives": {
+        "life_resource": "life"
+      },
+      "resources": {
+        "life": {
+          "initial": 5,
+          "capacity": 5
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/story",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/exit",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/story",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 95000,
+              "atk": 0,
+              "def": 0,
+              "mres": 0,
+              "move_speed": 2,
+              "block_count": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 95000,
+              "capacity": 95000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle",
+            "leak_loss": 1,
+            "exit_rule": "rule/peer/exit",
+            "exit_parameters": {
+              "source_unharmful": true
+            }
+          }
+        }
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/exit",
+        "kind": "calculation_rule",
+        "contract": "lifecycle.exit",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'base_life_loss': 0, 'kills_delta': 1, 'leaks_delta': 1}"
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/exit",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 3
+      },
+      "parameters": {
+        "deploy_capacity": 0
+      },
+      "objectives": {
+        "life_resource": "life"
+      },
+      "resources": {
+        "life": {
+          "initial": 5,
+          "capacity": 5
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/story",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/exit",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/story",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 95000,
+              "atk": 0,
+              "def": 0,
+              "mres": 0,
+              "move_speed": 2,
+              "block_count": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 95000,
+              "capacity": 95000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle",
+            "leak_loss": 1,
+            "exit_rule": "rule/peer/exit",
+            "exit_parameters": {
+              "source_unharmful": true
+            }
+          }
+        }
+      }
+    ],
+    "rules": [],
+    "scenarioDraft": {
+      "id": "scene/peer/exit",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 3
+      },
+      "parameters": {
+        "deploy_capacity": 0
+      },
+      "objectives": {
+        "life_resource": "life"
+      },
+      "resources": {
+        "life": {
+          "initial": 5,
+          "capacity": 5
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/story",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/exit",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/story",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 95000,
+              "atk": 0,
+              "def": 0,
+              "mres": 0,
+              "move_speed": 2,
+              "block_count": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 95000,
+              "capacity": 95000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle",
+            "leak_loss": 1,
+            "exit_rule": "rule/peer/exit",
+            "exit_parameters": {
+              "source_unharmful": true
+            }
+          }
+        }
+      }
+    ],
+    "rules": [],
+    "scenarioDraft": {
+      "id": "scene/peer/exit",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 3
+      },
+      "parameters": {
+        "deploy_capacity": 0
+      },
+      "objectives": {
+        "life_resource": "life"
+      },
+      "resources": {
+        "life": {
+          "initial": 5,
+          "capacity": 5
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/story",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    },
+    "buffs": [
+      {
+        "id": "rule/peer/exit",
+        "kind": "buff"
+      }
+    ]
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/exit",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/story",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 95000,
+              "atk": 0,
+              "def": 0,
+              "mres": 0,
+              "move_speed": 2,
+              "block_count": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 95000,
+              "capacity": 95000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle",
+            "leak_loss": 1,
+            "exit_rule": "rule/peer/exit",
+            "exit_parameters": {
+              "source_unharmful": true
+            }
+          }
+        }
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/exit",
+        "kind": "calculation_rule",
+        "contract": "buff.duration",
+        "implementation": {
+          "type": "expression",
+          "expression": "0"
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/exit",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 3
+      },
+      "parameters": {
+        "deploy_capacity": 0
+      },
+      "objectives": {
+        "life_resource": "life"
+      },
+      "resources": {
+        "life": {
+          "initial": 5,
+          "capacity": 5
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/story",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/exit",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/story",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 95000,
+              "atk": 0,
+              "def": 0,
+              "mres": 0,
+              "move_speed": 2,
+              "block_count": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 95000,
+              "capacity": 95000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle",
+            "leak_loss": 1,
+            "exit_rule": "rule/peer/exit",
+            "exit_parameters": {
+              "source_unharmful": true
+            }
+          }
+        }
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/exit",
+        "kind": "calculation_rule",
+        "contract": "lifecycle.exit",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'base_life_loss': 1, 'kills_delta': 1, 'leaks_delta': 0}"
+        }
+      },
+      {
+        "id": "rule/peer/reject_life",
+        "kind": "calculation_rule",
+        "contract": "resource.bounds",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.reject_bounds"
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/exit",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 3
+      },
+      "parameters": {
+        "deploy_capacity": 0
+      },
+      "objectives": {
+        "life_resource": "life"
+      },
+      "resources": {
+        "life": {
+          "initial": 5,
+          "capacity": 5,
+          "bounds_rule": "rule/peer/reject_life"
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/story",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/exit",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/story",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 95000,
+              "atk": 0,
+              "def": 0,
+              "mres": 0,
+              "move_speed": 2,
+              "block_count": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 95000,
+              "capacity": 95000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle",
+            "leak_loss": 1,
+            "exit_rule": "rule/peer/exit",
+            "exit_parameters": {
+              "source_unharmful": true
+            }
+          }
+        }
+      },
+      {
+        "id": "unit/peer/watcher",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "buffs": {
+            "initial": [
+              "buff/peer/resource_watch"
+            ]
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/exit",
+        "kind": "calculation_rule",
+        "contract": "lifecycle.exit",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'base_life_loss': 1, 'kills_delta': 1, 'leaks_delta': 0}"
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/exit",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 3
+      },
+      "parameters": {
+        "deploy_capacity": 0
+      },
+      "objectives": {
+        "life_resource": "life"
+      },
+      "resources": {
+        "life": {
+          "initial": 5,
+          "capacity": 5
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/story",
+          "instanceAlias": "actor",
+          "position": {
+            "row": 0,
+            "col": 0
+          },
+          "route": {
+            "motionMode": 0,
+            "startPosition": {
+              "row": 0,
+              "col": 0
+            },
+            "endPosition": {
+              "row": 0,
+              "col": 1
+            },
+            "checkpoints": []
+          }
+        },
+        {
+          "definition": "unit/peer/watcher",
+          "instanceAlias": "watcher",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        }
+      ]
+    },
+    "buffs": [
+      {
+        "id": "buff/peer/resource_watch",
+        "kind": "buff",
+        "events": [
+          {
+            "event": "resource.changed",
+            "condition": "inputs.payload.target == 1 and inputs.payload.resource == 'life'",
+            "effects": [
+              {
+                "op": "retire",
+                "target": 2,
+                "parameters": {
+                  "reason": "dead"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

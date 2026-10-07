@@ -1,0 +1,93 @@
+--- a/ark_sim/content/capabilities.py
++++ b/ark_sim/content/capabilities.py
+@@ -58,6 +58,13 @@
+         local = [*scopes, item.get("rules", {})]
+         if item.get("op") == "area" and item.get("membership_rule"):
+             require("area.members", path+".membership_rule", explicit=item["membership_rule"])
++            member_rule = definitions[item["membership_rule"]]
++            if member_rule["implementation"].get("provider") == "ark.area.qualified_cell_offsets":
++                from ..domains.qualified_areas import validate_parameters
++                options = {**member_rule.get("parameters", {}), **item.get("parameters", {})}
++                try:validate_parameters(options)
++                except ValueError as error:raise ContentError(path+": "+str(error)) from error
++                require("targeting.eligibility", path+".eligibility", explicit=options["eligibility"]["rule"])
+         if item.get("projectile_definition"):
+             projectile=definitions[item["projectile_definition"]]
+             if projectile.get("kind") != "projectile": raise ContentError(path+": projectile reference kind required")
+--- a/ark_sim/domains/effects.py
++++ b/ark_sim/domains/effects.py
+@@ -84,9 +84,15 @@
+                         if entity["components"].get("spatial", {}).get("position") is not None
+                         and getattr(self.ctx, "selectable", self.ctx.alive)(entity["id"])
+                         and not any("tag" in f and f["tag"] not in entity["tags"] for f in effect.get("filters", []))]
++                    area_extra = {"ability": ability, "effect": effect}
++                    member_rule = self.ctx.rules.rules[effect["membership_rule"]]
++                    if member_rule["implementation"].get("provider") == "ark.area.qualified_cell_offsets":
++                        from .qualified_areas import projection
++                        options = {**thaw(member_rule.get("parameters", {})), **thaw(effect.get("parameters", {}))}
++                        area_extra["area_selection_states"] = projection(self.ctx, source, candidates, options)
+                     result = self.ctx.calc("area.members", {"center_position": position,
+                         "candidates": candidates, "parameters": thaw(effect.get("parameters", {}))},
+-                        source=source, target=target, owner=source, ability=ability, effect=effect, rule_id=effect["membership_rule"], extra={"ability": ability, "effect": effect})
++                        source=source, target=target, owner=source, ability=ability, effect=effect, rule_id=effect["membership_rule"], extra=area_extra)
+                     members = thaw(result)
+                     allowed = {entity["id"] for entity in candidates}
+                     if not isinstance(members, list) or any(type(ref) is not int or ref not in allowed for ref in members) or len(members)!=len(set(members)):
+--- a/ark_sim/domains/providers.py
++++ b/ark_sim/domains/providers.py
+@@ -4,6 +4,7 @@
+ from . import projectile_profiles
+ from .selection import eligibility_profile
+ from .request_transforms import request_field_transform
++from .qualified_areas import qualified_cell_offsets
+ 
+ BUILTIN_PROVIDERS = {
+     "model.damage.request_field_transform": request_field_transform,
+@@ -31,6 +32,7 @@
+     "ark.behavior.ground_melee": ark.ground_behavior,
+     "ark.selector.grid": ark.selector_grid,
+     "ark.area.cell_offsets": ark.area_cell_offsets,
++    "ark.area.qualified_cell_offsets": qualified_cell_offsets,
+     "ark.spatial.route": ark.spatial_route,
+     "ark.spatial.blocking": ark.spatial_blocking,
+     "ark.damage.pipeline": ark.damage_pipeline,
+--- a/ark_sim/domains/qualified_areas.py
++++ b/ark_sim/domains/qualified_areas.py
+@@ -0,0 +1,37 @@
++"""Pure declared grid membership plus separately bound target eligibility."""
++from collections.abc import Mapping
++from ark_sim.contracts import thaw
++from .selection import validate_eligibility,validate_state
++from .spatial import project_cell
++
++def validate_parameters(options):
++    if not isinstance(options,Mapping) or set(options)!={'offsets','eligibility'}:raise ValueError('qualified area requires explicit offsets and eligibility')
++    offsets=options['offsets']
++    if not isinstance(offsets,(list,tuple)) or not offsets or any(not isinstance(p,(list,tuple)) or len(p)!=2 or any(type(v) is not int for v in p) for p in offsets):raise ValueError('qualified area offsets require integer pairs')
++    validate_eligibility(options['eligibility'],'qualified area eligibility')
++
++def qualified_cell_offsets(inputs,params,context):
++    options={**thaw(params),**thaw(inputs['parameters'])};validate_parameters(options)
++    projection=context.get('area_selection_states')
++    if not isinstance(projection,Mapping) or set(projection)!={'source','candidates'}:raise ValueError('qualified area requires explicit pure selection projection')
++    source=context.get('source')
++    if not isinstance(source,Mapping) or type(source.get('id')) is not int:raise ValueError('qualified area requires source snapshot')
++    validate_state(projection['source'],complete=True)
++    row,col=project_cell(inputs['center_position']);cells={(row+dr,col+dc) for dr,dc in options['offsets']};result=[]
++    for candidate in inputs['candidates']:
++        if project_cell(candidate['components']['spatial']['position']) not in cells:continue
++        key=str(candidate['id'])
++        if key not in projection['candidates']:raise ValueError('qualified area missing candidate selection state')
++        state=projection['candidates'][key];validate_state(state,complete=True)
++        decision=context.calculate('targeting.eligibility',{'source':source,'candidate':candidate,
++            'selector':{'healing':False},'parameters':options['eligibility']['parameters'],
++            'selection_states':{'source':projection['source'],'candidate':state}},rule_id=options['eligibility']['rule']).value
++        if not isinstance(decision,Mapping) or set(decision)!={'accepted','reason'} or type(decision['accepted']) is not bool or not isinstance(decision['reason'],str):raise ValueError('qualified area eligibility must return strict decision')
++        if decision['accepted']:result.append(candidate['id'])
++    return result
++
++def projection(context,source,candidates,parameters):
++    """World reads occur at the domain boundary; providers get only snapshots."""
++    validate_parameters(parameters);defaults=parameters['eligibility']['parameters']['defaults']
++    return {'source':context.spatial.selection_state(source,defaults),
++        'candidates':{str(candidate['id']):context.spatial.selection_state(candidate['id'],defaults) for candidate in candidates}}

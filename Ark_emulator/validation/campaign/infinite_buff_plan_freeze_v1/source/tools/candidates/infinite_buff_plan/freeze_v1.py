@@ -1,0 +1,17 @@
+"""Freeze one-file candidate, actual guarded authors/compat/no-opt and source inputs."""
+import hashlib,json,shutil
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[3];CAND=ROOT.parent/'unpack_work/campaign_infinite_buff_plan_v1_candidate';OUT=ROOT/'validation/campaign/infinite_buff_plan_freeze_v1'
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def main():
+ reports=[ROOT/'validation/campaign'/p/'verification.json' for p in ('infinite_buff_plan_guarded_v1','infinite_buff_plan_compat_v1','infinite_buff_plan_noopt_v1')];receipts=[]
+ for p in reports:
+  r=json.loads(p.read_bytes());assert r['passed'] and r.get('actual_exit',0)==0 and r['source_before']==r['source_after'];assert all(sha(Path(f))==h for f,h in r['source_after'].items());receipts.append({'path':str(p),'sha':sha(p),'elapsed':r.get('elapsed'),'scope':r.get('scope')})
+ comp=ROOT/'validation/campaign/infinite_buff_plan_v2/composition.json';c=json.loads(comp.read_bytes());assert c['changed']==['ark_sim/domains/buff_application.py'];assert all(sha(CAND/f)==h for f,h in c['candidate_guards'].items());assert not OUT.exists();OUT.mkdir(parents=True);delta=CAND/'ark_sim/domains/buff_application.py';dst=OUT/'delta/ark_sim/domains/buff_application.py';dst.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(delta,dst);assert sha(delta)==sha(dst)
+ sourcefiles=list((ROOT/'tools/candidates/infinite_buff_plan').glob('*.py'))+list((ROOT/'tools/chapter07_strength_melee').glob('*.py'))+list((ROOT/'packages/campaign/chapter07_strength_melee').glob('*.json'));evidence=[]
+ for p in sourcefiles:
+  dst=OUT/'source'/p.relative_to(ROOT);dst.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(p,dst);assert sha(p)==sha(dst)
+ for p in (ROOT/'validation/campaign/chapter07_strength_melee_guarded_v4').glob('*'):
+  if p.is_file():evidence.append({'path':str(p),'sha':sha(p),'bytes':p.stat().st_size})
+ oldfailures=[ROOT/'validation/campaign/chapter07_strength_melee_gap_v1/receipt.json',ROOT/'validation/campaign/chapter07_strength_melee_author_v1.log',ROOT/'validation/campaign/chapter07_strength_melee_author_v2.log'];r={'core':c['core'],'parent_core':c['parent_core'],'candidate':str(CAND),'delta':[{'file':'ark_sim/domains/buff_application.py','sha':sha(delta),'parent_sha':c['parent_guards']['ark_sim/domains/buff_application.py']}],'composition':{'path':str(comp),'sha':sha(comp)},'candidate_guards':c['candidate_guards'],'actual_receipts':receipts,'author18_contract_plus9_source_cases':True,'existing93_compat_assertions_unchanged':True,'noopt_actual_only4_identity_diff':True,'source_helpers':{str(p):sha(p) for p in sourcefiles},'actual_CP7_CP10_SHAload_resume_public_head_evidence':evidence,'historical_failures':{str(p):sha(p) for p in oldfailures},'source_policy':'Explicit None allowed only real permanent Buff with duration fields absent and paramsduration absent/strict numeric0. All operations validated before mutations. Source strength marker is external input role; emission consumer remains separate. .25period first8/24remove/derived no refresh16/real multiplier1.3/1.5/1.8 sourceBB; native comparator/body/calibration pending.','full_suite_passed':False,'full_baseline_passed':False,'independent_reviewed':False,'primary_modified':False,'whole_stage_executed':False,'client_verified':False};out=OUT/'freeze.json';out.write_text(json.dumps(r,indent=2)+'\n',encoding='utf8',newline='');print(json.dumps({'freeze_sha':sha(out),'core':c['core'],'one_file':True}))
+if __name__=='__main__':main()

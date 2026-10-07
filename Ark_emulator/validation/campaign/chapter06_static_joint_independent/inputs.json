@@ -1,0 +1,1228 @@
+[
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/staticjoint",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/hero",
+        "kind": "entity",
+        "tags": [
+          "player",
+          "ground"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 333,
+              "block_count": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 333,
+              "capacity": 333,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "deployable": {
+            "base_cost": 7,
+            "capacity": 1,
+            "cooldown_seconds": 0,
+            "terrain": "ground"
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/staticjoint",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 2,
+        "cols": 3,
+        "tiles": [
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile/peer/arbitrary_fence_walk",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": [],
+            "effects": {}
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile/peer/arbitrary_road_blocked",
+            "buildableType": 0,
+            "passableMask": 2,
+            "heightType": 0,
+            "blackboard": [],
+            "effects": {}
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          }
+        ],
+        "tile_mechanics": {
+          "tile/peer/arbitrary_fence_walk": {
+            "type": "declared_static_tile",
+            "expected_options": {
+              "buildableType": 1,
+              "passableMask": 1,
+              "heightType": 0
+            },
+            "expected_blackboard": [],
+            "expected_effects": {}
+          },
+          "tile/peer/arbitrary_road_blocked": {
+            "type": "declared_static_tile",
+            "expected_options": {
+              "buildableType": 0,
+              "passableMask": 2,
+              "heightType": 0
+            },
+            "expected_blackboard": [],
+            "expected_effects": {}
+          }
+        }
+      },
+      "parameters": {
+        "deploy_capacity": 1
+      },
+      "resources": {
+        "dp": {
+          "initial": 20,
+          "capacity": 20
+        }
+      },
+      "roster": [
+        "unit/peer/hero"
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/staticjoint",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/hero",
+        "kind": "entity",
+        "tags": [
+          "player",
+          "ground"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 333,
+              "block_count": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 333,
+              "capacity": 333,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "deployable": {
+            "base_cost": 7,
+            "capacity": 1,
+            "cooldown_seconds": 0,
+            "terrain": "ground"
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/staticjoint",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 2,
+        "cols": 3,
+        "tiles": [
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile/peer/arbitrary_fence_walk",
+            "buildableType": 1,
+            "passableMask": true,
+            "heightType": 0,
+            "blackboard": [],
+            "effects": {}
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile/peer/arbitrary_road_blocked",
+            "buildableType": 0,
+            "passableMask": 2,
+            "heightType": 0,
+            "blackboard": [],
+            "effects": {}
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          }
+        ],
+        "tile_mechanics": {
+          "tile/peer/arbitrary_fence_walk": {
+            "type": "declared_static_tile",
+            "expected_options": {
+              "buildableType": 1,
+              "passableMask": 1,
+              "heightType": 0
+            },
+            "expected_blackboard": [],
+            "expected_effects": {}
+          },
+          "tile/peer/arbitrary_road_blocked": {
+            "type": "declared_static_tile",
+            "expected_options": {
+              "buildableType": 0,
+              "passableMask": 2,
+              "heightType": 0
+            },
+            "expected_blackboard": [],
+            "expected_effects": {}
+          }
+        }
+      },
+      "parameters": {
+        "deploy_capacity": 1
+      },
+      "resources": {
+        "dp": {
+          "initial": 20,
+          "capacity": 20
+        }
+      },
+      "roster": [
+        "unit/peer/hero"
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/staticjoint",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/hero",
+        "kind": "entity",
+        "tags": [
+          "player",
+          "ground"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 333,
+              "block_count": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 333,
+              "capacity": 333,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "deployable": {
+            "base_cost": 7,
+            "capacity": 1,
+            "cooldown_seconds": 0,
+            "terrain": "ground"
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/staticjoint",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 2,
+        "cols": 3,
+        "tiles": [
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile/peer/arbitrary_fence_walk",
+            "buildableType": 1,
+            "passableMask": 1.0,
+            "heightType": 0,
+            "blackboard": [],
+            "effects": {}
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile/peer/arbitrary_road_blocked",
+            "buildableType": 0,
+            "passableMask": 2,
+            "heightType": 0,
+            "blackboard": [],
+            "effects": {}
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          }
+        ],
+        "tile_mechanics": {
+          "tile/peer/arbitrary_fence_walk": {
+            "type": "declared_static_tile",
+            "expected_options": {
+              "buildableType": 1,
+              "passableMask": 1,
+              "heightType": 0
+            },
+            "expected_blackboard": [],
+            "expected_effects": {}
+          },
+          "tile/peer/arbitrary_road_blocked": {
+            "type": "declared_static_tile",
+            "expected_options": {
+              "buildableType": 0,
+              "passableMask": 2,
+              "heightType": 0
+            },
+            "expected_blackboard": [],
+            "expected_effects": {}
+          }
+        }
+      },
+      "parameters": {
+        "deploy_capacity": 1
+      },
+      "resources": {
+        "dp": {
+          "initial": 20,
+          "capacity": 20
+        }
+      },
+      "roster": [
+        "unit/peer/hero"
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/staticjoint",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/hero",
+        "kind": "entity",
+        "tags": [
+          "player",
+          "ground"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 333,
+              "block_count": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 333,
+              "capacity": 333,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "deployable": {
+            "base_cost": 7,
+            "capacity": 1,
+            "cooldown_seconds": 0,
+            "terrain": "ground"
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/staticjoint",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 2,
+        "cols": 3,
+        "tiles": [
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile/peer/arbitrary_fence_walk",
+            "buildableType": 1,
+            "passableMask": 3,
+            "heightType": 0,
+            "blackboard": [],
+            "effects": {}
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile/peer/arbitrary_road_blocked",
+            "buildableType": 0,
+            "passableMask": 2,
+            "heightType": 0,
+            "blackboard": [],
+            "effects": {}
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          }
+        ],
+        "tile_mechanics": {
+          "tile/peer/arbitrary_fence_walk": {
+            "type": "declared_static_tile",
+            "expected_options": {
+              "buildableType": 1,
+              "passableMask": 1,
+              "heightType": 0
+            },
+            "expected_blackboard": [],
+            "expected_effects": {}
+          },
+          "tile/peer/arbitrary_road_blocked": {
+            "type": "declared_static_tile",
+            "expected_options": {
+              "buildableType": 0,
+              "passableMask": 2,
+              "heightType": 0
+            },
+            "expected_blackboard": [],
+            "expected_effects": {}
+          }
+        }
+      },
+      "parameters": {
+        "deploy_capacity": 1
+      },
+      "resources": {
+        "dp": {
+          "initial": 20,
+          "capacity": 20
+        }
+      },
+      "roster": [
+        "unit/peer/hero"
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/staticjoint",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/hero",
+        "kind": "entity",
+        "tags": [
+          "player",
+          "ground"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 333,
+              "block_count": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 333,
+              "capacity": 333,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "deployable": {
+            "base_cost": 7,
+            "capacity": 1,
+            "cooldown_seconds": 0,
+            "terrain": "ground"
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/staticjoint",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 2,
+        "cols": 3,
+        "tiles": [
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile/peer/arbitrary_fence_walk",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": [
+              {
+                "key": "unknown",
+                "value": 1
+              }
+            ],
+            "effects": {}
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile/peer/arbitrary_road_blocked",
+            "buildableType": 0,
+            "passableMask": 2,
+            "heightType": 0,
+            "blackboard": [],
+            "effects": {}
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          }
+        ],
+        "tile_mechanics": {
+          "tile/peer/arbitrary_fence_walk": {
+            "type": "declared_static_tile",
+            "expected_options": {
+              "buildableType": 1,
+              "passableMask": 1,
+              "heightType": 0
+            },
+            "expected_blackboard": [
+              {
+                "key": "unknown",
+                "value": 1
+              }
+            ],
+            "expected_effects": {}
+          },
+          "tile/peer/arbitrary_road_blocked": {
+            "type": "declared_static_tile",
+            "expected_options": {
+              "buildableType": 0,
+              "passableMask": 2,
+              "heightType": 0
+            },
+            "expected_blackboard": [],
+            "expected_effects": {}
+          }
+        }
+      },
+      "parameters": {
+        "deploy_capacity": 1
+      },
+      "resources": {
+        "dp": {
+          "initial": 20,
+          "capacity": 20
+        }
+      },
+      "roster": [
+        "unit/peer/hero"
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/staticjoint",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/hero",
+        "kind": "entity",
+        "tags": [
+          "player",
+          "ground"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 333,
+              "block_count": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 333,
+              "capacity": 333,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "deployable": {
+            "base_cost": 7,
+            "capacity": 1,
+            "cooldown_seconds": 0,
+            "terrain": "ground"
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/staticjoint",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 2,
+        "cols": 3,
+        "tiles": [
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile/peer/arbitrary_fence_walk",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": [],
+            "effects": {
+              "a": 1
+            }
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile/peer/arbitrary_road_blocked",
+            "buildableType": 0,
+            "passableMask": 2,
+            "heightType": 0,
+            "blackboard": [],
+            "effects": {}
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          }
+        ],
+        "tile_mechanics": {
+          "tile/peer/arbitrary_fence_walk": {
+            "type": "declared_static_tile",
+            "expected_options": {
+              "buildableType": 1,
+              "passableMask": 1,
+              "heightType": 0
+            },
+            "expected_blackboard": [],
+            "expected_effects": {
+              "a": 1
+            }
+          },
+          "tile/peer/arbitrary_road_blocked": {
+            "type": "declared_static_tile",
+            "expected_options": {
+              "buildableType": 0,
+              "passableMask": 2,
+              "heightType": 0
+            },
+            "expected_blackboard": [],
+            "expected_effects": {}
+          }
+        }
+      },
+      "parameters": {
+        "deploy_capacity": 1
+      },
+      "resources": {
+        "dp": {
+          "initial": 20,
+          "capacity": 20
+        }
+      },
+      "roster": [
+        "unit/peer/hero"
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/staticjoint",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/hero",
+        "kind": "entity",
+        "tags": [
+          "player",
+          "ground"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 333,
+              "block_count": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 333,
+              "capacity": 333,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "deployable": {
+            "base_cost": 7,
+            "capacity": 1,
+            "cooldown_seconds": 0,
+            "terrain": "ground"
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/staticjoint",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 2,
+        "cols": 3,
+        "tiles": [
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile/peer/arbitrary_fence_walk",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": [],
+            "effects": {}
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile/peer/arbitrary_road_blocked",
+            "buildableType": 0,
+            "passableMask": 2,
+            "heightType": 0,
+            "blackboard": [],
+            "effects": {}
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          }
+        ],
+        "tile_mechanics": {}
+      },
+      "parameters": {
+        "deploy_capacity": 1
+      },
+      "resources": {
+        "dp": {
+          "initial": 20,
+          "capacity": 20
+        }
+      },
+      "roster": [
+        "unit/peer/hero"
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/staticjoint",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/hero",
+        "kind": "entity",
+        "tags": [
+          "player",
+          "ground"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 333,
+              "block_count": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 333,
+              "capacity": 333,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "deployable": {
+            "base_cost": 7,
+            "capacity": 1,
+            "cooldown_seconds": 0,
+            "terrain": "ground"
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/staticjoint",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 2,
+        "cols": 3,
+        "tiles": [
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile/peer/arbitrary_fence_walk",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": [],
+            "effects": {}
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile/peer/arbitrary_road_blocked",
+            "buildableType": 0,
+            "passableMask": 2,
+            "heightType": 0,
+            "blackboard": [],
+            "effects": {}
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          }
+        ],
+        "tile_mechanics": {
+          "tile/peer/arbitrary_fence_walk": {
+            "type": "static_unimplemented",
+            "expected_options": {
+              "buildableType": 1,
+              "passableMask": 1,
+              "heightType": 0
+            },
+            "expected_blackboard": [],
+            "expected_effects": {}
+          },
+          "tile/peer/arbitrary_road_blocked": {
+            "type": "declared_static_tile",
+            "expected_options": {
+              "buildableType": 0,
+              "passableMask": 2,
+              "heightType": 0
+            },
+            "expected_blackboard": [],
+            "expected_effects": {}
+          }
+        }
+      },
+      "parameters": {
+        "deploy_capacity": 1
+      },
+      "resources": {
+        "dp": {
+          "initial": 20,
+          "capacity": 20
+        }
+      },
+      "roster": [
+        "unit/peer/hero"
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/staticjoint",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/hero",
+        "kind": "entity",
+        "tags": [
+          "player",
+          "ground"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 333,
+              "block_count": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 333,
+              "capacity": 333,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "deployable": {
+            "base_cost": 7,
+            "capacity": 1,
+            "cooldown_seconds": 0,
+            "terrain": "ground"
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/staticjoint",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 2,
+        "cols": 3,
+        "tiles": [
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile/peer/arbitrary_fence_walk",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": {},
+            "effects": {}
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          },
+          {
+            "tileKey": "tile/peer/arbitrary_road_blocked",
+            "buildableType": 0,
+            "passableMask": 2,
+            "heightType": 0,
+            "blackboard": [],
+            "effects": {}
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": null,
+            "effects": null
+          }
+        ],
+        "tile_mechanics": {
+          "tile/peer/arbitrary_fence_walk": {
+            "type": "declared_static_tile",
+            "expected_options": {
+              "buildableType": 1,
+              "passableMask": 1,
+              "heightType": 0
+            },
+            "expected_blackboard": [],
+            "expected_effects": {}
+          },
+          "tile/peer/arbitrary_road_blocked": {
+            "type": "declared_static_tile",
+            "expected_options": {
+              "buildableType": 0,
+              "passableMask": 2,
+              "heightType": 0
+            },
+            "expected_blackboard": [],
+            "expected_effects": {}
+          }
+        }
+      },
+      "parameters": {
+        "deploy_capacity": 1
+      },
+      "resources": {
+        "dp": {
+          "initial": 20,
+          "capacity": 20
+        }
+      },
+      "roster": [
+        "unit/peer/hero"
+      ]
+    }
+  }
+]

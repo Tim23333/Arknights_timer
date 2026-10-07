@@ -1,0 +1,193 @@
+{
+  "cases": [
+    {
+      "case": "actual_entry_empty_input_real7ack_complete",
+      "passed": true,
+      "actual": {
+        "process_status": "complete",
+        "determinism_status": "verified",
+        "durable_checkpoint_status": "verified",
+        "accuracy_status": "pending",
+        "accuracy_reason": "Reference policies separate from user client feedback",
+        "report": "E:/ArkSimEvidence/campaign/06_17_d509_story_v3/full_v1.json",
+        "report_sha256": "1fcff3b7db51d85c1d71e9d2dbd7a9755c790221b9d6e7987efec6ca4b31783a",
+        "implementation": "d509afe2cdd941dbaa75f4bb0cfa931b7869b29eff6753a7a571d0ef39f116d1",
+        "package_sha256": "af0309661b542f1130ac3b84e6f7f429bae45e10ea78f96169bbd29beb9e4d1d",
+        "end_tick": 1400,
+        "kills": 1,
+        "leaks": 0,
+        "base_life_final": 99999,
+        "sealed_checkpoint_journal": {
+          "status": "verified",
+          "path": "E:\\ArkSimEvidence\\campaign\\06_17_d509_story_v3\\full_v1.active.jsonl.checkpoint-0375be8d11444c29bccc60c8821ee0d4",
+          "sha256": "2cbdb96ca0b973c5424d6811d4445bd19a93f6df53ab961bfd88ff50fc20c92c",
+          "bytes": 10105723,
+          "count": 6220,
+          "exact_final_journal_prefix": true
+        },
+        "input_validation": "native_life_public_dialogue_v1",
+        "public_dialogue": {
+          "verified": true,
+          "actual_dialogue_acks": 7,
+          "accepted_acks": 7,
+          "durable_driver_sha": "94315939e6c17baac660f47cd47232d4dd4083dcb66921f36324d6a0a7826aff",
+          "native_controls_completed": 5,
+          "fixed12_selected": 12,
+          "actual_player_deployments": 0,
+          "native_predefined_activations": 3
+        }
+      }
+    },
+    {
+      "case": "forged_control",
+      "passed": true,
+      "rejection": "Driver saved ledger is not exact final prefix"
+    },
+    {
+      "case": "bool_step",
+      "passed": true,
+      "rejection": "Driver saved ledger is not exact final prefix"
+    },
+    {
+      "case": "duplicate_ledger_event",
+      "passed": true,
+      "rejection": "Public ledger does not cover every actual dialogue wait"
+    },
+    {
+      "case": "wrong_final_clock",
+      "passed": true,
+      "rejection": "Driver final boundary differs"
+    },
+    {
+      "case": "wrong_final_cursor",
+      "passed": true,
+      "rejection": "Driver final boundary differs"
+    },
+    {
+      "case": "sidecar_bad_pin",
+      "passed": true,
+      "rejection": "Actual driver sidecar bytes differ"
+    },
+    {
+      "case": "late_submission",
+      "passed": true,
+      "rejection": "Driver saved ledger is not exact final prefix"
+    },
+    {
+      "case": "saved_cursor_bool",
+      "passed": true,
+      "rejection": "Strict nonnegative dialogue integer required"
+    },
+    {
+      "case": "saved_future_ledger",
+      "passed": true,
+      "rejection": "Saved driver ledger does not cover actual checkpoint waits"
+    },
+    {
+      "case": "saved_missing_await",
+      "passed": true,
+      "rejection": "Saved driver ledger does not cover actual checkpoint waits"
+    },
+    {
+      "case": "saved_wrong_clock",
+      "passed": true,
+      "rejection": "Driver actual checkpoint boundary differs"
+    },
+    {
+      "case": "hidden_made_visible",
+      "passed": true,
+      "rejection": "Overlay altered data beyond base life/profile/provenance"
+    },
+    {
+      "case": "control_count_pollution",
+      "passed": true,
+      "rejection": "Overlay altered data beyond base life/profile/provenance"
+    },
+    {
+      "case": "profile_birth_bool",
+      "passed": true,
+      "rejection": "Overlay source population/deployment limit differs"
+    },
+    {
+      "case": "profile_slot_bool",
+      "passed": true,
+      "rejection": "Overlay source population/deployment limit differs"
+    },
+    {
+      "case": "foreign_public_input",
+      "passed": true,
+      "rejection": "Missing/foreign/duplicate public command outcome"
+    },
+    {
+      "case": "expected_births_bool",
+      "passed": true,
+      "actual": {
+        "process_status": "stale_or_invalid",
+        "determinism_status": "pending",
+        "durable_checkpoint_status": "pending",
+        "accuracy_status": "pending",
+        "accuracy_reason": "Reference policies separate from user client feedback",
+        "report": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\validation\\campaign\\chapter06_dialogue_acceptance_v5_independent\\expected_births_bool.report.json",
+        "reason": "Typed expected/actual births differ"
+      }
+    },
+    {
+      "case": "state_counts_bool",
+      "passed": true,
+      "actual": {
+        "process_status": "stale_or_invalid",
+        "determinism_status": "pending",
+        "durable_checkpoint_status": "pending",
+        "accuracy_status": "pending",
+        "accuracy_reason": "Reference policies separate from user client feedback",
+        "report": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\validation\\campaign\\chapter06_dialogue_acceptance_v5_independent\\state_counts_bool.report.json",
+        "reason": "Strict nonnegative battle counter required: kills"
+      }
+    }
+  ],
+  "passed": 19,
+  "guards_start": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\chapter06_dialogue_acceptance_peer\\verify_v5.py": "d70eaa1cfb9179be31a4428f4cab664f640b3e6bbce2c7b9be5d759678fbf3bf",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_public_dialogue_validation.py": "1ce7f73cdddd17137731d3a02979797ba826aeaf0822b5ff7f1e5dc330c9da02",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_runthrough_progress_v5.py": "e4b627379a8455a7132c304e4be9cdc969a05658bd0945764a391a13d1faabb9",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_runthrough_progress_v3.py": "afb959ae41816f08040bb349a2b7c0fec490ba6c2b9497d67b6826069b79c203",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_runthrough_progress_v2.py": "df3eb409ac11d2b56735776127b9cb3ee78cbda74af2e4fcead2c7c564a679c1",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_runthrough_progress.py": "368aee154e50e2aab0aaff94625bfac1af47bee1ac14431091d832967f41ae65",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\compare_campaign_trace.py": "9d4968837f9898cc87fd0dc017410ebc4ce1fe3f88ae9cdb65b41f6f6f39f019",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\validation\\campaign\\chapter06_story_complete_pending_v3\\entry.json": "9208dd03294f475d51dea04fe4f73c81beb32466169b06a12c84fb6984e57f38",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\validation\\campaign\\chapter06_story_join_v3\\06-15.life99999.json": "af0309661b542f1130ac3b84e6f7f429bae45e10ea78f96169bbd29beb9e4d1d",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\validation\\campaign\\chapter06_story_join_v3\\06-15.native.json": "29f3ab58c4e5fccdc0e3c0d65c062fb38ba82af618ce89a030b8fe62e70f2be1",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\scenarios\\campaign\\chapter06\\level_main_06-15\\native_story_v1\\commands.json": "a5338d955b09046ec0b16f3a9625b7955c763aae07dc722e474e6078745f932f",
+    "E:\\ArkSimEvidence\\campaign\\06_17_d509_story_v3\\full_v1.json": "1fcff3b7db51d85c1d71e9d2dbd7a9755c790221b9d6e7987efec6ca4b31783a",
+    "E:\\ArkSimEvidence\\campaign\\06_17_d509_story_v3\\full_v1.driver.checkpoint.json": "94315939e6c17baac660f47cd47232d4dd4083dcb66921f36324d6a0a7826aff",
+    "E:\\ArkSimEvidence\\campaign\\06_17_d509_story_v3\\full_v1.checkpoint.json": "59cb536294bdd569792b38481bb4820f2f8928e90097f3652bfe4e55c9c9be9d",
+    "E:\\ArkSimEvidence\\campaign\\06_17_d509_story_v3\\full_v1.events.jsonl": "3c55e391bf0a7682872cfd4855d4de0ff0bb421ffd0b11d0680df8acc65bb611",
+    "E:\\ArkSimEvidence\\campaign\\06_17_d509_story_v3\\full_v1.continued.events.jsonl": "3c55e391bf0a7682872cfd4855d4de0ff0bb421ffd0b11d0680df8acc65bb611",
+    "E:\\ArkSimEvidence\\campaign\\06_17_d509_story_v3\\full_v1.replayed.events.jsonl": "3c55e391bf0a7682872cfd4855d4de0ff0bb421ffd0b11d0680df8acc65bb611",
+    "E:\\ArkSimEvidence\\campaign\\06_17_d509_story_v3\\full_v1.active.jsonl.checkpoint-0375be8d11444c29bccc60c8821ee0d4": "2cbdb96ca0b973c5424d6811d4445bd19a93f6df53ab961bfd88ff50fc20c92c",
+    "E:\\ArkSimEvidence\\campaign\\06_17_d509_story_v3\\full_v1.replay.json": "8b816d0ad7afa9df58df7b992a49122c03edddd20ac10b988e108c84f6d87ff2"
+  },
+  "guards_end": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\chapter06_dialogue_acceptance_peer\\verify_v5.py": "d70eaa1cfb9179be31a4428f4cab664f640b3e6bbce2c7b9be5d759678fbf3bf",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_public_dialogue_validation.py": "1ce7f73cdddd17137731d3a02979797ba826aeaf0822b5ff7f1e5dc330c9da02",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_runthrough_progress_v5.py": "e4b627379a8455a7132c304e4be9cdc969a05658bd0945764a391a13d1faabb9",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_runthrough_progress_v3.py": "afb959ae41816f08040bb349a2b7c0fec490ba6c2b9497d67b6826069b79c203",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_runthrough_progress_v2.py": "df3eb409ac11d2b56735776127b9cb3ee78cbda74af2e4fcead2c7c564a679c1",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_runthrough_progress.py": "368aee154e50e2aab0aaff94625bfac1af47bee1ac14431091d832967f41ae65",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\compare_campaign_trace.py": "9d4968837f9898cc87fd0dc017410ebc4ce1fe3f88ae9cdb65b41f6f6f39f019",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\validation\\campaign\\chapter06_story_complete_pending_v3\\entry.json": "9208dd03294f475d51dea04fe4f73c81beb32466169b06a12c84fb6984e57f38",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\validation\\campaign\\chapter06_story_join_v3\\06-15.life99999.json": "af0309661b542f1130ac3b84e6f7f429bae45e10ea78f96169bbd29beb9e4d1d",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\validation\\campaign\\chapter06_story_join_v3\\06-15.native.json": "29f3ab58c4e5fccdc0e3c0d65c062fb38ba82af618ce89a030b8fe62e70f2be1",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\scenarios\\campaign\\chapter06\\level_main_06-15\\native_story_v1\\commands.json": "a5338d955b09046ec0b16f3a9625b7955c763aae07dc722e474e6078745f932f",
+    "E:\\ArkSimEvidence\\campaign\\06_17_d509_story_v3\\full_v1.json": "1fcff3b7db51d85c1d71e9d2dbd7a9755c790221b9d6e7987efec6ca4b31783a",
+    "E:\\ArkSimEvidence\\campaign\\06_17_d509_story_v3\\full_v1.driver.checkpoint.json": "94315939e6c17baac660f47cd47232d4dd4083dcb66921f36324d6a0a7826aff",
+    "E:\\ArkSimEvidence\\campaign\\06_17_d509_story_v3\\full_v1.checkpoint.json": "59cb536294bdd569792b38481bb4820f2f8928e90097f3652bfe4e55c9c9be9d",
+    "E:\\ArkSimEvidence\\campaign\\06_17_d509_story_v3\\full_v1.events.jsonl": "3c55e391bf0a7682872cfd4855d4de0ff0bb421ffd0b11d0680df8acc65bb611",
+    "E:\\ArkSimEvidence\\campaign\\06_17_d509_story_v3\\full_v1.continued.events.jsonl": "3c55e391bf0a7682872cfd4855d4de0ff0bb421ffd0b11d0680df8acc65bb611",
+    "E:\\ArkSimEvidence\\campaign\\06_17_d509_story_v3\\full_v1.replayed.events.jsonl": "3c55e391bf0a7682872cfd4855d4de0ff0bb421ffd0b11d0680df8acc65bb611",
+    "E:\\ArkSimEvidence\\campaign\\06_17_d509_story_v3\\full_v1.active.jsonl.checkpoint-0375be8d11444c29bccc60c8821ee0d4": "2cbdb96ca0b973c5424d6811d4445bd19a93f6df53ab961bfd88ff50fc20c92c",
+    "E:\\ArkSimEvidence\\campaign\\06_17_d509_story_v3\\full_v1.replay.json": "8b816d0ad7afa9df58df7b992a49122c03edddd20ac10b988e108c84f6d87ff2"
+  },
+  "guards_equal": true,
+  "scope": "Independent actualempty commands source entry + hostile driver/sidecar/prefix/type/hidden/count/public command provenance. Only new copies modified; no simulation/new whole or registry write."
+}

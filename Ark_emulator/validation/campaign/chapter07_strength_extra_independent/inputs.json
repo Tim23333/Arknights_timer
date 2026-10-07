@@ -1,0 +1,2130 @@
+[
+  {
+    "package": {
+      "schemaVersion": 2,
+      "manifest": {
+        "id": "package/peer/consumer/strength_observe",
+        "requires": [
+          "preset/ark_standard"
+        ]
+      },
+      "rules": [
+        {
+          "id": "rule/peer/sp",
+          "kind": "rule",
+          "contract": "resource.recovery",
+          "implementation": {
+            "type": "expression",
+            "expression": "inputs.current+inputs.parameters.amount"
+          }
+        }
+      ],
+      "buffs": [
+        {
+          "id": "buff/ch7/source/ore_immune",
+          "kind": "buff"
+        },
+        {
+          "id": "buff/ch7/source/ore_listener",
+          "kind": "buff"
+        }
+      ],
+      "entities": [
+        {
+          "id": "unit/peer/director",
+          "kind": "entity",
+          "components": {
+            "abilities": [
+              "ability/peer/all_on",
+              "ability/peer/v2_off",
+              "ability/peer/others_off",
+              "ability/peer/v1_dead"
+            ],
+            "spatial": {}
+          }
+        }
+      ],
+      "abilities": [
+        {
+          "id": "ability/peer/all_on",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "apply_buff",
+                "target": 3,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "apply_buff",
+                "target": 4,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "apply_buff",
+                "target": 5,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/v2_off",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "remove_buff",
+                "target": 4,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/others_off",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "remove_buff",
+                "target": 3,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "remove_buff",
+                "target": 5,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/v1_dead",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "modify_resource",
+                "target": 3,
+                "resource": "hp",
+                "value": 0
+              }
+            ]
+          },
+          "timeline": []
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "behavior/peer/modes",
+          "kind": "behavior",
+          "initial": "mode0",
+          "states": {
+            "mode0": {},
+            "mode1": {}
+          }
+        }
+      ],
+      "scenarioDraft": {
+        "id": "scene/peer/strength_observe",
+        "ruleset": "ruleset/ark_standard",
+        "map": {
+          "rows": 7,
+          "cols": 7
+        },
+        "objectives": {},
+        "resources": {
+          "dp": {
+            "initial": 100,
+            "capacity": 100
+          },
+          "deployment_capacity": {
+            "initial": 0,
+            "capacity": 0
+          },
+          "stock_ch7_mine": {
+            "initial": 15,
+            "capacity": 15
+          }
+        },
+        "initialEntities": [
+          {
+            "definition": "unit/peer/director",
+            "instanceAlias": "director",
+            "position": {
+              "row": 0,
+              "col": 0
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1083_sotiab",
+            "instanceAlias": "v1",
+            "position": {
+              "row": 3,
+              "col": 1
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1083_sotiab_2",
+            "instanceAlias": "v2",
+            "position": {
+              "row": 3,
+              "col": 2
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1078_sotisc",
+            "instanceAlias": "v3",
+            "position": {
+              "row": 3,
+              "col": 3
+            }
+          }
+        ]
+      }
+    },
+    "modules": [
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json"
+    ],
+    "composition": {
+      "unit/ch7/strength/enemy_1083_sotiab": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "0e67843c9fd61ac8c59cdccdb377786ed8c48ecfb76d6f795a4117e1405d6957"
+        }
+      ],
+      "ability/ch7/strength/enemy_1083_sotiab": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "26c98a7e08b3e0eb3df1edbc356062a6a8aad1f4c45c4482d6ca9363bf8d3c8d"
+        }
+      ],
+      "buff/ch7/source/enemy_9D0_talent_strength": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "d7a05df18ee48616657fd34c1d55133f6eb1fecf4aa47e380776169622cb6d4f"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "d7a05df18ee48616657fd34c1d55133f6eb1fecf4aa47e380776169622cb6d4f"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "d7a05df18ee48616657fd34c1d55133f6eb1fecf4aa47e380776169622cb6d4f"
+        }
+      ],
+      "buff/unit/ch7/strength/enemy_1083_sotiab/source/enemy_talent_strength[atk]": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "3ff0e606770dc867a8d781f21c96c9d92af55d4ca2446aeb63e9beea14c9a2d8"
+        }
+      ],
+      "buff/ch7/strength/enemy_1083_sotiab/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "a111e863454f7f8b25fe32423620dfb0dae7d10bd8f444e152403d450b2330ab"
+        }
+      ],
+      "buff/ch7/strength/enemy_1083_sotiab/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "a0752ef64200a490533d7fdb5234c27b8d4d953a94163a73af8ebe22180dedcb"
+        }
+      ],
+      "selector/ch7/strength/enemy_1083_sotiab": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "73890463475d1ef4a2a82cde7686dcff8d327dbe2b48ab82eb18f1cde29ea559"
+        }
+      ],
+      "behavior/ch7/strength/enemy_1083_sotiab": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "d3c3f41ea6987441b4758cfd19549524ebe4ea664f7c11fa8c7ff38cca41f658"
+        }
+      ],
+      "rule/ch7/ordinary/steering": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "b218701bd4f357a66ed221a716d3c4e5d79816b98b008367dcfeaf9ecdc4d639"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "b218701bd4f357a66ed221a716d3c4e5d79816b98b008367dcfeaf9ecdc4d639"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "b218701bd4f357a66ed221a716d3c4e5d79816b98b008367dcfeaf9ecdc4d639"
+        }
+      ],
+      "rule/ch7/ordinary/sotihd/source_windup": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "277c50634392ce66bace10f3cea4d3cfeda3034013979eaae7b7c9f6b423176c"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "277c50634392ce66bace10f3cea4d3cfeda3034013979eaae7b7c9f6b423176c"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "277c50634392ce66bace10f3cea4d3cfeda3034013979eaae7b7c9f6b423176c"
+        }
+      ],
+      "rule/ch7/strength/enemy_1083_sotiab/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "82105a9bc3ec95d9e3b84e6972218cf1328201c8ac2f2666ae3e487205ac6972"
+        }
+      ],
+      "rule/ch7/strength/enemy_1083_sotiab/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "84d766d16595c3b8cbc6fa8ae76603edebbd2b0556248001776337c4616df199"
+        }
+      ],
+      "unit/ch7/strength/enemy_1083_sotiab_2": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "2fc372ae24718a2b5ee50e7d69af83e63d3411c147364ad5a1329628280ea689"
+        }
+      ],
+      "ability/ch7/strength/enemy_1083_sotiab_2": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "d89d8987ba324c0ee24f90c7934896bfa4ab8e7cc138444b2b46959a9bbe8820"
+        }
+      ],
+      "buff/unit/ch7/strength/enemy_1083_sotiab_2/source/enemy_talent_strength[atk]": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "8bce922ddeb0ef94b5101952379c1e968f6fe4162b71adea6a939808ff62926e"
+        }
+      ],
+      "buff/ch7/strength/enemy_1083_sotiab_2/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "340e32867409bf070292740d97084740c774d29c6b20b678d0fa5f6e976422be"
+        }
+      ],
+      "buff/ch7/strength/enemy_1083_sotiab_2/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "b22aa230b60398a2b4beed6d97342754f78aff2d6d296b895d37c1490b082722"
+        }
+      ],
+      "selector/ch7/strength/enemy_1083_sotiab_2": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "4e614543e3d9c75ea7ee280438f3e1a5da9575ba7009a9469fd1b1024fcdbfb9"
+        }
+      ],
+      "behavior/ch7/strength/enemy_1083_sotiab_2": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "d87c14657502757c78727b449616f9f398264f36854083ee95d319233016848e"
+        }
+      ],
+      "rule/ch7/strength/enemy_1083_sotiab_2/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "5630732df94d232070fcad7b48f865d9c6fd038b7953afee92a4886f5901b44b"
+        }
+      ],
+      "rule/ch7/strength/enemy_1083_sotiab_2/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "94931b2b137269e9c209397bdb3562c4585db77d5708156a5810b92fc0cf37dd"
+        }
+      ],
+      "unit/ch7/strength/enemy_1078_sotisc": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "af32d3121d7bcf1edbf4792b6c2e902ada35d6a285372fddaa23739d4dec6f06"
+        }
+      ],
+      "ability/ch7/strength/enemy_1078_sotisc": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "b3afb1abe9bf2cf7f38be599cba853dbcab0a77ca93040774b01bfd52be0567b"
+        }
+      ],
+      "buff/unit/ch7/strength/enemy_1078_sotisc/source/enemy_talent_strength[move_speed]": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "c181fba03dfba9731753c2982a93761705f9b5a7d1e1f1c462142767ab891714"
+        }
+      ],
+      "buff/ch7/strength/enemy_1078_sotisc/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "77f48d5e1fa4d36f26528268f23135c09ee80ba9af8f8a63433f9e8d8eed72c4"
+        }
+      ],
+      "buff/ch7/strength/enemy_1078_sotisc/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "0d04a0b6bd8f445352350a0aa38f675643175423f14b5b42c47174f523f08899"
+        }
+      ],
+      "selector/ch7/strength/enemy_1078_sotisc": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "93dd9bfe1c8041643c2f54ad2adf0b7e9c8988d9426382056860fec8a3247998"
+        }
+      ],
+      "behavior/ch7/strength/enemy_1078_sotisc": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "3d7dae6d20d08090cc44995c03f36c1b6e69560b90e2257a9389c6a75738f7cf"
+        }
+      ],
+      "rule/ch7/strength/enemy_1078_sotisc/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "043a8dd3cad1171bd4c2e1250b3c69db9ff71215bc268fd8091bc26fa277025c"
+        }
+      ],
+      "rule/ch7/strength/enemy_1078_sotisc/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "87232fc2c4c9ac26fee7dee375cdf636b714e60ed834cb3b78a131ae6248fc5c"
+        }
+      ]
+    }
+  },
+  {
+    "package": {
+      "schemaVersion": 2,
+      "manifest": {
+        "id": "package/peer/consumer/strength_cross",
+        "requires": [
+          "preset/ark_standard"
+        ]
+      },
+      "rules": [
+        {
+          "id": "rule/peer/sp",
+          "kind": "rule",
+          "contract": "resource.recovery",
+          "implementation": {
+            "type": "expression",
+            "expression": "inputs.current+inputs.parameters.amount"
+          }
+        }
+      ],
+      "buffs": [
+        {
+          "id": "buff/ch7/source/ore_immune",
+          "kind": "buff"
+        },
+        {
+          "id": "buff/ch7/source/ore_listener",
+          "kind": "buff"
+        }
+      ],
+      "entities": [
+        {
+          "id": "unit/peer/director",
+          "kind": "entity",
+          "components": {
+            "abilities": [
+              "ability/peer/all_on",
+              "ability/peer/v2_off",
+              "ability/peer/others_off",
+              "ability/peer/v1_dead"
+            ],
+            "spatial": {}
+          }
+        }
+      ],
+      "abilities": [
+        {
+          "id": "ability/peer/all_on",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "apply_buff",
+                "target": 3,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "apply_buff",
+                "target": 4,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "apply_buff",
+                "target": 5,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/v2_off",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "remove_buff",
+                "target": 4,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/others_off",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "remove_buff",
+                "target": 3,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "remove_buff",
+                "target": 5,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/v1_dead",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "modify_resource",
+                "target": 3,
+                "resource": "hp",
+                "value": 0
+              }
+            ]
+          },
+          "timeline": []
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "behavior/peer/modes",
+          "kind": "behavior",
+          "initial": "mode0",
+          "states": {
+            "mode0": {},
+            "mode1": {}
+          }
+        }
+      ],
+      "scenarioDraft": {
+        "id": "scene/peer/strength_cross",
+        "ruleset": "ruleset/ark_standard",
+        "map": {
+          "rows": 7,
+          "cols": 7
+        },
+        "objectives": {},
+        "resources": {
+          "dp": {
+            "initial": 100,
+            "capacity": 100
+          },
+          "deployment_capacity": {
+            "initial": 0,
+            "capacity": 0
+          },
+          "stock_ch7_mine": {
+            "initial": 15,
+            "capacity": 15
+          }
+        },
+        "initialEntities": [
+          {
+            "definition": "unit/peer/director",
+            "instanceAlias": "director",
+            "position": {
+              "row": 0,
+              "col": 0
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1083_sotiab",
+            "instanceAlias": "v1",
+            "position": {
+              "row": 3,
+              "col": 1
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1083_sotiab_2",
+            "instanceAlias": "v2",
+            "position": {
+              "row": 3,
+              "col": 2
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1078_sotisc",
+            "instanceAlias": "v3",
+            "position": {
+              "row": 3,
+              "col": 3
+            }
+          }
+        ]
+      }
+    },
+    "modules": [
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json"
+    ],
+    "composition": {
+      "unit/ch7/strength/enemy_1083_sotiab": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "0e67843c9fd61ac8c59cdccdb377786ed8c48ecfb76d6f795a4117e1405d6957"
+        }
+      ],
+      "ability/ch7/strength/enemy_1083_sotiab": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "26c98a7e08b3e0eb3df1edbc356062a6a8aad1f4c45c4482d6ca9363bf8d3c8d"
+        }
+      ],
+      "buff/ch7/source/enemy_9D0_talent_strength": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "d7a05df18ee48616657fd34c1d55133f6eb1fecf4aa47e380776169622cb6d4f"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "d7a05df18ee48616657fd34c1d55133f6eb1fecf4aa47e380776169622cb6d4f"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "d7a05df18ee48616657fd34c1d55133f6eb1fecf4aa47e380776169622cb6d4f"
+        }
+      ],
+      "buff/unit/ch7/strength/enemy_1083_sotiab/source/enemy_talent_strength[atk]": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "3ff0e606770dc867a8d781f21c96c9d92af55d4ca2446aeb63e9beea14c9a2d8"
+        }
+      ],
+      "buff/ch7/strength/enemy_1083_sotiab/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "a111e863454f7f8b25fe32423620dfb0dae7d10bd8f444e152403d450b2330ab"
+        }
+      ],
+      "buff/ch7/strength/enemy_1083_sotiab/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "a0752ef64200a490533d7fdb5234c27b8d4d953a94163a73af8ebe22180dedcb"
+        }
+      ],
+      "selector/ch7/strength/enemy_1083_sotiab": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "73890463475d1ef4a2a82cde7686dcff8d327dbe2b48ab82eb18f1cde29ea559"
+        }
+      ],
+      "behavior/ch7/strength/enemy_1083_sotiab": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "d3c3f41ea6987441b4758cfd19549524ebe4ea664f7c11fa8c7ff38cca41f658"
+        }
+      ],
+      "rule/ch7/ordinary/steering": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "b218701bd4f357a66ed221a716d3c4e5d79816b98b008367dcfeaf9ecdc4d639"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "b218701bd4f357a66ed221a716d3c4e5d79816b98b008367dcfeaf9ecdc4d639"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "b218701bd4f357a66ed221a716d3c4e5d79816b98b008367dcfeaf9ecdc4d639"
+        }
+      ],
+      "rule/ch7/ordinary/sotihd/source_windup": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "277c50634392ce66bace10f3cea4d3cfeda3034013979eaae7b7c9f6b423176c"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "277c50634392ce66bace10f3cea4d3cfeda3034013979eaae7b7c9f6b423176c"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "277c50634392ce66bace10f3cea4d3cfeda3034013979eaae7b7c9f6b423176c"
+        }
+      ],
+      "rule/ch7/strength/enemy_1083_sotiab/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "82105a9bc3ec95d9e3b84e6972218cf1328201c8ac2f2666ae3e487205ac6972"
+        }
+      ],
+      "rule/ch7/strength/enemy_1083_sotiab/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "84d766d16595c3b8cbc6fa8ae76603edebbd2b0556248001776337c4616df199"
+        }
+      ],
+      "unit/ch7/strength/enemy_1083_sotiab_2": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "2fc372ae24718a2b5ee50e7d69af83e63d3411c147364ad5a1329628280ea689"
+        }
+      ],
+      "ability/ch7/strength/enemy_1083_sotiab_2": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "d89d8987ba324c0ee24f90c7934896bfa4ab8e7cc138444b2b46959a9bbe8820"
+        }
+      ],
+      "buff/unit/ch7/strength/enemy_1083_sotiab_2/source/enemy_talent_strength[atk]": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "8bce922ddeb0ef94b5101952379c1e968f6fe4162b71adea6a939808ff62926e"
+        }
+      ],
+      "buff/ch7/strength/enemy_1083_sotiab_2/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "340e32867409bf070292740d97084740c774d29c6b20b678d0fa5f6e976422be"
+        }
+      ],
+      "buff/ch7/strength/enemy_1083_sotiab_2/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "b22aa230b60398a2b4beed6d97342754f78aff2d6d296b895d37c1490b082722"
+        }
+      ],
+      "selector/ch7/strength/enemy_1083_sotiab_2": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "4e614543e3d9c75ea7ee280438f3e1a5da9575ba7009a9469fd1b1024fcdbfb9"
+        }
+      ],
+      "behavior/ch7/strength/enemy_1083_sotiab_2": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "d87c14657502757c78727b449616f9f398264f36854083ee95d319233016848e"
+        }
+      ],
+      "rule/ch7/strength/enemy_1083_sotiab_2/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "5630732df94d232070fcad7b48f865d9c6fd038b7953afee92a4886f5901b44b"
+        }
+      ],
+      "rule/ch7/strength/enemy_1083_sotiab_2/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "94931b2b137269e9c209397bdb3562c4585db77d5708156a5810b92fc0cf37dd"
+        }
+      ],
+      "unit/ch7/strength/enemy_1078_sotisc": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "af32d3121d7bcf1edbf4792b6c2e902ada35d6a285372fddaa23739d4dec6f06"
+        }
+      ],
+      "ability/ch7/strength/enemy_1078_sotisc": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "b3afb1abe9bf2cf7f38be599cba853dbcab0a77ca93040774b01bfd52be0567b"
+        }
+      ],
+      "buff/unit/ch7/strength/enemy_1078_sotisc/source/enemy_talent_strength[move_speed]": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "c181fba03dfba9731753c2982a93761705f9b5a7d1e1f1c462142767ab891714"
+        }
+      ],
+      "buff/ch7/strength/enemy_1078_sotisc/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "77f48d5e1fa4d36f26528268f23135c09ee80ba9af8f8a63433f9e8d8eed72c4"
+        }
+      ],
+      "buff/ch7/strength/enemy_1078_sotisc/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "0d04a0b6bd8f445352350a0aa38f675643175423f14b5b42c47174f523f08899"
+        }
+      ],
+      "selector/ch7/strength/enemy_1078_sotisc": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "93dd9bfe1c8041643c2f54ad2adf0b7e9c8988d9426382056860fec8a3247998"
+        }
+      ],
+      "behavior/ch7/strength/enemy_1078_sotisc": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "3d7dae6d20d08090cc44995c03f36c1b6e69560b90e2257a9389c6a75738f7cf"
+        }
+      ],
+      "rule/ch7/strength/enemy_1078_sotisc/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "043a8dd3cad1171bd4c2e1250b3c69db9ff71215bc268fd8091bc26fa277025c"
+        }
+      ],
+      "rule/ch7/strength/enemy_1078_sotisc/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "87232fc2c4c9ac26fee7dee375cdf636b714e60ed834cb3b78a131ae6248fc5c"
+        }
+      ]
+    }
+  },
+  {
+    "package": {
+      "schemaVersion": 2,
+      "manifest": {
+        "id": "package/peer/consumer/strength_death",
+        "requires": [
+          "preset/ark_standard"
+        ]
+      },
+      "rules": [
+        {
+          "id": "rule/peer/sp",
+          "kind": "rule",
+          "contract": "resource.recovery",
+          "implementation": {
+            "type": "expression",
+            "expression": "inputs.current+inputs.parameters.amount"
+          }
+        }
+      ],
+      "buffs": [
+        {
+          "id": "buff/ch7/source/ore_immune",
+          "kind": "buff"
+        },
+        {
+          "id": "buff/ch7/source/ore_listener",
+          "kind": "buff"
+        }
+      ],
+      "entities": [
+        {
+          "id": "unit/peer/director",
+          "kind": "entity",
+          "components": {
+            "abilities": [
+              "ability/peer/all_on",
+              "ability/peer/v2_off",
+              "ability/peer/others_off",
+              "ability/peer/v1_dead"
+            ],
+            "spatial": {}
+          }
+        }
+      ],
+      "abilities": [
+        {
+          "id": "ability/peer/all_on",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "apply_buff",
+                "target": 3,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "apply_buff",
+                "target": 4,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "apply_buff",
+                "target": 5,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/v2_off",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "remove_buff",
+                "target": 4,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/others_off",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "remove_buff",
+                "target": 3,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "remove_buff",
+                "target": 5,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/v1_dead",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "modify_resource",
+                "target": 3,
+                "resource": "hp",
+                "value": 0
+              }
+            ]
+          },
+          "timeline": []
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "behavior/peer/modes",
+          "kind": "behavior",
+          "initial": "mode0",
+          "states": {
+            "mode0": {},
+            "mode1": {}
+          }
+        }
+      ],
+      "scenarioDraft": {
+        "id": "scene/peer/strength_death",
+        "ruleset": "ruleset/ark_standard",
+        "map": {
+          "rows": 7,
+          "cols": 7
+        },
+        "objectives": {},
+        "resources": {
+          "dp": {
+            "initial": 100,
+            "capacity": 100
+          },
+          "deployment_capacity": {
+            "initial": 0,
+            "capacity": 0
+          },
+          "stock_ch7_mine": {
+            "initial": 15,
+            "capacity": 15
+          }
+        },
+        "initialEntities": [
+          {
+            "definition": "unit/peer/director",
+            "instanceAlias": "director",
+            "position": {
+              "row": 0,
+              "col": 0
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1083_sotiab",
+            "instanceAlias": "v1",
+            "position": {
+              "row": 3,
+              "col": 1
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1083_sotiab_2",
+            "instanceAlias": "v2",
+            "position": {
+              "row": 3,
+              "col": 2
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1078_sotisc",
+            "instanceAlias": "v3",
+            "position": {
+              "row": 3,
+              "col": 3
+            }
+          }
+        ]
+      }
+    },
+    "modules": [
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json"
+    ],
+    "composition": {
+      "unit/ch7/strength/enemy_1083_sotiab": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "0e67843c9fd61ac8c59cdccdb377786ed8c48ecfb76d6f795a4117e1405d6957"
+        }
+      ],
+      "ability/ch7/strength/enemy_1083_sotiab": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "26c98a7e08b3e0eb3df1edbc356062a6a8aad1f4c45c4482d6ca9363bf8d3c8d"
+        }
+      ],
+      "buff/ch7/source/enemy_9D0_talent_strength": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "d7a05df18ee48616657fd34c1d55133f6eb1fecf4aa47e380776169622cb6d4f"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "d7a05df18ee48616657fd34c1d55133f6eb1fecf4aa47e380776169622cb6d4f"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "d7a05df18ee48616657fd34c1d55133f6eb1fecf4aa47e380776169622cb6d4f"
+        }
+      ],
+      "buff/unit/ch7/strength/enemy_1083_sotiab/source/enemy_talent_strength[atk]": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "3ff0e606770dc867a8d781f21c96c9d92af55d4ca2446aeb63e9beea14c9a2d8"
+        }
+      ],
+      "buff/ch7/strength/enemy_1083_sotiab/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "a111e863454f7f8b25fe32423620dfb0dae7d10bd8f444e152403d450b2330ab"
+        }
+      ],
+      "buff/ch7/strength/enemy_1083_sotiab/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "a0752ef64200a490533d7fdb5234c27b8d4d953a94163a73af8ebe22180dedcb"
+        }
+      ],
+      "selector/ch7/strength/enemy_1083_sotiab": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "73890463475d1ef4a2a82cde7686dcff8d327dbe2b48ab82eb18f1cde29ea559"
+        }
+      ],
+      "behavior/ch7/strength/enemy_1083_sotiab": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "d3c3f41ea6987441b4758cfd19549524ebe4ea664f7c11fa8c7ff38cca41f658"
+        }
+      ],
+      "rule/ch7/ordinary/steering": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "b218701bd4f357a66ed221a716d3c4e5d79816b98b008367dcfeaf9ecdc4d639"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "b218701bd4f357a66ed221a716d3c4e5d79816b98b008367dcfeaf9ecdc4d639"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "b218701bd4f357a66ed221a716d3c4e5d79816b98b008367dcfeaf9ecdc4d639"
+        }
+      ],
+      "rule/ch7/ordinary/sotihd/source_windup": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "277c50634392ce66bace10f3cea4d3cfeda3034013979eaae7b7c9f6b423176c"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "277c50634392ce66bace10f3cea4d3cfeda3034013979eaae7b7c9f6b423176c"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "277c50634392ce66bace10f3cea4d3cfeda3034013979eaae7b7c9f6b423176c"
+        }
+      ],
+      "rule/ch7/strength/enemy_1083_sotiab/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "82105a9bc3ec95d9e3b84e6972218cf1328201c8ac2f2666ae3e487205ac6972"
+        }
+      ],
+      "rule/ch7/strength/enemy_1083_sotiab/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "84d766d16595c3b8cbc6fa8ae76603edebbd2b0556248001776337c4616df199"
+        }
+      ],
+      "unit/ch7/strength/enemy_1083_sotiab_2": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "2fc372ae24718a2b5ee50e7d69af83e63d3411c147364ad5a1329628280ea689"
+        }
+      ],
+      "ability/ch7/strength/enemy_1083_sotiab_2": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "d89d8987ba324c0ee24f90c7934896bfa4ab8e7cc138444b2b46959a9bbe8820"
+        }
+      ],
+      "buff/unit/ch7/strength/enemy_1083_sotiab_2/source/enemy_talent_strength[atk]": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "8bce922ddeb0ef94b5101952379c1e968f6fe4162b71adea6a939808ff62926e"
+        }
+      ],
+      "buff/ch7/strength/enemy_1083_sotiab_2/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "340e32867409bf070292740d97084740c774d29c6b20b678d0fa5f6e976422be"
+        }
+      ],
+      "buff/ch7/strength/enemy_1083_sotiab_2/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "b22aa230b60398a2b4beed6d97342754f78aff2d6d296b895d37c1490b082722"
+        }
+      ],
+      "selector/ch7/strength/enemy_1083_sotiab_2": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "4e614543e3d9c75ea7ee280438f3e1a5da9575ba7009a9469fd1b1024fcdbfb9"
+        }
+      ],
+      "behavior/ch7/strength/enemy_1083_sotiab_2": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "d87c14657502757c78727b449616f9f398264f36854083ee95d319233016848e"
+        }
+      ],
+      "rule/ch7/strength/enemy_1083_sotiab_2/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "5630732df94d232070fcad7b48f865d9c6fd038b7953afee92a4886f5901b44b"
+        }
+      ],
+      "rule/ch7/strength/enemy_1083_sotiab_2/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "94931b2b137269e9c209397bdb3562c4585db77d5708156a5810b92fc0cf37dd"
+        }
+      ],
+      "unit/ch7/strength/enemy_1078_sotisc": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "af32d3121d7bcf1edbf4792b6c2e902ada35d6a285372fddaa23739d4dec6f06"
+        }
+      ],
+      "ability/ch7/strength/enemy_1078_sotisc": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "b3afb1abe9bf2cf7f38be599cba853dbcab0a77ca93040774b01bfd52be0567b"
+        }
+      ],
+      "buff/unit/ch7/strength/enemy_1078_sotisc/source/enemy_talent_strength[move_speed]": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "c181fba03dfba9731753c2982a93761705f9b5a7d1e1f1c462142767ab891714"
+        }
+      ],
+      "buff/ch7/strength/enemy_1078_sotisc/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "77f48d5e1fa4d36f26528268f23135c09ee80ba9af8f8a63433f9e8d8eed72c4"
+        }
+      ],
+      "buff/ch7/strength/enemy_1078_sotisc/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "0d04a0b6bd8f445352350a0aa38f675643175423f14b5b42c47174f523f08899"
+        }
+      ],
+      "selector/ch7/strength/enemy_1078_sotisc": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "93dd9bfe1c8041643c2f54ad2adf0b7e9c8988d9426382056860fec8a3247998"
+        }
+      ],
+      "behavior/ch7/strength/enemy_1078_sotisc": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "3d7dae6d20d08090cc44995c03f36c1b6e69560b90e2257a9389c6a75738f7cf"
+        }
+      ],
+      "rule/ch7/strength/enemy_1078_sotisc/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "043a8dd3cad1171bd4c2e1250b3c69db9ff71215bc268fd8091bc26fa277025c"
+        }
+      ],
+      "rule/ch7/strength/enemy_1078_sotisc/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "87232fc2c4c9ac26fee7dee375cdf636b714e60ed834cb3b78a131ae6248fc5c"
+        }
+      ]
+    }
+  },
+  {
+    "package": {
+      "schemaVersion": 2,
+      "manifest": {
+        "id": "package/peer/consumer/strength_silence_refresh",
+        "requires": [
+          "preset/ark_standard"
+        ]
+      },
+      "rules": [
+        {
+          "id": "rule/peer/sp",
+          "kind": "rule",
+          "contract": "resource.recovery",
+          "implementation": {
+            "type": "expression",
+            "expression": "inputs.current+inputs.parameters.amount"
+          }
+        }
+      ],
+      "buffs": [
+        {
+          "id": "buff/ch7/source/ore_immune",
+          "kind": "buff"
+        },
+        {
+          "id": "buff/ch7/source/ore_listener",
+          "kind": "buff"
+        },
+        {
+          "id": "buff/peer/silence",
+          "kind": "buff",
+          "selection_flags": {
+            "abnormal_flags": [
+              7
+            ]
+          }
+        }
+      ],
+      "entities": [
+        {
+          "id": "unit/peer/director",
+          "kind": "entity",
+          "components": {
+            "abilities": [
+              "ability/peer/all_on",
+              "ability/peer/v2_off",
+              "ability/peer/others_off",
+              "ability/peer/v1_dead"
+            ],
+            "spatial": {}
+          }
+        }
+      ],
+      "abilities": [
+        {
+          "id": "ability/peer/all_on",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "apply_buff",
+                "target": 3,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "apply_buff",
+                "target": 4,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "apply_buff",
+                "target": 5,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "apply_buff",
+                "target": 3,
+                "buff": "buff/peer/silence"
+              },
+              {
+                "op": "apply_buff",
+                "target": 4,
+                "buff": "buff/peer/silence"
+              },
+              {
+                "op": "apply_buff",
+                "target": 5,
+                "buff": "buff/peer/silence"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/v2_off",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "remove_buff",
+                "target": 4,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/others_off",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "remove_buff",
+                "target": 3,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "remove_buff",
+                "target": 5,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/v1_dead",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "modify_resource",
+                "target": 3,
+                "resource": "hp",
+                "value": 0
+              }
+            ]
+          },
+          "timeline": []
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "behavior/peer/modes",
+          "kind": "behavior",
+          "initial": "mode0",
+          "states": {
+            "mode0": {},
+            "mode1": {}
+          }
+        }
+      ],
+      "scenarioDraft": {
+        "id": "scene/peer/strength_silence_refresh",
+        "ruleset": "ruleset/ark_standard",
+        "map": {
+          "rows": 7,
+          "cols": 7
+        },
+        "objectives": {},
+        "resources": {
+          "dp": {
+            "initial": 100,
+            "capacity": 100
+          },
+          "deployment_capacity": {
+            "initial": 0,
+            "capacity": 0
+          },
+          "stock_ch7_mine": {
+            "initial": 15,
+            "capacity": 15
+          }
+        },
+        "initialEntities": [
+          {
+            "definition": "unit/peer/director",
+            "instanceAlias": "director",
+            "position": {
+              "row": 0,
+              "col": 0
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1083_sotiab",
+            "instanceAlias": "v1",
+            "position": {
+              "row": 3,
+              "col": 1
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1083_sotiab_2",
+            "instanceAlias": "v2",
+            "position": {
+              "row": 3,
+              "col": 2
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1078_sotisc",
+            "instanceAlias": "v3",
+            "position": {
+              "row": 3,
+              "col": 3
+            }
+          }
+        ]
+      }
+    },
+    "modules": [
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json"
+    ],
+    "composition": {
+      "unit/ch7/strength/enemy_1083_sotiab": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "0e67843c9fd61ac8c59cdccdb377786ed8c48ecfb76d6f795a4117e1405d6957"
+        }
+      ],
+      "ability/ch7/strength/enemy_1083_sotiab": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "26c98a7e08b3e0eb3df1edbc356062a6a8aad1f4c45c4482d6ca9363bf8d3c8d"
+        }
+      ],
+      "buff/ch7/source/enemy_9D0_talent_strength": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "d7a05df18ee48616657fd34c1d55133f6eb1fecf4aa47e380776169622cb6d4f"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "d7a05df18ee48616657fd34c1d55133f6eb1fecf4aa47e380776169622cb6d4f"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "d7a05df18ee48616657fd34c1d55133f6eb1fecf4aa47e380776169622cb6d4f"
+        }
+      ],
+      "buff/unit/ch7/strength/enemy_1083_sotiab/source/enemy_talent_strength[atk]": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "3ff0e606770dc867a8d781f21c96c9d92af55d4ca2446aeb63e9beea14c9a2d8"
+        }
+      ],
+      "buff/ch7/strength/enemy_1083_sotiab/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "a111e863454f7f8b25fe32423620dfb0dae7d10bd8f444e152403d450b2330ab"
+        }
+      ],
+      "buff/ch7/strength/enemy_1083_sotiab/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "a0752ef64200a490533d7fdb5234c27b8d4d953a94163a73af8ebe22180dedcb"
+        }
+      ],
+      "selector/ch7/strength/enemy_1083_sotiab": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "73890463475d1ef4a2a82cde7686dcff8d327dbe2b48ab82eb18f1cde29ea559"
+        }
+      ],
+      "behavior/ch7/strength/enemy_1083_sotiab": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "d3c3f41ea6987441b4758cfd19549524ebe4ea664f7c11fa8c7ff38cca41f658"
+        }
+      ],
+      "rule/ch7/ordinary/steering": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "b218701bd4f357a66ed221a716d3c4e5d79816b98b008367dcfeaf9ecdc4d639"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "b218701bd4f357a66ed221a716d3c4e5d79816b98b008367dcfeaf9ecdc4d639"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "b218701bd4f357a66ed221a716d3c4e5d79816b98b008367dcfeaf9ecdc4d639"
+        }
+      ],
+      "rule/ch7/ordinary/sotihd/source_windup": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "277c50634392ce66bace10f3cea4d3cfeda3034013979eaae7b7c9f6b423176c"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "277c50634392ce66bace10f3cea4d3cfeda3034013979eaae7b7c9f6b423176c"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "277c50634392ce66bace10f3cea4d3cfeda3034013979eaae7b7c9f6b423176c"
+        }
+      ],
+      "rule/ch7/strength/enemy_1083_sotiab/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "82105a9bc3ec95d9e3b84e6972218cf1328201c8ac2f2666ae3e487205ac6972"
+        }
+      ],
+      "rule/ch7/strength/enemy_1083_sotiab/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "84d766d16595c3b8cbc6fa8ae76603edebbd2b0556248001776337c4616df199"
+        }
+      ],
+      "unit/ch7/strength/enemy_1083_sotiab_2": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "2fc372ae24718a2b5ee50e7d69af83e63d3411c147364ad5a1329628280ea689"
+        }
+      ],
+      "ability/ch7/strength/enemy_1083_sotiab_2": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "d89d8987ba324c0ee24f90c7934896bfa4ab8e7cc138444b2b46959a9bbe8820"
+        }
+      ],
+      "buff/unit/ch7/strength/enemy_1083_sotiab_2/source/enemy_talent_strength[atk]": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "8bce922ddeb0ef94b5101952379c1e968f6fe4162b71adea6a939808ff62926e"
+        }
+      ],
+      "buff/ch7/strength/enemy_1083_sotiab_2/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "340e32867409bf070292740d97084740c774d29c6b20b678d0fa5f6e976422be"
+        }
+      ],
+      "buff/ch7/strength/enemy_1083_sotiab_2/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "b22aa230b60398a2b4beed6d97342754f78aff2d6d296b895d37c1490b082722"
+        }
+      ],
+      "selector/ch7/strength/enemy_1083_sotiab_2": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "4e614543e3d9c75ea7ee280438f3e1a5da9575ba7009a9469fd1b1024fcdbfb9"
+        }
+      ],
+      "behavior/ch7/strength/enemy_1083_sotiab_2": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "d87c14657502757c78727b449616f9f398264f36854083ee95d319233016848e"
+        }
+      ],
+      "rule/ch7/strength/enemy_1083_sotiab_2/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "5630732df94d232070fcad7b48f865d9c6fd038b7953afee92a4886f5901b44b"
+        }
+      ],
+      "rule/ch7/strength/enemy_1083_sotiab_2/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "94931b2b137269e9c209397bdb3562c4585db77d5708156a5810b92fc0cf37dd"
+        }
+      ],
+      "unit/ch7/strength/enemy_1078_sotisc": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "af32d3121d7bcf1edbf4792b6c2e902ada35d6a285372fddaa23739d4dec6f06"
+        }
+      ],
+      "ability/ch7/strength/enemy_1078_sotisc": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "b3afb1abe9bf2cf7f38be599cba853dbcab0a77ca93040774b01bfd52be0567b"
+        }
+      ],
+      "buff/unit/ch7/strength/enemy_1078_sotisc/source/enemy_talent_strength[move_speed]": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "c181fba03dfba9731753c2982a93761705f9b5a7d1e1f1c462142767ab891714"
+        }
+      ],
+      "buff/ch7/strength/enemy_1078_sotisc/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "77f48d5e1fa4d36f26528268f23135c09ee80ba9af8f8a63433f9e8d8eed72c4"
+        }
+      ],
+      "buff/ch7/strength/enemy_1078_sotisc/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "0d04a0b6bd8f445352350a0aa38f675643175423f14b5b42c47174f523f08899"
+        }
+      ],
+      "selector/ch7/strength/enemy_1078_sotisc": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "93dd9bfe1c8041643c2f54ad2adf0b7e9c8988d9426382056860fec8a3247998"
+        }
+      ],
+      "behavior/ch7/strength/enemy_1078_sotisc": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "3d7dae6d20d08090cc44995c03f36c1b6e69560b90e2257a9389c6a75738f7cf"
+        }
+      ],
+      "rule/ch7/strength/enemy_1078_sotisc/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "043a8dd3cad1171bd4c2e1250b3c69db9ff71215bc268fd8091bc26fa277025c"
+        }
+      ],
+      "rule/ch7/strength/enemy_1078_sotisc/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "87232fc2c4c9ac26fee7dee375cdf636b714e60ed834cb3b78a131ae6248fc5c"
+        }
+      ]
+    }
+  },
+  {
+    "package": {
+      "schemaVersion": 2,
+      "manifest": {
+        "id": "package/peer/consumer/strength_packets",
+        "requires": [
+          "preset/ark_standard"
+        ]
+      },
+      "rules": [
+        {
+          "id": "rule/peer/sp",
+          "kind": "rule",
+          "contract": "resource.recovery",
+          "implementation": {
+            "type": "expression",
+            "expression": "inputs.current+inputs.parameters.amount"
+          }
+        }
+      ],
+      "buffs": [
+        {
+          "id": "buff/ch7/source/ore_immune",
+          "kind": "buff"
+        },
+        {
+          "id": "buff/ch7/source/ore_listener",
+          "kind": "buff"
+        }
+      ],
+      "entities": [
+        {
+          "id": "unit/peer/director",
+          "kind": "entity",
+          "components": {
+            "abilities": [
+              "ability/peer/all_on",
+              "ability/peer/v2_off",
+              "ability/peer/others_off",
+              "ability/peer/v1_dead"
+            ],
+            "spatial": {}
+          }
+        },
+        {
+          "id": "unit/peer/blocker",
+          "kind": "entity",
+          "tags": [
+            "player",
+            "ground"
+          ],
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 90000,
+                "atk": 0,
+                "def": 31,
+                "mres": 17,
+                "block_count": 3
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 90000,
+                "capacity": 90000,
+                "role": "health"
+              }
+            },
+            "selection_state": {
+              "side": 0,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1
+            },
+            "deployable": {
+              "base_cost": 0,
+              "terrain": "ground",
+              "capacity": 1,
+              "refund_ratio": 0
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {}
+          }
+        }
+      ],
+      "abilities": [
+        {
+          "id": "ability/peer/all_on",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "apply_buff",
+                "target": 3,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "apply_buff",
+                "target": 4,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "apply_buff",
+                "target": 5,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/v2_off",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "remove_buff",
+                "target": 4,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/others_off",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "remove_buff",
+                "target": 3,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "remove_buff",
+                "target": 5,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/v1_dead",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "modify_resource",
+                "target": 3,
+                "resource": "hp",
+                "value": 0
+              }
+            ]
+          },
+          "timeline": []
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "behavior/peer/modes",
+          "kind": "behavior",
+          "initial": "mode0",
+          "states": {
+            "mode0": {},
+            "mode1": {}
+          }
+        }
+      ],
+      "scenarioDraft": {
+        "id": "scene/peer/strength_packets",
+        "ruleset": "ruleset/ark_standard",
+        "map": {
+          "rows": 7,
+          "cols": 7
+        },
+        "objectives": {},
+        "resources": {
+          "dp": {
+            "initial": 100,
+            "capacity": 100
+          },
+          "deployment_capacity": {
+            "initial": 0,
+            "capacity": 0
+          },
+          "stock_ch7_mine": {
+            "initial": 15,
+            "capacity": 15
+          }
+        },
+        "initialEntities": [
+          {
+            "definition": "unit/peer/director",
+            "instanceAlias": "director",
+            "position": {
+              "row": 0,
+              "col": 0
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1083_sotiab",
+            "instanceAlias": "v1",
+            "position": {
+              "row": 3,
+              "col": 2
+            },
+            "route": {
+              "motionMode": "WALK",
+              "startPosition": {
+                "row": 3,
+                "col": 2
+              },
+              "endPosition": {
+                "row": 3,
+                "col": 5
+              },
+              "checkpoints": []
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1083_sotiab_2",
+            "instanceAlias": "v2",
+            "position": {
+              "row": 3,
+              "col": 2
+            },
+            "route": {
+              "motionMode": "WALK",
+              "startPosition": {
+                "row": 3,
+                "col": 2
+              },
+              "endPosition": {
+                "row": 3,
+                "col": 5
+              },
+              "checkpoints": []
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1078_sotisc",
+            "instanceAlias": "v3",
+            "position": {
+              "row": 3,
+              "col": 2
+            },
+            "route": {
+              "motionMode": "WALK",
+              "startPosition": {
+                "row": 3,
+                "col": 2
+              },
+              "endPosition": {
+                "row": 3,
+                "col": 5
+              },
+              "checkpoints": []
+            }
+          }
+        ],
+        "parameters": {
+          "deploy_capacity": 1
+        },
+        "dependencies": [
+          "unit/peer/blocker"
+        ]
+      }
+    },
+    "modules": [
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json"
+    ],
+    "composition": {
+      "unit/ch7/strength/enemy_1083_sotiab": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "0e67843c9fd61ac8c59cdccdb377786ed8c48ecfb76d6f795a4117e1405d6957"
+        }
+      ],
+      "ability/ch7/strength/enemy_1083_sotiab": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "26c98a7e08b3e0eb3df1edbc356062a6a8aad1f4c45c4482d6ca9363bf8d3c8d"
+        }
+      ],
+      "buff/ch7/source/enemy_9D0_talent_strength": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "d7a05df18ee48616657fd34c1d55133f6eb1fecf4aa47e380776169622cb6d4f"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "d7a05df18ee48616657fd34c1d55133f6eb1fecf4aa47e380776169622cb6d4f"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "d7a05df18ee48616657fd34c1d55133f6eb1fecf4aa47e380776169622cb6d4f"
+        }
+      ],
+      "buff/unit/ch7/strength/enemy_1083_sotiab/source/enemy_talent_strength[atk]": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "3ff0e606770dc867a8d781f21c96c9d92af55d4ca2446aeb63e9beea14c9a2d8"
+        }
+      ],
+      "buff/ch7/strength/enemy_1083_sotiab/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "a111e863454f7f8b25fe32423620dfb0dae7d10bd8f444e152403d450b2330ab"
+        }
+      ],
+      "buff/ch7/strength/enemy_1083_sotiab/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "a0752ef64200a490533d7fdb5234c27b8d4d953a94163a73af8ebe22180dedcb"
+        }
+      ],
+      "selector/ch7/strength/enemy_1083_sotiab": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "73890463475d1ef4a2a82cde7686dcff8d327dbe2b48ab82eb18f1cde29ea559"
+        }
+      ],
+      "behavior/ch7/strength/enemy_1083_sotiab": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "d3c3f41ea6987441b4758cfd19549524ebe4ea664f7c11fa8c7ff38cca41f658"
+        }
+      ],
+      "rule/ch7/ordinary/steering": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "b218701bd4f357a66ed221a716d3c4e5d79816b98b008367dcfeaf9ecdc4d639"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "b218701bd4f357a66ed221a716d3c4e5d79816b98b008367dcfeaf9ecdc4d639"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "b218701bd4f357a66ed221a716d3c4e5d79816b98b008367dcfeaf9ecdc4d639"
+        }
+      ],
+      "rule/ch7/ordinary/sotihd/source_windup": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "277c50634392ce66bace10f3cea4d3cfeda3034013979eaae7b7c9f6b423176c"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "277c50634392ce66bace10f3cea4d3cfeda3034013979eaae7b7c9f6b423176c"
+        },
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "277c50634392ce66bace10f3cea4d3cfeda3034013979eaae7b7c9f6b423176c"
+        }
+      ],
+      "rule/ch7/strength/enemy_1083_sotiab/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "82105a9bc3ec95d9e3b84e6972218cf1328201c8ac2f2666ae3e487205ac6972"
+        }
+      ],
+      "rule/ch7/strength/enemy_1083_sotiab/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+          "definition_digest": "84d766d16595c3b8cbc6fa8ae76603edebbd2b0556248001776337c4616df199"
+        }
+      ],
+      "unit/ch7/strength/enemy_1083_sotiab_2": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "2fc372ae24718a2b5ee50e7d69af83e63d3411c147364ad5a1329628280ea689"
+        }
+      ],
+      "ability/ch7/strength/enemy_1083_sotiab_2": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "d89d8987ba324c0ee24f90c7934896bfa4ab8e7cc138444b2b46959a9bbe8820"
+        }
+      ],
+      "buff/unit/ch7/strength/enemy_1083_sotiab_2/source/enemy_talent_strength[atk]": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "8bce922ddeb0ef94b5101952379c1e968f6fe4162b71adea6a939808ff62926e"
+        }
+      ],
+      "buff/ch7/strength/enemy_1083_sotiab_2/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "340e32867409bf070292740d97084740c774d29c6b20b678d0fa5f6e976422be"
+        }
+      ],
+      "buff/ch7/strength/enemy_1083_sotiab_2/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "b22aa230b60398a2b4beed6d97342754f78aff2d6d296b895d37c1490b082722"
+        }
+      ],
+      "selector/ch7/strength/enemy_1083_sotiab_2": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "4e614543e3d9c75ea7ee280438f3e1a5da9575ba7009a9469fd1b1024fcdbfb9"
+        }
+      ],
+      "behavior/ch7/strength/enemy_1083_sotiab_2": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "d87c14657502757c78727b449616f9f398264f36854083ee95d319233016848e"
+        }
+      ],
+      "rule/ch7/strength/enemy_1083_sotiab_2/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "5630732df94d232070fcad7b48f865d9c6fd038b7953afee92a4886f5901b44b"
+        }
+      ],
+      "rule/ch7/strength/enemy_1083_sotiab_2/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+          "definition_digest": "94931b2b137269e9c209397bdb3562c4585db77d5708156a5810b92fc0cf37dd"
+        }
+      ],
+      "unit/ch7/strength/enemy_1078_sotisc": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "af32d3121d7bcf1edbf4792b6c2e902ada35d6a285372fddaa23739d4dec6f06"
+        }
+      ],
+      "ability/ch7/strength/enemy_1078_sotisc": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "b3afb1abe9bf2cf7f38be599cba853dbcab0a77ca93040774b01bfd52be0567b"
+        }
+      ],
+      "buff/unit/ch7/strength/enemy_1078_sotisc/source/enemy_talent_strength[move_speed]": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "c181fba03dfba9731753c2982a93761705f9b5a7d1e1f1c462142767ab891714"
+        }
+      ],
+      "buff/ch7/strength/enemy_1078_sotisc/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "77f48d5e1fa4d36f26528268f23135c09ee80ba9af8f8a63433f9e8d8eed72c4"
+        }
+      ],
+      "buff/ch7/strength/enemy_1078_sotisc/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "0d04a0b6bd8f445352350a0aa38f675643175423f14b5b42c47174f523f08899"
+        }
+      ],
+      "selector/ch7/strength/enemy_1078_sotisc": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "93dd9bfe1c8041643c2f54ad2adf0b7e9c8988d9426382056860fec8a3247998"
+        }
+      ],
+      "behavior/ch7/strength/enemy_1078_sotisc": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "3d7dae6d20d08090cc44995c03f36c1b6e69560b90e2257a9389c6a75738f7cf"
+        }
+      ],
+      "rule/ch7/strength/enemy_1078_sotisc/start": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "043a8dd3cad1171bd4c2e1250b3c69db9ff71215bc268fd8091bc26fa277025c"
+        }
+      ],
+      "rule/ch7/strength/enemy_1078_sotisc/finish": [
+        {
+          "module": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json",
+          "definition_digest": "87232fc2c4c9ac26fee7dee375cdf636b714e60ed834cb3b78a131ae6248fc5c"
+        }
+      ]
+    }
+  }
+]

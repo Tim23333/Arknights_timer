@@ -1,0 +1,646 @@
+--- a/ark_sim/adapters/api.py
++++ b/ark_sim/adapters/api.py
+@@ -15,6 +15,7 @@
+ from ark_sim.domains.lifecycle import LifecycleSystem
+ from ark_sim.domains.timeline import TimelineSystem
+ from ark_sim.domains.controls import ControlSystem
++from ark_sim.domains.terrain import TerrainSystem
+ 
+ 
+ def implementation_digest():
+@@ -37,6 +38,13 @@
+         self.ctx.abilities = AbilitySystem(self.ctx)
+         self.ctx.behavior = BehaviorSystem(self.ctx)
+         self.ctx.spatial = SpatialSystem(self.ctx)
++        def uses_terrain(value):
++            if isinstance(value, dict) or hasattr(value, "items"):
++                return "terrain_overlays" in value or value.get("op") in {"apply_terrain_overlay", "remove_terrain_overlay"} or any(uses_terrain(v) for v in value.values())
++            return isinstance(value, (list, tuple)) and any(uses_terrain(v) for v in value)
++        if uses_terrain(program.definitions):
++            self.ctx.terrain = TerrainSystem(self.ctx)
++            self.ctx.spatial.grid.tile_reader = self.ctx.terrain.tile
+         self.ctx.movement = MovementSystem(self.ctx)
+         self.ctx.lifecycle = LifecycleSystem(self.ctx)
+         if program.scenario.get("timeline") is not None:
+@@ -99,6 +107,8 @@
+         if self.ctx.controls is not None:
+             for name, handler in self.ctx.controls.handlers.items(): self.session.register_handler(name, handler)
+             self.session.add_system(self.ctx.controls.tick, phase=0)
++        if self.ctx.terrain is not None:
++            self.session.add_system(self.ctx.terrain.tick, phase=0)
+         self.session.add_system(self.ctx.lifecycle.prune_expired, phase=0)
+         if self.ctx.buffs.has_buffs:
+             # Registered before initial waves and input tasks: expiry at t is
+--- a/ark_sim/content/capabilities.py
++++ b/ark_sim/content/capabilities.py
+@@ -50,6 +50,10 @@
+     def effect(item, path, scopes):
+         local = [*scopes, item.get("rules", {})]
+         op = item.get("op")
++        if op == "apply_terrain_overlay":
++            require("terrain.tile_options", path, (), item.get("parameters", {}).get("rule"))
++            if "position" in item.get("parameters", {}):
++                overlay_position(item["parameters"]["position"], path)
+         if op == "damage":
+             require("damage.pipeline", path, local)
+         elif op in ("heal", "regenerate"):
+@@ -77,7 +81,9 @@
+             if selected.get("region", {}).get("type") != "all":
+                 raise ContentError(f"{path}.selector: control effect requires explicit spatial origin; only nonspatial all is supported")
+         op = item.get("op")
+-        if op == "retire" and not item.get("selector") and item.get("target", "selected") in {"selected", "self", "source", "battle", "owner"}:
++        if op in {"apply_terrain_overlay", "remove_terrain_overlay"} and item.get("target", "selected") in {"source", "self", "battle", "owner"}:
++            raise ContentError(f"{path}: control terrain layers require selected actors or an explicit actor ID")
++        if op in {"retire", "apply_terrain_overlay", "remove_terrain_overlay"} and not item.get("selector") and item.get("target", "selected") in {"selected", "self", "source", "battle", "owner"}:
+             raise ContentError(f"{path}: control retirement requires an explicit actor target or nonspatial selector")
+         if op in {"heal", "regenerate", "push"}:
+             raise ContentError(f"{path}: control {op} requires actor source attributes/origin")
+@@ -167,6 +173,27 @@
+                       spatial.get("rules", {}), overrides.get("rules", {})]
+             route(path, scopes, actual)
+ 
++    def overlay_position(position, path):
++        geometry = scenario.get("map", {"rows": 1, "cols": 1})
++        if (not isinstance(position, Mapping) or set(position) != {"row", "col"} or
++                any(type(position[a]) is not int or not 0 <= position[a] < geometry[n]
++                    for a, n in (("row", "rows"), ("col", "cols")))):
++            raise ContentError(f"{path}: terrain overlays require an integer cell inside scenario map")
++
++    def overlay_instance(item, path):
++        definition = definitions[item["definition"]]
++        merged = {**definition.get("components", {}), **item.get("components", {})}
++        if merged.get("terrain_overlays"):
++            from ark_sim.domains.terrain import validate_spec
++            for overlay in merged["terrain_overlays"]:
++                try: validate_spec(overlay)
++                except (TypeError, ValueError) as error: raise ContentError(f"{path}: {error}") from error
++                require("terrain.tile_options", path, (), overlay.get("rule"))
++            overlay_position(item.get("position", merged.get("spatial", {}).get("position", {"row": 0, "col": 0})), path)
++            placement = item.get("placement", {})
++            if any(placement.get("random_range", {}).values()) or any(placement.get("offset", {}).values()):
++                raise ContentError(f"{path}: terrain owner placement must resolve to an explicitly integer cell")
++
+     entity_scopes = {}
+     for identifier, definition in definitions.items():
+         if definition.get("kind") != "entity":
+@@ -177,6 +204,8 @@
+             steering = components["spatial"]["steering"]
+             require("movement.steering", f"{identifier}.spatial.steering", scopes, steering.get("rule"))
+         entity_scopes[identifier] = scopes
++        for overlay in components.get("terrain_overlays", ()):
++            require("terrain.tile_options", f"{identifier}.terrain_overlays", (), overlay.get("rule"))
+         attributes = components.get("attributes", {})
+         for stat in attributes.get("base", {}):
+             require("attributes.effective", f"{identifier}.attributes.{stat}",
+@@ -256,6 +285,7 @@
+                     path = f"{scenario['id']}.timeline.waves[{wi}].fragments[{fi}].actions[{ai}]"
+                     if action["kind"] == "spawn":
+                         spawn = action["spawn"]
++                        overlay_instance(spawn, path)
+                         if spawn.get("placement"):
+                             require("spawn.position", path, explicit=spawn["placement"]["rule"])
+                         instance_route(spawn, path+".route")
+@@ -265,14 +295,18 @@
+     for index, entry in enumerate(scenario.get("scheduledEffects", [])):
+         path = f"{scenario['id']}.scheduledEffects[{index}]"
+         require("time.quantize", path)
++        if entry["effect"].get("op") in {"apply_terrain_overlay", "remove_terrain_overlay"}:
++            control_effect(entry["effect"], path)
+         effect(entry["effect"], path, [])
+     for index, wave in enumerate(scenario.get("waves", [])):
++        overlay_instance(wave, f"{scenario['id']}.waves[{index}]")
+         captured_origins(wave, f"{scenario['id']}.waves[{index}].route")
+         require("time.quantize", f"{scenario['id']}.waves[{index}]")
+         if wave.get("placement"):
+             require("spawn.position", f"{scenario['id']}.waves[{index}].placement", explicit=wave["placement"]["rule"])
+         instance_route(wave, f"{scenario['id']}.waves[{index}].route")
+     for index, item in enumerate(scenario.get("initialEntities", [])):
++        overlay_instance(item, f"{scenario['id']}.initialEntities[{index}]")
+         captured_origins(item, f"{scenario['id']}.initialEntities[{index}].route")
+         instance_route(item, f"{scenario['id']}.initialEntities[{index}].route")
+     if scenario.get("objectives"):
+--- a/ark_sim/content/dependencies.py
++++ b/ark_sim/content/dependencies.py
+@@ -12,6 +12,12 @@
+     result = set()
+     def visit(item, location, key=None):
+         if isinstance(item, Mapping):
++            if item.get("op") == "apply_terrain_overlay":
++                terrain_rule = item.get("parameters", {}).get("rule")
++                if terrain_rule is not None:
++                    if not isinstance(terrain_rule, str) or not terrain_rule:
++                        raise ContentError(f"{location}.parameters.rule: terrain rule ID required")
++                    result.add(terrain_rule)
+             if item.get("action", item.get("type")) == "deploy" and isinstance(item.get("entity"), str):
+                 result.add(item["entity"])
+             if "dynamic" in item:
+--- a/ark_sim/content/presets/ark_standard.json
++++ b/ark_sim/content/presets/ark_standard.json
+@@ -556,6 +556,19 @@
+       "metadata": {
+         "scope": "explicit_model_profile",
+         "client_verified": false
++      }
++    },
++    {
++      "id": "rule/ark_terrain_tile_options",
++      "kind": "calculation_rule",
++      "contract": "terrain.tile_options",
++      "implementation": {
++        "type": "provider",
++        "provider": "ark.terrain.tile_options"
++      },
++      "parameters": {
++        "normal_cost": 1,
++        "obstacle_like_cost": 3
+       }
+     }
+   ],
+@@ -623,7 +636,8 @@
+         "targeting.selection": "rule/ark_targeting_selection",
+         "random.check": "rule/ark_random_check",
+         "resource.capacity_change": "rule/ark_capacity_change",
+-        "movement.wait_deadline": "rule/ark_wait_deadline"
++        "movement.wait_deadline": "rule/ark_wait_deadline",
++        "terrain.tile_options": "rule/ark_terrain_tile_options"
+       },
+       "parameters": {
+         "health_resource": "hp",
+--- a/ark_sim/content/schemas.py
++++ b/ark_sim/content/schemas.py
+@@ -23,6 +23,7 @@
+ COMPONENT_FIELDS = {
+     "attributes": {"base", "modifiers", "rules", "growth", "parameters", "layers", "attribute_rules"},
+     "resources": None,
++    "terrain_overlays": None,
+     "abilities": None,
+     "deployable": {"policy", "cost", "base_cost", "cooldown_seconds", "refund_ratio", "terrain", "capacity", "rules", "parameters", "deployed", "initial_state"},
+     "behavior": {"machine", "state", "rules", "parameters"},
+@@ -36,7 +37,7 @@
+ RESOURCE_FIELDS = {"initial", "capacity", "capacity_attribute", "capacity_change_rule", "recovery_rule", "recovery_rate", "recovery", "rules", "parameters", "bounds_rule", "capacity_rule", "role", "events", "recovery_freeze_abilities", "recovery_freeze_rule"}
+ EFFECT_FIELDS = {"op", "target", "rules", "read_mode", "damage_type", "scale", "additions", "amount", "delta", "value", "amount_rule", "resource", "buff", "definition", "position", "facing", "tags", "on_success", "on_failure", "effects", "condition", "parameters", "event", "payload", "type", "state", "machine", "distance", "offset", "direction", "kind", "at_seconds", "delay_seconds", "effect", "stacks", "selector", "lifetime_seconds", "remove_all", "metadata", "duration_seconds", "center", "radius", "filters", "owner", "ability", "force", "stream", "probability"}
+ DEFAULT_CAPABILITIES = {
+-    "effects": {"damage", "heal", "regenerate", "modify_resource", "apply_buff", "remove_buff", "spawn", "emit", "move", "state", "schedule", "transition", "area", "trigger_ability", "push", "random", "input_lock", "retire"},
++    "effects": {"damage", "heal", "regenerate", "modify_resource", "apply_buff", "remove_buff", "spawn", "emit", "move", "state", "schedule", "transition", "area", "trigger_ability", "push", "random", "input_lock", "retire", "apply_terrain_overlay", "remove_terrain_overlay"},
+     "activations": {"manual", "automatic_attack", "on_deploy", "passive"},
+     "read_modes": {"at_hit", "at_cast", "at_launch"},
+     "stacking": {"refresh", "independent", "add", "extend", "max"},
+@@ -92,6 +93,19 @@
+         options = effect.get("parameters", {})
+         if not isinstance(options.get("key"), str) or not options["key"] or type(options.get("enabled")) is not bool:
+             raise ContentError(f"{path}.parameters: input_lock requires key and boolean enabled")
++    if effect["op"] in {"apply_terrain_overlay", "remove_terrain_overlay"}:
++        from ark_sim.domains.terrain import validate_spec
++        try:
++            if effect["op"] == "apply_terrain_overlay":
++                validate_spec(effect.get("parameters"), position=True)
++            else:
++                options = effect.get("parameters", {})
++                if set(options) != {"key"} or not isinstance(options["key"], str) or not options["key"]:
++                    raise ValueError("remove overlay requires explicit nonempty owner key")
++            if effect.get("target") in {"battle", "system/battle"}:
++                raise ValueError("terrain overlay requires actor ownership")
++        except (ValueError, TypeError) as error:
++            raise ContentError(f"{path}: {error}") from error
+     if effect["op"] == "retire":
+         parameters = effect.get("parameters", {})
+         if not isinstance(parameters, Mapping):
+@@ -220,6 +234,20 @@
+             allowed = COMPONENT_FIELDS[key]
+             if allowed is not None:
+                 fields(value, allowed, f"{identifier}.components.{key}")
++        if "terrain_overlays" in components:
++            from ark_sim.domains.terrain import validate_spec
++            layers = components["terrain_overlays"]
++            if not isinstance(layers, (list, tuple)):
++                raise ContentError(identifier+".terrain_overlays must be a list")
++            keys = set()
++            for layer in layers:
++                try: validate_spec(layer)
++                except (ValueError, TypeError) as error: raise ContentError(identifier+": "+str(error)) from error
++                if layer["key"] in keys: raise ContentError(identifier+": duplicate terrain owner key")
++                keys.add(layer["key"])
++        advanced = components.get("deployable", {}).get("parameters", {}).get("advanced_build_mask")
++        if advanced is not None and (type(advanced) is not int or advanced <= 0):
++            raise ContentError(identifier+": advanced_build_mask requires a positive integer mask")
+         if "buffs" in components and "buff_container" in components:
+             raise ContentError(f"{identifier}.components: buffs and buff_container are mutually exclusive aliases")
+         for effect in components.get("deck", {}).get("on_create", []):
+--- a/ark_sim/domains/context.py
++++ b/ark_sim/domains/context.py
+@@ -56,7 +56,7 @@
+         if expected and expected != self.rules.fingerprint:
+             raise DomainError("compiled provider/rule identity differs from runtime; recompile with the chosen providers")
+         self.effect_phase = len(program.ruleset.get("system_order", ())) + 1
+-        self.attributes = self.resources = self.effects = self.abilities = self.buffs = self.spatial = self.behavior = self.lifecycle = self.timeline = None
++        self.attributes = self.resources = self.effects = self.abilities = self.buffs = self.spatial = self.behavior = self.lifecycle = self.timeline = self.terrain = None
+         self.controls = None
+         self._notifying = 0
+         self.last_calculation_event_id = None
+--- a/ark_sim/domains/deployment.py
++++ b/ark_sim/domains/deployment.py
+@@ -36,7 +36,7 @@
+         owner is None or e["components"].get("ownership", {}).get("owner") == owner)]
+     decision = context.calc("deploy.eligibility", {
+         "entity": prototype, "location": position,
+-        "terrain": {"inside": inside, "buildable": tile.get("buildableType", 0),
++        "terrain": {**tile, "inside": inside, "buildable": tile.get("buildableType", 0),
+                     "occupied": any(e["components"].get("spatial", {}).get("position") == position for e in actors)},
+         "resources": {"affordable": paid or not resource or context.resources.current("system/battle", resource) >= cost},
+         "states": {"finished": state["finished"], "instances": len(same),
+--- a/ark_sim/domains/effects.py
++++ b/ark_sim/domains/effects.py
+@@ -132,6 +132,14 @@
+             elif operation == "emit":
+                 self.ctx.emit(effect.get("event", effect.get("type", "custom")),
+                     {**effect.get("payload", {}), "source": source, "target": target}, cause)
++            elif operation == "apply_terrain_overlay":
++                if self.ctx.terrain is None:
++                    raise ValueError("terrain overlay capability was not loaded by this program")
++                self.ctx.terrain.apply(target, effect["parameters"])
++            elif operation == "remove_terrain_overlay":
++                if self.ctx.terrain is None:
++                    raise ValueError("terrain overlay capability was not loaded by this program")
++                self.ctx.terrain.remove(target, effect["parameters"]["key"])
+             elif operation == "retire":
+                 if target == self.ctx.session.world.resolve("system/battle"):
+                     raise ValueError("retire effects cannot remove the reserved battle entity")
+--- a/ark_sim/domains/lifecycle.py
++++ b/ark_sim/domains/lifecycle.py
+@@ -7,7 +7,13 @@
+     def __init__(self, context):
+         self.ctx = context
+ 
+-    def create(self, definition_id, position=None, facing="right", route=None, alias=None, parameters=None,
++    def create(self, *args, **kwargs):
++        if self.ctx.terrain is None:
++            return self._create(*args, **kwargs)
++        with self.ctx.session.atomic():
++            return self._create(*args, **kwargs)
++
++    def _create(self, definition_id, position=None, facing="right", route=None, alias=None, parameters=None,
+                deployed=False, component_overrides=None, rule_overrides=None, tags=None,
+                owner=None, lifetime_seconds=None, on_owner_retire="retain"):
+         if alias is not None and (not isinstance(alias, str) or not alias):
+@@ -54,6 +60,8 @@
+         components["buffs"] = {**buff_config, "instances": [], "next_instance_id": 1}
+         ref = self.ctx.session.commit([Intent("create", data={"definition_id": definition_id,
+               "components": components, "tags": list(definition.get("tags", ()) if tags is None else tags), "alias": alias})])[0]
++        for overlay in components.get("terrain_overlays", ()):
++            self.ctx.terrain.apply(ref, overlay)
+         if lifetime_seconds is not None:
+             if type(lifetime_seconds) not in (int, float) or lifetime_seconds < 0:
+                 raise ValueError("entity lifetime must be nonnegative")
+@@ -115,11 +123,19 @@
+             self.ctx.emit("entity.revived", {"source": ref, "target": ref})
+ 
+     def retire(self, ref, reason):
++        if self.ctx.terrain is None:
++            return self._retire(ref, reason)
++        with self.ctx.session.atomic():
++            return self._retire(ref, reason)
++
++    def _retire(self, ref, reason):
+         ref = self.ctx.session.world.resolve(ref)
+         if not self.ctx.alive(ref):
+             return
+         self.ctx.set(ref, ("runtime", "alive"), False)
+         self.ctx.set(ref, ("runtime", "state"), reason)
++        if self.ctx.terrain is not None:
++            self.ctx.terrain.remove(ref)
+         self.ctx.abilities.interrupt(ref, reason)
+         lifetime = self.ctx.get(ref, ("runtime", "lifetime"))
+         if lifetime and lifetime["task"] in {t["id"] for t in self.ctx.session.scheduler.pending}:
+--- a/ark_sim/domains/movement.py
++++ b/ark_sim/domains/movement.py
+@@ -2,15 +2,20 @@
+ import math
+ from collections.abc import Mapping
+ from ark_sim.contracts import thaw
+-from .spatial import GridTopology, route_motion_mode, project_cell
++from .spatial import GridTopology, route_motion_mode, project_cell, UnreachablePathError
+ 
+ 
+ class SpatialSystem:
+     def __init__(self, context):
+         self.ctx = context
+-        self.map_definition = thaw(context.program.scenario.get("map", {"rows": 1, "cols": 1}))
+-        self.grid = GridTopology(self.map_definition)
++        self._base_map_definition = thaw(context.program.scenario.get("map", {"rows": 1, "cols": 1}))
++        self.grid = GridTopology(self._base_map_definition)
+         self._blocking_reconciling = False
++
++    @property
++    def map_definition(self):
++        terrain = getattr(self.ctx, "terrain", None)
++        return terrain.map() if terrain is not None else self._base_map_definition
+ 
+     def blocked_by(self, ref):
+         return self.ctx.get(ref, ("runtime", "blocked_by"))
+@@ -357,9 +362,26 @@
+                 continue
+             point = self.checkpoint_position(ref, checkpoints[cursor], route, spatial) if cursor < len(checkpoints) else route["endPosition"]
+             if not spatial.get("movement_path"):
+-                spatial["movement_path"] = self.ctx.calc("movement.path", {"map": self.ctx.spatial.map_definition,
++                terrain = getattr(self.ctx, "terrain", None)
++                revision = terrain._state()["revision"] if terrain is not None else None
++                if terrain is not None and spatial.get("terrain_wait_revision") == revision:
++                    continue
++                try:
++                    spatial["movement_path"] = self.ctx.calc("movement.path", {"map": self.ctx.spatial.map_definition,
+                         "origin": spatial["position"], "destination": point, "checkpoints": checkpoints}, source=ref,
+                         component=spatial.get("rules", {}))
++                except Exception as error:
++                    cause = error
++                    while cause is not None and not isinstance(cause, UnreachablePathError):
++                        cause = cause.__cause__
++                    if terrain is None or cause is None:
++                        raise
++                    spatial["terrain_wait_revision"] = revision
++                    spatial["velocity"] = {"row": 0, "col": 0}
++                    self.ctx.set(ref, ("spatial",), spatial)
++                    self.ctx.emit("movement.terrain_blocked", {"source": ref, "revision": revision, "position": spatial["position"]})
++                    continue
++                spatial.pop("terrain_wait_revision", None)
+                 state["path_index"] = 0
+             path = spatial["movement_path"]
+             if state["path_index"] >= len(path):
+--- a/ark_sim/domains/providers.py
++++ b/ark_sim/domains/providers.py
+@@ -2,6 +2,7 @@
+ from ark_sim.presets import providers as ark
+ 
+ BUILTIN_PROVIDERS = {
++    "ark.terrain.tile_options": ark.terrain_tile_options,
+     "ark.movement.checkpoint_cartesian": ark.checkpoint_cartesian_position,
+     "ark.movement.living_transition": ark.living_route_transition,
+     "ark.spawn.uniform_rect": ark.spawn_uniform_rect,
+--- a/ark_sim/domains/spatial.py
++++ b/ark_sim/domains/spatial.py
+@@ -67,6 +67,7 @@
+     def __init__(self, map_definition):
+         if not isinstance(map_definition, Mapping):
+             raise ValueError("map definition must be an object")
++        self.tile_reader = None
+         self.rows, self.cols = map_definition.get("rows"), map_definition.get("cols")
+         for field, value in (("rows", self.rows), ("cols", self.cols)):
+             if type(value) is not int or value <= 0:
+@@ -93,12 +94,14 @@
+     def tile(self, row, col):
+         if not self.inside(row, col):
+             raise ValueError(f"tile outside map: ({row}, {col})")
+-        return thaw(self._tiles[row * self.cols + col])
++        return self.tile_reader(row, col) if self.tile_reader else thaw(self._tiles[row * self.cols + col])
+ 
+     def passable(self, row, col):
+         if not self.inside(row, col):
+             return False
+-        tile = self._tiles[row * self.cols + col]
++        tile = self.tile(row, col)
++        if "groundPassable" in tile:
++            return tile["groundPassable"]
+         key = tile.get("tileKey", "tile_floor")
+         if key in {"tile_wall", "tile_forbidden", "tile_flystart"}:
+             return False
+@@ -158,8 +161,8 @@
+             raise UnreachablePathError(f"Route endpoint is not ground-passable: {start} -> {end}")
+         if start == end:
+             return [] if origin["row"] == target["row"] and origin["col"] == target["col"] else [target]
+-        if allow_diagonal:
+-            return self._diagonal_path(start, end, target, corner_cut)
++        if allow_diagonal or any(self.tile(r, c).get("movementCost", 1) != 1 for r in range(self.rows) for c in range(self.cols)):
++            return self._diagonal_path(start, end, target, corner_cut, allow_diagonal)
+         queue = deque([start])
+         previous = {start: None}
+         while queue and end not in previous:
+@@ -180,9 +183,9 @@
+         route[-1] = target
+         return route
+ 
+-    def _diagonal_path(self, start, end, target, corner_cut):
++    def _diagonal_path(self, start, end, target, corner_cut, allow_diagonal=True):
+         queue, distances, previous = [(0, *start)], {start: 0}, {start: None}
+-        neighbours = (*self._NEIGHBOURS, (-1, -1), (-1, 1), (1, -1), (1, 1))
++        neighbours = (*self._NEIGHBOURS, (-1, -1), (-1, 1), (1, -1), (1, 1)) if allow_diagonal else self._NEIGHBOURS
+         while queue:
+             cost, row, col = heapq.heappop(queue)
+             if cost != distances[(row, col)]:
+@@ -196,7 +199,7 @@
+                 if dr and dc and not corner_cut and (
+                         not self.passable(row+dr, col) or not self.passable(row, col+dc)):
+                     continue
+-                candidate = cost+(math.sqrt(2) if dr and dc else 1)
++                candidate = cost+(math.sqrt(2) if dr and dc else 1)*self.tile(*neighbour).get("movementCost", 1)
+                 if candidate < distances.get(neighbour, math.inf):
+                     distances[neighbour], previous[neighbour] = candidate, (row, col)
+                     heapq.heappush(queue, (candidate, *neighbour))
+--- a/ark_sim/domains/terrain.py
++++ b/ark_sim/domains/terrain.py
+@@ -0,0 +1,127 @@
++"""Owned tile layers: World stores ownership, pure rules compute effective data."""
++from collections.abc import Mapping
++from ark_sim.contracts import thaw
++from ark_sim.rules.numeric import validate_data
++import math
++
++PATCH_FIELDS={'buildableType','passableMask','heightType','physicalHeight','advancedBuildMask','obstacleLikeMoveCost'}
++
++
++def validate_values(values):
++    if not isinstance(values,Mapping) or set(values)-PATCH_FIELDS:raise ValueError('terrain overlay values contain unsupported tile fields')
++    for key,value in values.items():
++        if key in ('buildableType','passableMask') and (type(value) is not int or not 0<=value<=3):raise ValueError('terrain overlay '+key+' requires mask0..3')
++        if key=='advancedBuildMask' and (type(value) is not int or value<0):raise ValueError('terrain advancedBuildMask requires nonnegative integer')
++        if key=='heightType' and value not in (0,1,'LOWLAND','HIGHLAND'):raise ValueError('terrain heightType requires0/1/LOWLAND/HIGHLAND')
++        if key=='heightType' and isinstance(value,bool):raise ValueError('terrain heightType cannot be boolean')
++        if key=='physicalHeight' and (type(value) not in (int,float) or not math.isfinite(value)):raise ValueError('terrain physicalHeight requires finite numeric data')
++        if key=='obstacleLikeMoveCost' and type(value) is not bool:raise ValueError('terrain obstacleLikeMoveCost requires boolean')
++
++
++def validate_spec(spec,position=False):
++    allowed={'key','priority','values','preserve','rule'}|({'position'} if position else set())
++    if not isinstance(spec,Mapping) or set(spec)-allowed:raise ValueError('terrain overlay unknown specification fields')
++    if not isinstance(spec.get('key'),str) or not spec['key']:raise ValueError('terrain overlay requires nonempty owner key')
++    if type(spec.get('priority')) is not int:raise ValueError('terrain overlay priority must be explicit integer')
++    validate_values(spec.get('values'))
++    preserve=spec.get('preserve',[])
++    if not isinstance(preserve,(list,tuple)) or any(not isinstance(x,str) or x not in PATCH_FIELDS for x in preserve) or len(set(preserve))!=len(preserve):raise ValueError('terrain preserve requires unique known tile fields')
++    if set(preserve)&set(spec['values']):raise ValueError('terrain preserve conflicts with a rewritten field')
++    if 'rule' in spec and (not isinstance(spec['rule'],str) or not spec['rule']):raise ValueError('terrain overlay rule must be a definition ID')
++    if 'position' in spec:
++        p=spec['position']
++        if not isinstance(p,Mapping) or set(p)!={'row','col'} or any(type(v) is not int for v in p.values()):raise ValueError('terrain overlay position requires integer cell')
++
++
++class TerrainSystem:
++    def __init__(self,context):self.ctx=context
++
++    def _state(self):return self.ctx.get('system/battle',('state','terrain'),{'next_id':1,'revision':0,'layers':{},'effective_tiles':{}})
++    def _save(self,state):self.ctx.set('system/battle',('state','terrain'),state)
++    def _base(self,row,col):return thaw(self.ctx.spatial.grid._tiles[row*self.ctx.spatial.grid.cols+col])
++    def _cell_layers(self,row,col,state):return [x for x in state['layers'].values() if x['cell']=={'row':row,'col':col}]
++
++    def _evaluate(self,row,col,state):
++        layers=self._cell_layers(row,col,state);base=self._base(row,col)
++        if not layers:return base,None
++        explicit={x['rule'] for x in layers if x.get('rule')}
++        if len(explicit)>1:raise ValueError('overlapping terrain layers require one coherent tile-options rule')
++        scope={'scenario':thaw(self.ctx.program.scenario.get('rules',{}))}
++        result=self.ctx.rules.evaluate('terrain.tile_options',{'base':base,'layers':layers,'position':{'row':row,'col':col}},
++            scope=scope,rule_id=next(iter(explicit)) if explicit else None,
++            context={'time':self.ctx.session.time,'seconds':self.ctx.session.time*self.ctx.session.quantum,'quantum':self.ctx.session.quantum})
++        options=thaw(result.value)
++        if not isinstance(options,Mapping):raise ValueError('terrain tile-options rule must return tile data')
++        # Custom rules can alter every normalized option, but cannot return
++        # unrecognized behavior fields under the guise of a tile patch.
++        allowed=set(base)|PATCH_FIELDS|{'groundPassable','movementCost'}
++        if set(options)-allowed:raise ValueError('terrain tile-options rule returned unsupported fields')
++        validate_values({k:v for k,v in options.items() if k in PATCH_FIELDS})
++        if type(options.get('groundPassable')) is not bool:raise ValueError('terrain rule requires explicit groundPassable')
++        cost=options.get('movementCost')
++        if type(cost) not in (int,float) or not math.isfinite(cost) or cost<=0:raise ValueError('terrain rule requires positive finite movementCost')
++        validate_data(options,'terrain effective tile')
++        return dict(options),result
++
++    def tile(self,row,col):return self._evaluate(row,col,self._state())[0]
++    def map(self):
++        state=self._state();base=thaw(self.ctx.spatial._base_map_definition)
++        if not state['layers']:return base
++        base['tiles']=[self._evaluate(r,c,state)[0] for r in range(base['rows']) for c in range(base['cols'])]
++        return base
++
++    def _changed(self,state,cells,reason):
++        traces=[]
++        for row,col in sorted(cells):
++            tile,result=self._evaluate(row,col,state);key=f'{row}:{col}'
++            if self._cell_layers(row,col,state):state['effective_tiles'][key]=tile
++            else:state['effective_tiles'].pop(key,None)
++            traces.append({'position':{'row':row,'col':col},'effective_tile':tile,'rule_id':result.rule_id if result else None,'trace':thaw(result.trace) if result else None})
++        state['revision']+=1;self._save(state)
++        # Derived paths/steering are never retained across a layer revision.
++        for entity in self.ctx.session.world.entities():
++            spatial=entity['components'].get('spatial',{})
++            if spatial.get('route'):
++                spatial=thaw(spatial);spatial.pop('movement_path',None);spatial.pop('velocity',None);spatial.pop('terrain_wait_revision',None)
++                spatial.get('movement',{}).update(path_index=0)
++                self.ctx.set(entity['id'],('spatial',),spatial)
++        self.ctx.emit('terrain.changed',{'revision':state['revision'],'reason':reason,'changes':traces})
++        self.ctx.spatial.blocking()
++
++    def apply(self,owner,spec):
++        with self.ctx.session.atomic():
++            validate_spec(spec,position=True);owner=self.ctx.session.world.resolve(owner)
++            if owner==self.ctx.session.world.resolve('system/battle') or not self.ctx.alive(owner):raise ValueError('terrain overlay requires a living actor owner')
++            cell=spec.get('position',self.ctx.get(owner,('spatial','position')))
++            if not isinstance(cell,Mapping) or set(cell)!={'row','col'} or any(type(v) is not int for v in cell.values()) or not self.ctx.spatial.grid.inside(cell['row'],cell['col']):raise ValueError('terrain overlay owner/cell must be an integer position inside map')
++            state=self._state();cells={(cell['row'],cell['col'])}
++            for key,layer in list(state['layers'].items()):
++                if layer['owner']==owner and layer['key']==spec['key']:
++                    cells.add((layer['cell']['row'],layer['cell']['col']));state['layers'].pop(key)
++            uid=state['next_id'];state['next_id']+=1
++            layer={'id':uid,'sequence':uid,'owner':owner,'cell':dict(cell),'key':spec['key'],'priority':spec['priority'],
++                'values':thaw(spec['values']),'preserve':list(spec.get('preserve',[])),'rule':spec.get('rule')}
++            state['layers'][str(uid)]=layer;self._changed(state,cells,{'kind':'apply_or_replace','owner':owner,'layer':uid,'key':spec['key']})
++            return uid
++
++    def remove(self,owner,key=None):
++        with self.ctx.session.atomic():
++            if key is not None and (not isinstance(key,str) or not key):raise ValueError('terrain remove requires a nonempty owner key')
++            owner=self.ctx.session.world.resolve(owner)
++            if owner==self.ctx.session.world.resolve('system/battle'):raise ValueError('terrain layers have actor owners')
++            state=self._state();cells=set();removed=[]
++            for uid,layer in list(state['layers'].items()):
++                if layer['owner']==owner and (key is None or layer['key']==key):
++                    cells.add((layer['cell']['row'],layer['cell']['col']));removed.append(int(uid));state['layers'].pop(uid)
++            if removed:self._changed(state,cells,{'kind':'remove','owner':owner,'key':key,'layers':removed})
++            return removed
++
++    def tick(self,session):
++        state=self._state()
++        if not state['layers']:return
++        cells={(l['cell']['row'],l['cell']['col']) for l in state['layers'].values()};changed=set()
++        for row,col in cells:
++            value,_=self._evaluate(row,col,state)
++            if value!=state['effective_tiles'].get(f'{row}:{col}'):changed.add((row,col))
++        if changed:
++            with session.atomic():self._changed(state,changed,{'kind':'pure_rule_time_or_dependency_change'})
+--- a/ark_sim/presets/providers.py
++++ b/ark_sim/presets/providers.py
+@@ -116,6 +116,22 @@
+     return max(0, value)
+ 
+ 
++def terrain_tile_options(inputs, params, context):
++    """Stable ownership layers; explicit model costs, no native-ID branches."""
++    result = dict(inputs["base"])
++    key = result.get("tileKey", "tile_floor")
++    ground = key not in {"tile_wall", "tile_forbidden", "tile_flystart"} and (
++        key in {"tile_start", "tile_end"} or bool((result.get("passableMask", 1) or 0) & 1))
++    for layer in sorted(inputs["layers"], key=lambda x: (x["priority"], x["sequence"], x["owner"])):
++        values = layer["values"]
++        result.update(values)
++        if "passableMask" in values:
++            ground = bool(values["passableMask"] & 1)
++    result["groundPassable"] = ground
++    result["movementCost"] = params.get("obstacle_like_cost", 3) if result.get("obstacleLikeMoveCost", False) else params.get("normal_cost", 1)
++    return result
++
++
+ def ground_deploy(inputs, params, context):
+     terrain, states = inputs["terrain"], inputs["states"]
+     restrictions = inputs["entity"].get("components", {}).get("deployable", {})
+@@ -125,6 +141,7 @@
+               (not terrain.get("inside", False), "out_of_map"),
+               (not int(terrain.get("buildable", 0) or 0) & mask, "not_buildable"),
+               (terrain.get("occupied", False), "occupied"),
++              ("advanced_build_mask" in restrictions.get("parameters", {}) and not int(terrain.get("advancedBuildMask", 1)) & restrictions["parameters"]["advanced_build_mask"], "advanced_not_buildable"),
+               (states.get("instances", 0) >= restrictions.get("parameters", {}).get("max_instances", 1), "already_deployed"),
+               (states.get("cooldown", False), "on_cooldown"),
+               (states.get("at_capacity", False), "capacity"),
+--- a/ark_sim/rules/contracts.json
++++ b/ark_sim/rules/contracts.json
+@@ -3184,7 +3184,7 @@
+         "graph",
+         "provider"
+       ],
+-      "description": "Explicit final Boolean override; metadata authority may解除 legacy/ability freeze. No implicit/default binding.",
++      "description": "Explicit final Boolean override; metadata authority may\u89e3\u9664 legacy/ability freeze. No implicit/default binding.",
+       "pureEvaluation": true,
+       "writesStateDirectly": false,
+       "versionsRequired": true,
+@@ -3193,6 +3193,35 @@
+       },
+       "contractVersion": 1,
+       "status": "declared"
++    },
++    {
++      "id": "terrain.tile_options",
++      "kind": "calculation",
++      "owner": "scenario",
++      "inputs": [
++        {
++          "name": "base",
++          "type": "record",
++          "required": true
++        },
++        {
++          "name": "layers",
++          "type": "record_list",
++          "required": true
++        },
++        {
++          "name": "position",
++          "type": "position",
++          "required": true
++        }
++      ],
++      "outputType": "record",
++      "implementations": [
++        "expression",
++        "graph",
++        "provider"
++      ],
++      "description": "Pure stable owned tile-layer merge; movement and deployment consume normalized effective options."
+     }
+   ],
+   "types": {

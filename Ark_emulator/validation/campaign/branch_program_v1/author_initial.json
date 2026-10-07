@@ -1,0 +1,32 @@
+{
+  "core": "510a6f2d62d43f4f11c0313779e8cd2bbcb18766ac6d5baad17210bc2dd31c33",
+  "exitcode": 1,
+  "cases": [
+    {
+      "case": "tools/experiments/branch_program_v1/test_branches.py::test_real_phase_progress_activation_and_cp_replay",
+      "outcome": "passed",
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/branch_program_v1/test_branches.py::test_busy_or_exhausted_branch_rejects_without_writes",
+      "outcome": "passed",
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/branch_program_v1/test_branches.py::test_action_failure_atomic_retains_dormant_and_running_phase",
+      "outcome": "failed",
+      "failure": "tools\\experiments\\branch_program_v1\\test_branches.py:49: in test_action_failure_atomic_retains_dormant_and_running_phase\n    s=create(p);s.ctx.branches.advance('test',2)\n      ^^^^^^^^^\ntools\\experiments\\branch_program_v1\\test_branches.py:23: in create\n    def create(p=None):return Engine.create(Compiler().compile(p or fixture()),seed=540)\n                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n..\\unpack_work\\campaign_branch_program_v2_candidate\\ark_sim\\content\\compiler.py:82: in compile\n    return self._compile(scenario, packages, ruleset, overrides)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n..\\unpack_work\\campaign_branch_program_v2_candidate\\ark_sim\\content\\compiler.py:230: in _compile\n    validate_activation(definitions)\n..\\unpack_work\\campaign_branch_program_v2_candidate\\ark_sim\\content\\compiler.py:227: in validate_activation\n    if key not in {'metadata', 'payload', 'parameters', 'manifest'}: validate_activation(child)\n                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^\n..\\unpack_work\\campaign_branch_program_v2_candidate\\ark_sim\\content\\compiler.py:227: in validate_activation\n    if key not in {'metadata', 'payload', 'parameters', 'manifest'}: validate_activation(child)\n                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^\n..\\unpack_work\\campaign_branch_program_v2_candidate\\ark_sim\\content\\compiler.py:227: in validate_activation\n    if key not in {'metadata', 'payload', 'parameters', 'manifest'}: validate_activation(child)\n                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^\n..\\unpack_work\\campaign_branch_program_v2_candidate\\ark_sim\\content\\compiler.py:227: in validate_activation\n    if key not in {'metadata', 'payload', 'parameters', 'manifest'}: validate_activation(child)\n                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^\n..\\unpack_work\\campaign_branch_program_v2_candidate\\ark_sim\\content\\compiler.py:229: in validate_activation\n    for child in value: validate_activation(child)\n                        ^^^^^^^^^^^^^^^^^^^^^^^^^^\n..\\unpack_work\\campaign_branch_program_v2_candidate\\ark_sim\\content\\compiler.py:227: in validate_activation\n    if key not in {'metadata', 'payload', 'parameters', 'manifest'}: validate_activation(child)\n                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^\n..\\unpack_work\\campaign_branch_program_v2_candidate\\ark_sim\\content\\compiler.py:229: in validate_activation\n    for child in value: validate_activation(child)\n                        ^^^^^^^^^^^^^^^^^^^^^^^^^^\n..\\unpack_work\\campaign_branch_program_v2_candidate\\ark_sim\\content\\compiler.py:227: in validate_activation\n    if key not in {'metadata', 'payload', 'parameters', 'manifest'}: validate_activation(child)\n                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^\n..\\unpack_work\\campaign_branch_program_v2_candidate\\ark_sim\\content\\compiler.py:229: in validate_activation\n    for child in value: validate_activation(child)\n                        ^^^^^^^^^^^^^^^^^^^^^^^^^^\n..\\unpack_work\\campaign_branch_program_v2_candidate\\ark_sim\\content\\compiler.py:225: in validate_activation\n    raise CompileError('activate_predefined references an unknown initial registration key')\nE   ark_sim.content.compiler.CompileError: activate_predefined references an unknown initial registration key"
+    },
+    {
+      "case": "tools/experiments/branch_program_v1/test_branches.py::test_terminal_cancel_does_not_claim_unexecuted_phase_complete",
+      "outcome": "passed",
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/branch_program_v1/test_branches.py::test_loop_phase_is_explicit_and_unknown_program_compile_rejected",
+      "outcome": "passed",
+      "failure": null
+    }
+  ],
+  "full_stage_executed": false
+}

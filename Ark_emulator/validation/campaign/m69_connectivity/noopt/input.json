@@ -1,0 +1,123 @@
+{
+  "manifest": {
+    "requires": [
+      "preset/ark_standard"
+    ]
+  },
+  "entities": [
+    {
+      "id": "unit/barrier",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "spatial": {},
+        "attributes": {
+          "base": {
+            "max_hp": 100,
+            "atk": 0,
+            "def": 0,
+            "block_count": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100,
+            "role": "health"
+          }
+        },
+        "deployable": {
+          "base_cost": 2,
+          "cooldown_seconds": 0,
+          "capacity": 0,
+          "terrain": "ground",
+          "parameters": {
+            "max_instances": 5
+          },
+          "stock": {
+            "resource": "cards",
+            "amount": 1
+          },
+          "rules": {
+            "deploy.cost": "rule/fee"
+          }
+        },
+        "terrain_overlays": [
+          {
+            "key": "barrier",
+            "priority": 0,
+            "values": {
+              "obstacleLikeMoveCost": true
+            },
+            "preserve": [
+              "passableMask"
+            ],
+            "rule": "rule/terrain"
+          }
+        ]
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/fee",
+      "kind": "rule",
+      "contract": "deploy.cost",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.base_cost"
+      }
+    },
+    {
+      "id": "rule/terrain",
+      "kind": "rule",
+      "contract": "terrain.tile_options",
+      "parameters": {
+        "obstacle_like_cost": 1000
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.terrain.tile_options"
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/connectivity",
+    "ruleset": "ruleset/ark_standard",
+    "objectives": {},
+    "map": {
+      "rows": 2,
+      "cols": 4
+    },
+    "roster": [
+      "unit/barrier"
+    ],
+    "resources": {
+      "dp": {
+        "initial": 10,
+        "capacity": 10
+      },
+      "cards": {
+        "initial": 5,
+        "capacity": 5
+      }
+    },
+    "parameters": {
+      "deployment_routes": [
+        {
+          "id": "original",
+          "start": {
+            "row": 0,
+            "col": 0
+          },
+          "end": {
+            "row": 0,
+            "col": 3
+          }
+        }
+      ]
+    }
+  }
+}

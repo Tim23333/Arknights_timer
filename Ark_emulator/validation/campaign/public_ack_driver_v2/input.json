@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/public_ack_driver",
+    "requires": [
+      "preset/ark_standard"
+    ]
+  },
+  "controls": [
+    {
+      "id": "control/dialogue",
+      "kind": "control",
+      "clock_policy": "logical",
+      "ack_policy": "external",
+      "on_start": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "dialogue",
+            "enabled": true
+          }
+        }
+      ],
+      "on_complete": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "dialogue",
+            "enabled": false
+          }
+        }
+      ],
+      "on_cancel": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "dialogue",
+            "enabled": false
+          }
+        }
+      ],
+      "steps": [
+        {
+          "kind": "ack",
+          "key": "line/1"
+        },
+        {
+          "kind": "ack",
+          "key": "line/2"
+        }
+      ]
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/public_ack_driver",
+    "ruleset": "ruleset/ark_standard",
+    "map": {
+      "rows": 1,
+      "cols": 1
+    },
+    "objectives": {},
+    "resources": {},
+    "timeline": {
+      "policy": "managed_clear",
+      "negative_timeout_policy": "wait_for_clear",
+      "waves": [
+        {
+          "fragments": [
+            {
+              "actions": [
+                {
+                  "kind": "control",
+                  "definition": "control/dialogue",
+                  "instanceAlias": "story/native",
+                  "managed": true,
+                  "blocks_wave": true,
+                  "blocks_fragment": true
+                }
+              ]
+            },
+            {
+              "actions": [
+                {
+                  "kind": "effects",
+                  "effects": [
+                    {
+                      "op": "emit",
+                      "target": "battle",
+                      "event": "proof.next_fragment"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

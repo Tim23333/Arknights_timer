@@ -1,0 +1,190 @@
+--- a/ark_sim/adapters/api.py
++++ b/ark_sim/adapters/api.py
+@@ -70,6 +70,8 @@
+                                       item.get("route"), item.get("instanceAlias"), parameters=item.get("parameters"), deployed=item.get("deployed", False),
+                                       component_overrides=item.get("components"), rule_overrides=item.get("rules"), tags=item.get("tags"),
+                                       active=item.get('active', True), registration_key=item.get('registration_key'))
++        from ark_sim.domains.tile_fields import initialize as initialize_tile_fields
++        initialize_tile_fields(self.ctx)
+         for entry in program.scenario.get("scheduledEffects", ()):
+             at = entry.get("at")
+             if at is None:
+--- a/ark_sim/content/compiler.py
++++ b/ark_sim/content/compiler.py
+@@ -37,7 +37,7 @@
+             if isinstance(value.get("provider"), str):
+                 result.add(value["provider"])
+             for key, child in value.items():
+-                if key not in {"metadata", "parameters", "payload", "inputs"}:
++                if key not in {"metadata", "parameters", "payload", "inputs", "expected_blackboard"}:
+                     walk(child)
+         elif isinstance(value, (tuple, list)):
+             for child in value:
+@@ -209,6 +209,8 @@
+                                        {name: providers[name] for name in required_providers})
+         self._validate_reference_kinds(definitions)
+         self._validate_entity_abilities(definitions, selected_scene)
++        from ..domains.tile_fields import validate_definitions as validate_tile_fields
++        validate_tile_fields(definitions,selected_scene)
+         registered = {item['registration_key'] for item in selected_scene.get('initialEntities', ()) if item.get('registration_key')}
+         def validate_activation(value):
+             if isinstance(value, dict):
+@@ -262,7 +264,7 @@
+         def bindings(value, path):
+             if isinstance(value, Mapping):
+                 for key, child in value.items():
+-                    if key in {"metadata", "parameters", "payload", "inputs"}:
++                    if key in {"metadata", "parameters", "payload", "inputs", "expected_blackboard"}:
+                         continue
+                     if key == "attribute_rules" and isinstance(child, Mapping):
+                         for attribute, overrides in child.items():
+--- a/ark_sim/content/dependencies.py
++++ b/ark_sim/content/dependencies.py
+@@ -40,7 +40,7 @@
+                     # Timeline's validated scheduling policy is an enum, unlike
+                     # entity/lifecycle/buff policy definition references.
+                     continue
+-                if name in {"metadata", "parameters", "payload", "inputs"}:
++                if name in {"metadata", "parameters", "payload", "inputs", "expected_blackboard"}:
+                     # These are data/expression records, not schema references.
+                     # Providers declaring generated content use dependencies or
+                     # bounded dynamicReferences instead of accidental key scans.
+--- a/ark_sim/content/spatial_validation.py
++++ b/ark_sim/content/spatial_validation.py
+@@ -193,6 +193,8 @@
+     except ValueError as error:fail(path,str(error))
+     tiles = value.get("tiles")
+     if tiles is None:
++        if any(p.get('type')=='occupancy_buff_field' for p in profiles.values()):
++            fail(path+'.tiles','tile field profiles require explicit row-major tiles')
+         return
+     if not isinstance(tiles, (list, tuple)) or len(tiles) != value["rows"] * value["cols"]:
+         fail(f"{path}.tiles", "expected exactly rows * cols row-major entries")
+@@ -212,6 +214,11 @@
+             number = tile.get(field)
+             if number is not None and (type(number) is not int or not 0 <= number <= 3):
+                 fail(f"{location}.{field}", "expected a normalized integer mask in [0, 3] or null")
+-        if tile.get("blackboard"):
++        field_profile=profiles.get(key,{}) if key in profiles else {}
++        if field_profile.get('type')=='occupancy_buff_field':
++            from ..domains.tile_fields import validate_data as validate_field_data
++            try:validate_field_data(tile,field_profile)
++            except ValueError as error:fail(location,str(error))
++        elif tile.get("blackboard"):
+             fail(f"{location}.blackboard", "tile blackboard behavior is unsupported")
+         if tile.get('effects'):fail(location+'.effects','tile effects behavior is unsupported')
+--- a/ark_sim/domains/context.py
++++ b/ark_sim/domains/context.py
+@@ -98,9 +98,13 @@
+         return self.alive(ref) and bool(self.get(ref, ('runtime', 'active'), True))
+ 
+     def selectable(self, ref):
++        if 'tile_field_owner' in self.entity(ref)['tags']:
++            return False
+         return self.active(ref) and not self.route_hidden(ref)
+ 
+     def effect_target_available(self, ref):
++        if 'tile_field_owner' in self.entity(ref)['tags']:
++            return False
+         return bool(self.get(ref, ('runtime', 'active'), True)) and (not self.route_hidden(ref) or self.visibility_policy(ref).get("hidden_effects", "reject") == "allow")
+ 
+     def aura_available(self, ref):
+--- a/ark_sim/domains/movement.py
++++ b/ark_sim/domains/movement.py
+@@ -45,6 +45,7 @@
+         definition = self.ctx.program.definitions[selector_id]
+         entity = self.ctx.entity(source)
+         candidates = [thaw(e) for e in self.ctx.session.world.entities() if e["id"] != self.ctx.session.world.resolve("system/battle")
++                      and 'tile_field_owner' not in e['tags']
+                       and self.ctx.get(e["id"], ('runtime', 'active'), True) and not self.ctx.route_hidden(e["id"])]
+         if definition.get("parameters", {}).get("exclude_source"):
+             candidates = [e for e in candidates if e["id"] != entity["id"]]
+--- a/ark_sim/domains/tile_fields.py
++++ b/ark_sim/domains/tile_fields.py
+@@ -0,0 +1,55 @@
++"""Generic authored tile fields represented by explicit Buff owner entities."""
++from collections.abc import Mapping
++from ark_sim.contracts import thaw
++
++
++def board(tile):
++    raw=tile.get('blackboard')
++    if raw is None:return {}
++    if isinstance(raw,Mapping):return dict(raw)
++    if not isinstance(raw,(list,tuple)):raise ValueError('tile field blackboard must be a mapping or entry list')
++    result={}
++    for entry in raw:
++        if not isinstance(entry,Mapping) or set(entry)-{'key','value','valueStr'} or not isinstance(entry.get('key'),str) or not entry['key']:
++            raise ValueError('tile field blackboard entry malformed')
++        if entry['key'] in result:raise ValueError('tile field duplicate blackboard key')
++        if entry.get('valueStr') is not None:raise ValueError('tile field string blackboard needs an explicit adapter')
++        result[entry['key']]=entry['value']
++    return result
++
++
++def validate_data(tile,profile):
++    actual=board(tile);expected=profile['expected_blackboard']
++    if set(actual)!=set(expected) or any(type(actual[k]) is not type(expected[k]) or actual[k]!=expected[k] for k in actual):
++        raise ValueError('tile field blackboard is not fully bound by its explicit profile')
++    if tile.get('effects'):raise ValueError('tile field graphic/effect data requires an explicit effect adapter')
++
++
++def validate_definitions(definitions,scene):
++    for key,profile in scene.get('map',{}).get('tile_mechanics',{}).items():
++        if profile['type']!='occupancy_buff_field':continue
++        definition=definitions[profile['definition']]
++        if definition['kind']!='entity':raise ValueError('tile field definition must be an entity')
++        components=definition.get('components',{})
++        if 'tile_field_owner' not in definition.get('tags',[]) or set(definition.get('tags',[])) & {'enemy','player','campaign_roster'}:
++            raise ValueError('tile field owner requires explicit noncombat field tag')
++        if any(components.get(k) for k in ('abilities','behavior','deployable','ownership','terrain_overlays')):
++            raise ValueError('tile field owner must be static without combat/deployment/ownership/terrain mechanics')
++        initial=components.get('buffs',components.get('buff_container',{})).get('initial',[])
++        if not initial or not any(definitions[bid].get('aura') for bid in initial):
++            raise ValueError('tile field owner needs an explicit parent aura Buff')
++
++
++def initialize(ctx):
++    map_definition=ctx.program.scenario.get('map',{});profiles=map_definition.get('tile_mechanics',{})
++    if not any(p['type']=='occupancy_buff_field' for p in profiles.values()):return
++    fields={}
++    with ctx.session.atomic():
++        for index,tile in enumerate(map_definition['tiles']):
++            profile=profiles.get(tile.get('tileKey'))
++            if not profile or profile['type']!='occupancy_buff_field':continue
++            validate_data(tile,profile);row,col=divmod(index,map_definition['cols'])
++            ref=ctx.lifecycle.create(profile['definition'],{'row':row,'col':col},deployed=False)
++            fields[f'{row}:{col}']={'owner':ref,'tile_key':tile['tileKey'],'definition':profile['definition'],
++                'source_blackboard':board(tile),'source_tile':thaw(tile)}
++        ctx.state_update(tile_fields=fields)
+--- a/ark_sim/domains/tile_mechanics.py
++++ b/ark_sim/domains/tile_mechanics.py
+@@ -8,6 +8,12 @@
+     if not isinstance(value,Mapping):raise ValueError('map.tile_mechanics requires a mapping of tile keys to profiles')
+     for key,p in value.items():
+         if not isinstance(key,str) or not key:raise ValueError('tile mechanic key must be a nonempty string')
++        if isinstance(p,Mapping) and p.get('type')=='occupancy_buff_field':
++            if set(p)!={'type','definition','expected_blackboard'}:raise ValueError('tile field profile needs explicit definition and blackboard binding')
++            if not isinstance(p['definition'],str) or not p['definition']:raise ValueError('tile field entity reference required')
++            if not isinstance(p['expected_blackboard'],Mapping):raise ValueError('tile field expected blackboard must be a mapping')
++            validate_data(p['expected_blackboard'],'tile field blackboard')
++            continue
+         if not isinstance(p,Mapping) or set(p)-{'type','role','rule','parameters'}:raise ValueError('tile mechanic unknown profile fields')
+         if p.get('type')!='route_checkpoint_portal' or p.get('role') not in ('entry','exit'):raise ValueError('unsupported tile mechanic profile/role')
+         if p.get('rule') is not None and (not isinstance(p['rule'],str) or not p['rule']):raise ValueError('tile mechanic rule requires definition ID')
+@@ -20,11 +26,15 @@
+     return {'cell':{'row':row,'col':col},'tile_key':key,'tile_options':tile,'profile':thaw(profile) if profile else None}
+ 
+ def paired_rule(entry,exit,fallback):
++    entry=entry if entry and entry.get('type')=='route_checkpoint_portal' else None
++    exit=exit if exit and exit.get('type')=='route_checkpoint_portal' else None
+     rules={p.get('rule') for p in (entry,exit) if p and p.get('rule')}
+     if len(rules)>1:raise ValueError('portal entry/exit declare conflicting transition rules')
+     return next(iter(rules)) if rules else fallback
+ 
+ def validate_pair(entry,exit):
++    entry=entry if entry and entry.get('type')=='route_checkpoint_portal' else None
++    exit=exit if exit and exit.get('type')=='route_checkpoint_portal' else None
+     if not entry and not exit:return False
+     if not entry or not exit or entry['role']!='entry' or exit['role']!='exit':
+         raise ValueError('route portal requires paired entry and exit tile profiles')

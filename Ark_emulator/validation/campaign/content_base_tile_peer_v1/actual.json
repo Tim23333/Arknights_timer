@@ -1,0 +1,557 @@
+{
+  "input": {
+    "schemaVersion": 2,
+    "manifest": {
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "tags": [
+          "peer_occupant"
+        ],
+        "components": {
+          "attributes": {
+            "base": {}
+          },
+          "selection_state": {
+            "side": 1,
+            "unit_type": 2
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/player_char",
+        "kind": "entity",
+        "tags": [
+          "peer_occupant"
+        ],
+        "components": {
+          "attributes": {
+            "base": {}
+          },
+          "selection_state": {
+            "side": 0,
+            "unit_type": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/player_token",
+        "kind": "entity",
+        "tags": [
+          "peer_occupant"
+        ],
+        "components": {
+          "attributes": {
+            "base": {}
+          },
+          "selection_state": {
+            "side": 0,
+            "unit_type": 4
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/enemy_char",
+        "kind": "entity",
+        "tags": [
+          "peer_occupant"
+        ],
+        "components": {
+          "attributes": {
+            "base": {}
+          },
+          "selection_state": {
+            "side": 1,
+            "unit_type": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/enemy_token",
+        "kind": "entity",
+        "tags": [
+          "peer_occupant"
+        ],
+        "components": {
+          "attributes": {
+            "base": {}
+          },
+          "selection_state": {
+            "side": 1,
+            "unit_type": 4
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/player_compound",
+        "kind": "entity",
+        "tags": [
+          "peer_occupant"
+        ],
+        "components": {
+          "attributes": {
+            "base": {}
+          },
+          "selection_state": {
+            "side": 0,
+            "unit_type": 5
+          },
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/typed_tiles",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 2,
+        "cols": 3
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/player_char",
+          "instanceAlias": "player_char",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        },
+        {
+          "definition": "unit/peer/player_token",
+          "instanceAlias": "player_token",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/peer/enemy_char",
+          "instanceAlias": "enemy_char",
+          "position": {
+            "row": 1,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/enemy_token",
+          "instanceAlias": "enemy_token",
+          "position": {
+            "row": 1,
+            "col": 1
+          }
+        },
+        {
+          "definition": "unit/peer/player_compound",
+          "instanceAlias": "player_compound",
+          "position": {
+            "row": 1,
+            "col": 2
+          }
+        }
+      ]
+    }
+  },
+  "cp_sha": "9409c027d9689ca982d9f469e0254fe86e9046400dbf9e1f497436d217f86f8e",
+  "expected": [
+    {
+      "row": 0,
+      "col": 0
+    },
+    {
+      "row": 0,
+      "col": 2
+    },
+    {
+      "row": 1,
+      "col": 0
+    },
+    {
+      "row": 1,
+      "col": 1
+    }
+  ],
+  "snapshot": {
+    "time": 11,
+    "seconds": 0.36666666666666664,
+    "scenario": "scene/peer/typed_tiles",
+    "program_fingerprint": "1d9a4b0cb9ac4b4093b017ab0894997a1a451435d6ba53d40e9e5d588abcd5c7",
+    "runtime_fingerprint": "47379612ad751e85f35d2557f5d2db3cb7469d502d7637b9d8d6db79197c8225",
+    "entities": [
+      {
+        "id": 1,
+        "definition_id": "system/battle",
+        "tags": [
+          "system"
+        ],
+        "components": {
+          "attributes": {
+            "base": {},
+            "modifiers": []
+          },
+          "resources": {},
+          "state": {
+            "finished": false,
+            "result": "running",
+            "pending_waves": 0,
+            "kills": 0,
+            "leaks": 0,
+            "damage_dealt": 0,
+            "deployments": {},
+            "command_results": {}
+          },
+          "runtime": {
+            "alive": true,
+            "casts": {}
+          },
+          "buffs": {
+            "instances": []
+          }
+        },
+        "version": 1
+      },
+      {
+        "id": 2,
+        "definition_id": "unit/peer/source",
+        "tags": [
+          "peer_occupant"
+        ],
+        "components": {
+          "attributes": {
+            "base": {},
+            "modifiers": []
+          },
+          "selection_state": {
+            "side": 1,
+            "unit_type": 2
+          },
+          "spatial": {
+            "position": {
+              "row": 0,
+              "col": 0
+            },
+            "facing": "right"
+          },
+          "resources": {},
+          "runtime": {
+            "alive": true,
+            "state": "alive",
+            "deployed": false,
+            "initializing": false,
+            "casts": {},
+            "cooldowns": {},
+            "next_attack": 0,
+            "blocked_by": null,
+            "rule_bindings": {}
+          },
+          "buffs": {
+            "instances": [],
+            "next_instance_id": 1
+          }
+        },
+        "version": 2
+      },
+      {
+        "id": 3,
+        "definition_id": "unit/peer/player_char",
+        "tags": [
+          "peer_occupant"
+        ],
+        "components": {
+          "attributes": {
+            "base": {},
+            "modifiers": []
+          },
+          "selection_state": {
+            "side": 0,
+            "unit_type": 1
+          },
+          "spatial": {
+            "position": {
+              "row": 0,
+              "col": 1
+            },
+            "facing": "right"
+          },
+          "resources": {},
+          "runtime": {
+            "alive": true,
+            "state": "alive",
+            "deployed": false,
+            "initializing": false,
+            "casts": {},
+            "cooldowns": {},
+            "next_attack": 0,
+            "blocked_by": null,
+            "rule_bindings": {}
+          },
+          "buffs": {
+            "instances": [],
+            "next_instance_id": 1
+          }
+        },
+        "version": 2
+      },
+      {
+        "id": 4,
+        "definition_id": "unit/peer/player_token",
+        "tags": [
+          "peer_occupant"
+        ],
+        "components": {
+          "attributes": {
+            "base": {},
+            "modifiers": []
+          },
+          "selection_state": {
+            "side": 0,
+            "unit_type": 4
+          },
+          "spatial": {
+            "position": {
+              "row": 0,
+              "col": 2
+            },
+            "facing": "right"
+          },
+          "resources": {},
+          "runtime": {
+            "alive": true,
+            "state": "alive",
+            "deployed": false,
+            "initializing": false,
+            "casts": {},
+            "cooldowns": {},
+            "next_attack": 0,
+            "blocked_by": null,
+            "rule_bindings": {}
+          },
+          "buffs": {
+            "instances": [],
+            "next_instance_id": 1
+          }
+        },
+        "version": 2
+      },
+      {
+        "id": 5,
+        "definition_id": "unit/peer/enemy_char",
+        "tags": [
+          "peer_occupant"
+        ],
+        "components": {
+          "attributes": {
+            "base": {},
+            "modifiers": []
+          },
+          "selection_state": {
+            "side": 1,
+            "unit_type": 1
+          },
+          "spatial": {
+            "position": {
+              "row": 1,
+              "col": 0
+            },
+            "facing": "right"
+          },
+          "resources": {},
+          "runtime": {
+            "alive": true,
+            "state": "alive",
+            "deployed": false,
+            "initializing": false,
+            "casts": {},
+            "cooldowns": {},
+            "next_attack": 0,
+            "blocked_by": null,
+            "rule_bindings": {}
+          },
+          "buffs": {
+            "instances": [],
+            "next_instance_id": 1
+          }
+        },
+        "version": 2
+      },
+      {
+        "id": 6,
+        "definition_id": "unit/peer/enemy_token",
+        "tags": [
+          "peer_occupant"
+        ],
+        "components": {
+          "attributes": {
+            "base": {},
+            "modifiers": []
+          },
+          "selection_state": {
+            "side": 1,
+            "unit_type": 4
+          },
+          "spatial": {
+            "position": {
+              "row": 1,
+              "col": 1
+            },
+            "facing": "right"
+          },
+          "resources": {},
+          "runtime": {
+            "alive": true,
+            "state": "alive",
+            "deployed": false,
+            "initializing": false,
+            "casts": {},
+            "cooldowns": {},
+            "next_attack": 0,
+            "blocked_by": null,
+            "rule_bindings": {}
+          },
+          "buffs": {
+            "instances": [],
+            "next_instance_id": 1
+          }
+        },
+        "version": 2
+      },
+      {
+        "id": 7,
+        "definition_id": "unit/peer/player_compound",
+        "tags": [
+          "peer_occupant"
+        ],
+        "components": {
+          "attributes": {
+            "base": {},
+            "modifiers": []
+          },
+          "selection_state": {
+            "side": 0,
+            "unit_type": 5
+          },
+          "spatial": {
+            "position": {
+              "row": 1,
+              "col": 2
+            },
+            "facing": "right"
+          },
+          "resources": {},
+          "runtime": {
+            "alive": true,
+            "state": "alive",
+            "deployed": false,
+            "initializing": false,
+            "casts": {},
+            "cooldowns": {},
+            "next_attack": 0,
+            "blocked_by": null,
+            "rule_bindings": {}
+          },
+          "buffs": {
+            "instances": [],
+            "next_instance_id": 1
+          }
+        },
+        "version": 2
+      }
+    ],
+    "state": {
+      "finished": false,
+      "result": "running",
+      "pending_waves": 0,
+      "kills": 0,
+      "leaks": 0,
+      "damage_dealt": 0,
+      "deployments": {},
+      "command_results": {}
+    },
+    "events": [
+      {
+        "id": 1,
+        "type": "entity.created",
+        "payload": {
+          "source": 2,
+          "target": 2,
+          "definition": "unit/peer/source"
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 2,
+        "type": "entity.created",
+        "payload": {
+          "source": 3,
+          "target": 3,
+          "definition": "unit/peer/player_char"
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 3,
+        "type": "entity.created",
+        "payload": {
+          "source": 4,
+          "target": 4,
+          "definition": "unit/peer/player_token"
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 4,
+        "type": "entity.created",
+        "payload": {
+          "source": 5,
+          "target": 5,
+          "definition": "unit/peer/enemy_char"
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 5,
+        "type": "entity.created",
+        "payload": {
+          "source": 6,
+          "target": 6,
+          "definition": "unit/peer/enemy_token"
+        },
+        "time": 0,
+        "cause": null
+      },
+      {
+        "id": 6,
+        "type": "entity.created",
+        "payload": {
+          "source": 7,
+          "target": 7,
+          "definition": "unit/peer/player_compound"
+        },
+        "time": 0,
+        "cause": null
+      }
+    ]
+  }
+}

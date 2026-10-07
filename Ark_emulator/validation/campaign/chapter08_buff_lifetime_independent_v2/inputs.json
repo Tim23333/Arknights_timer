@@ -1,0 +1,2929 @@
+[
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/lifetime",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/rate",
+        "kind": "rule",
+        "contract": "buff.lifetime_rate",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.attributes.clock_rate"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/timer",
+        "kind": "buff",
+        "duration_seconds": 0.2,
+        "interval_seconds": 0.06666666666666667,
+        "lifetime": {
+          "rule": "rule/peer/rate",
+          "parameters": {},
+          "count_when_inactive": true
+        },
+        "stacking": {
+          "mode": "refresh"
+        },
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 17
+          }
+        ],
+        "effects": [
+          {
+            "op": "emit",
+            "event": "peer.timer.packet"
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/fast",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/pause",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": -1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/invalid",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": -2
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 31,
+              "def": 13,
+              "mres": 17,
+              "clock_rate": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/install",
+            "ability/peer/fast",
+            "ability/peer/pause",
+            "ability/peer/unpause",
+            "ability/peer/remove",
+            "ability/peer/replace",
+            "ability/peer/invalid"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/install",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fast",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/fast"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/pause",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/pause"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/unpause",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/pause"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/replace",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            },
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/invalid",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/invalid"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/lifetime",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/lifetime",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/rate",
+        "kind": "rule",
+        "contract": "buff.lifetime_rate",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.attributes.clock_rate"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/timer",
+        "kind": "buff",
+        "duration_seconds": 0.2,
+        "interval_seconds": 0.06666666666666667,
+        "lifetime": {
+          "rule": "rule/peer/rate",
+          "parameters": {},
+          "count_when_inactive": true
+        },
+        "stacking": {
+          "mode": "refresh"
+        },
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 17
+          }
+        ],
+        "effects": [
+          {
+            "op": "emit",
+            "event": "peer.timer.packet"
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/fast",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/pause",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": -1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/invalid",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": -2
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 31,
+              "def": 13,
+              "mres": 17,
+              "clock_rate": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/install",
+            "ability/peer/fast",
+            "ability/peer/pause",
+            "ability/peer/unpause",
+            "ability/peer/remove",
+            "ability/peer/replace",
+            "ability/peer/invalid"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/install",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fast",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/fast"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/pause",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/pause"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/unpause",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/pause"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/replace",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            },
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/invalid",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/invalid"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/lifetime",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/lifetime",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/rate",
+        "kind": "rule",
+        "contract": "buff.lifetime_rate",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.attributes.clock_rate"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/timer",
+        "kind": "buff",
+        "duration_seconds": 0.2,
+        "interval_seconds": 0.06666666666666667,
+        "lifetime": {
+          "rule": "rule/peer/rate",
+          "parameters": {},
+          "count_when_inactive": true
+        },
+        "stacking": {
+          "mode": "refresh"
+        },
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 17
+          }
+        ],
+        "effects": [
+          {
+            "op": "emit",
+            "event": "peer.timer.packet"
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/fast",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/pause",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": -1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/invalid",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": -2
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 31,
+              "def": 13,
+              "mres": 17,
+              "clock_rate": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/install",
+            "ability/peer/fast",
+            "ability/peer/pause",
+            "ability/peer/unpause",
+            "ability/peer/remove",
+            "ability/peer/replace",
+            "ability/peer/invalid"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/install",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fast",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/fast"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/pause",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/pause"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/unpause",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/pause"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/replace",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            },
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/invalid",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/invalid"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/lifetime",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/lifetime",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/rate",
+        "kind": "rule",
+        "contract": "buff.lifetime_rate",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.attributes.clock_rate"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/timer",
+        "kind": "buff",
+        "duration_seconds": 0.2,
+        "interval_seconds": 0.06666666666666667,
+        "lifetime": {
+          "rule": "rule/peer/rate",
+          "parameters": {},
+          "count_when_inactive": true
+        },
+        "stacking": {
+          "mode": "extend"
+        },
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 17
+          }
+        ],
+        "effects": [
+          {
+            "op": "emit",
+            "event": "peer.timer.packet"
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/fast",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/pause",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": -1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/invalid",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": -2
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 31,
+              "def": 13,
+              "mres": 17,
+              "clock_rate": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/install",
+            "ability/peer/fast",
+            "ability/peer/pause",
+            "ability/peer/unpause",
+            "ability/peer/remove",
+            "ability/peer/replace",
+            "ability/peer/invalid"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/install",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fast",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/fast"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/pause",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/pause"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/unpause",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/pause"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/replace",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            },
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/invalid",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/invalid"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/lifetime",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/lifetime",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/rate",
+        "kind": "rule",
+        "contract": "buff.lifetime_rate",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.attributes.clock_rate"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/timer",
+        "kind": "buff",
+        "duration_seconds": 0.2,
+        "interval_seconds": 0.06666666666666667,
+        "lifetime": {
+          "rule": "rule/peer/rate",
+          "parameters": {},
+          "count_when_inactive": true
+        },
+        "stacking": {
+          "mode": "refresh"
+        },
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 17
+          }
+        ],
+        "effects": [
+          {
+            "op": "emit",
+            "event": "peer.timer.packet"
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/fast",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/pause",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": -1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/invalid",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": -2
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 31,
+              "def": 13,
+              "mres": 17,
+              "clock_rate": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/install",
+            "ability/peer/fast",
+            "ability/peer/pause",
+            "ability/peer/unpause",
+            "ability/peer/remove",
+            "ability/peer/replace",
+            "ability/peer/invalid"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/install",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fast",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/fast"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/pause",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/pause"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/unpause",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/pause"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/replace",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            },
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/invalid",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/invalid"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/lifetime",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/lifetime",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/rate",
+        "kind": "rule",
+        "contract": "buff.lifetime_rate",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.attributes.clock_rate"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/timer",
+        "kind": "buff",
+        "duration_seconds": 0.2,
+        "interval_seconds": 0.06666666666666667,
+        "lifetime": {
+          "rule": "rule/peer/rate",
+          "parameters": {},
+          "count_when_inactive": true
+        },
+        "stacking": {
+          "mode": "refresh"
+        },
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 17
+          }
+        ],
+        "effects": [
+          {
+            "op": "emit",
+            "event": "peer.timer.packet"
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/fast",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/pause",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": -1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/invalid",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": -2
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 31,
+              "def": 13,
+              "mres": 17,
+              "clock_rate": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/install",
+            "ability/peer/fast",
+            "ability/peer/pause",
+            "ability/peer/unpause",
+            "ability/peer/remove",
+            "ability/peer/replace",
+            "ability/peer/invalid"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/install",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fast",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/fast"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/pause",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/pause"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/unpause",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/pause"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/replace",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            },
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/invalid",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/invalid"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/lifetime",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/lifetime",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/rate",
+        "kind": "rule",
+        "contract": "buff.lifetime_rate",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.invalid_rate"
+        },
+        "parameters": {
+          "code": "bool"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/timer",
+        "kind": "buff",
+        "duration_seconds": 0.2,
+        "interval_seconds": 0.06666666666666667,
+        "lifetime": {
+          "rule": "rule/peer/rate",
+          "parameters": {},
+          "count_when_inactive": true
+        },
+        "stacking": {
+          "mode": "refresh"
+        },
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 17
+          }
+        ],
+        "effects": [
+          {
+            "op": "emit",
+            "event": "peer.timer.packet"
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/fast",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/pause",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": -1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/invalid",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": -2
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 31,
+              "def": 13,
+              "mres": 17,
+              "clock_rate": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/install",
+            "ability/peer/fast",
+            "ability/peer/pause",
+            "ability/peer/unpause",
+            "ability/peer/remove",
+            "ability/peer/replace",
+            "ability/peer/invalid"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/install",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fast",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/fast"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/pause",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/pause"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/unpause",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/pause"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/replace",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            },
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/invalid",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/invalid"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/lifetime",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/lifetime",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/rate",
+        "kind": "rule",
+        "contract": "buff.lifetime_rate",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.invalid_rate"
+        },
+        "parameters": {
+          "code": "negative"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/timer",
+        "kind": "buff",
+        "duration_seconds": 0.2,
+        "interval_seconds": 0.06666666666666667,
+        "lifetime": {
+          "rule": "rule/peer/rate",
+          "parameters": {},
+          "count_when_inactive": true
+        },
+        "stacking": {
+          "mode": "refresh"
+        },
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 17
+          }
+        ],
+        "effects": [
+          {
+            "op": "emit",
+            "event": "peer.timer.packet"
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/fast",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/pause",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": -1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/invalid",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": -2
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 31,
+              "def": 13,
+              "mres": 17,
+              "clock_rate": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/install",
+            "ability/peer/fast",
+            "ability/peer/pause",
+            "ability/peer/unpause",
+            "ability/peer/remove",
+            "ability/peer/replace",
+            "ability/peer/invalid"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/install",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fast",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/fast"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/pause",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/pause"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/unpause",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/pause"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/replace",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            },
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/invalid",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/invalid"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/lifetime",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/lifetime",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/rate",
+        "kind": "rule",
+        "contract": "buff.lifetime_rate",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.invalid_rate"
+        },
+        "parameters": {
+          "code": "nan"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/timer",
+        "kind": "buff",
+        "duration_seconds": 0.2,
+        "interval_seconds": 0.06666666666666667,
+        "lifetime": {
+          "rule": "rule/peer/rate",
+          "parameters": {},
+          "count_when_inactive": true
+        },
+        "stacking": {
+          "mode": "refresh"
+        },
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 17
+          }
+        ],
+        "effects": [
+          {
+            "op": "emit",
+            "event": "peer.timer.packet"
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/fast",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/pause",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": -1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/invalid",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": -2
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 31,
+              "def": 13,
+              "mres": 17,
+              "clock_rate": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/install",
+            "ability/peer/fast",
+            "ability/peer/pause",
+            "ability/peer/unpause",
+            "ability/peer/remove",
+            "ability/peer/replace",
+            "ability/peer/invalid"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/install",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fast",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/fast"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/pause",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/pause"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/unpause",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/pause"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/replace",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            },
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/invalid",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/invalid"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/lifetime",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/lifetime",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/rate",
+        "kind": "rule",
+        "contract": "buff.lifetime_rate",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.invalid_rate"
+        },
+        "parameters": {
+          "code": "infinity"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/timer",
+        "kind": "buff",
+        "duration_seconds": 0.2,
+        "interval_seconds": 0.06666666666666667,
+        "lifetime": {
+          "rule": "rule/peer/rate",
+          "parameters": {},
+          "count_when_inactive": true
+        },
+        "stacking": {
+          "mode": "refresh"
+        },
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 17
+          }
+        ],
+        "effects": [
+          {
+            "op": "emit",
+            "event": "peer.timer.packet"
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/fast",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/pause",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": -1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/invalid",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": -2
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 31,
+              "def": 13,
+              "mres": 17,
+              "clock_rate": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/install",
+            "ability/peer/fast",
+            "ability/peer/pause",
+            "ability/peer/unpause",
+            "ability/peer/remove",
+            "ability/peer/replace",
+            "ability/peer/invalid"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/install",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fast",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/fast"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/pause",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/pause"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/unpause",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/pause"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/replace",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            },
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/invalid",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/invalid"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/lifetime",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/lifetime",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/rate",
+        "kind": "rule",
+        "contract": "buff.lifetime_rate",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.attributes.clock_rate"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/timer",
+        "kind": "buff",
+        "duration_seconds": 0.2,
+        "interval_seconds": 0.06666666666666667,
+        "lifetime": {
+          "rule": "rule/peer/rate",
+          "parameters": {},
+          "count_when_inactive": true
+        },
+        "stacking": {
+          "mode": "refresh"
+        },
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 17
+          }
+        ],
+        "effects": [
+          {
+            "op": "emit",
+            "event": "peer.timer.packet"
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/fast",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/pause",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": -1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/invalid",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "clock_rate",
+            "layer": "flat",
+            "value": -2
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 31,
+              "def": 13,
+              "mres": 17,
+              "clock_rate": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/install",
+            "ability/peer/fast",
+            "ability/peer/pause",
+            "ability/peer/unpause",
+            "ability/peer/remove",
+            "ability/peer/replace",
+            "ability/peer/invalid"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/install",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fast",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/fast"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/pause",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/pause"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/unpause",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/pause"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/replace",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            },
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/timer"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/invalid",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/invalid"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/lifetime",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  }
+]

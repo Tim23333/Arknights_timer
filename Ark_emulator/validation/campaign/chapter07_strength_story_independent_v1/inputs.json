@@ -1,0 +1,708 @@
+[
+  {
+    "package": {
+      "schemaVersion": 2,
+      "manifest": {
+        "id": "package/peer/consumer/strength_observe",
+        "requires": [
+          "preset/ark_standard"
+        ]
+      },
+      "rules": [
+        {
+          "id": "rule/peer/sp",
+          "kind": "rule",
+          "contract": "resource.recovery",
+          "implementation": {
+            "type": "expression",
+            "expression": "inputs.current+inputs.parameters.amount"
+          }
+        }
+      ],
+      "buffs": [
+        {
+          "id": "buff/ch7/source/ore_immune",
+          "kind": "buff"
+        },
+        {
+          "id": "buff/ch7/source/ore_listener",
+          "kind": "buff"
+        }
+      ],
+      "entities": [
+        {
+          "id": "unit/peer/director",
+          "kind": "entity",
+          "components": {
+            "abilities": [
+              "ability/peer/all_on",
+              "ability/peer/v2_off",
+              "ability/peer/others_off",
+              "ability/peer/v1_dead"
+            ],
+            "spatial": {}
+          }
+        }
+      ],
+      "abilities": [
+        {
+          "id": "ability/peer/all_on",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "apply_buff",
+                "target": 3,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "apply_buff",
+                "target": 4,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "apply_buff",
+                "target": 5,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/v2_off",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "remove_buff",
+                "target": 4,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/others_off",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "remove_buff",
+                "target": 3,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "remove_buff",
+                "target": 5,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/v1_dead",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "modify_resource",
+                "target": 3,
+                "resource": "hp",
+                "value": 0
+              }
+            ]
+          },
+          "timeline": []
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "behavior/peer/modes",
+          "kind": "behavior",
+          "initial": "mode0",
+          "states": {
+            "mode0": {},
+            "mode1": {}
+          }
+        }
+      ],
+      "scenarioDraft": {
+        "id": "scene/peer/strength_observe",
+        "ruleset": "ruleset/ark_standard",
+        "map": {
+          "rows": 7,
+          "cols": 7
+        },
+        "objectives": {},
+        "resources": {
+          "dp": {
+            "initial": 100,
+            "capacity": 100
+          },
+          "deployment_capacity": {
+            "initial": 0,
+            "capacity": 0
+          },
+          "stock_ch7_mine": {
+            "initial": 15,
+            "capacity": 15
+          }
+        },
+        "initialEntities": [
+          {
+            "definition": "unit/peer/director",
+            "instanceAlias": "director",
+            "position": {
+              "row": 0,
+              "col": 0
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1083_sotiab",
+            "instanceAlias": "v1",
+            "position": {
+              "row": 3,
+              "col": 1
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1083_sotiab_2",
+            "instanceAlias": "v2",
+            "position": {
+              "row": 3,
+              "col": 2
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1078_sotisc",
+            "instanceAlias": "v3",
+            "position": {
+              "row": 3,
+              "col": 3
+            }
+          }
+        ]
+      }
+    },
+    "modules": [
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json"
+    ]
+  },
+  {
+    "package": {
+      "schemaVersion": 2,
+      "manifest": {
+        "id": "package/peer/consumer/strength_cross",
+        "requires": [
+          "preset/ark_standard"
+        ]
+      },
+      "rules": [
+        {
+          "id": "rule/peer/sp",
+          "kind": "rule",
+          "contract": "resource.recovery",
+          "implementation": {
+            "type": "expression",
+            "expression": "inputs.current+inputs.parameters.amount"
+          }
+        }
+      ],
+      "buffs": [
+        {
+          "id": "buff/ch7/source/ore_immune",
+          "kind": "buff"
+        },
+        {
+          "id": "buff/ch7/source/ore_listener",
+          "kind": "buff"
+        }
+      ],
+      "entities": [
+        {
+          "id": "unit/peer/director",
+          "kind": "entity",
+          "components": {
+            "abilities": [
+              "ability/peer/all_on",
+              "ability/peer/v2_off",
+              "ability/peer/others_off",
+              "ability/peer/v1_dead"
+            ],
+            "spatial": {}
+          }
+        }
+      ],
+      "abilities": [
+        {
+          "id": "ability/peer/all_on",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "apply_buff",
+                "target": 3,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "apply_buff",
+                "target": 4,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "apply_buff",
+                "target": 5,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/v2_off",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "remove_buff",
+                "target": 4,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/others_off",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "remove_buff",
+                "target": 3,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "remove_buff",
+                "target": 5,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/v1_dead",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "modify_resource",
+                "target": 3,
+                "resource": "hp",
+                "value": 0
+              }
+            ]
+          },
+          "timeline": []
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "behavior/peer/modes",
+          "kind": "behavior",
+          "initial": "mode0",
+          "states": {
+            "mode0": {},
+            "mode1": {}
+          }
+        }
+      ],
+      "scenarioDraft": {
+        "id": "scene/peer/strength_cross",
+        "ruleset": "ruleset/ark_standard",
+        "map": {
+          "rows": 7,
+          "cols": 7
+        },
+        "objectives": {},
+        "resources": {
+          "dp": {
+            "initial": 100,
+            "capacity": 100
+          },
+          "deployment_capacity": {
+            "initial": 0,
+            "capacity": 0
+          },
+          "stock_ch7_mine": {
+            "initial": 15,
+            "capacity": 15
+          }
+        },
+        "initialEntities": [
+          {
+            "definition": "unit/peer/director",
+            "instanceAlias": "director",
+            "position": {
+              "row": 0,
+              "col": 0
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1083_sotiab",
+            "instanceAlias": "v1",
+            "position": {
+              "row": 3,
+              "col": 1
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1083_sotiab_2",
+            "instanceAlias": "v2",
+            "position": {
+              "row": 3,
+              "col": 2
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1078_sotisc",
+            "instanceAlias": "v3",
+            "position": {
+              "row": 3,
+              "col": 3
+            }
+          }
+        ]
+      }
+    },
+    "modules": [
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json"
+    ]
+  },
+  {
+    "package": {
+      "schemaVersion": 2,
+      "manifest": {
+        "id": "package/peer/consumer/strength_death",
+        "requires": [
+          "preset/ark_standard"
+        ]
+      },
+      "rules": [
+        {
+          "id": "rule/peer/sp",
+          "kind": "rule",
+          "contract": "resource.recovery",
+          "implementation": {
+            "type": "expression",
+            "expression": "inputs.current+inputs.parameters.amount"
+          }
+        }
+      ],
+      "buffs": [
+        {
+          "id": "buff/ch7/source/ore_immune",
+          "kind": "buff"
+        },
+        {
+          "id": "buff/ch7/source/ore_listener",
+          "kind": "buff"
+        }
+      ],
+      "entities": [
+        {
+          "id": "unit/peer/director",
+          "kind": "entity",
+          "components": {
+            "abilities": [
+              "ability/peer/all_on",
+              "ability/peer/v2_off",
+              "ability/peer/others_off",
+              "ability/peer/v1_dead"
+            ],
+            "spatial": {}
+          }
+        }
+      ],
+      "abilities": [
+        {
+          "id": "ability/peer/all_on",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "apply_buff",
+                "target": 3,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "apply_buff",
+                "target": 4,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "apply_buff",
+                "target": 5,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/v2_off",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "remove_buff",
+                "target": 4,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/others_off",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "remove_buff",
+                "target": 3,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              },
+              {
+                "op": "remove_buff",
+                "target": 5,
+                "buff": "buff/ch7/source/enemy_9D0_talent_strength"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/v1_dead",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "modify_resource",
+                "target": 3,
+                "resource": "hp",
+                "value": 0
+              }
+            ]
+          },
+          "timeline": []
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "behavior/peer/modes",
+          "kind": "behavior",
+          "initial": "mode0",
+          "states": {
+            "mode0": {},
+            "mode1": {}
+          }
+        }
+      ],
+      "scenarioDraft": {
+        "id": "scene/peer/strength_death",
+        "ruleset": "ruleset/ark_standard",
+        "map": {
+          "rows": 7,
+          "cols": 7
+        },
+        "objectives": {},
+        "resources": {
+          "dp": {
+            "initial": 100,
+            "capacity": 100
+          },
+          "deployment_capacity": {
+            "initial": 0,
+            "capacity": 0
+          },
+          "stock_ch7_mine": {
+            "initial": 15,
+            "capacity": 15
+          }
+        },
+        "initialEntities": [
+          {
+            "definition": "unit/peer/director",
+            "instanceAlias": "director",
+            "position": {
+              "row": 0,
+              "col": 0
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1083_sotiab",
+            "instanceAlias": "v1",
+            "position": {
+              "row": 3,
+              "col": 1
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1083_sotiab_2",
+            "instanceAlias": "v2",
+            "position": {
+              "row": 3,
+              "col": 2
+            }
+          },
+          {
+            "definition": "unit/ch7/strength/enemy_1078_sotisc",
+            "instanceAlias": "v3",
+            "position": {
+              "row": 3,
+              "col": 3
+            }
+          }
+        ]
+      }
+    },
+    "modules": [
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab.v6.json",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1083_sotiab_2.v6.json",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_strength_melee\\module.enemy_1078_sotisc.v6.json"
+    ]
+  },
+  {
+    "package": {
+      "schemaVersion": 2,
+      "manifest": {
+        "id": "package/peer/consumer/story_source_v2",
+        "requires": [
+          "preset/ark_standard"
+        ]
+      },
+      "rules": [
+        {
+          "id": "rule/peer/sp",
+          "kind": "rule",
+          "contract": "resource.recovery",
+          "implementation": {
+            "type": "expression",
+            "expression": "inputs.current+inputs.parameters.amount"
+          }
+        }
+      ],
+      "buffs": [
+        {
+          "id": "buff/ch7/source/ore_immune",
+          "kind": "buff"
+        },
+        {
+          "id": "buff/ch7/source/ore_listener",
+          "kind": "buff"
+        }
+      ],
+      "entities": [],
+      "abilities": [],
+      "behaviors": [
+        {
+          "id": "behavior/peer/modes",
+          "kind": "behavior",
+          "initial": "mode0",
+          "states": {
+            "mode0": {},
+            "mode1": {}
+          }
+        }
+      ],
+      "scenarioDraft": {
+        "id": "scene/peer/story_source_v2",
+        "ruleset": "ruleset/ark_standard",
+        "map": {
+          "rows": 7,
+          "cols": 7
+        },
+        "objectives": {},
+        "resources": {
+          "dp": {
+            "initial": 100,
+            "capacity": 100
+          },
+          "deployment_capacity": {
+            "initial": 0,
+            "capacity": 0
+          },
+          "stock_ch7_mine": {
+            "initial": 15,
+            "capacity": 15
+          }
+        },
+        "initialEntities": [],
+        "timeline": {
+          "policy": "managed_clear",
+          "negative_timeout_policy": "wait_for_clear",
+          "waves": [
+            {
+              "max_wait_seconds": -1,
+              "fragments": [
+                {
+                  "actions": [
+                    {
+                      "kind": "control",
+                      "definition": "control/ch7/main_07-16",
+                      "instanceAlias": "story",
+                      "managed": true,
+                      "blocks_wave": true,
+                      "blocks_fragment": false
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "fragments": [
+                {
+                  "actions": [
+                    {
+                      "kind": "effects",
+                      "effects": [
+                        {
+                          "op": "emit",
+                          "event": "peer.story.after"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "modules": [
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_predefines_consumer\\story.controls.v2.json"
+    ]
+  }
+]

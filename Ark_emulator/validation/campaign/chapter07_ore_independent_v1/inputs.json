@@ -1,0 +1,1702 @@
+[
+  {
+    "package": {
+      "schemaVersion": 2,
+      "manifest": {
+        "id": "package/peer/consumer/ore14",
+        "requires": [
+          "preset/ark_standard"
+        ]
+      },
+      "rules": [
+        {
+          "id": "rule/peer/sp",
+          "kind": "rule",
+          "contract": "resource.recovery",
+          "implementation": {
+            "type": "expression",
+            "expression": "inputs.current+inputs.parameters.amount"
+          }
+        }
+      ],
+      "buffs": [
+        {
+          "id": "buff/ch7/source/ore_immune",
+          "kind": "buff"
+        },
+        {
+          "id": "buff/ch7/source/ore_listener",
+          "kind": "buff"
+        }
+      ],
+      "entities": [
+        {
+          "id": "unit/peer/side0",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 0,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/side1",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/side2",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 2,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/ground",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/air",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 2,
+              "category": 1,
+              "unit_type": 1
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/motion0",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 0,
+              "category": 1,
+              "unit_type": 1
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/category2",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 2,
+              "unit_type": 1
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/free",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1,
+              "target_free": true
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/camo",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1,
+              "camouflage": true
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/allyfree",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1,
+              "ally_target_free": true
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/healfree",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1,
+              "heal_free": true
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/flag14",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1,
+              "abnormal_flags": [
+                14
+              ]
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/combo1",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1,
+              "abnormal_combos": [
+                1
+              ]
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/tokenbit",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 4
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        }
+      ],
+      "abilities": [],
+      "behaviors": [
+        {
+          "id": "behavior/peer/modes",
+          "kind": "behavior",
+          "initial": "mode0",
+          "states": {
+            "mode0": {},
+            "mode1": {}
+          }
+        }
+      ],
+      "scenarioDraft": {
+        "id": "scene/peer/ore14",
+        "ruleset": "ruleset/ark_standard",
+        "map": {
+          "rows": 7,
+          "cols": 7
+        },
+        "objectives": {},
+        "resources": {
+          "dp": {
+            "initial": 100,
+            "capacity": 100
+          },
+          "deployment_capacity": {
+            "initial": 0,
+            "capacity": 0
+          },
+          "stock_ch7_mine": {
+            "initial": 15,
+            "capacity": 15
+          }
+        },
+        "initialEntities": [
+          {
+            "definition": "unit/ch7/predefined/ore/level1",
+            "instanceAlias": "ore",
+            "position": {
+              "row": 3,
+              "col": 3
+            },
+            "components": {
+              "resources": {
+                "sp": {
+                  "initial": 7
+                }
+              }
+            }
+          },
+          {
+            "definition": "unit/peer/side0",
+            "instanceAlias": "side0",
+            "position": {
+              "row": 3,
+              "col": 4
+            }
+          },
+          {
+            "definition": "unit/peer/side1",
+            "instanceAlias": "side1",
+            "position": {
+              "row": 3,
+              "col": 4
+            }
+          },
+          {
+            "definition": "unit/peer/side2",
+            "instanceAlias": "side2",
+            "position": {
+              "row": 3,
+              "col": 4
+            }
+          },
+          {
+            "definition": "unit/peer/ground",
+            "instanceAlias": "ground",
+            "position": {
+              "row": 3,
+              "col": 4
+            }
+          },
+          {
+            "definition": "unit/peer/air",
+            "instanceAlias": "air",
+            "position": {
+              "row": 3,
+              "col": 4
+            }
+          },
+          {
+            "definition": "unit/peer/motion0",
+            "instanceAlias": "motion0",
+            "position": {
+              "row": 3,
+              "col": 4
+            }
+          },
+          {
+            "definition": "unit/peer/category2",
+            "instanceAlias": "category2",
+            "position": {
+              "row": 3,
+              "col": 4
+            }
+          },
+          {
+            "definition": "unit/peer/free",
+            "instanceAlias": "free",
+            "position": {
+              "row": 3,
+              "col": 4
+            }
+          },
+          {
+            "definition": "unit/peer/camo",
+            "instanceAlias": "camo",
+            "position": {
+              "row": 3,
+              "col": 4
+            }
+          },
+          {
+            "definition": "unit/peer/allyfree",
+            "instanceAlias": "allyfree",
+            "position": {
+              "row": 3,
+              "col": 4
+            }
+          },
+          {
+            "definition": "unit/peer/healfree",
+            "instanceAlias": "healfree",
+            "position": {
+              "row": 3,
+              "col": 4
+            }
+          },
+          {
+            "definition": "unit/peer/flag14",
+            "instanceAlias": "flag14",
+            "position": {
+              "row": 3,
+              "col": 4
+            }
+          },
+          {
+            "definition": "unit/peer/combo1",
+            "instanceAlias": "combo1",
+            "position": {
+              "row": 3,
+              "col": 4
+            }
+          },
+          {
+            "definition": "unit/peer/tokenbit",
+            "instanceAlias": "tokenbit",
+            "position": {
+              "row": 3,
+              "col": 4
+            }
+          }
+        ]
+      }
+    },
+    "modules": [
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_predefines_consumer\\ore.module.v3.json"
+    ]
+  },
+  {
+    "package": {
+      "schemaVersion": 2,
+      "manifest": {
+        "id": "package/peer/consumer/ore_geometry",
+        "requires": [
+          "preset/ark_standard"
+        ]
+      },
+      "rules": [
+        {
+          "id": "rule/peer/sp",
+          "kind": "rule",
+          "contract": "resource.recovery",
+          "implementation": {
+            "type": "expression",
+            "expression": "inputs.current+inputs.parameters.amount"
+          }
+        }
+      ],
+      "buffs": [
+        {
+          "id": "buff/ch7/source/ore_immune",
+          "kind": "buff"
+        },
+        {
+          "id": "buff/ch7/source/ore_listener",
+          "kind": "buff"
+        }
+      ],
+      "entities": [
+        {
+          "id": "unit/peer/edge",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/diag",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/outside",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/beforehalf",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/athalf",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        }
+      ],
+      "abilities": [],
+      "behaviors": [
+        {
+          "id": "behavior/peer/modes",
+          "kind": "behavior",
+          "initial": "mode0",
+          "states": {
+            "mode0": {},
+            "mode1": {}
+          }
+        }
+      ],
+      "scenarioDraft": {
+        "id": "scene/peer/ore_geometry",
+        "ruleset": "ruleset/ark_standard",
+        "map": {
+          "rows": 7,
+          "cols": 7
+        },
+        "objectives": {},
+        "resources": {
+          "dp": {
+            "initial": 100,
+            "capacity": 100
+          },
+          "deployment_capacity": {
+            "initial": 0,
+            "capacity": 0
+          },
+          "stock_ch7_mine": {
+            "initial": 15,
+            "capacity": 15
+          }
+        },
+        "initialEntities": [
+          {
+            "definition": "unit/ch7/predefined/ore/level1",
+            "instanceAlias": "ore",
+            "position": {
+              "row": 3,
+              "col": 3
+            },
+            "components": {
+              "resources": {
+                "sp": {
+                  "initial": 7
+                }
+              }
+            }
+          },
+          {
+            "definition": "unit/peer/edge",
+            "instanceAlias": "edge",
+            "position": {
+              "row": 3,
+              "col": 5
+            }
+          },
+          {
+            "definition": "unit/peer/diag",
+            "instanceAlias": "diag",
+            "position": {
+              "row": 4,
+              "col": 4
+            }
+          },
+          {
+            "definition": "unit/peer/outside",
+            "instanceAlias": "outside",
+            "position": {
+              "row": 4,
+              "col": 5
+            }
+          },
+          {
+            "definition": "unit/peer/beforehalf",
+            "instanceAlias": "beforehalf",
+            "position": {
+              "row": 3,
+              "col": 5.499999
+            }
+          },
+          {
+            "definition": "unit/peer/athalf",
+            "instanceAlias": "athalf",
+            "position": {
+              "row": 3,
+              "col": 5.5
+            }
+          }
+        ]
+      }
+    },
+    "modules": [
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_predefines_consumer\\ore.module.v3.json"
+    ]
+  },
+  {
+    "package": {
+      "schemaVersion": 2,
+      "manifest": {
+        "id": "package/peer/consumer/ore_late_markers",
+        "requires": [
+          "preset/ark_standard"
+        ]
+      },
+      "rules": [
+        {
+          "id": "rule/peer/sp",
+          "kind": "rule",
+          "contract": "resource.recovery",
+          "implementation": {
+            "type": "expression",
+            "expression": "inputs.current+inputs.parameters.amount"
+          }
+        }
+      ],
+      "buffs": [
+        {
+          "id": "buff/ch7/source/ore_immune",
+          "kind": "buff",
+          "duration_seconds": 0.03333333333333333
+        },
+        {
+          "id": "buff/ch7/source/ore_listener",
+          "kind": "buff"
+        }
+      ],
+      "entities": [
+        {
+          "id": "unit/peer/a",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/b",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/c",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/director",
+          "kind": "entity",
+          "components": {
+            "abilities": [
+              "ability/peer/mark",
+              "ability/peer/held"
+            ],
+            "spatial": {}
+          }
+        }
+      ],
+      "abilities": [
+        {
+          "id": "ability/peer/mark",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "apply_buff",
+                "target": 4,
+                "buff": "buff/ch7/source/ore_listener"
+              },
+              {
+                "op": "apply_buff",
+                "target": 5,
+                "buff": "buff/ch7/source/ore_immune"
+              }
+            ]
+          },
+          "timeline": []
+        },
+        {
+          "id": "ability/peer/held",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "apply_buff",
+                "target": 3,
+                "buff": "buff/ch7/source/ore_immune"
+              }
+            ]
+          },
+          "timeline": []
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "behavior/peer/modes",
+          "kind": "behavior",
+          "initial": "mode0",
+          "states": {
+            "mode0": {},
+            "mode1": {}
+          }
+        }
+      ],
+      "scenarioDraft": {
+        "id": "scene/peer/ore_late_markers",
+        "ruleset": "ruleset/ark_standard",
+        "map": {
+          "rows": 7,
+          "cols": 7
+        },
+        "objectives": {},
+        "resources": {
+          "dp": {
+            "initial": 100,
+            "capacity": 100
+          },
+          "deployment_capacity": {
+            "initial": 0,
+            "capacity": 0
+          },
+          "stock_ch7_mine": {
+            "initial": 15,
+            "capacity": 15
+          }
+        },
+        "initialEntities": [
+          {
+            "definition": "unit/ch7/predefined/ore/level1",
+            "instanceAlias": "ore",
+            "position": {
+              "row": 3,
+              "col": 3
+            },
+            "components": {
+              "resources": {
+                "sp": {
+                  "initial": 7
+                }
+              }
+            }
+          },
+          {
+            "definition": "unit/peer/a",
+            "instanceAlias": "a",
+            "position": {
+              "row": 3,
+              "col": 4
+            }
+          },
+          {
+            "definition": "unit/peer/b",
+            "instanceAlias": "b",
+            "position": {
+              "row": 4,
+              "col": 3
+            }
+          },
+          {
+            "definition": "unit/peer/c",
+            "instanceAlias": "c",
+            "position": {
+              "row": 3,
+              "col": 2
+            }
+          },
+          {
+            "definition": "unit/peer/director",
+            "instanceAlias": "director",
+            "position": {
+              "row": 0,
+              "col": 0
+            }
+          }
+        ]
+      }
+    },
+    "modules": [
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_predefines_consumer\\ore.module.v3.json"
+    ]
+  },
+  {
+    "package": {
+      "schemaVersion": 2,
+      "manifest": {
+        "id": "package/peer/consumer/ore_retire",
+        "requires": [
+          "preset/ark_standard"
+        ]
+      },
+      "rules": [
+        {
+          "id": "rule/peer/sp",
+          "kind": "rule",
+          "contract": "resource.recovery",
+          "implementation": {
+            "type": "expression",
+            "expression": "inputs.current+inputs.parameters.amount"
+          }
+        }
+      ],
+      "buffs": [
+        {
+          "id": "buff/ch7/source/ore_immune",
+          "kind": "buff"
+        },
+        {
+          "id": "buff/ch7/source/ore_listener",
+          "kind": "buff"
+        }
+      ],
+      "entities": [
+        {
+          "id": "unit/peer/a",
+          "kind": "entity",
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 9000,
+                "atk": 17,
+                "def": 31,
+                "mres": 17
+              }
+            },
+            "resources": {
+              "hp": {
+                "initial": 9000,
+                "capacity": 9000,
+                "role": "health"
+              },
+              "sp": {
+                "initial": 0,
+                "capacity": 20,
+                "recovery_rule": "rule/peer/sp",
+                "recovery": {
+                  "mode": "event",
+                  "event": "damage.accepted",
+                  "owner_role": "target",
+                  "amount": 1
+                }
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "motion": 1,
+              "category": 1,
+              "unit_type": 1
+            },
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle"
+            },
+            "spatial": {},
+            "behavior": {
+              "machine": "behavior/peer/modes",
+              "state": "mode0"
+            }
+          }
+        },
+        {
+          "id": "unit/peer/director",
+          "kind": "entity",
+          "components": {
+            "abilities": [
+              "ability/peer/retire"
+            ],
+            "spatial": {}
+          }
+        }
+      ],
+      "abilities": [
+        {
+          "id": "ability/peer/retire",
+          "kind": "ability",
+          "activation": {
+            "mode": "manual",
+            "on_start": [
+              {
+                "op": "retire",
+                "target": 2,
+                "parameters": {
+                  "reason": "withdraw"
+                }
+              }
+            ]
+          },
+          "timeline": []
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "behavior/peer/modes",
+          "kind": "behavior",
+          "initial": "mode0",
+          "states": {
+            "mode0": {},
+            "mode1": {}
+          }
+        }
+      ],
+      "scenarioDraft": {
+        "id": "scene/peer/ore_retire",
+        "ruleset": "ruleset/ark_standard",
+        "map": {
+          "rows": 7,
+          "cols": 7
+        },
+        "objectives": {},
+        "resources": {
+          "dp": {
+            "initial": 100,
+            "capacity": 100
+          },
+          "deployment_capacity": {
+            "initial": 0,
+            "capacity": 0
+          },
+          "stock_ch7_mine": {
+            "initial": 15,
+            "capacity": 15
+          }
+        },
+        "initialEntities": [
+          {
+            "definition": "unit/ch7/predefined/ore/level1",
+            "instanceAlias": "ore",
+            "position": {
+              "row": 3,
+              "col": 3
+            },
+            "components": {
+              "resources": {
+                "sp": {
+                  "initial": 7
+                }
+              }
+            }
+          },
+          {
+            "definition": "unit/peer/a",
+            "instanceAlias": "a",
+            "position": {
+              "row": 3,
+              "col": 4
+            }
+          },
+          {
+            "definition": "unit/peer/director",
+            "instanceAlias": "director",
+            "position": {
+              "row": 0,
+              "col": 0
+            }
+          }
+        ]
+      }
+    },
+    "modules": [
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter07_predefines_consumer\\ore.module.v3.json"
+    ]
+  }
+]

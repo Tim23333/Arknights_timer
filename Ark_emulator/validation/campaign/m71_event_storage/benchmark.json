@@ -1,0 +1,86 @@
+{
+  "schema": "ark-sim/m71-event-storage-benchmark/v1",
+  "passed": true,
+  "scope": "Complete actual 0-1 trace through tick 120; not fullstage RSS or 36-stage acceptance",
+  "source": {
+    "package": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\ark_content\\level_main_00_01.json",
+    "sha256": "74f1bf9a2721694bc732cf51e09696ab552a27a5c66a07a3ba75537083054584",
+    "commands": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\scenarios\\level_main_00_01\\commands.json",
+    "commands_sha256": "f4aee6f7fd1673d96c908b2c22c8fa63f10c9365e2e9ca5b27f650dee4c59de5",
+    "ticks": 120,
+    "events": 425,
+    "simulation_seconds": 0.4763586000772193
+  },
+  "environment": {
+    "python": "3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.22631-SP0"
+  },
+  "core": "15517b90969c61b15340929687092401b4a807b6a3f66d0d2135e780568c04aa",
+  "runtime_fingerprint": "098eb5155dd1d3a6b29b7248c7a78d7cf04fcc8236abd196778548dbfcc5baec",
+  "program_fingerprint": "a218d3d2e5069643d74591f335373055fb3db5be73aaae31195aaa80d2b60c01",
+  "results": [
+    {
+      "mode": "memory",
+      "store": {
+        "seconds": 0.5876874000532553,
+        "current_incremental_bytes": 1153969,
+        "peak_incremental_bytes": 1187911
+      },
+      "full_checkpoint": {
+        "seconds": 0.10651740001048893,
+        "current_incremental_bytes": 2648618,
+        "peak_incremental_bytes": 3365326
+      },
+      "event_value_sha256": "b9f78f9182791430b3b2b678ed7f0de4dd787e7b7d9606968ee2f91759cc377a"
+    },
+    {
+      "mode": "disk",
+      "store": {
+        "seconds": 0.22752079996280372,
+        "current_incremental_bytes": 35524,
+        "peak_incremental_bytes": 41412
+      },
+      "full_checkpoint": {
+        "seconds": 0.20371609996072948,
+        "current_incremental_bytes": 2715346,
+        "peak_incremental_bytes": 8127983
+      },
+      "event_value_sha256": "b9f78f9182791430b3b2b678ed7f0de4dd787e7b7d9606968ee2f91759cc377a",
+      "reference_checkpoint": {
+        "seconds": 0.02695599989965558,
+        "current_incremental_bytes": 2301,
+        "peak_incremental_bytes": 16141
+      },
+      "direct_export": {
+        "seconds": 0.024425199953839183,
+        "current_incremental_bytes": 1957,
+        "peak_incremental_bytes": 15270
+      },
+      "reference": {
+        "reference": {
+          "schema": "ark-sim/event-journal-reference/v1",
+          "path": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\validation\\campaign\\m71_event_storage\\run-14b10c6b536a4f8faaef84afbbbf5484\\benchmark-active.jsonl.checkpoint-3d47275f31d64db3bbfe194fe07138ed",
+          "sha256": "959b2598e5f6b5dab10725622fea60916f7dbf6e07e1faa186a78324e485ecff",
+          "bytes": 649694,
+          "count": 425
+        },
+        "next_id": 426
+      },
+      "export": {
+        "path": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\validation\\campaign\\m71_event_storage\\run-14b10c6b536a4f8faaef84afbbbf5484\\benchmark-export.jsonl",
+        "sha256": "959b2598e5f6b5dab10725622fea60916f7dbf6e07e1faa186a78324e485ecff",
+        "bytes": 649694,
+        "count": 425
+      }
+    }
+  ],
+  "v12_full_observation_hashes_equal": true,
+  "actual_checkpoint_reload_and_30_tick_continuation_equal": true,
+  "script_sha256": "b03b0895b92cab7adbd57faae47de3a23bddf5677659411dfcdc6849c44eba6d",
+  "v12_sha256": "91e041ac22515b4ed3c52f2a8d0a115c97d2ab0e105dd5c55b0c3b8658f828c3",
+  "notes": [
+    "tracemalloc counts Python allocation, not process RSS or OS file cache",
+    "Input complete trace remains resident outside measured regions in both modes",
+    "Disk journal keys preserve insertion order; v12 recanonicalizes one event per hash"
+  ]
+}

@@ -1,0 +1,104 @@
+--- m58/content\compiler.py
++++ m63/content\compiler.py
+@@ -471,6 +471,8 @@
+         for item in instances:
+             base = definitions[item["definition"]].get("components", {})
+             actual = merge(base, item.get("components", {}))
++            from ..domains.deployment import cooldown_start
++            cooldown_start(actual.get('deployable',{}))
+             if "selection_state" in actual:
+                 from ..domains.selection import validate_state
+                 validate_state(actual["selection_state"], (item.get("instanceAlias") or item["definition"])+".selection_state")
+--- m58/content\schemas.py
++++ m63/content\schemas.py
+@@ -27,7 +27,7 @@
+     "terrain_overlays": None,
+     "abilities": None,
+     "route_obstacle": {"rule", "contact_radius", "parameters"},
+-    "deployable": {"stock", "policy", "cost", "base_cost", "cooldown_seconds", "refund_ratio", "terrain", "capacity", "rules", "parameters", "deployed", "initial_state"},
++    "deployable": {"cooldown_start", "stock", "policy", "cost", "base_cost", "cooldown_seconds", "refund_ratio", "terrain", "capacity", "rules", "parameters", "deployed", "initial_state"},
+     "behavior": {"machine", "state", "rules", "parameters"},
+     "lifecycle": {"policy", "initial_state", "rules", "parameters", "leak_loss", "revive"},
+     "spatial": {"motion_mode", "coordinate_space", "position", "facing", "route", "route_id", "speed", "blocking", "occupancy", "radius", "projectile", "rules", "parameters", "wait_seconds", "movement", "steering", "timing_origins", "terrain", "block_capacity", "block_cost"},
+@@ -294,6 +294,10 @@
+                 except (ValueError, TypeError) as error: raise ContentError(identifier+": "+str(error)) from error
+                 if layer["key"] in keys: raise ContentError(identifier+": duplicate terrain owner key")
+                 keys.add(layer["key"])
++        if "cooldown_start" in components.get("deployable",{}):
++            start=components['deployable']['cooldown_start']
++            if type(start) is not str or start not in ('deploy','retire'):
++                raise ContentError(identifier+': cooldown_start must be deploy or retire')
+         stock=components.get("deployable",{}).get("stock")
+         if stock is not None:
+             fields(stock,{"resource","amount","rule"},identifier+".deployable.stock")
+--- m58/domains\deployment.py
++++ m63/domains\deployment.py
+@@ -1,5 +1,12 @@
+ """Shared deployment decisions for player cards and authored owned spawns."""
+ from ark_sim.contracts import thaw
++
++
++def cooldown_start(deployable):
++    start=deployable.get('cooldown_start','retire')
++    if type(start) is not str or start not in ('deploy','retire'):
++        raise ValueError('cooldown_start must be deploy or retire')
++    return start
+ 
+ 
+ def prepare(context, definition_id, position, facing="right", owner=None, paid=False):
+@@ -13,6 +20,7 @@
+         raise ValueError("deployment requires a declared facing")
+     components = thaw(definition.get("components", {}))
+     deployable = components.get("deployable", {})
++    cooldown_start(deployable)
+     prototype = {"definition_id": definition_id, "components": components, "tags": list(definition.get("tags", ()))}
+     scope = {"source": definition.get("rules", {})}
+     actors = [thaw(e) for e in context.session.world.entities()
+@@ -65,6 +73,9 @@
+ 
+ def _record(context, ref, plan, paid_cost=None):
+     if context.get(ref,("runtime","deployment_recorded"),False):raise ValueError("deployment already recorded")
++    start=cooldown_start(plan['deployable'])
++    # World reservation rolls back together with payments and rule effects.
++    if start=='deploy':context.set(ref,('runtime','deployment_recorded'),True)
+     stock=plan.get("stock_payment")
+     if stock is not None:
+         if context.resources.current("system/battle",stock["resource"])<stock["amount"]:raise ValueError("insufficient deployment stock")
+@@ -74,7 +85,15 @@
+     deployable["paid_cost"] = plan["cost"] if paid_cost is None else paid_cost
+     deployable.setdefault("parameters", {})["history_key"] = plan["history_key"]
+     context.set(ref, ("deployable",), deployable)
+-    history = dict(plan["history"], count=plan["history"]["count"]+1)
++    if start=='deploy':
++        cooldown=deployable['cooldown_seconds'] if 'cooldown_seconds' in deployable else context.role_value(ref,'redeploy_time')
++        seconds=context.calc('deploy.cooldown',{'attributes':context.attributes.values(ref),'reason':{'type':'deployed'},'cooldown_parameters':{'seconds':cooldown}},source=ref,component=deployable.get('rules',{}))
++        if type(seconds) not in (int,float) or seconds<0:raise ValueError('deployment cooldown must be finite nonnegative seconds')
++        ready=context.session.time+context.quantize(seconds)
++        current=context.state()['deployments'].get(plan['history_key'],{'count':0,'ready_at':0})
++        history=dict(current,count=current['count']+1,ready_at=ready)
++    else:
++        history = dict(plan["history"], count=plan["history"]["count"]+1)
+     state = context.state()
+     state["deployments"][plan["history_key"]] = history
+     context.state_update(**state)
+--- m58/domains\lifecycle.py
++++ m63/domains\lifecycle.py
+@@ -44,6 +44,8 @@
+                 else:
+                     base[key] = thaw(value)
+         merge(components, thaw(component_overrides or {}))
++        from .deployment import cooldown_start
++        cooldown_start(components.get('deployable',{}))
+         parameters = parameters or {}
+         ownership = components.get("ownership", {})
+         owner = owner if owner is not None else parameters.get("owner", ownership.get("owner"))
+@@ -222,7 +224,8 @@
+             state["kills"] += 1
+         self.ctx.state_update(**state)
+         deployable = self.ctx.get(ref, ("deployable",))
+-        if deployable:
++        from .deployment import cooldown_start
++        if deployable and cooldown_start(deployable)=='retire':
+             cooldown = deployable["cooldown_seconds"] if "cooldown_seconds" in deployable else self.ctx.role_value(ref, "redeploy_time")
+             seconds = self.ctx.calc("deploy.cooldown", {"attributes": self.ctx.attributes.values(ref), "reason": {"type": reason},
+                        "cooldown_parameters": {"seconds": cooldown}}, source=ref,

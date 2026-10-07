@@ -1,0 +1,72 @@
+{
+  "schema": "ark-sim/projectile-canonical-reference-peer/v1",
+  "passed": true,
+  "core_start": "c77ce7a46101cf903fd9c6c56dcabddf5775008d091365cd7486ddeb47b8d740",
+  "core_end": "c77ce7a46101cf903fd9c6c56dcabddf5775008d091365cd7486ddeb47b8d740",
+  "actual_module": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m37_projectile_refs_candidate\\ark_sim\\__init__.py",
+  "source_before": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m37_peer\\verify.py": "40bdc32c6f41c3150c6986349bd6fccb085494541a1ff4926062136f4cf22afa",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m37_peer\\test_refs.py": "883e51c04b4972c4a8829267ae0be5ad20e90a23704dcdc87912758925750bc0",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m30_quota\\test_quota.py": "ab62d0c2bfa349f32840f987e5b95dfbc2c6ff2223beb7e95183fe1e984da3d4",
+    "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m37_projectile_refs_candidate\\ark_sim\\domains\\projectiles.py": "85d919dad54a69ce162aac8853ef180cec66547fc2729ff5755c1563d9e4701c"
+  },
+  "source_after": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m37_peer\\verify.py": "40bdc32c6f41c3150c6986349bd6fccb085494541a1ff4926062136f4cf22afa",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m37_peer\\test_refs.py": "883e51c04b4972c4a8829267ae0be5ad20e90a23704dcdc87912758925750bc0",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m30_quota\\test_quota.py": "ab62d0c2bfa349f32840f987e5b95dfbc2c6ff2223beb7e95183fe1e984da3d4",
+    "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m37_projectile_refs_candidate\\ark_sim\\domains\\projectiles.py": "85d919dad54a69ce162aac8853ef180cec66547fc2729ff5755c1563d9e4701c"
+  },
+  "tests": [
+    {
+      "case": "tools/experiments/m37_peer/test_refs.py::test_duplicate_ref_same_runtime_entity_inflight_and_history[False-True]",
+      "result": "passed",
+      "seconds": 0.09752169996500015
+    },
+    {
+      "case": "tools/experiments/m37_peer/test_refs.py::test_duplicate_ref_same_runtime_entity_inflight_and_history[True-False]",
+      "result": "passed",
+      "seconds": 0.1041634000139311
+    },
+    {
+      "case": "tools/experiments/m37_peer/test_refs.py::test_duplicate_ref_same_runtime_entity_inflight_and_history[True-True]",
+      "result": "passed",
+      "seconds": 0.0958795000333339
+    },
+    {
+      "case": "tools/experiments/m37_peer/test_refs.py::test_invalid_refs_error_before_quota_or_state_change[missing]",
+      "result": "passed",
+      "seconds": 0.09847379999700934
+    },
+    {
+      "case": "tools/experiments/m37_peer/test_refs.py::test_invalid_refs_error_before_quota_or_state_change[-1]",
+      "result": "passed",
+      "seconds": 0.09748880006372929
+    },
+    {
+      "case": "tools/experiments/m37_peer/test_refs.py::test_invalid_refs_error_before_quota_or_state_change[True]",
+      "result": "passed",
+      "seconds": 0.10929579997900873
+    },
+    {
+      "case": "tools/experiments/m37_peer/test_refs.py::test_invalid_refs_error_before_quota_or_state_change[None]",
+      "result": "passed",
+      "seconds": 0.09896189998835325
+    },
+    {
+      "case": "tools/experiments/m37_peer/test_refs.py::test_alias_valid_repeat_when_enabled_and_quota_two_exact",
+      "result": "passed",
+      "seconds": 0.10298980004154146
+    },
+    {
+      "case": "tools/experiments/m37_peer/test_refs.py::test_ordinary_public_command_reach_first_full_checkpoint_replay",
+      "result": "passed",
+      "seconds": 0.22878580004908144
+    }
+  ],
+  "elapsed_seconds": 1.1489078998565674,
+  "actual_code_difference": "exactly world.resolve(target) after trace-target fallback, before quota/invalid/inflight checks",
+  "scope": "same-canonical-runtime-ID quota/target-history consistency for alias/int caller paths; private API instrumentation separate from one ordinary command CP/replay case",
+  "invalid_alias_refs_no_mutation": true,
+  "alias_repeat_allowed_only_under_same_target_and_cap_policy": true,
+  "native_or_whole_stage_approval": false
+}

@@ -1,0 +1,224 @@
+{
+  "manifest": {
+    "requires": [
+      "preset/ark_standard"
+    ]
+  },
+  "entities": [
+    {
+      "id": "unit/boundary/subject",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "focus"
+      ],
+      "components": {
+        "spatial": {},
+        "selection_state": {
+          "side": 1
+        },
+        "attributes": {
+          "base": {
+            "max_hp": 10000,
+            "atk": 20,
+            "def": 0,
+            "mres": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 10000,
+            "capacity": 10000,
+            "role": "health"
+          }
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    },
+    {
+      "id": "unit/boundary/director",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "spatial": {},
+        "attributes": {
+          "base": {
+            "atk": 10
+          }
+        },
+        "abilities": [
+          "ability/boundary/apply",
+          "ability/boundary/damage"
+        ]
+      }
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/boundary/subject",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "focus"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/boundary/active",
+      "kind": "rule",
+      "contract": "buff.applicability",
+      "implementation": {
+        "type": "expression",
+        "expression": "12 in inputs.status.abnormal_flags or 9 not in inputs.status.abnormal_flags"
+      }
+    },
+    {
+      "id": "rule/boundary/sleep",
+      "kind": "rule",
+      "contract": "buff.applicability",
+      "implementation": {
+        "type": "expression",
+        "expression": "0 in inputs.status.abnormal_combos"
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/boundary/immune",
+      "kind": "buff",
+      "duration_seconds": 0.1,
+      "selection_flags": {
+        "abnormal_combo_immunes": [
+          0
+        ]
+      }
+    },
+    {
+      "id": "buff/boundary/sleep",
+      "kind": "buff",
+      "control_rule": "rule/boundary/sleep",
+      "selection_flags": {
+        "abnormal_combos": [
+          0
+        ]
+      },
+      "control": {
+        "attack": false,
+        "move": false,
+        "abilities": false,
+        "block": false
+      }
+    },
+    {
+      "id": "buff/boundary/silent",
+      "kind": "buff",
+      "duration_seconds": 0.1,
+      "selection_flags": {
+        "abnormal_flags": [
+          12
+        ]
+      }
+    },
+    {
+      "id": "buff/boundary/mixed",
+      "kind": "buff",
+      "active_rule": "rule/boundary/active",
+      "modifiers": [
+        {
+          "attribute": "atk",
+          "layer": "flat",
+          "value": 13
+        }
+      ],
+      "selection_flags": {
+        "abnormal_flags": [
+          9
+        ],
+        "abnormal_immunes": [
+          16
+        ]
+      }
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/boundary/apply",
+      "kind": "ability",
+      "selector": "selector/boundary/subject",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "buff": "buff/boundary/immune"
+          },
+          {
+            "op": "apply_buff",
+            "buff": "buff/boundary/sleep"
+          },
+          {
+            "op": "apply_buff",
+            "buff": "buff/boundary/silent"
+          },
+          {
+            "op": "apply_buff",
+            "buff": "buff/boundary/mixed"
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/boundary/damage",
+      "kind": "ability",
+      "selector": "selector/boundary/subject",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "damage",
+            "damage_type": "true"
+          }
+        ]
+      },
+      "timeline": []
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/peer/boundary",
+    "ruleset": "ruleset/ark_standard",
+    "objectives": {},
+    "map": {
+      "rows": 2,
+      "cols": 4
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/boundary/subject",
+        "instanceAlias": "subject",
+        "position": {
+          "row": 0,
+          "col": 0
+        }
+      },
+      {
+        "definition": "unit/boundary/director",
+        "instanceAlias": "director",
+        "position": {
+          "row": 1,
+          "col": 3
+        }
+      }
+    ]
+  }
+}

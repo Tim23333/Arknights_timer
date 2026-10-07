@@ -1,0 +1,136 @@
+{
+  "schema": "ark-sim/ch6-snmage-required-retained-payload-failure/v1",
+  "core": "6192789537ba5250da2cd781f6583a8b7ce7dccfcfba4a5bb9fc5f535674d419",
+  "source_sha256": "ed8ba0459e0ba614d73b38f85247e7f949477c6bd3a60d6a5113e8d298ec5cc8",
+  "module_sha256": "c9c5d932a1651904b1626fc428d8436ba97d57e795dd29cb81f3ffd892ed8344",
+  "actual": {
+    "source_alive": false,
+    "source_hp": 0,
+    "source_sp": 0,
+    "target_flags": [
+      23
+    ],
+    "damage_packets": [
+      [
+        22,
+        8000
+      ],
+      [
+        23,
+        300.0
+      ]
+    ],
+    "target_buffs": [
+      {
+        "definition": "buff/ch6/cold/e2c_cold",
+        "source": 2,
+        "target": 3,
+        "id": "buff/3/1",
+        "stacks": 1,
+        "started_at": 23,
+        "expires_at": 323,
+        "interval_units": 0,
+        "generation": 1,
+        "tasks": {
+          "expire": 34
+        },
+        "blackboard": {},
+        "applicability": {
+          "active": true,
+          "control": true
+        }
+      }
+    ],
+    "projectile_events": [
+      {
+        "id": 628,
+        "type": "projectile.launched",
+        "payload": {
+          "projectile": "projectile/1",
+          "definition": "projectile/unit/ch6/snmage/36f9c16582d28dfa",
+          "source": 2,
+          "target": 3,
+          "attachment_target": 3,
+          "ability": "ability/unit/ch6/snmage/36f9c16582d28dfa/coldattack",
+          "position": {
+            "row": 0.0,
+            "col": 0.0,
+            "height": 0.0
+          },
+          "expires": 320
+        },
+        "time": 20,
+        "cause": null
+      },
+      {
+        "id": 822,
+        "type": "projectile.hit",
+        "payload": {
+          "projectile": "projectile/1",
+          "source": 2,
+          "target": 3,
+          "position": {
+            "row": 0,
+            "col": 1,
+            "height": 0
+          },
+          "hit_count": 1
+        },
+        "time": 23,
+        "cause": null
+      },
+      {
+        "id": 824,
+        "type": "projectile.invalid",
+        "payload": {
+          "projectile": "projectile/1",
+          "source": 2,
+          "target": 3,
+          "reason": "max_hit",
+          "position": {
+            "row": 0,
+            "col": 1,
+            "height": 0
+          }
+        },
+        "time": 23,
+        "cause": null
+      }
+    ],
+    "skill_starts": [
+      {
+        "id": 276,
+        "type": "ability.started",
+        "payload": {
+          "source": 2,
+          "ability": "ability/unit/ch6/snmage/36f9c16582d28dfa/coldattack",
+          "cast": "cast/2/1",
+          "targets": [
+            3
+          ]
+        },
+        "time": 0,
+        "cause": null
+      }
+    ]
+  },
+  "expected": {
+    "source_alive": false,
+    "damage_packets": [
+      [
+        22,
+        8000
+      ],
+      [
+        23,
+        300
+      ]
+    ],
+    "target_required_cold_flag": 23,
+    "source_sp": 0
+  },
+  "required_consumer_passed": true,
+  "source_gap": "SimpleProjectile stopWhenSourceInvalid0 retains actual damage at23 but buff.application active-source gate rejects nested e2c_cold payload after source dies22",
+  "whole_stage_executed": false,
+  "client_verified": false
+}

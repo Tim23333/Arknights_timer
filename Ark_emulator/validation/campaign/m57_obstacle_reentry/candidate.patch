@@ -1,0 +1,153 @@
+--- m55/domains/movement.py
++++ m57/domains/movement.py
+@@ -182,15 +182,46 @@
+ 
+     def blocking(self):
+         if self._blocking_reconciling:
++            self._blocking_requested = True
+             return
+         self._blocking_reconciling = True
+         try:
+             with self.ctx.session.atomic():
+-                self._blocking()
+-                self._blocking_reconciling = False
+-                self.ctx.buffs.toggles.reconcile()
++                budget = self.ctx.session.reaction_budget
++                while True:
++                    self._blocking_requested = False
++                    self._blocking()
++                    before = tuple(self.ctx.session.world.entities())
++                    self.ctx.buffs.toggles.reconcile()
++                    if before != tuple(self.ctx.session.world.entities()):self._blocking_requested = True
++                    if not self._blocking_requested:break
++                    budget -= 1
++                    if budget <= 0:raise ValueError('blocking callbacks exceed stabilization budget')
+         finally:
+             self._blocking_reconciling = False
++            self._blocking_requested = False
++
++    def _emit_blocking(self, payload):
++        # Immutable snapshots detect synchronous actor/control/path callbacks;
++        # pure queries and unchanged events do not request another pass.
++        before = tuple(self.ctx.session.world.entities())
++        self.ctx.emit('blocking.changed', payload)
++        if before != tuple(self.ctx.session.world.entities()):self._blocking_requested = True
++
++    def _obstacle_facts(self, mover_id, obstacle_id):
++        if not self.ctx.active(mover_id) or self.ctx.route_hidden(mover_id) or not self.ctx.active(obstacle_id) or self.ctx.route_hidden(obstacle_id):return None
++        mover=thaw(self.ctx.entity(mover_id));obstacle=thaw(self.ctx.entity(obstacle_id))
++        spatial=mover['components'].get('spatial',{});other=obstacle['components'].get('spatial',{}).get('position');spec=obstacle['components'].get('route_obstacle')
++        if not spatial.get('route') or route_motion_mode(spatial['route']) != 0 or spatial.get('forced_motion') or not spec or other is None:return None
++        position=spatial.get('position')
++        if position is None:return None
++        cursor=spatial.get('movement',{}).get('path_index',0)
++        if type(cursor) is not int or cursor<0:raise ValueError('route obstacle path index invalid')
++        remaining=list(spatial.get('movement_path',()))[cursor:];cell=project_cell(other)
++        if not any(project_cell(point)==cell for point in remaining) and project_cell(position)!=cell:return None
++        distance=math.hypot(other['row']-position['row'],other['col']-position['col'])
++        if distance>spec['contact_radius']:return None
++        return mover,obstacle,remaining,distance,spec
+ 
+     def _blocking(self):
+         entities = [thaw(e) for e in self.ctx.session.world.entities() if getattr(self.ctx, 'active', self.ctx.alive)(e["id"])]
+@@ -214,6 +245,8 @@
+         used = {ref: 0 for ref, _ in blockers}
+         for entity in movers:
+             ref = entity["id"]
++            if not self.ctx.active(ref):continue
++            entity=thaw(self.ctx.entity(ref))
+             spatial = entity["components"].get("spatial", {})
+             if not spatial.get("route"):
+                 continue
+@@ -222,7 +255,7 @@
+             if self.ctx.route_hidden(ref):
+                 if current is not None:
+                     self.ctx.set(ref, ("runtime", "blocked_by"), None)
+-                    self.ctx.emit("blocking.changed", {"source": None, "target": ref, "reason": "route_hidden"})
++                    self._emit_blocking( {"source": None, "target": ref, "reason": "route_hidden"})
+                 continue
+             if spatial.get("forced_motion"):
+                 if current is not None:
+@@ -231,7 +264,7 @@
+             if route_motion_mode(spatial["route"]) == 1:
+                 if current is not None:
+                     self.ctx.set(ref, ("runtime", "blocked_by"), None)
+-                    self.ctx.emit("blocking.changed", {"source": None, "target": ref, "reason": "flying"})
++                    self._emit_blocking( {"source": None, "target": ref, "reason": "flying"})
+                 continue
+             volume = self.ctx.calc("blocking.occupancy", {"attributes": self.ctx.attributes.values(ref),
+                 "states": {}, "occupancy_parameters": {"number": self.ctx.role_value(ref, "block_occupancy")}}, target=ref)
+@@ -242,10 +275,19 @@
+             ordered = sorted(blockers, key=lambda item: item[0] != previous)
+             current = None
+             for blocker, capacity in ordered:
++                if not self.ctx.active(blocker) or self.ctx.route_hidden(blocker) or not self.ctx.buffs.controls(blocker)['block']:continue
++                captured = next(e for e in entities if e['id']==blocker)
++                if captured != thaw(self.ctx.entity(blocker)):
++                    capacity = self.ctx.calc('blocking.capacity', {'attributes':self.ctx.attributes.values(blocker),'states':{},'capacity_parameters':{'capacity':self.ctx.role_value(blocker,'block_capacity')}},source=blocker)
+                 other = self.ctx.get(blocker, ("spatial", "position"))
+-                plan = self.ctx.calc("blocking.eligibility", {"blocker": self.ctx.entity(blocker),
++                blocker_before=self.ctx.entity(blocker)
++                mover_before=self.ctx.entity(ref)
++                plan = self.ctx.calc("blocking.eligibility", {"blocker": blocker_before,
+                     "target": entity, "positions": [{"blocker": other}, {"target": position}],
+                     "paths": {"remaining": list(spatial.get("movement_path", ()))}, "states": {}}, source=blocker, target=ref)
++                if not self.ctx.active(ref) or not self.ctx.active(blocker) or mover_before != self.ctx.entity(ref) or blocker_before != self.ctx.entity(blocker):
++                    self._blocking_requested=True
++                    continue
+                 path = spatial.get("movement_path", ())
+                 blocker_cell = project_cell(other)
+                 on_path = any(project_cell(p) == blocker_cell for p in path) or project_cell(position) == blocker_cell
+@@ -254,24 +296,30 @@
+                     used[blocker] += volume
+                     break
+             if current is None:
+-                remaining=list(spatial.get("movement_path",()))
+-                cursor=spatial.get("movement",{}).get("path_index",0)
+-                if type(cursor) is not int or cursor<0:raise ValueError("route obstacle path index invalid")
+-                remaining=remaining[cursor:]
+-                for obstacle in sorted(obstacles,key=lambda e:(e["id"]!=previous,e["id"])):
+-                    spec=obstacle["components"]["route_obstacle"];other=obstacle["components"]["spatial"]["position"]
+-                    cell=project_cell(other)
+-                    if not any(project_cell(p)==cell for p in remaining) and project_cell(position)!=cell:continue
+-                    distance=math.hypot(other["row"]-position["row"],other["col"]-position["col"])
+-                    if distance>spec["contact_radius"]:continue
+-                    accepted=self.ctx.calc("blocking.obstacle",{"source":entity,"obstacle":obstacle,"path":remaining,
++                for captured_obstacle in sorted(obstacles,key=lambda e:(e["id"]!=previous,e["id"])):
++                    facts=self._obstacle_facts(ref,captured_obstacle['id'])
++                    if facts is None:continue
++                    live_mover,obstacle,remaining,distance,spec=facts
++                    accepted=self.ctx.calc("blocking.obstacle",{"source":live_mover,"obstacle":obstacle,"path":remaining,
+                         "distance":distance,"parameters":thaw(spec["parameters"])},source=ref,target=obstacle["id"],owner=obstacle["id"],rule_id=spec["rule"])
+                     if type(accepted) is not bool:raise ValueError("blocking.obstacle must return strict boolean")
+-                    if accepted:
++                    after=self._obstacle_facts(ref,obstacle['id'])
++                    if after != facts:
++                        self._blocking_requested=True
++                        continue
++                    if accepted and after is not None:
+                         current=obstacle["id"];break
++            obstacle_relation=current is not None and any(o['id']==current for o in obstacles)
++            if obstacle_relation and self._obstacle_facts(ref,current) is None:current=None
++            if not self.ctx.active(ref):continue
+             if current != self.blocked_by(ref):
+                 self.ctx.set(ref, ("runtime", "blocked_by"), current)
+-                self.ctx.emit("blocking.changed", {"source": current, "target": ref})
++                self._emit_blocking( {"source": current, "target": ref})
++                # Domain event callbacks may legally retire/move a participant.
++                # Do not leave its relation for the next maintenance tick.
++                if obstacle_relation and current is not None and self.blocked_by(ref)==current and self._obstacle_facts(ref,current) is None:
++                    self.ctx.set(ref, ('runtime','blocked_by'), None)
++                    self._emit_blocking({'source':None,'target':ref,'reason':'obstacle_callback_invalidated'})
+ 
+ 
+ class MovementSystem:
+@@ -405,7 +453,7 @@
+             self.ctx.set(ref, ("spatial",), spatial)
+             if self.ctx.spatial.blocked_by(ref) is not None:
+                 self.ctx.set(ref, ("runtime", "blocked_by"), None)
+-                self.ctx.emit("blocking.changed", {"source": None, "target": ref, "reason": "route_transition"})
++                self._emit_blocking( {"source": None, "target": ref, "reason": "route_transition"})
+             self.ctx.spatial.blocking()
+             self.ctx.buffs.reconcile()
+             consumed = {"tile_transition":tile_transition} if tile_transition is not None else {}

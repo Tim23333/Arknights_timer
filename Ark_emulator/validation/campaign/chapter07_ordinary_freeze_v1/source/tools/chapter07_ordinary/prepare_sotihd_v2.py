@@ -1,0 +1,3 @@
+"""Preserve first unexecuted guessed-index content; actual frozen enum binds SILENCED12."""
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2];p=ROOT/'tools/chapter07_ordinary/build_sotihd_v1.py';s=p.read_text().replace("'abnormal_immunes':[8]","'abnormal_immunes':[12]").replace('SILENCE8','SILENCED12').replace('sotihd.module.reference.json','sotihd.module.v2.reference.json');s=s.replace("'source_locks':{str(source):sha(source)}","'source_locks':{str(source):sha(source),str(ROOT/'packages/campaign/chapter04_boss/m70/immunity.reference_model.json'):sha(ROOT/'packages/campaign/chapter04_boss/m70/immunity.reference_model.json')}");out=p.with_name('build_sotihd_v2.py');assert not out.exists();out.write_text(s,encoding='utf8',newline='');print(out)

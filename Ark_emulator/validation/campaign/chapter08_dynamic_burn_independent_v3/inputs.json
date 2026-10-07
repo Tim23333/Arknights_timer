@@ -1,0 +1,974 @@
+[
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/dragonclock",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "buffs": [
+      {
+        "id": "buff/peer/resistance",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "one_minus_status_resistance",
+            "layer": "final_ratio",
+            "value": -0.5
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/fireowner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 3131,
+              "atk": 493,
+              "def": 81,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 3131,
+              "capacity": 3131,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/fire",
+            "ability/peer/retire"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/firetarget",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 70000,
+              "atk": 217,
+              "def": 31,
+              "mres": 17,
+              "one_minus_status_resistance": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 70000,
+              "capacity": 70000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/resistance"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/fire",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "buff_application",
+              "target": 3,
+              "application_rule": "rule/ch8/dragon_fire/application",
+              "allowed": [
+                "buff/ch8/source/dragon_fire",
+                "buff/ch8/source/dragon_fire[damage]"
+              ]
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/resistance",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": "self",
+              "buff": "buff/peer/resistance"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/retire",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": "self",
+              "parameters": {
+                "reason": "peer_source_exit"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/dragonclock",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/fireowner",
+          "instanceAlias": "fireowner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/firetarget",
+          "instanceAlias": "firetarget",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/dragonclock",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "buffs": [
+      {
+        "id": "buff/peer/resistance",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "one_minus_status_resistance",
+            "layer": "final_ratio",
+            "value": -0.5
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/fireowner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 3131,
+              "atk": 493,
+              "def": 81,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 3131,
+              "capacity": 3131,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/fire",
+            "ability/peer/retire"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/firetarget",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 70000,
+              "atk": 217,
+              "def": 31,
+              "mres": 17,
+              "one_minus_status_resistance": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 70000,
+              "capacity": 70000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/resistance"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/fire",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "buff_application",
+              "target": 3,
+              "application_rule": "rule/ch8/dragon_fire/application",
+              "allowed": [
+                "buff/ch8/source/dragon_fire",
+                "buff/ch8/source/dragon_fire[damage]"
+              ]
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/resistance",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": "self",
+              "buff": "buff/peer/resistance"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/retire",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": "self",
+              "parameters": {
+                "reason": "peer_source_exit"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/dragonclock",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/fireowner",
+          "instanceAlias": "fireowner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/firetarget",
+          "instanceAlias": "firetarget",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/dragonclock",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "buffs": [
+      {
+        "id": "buff/peer/resistance",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "one_minus_status_resistance",
+            "layer": "final_ratio",
+            "value": -0.5
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/fireowner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 3131,
+              "atk": 493,
+              "def": 81,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 3131,
+              "capacity": 3131,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/fire",
+            "ability/peer/retire"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/firetarget",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 70000,
+              "atk": 217,
+              "def": 31,
+              "mres": 17,
+              "one_minus_status_resistance": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 70000,
+              "capacity": 70000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/resistance"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/fire",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "buff_application",
+              "target": 3,
+              "application_rule": "rule/ch8/dragon_fire/application",
+              "allowed": [
+                "buff/ch8/source/dragon_fire",
+                "buff/ch8/source/dragon_fire[damage]"
+              ]
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/resistance",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": "self",
+              "buff": "buff/peer/resistance"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/retire",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": "self",
+              "parameters": {
+                "reason": "peer_source_exit"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/dragonclock",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/fireowner",
+          "instanceAlias": "fireowner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/firetarget",
+          "instanceAlias": "firetarget",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/dragonclock",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "buffs": [
+      {
+        "id": "buff/peer/resistance",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "one_minus_status_resistance",
+            "layer": "final_ratio",
+            "value": -0.5
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/fireowner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 3131,
+              "atk": 493,
+              "def": 81,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 3131,
+              "capacity": 3131,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/fire",
+            "ability/peer/retire"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/firetarget",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 70000,
+              "atk": 217,
+              "def": 31,
+              "mres": 17,
+              "one_minus_status_resistance": 1
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 70000,
+              "capacity": 70000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/resistance"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/fire",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "buff_application",
+              "target": 3,
+              "application_rule": "rule/ch8/dragon_fire/application",
+              "allowed": [
+                "buff/ch8/source/dragon_fire",
+                "buff/ch8/source/dragon_fire[damage]"
+              ]
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/resistance",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": "self",
+              "buff": "buff/peer/resistance"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/retire",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": "self",
+              "parameters": {
+                "reason": "peer_source_exit"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/dragonclock",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/fireowner",
+          "instanceAlias": "fireowner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/firetarget",
+          "instanceAlias": "firetarget",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/dragonclock",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "buffs": [
+      {
+        "id": "buff/peer/resistance",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "one_minus_status_resistance",
+            "layer": "final_ratio",
+            "value": -0.5
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/fireowner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 3131,
+              "atk": 493,
+              "def": 81,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 3131,
+              "capacity": 3131,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/fire",
+            "ability/peer/retire"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/firetarget",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 70000,
+              "atk": 217,
+              "def": 31,
+              "mres": 17,
+              "one_minus_status_resistance": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 70000,
+              "capacity": 70000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/resistance"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/fire",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "buff_application",
+              "target": 3,
+              "application_rule": "rule/ch8/dragon_fire/application",
+              "allowed": [
+                "buff/ch8/source/dragon_fire",
+                "buff/ch8/source/dragon_fire[damage]"
+              ]
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/resistance",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": "self",
+              "buff": "buff/peer/resistance"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/retire",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": "self",
+              "parameters": {
+                "reason": "peer_source_exit"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/dragonclock",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/fireowner",
+          "instanceAlias": "fireowner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/firetarget",
+          "instanceAlias": "firetarget",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/dragonclock",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "buffs": [
+      {
+        "id": "buff/peer/resistance",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "one_minus_status_resistance",
+            "layer": "final_ratio",
+            "value": -0.5
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/fireowner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 3131,
+              "atk": 493,
+              "def": 81,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 3131,
+              "capacity": 3131,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/fire",
+            "ability/peer/retire"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/firetarget",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 70000,
+              "atk": 217,
+              "def": 31,
+              "mres": 17,
+              "one_minus_status_resistance": 2000
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 70000,
+              "capacity": 70000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/resistance"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/fire",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "buff_application",
+              "target": 3,
+              "application_rule": "rule/ch8/dragon_fire/application",
+              "allowed": [
+                "buff/ch8/source/dragon_fire",
+                "buff/ch8/source/dragon_fire[damage]"
+              ]
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/resistance",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": "self",
+              "buff": "buff/peer/resistance"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/retire",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": "self",
+              "parameters": {
+                "reason": "peer_source_exit"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/dragonclock",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/fireowner",
+          "instanceAlias": "fireowner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/firetarget",
+          "instanceAlias": "firetarget",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  }
+]

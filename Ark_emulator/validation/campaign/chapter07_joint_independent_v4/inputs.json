@@ -1,0 +1,2222 @@
+[
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/joint7",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/j/restore",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.parameters.capacity*inputs.parameters.ratio"
+        }
+      },
+      {
+        "id": "rule/j/tile",
+        "kind": "rule",
+        "contract": "targeting.eligibility",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "answer",
+              "expression": "{'accepted':inputs.candidate_spatial_tile.tile.buildableType == 2,'reason':'high_tile'}"
+            }
+          ],
+          "output": "nodes.answer"
+        }
+      }
+    ],
+    "selectors": [
+      {
+        "id": "selector/j/aura",
+        "kind": "selector",
+        "region": {
+          "type": "radius",
+          "radius": 3
+        },
+        "filters": [
+          {
+            "tag": "recipient"
+          }
+        ],
+        "limit": null,
+        "eligibility": {
+          "rule": "rule/j/tile",
+          "include_candidate_tile": true,
+          "parameters": {
+            "source_configuration": {
+              "_ignoreTargetFree": 0,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_needProfessionMask": 0,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 0,
+              "_checkUnitType": 0,
+              "_targetSide": 7,
+              "_targetMotion": 3,
+              "_targetCategory": 7
+            },
+            "side_policy": "relative_ally_enemy",
+            "neutral_policy": "absolute_mask",
+            "defaults": {
+              "heal_free": false,
+              "camouflage": false,
+              "ally_target_free": false,
+              "can_select_camouflage": false,
+              "target_free": false,
+              "motion": 0,
+              "category": 0,
+              "profession": 0,
+              "unit_type": 0,
+              "abnormal_flags": [],
+              "abnormal_combos": [],
+              "target_free_flags": [],
+              "target_free_combos": [],
+              "abnormal_immunes": [],
+              "side": 0
+            }
+          }
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/j/parent",
+        "kind": "buff",
+        "removal": {
+          "on_source_death": "retain",
+          "on_target_death": "retain"
+        },
+        "aura": {
+          "selector": "selector/j/aura",
+          "buff": "buff/j/child",
+          "lease_policy": {
+            "mode": "shared",
+            "identity": [
+              "definition",
+              "target"
+            ],
+            "source_binding": "oldest_live_lease",
+            "external_child_collision": "reject",
+            "owner_activity": "active_or_rebirth_waiting"
+          }
+        }
+      },
+      {
+        "id": "buff/j/child",
+        "kind": "buff",
+        "stacking": {
+          "mode": "refresh",
+          "max_stacks": 1
+        },
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 37
+          }
+        ]
+      },
+      {
+        "id": "buff/j/timer",
+        "kind": "buff",
+        "interval_seconds": 0.9666666666666667,
+        "removal": {
+          "on_source_death": "retain",
+          "on_target_death": "retain"
+        },
+        "effects": [
+          {
+            "op": "trigger_ability",
+            "target": "source",
+            "ability": "ability/j/wait"
+          }
+        ]
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/j/wait",
+        "kind": "ability",
+        "duration_seconds": 0.5,
+        "activation": {
+          "mode": "manual",
+          "parameters": {
+            "auto_only": true
+          }
+        },
+        "timeline": [
+          {
+            "at": 3,
+            "effect": {
+              "op": "emit",
+              "event": "peer.joint.impact"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/j/kill",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "modify_resource",
+              "target": 2,
+              "resource": "hp",
+              "value": 0
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/j/retire",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 2,
+              "parameters": {
+                "reason": "withdraw"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/j/owner",
+        "kind": "entity",
+        "tags": [
+          "recipient"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 19
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {},
+          "buffs": {
+            "initial": [
+              "buff/j/parent",
+              "buff/j/timer"
+            ]
+          },
+          "abilities": [
+            "ability/j/wait"
+          ],
+          "rebirth": {
+            "resource": "hp",
+            "max_count": 1,
+            "delay_seconds": 3.3333333333333335,
+            "restore_ratio": 1,
+            "restore_rule": "rule/j/restore",
+            "retain_buffs": [
+              "buff/j/parent",
+              "buff/j/timer"
+            ],
+            "waiting_actions": {
+              "abilities": [
+                "ability/j/wait"
+              ],
+              "buffs": [
+                "buff/j/timer"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": "unit/j/ally",
+        "kind": "entity",
+        "tags": [
+          "recipient"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 19
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/j/low",
+        "kind": "entity",
+        "tags": [
+          "recipient"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 19
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/j/dormant",
+        "kind": "entity",
+        "tags": [
+          "recipient"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 19
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/j/controller",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/j/kill",
+            "ability/j/retire"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/joint7",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 4,
+        "tiles": [
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 2,
+            "heightType": 1,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 2,
+            "heightType": 1,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "heightType": 0,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 2,
+            "heightType": 1,
+            "passableMask": 1
+          }
+        ]
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/j/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/j/ally",
+          "instanceAlias": "ally",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        },
+        {
+          "definition": "unit/j/low",
+          "instanceAlias": "low",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/j/dormant",
+          "instanceAlias": "dormant",
+          "position": {
+            "row": 0,
+            "col": 3
+          },
+          "active": false,
+          "registration_key": "peer-dormant"
+        },
+        {
+          "definition": "unit/j/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 0,
+            "col": 3
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/joint7",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/j/restore",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.parameters.capacity*inputs.parameters.ratio"
+        }
+      },
+      {
+        "id": "rule/j/tile",
+        "kind": "rule",
+        "contract": "targeting.eligibility",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "answer",
+              "expression": "{'accepted':inputs.candidate_spatial_tile.tile.buildableType == 2,'reason':'high_tile'}"
+            }
+          ],
+          "output": "nodes.answer"
+        }
+      }
+    ],
+    "selectors": [
+      {
+        "id": "selector/j/aura",
+        "kind": "selector",
+        "region": {
+          "type": "radius",
+          "radius": 3
+        },
+        "filters": [
+          {
+            "tag": "recipient"
+          }
+        ],
+        "limit": null,
+        "eligibility": {
+          "rule": "rule/j/tile",
+          "include_candidate_tile": true,
+          "parameters": {
+            "source_configuration": {
+              "_ignoreTargetFree": 0,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_needProfessionMask": 0,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 0,
+              "_checkUnitType": 0,
+              "_targetSide": 7,
+              "_targetMotion": 3,
+              "_targetCategory": 7
+            },
+            "side_policy": "relative_ally_enemy",
+            "neutral_policy": "absolute_mask",
+            "defaults": {
+              "heal_free": false,
+              "camouflage": false,
+              "ally_target_free": false,
+              "can_select_camouflage": false,
+              "target_free": false,
+              "motion": 0,
+              "category": 0,
+              "profession": 0,
+              "unit_type": 0,
+              "abnormal_flags": [],
+              "abnormal_combos": [],
+              "target_free_flags": [],
+              "target_free_combos": [],
+              "abnormal_immunes": [],
+              "side": 0
+            }
+          }
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/j/parent",
+        "kind": "buff",
+        "removal": {
+          "on_source_death": "retain",
+          "on_target_death": "retain"
+        },
+        "aura": {
+          "selector": "selector/j/aura",
+          "buff": "buff/j/child",
+          "lease_policy": {
+            "mode": "shared",
+            "identity": [
+              "definition",
+              "target"
+            ],
+            "source_binding": "oldest_live_lease",
+            "external_child_collision": "reject",
+            "owner_activity": "active_or_rebirth_waiting"
+          }
+        }
+      },
+      {
+        "id": "buff/j/child",
+        "kind": "buff",
+        "stacking": {
+          "mode": "refresh",
+          "max_stacks": 1
+        },
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 37
+          }
+        ]
+      },
+      {
+        "id": "buff/j/timer",
+        "kind": "buff",
+        "interval_seconds": 0.9666666666666667,
+        "removal": {
+          "on_source_death": "retain",
+          "on_target_death": "retain"
+        },
+        "effects": [
+          {
+            "op": "trigger_ability",
+            "target": "source",
+            "ability": "ability/j/wait"
+          }
+        ]
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/j/wait",
+        "kind": "ability",
+        "duration_seconds": 0.5,
+        "activation": {
+          "mode": "manual",
+          "parameters": {
+            "auto_only": true
+          }
+        },
+        "timeline": [
+          {
+            "at": 3,
+            "effect": {
+              "op": "emit",
+              "event": "peer.joint.impact"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/j/kill",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "modify_resource",
+              "target": 2,
+              "resource": "hp",
+              "value": 0
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/j/retire",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 2,
+              "parameters": {
+                "reason": "withdraw"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/j/owner",
+        "kind": "entity",
+        "tags": [
+          "recipient"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 19
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {},
+          "buffs": {
+            "initial": [
+              "buff/j/parent",
+              "buff/j/timer"
+            ]
+          },
+          "abilities": [
+            "ability/j/wait"
+          ],
+          "rebirth": {
+            "resource": "hp",
+            "max_count": 1,
+            "delay_seconds": 3.3333333333333335,
+            "restore_ratio": 1,
+            "restore_rule": "rule/j/restore",
+            "retain_buffs": [
+              "buff/j/parent",
+              "buff/j/timer"
+            ],
+            "waiting_actions": {
+              "abilities": [
+                "ability/j/wait"
+              ],
+              "buffs": [
+                "buff/j/timer"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": "unit/j/ally",
+        "kind": "entity",
+        "tags": [
+          "recipient"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 19
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/j/low",
+        "kind": "entity",
+        "tags": [
+          "recipient"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 19
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/j/dormant",
+        "kind": "entity",
+        "tags": [
+          "recipient"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 19
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/j/controller",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/j/kill",
+            "ability/j/retire"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/joint7",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 4,
+        "tiles": [
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 2,
+            "heightType": 1,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 2,
+            "heightType": 1,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "heightType": 0,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 2,
+            "heightType": 1,
+            "passableMask": 1
+          }
+        ]
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/j/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/j/ally",
+          "instanceAlias": "ally",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        },
+        {
+          "definition": "unit/j/low",
+          "instanceAlias": "low",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/j/dormant",
+          "instanceAlias": "dormant",
+          "position": {
+            "row": 0,
+            "col": 3
+          },
+          "active": false,
+          "registration_key": "peer-dormant"
+        },
+        {
+          "definition": "unit/j/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 0,
+            "col": 3
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/joint7",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/j/restore",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.parameters.capacity*inputs.parameters.ratio"
+        }
+      },
+      {
+        "id": "rule/j/tile",
+        "kind": "rule",
+        "contract": "targeting.eligibility",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "answer",
+              "expression": "{'accepted':inputs.candidate_spatial_tile.tile.buildableType == 2,'reason':'high_tile'}"
+            }
+          ],
+          "output": "nodes.answer"
+        }
+      }
+    ],
+    "selectors": [
+      {
+        "id": "selector/j/aura",
+        "kind": "selector",
+        "region": {
+          "type": "radius",
+          "radius": 3
+        },
+        "filters": [
+          {
+            "tag": "recipient"
+          }
+        ],
+        "limit": null,
+        "eligibility": {
+          "rule": "rule/j/tile",
+          "include_candidate_tile": true,
+          "parameters": {
+            "source_configuration": {
+              "_ignoreTargetFree": 0,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_needProfessionMask": 0,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 0,
+              "_checkUnitType": 0,
+              "_targetSide": 7,
+              "_targetMotion": 3,
+              "_targetCategory": 7
+            },
+            "side_policy": "relative_ally_enemy",
+            "neutral_policy": "absolute_mask",
+            "defaults": {
+              "heal_free": false,
+              "camouflage": false,
+              "ally_target_free": false,
+              "can_select_camouflage": false,
+              "target_free": false,
+              "motion": 0,
+              "category": 0,
+              "profession": 0,
+              "unit_type": 0,
+              "abnormal_flags": [],
+              "abnormal_combos": [],
+              "target_free_flags": [],
+              "target_free_combos": [],
+              "abnormal_immunes": [],
+              "side": 0
+            }
+          }
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/j/parent",
+        "kind": "buff",
+        "removal": {
+          "on_source_death": "retain",
+          "on_target_death": "retain"
+        },
+        "aura": {
+          "selector": "selector/j/aura",
+          "buff": "buff/j/child",
+          "lease_policy": {
+            "mode": "shared",
+            "identity": [
+              "definition",
+              "target"
+            ],
+            "source_binding": "oldest_live_lease",
+            "external_child_collision": "reject",
+            "owner_activity": "active_or_rebirth_waiting"
+          }
+        }
+      },
+      {
+        "id": "buff/j/child",
+        "kind": "buff",
+        "stacking": {
+          "mode": "refresh",
+          "max_stacks": 1
+        },
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 37
+          }
+        ]
+      },
+      {
+        "id": "buff/j/timer",
+        "kind": "buff",
+        "interval_seconds": 0.9666666666666667,
+        "removal": {
+          "on_source_death": "retain",
+          "on_target_death": "retain"
+        },
+        "effects": [
+          {
+            "op": "trigger_ability",
+            "target": "source",
+            "ability": "ability/j/wait"
+          }
+        ]
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/j/wait",
+        "kind": "ability",
+        "duration_seconds": 0.5,
+        "activation": {
+          "mode": "manual",
+          "parameters": {
+            "auto_only": true
+          }
+        },
+        "timeline": [
+          {
+            "at": 3,
+            "effect": {
+              "op": "emit",
+              "event": "peer.joint.impact"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/j/kill",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "modify_resource",
+              "target": 2,
+              "resource": "hp",
+              "value": 0
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/j/retire",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 2,
+              "parameters": {
+                "reason": "withdraw"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/j/owner",
+        "kind": "entity",
+        "tags": [
+          "recipient"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 19
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {},
+          "buffs": {
+            "initial": [
+              "buff/j/parent",
+              "buff/j/timer"
+            ]
+          },
+          "abilities": [
+            "ability/j/wait"
+          ],
+          "rebirth": {
+            "resource": "hp",
+            "max_count": 1,
+            "delay_seconds": 3.3333333333333335,
+            "restore_ratio": 1,
+            "restore_rule": "rule/j/restore",
+            "retain_buffs": [
+              "buff/j/parent",
+              "buff/j/timer"
+            ],
+            "waiting_actions": {
+              "abilities": [
+                "ability/j/wait"
+              ],
+              "buffs": [
+                "buff/j/timer"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": "unit/j/ally",
+        "kind": "entity",
+        "tags": [
+          "recipient"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 19
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/j/low",
+        "kind": "entity",
+        "tags": [
+          "recipient"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 19
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/j/dormant",
+        "kind": "entity",
+        "tags": [
+          "recipient"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 19
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/j/controller",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/j/kill",
+            "ability/j/retire"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/joint7",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 4,
+        "tiles": [
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 2,
+            "heightType": 1,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 2,
+            "heightType": 1,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "heightType": 0,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 2,
+            "heightType": 1,
+            "passableMask": 1
+          }
+        ]
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/j/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/j/ally",
+          "instanceAlias": "ally",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        },
+        {
+          "definition": "unit/j/low",
+          "instanceAlias": "low",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/j/dormant",
+          "instanceAlias": "dormant",
+          "position": {
+            "row": 0,
+            "col": 3
+          },
+          "active": false,
+          "registration_key": "peer-dormant"
+        },
+        {
+          "definition": "unit/j/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 0,
+            "col": 3
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/joint7",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/j/restore",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.parameters.capacity*inputs.parameters.ratio"
+        }
+      },
+      {
+        "id": "rule/j/tile",
+        "kind": "rule",
+        "contract": "targeting.eligibility",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "answer",
+              "expression": "{'accepted':inputs.candidate_spatial_tile.tile.buildableType == 2,'reason':'high_tile'}"
+            }
+          ],
+          "output": "nodes.answer"
+        }
+      }
+    ],
+    "selectors": [
+      {
+        "id": "selector/j/aura",
+        "kind": "selector",
+        "region": {
+          "type": "radius",
+          "radius": 3
+        },
+        "filters": [
+          {
+            "tag": "recipient"
+          }
+        ],
+        "limit": null,
+        "eligibility": {
+          "rule": "rule/j/tile",
+          "include_candidate_tile": true,
+          "parameters": {
+            "source_configuration": {
+              "_ignoreTargetFree": 0,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_needProfessionMask": 0,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 0,
+              "_checkUnitType": 0,
+              "_targetSide": 7,
+              "_targetMotion": 3,
+              "_targetCategory": 7
+            },
+            "side_policy": "relative_ally_enemy",
+            "neutral_policy": "absolute_mask",
+            "defaults": {
+              "heal_free": false,
+              "camouflage": false,
+              "ally_target_free": false,
+              "can_select_camouflage": false,
+              "target_free": false,
+              "motion": 0,
+              "category": 0,
+              "profession": 0,
+              "unit_type": 0,
+              "abnormal_flags": [],
+              "abnormal_combos": [],
+              "target_free_flags": [],
+              "target_free_combos": [],
+              "abnormal_immunes": [],
+              "side": 0
+            }
+          }
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/j/parent",
+        "kind": "buff",
+        "removal": {
+          "on_source_death": "retain",
+          "on_target_death": "retain"
+        },
+        "aura": {
+          "selector": "selector/j/aura",
+          "buff": "buff/j/child",
+          "lease_policy": {
+            "mode": "shared",
+            "identity": [
+              "definition",
+              "target"
+            ],
+            "source_binding": "oldest_live_lease",
+            "external_child_collision": "reject",
+            "owner_activity": "active_or_rebirth_waiting"
+          }
+        }
+      },
+      {
+        "id": "buff/j/child",
+        "kind": "buff",
+        "stacking": {
+          "mode": "refresh",
+          "max_stacks": 1
+        },
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 37
+          }
+        ]
+      },
+      {
+        "id": "buff/j/timer",
+        "kind": "buff",
+        "interval_seconds": 0.9666666666666667,
+        "removal": {
+          "on_source_death": "retain",
+          "on_target_death": "retain"
+        },
+        "effects": [
+          {
+            "op": "trigger_ability",
+            "target": "source",
+            "ability": "ability/j/wait"
+          }
+        ]
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/j/wait",
+        "kind": "ability",
+        "duration_seconds": 0.5,
+        "activation": {
+          "mode": "manual",
+          "parameters": {
+            "auto_only": true
+          }
+        },
+        "timeline": [
+          {
+            "at": 3,
+            "effect": {
+              "op": "emit",
+              "event": "peer.joint.impact"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/j/kill",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "modify_resource",
+              "target": 2,
+              "resource": "hp",
+              "value": 0
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/j/retire",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 2,
+              "parameters": {
+                "reason": "withdraw"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/j/owner",
+        "kind": "entity",
+        "tags": [
+          "recipient"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 19
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {},
+          "buffs": {
+            "initial": [
+              "buff/j/parent",
+              "buff/j/timer"
+            ]
+          },
+          "abilities": [
+            "ability/j/wait"
+          ],
+          "rebirth": {
+            "resource": "hp",
+            "max_count": 1,
+            "delay_seconds": 3.3333333333333335,
+            "restore_ratio": 1,
+            "restore_rule": "rule/j/restore",
+            "retain_buffs": [
+              "buff/j/parent",
+              "buff/j/timer"
+            ],
+            "waiting_actions": {
+              "abilities": [
+                "ability/j/wait"
+              ],
+              "buffs": [
+                "buff/j/timer"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": "unit/j/ally",
+        "kind": "entity",
+        "tags": [
+          "recipient"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 19
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/j/low",
+        "kind": "entity",
+        "tags": [
+          "recipient"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 19
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/j/dormant",
+        "kind": "entity",
+        "tags": [
+          "recipient"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 19
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/j/controller",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/j/kill",
+            "ability/j/retire"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/joint7",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 4,
+        "tiles": [
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 2,
+            "heightType": 1,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 2,
+            "heightType": 1,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "heightType": 0,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 2,
+            "heightType": 1,
+            "passableMask": 1
+          }
+        ]
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/j/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/j/ally",
+          "instanceAlias": "ally",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        },
+        {
+          "definition": "unit/j/low",
+          "instanceAlias": "low",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/j/dormant",
+          "instanceAlias": "dormant",
+          "position": {
+            "row": 0,
+            "col": 3
+          },
+          "active": false,
+          "registration_key": "peer-dormant"
+        },
+        {
+          "definition": "unit/j/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 0,
+            "col": 3
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/joint7",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/j/restore",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.parameters.capacity*inputs.parameters.ratio"
+        }
+      },
+      {
+        "id": "rule/j/tile",
+        "kind": "rule",
+        "contract": "targeting.eligibility",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "answer",
+              "expression": "{'accepted':inputs.candidate_spatial_tile.tile.buildableType == 2,'reason':'high_tile'}"
+            }
+          ],
+          "output": "nodes.answer"
+        }
+      }
+    ],
+    "selectors": [
+      {
+        "id": "selector/j/aura",
+        "kind": "selector",
+        "region": {
+          "type": "radius",
+          "radius": 3
+        },
+        "filters": [
+          {
+            "tag": "recipient"
+          }
+        ],
+        "limit": null,
+        "eligibility": {
+          "rule": "rule/j/tile",
+          "include_candidate_tile": true,
+          "parameters": {
+            "source_configuration": {
+              "_ignoreTargetFree": 0,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_needProfessionMask": 0,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 0,
+              "_checkUnitType": 0,
+              "_targetSide": 7,
+              "_targetMotion": 3,
+              "_targetCategory": 7
+            },
+            "side_policy": "relative_ally_enemy",
+            "neutral_policy": "absolute_mask",
+            "defaults": {
+              "heal_free": false,
+              "camouflage": false,
+              "ally_target_free": false,
+              "can_select_camouflage": false,
+              "target_free": false,
+              "motion": 0,
+              "category": 0,
+              "profession": 0,
+              "unit_type": 0,
+              "abnormal_flags": [],
+              "abnormal_combos": [],
+              "target_free_flags": [],
+              "target_free_combos": [],
+              "abnormal_immunes": [],
+              "side": 0
+            }
+          }
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/j/parent",
+        "kind": "buff",
+        "removal": {
+          "on_source_death": "retain",
+          "on_target_death": "retain"
+        },
+        "aura": {
+          "selector": "selector/j/aura",
+          "buff": "buff/j/child",
+          "lease_policy": {
+            "mode": "shared",
+            "identity": [
+              "definition",
+              "target"
+            ],
+            "source_binding": "oldest_live_lease",
+            "external_child_collision": "reject",
+            "owner_activity": "active_or_rebirth_waiting"
+          }
+        }
+      },
+      {
+        "id": "buff/j/child",
+        "kind": "buff",
+        "stacking": {
+          "mode": "refresh",
+          "max_stacks": 1
+        },
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 37
+          }
+        ]
+      },
+      {
+        "id": "buff/j/timer",
+        "kind": "buff",
+        "interval_seconds": 0.9666666666666667,
+        "removal": {
+          "on_source_death": "retain",
+          "on_target_death": "retain"
+        },
+        "effects": [
+          {
+            "op": "trigger_ability",
+            "target": "source",
+            "ability": "ability/j/wait"
+          }
+        ]
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/j/wait",
+        "kind": "ability",
+        "duration_seconds": 0.5,
+        "activation": {
+          "mode": "manual",
+          "parameters": {
+            "auto_only": true
+          }
+        },
+        "timeline": [
+          {
+            "at": 3,
+            "effect": {
+              "op": "emit",
+              "event": "peer.joint.impact"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/j/kill",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "modify_resource",
+              "target": 2,
+              "resource": "hp",
+              "value": 0
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/j/retire",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 2,
+              "parameters": {
+                "reason": "withdraw"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/j/owner",
+        "kind": "entity",
+        "tags": [
+          "recipient"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 19
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {},
+          "buffs": {
+            "initial": [
+              "buff/j/parent",
+              "buff/j/timer"
+            ]
+          },
+          "abilities": [
+            "ability/j/wait"
+          ],
+          "rebirth": {
+            "resource": "hp",
+            "max_count": 1,
+            "delay_seconds": 3.3333333333333335,
+            "restore_ratio": 1,
+            "restore_rule": "rule/j/restore",
+            "retain_buffs": [
+              "buff/j/parent",
+              "buff/j/timer"
+            ],
+            "waiting_actions": {
+              "abilities": [
+                "ability/j/wait"
+              ],
+              "buffs": [
+                "buff/j/timer"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": "unit/j/ally",
+        "kind": "entity",
+        "tags": [
+          "recipient"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 19
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/j/low",
+        "kind": "entity",
+        "tags": [
+          "recipient"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 19
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/j/dormant",
+        "kind": "entity",
+        "tags": [
+          "recipient"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 19
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/j/controller",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/j/kill",
+            "ability/j/retire"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/joint7",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 4,
+        "tiles": [
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 2,
+            "heightType": 1,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 2,
+            "heightType": 1,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "heightType": 0,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 2,
+            "heightType": 1,
+            "passableMask": 1
+          }
+        ]
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/j/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/j/ally",
+          "instanceAlias": "ally",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        },
+        {
+          "definition": "unit/j/low",
+          "instanceAlias": "low",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/j/dormant",
+          "instanceAlias": "dormant",
+          "position": {
+            "row": 0,
+            "col": 3
+          },
+          "active": false,
+          "registration_key": "peer-dormant"
+        },
+        {
+          "definition": "unit/j/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 0,
+            "col": 3
+          }
+        }
+      ]
+    }
+  }
+]

@@ -1,0 +1,1162 @@
+[
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/terminal",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/restore",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.terminal_restore"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/terminal_end",
+        "kind": "buff",
+        "duration_seconds": 0.2,
+        "on_remove": [
+          {
+            "op": "emit",
+            "event": "peer.end.removed"
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/other_remove",
+        "kind": "buff",
+        "on_remove": [
+          {
+            "op": "instant_kill",
+            "target": "self",
+            "parameters": {
+              "cause": "peer_noncompletion_end",
+              "skip_rebirth": false
+            }
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/boss",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 31,
+              "def": 17,
+              "mres": 13
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/peer/terminal",
+            "ability/peer/other"
+          ],
+          "rebirth": {
+            "resource": "hp",
+            "max_count": 2,
+            "delay_seconds": 0.03333333333333333,
+            "restore_ratio": 0.5,
+            "restore_rule": "rule/peer/restore",
+            "zero_restore_lifecycle": {
+              "mode": "terminal_active",
+              "counts": [
+                2
+              ],
+              "duration_seconds": 0.3333333333333333,
+              "owned_abilities": [
+                "ability/peer/terminal"
+              ],
+              "retained_buffs": [
+                "buff/peer/terminal_end",
+                "buff/peer/other_remove"
+              ],
+              "completion_buffs": [
+                "buff/peer/terminal_end"
+              ],
+              "on_enter": [
+                {
+                  "op": "apply_buff",
+                  "target": "self",
+                  "buff": "buff/peer/terminal_end"
+                },
+                {
+                  "op": "apply_buff",
+                  "target": "self",
+                  "buff": "buff/peer/other_remove"
+                }
+              ]
+            },
+            "retain_buffs": [
+              "buff/peer/terminal_end",
+              "buff/peer/other_remove"
+            ]
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/kill",
+            "ability/peer/trigger",
+            "ability/peer/foreign_remove"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/terminal",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 0,
+            "effect": {
+              "op": "emit",
+              "event": "peer.terminal.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/other",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "instant_kill",
+              "target": 2,
+              "parameters": {
+                "cause": "peer_damage",
+                "skip_rebirth": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/trigger",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "trigger_ability",
+              "target": 2,
+              "ability": "ability/peer/terminal"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/foreign_remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/other_remove"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/terminal",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/boss",
+          "instanceAlias": "boss",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/terminal",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/restore",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.terminal_restore"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/terminal_end",
+        "kind": "buff",
+        "duration_seconds": 0.2,
+        "on_remove": [
+          {
+            "op": "instant_kill",
+            "target": "self",
+            "parameters": {
+              "cause": "peer_source_end",
+              "skip_rebirth": false
+            }
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/other_remove",
+        "kind": "buff",
+        "on_remove": [
+          {
+            "op": "instant_kill",
+            "target": "self",
+            "parameters": {
+              "cause": "peer_noncompletion_end",
+              "skip_rebirth": false
+            }
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/boss",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 31,
+              "def": 17,
+              "mres": 13
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/peer/terminal",
+            "ability/peer/other"
+          ],
+          "rebirth": {
+            "resource": "hp",
+            "max_count": 2,
+            "delay_seconds": 0.03333333333333333,
+            "restore_ratio": 0.5,
+            "restore_rule": "rule/peer/restore",
+            "zero_restore_lifecycle": {
+              "mode": "terminal_active",
+              "counts": [
+                2
+              ],
+              "duration_seconds": 0.3333333333333333,
+              "owned_abilities": [
+                "ability/peer/terminal"
+              ],
+              "retained_buffs": [
+                "buff/peer/terminal_end",
+                "buff/peer/other_remove"
+              ],
+              "completion_buffs": [
+                "buff/peer/terminal_end"
+              ],
+              "on_enter": [
+                {
+                  "op": "apply_buff",
+                  "target": "self",
+                  "buff": "buff/peer/terminal_end"
+                },
+                {
+                  "op": "apply_buff",
+                  "target": "self",
+                  "buff": "buff/peer/other_remove"
+                }
+              ]
+            },
+            "retain_buffs": [
+              "buff/peer/terminal_end",
+              "buff/peer/other_remove"
+            ]
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/kill",
+            "ability/peer/trigger",
+            "ability/peer/foreign_remove"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/terminal",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 0,
+            "effect": {
+              "op": "emit",
+              "event": "peer.terminal.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/other",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "instant_kill",
+              "target": 2,
+              "parameters": {
+                "cause": "peer_damage",
+                "skip_rebirth": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/trigger",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "trigger_ability",
+              "target": 2,
+              "ability": "ability/peer/terminal"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/foreign_remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/other_remove"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/terminal",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/boss",
+          "instanceAlias": "boss",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/terminal",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/restore",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.terminal_restore"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/terminal_end",
+        "kind": "buff",
+        "duration_seconds": 0.2,
+        "on_remove": [
+          {
+            "op": "remove_buff",
+            "target": "self",
+            "buff": "buff/peer/other_remove"
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/other_remove",
+        "kind": "buff",
+        "on_remove": [
+          {
+            "op": "instant_kill",
+            "target": "self",
+            "parameters": {
+              "cause": "peer_noncompletion_end",
+              "skip_rebirth": false
+            }
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/boss",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 31,
+              "def": 17,
+              "mres": 13
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/peer/terminal",
+            "ability/peer/other"
+          ],
+          "rebirth": {
+            "resource": "hp",
+            "max_count": 2,
+            "delay_seconds": 0.03333333333333333,
+            "restore_ratio": 0.5,
+            "restore_rule": "rule/peer/restore",
+            "zero_restore_lifecycle": {
+              "mode": "terminal_active",
+              "counts": [
+                2
+              ],
+              "duration_seconds": 0.3333333333333333,
+              "owned_abilities": [
+                "ability/peer/terminal"
+              ],
+              "retained_buffs": [
+                "buff/peer/terminal_end",
+                "buff/peer/other_remove"
+              ],
+              "completion_buffs": [
+                "buff/peer/terminal_end"
+              ],
+              "on_enter": [
+                {
+                  "op": "apply_buff",
+                  "target": "self",
+                  "buff": "buff/peer/terminal_end"
+                },
+                {
+                  "op": "apply_buff",
+                  "target": "self",
+                  "buff": "buff/peer/other_remove"
+                }
+              ]
+            },
+            "retain_buffs": [
+              "buff/peer/terminal_end",
+              "buff/peer/other_remove"
+            ]
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/kill",
+            "ability/peer/trigger",
+            "ability/peer/foreign_remove"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/terminal",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 0,
+            "effect": {
+              "op": "emit",
+              "event": "peer.terminal.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/other",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "instant_kill",
+              "target": 2,
+              "parameters": {
+                "cause": "peer_damage",
+                "skip_rebirth": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/trigger",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "trigger_ability",
+              "target": 2,
+              "ability": "ability/peer/terminal"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/foreign_remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/other_remove"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/terminal",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/boss",
+          "instanceAlias": "boss",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/terminal",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/restore",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.terminal_restore"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/terminal_end",
+        "kind": "buff",
+        "duration_seconds": 0.2,
+        "on_remove": [
+          {
+            "op": "emit",
+            "event": "peer.end.removed"
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/other_remove",
+        "kind": "buff",
+        "on_remove": [
+          {
+            "op": "instant_kill",
+            "target": "self",
+            "parameters": {
+              "cause": "peer_noncompletion_end",
+              "skip_rebirth": false
+            }
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/boss",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 31,
+              "def": 17,
+              "mres": 13
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/peer/terminal",
+            "ability/peer/other"
+          ],
+          "rebirth": {
+            "resource": "hp",
+            "max_count": 2,
+            "delay_seconds": 0.03333333333333333,
+            "restore_ratio": 0.5,
+            "restore_rule": "rule/peer/restore",
+            "zero_restore_lifecycle": {
+              "mode": "terminal_active",
+              "counts": [
+                2
+              ],
+              "duration_seconds": 0.3333333333333333,
+              "owned_abilities": [
+                "ability/peer/terminal"
+              ],
+              "retained_buffs": [
+                "buff/peer/terminal_end",
+                "buff/peer/other_remove"
+              ],
+              "completion_buffs": [
+                "buff/peer/terminal_end"
+              ],
+              "on_enter": [
+                {
+                  "op": "apply_buff",
+                  "target": "self",
+                  "buff": "buff/peer/terminal_end"
+                },
+                {
+                  "op": "apply_buff",
+                  "target": "self",
+                  "buff": "buff/peer/other_remove"
+                }
+              ]
+            },
+            "retain_buffs": [
+              "buff/peer/terminal_end",
+              "buff/peer/other_remove"
+            ]
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/kill",
+            "ability/peer/trigger",
+            "ability/peer/foreign_remove"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/terminal",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 0,
+            "effect": {
+              "op": "emit",
+              "event": "peer.terminal.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/other",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "instant_kill",
+              "target": 2,
+              "parameters": {
+                "cause": "peer_damage",
+                "skip_rebirth": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/trigger",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "trigger_ability",
+              "target": 2,
+              "ability": "ability/peer/terminal"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/foreign_remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/other_remove"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/terminal",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/boss",
+          "instanceAlias": "boss",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/terminal",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/restore",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.terminal_restore"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/terminal_end",
+        "kind": "buff",
+        "duration_seconds": 0.2,
+        "on_remove": [
+          {
+            "op": "emit",
+            "event": "peer.end.removed"
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/other_remove",
+        "kind": "buff",
+        "on_remove": [
+          {
+            "op": "instant_kill",
+            "target": "self",
+            "parameters": {
+              "cause": "peer_noncompletion_end",
+              "skip_rebirth": false
+            }
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/boss",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 31,
+              "def": 17,
+              "mres": 13
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/peer/terminal",
+            "ability/peer/other"
+          ],
+          "rebirth": {
+            "resource": "hp",
+            "max_count": 2,
+            "delay_seconds": 0.03333333333333333,
+            "restore_ratio": 0.5,
+            "restore_rule": "rule/peer/restore",
+            "zero_restore_lifecycle": {
+              "mode": "terminal_active",
+              "counts": [
+                2
+              ],
+              "duration_seconds": 0.3333333333333333,
+              "owned_abilities": [
+                "ability/peer/terminal"
+              ],
+              "retained_buffs": [
+                "buff/peer/terminal_end",
+                "buff/peer/other_remove"
+              ],
+              "completion_buffs": [
+                "buff/peer/terminal_end"
+              ],
+              "on_enter": [
+                {
+                  "op": "apply_buff",
+                  "target": "self",
+                  "buff": "buff/peer/terminal_end"
+                },
+                {
+                  "op": "apply_buff",
+                  "target": "self",
+                  "buff": "buff/peer/other_remove"
+                }
+              ]
+            },
+            "retain_buffs": [
+              "buff/peer/terminal_end",
+              "buff/peer/other_remove"
+            ]
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/kill",
+            "ability/peer/trigger",
+            "ability/peer/foreign_remove"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/terminal",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 0,
+            "effect": {
+              "op": "emit",
+              "event": "peer.terminal.packet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/other",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "instant_kill",
+              "target": 2,
+              "parameters": {
+                "cause": "peer_damage",
+                "skip_rebirth": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/trigger",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "trigger_ability",
+              "target": 2,
+              "ability": "ability/peer/terminal"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/foreign_remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/other_remove"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/terminal",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/boss",
+          "instanceAlias": "boss",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  }
+]

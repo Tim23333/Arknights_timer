@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 2,
+  "entities": [
+    {
+      "id": "unit/source",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "atk": 10,
+            "def": 0,
+            "magic_resistance": 0,
+            "max_hp": 100,
+            "attack_interval": 10,
+            "attack_speed_ratio": 1,
+            "move_speed": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100,
+            "role": "health"
+          },
+          "sp": {
+            "initial": 0,
+            "capacity": 100
+          }
+        },
+        "spatial": {},
+        "abilities": [
+          "ability/probe"
+        ]
+      }
+    },
+    {
+      "id": "unit/target",
+      "kind": "entity",
+      "tags": [
+        "enemy"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 100,
+            "def": 0,
+            "magic_resistance": 0
+          }
+        },
+        "spatial": {},
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100,
+            "role": "health"
+          }
+        }
+      }
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/probe",
+      "kind": "ability",
+      "activation": {
+        "mode": "automatic_attack"
+      },
+      "selector": "selector/probe",
+      "timeline": [
+        {
+          "at": 0,
+          "repeat": {
+            "count": 1,
+            "interval_seconds": 0
+          },
+          "effect": {
+            "op": "damage",
+            "damage_type": "true",
+            "scale": 1
+          }
+        }
+      ]
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/probe",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "enemy"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 2
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scenario/probe",
+    "ruleset": "ruleset/ark_standard",
+    "map": {
+      "rows": 1,
+      "cols": 5
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/source",
+        "instanceAlias": "source",
+        "position": {
+          "row": 0,
+          "col": 0
+        },
+        "route": {
+          "startPosition": {
+            "row": 0,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 0,
+            "col": 4
+          },
+          "checkpoints": []
+        }
+      },
+      {
+        "definition": "unit/target",
+        "instanceAlias": "target1",
+        "position": {
+          "row": 0,
+          "col": 2
+        }
+      },
+      {
+        "definition": "unit/target",
+        "instanceAlias": "target2",
+        "position": {
+          "row": 0,
+          "col": 3
+        }
+      }
+    ],
+    "dependencies": [
+      "buff/control"
+    ]
+  },
+  "buffs": [
+    {
+      "id": "buff/control",
+      "kind": "buff",
+      "duration_seconds": 1,
+      "control": {
+        "move": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,617 @@
+[
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/realtiles",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/tileselect",
+        "kind": "rule",
+        "contract": "targeting.eligibility",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "answer",
+              "expression": "{'accepted':inputs.candidate_spatial_tile.tile.buildableType == 2,'reason':'actual_tile_mask'}"
+            }
+          ],
+          "output": "nodes.answer"
+        }
+      }
+    ],
+    "selectors": [
+      {
+        "id": "selector/peer/tile",
+        "kind": "selector",
+        "region": {
+          "type": "radius",
+          "radius": 4
+        },
+        "filters": [
+          {
+            "tag": "player"
+          }
+        ],
+        "limit": null,
+        "eligibility": {
+          "rule": "rule/peer/tileselect",
+          "parameters": {
+            "source_configuration": {
+              "_ignoreTargetFree": 0,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_needProfessionMask": 0,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 0,
+              "_checkUnitType": 0,
+              "_targetSide": 2,
+              "_targetMotion": 1,
+              "_targetCategory": 1
+            },
+            "side_policy": "relative_ally_enemy",
+            "neutral_policy": "reject",
+            "defaults": {
+              "ally_target_free": false,
+              "target_free": false,
+              "can_select_camouflage": false,
+              "camouflage": false,
+              "heal_free": false,
+              "motion": 0,
+              "category": 0,
+              "profession": 0,
+              "unit_type": 0,
+              "abnormal_flags": [],
+              "abnormal_combos": [],
+              "target_free_flags": [],
+              "target_free_combos": [],
+              "abnormal_immunes": [],
+              "side": 0
+            }
+          },
+          "include_candidate_tile": true
+        }
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/highGround",
+        "kind": "entity",
+        "tags": [
+          "player",
+          "ground"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/lowRanged",
+        "kind": "entity",
+        "tags": [
+          "player",
+          "ranged"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/realtiles",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 3,
+        "tiles": [
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "heightType": 0,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 2,
+            "heightType": 1,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "heightType": 0,
+            "passableMask": 1
+          }
+        ]
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/highGround",
+          "instanceAlias": "groundOnHigh",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        },
+        {
+          "definition": "unit/peer/lowRanged",
+          "instanceAlias": "rangedOnLow",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        }
+      ],
+      "dependencies": [
+        "selector/peer/tile"
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/realtiles",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/tileselect",
+        "kind": "rule",
+        "contract": "targeting.eligibility",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "answer",
+              "expression": "{'accepted':'candidate_spatial_tile' not in inputs,'reason':'no_optin'}"
+            }
+          ],
+          "output": "nodes.answer"
+        }
+      }
+    ],
+    "selectors": [
+      {
+        "id": "selector/peer/tile",
+        "kind": "selector",
+        "region": {
+          "type": "radius",
+          "radius": 4
+        },
+        "filters": [
+          {
+            "tag": "player"
+          }
+        ],
+        "limit": null,
+        "eligibility": {
+          "rule": "rule/peer/tileselect",
+          "parameters": {
+            "source_configuration": {
+              "_ignoreTargetFree": 0,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_needProfessionMask": 0,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 0,
+              "_checkUnitType": 0,
+              "_targetSide": 2,
+              "_targetMotion": 1,
+              "_targetCategory": 1
+            },
+            "side_policy": "relative_ally_enemy",
+            "neutral_policy": "reject",
+            "defaults": {
+              "ally_target_free": false,
+              "target_free": false,
+              "can_select_camouflage": false,
+              "camouflage": false,
+              "heal_free": false,
+              "motion": 0,
+              "category": 0,
+              "profession": 0,
+              "unit_type": 0,
+              "abnormal_flags": [],
+              "abnormal_combos": [],
+              "target_free_flags": [],
+              "target_free_combos": [],
+              "abnormal_immunes": [],
+              "side": 0
+            }
+          },
+          "include_candidate_tile": false
+        }
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/highGround",
+        "kind": "entity",
+        "tags": [
+          "player",
+          "ground"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/lowRanged",
+        "kind": "entity",
+        "tags": [
+          "player",
+          "ranged"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/realtiles",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 3,
+        "tiles": [
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "heightType": 0,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 2,
+            "heightType": 1,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "heightType": 0,
+            "passableMask": 1
+          }
+        ]
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/highGround",
+          "instanceAlias": "groundOnHigh",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        },
+        {
+          "definition": "unit/peer/lowRanged",
+          "instanceAlias": "rangedOnLow",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        }
+      ],
+      "dependencies": [
+        "selector/peer/tile"
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/realtiles",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/tileselect",
+        "kind": "rule",
+        "contract": "targeting.eligibility",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "answer",
+              "expression": "{'accepted':inputs.candidate_spatial_tile.tile.buildableType == 2,'reason':'actual_tile_mask'}"
+            }
+          ],
+          "output": "nodes.answer"
+        }
+      }
+    ],
+    "selectors": [
+      {
+        "id": "selector/peer/tile",
+        "kind": "selector",
+        "region": {
+          "type": "radius",
+          "radius": 4
+        },
+        "filters": [
+          {
+            "tag": "player"
+          }
+        ],
+        "limit": null,
+        "eligibility": {
+          "rule": "rule/peer/tileselect",
+          "parameters": {
+            "source_configuration": {
+              "_ignoreTargetFree": 0,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_needProfessionMask": 0,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 0,
+              "_checkUnitType": 0,
+              "_targetSide": 2,
+              "_targetMotion": 1,
+              "_targetCategory": 1
+            },
+            "side_policy": "relative_ally_enemy",
+            "neutral_policy": "reject",
+            "defaults": {
+              "ally_target_free": false,
+              "target_free": false,
+              "can_select_camouflage": false,
+              "camouflage": false,
+              "heal_free": false,
+              "motion": 0,
+              "category": 0,
+              "profession": 0,
+              "unit_type": 0,
+              "abnormal_flags": [],
+              "abnormal_combos": [],
+              "target_free_flags": [],
+              "target_free_combos": [],
+              "abnormal_immunes": [],
+              "side": 0
+            }
+          },
+          "include_candidate_tile": true
+        }
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/overlay",
+            "ability/peer/query"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/highGround",
+        "kind": "entity",
+        "tags": [
+          "player",
+          "ground"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/lowRanged",
+        "kind": "entity",
+        "tags": [
+          "player",
+          "ranged"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/realtiles",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 3,
+        "tiles": [
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "heightType": 0,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 2,
+            "heightType": 1,
+            "passableMask": 1
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "heightType": 0,
+            "passableMask": 1
+          }
+        ]
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/highGround",
+          "instanceAlias": "groundOnHigh",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        },
+        {
+          "definition": "unit/peer/lowRanged",
+          "instanceAlias": "rangedOnLow",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        }
+      ],
+      "dependencies": [
+        "selector/peer/tile"
+      ]
+    },
+    "abilities": [
+      {
+        "id": "ability/peer/overlay",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_terrain_overlay",
+              "parameters": {
+                "key": "source_override",
+                "priority": 2,
+                "position": {
+                  "row": 0,
+                  "col": 2
+                },
+                "values": {
+                  "buildableType": 2,
+                  "heightType": 1
+                },
+                "preserve": [
+                  "passableMask"
+                ]
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/query",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "selector": "selector/peer/tile",
+        "timeline": [
+          {
+            "at": 0,
+            "effect": {
+              "op": "emit",
+              "event": "peer.tile.query"
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,124 @@
+{
+  "forward_restore": {
+    "path": "/kernel/events/records/611/type",
+    "a": "calculation.cached",
+    "b": "calculation"
+  },
+  "forward_head": null,
+  "first_events": {
+    "forward": {
+      "id": 612,
+      "type": "calculation.cached",
+      "payload": {
+        "calculation_id": "attributes.effective",
+        "owner": 2,
+        "attribute": "max_hp",
+        "value": 45000,
+        "source_event_id": 597
+      },
+      "time": 0,
+      "cause": 597
+    },
+    "restore": {
+      "id": 612,
+      "type": "calculation",
+      "payload": {
+        "calculation_id": "attributes.effective",
+        "rule_id": "rule/ark_attribute_layers",
+        "source": null,
+        "target": null,
+        "value": 45000,
+        "trace": {
+          "calculation_id": "attributes.effective",
+          "rule_id": "rule/ark_attribute_layers",
+          "contract_version": 1,
+          "rule_fingerprint": "b1429727a2aa9c43395ed1ff0ee1fbc56e7aa1c650636ba9a974a736def58435",
+          "runtime_fingerprint": "893956186ef8fffb96645dff3b49a33e238d74e5c715620a0ce042a62dfd714d",
+          "inputs": {
+            "base": 45000,
+            "modifier_layers": [],
+            "order": [
+              {
+                "layer": "flat"
+              },
+              {
+                "layer": "direct_ratio"
+              },
+              {
+                "layer": "final_ratio"
+              }
+            ]
+          },
+          "parameters": {
+            "operations": {
+              "flat": "add",
+              "direct_ratio": "ratio_sum",
+              "final_ratio": "ratio_product",
+              "final_add": "add",
+              "final_mul": "factor_product"
+            },
+            "aggregator": {
+              "provider": "ark.attributes.aggregate"
+            }
+          },
+          "context": {
+            "time": 0,
+            "seconds": 0.0,
+            "quantum": 0.03333333333333333,
+            "attribute": "max_hp",
+            "attribute_sample_time": 0,
+            "rule_scope": {
+              "scenario": {},
+              "source": {},
+              "target": {},
+              "owner": {},
+              "component": {},
+              "attribute_or_resource": {},
+              "ability": {},
+              "effect": {}
+            },
+            "source_id": 2,
+            "target_id": null,
+            "owner_id": 2
+          },
+          "stages": [
+            {
+              "id": "provider",
+              "provider": "ark.attributes.layers",
+              "raw": 45000
+            }
+          ],
+          "raw": 45000,
+          "value": 45000,
+          "numeric": {
+            "backend": "float",
+            "rounding": "half_even"
+          },
+          "provider": {
+            "name": "ark.attributes.layers",
+            "module": "ark_sim.presets.providers",
+            "qualname": "attribute_layers",
+            "version": "ark-preset/1",
+            "source_sha256": "939ebedaee9e807f0640706e97f4ae37d8eeb73a3954a4a8974560c5bec85a73",
+            "descriptor": {
+              "version": "ark-preset/1",
+              "attribute_time_dependency": "modifiers"
+            }
+          },
+          "binding": {
+            "owner": "owner",
+            "origin": "preset",
+            "overrides": [
+              {
+                "scope": "preset",
+                "rule_id": "rule/ark_attribute_layers"
+              }
+            ]
+          }
+        }
+      },
+      "time": 0,
+      "cause": null
+    }
+  }
+}

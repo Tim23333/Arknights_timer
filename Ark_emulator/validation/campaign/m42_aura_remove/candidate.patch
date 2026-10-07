@@ -1,0 +1,37 @@
+--- M38/ark_sim/domains/buffs.py
++++ M42/ark_sim/domains/buffs.py
+@@ -7,6 +7,7 @@
+     def __init__(self, context):
+         self.ctx = context
+         self._reconciling = False
++        self._removal_depth = 0
+         self.has_auras = any(d.get("kind") == "buff" and d.get("aura")
+                              for d in context.program.definitions.values())
+         self.has_buffs = any(d.get("kind") == "buff" for d in context.program.definitions.values())
+@@ -177,6 +178,17 @@
+ 
+     def remove(self, target, buff_or_instance):
+         with self.ctx.session.atomic():
++            self._removal_depth += 1
++            try:
++                removed = self._remove(target, buff_or_instance)
++            finally:
++                self._removal_depth -= 1
++            if removed and self._removal_depth == 0:
++                self.reconcile()
++            return removed
++
++    def _remove(self, target, buff_or_instance):
++        with self.ctx.session.atomic():
+             target = self.ctx.session.world.resolve(target)
+             instances = self._instances(target)
+             removed = [item for item in instances if item["id"] == buff_or_instance or item["definition"] == buff_or_instance]
+@@ -212,7 +224,7 @@
+         Membership is World state, so atomic rollback, restore and replay use
+         the same instance IDs. Selectors and member modifiers remain content.
+         """
+-        if not self.has_auras or self._reconciling:
++        if not self.has_auras or self._reconciling or self._removal_depth:
+             return
+         self._reconciling = True
+         try:

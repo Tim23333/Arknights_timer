@@ -1,0 +1,376 @@
+{
+  "schemaVersion": 2,
+  "status": "model_validated",
+  "manifest": {
+    "id": "package/my_content",
+    "version": "0.1.0",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "externals": [
+      "policy/ark_ground_deploy",
+      "behavior/player_combat",
+      "rule/ark_basic_power",
+      "rule/ark_attack_interval",
+      "rule/ark_standard_mitigation",
+      "ruleset/ark_standard",
+      "policy/ark_lifecycle"
+    ]
+  },
+  "rules": [
+    {
+      "id": "rule/my_physical",
+      "kind": "calculation_rule",
+      "contract": "damage.mitigation",
+      "implementation": {
+        "type": "expression",
+        "expression": "max(inputs.power - inputs.defense * params.defense_factor, inputs.power * params.minimum_ratio)"
+      },
+      "parameters": {
+        "defense_factor": 0.5,
+        "minimum_ratio": 0.01
+      }
+    },
+    {
+      "id": "rule/my_skill_power",
+      "kind": "calculation_rule",
+      "contract": "damage.base",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.attack * params.scale"
+      },
+      "parameters": {
+        "scale": 2.0
+      }
+    },
+    {
+      "id": "rule/my_energy_recovery",
+      "kind": "calculation_rule",
+      "contract": "resource.recovery",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.current + params.rate * inputs.delta_seconds"
+      },
+      "parameters": {
+        "rate": 2.0
+      }
+    },
+    {
+      "id": "rule/balanced_damage",
+      "kind": "calculation_rule",
+      "contract": "damage.pipeline",
+      "implementation": {
+        "type": "graph",
+        "nodes": [
+          {
+            "id": "result",
+            "expression": "{'accepted': True, 'amount': inputs.effect.attack * params.ratio, 'allocations': [], 'events': []}"
+          }
+        ],
+        "output": "nodes.result"
+      },
+      "parameters": {
+        "ratio": 0.1
+      },
+      "metadata": {
+        "input_bindings": {
+          "attack": {
+            "entity": "source",
+            "attribute_role": "attack"
+          }
+        }
+      }
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/my_front_area",
+      "kind": "selector",
+      "region": {
+        "type": "grid_offsets",
+        "offsets": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            -1,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ],
+        "rotate_with_facing": true
+      },
+      "filters": [
+        {
+          "tag": "enemy"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "ordering": "nearest_then_entity_id",
+      "limit": null
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/my_attack_boost",
+      "kind": "buff",
+      "duration_seconds": 5,
+      "stacking": {
+        "mode": "refresh",
+        "identity": [
+          "definition",
+          "source",
+          "target"
+        ]
+      },
+      "modifiers": [
+        {
+          "attribute": "atk",
+          "layer": "direct_ratio",
+          "value": 0.5
+        }
+      ]
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/my_basic",
+      "kind": "ability",
+      "activation": {
+        "mode": "automatic_attack",
+        "interval_rule": "rule/ark_attack_interval"
+      },
+      "selector": "selector/my_front_area",
+      "timeline": [
+        {
+          "at_seconds": 0.25,
+          "effect": {
+            "op": "damage",
+            "target": "selected",
+            "damage_type": "physical",
+            "rules": {
+              "damage.base": "rule/ark_basic_power",
+              "damage.mitigation": "rule/ark_standard_mitigation"
+            },
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/my_burst",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "costs": [
+          {
+            "resource": "energy",
+            "amount": 20
+          }
+        ]
+      },
+      "selector": "selector/my_front_area",
+      "target_capture": "each_hit",
+      "interrupt_policy": {
+        "on_source_death": "cancel_remaining",
+        "refund": "none"
+      },
+      "success_definition": "accepted_hit_per_target",
+      "timeline": [
+        {
+          "at_seconds": 0,
+          "effect": {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/my_attack_boost"
+          }
+        },
+        {
+          "at_seconds": 0.2,
+          "repeat": {
+            "count": 3,
+            "interval_seconds": 0.2
+          },
+          "effect": {
+            "op": "damage",
+            "target": "selected",
+            "damage_type": "physical",
+            "rules": {
+              "damage.base": "rule/my_skill_power",
+              "damage.mitigation": "rule/my_physical"
+            },
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            },
+            "on_success": [
+              {
+                "op": "modify_resource",
+                "target": "source",
+                "resource": "energy",
+                "delta": 2
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "entities": [
+    {
+      "id": "unit/my_guard",
+      "kind": "entity",
+      "tags": [
+        "player",
+        "ground",
+        "melee"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "atk": 100,
+            "def": 50,
+            "max_hp": 1200,
+            "attack_interval": 1.0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 1200,
+            "capacity_attribute": "max_hp"
+          },
+          "energy": {
+            "initial": 20,
+            "capacity": 40,
+            "recovery_rule": "rule/my_energy_recovery"
+          }
+        },
+        "abilities": [
+          "ability/my_basic",
+          "ability/my_burst"
+        ],
+        "deployable": {
+          "policy": "policy/ark_ground_deploy"
+        },
+        "behavior": {
+          "machine": "behavior/player_combat"
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle",
+          "initial_state": "alive"
+        },
+        "spatial": {
+          "coordinate_space": "scenario_map"
+        }
+      }
+    },
+    {
+      "id": "unit/training_dummy",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "atk": 0,
+            "def": 80,
+            "max_hp": 10000
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 10000,
+            "capacity_attribute": "max_hp"
+          }
+        },
+        "abilities": [],
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle",
+          "initial_state": "alive"
+        },
+        "spatial": {
+          "coordinate_space": "scenario_map"
+        }
+      }
+    }
+  ],
+  "formulaPreviewCases": [
+    {
+      "rule": "rule/my_physical",
+      "inputs": {
+        "power": 100,
+        "defense": 80,
+        "resistance": 0,
+        "damage_type": "physical"
+      },
+      "expected": 60
+    },
+    {
+      "rule": "rule/my_skill_power",
+      "inputs": {
+        "attack": 150,
+        "scale": 1,
+        "additions": 0
+      },
+      "expected": 300
+    },
+    {
+      "rule": "rule/my_energy_recovery",
+      "inputs": {
+        "current": 5,
+        "delta_seconds": 0.5,
+        "attributes": {},
+        "parameters": {}
+      },
+      "expected": 6
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scenario/custom_sandbox",
+    "ruleset": "ruleset/ark_standard",
+    "map": {
+      "rows": 5,
+      "cols": 8,
+      "topology": "square_grid"
+    },
+    "initialEntities": [],
+    "commands": [],
+    "resources": {
+      "zeta": {
+        "initial": 0,
+        "capacity": 1000,
+        "recovery_rate": 1
+      },
+      "alpha": {
+        "initial": 0,
+        "capacity": 1000,
+        "recovery_rate": 2
+      }
+    }
+  },
+  "rulesets": [
+    {
+      "id": "ruleset/custom_balance",
+      "kind": "ruleset",
+      "extends": "ruleset/ark_standard",
+      "bindings": {
+        "damage.pipeline": "rule/balanced_damage"
+      }
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "cases": [
+    {
+      "case": "native",
+      "exit": 0,
+      "stdout": "{\"parent_sha\": \"ac699d0191d154a209ef2dfcc19d21eadbe9380f9095e04c3a3946758eec8f74\", \"overlay_sha\": \"01182d1a171df59e5da8a80b5067a8819689c272ec739e02b92ac23c2b1dc14c\", \"base_life\": 99999, \"other_source_inputs_exact\": true}\n",
+      "stderr": "",
+      "argv": [
+        "D:\\Arknights\\Arknights_timer\\.venv\\Scripts\\python.exe",
+        "tools/chapter06_review/build_life_overlay_v2.py",
+        "--parent",
+        "validation\\campaign\\chapter06_stage_join_v2_fresh_independent\\parent.native.json",
+        "--commands",
+        "validation\\campaign\\chapter06_stage_join_v2_fresh_independent\\empty.commands.json",
+        "--output",
+        "validation\\campaign\\chapter06_stage_join_v2_fresh_independent\\native.overlay.json",
+        "--runtime-root",
+        "../unpack_work/campaign_chapter06_static_selfremove_v1_candidate",
+        "--expected-core",
+        "fb599602df2fcdf1e7eb4aacc294084a064b8810461e95437496178cb524ef7b"
+      ],
+      "passed": true
+    },
+    {
+      "case": "slots_polluted",
+      "exit": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter06_review\\build_life_overlay_v2.py\", line 42, in <module>\n    if __name__=='__main__':main()\n                            ^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter06_review\\build_life_overlay_v2.py\", line 37, in main\n    p=apply(json.loads(a.parent.read_bytes()),sha(a.commands));a.output.parent.mkdir(parents=True,exist_ok=True)\n      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter06_review\\build_life_overlay_v2.py\", line 15, in apply\n    validate(parent)\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter06_review\\validate_stage_parent_v1.py\", line 19, in validate\n    raise ValueError('Parent deployment limit differs from source')\nValueError: Parent deployment limit differs from source\n",
+      "argv": [
+        "D:\\Arknights\\Arknights_timer\\.venv\\Scripts\\python.exe",
+        "tools/chapter06_review/build_life_overlay_v2.py",
+        "--parent",
+        "validation\\campaign\\chapter06_stage_join_v2_fresh_independent\\parent.slots_polluted.json",
+        "--commands",
+        "validation\\campaign\\chapter06_stage_join_v2_fresh_independent\\empty.commands.json",
+        "--output",
+        "validation\\campaign\\chapter06_stage_join_v2_fresh_independent\\slots_polluted.overlay.json",
+        "--runtime-root",
+        "../unpack_work/campaign_chapter06_static_selfremove_v1_candidate",
+        "--expected-core",
+        "fb599602df2fcdf1e7eb4aacc294084a064b8810461e95437496178cb524ef7b"
+      ],
+      "passed": true
+    },
+    {
+      "case": "wrong_core",
+      "exit": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter06_review\\build_life_overlay_v2.py\", line 42, in <module>\n    if __name__=='__main__':main()\n                            ^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter06_review\\build_life_overlay_v2.py\", line 36, in main\n    if implementation_digest()!=a.expected_core:raise ValueError('Source overlay runtime identity differs')\n                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nValueError: Source overlay runtime identity differs\n",
+      "argv": [
+        "D:\\Arknights\\Arknights_timer\\.venv\\Scripts\\python.exe",
+        "tools/chapter06_review/build_life_overlay_v2.py",
+        "--parent",
+        "validation\\campaign\\chapter06_stage_join_v2_fresh_independent\\parent.native.json",
+        "--commands",
+        "validation\\campaign\\chapter06_stage_join_v2_fresh_independent\\empty.commands.json",
+        "--output",
+        "validation\\campaign\\chapter06_stage_join_v2_fresh_independent\\wrong_core.overlay.json",
+        "--runtime-root",
+        "../unpack_work/campaign_chapter06_static_selfremove_v1_candidate",
+        "--expected-core",
+        "0000000000000000000000000000000000000000000000000000000000000000"
+      ],
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "scope": "Public CLI selects frozen candidate explicitly; source-native overlay accepted, pollutedslot and wrongcore rejected. Emptycommands only input/provenance probe, no stage execution."
+}

@@ -1,0 +1,2070 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/chapter05/mephi/normal_heal_global_aura",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "required_runtime": "cb321a851dc1ccb373477c73a522fc4ca8c35ce8b1c38d18bbee7e1e028358d7",
+      "builder_sha256": "de22975aad540b401d956e77f2712482ec663e6085b7c723841f33baf0100f69",
+      "source_locks": {
+        "packages/campaign/chapter05_sources/native.reference.json": "323baee04eca79f6e750cf45d460ffe678667c1614763814436402e8187badd5"
+      },
+      "fixed_commit": "56aee3d6c5a29c3a0d192456d70d14252cbb0804",
+      "native_variant_id": "enemy_1507_mephi@0/6468197a2a582f8b",
+      "formal_approved": false,
+      "independent_reviewed": false,
+      "actual_client_verified": false,
+      "whole_stage_executed": false,
+      "reference_policies": {
+        "heal_range": "db_scaled: normalized Circle radius1 * DBrangeRadius20, source CircleRange scalable1; point inclusive radius20",
+        "heal_selection": "injured health ratio ascending then stable actor ID; native postFilter3/max3/excludeOwner0; capture at source AT_BEGINING",
+        "healing_status": "typed native eligibility at cast; health healing_allowed/alive/active/visibility enforced at packet. Native status changes during windup need calibration",
+        "aura_validator": "relative ally CHAR motionALL; no mutant-tag filter. Basic native masks + explicit target_free/ally_target_free/camouflage policy; heal_free only on heal channel",
+        "undeclared_actor_defaults": "explicit player side0/CHAR/ground defaults; all authored C5 enemy actors override side1. No enemy-tag inference",
+        "self": "GlobalAura DEFAULT follows validator, owner allowed by healing excludeOwner0",
+        "multi_source_stacking": "explicit replaceable reference: each source owns one maxStack1 child; independent sources add MULTIPLIER contributions. Fixed stage has one Mephi",
+        "aura_lifetime": "owned permanent parent/children removed on source inactive/death; no synthetic heal or idle emit for aura",
+        "windup": "source33/30 divided by effective ASPD ratio min.01; native animation clamp and callback methods unverified",
+        "source_version": "fixed DB/stage + local frozen prefab/Spine; old enum dump version and current client alignment unverified"
+      },
+      "source_evidence": {
+        "resolved_DB": {
+          "name": "梅菲斯特",
+          "description": "整合运动干部，能同时治疗至多<@eb.key>3名</>敌人，并使全场宿主单位的自然生命回复速度加倍。",
+          "prefabKey": "enemy_1507_mephi",
+          "attributes": {
+            "maxHp": 28000,
+            "atk": 500,
+            "def": 200,
+            "magicResistance": 60.0,
+            "moveSpeed": 0.5,
+            "attackSpeed": 100.0,
+            "baseAttackTime": 6.0,
+            "hpRecoveryPerSec": 0.0,
+            "spRecoveryPerSec": 0.0,
+            "massLevel": 3,
+            "stunImmune": false,
+            "silenceImmune": false
+          },
+          "applyWay": "NONE",
+          "motion": "WALK",
+          "lifePointReduce": 1,
+          "levelType": "BOSS",
+          "rangeRadius": 20.0,
+          "talentBlackboard": [
+            {
+              "key": "healaura.hp_recovery_per_sec",
+              "value": 1.0,
+              "valueStr": null
+            }
+          ]
+        },
+        "mode": {
+          "index": 0,
+          "path_id": -4794319810065695301,
+          "raw": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": 5498537171194445243
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 5390319429299248724
+            },
+            "m_Name": "",
+            "_bodyTransform": {
+              "m_FileID": 0,
+              "m_PathID": -3019328716830966341
+            },
+            "_animatorHooker": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_overrideStartEffect": "",
+            "_overrideDeadEffect": "",
+            "_combat": {
+              "m_FileID": 0,
+              "m_PathID": 8518240515140386235
+            },
+            "_attack": {
+              "m_FileID": 0,
+              "m_PathID": 8518240515140386235
+            },
+            "_attackTrigger": {
+              "m_FileID": 0,
+              "m_PathID": 8871845702652689851
+            },
+            "_hideUIAttackRange": 0,
+            "_updateAttackRangeExtendByAttributeDirty": 0,
+            "_rangeToShow": {
+              "m_FileID": 0,
+              "m_PathID": 0
+            },
+            "_extraRangesToShow": [],
+            "_generalAbilities": [],
+            "_addIndexToSignalId": 0,
+            "_includeIndexZero": 0,
+            "_alwaysHideHp": {
+              "isDefined": 0,
+              "value": 0
+            },
+            "_alwaysHideSp": {
+              "isDefined": 0,
+              "value": 0
+            }
+          },
+          "nodes": {
+            "_combat": {
+              "script_path_id": -1761593469416546375,
+              "gameobject_path_id": -7042010715094286917,
+              "gameobject_name": "Heal",
+              "raw": {
+                "m_GameObject": {
+                  "m_FileID": 0,
+                  "m_PathID": -7042010715094286917
+                },
+                "m_Enabled": 1,
+                "m_Script": {
+                  "m_FileID": 1,
+                  "m_PathID": -1761593469416546375
+                },
+                "m_Name": "",
+                "_selector": {
+                  "m_FileID": 0,
+                  "m_PathID": 3203234472427617723
+                },
+                "_metadata": {
+                  "namedAsAlias": "",
+                  "blackboardPrefix": ""
+                },
+                "_interruptAbilityOnDetach": 0,
+                "_attachPassiveBuffsOnDummy": 1,
+                "_ignoreIfOwnerDead": 0,
+                "_forceAsDmgOrHealAbility": 0,
+                "_waitForAttackEvent": 1,
+                "_interuptIfTargetDead": 0,
+                "_resetCdStrategy": 1,
+                "_selectTargetSource": 1,
+                "_selectTargetTiming": 0,
+                "_timeMode": 0,
+                "_alwaysIncludeTarget": 0,
+                "_allowNoTarget": 0,
+                "_animKey": "Attack",
+                "_endAnimKey": "Idle",
+                "_downAnimKey": "",
+                "_downEndAnimKey": "",
+                "_upAnimKey": "",
+                "_upEndAnimKey": "",
+                "_cooldown": 0.0,
+                "_cooldownKey": "duration",
+                "_preDelay": 0.0,
+                "_escapeTime": 0.0,
+                "_faceToTarget": 1,
+                "_faceToDefault": 0,
+                "_faceToFront": 0,
+                "_faceToFirstCastTarget": 0,
+                "_checkFaceToFirstCastTargetDownAttack": 0,
+                "_forceFaceToDirection": 0,
+                "_activeBuffs": [],
+                "_maxAnimScale": 1.0,
+                "_onlyPlayEndAnimWhenIsLastAbility": 0,
+                "_ignorePalsyInterrupt": 0,
+                "_affectedBySlowDown": 1,
+                "_isCont": 0,
+                "_isHpRatio": 0,
+                "_hasNoActionNode": 0,
+                "_ignoreHealFree": 0,
+                "_applyEPHeal": 0,
+                "_applyHealScaleToEPHealScale": 0
+              },
+              "script_key": "CAB-658d74aab777086fc32b93f385be999a:-1761593469416546375",
+              "native_class": "Heal",
+              "path_id": 8518240515140386235,
+              "animation_binding": {
+                "key": "Attack",
+                "animation_name": "Attack",
+                "mapping": {
+                  "animKey": "Attack",
+                  "animName": "Attack",
+                  "loop": 0,
+                  "speed": 1.0,
+                  "ignoreMissing": 0
+                },
+                "duration": {
+                  "source_seconds_float32": 3.1666667461395264,
+                  "seconds": 3.1666666666666665,
+                  "frame": 95,
+                  "exact_authored_frame": true
+                },
+                "events": [
+                  {
+                    "name": "OnAttack",
+                    "source_seconds_float32": 1.100000023841858,
+                    "seconds": 1.1,
+                    "frame": 33,
+                    "exact_authored_frame": true
+                  }
+                ],
+                "status": "native_binding_resolved"
+              }
+            },
+            "_attack": {
+              "script_path_id": -1761593469416546375,
+              "gameobject_path_id": -7042010715094286917,
+              "gameobject_name": "Heal",
+              "raw": {
+                "m_GameObject": {
+                  "m_FileID": 0,
+                  "m_PathID": -7042010715094286917
+                },
+                "m_Enabled": 1,
+                "m_Script": {
+                  "m_FileID": 1,
+                  "m_PathID": -1761593469416546375
+                },
+                "m_Name": "",
+                "_selector": {
+                  "m_FileID": 0,
+                  "m_PathID": 3203234472427617723
+                },
+                "_metadata": {
+                  "namedAsAlias": "",
+                  "blackboardPrefix": ""
+                },
+                "_interruptAbilityOnDetach": 0,
+                "_attachPassiveBuffsOnDummy": 1,
+                "_ignoreIfOwnerDead": 0,
+                "_forceAsDmgOrHealAbility": 0,
+                "_waitForAttackEvent": 1,
+                "_interuptIfTargetDead": 0,
+                "_resetCdStrategy": 1,
+                "_selectTargetSource": 1,
+                "_selectTargetTiming": 0,
+                "_timeMode": 0,
+                "_alwaysIncludeTarget": 0,
+                "_allowNoTarget": 0,
+                "_animKey": "Attack",
+                "_endAnimKey": "Idle",
+                "_downAnimKey": "",
+                "_downEndAnimKey": "",
+                "_upAnimKey": "",
+                "_upEndAnimKey": "",
+                "_cooldown": 0.0,
+                "_cooldownKey": "duration",
+                "_preDelay": 0.0,
+                "_escapeTime": 0.0,
+                "_faceToTarget": 1,
+                "_faceToDefault": 0,
+                "_faceToFront": 0,
+                "_faceToFirstCastTarget": 0,
+                "_checkFaceToFirstCastTargetDownAttack": 0,
+                "_forceFaceToDirection": 0,
+                "_activeBuffs": [],
+                "_maxAnimScale": 1.0,
+                "_onlyPlayEndAnimWhenIsLastAbility": 0,
+                "_ignorePalsyInterrupt": 0,
+                "_affectedBySlowDown": 1,
+                "_isCont": 0,
+                "_isHpRatio": 0,
+                "_hasNoActionNode": 0,
+                "_ignoreHealFree": 0,
+                "_applyEPHeal": 0,
+                "_applyHealScaleToEPHealScale": 0
+              },
+              "script_key": "CAB-658d74aab777086fc32b93f385be999a:-1761593469416546375",
+              "native_class": "Heal",
+              "path_id": 8518240515140386235,
+              "animation_binding": {
+                "key": "Attack",
+                "animation_name": "Attack",
+                "mapping": {
+                  "animKey": "Attack",
+                  "animName": "Attack",
+                  "loop": 0,
+                  "speed": 1.0,
+                  "ignoreMissing": 0
+                },
+                "duration": {
+                  "source_seconds_float32": 3.1666667461395264,
+                  "seconds": 3.1666666666666665,
+                  "frame": 95,
+                  "exact_authored_frame": true
+                },
+                "events": [
+                  {
+                    "name": "OnAttack",
+                    "source_seconds_float32": 1.100000023841858,
+                    "seconds": 1.1,
+                    "frame": 33,
+                    "exact_authored_frame": true
+                  }
+                ],
+                "status": "native_binding_resolved"
+              }
+            },
+            "_attackTrigger": {
+              "script_path_id": 8607874384982393801,
+              "gameobject_path_id": -2990437240817222213,
+              "gameobject_name": "Trigger",
+              "raw": {
+                "m_GameObject": {
+                  "m_FileID": 0,
+                  "m_PathID": -2990437240817222213
+                },
+                "m_Enabled": 1,
+                "m_Script": {
+                  "m_FileID": 1,
+                  "m_PathID": 8607874384982393801
+                },
+                "m_Name": "",
+                "_keepTarget": 0,
+                "_minTargetNum": 1,
+                "_overrideSearchTargetTick": -1
+              },
+              "script_key": "CAB-658d74aab777086fc32b93f385be999a:8607874384982393801",
+              "native_class": "SelectorTrigger",
+              "path_id": 8871845702652689851,
+              "animation_binding": null
+            }
+          }
+        },
+        "native_heal": {
+          "m_GameObject": {
+            "m_FileID": 0,
+            "m_PathID": -7042010715094286917
+          },
+          "m_Enabled": 1,
+          "m_Script": {
+            "m_FileID": 1,
+            "m_PathID": -1761593469416546375
+          },
+          "m_Name": "",
+          "_selector": {
+            "m_FileID": 0,
+            "m_PathID": 3203234472427617723
+          },
+          "_metadata": {
+            "namedAsAlias": "",
+            "blackboardPrefix": ""
+          },
+          "_interruptAbilityOnDetach": 0,
+          "_attachPassiveBuffsOnDummy": 1,
+          "_ignoreIfOwnerDead": 0,
+          "_forceAsDmgOrHealAbility": 0,
+          "_waitForAttackEvent": 1,
+          "_interuptIfTargetDead": 0,
+          "_resetCdStrategy": 1,
+          "_selectTargetSource": 1,
+          "_selectTargetTiming": 0,
+          "_timeMode": 0,
+          "_alwaysIncludeTarget": 0,
+          "_allowNoTarget": 0,
+          "_animKey": "Attack",
+          "_endAnimKey": "Idle",
+          "_downAnimKey": "",
+          "_downEndAnimKey": "",
+          "_upAnimKey": "",
+          "_upEndAnimKey": "",
+          "_cooldown": 0.0,
+          "_cooldownKey": "duration",
+          "_preDelay": 0.0,
+          "_escapeTime": 0.0,
+          "_faceToTarget": 1,
+          "_faceToDefault": 0,
+          "_faceToFront": 0,
+          "_faceToFirstCastTarget": 0,
+          "_checkFaceToFirstCastTargetDownAttack": 0,
+          "_forceFaceToDirection": 0,
+          "_activeBuffs": [],
+          "_maxAnimScale": 1.0,
+          "_onlyPlayEndAnimWhenIsLastAbility": 0,
+          "_ignorePalsyInterrupt": 0,
+          "_affectedBySlowDown": 1,
+          "_isCont": 0,
+          "_isHpRatio": 0,
+          "_hasNoActionNode": 0,
+          "_ignoreHealFree": 0,
+          "_applyEPHeal": 0,
+          "_applyHealScaleToEPHealScale": 0
+        },
+        "native_selector": {
+          "m_GameObject": {
+            "m_FileID": 0,
+            "m_PathID": -2990437240817222213
+          },
+          "m_Enabled": 1,
+          "m_Script": {
+            "m_FileID": 1,
+            "m_PathID": 7080728813803358465
+          },
+          "m_Name": "",
+          "_targetSide": 1,
+          "_targetMotion": 3,
+          "_targetCategory": 1,
+          "_postFilter": 3,
+          "_ignoreTargetFree": 0,
+          "_onlyIgnoreSomeOfTargetFreeCase": 0,
+          "_abnormalFlag": 44,
+          "_abnormalCombo": 2,
+          "_ignoreAllyTargetFree": 0,
+          "_ignoreHealFree": 0,
+          "_ignoreMotionMode": 0,
+          "_forceIgnoreCamouflage": 0,
+          "_needProfessionMask": 0,
+          "_professionMask": 0,
+          "_excludeSomeAbnormalFlags": 0,
+          "_excludeAbnormalFlag": 46,
+          "_limitTargetNum": 1,
+          "_maxTargetKey": "max_target",
+          "_maxNum": 3,
+          "_excludeOwner": 0,
+          "_sortByTauntAtLast": 0,
+          "_ignoreHitRange": 0,
+          "_checkUnitType": 0,
+          "_unitTypeMask": 0,
+          "_abilityInputTargetAsSortSource": 0
+        },
+        "native_aura": {
+          "m_GameObject": {
+            "m_FileID": 0,
+            "m_PathID": 4529304800335330747
+          },
+          "m_Enabled": 1,
+          "m_Script": {
+            "m_FileID": 1,
+            "m_PathID": -5793748974791823428
+          },
+          "m_Name": "",
+          "_selector": {
+            "m_FileID": 0,
+            "m_PathID": 0
+          },
+          "_metadata": {
+            "namedAsAlias": "",
+            "blackboardPrefix": ""
+          },
+          "_interruptAbilityOnDetach": 0,
+          "_attachPassiveBuffsOnDummy": 1,
+          "_ignoreIfOwnerDead": 0,
+          "_forceAsDmgOrHealAbility": 0,
+          "_targetValidator": {
+            "m_FileID": 0,
+            "m_PathID": -4170003640169890373
+          },
+          "_buffs": [
+            {
+              "attributes": {
+                "abnormalFlags": [],
+                "abnormalImmunes": [],
+                "abnormalAntis": [],
+                "abnormalCombos": [],
+                "abnormalComboImmunes": [],
+                "attributeModifiers": [
+                  {
+                    "attributeType": 13,
+                    "formulaItem": 1,
+                    "value": 0.0,
+                    "loadFromBlackboard": 1,
+                    "fetchBaseValueFromSourceEntity": 0
+                  }
+                ]
+              },
+              "buffKey": "mephi_t_healaura",
+              "loadFromDB": 0,
+              "isDurableBuff": 0,
+              "isDamageMissable": 0,
+              "isSilenceable": 0,
+              "isStunnable": 0,
+              "isFreezable": 0,
+              "isLevitatable": 0,
+              "isGroundBoundable": 0,
+              "statusResistable": 2,
+              "templateKey": "empty",
+              "disableOverride": 0,
+              "overrideKey": "",
+              "overrideType": 0,
+              "maxStackCnt": 1,
+              "refreshRemainingTimeWhenStackMax": 0,
+              "clearAllStackCntWhenTimeUp": 0,
+              "maxValidStackCnt": -1,
+              "independentCharacterSource": 0,
+              "overrideEffectKey": "",
+              "overrideOnEventPriority": 0,
+              "onEventPriority": 0,
+              "audioSignal": "",
+              "lifeTimeType": 2,
+              "takeSnapshotWhenExtend": 0,
+              "durationKey": "",
+              "lifeTime": 0.0,
+              "triggerLifeType": 0,
+              "triggerCnt": 0,
+              "triggerInterval": -1.0,
+              "waitFirstTriggerInterval": 1,
+              "firstTriggerInterval": -1.0,
+              "priority": -1,
+              "priorityBBKeys": [],
+              "stripBlackboardParamsWithBuffKey": 0,
+              "blackboard": [],
+              "enableInitDirectionFromSource": 0
+            }
+          ],
+          "_passiveBuffs": [],
+          "_selfOption": 0,
+          "_removeBuffWhenAbilityDetached": 1,
+          "_removeBuffIncludeReborning": 0,
+          "_onlyDetactTargetWhenStarted": 0,
+          "_onlyDetectCurrentMapLayer": 0,
+          "_listenUnitRebornEvent": 0,
+          "_tryRemoveBuffFirstWhenReborn": 0,
+          "_useDurableRallyPointLikeSwitch": 0,
+          "_forceRemoveAllBuffsByKey": 0,
+          "_effects": [
+            "mephi_buff_01_start"
+          ],
+          "_forceTick": 0,
+          "_excludeReborningEntity": 0,
+          "_interval": 0.0,
+          "_clearBuffsWhenDisappear": 0
+        },
+        "native_validator": {
+          "targetSide": 1,
+          "targetMotion": 3,
+          "targetCategory": 1,
+          "enableAdvancedOptions": 0,
+          "ignoreTargetFree": 0,
+          "ignoreAllyTargetFree": 0,
+          "ignoreHealFree": 0,
+          "ignoreMotionMode": 0,
+          "ignoreTargetSide": 0,
+          "excludeSomeAbnormalFlags": 0,
+          "containSomeAbnormalFlags": 0,
+          "excludeAbnormalFlag": 0,
+          "containAbnormalFlag": 0,
+          "purposeMask": 0,
+          "professionMask": 0,
+          "checkUnitType": 0,
+          "unitTypeMask": 0,
+          "onlyIgnoreSomeOfTargetFreeCase": 0,
+          "abnormalFlag": 0,
+          "abnormalCombo": 0
+        },
+        "BB": [
+          {
+            "key": "healaura.hp_recovery_per_sec",
+            "value": 1.0,
+            "valueStr": null
+          }
+        ],
+        "geometry": [
+          {
+            "path_id": -3356061095947764293,
+            "gameobject_path_id": -9196396546687140421,
+            "gameobject_name": "HitPoint",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -9196396546687140421
+              },
+              "m_LocalRotation": {
+                "x": -0.0,
+                "y": -0.0,
+                "z": -0.0,
+                "w": 1.0
+              },
+              "m_LocalPosition": {
+                "x": 0.0,
+                "y": 2.200000047683716,
+                "z": 0.0
+              },
+              "m_LocalScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              },
+              "m_Children": [],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": 1829964029782031803
+              }
+            }
+          },
+          {
+            "path_id": -888432771957490245,
+            "gameobject_path_id": -7710128217149112901,
+            "gameobject_name": "Special0",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -7710128217149112901
+              },
+              "m_LocalRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.7005831599235535,
+                "w": 0.7135708332061768
+              },
+              "m_LocalPosition": {
+                "x": 1.3162206411361694,
+                "y": 2.288490056991577,
+                "z": 0.0
+              },
+              "m_LocalScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              },
+              "m_Children": [],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": 1829964029782031803
+              }
+            }
+          },
+          {
+            "path_id": 2323075503367683515,
+            "gameobject_path_id": -7453905656629199429,
+            "gameobject_name": "HeadPoint",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -7453905656629199429
+              },
+              "m_LocalRotation": {
+                "x": -0.0,
+                "y": -0.0,
+                "z": -0.0,
+                "w": 1.0
+              },
+              "m_LocalPosition": {
+                "x": 0.0,
+                "y": 5.0,
+                "z": -0.20000000298023224
+              },
+              "m_LocalScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              },
+              "m_Children": [],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": 1829964029782031803
+              }
+            }
+          },
+          {
+            "path_id": -7818344641850016325,
+            "gameobject_path_id": -7042010715094286917,
+            "gameobject_name": "Heal",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -7042010715094286917
+              },
+              "m_LocalRotation": {
+                "x": -0.0,
+                "y": -0.0,
+                "z": -0.0,
+                "w": 1.0
+              },
+              "m_LocalPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "m_LocalScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              },
+              "m_Children": [
+                {
+                  "m_FileID": 0,
+                  "m_PathID": 2847038164075118011
+                }
+              ],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": -3019328716830966341
+              }
+            }
+          },
+          {
+            "path_id": 7463706439765032379,
+            "gameobject_path_id": -5938166377231319621,
+            "gameobject_name": "Sprite",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -5938166377231319621
+              },
+              "m_LocalRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "m_LocalPosition": {
+                "x": -0.0,
+                "y": -0.17000000178813934,
+                "z": 0.0
+              },
+              "m_LocalScale": {
+                "x": 0.11999999731779099,
+                "y": 0.11999999731779099,
+                "z": 0.11999999731779099
+              },
+              "m_Children": [],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": 4807354109027777979
+              }
+            }
+          },
+          {
+            "path_id": -5442850830893023813,
+            "gameobject_path_id": -4998441712701899333,
+            "gameobject_name": "Modes",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -4998441712701899333
+              },
+              "m_LocalRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "m_LocalPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "m_LocalScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              },
+              "m_Children": [
+                {
+                  "m_FileID": 0,
+                  "m_PathID": -4160992896591495749
+                }
+              ],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": 7688305268280819131
+              }
+            }
+          },
+          {
+            "path_id": -3019328716830966341,
+            "gameobject_path_id": -4644080128365068869,
+            "gameobject_name": "Body",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -4644080128365068869
+              },
+              "m_LocalRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "m_LocalPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "m_LocalScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              },
+              "m_Children": [
+                {
+                  "m_FileID": 0,
+                  "m_PathID": -7818344641850016325
+                }
+              ],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": -4160992896591495749
+              }
+            }
+          },
+          {
+            "path_id": 4807354109027777979,
+            "gameobject_path_id": -3543255704082285125,
+            "gameobject_name": "Shadow",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -3543255704082285125
+              },
+              "m_LocalRotation": {
+                "x": -0.0,
+                "y": -0.0,
+                "z": -0.0,
+                "w": 1.0
+              },
+              "m_LocalPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "m_LocalScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              },
+              "m_Children": [
+                {
+                  "m_FileID": 0,
+                  "m_PathID": 7463706439765032379
+                }
+              ],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": 3604791479738269115
+              }
+            }
+          },
+          {
+            "path_id": 5134442905877511611,
+            "gameobject_path_id": -3028414838812541509,
+            "gameobject_name": "Graphic",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -3028414838812541509
+              },
+              "m_LocalRotation": {
+                "x": -0.25881901383399963,
+                "y": -0.0,
+                "z": -0.0,
+                "w": 0.9659258723258972
+              },
+              "m_LocalPosition": {
+                "x": 0.0,
+                "y": -0.20000004768371582,
+                "z": -0.05999999865889549
+              },
+              "m_LocalScale": {
+                "x": 0.27000001072883606,
+                "y": 0.27000001072883606,
+                "z": 0.27000001072883606
+              },
+              "m_Children": [
+                {
+                  "m_FileID": 0,
+                  "m_PathID": 8701223766229286331
+                }
+              ],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": 7688305268280819131
+              }
+            }
+          },
+          {
+            "path_id": 2847038164075118011,
+            "gameobject_path_id": -2990437240817222213,
+            "gameobject_name": "Trigger",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -2990437240817222213
+              },
+              "m_LocalRotation": {
+                "x": -0.0,
+                "y": -0.0,
+                "z": -0.0,
+                "w": 1.0
+              },
+              "m_LocalPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "m_LocalScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              },
+              "m_Children": [],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": -7818344641850016325
+              }
+            }
+          },
+          {
+            "path_id": 5904598695077576123,
+            "gameobject_path_id": -2990437240817222213,
+            "gameobject_name": "Trigger",
+            "unity_type": "CircleCollider2D",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -2990437240817222213
+              },
+              "m_Enabled": 1,
+              "m_Density": 1.0,
+              "m_Material": {
+                "m_FileID": 0,
+                "m_PathID": 0
+              },
+              "m_IsTrigger": true,
+              "m_UsedByEffector": false,
+              "m_UsedByComposite": false,
+              "m_Offset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "m_Radius": 1.0
+            }
+          },
+          {
+            "path_id": 4135134615005789627,
+            "gameobject_path_id": -2988937536060097093,
+            "gameobject_name": "MuzzlePoint",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -2988937536060097093
+              },
+              "m_LocalRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.6597135066986084,
+                "w": 0.7515171766281128
+              },
+              "m_LocalPosition": {
+                "x": 0.16040535271167755,
+                "y": 2.4425747394561768,
+                "z": 0.0
+              },
+              "m_LocalScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              },
+              "m_Children": [],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": 1829964029782031803
+              }
+            }
+          },
+          {
+            "path_id": -2421821957903909445,
+            "gameobject_path_id": -2130793573282906693,
+            "gameobject_name": "ColliderHolder",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -2130793573282906693
+              },
+              "m_LocalRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "m_LocalPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "m_LocalScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              },
+              "m_Children": [],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": 7688305268280819131
+              }
+            }
+          },
+          {
+            "path_id": 3686753894615842235,
+            "gameobject_path_id": -2130793573282906693,
+            "gameobject_name": "ColliderHolder",
+            "unity_type": "CapsuleCollider2D",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -2130793573282906693
+              },
+              "m_Enabled": 1,
+              "m_Density": 1.0,
+              "m_Material": {
+                "m_FileID": 0,
+                "m_PathID": 0
+              },
+              "m_IsTrigger": false,
+              "m_UsedByEffector": false,
+              "m_UsedByComposite": false,
+              "m_Offset": {
+                "x": 0.0,
+                "y": -0.10000002384185791
+              },
+              "m_Size": {
+                "x": 0.20000000298023224,
+                "y": 0.40000003576278687
+              },
+              "m_Direction": 0
+            }
+          },
+          {
+            "path_id": 1829964029782031803,
+            "gameobject_path_id": -1323463583096930885,
+            "gameobject_name": "Spine",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -1323463583096930885
+              },
+              "m_LocalRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "m_LocalPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "m_LocalScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              },
+              "m_Children": [
+                {
+                  "m_FileID": 0,
+                  "m_PathID": -3356061095947764293
+                },
+                {
+                  "m_FileID": 0,
+                  "m_PathID": 2323075503367683515
+                },
+                {
+                  "m_FileID": 0,
+                  "m_PathID": 4135134615005789627
+                },
+                {
+                  "m_FileID": 0,
+                  "m_PathID": -888432771957490245
+                },
+                {
+                  "m_FileID": 0,
+                  "m_PathID": 6344651024513072571
+                }
+              ],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": 8701223766229286331
+              }
+            }
+          },
+          {
+            "path_id": 3604791479738269115,
+            "gameobject_path_id": -565925983883199045,
+            "gameobject_name": "Others",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -565925983883199045
+              },
+              "m_LocalRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "m_LocalPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "m_LocalScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              },
+              "m_Children": [
+                {
+                  "m_FileID": 0,
+                  "m_PathID": 4807354109027777979
+                },
+                {
+                  "m_FileID": 0,
+                  "m_PathID": -2403877947226948165
+                }
+              ],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": 7688305268280819131
+              }
+            }
+          },
+          {
+            "path_id": -8991178921246556741,
+            "gameobject_path_id": 4529304800335330747,
+            "gameobject_name": "HealAura",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 4529304800335330747
+              },
+              "m_LocalRotation": {
+                "x": -0.0,
+                "y": -0.0,
+                "z": 3.102349310779573e-08,
+                "w": 1.0
+              },
+              "m_LocalPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "m_LocalScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              },
+              "m_Children": [],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": 8750865173328461243
+              }
+            }
+          },
+          {
+            "path_id": -2403877947226948165,
+            "gameobject_path_id": 5082983208675737019,
+            "gameobject_name": "Effects",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 5082983208675737019
+              },
+              "m_LocalRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "m_LocalPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "m_LocalScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              },
+              "m_Children": [],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": 3604791479738269115
+              }
+            }
+          },
+          {
+            "path_id": 8750865173328461243,
+            "gameobject_path_id": 5428451569017322939,
+            "gameobject_name": "Talents",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 5428451569017322939
+              },
+              "m_LocalRotation": {
+                "x": -0.0,
+                "y": -0.0,
+                "z": -0.0,
+                "w": 1.0
+              },
+              "m_LocalPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "m_LocalScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              },
+              "m_Children": [
+                {
+                  "m_FileID": 0,
+                  "m_PathID": -8991178921246556741
+                }
+              ],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": 7688305268280819131
+              }
+            }
+          },
+          {
+            "path_id": -4160992896591495749,
+            "gameobject_path_id": 5498537171194445243,
+            "gameobject_name": "Default",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 5498537171194445243
+              },
+              "m_LocalRotation": {
+                "x": -0.0,
+                "y": -0.0,
+                "z": -0.0,
+                "w": 1.0
+              },
+              "m_LocalPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "m_LocalScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              },
+              "m_Children": [
+                {
+                  "m_FileID": 0,
+                  "m_PathID": -3019328716830966341
+                }
+              ],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": -5442850830893023813
+              }
+            }
+          },
+          {
+            "path_id": 7688305268280819131,
+            "gameobject_path_id": 6094560371602652603,
+            "gameobject_name": "enemy_1507_mephi",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 6094560371602652603
+              },
+              "m_LocalRotation": {
+                "x": -0.0,
+                "y": -0.0,
+                "z": -0.0,
+                "w": 1.0
+              },
+              "m_LocalPosition": {
+                "x": 7.5,
+                "y": 3.0,
+                "z": 0.0
+              },
+              "m_LocalScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              },
+              "m_Children": [
+                {
+                  "m_FileID": 0,
+                  "m_PathID": 5134442905877511611
+                },
+                {
+                  "m_FileID": 0,
+                  "m_PathID": -5442850830893023813
+                },
+                {
+                  "m_FileID": 0,
+                  "m_PathID": 8750865173328461243
+                },
+                {
+                  "m_FileID": 0,
+                  "m_PathID": 3604791479738269115
+                },
+                {
+                  "m_FileID": 0,
+                  "m_PathID": -2421821957903909445
+                }
+              ],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": 0
+              }
+            }
+          },
+          {
+            "path_id": 7348241996346588603,
+            "gameobject_path_id": 6094560371602652603,
+            "gameobject_name": "enemy_1507_mephi",
+            "unity_type": "Rigidbody2D",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 6094560371602652603
+              },
+              "m_BodyType": 0,
+              "m_Simulated": true,
+              "m_UseFullKinematicContacts": false,
+              "m_UseAutoMass": false,
+              "m_Mass": 1.0,
+              "m_LinearDrag": 0.0,
+              "m_AngularDrag": 0.05000000074505806,
+              "m_GravityScale": 0.0,
+              "m_Material": {
+                "m_FileID": 0,
+                "m_PathID": 0
+              },
+              "m_Interpolate": 0,
+              "m_SleepingMode": 0,
+              "m_CollisionDetection": 1,
+              "m_Constraints": 4
+            }
+          },
+          {
+            "path_id": -3058714330612990533,
+            "gameobject_path_id": 6094560371602652603,
+            "gameobject_name": "enemy_1507_mephi",
+            "unity_type": "CircleCollider2D",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 6094560371602652603
+              },
+              "m_Enabled": 1,
+              "m_Density": 1.0,
+              "m_Material": {
+                "m_FileID": 0,
+                "m_PathID": 0
+              },
+              "m_IsTrigger": true,
+              "m_UsedByEffector": false,
+              "m_UsedByComposite": false,
+              "m_Offset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "m_Radius": 0.10000000149011612
+            }
+          },
+          {
+            "path_id": 8701223766229286331,
+            "gameobject_path_id": 7703493717024538043,
+            "gameobject_name": "FaceSwitcher",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 7703493717024538043
+              },
+              "m_LocalRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "m_LocalPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "m_LocalScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              },
+              "m_Children": [
+                {
+                  "m_FileID": 0,
+                  "m_PathID": 1829964029782031803
+                }
+              ],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": 5134442905877511611
+              }
+            }
+          },
+          {
+            "path_id": 6344651024513072571,
+            "gameobject_path_id": 8900826728361328059,
+            "gameobject_name": "Special1",
+            "unity_type": "Transform",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 8900826728361328059
+              },
+              "m_LocalRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": -0.9636876583099365,
+                "w": 0.2670321762561798
+              },
+              "m_LocalPosition": {
+                "x": -0.7351688146591187,
+                "y": 1.8475044965744019,
+                "z": 0.0
+              },
+              "m_LocalScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              },
+              "m_Children": [],
+              "m_Father": {
+                "m_FileID": 0,
+                "m_PathID": 1829964029782031803
+              }
+            }
+          }
+        ],
+        "prefab_source": {
+          "path": "data/battle/enm_pfb_17.ab_unpacked/CAB-a4a7bee43932d4710a58df03a50dfa6f",
+          "sha256": "4855f032d0fdbb17d841ce56a4322aa06f69a420131decfa799b88afe5a7af50",
+          "bytes": 1024040
+        },
+        "enums": {
+          "AttributeType": {
+            "line": 1457114,
+            "raw": "public enum AttributeType // TypeDefIndex: 37893\n{\n\t// Fields\n\tpublic int value__; // 0x0\n\tpublic const AttributeType MAX_HP = 0;\n\tpublic const AttributeType ATK = 1;\n\tpublic const AttributeType DEF = 2;\n\tpublic const AttributeType MAGIC_RESISTANCE = 3;\n\tpublic const AttributeType COST = 4;\n\tpublic const AttributeType BLOCK_CNT = 5;\n\tpublic const AttributeType MOVE_SPEED = 6;\n\tpublic const AttributeType ATTACK_SPEED = 7;\n\tpublic const AttributeType BASE_ATTACK_TIME = 8;\n\tpublic const AttributeType RESERVED_0 = 9;\n\tpublic const AttributeType RESERVED_1 = 10;\n\tpublic const AttributeType RESERVED_2 = 11;\n\tpublic const AttributeType RESERVED_3 = 12;\n\tpublic const AttributeType HP_RECOVERY_PER_SEC = 13;\n\tpublic const AttributeType SP_RECOVERY_PER_SEC = 14;\n\tpublic const AttributeType ABILITY_RANGE_FORWARD_EXTEND = 15;\n\tpublic const AttributeType MAX_DEPLOY_COUNT = 16;\n\tpublic const AttributeType DEF_PENETRATE = 17;\n\tpublic const AttributeType MAGIC_RESIST_PENETRATE = 18;\n\tpublic const AttributeType HP_RECOVERY_PER_SEC_BY_MAX_HP_RATIO = 19;\n\tpublic const AttributeType TAUNT_LEVEL = 20;\n\tpublic const AttributeType RESPAWN_TIME = 21;\n\tpublic const AttributeType MAX_DECK_STACK_CNT = 22;\n\tpublic const AttributeType MASS_LEVEL = 23;\n\tpublic const AttributeType BASE_FORCE_LEVEL = 24;\n\tpublic const AttributeType DEF_PENETRATE_FIXED = 25;\n\tpublic const AttributeType ONE_MINUS_STATUS_RESISTANCE = 26;\n\tpublic const AttributeType MAGIC_RESIST_PENETRATE_FIXED = 27;\n\tpublic const AttributeType MAX_EP = 28;\n\tpublic const AttributeType EP_RECOVERY_PER_SEC = 29;\n\tpublic const AttributeType SP_RECOVER_RATIO = 30;\n\tpublic const AttributeType EP_DAMAGE_RESISTANCE = 31;\n\tpublic const AttributeType EP_RESISTANCE = 32;\n\tpublic const AttributeType DAMAGE_HITRATE_PHYSICAL = 33;\n\tpublic const AttributeType DAMAGE_HITRATE_MAGICAL = 34;\n\tpublic const AttributeType EP_BREAK_RECOVER_SPEED = 35;\n\tpublic const AttributeType SLOW_DOWN = 36;\n\tpublic const AttributeType BLOCK_RADIUS_SCALE = 37;\n\tpublic const AttributeType E_NUM = 38;\n}"
+          },
+          "AttributeModifierData.AttributeModifier.FormulaItemType": {
+            "line": 163510,
+            "raw": "public enum AttributeModifierData.AttributeModifier.FormulaItemType // TypeDefIndex: 4084\n{\n\t// Fields\n\tpublic int value__; // 0x0\n\tpublic const AttributeModifierData.AttributeModifier.FormulaItemType ADDITION = 0;\n\tpublic const AttributeModifierData.AttributeModifier.FormulaItemType MULTIPLIER = 1;\n\tpublic const AttributeModifierData.AttributeModifier.FormulaItemType FINAL_ADDITION = 2;\n\tpublic const AttributeModifierData.AttributeModifier.FormulaItemType FINAL_SCALER = 3;\n}"
+          },
+          "FilterUtil.FilterType": {
+            "line": 435512,
+            "raw": "public enum FilterUtil.FilterType // TypeDefIndex: 11037\n{\n\t// Fields\n\tpublic int value__; // 0x0\n\tpublic const FilterUtil.FilterType ALL = 0;\n\tpublic const FilterUtil.FilterType DIST_TO_EXIT_ASC = 1;\n\tpublic const FilterUtil.FilterType HP_RATIO_ASC = 2;\n\tpublic const FilterUtil.FilterType HP_RATIO_NOT_FULL_ASC = 3;\n\tpublic const FilterUtil.FilterType HATRED_DES = 4;\n\tpublic const FilterUtil.FilterType HP_RATIO_NOT_FULL = 5;\n\tpublic const FilterUtil.FilterType HATRED_DES_FLY_FIRST = 6;\n\tpublic const FilterUtil.FilterType HATRED_DES_RANGED_FIRST = 7;\n\tpublic const FilterUtil.FilterType DEF_DES = 8;\n\tpublic const FilterUtil.FilterType DEF_ASC = 9;\n\tpublic const FilterUtil.FilterType DIST_TO_SOURCE_DES = 10;\n\tpublic const FilterUtil.FilterType DIST_TO_SOURCE_ASC = 11;\n\tpublic const FilterUtil.FilterType NOT_STUNNED_HATRED_DES = 12;\n\tpublic const FilterUtil.FilterType DIRECTIONAL_DIST_TO_SOURCE_ASC = 13;\n\tpublic const FilterUtil.FilterType RANDOM = 14;\n\tpublic const FilterUtil.FilterType HP_DES = 15;\n\tpublic const FilterUtil.FilterType HP_ASC = 16;\n\tpublic const FilterUtil.FilterType ATK_DES = 17;\n\tpublic const FilterUtil.FilterType ATK_ASC = 18;\n\tpublic const FilterUtil.FilterType MAX_HP_DES = 19;\n\tpublic const FilterUtil.FilterType MAX_HP_ASC = 20;\n\tpublic const FilterUtil.FilterType HAAK_ONLY_FORWARD_FIRST_MANHATTAN_ASC = 21;\n\tpublic const FilterUtil.FilterType HATRED_DES_UNBLOCKED_FIRST = 22;\n\tpublic const FilterUtil.FilterType HP_NOT_FULL_RANDOM = 23;\n\tpublic const FilterUtil.FilterType HATRED_DES_INVISIBLE_FIRST = 24;\n\tpublic const FilterUtil.FilterType HATRED_DES_DIST_FARTHER_FIRST = 25;\n\tpublic const FilterUtil.FilterType HATRED_DES_DIST_NEARER_FIRST = 26;\n\tpublic const FilterUtil.FilterType MASS_DES = 27;\n\tpublic const FilterUtil.FilterType MASS_ASC = 28;\n\tpublic const FilterUtil.FilterType HATRED_DES_SLEEPING_FIRST = 29;\n\tpublic const FilterUtil.FilterType HP_RATIO_ASC_CONTAINS_STATUS_RESISTABLE_BUFF_FIRST = 30;\n\tpublic const FilterUtil.FilterType HATRED_DES_IMMUNE_SLEEPING_EXCLUDE = 31;\n\tpublic const FilterUtil.FilterType EP_DES = 32;\n\tpublic const FilterUtil.FilterType HATRED_DES_BLOCKED_FIRST = 33;\n\tpublic const FilterUtil.FilterType CREATED_TIME_DES = 34;\n\tpublic const FilterUtil.FilterType CREATED_TIME_ASC = 35;\n\tpublic const FilterUtil.FilterType HP_RATIO_NOT_FULL_ASC_MY_TOKEN_OR_ME_FIRST = 36;\n\tpublic const FilterUtil.FilterType EP_MIN_ASC_HP_RATIO_ASC_FIRST_NOT_ALL_FULL = 37;\n\tpublic const FilterUtil.FilterType HP_RATIO_ASC_EP_MIN_ASC_FIRST_NOT_ALL_FULL = 38;\n\tpublic const FilterUtil.FilterType HP_RATIO_ASC_CREATED_TIME_DES_FIRST = 39;\n\tpublic const FilterUtil.FilterType HATRED_DES_COLD_FIRST_THEN_NOT_FROZEN = 40;\n\tpublic const FilterUtil.FilterType GRIDPOS_BY_SMALL_COL_BIG_ROW = 41;\n\tpublic const FilterUtil.FilterType BLOCK_COUNT_DES = 42;\n\tpublic const FilterUtil.FilterType HP_RATIO_ASC_CONTAINS_STATUS_RESISTABLE_BUFF = 43;\n\tpublic const FilterUtil.FilterType MASS_DES_SLEEPING_FIRST = 44;\n\tpublic const FilterUtil.FilterType HP_RATIO_DES = 45;\n\tpublic const FilterUtil.FilterType HATRED_ASC = 46;\n\tpublic const FilterUtil.FilterType LOWLAND_FIRST_CREATED_TIME_DES = 47;\n\tpublic const FilterUtil.FilterType TILE_HEIGHT_DES = 48;\n\tpublic const FilterUtil.FilterType ONLY_LEVITATED_HATRED_DES = 49;\n\tpublic const FilterUtil.FilterType ENEMY_FIRST_HATRED_DES = 50;\n\tpublic const FilterUtil.FilterType HATRED_DES_LOWLAND_FIRST = 51;\n\tpublic const FilterUtil.FilterType HATRED_DES_HIGHLAND_FIRST = 52;\n\tpublic const FilterUtil.FilterType HATRED_DES_ELITE_BOSS_FIRST = 53;\n\tpublic const FilterUtil.FilterType CROSS_ONLY_WITH_HATRED_DES = 54;\n\tpublic const FilterUtil.FilterType FOOTBALL_SEARCH_TEAMMATE = 55;\n\tpublic const FilterUtil.FilterType BLOCK_CNT_NO_ZERO_DIST_TO_SOURCE_ASC = 56;\n\tpublic const FilterUtil.FilterType PREFER_NOT_IN_EP_BREAK_AND_HATRED_DES = 57;\n\tpublic const FilterUtil.FilterType STAY_STILL_RANDOM = 58;\n\tpublic const FilterUtil.FilterType HATRED_DES_BLOCKED_BY_OWNER_FIRST = 59;\n\tpublic const FilterUtil.FilterType EP_WATER_DES = 60;\n\tpublic const FilterUtil.FilterType BLOCK_COUNT_ASC_CREATED_TIME_DES_FIRST = 61;\n\tpublic const FilterUtil.FilterType HATRED_DES_CHARACTER_FIRST = 62;\n\tpublic const FilterUtil.FilterType HP_RATIO_ASC_CONTAINS_STATUS_RESISTABLE_BUFF_FIRST_EVEN_HP_FULL = 63;\n\tpublic const FilterUtil.FilterType KALSIT_M3_SELECTOR = 64;\n\tpublic const FilterUtil.FilterType HP_RATIO_ASC_BUT_SP_LOSS_DES_FIRST = 65;\n\tpublic const FilterUtil.FilterType AMMO_NOT_FULL_ASC_CREATED_TIME_DES_FIRST = 66;\n\tpublic const FilterUtil.FilterType MAGIC_RESIST_ASC = 67;\n\tpublic const FilterUtil.FilterType MAGIC_RESIST_DES = 68;\n\tpublic const FilterUtil.FilterType PREFER_IN_EP_BREAK_AND_MIN_EP_THEN_HATRED_DES = 69;\n\tpublic const FilterUtil.FilterType DIST_TO_EXIT_DES = 70;\n\tpublic const FilterUtil.FilterType FILTER_CHAR_BUILDABLE_TYPE_MELEE_FIRST_HATRED_DES = 71;\n\tpublic const FilterUtil.FilterType HATRED_DES_SLEEPING_LAST = 72;\n\tpublic const FilterUtil.FilterType HATRED_DES_SLEEPING_LAST_EXCLUDE_SLEEP_IMMUNE = 73;\n\tpublic const FilterUtil.FilterType HP_RATIO_ASC_HATRED_DES = 74;\n\tpublic const FilterUtil.FilterType HP_RATIO_NOT_FULL_ASC_FLY_FIRST = 75;\n\tpublic const FilterUtil.FilterType PATH_DIST_TO_SOURCE_ASC = 76;\n\tpublic const FilterUtil.FilterType DIST_TO_SOURCE_ASC_LOWLAND_FIRST = 77;\n\tpublic const FilterUtil.FilterType HP_RATIO_ASC_DIST_TO_SOURCE_ASC_FIRST = 78;\n}"
+          },
+          "AbilityStandard.SelectTargetSource": {
+            "line": 369891,
+            "raw": "public enum AbilityStandard.SelectTargetSource // TypeDefIndex: 9817\n{\n\t// Fields\n\tpublic int value__; // 0x0\n\tpublic const AbilityStandard.SelectTargetSource NONE = 0;\n\tpublic const AbilityStandard.SelectTargetSource FROM_OWNER = 1;\n\tpublic const AbilityStandard.SelectTargetSource INPUT_TARGET = 2;\n\tpublic const AbilityStandard.SelectTargetSource INPUT_POINT = 3;\n\tpublic const AbilityStandard.SelectTargetSource INPUT_GRID_POS = 4;\n}"
+          },
+          "AbilityStandard.SelectTargetTiming": {
+            "line": 369903,
+            "raw": "public enum AbilityStandard.SelectTargetTiming // TypeDefIndex: 9818\n{\n\t// Fields\n\tpublic int value__; // 0x0\n\tpublic const AbilityStandard.SelectTargetTiming AT_BEGINING = 0;\n\tpublic const AbilityStandard.SelectTargetTiming BEFORE_SPELL_START = 1;\n\tpublic const AbilityStandard.SelectTargetTiming RESELECT_IF_TARGET_DEAD = 2;\n\tpublic const AbilityStandard.SelectTargetTiming BEFORE_FIRST_SPELL_START = 3;\n}"
+          },
+          "AuraAbility.SelfOption": {
+            "line": 536653,
+            "raw": "public enum AuraAbility.SelfOption // TypeDefIndex: 13088\n{\n\t// Fields\n\tpublic int value__; // 0x0\n\tpublic const AuraAbility.SelfOption DEFAULT = 0;\n\tpublic const AuraAbility.SelfOption INCLUDE = 1;\n\tpublic const AuraAbility.SelfOption EXCLUDE = 2;\n}"
+          }
+        },
+        "enum_dump": {
+          "path": "D:\\Arknights\\Arknights_timer\\Ark_data\\dump.cs",
+          "sha256": "d25fb9fb7ec81253f112d9090e4550cd37a273ace56085d37610bb67c1e3a88f"
+        },
+        "skills_priority": "No DB EnemySkill/SP rows; sole shared Heal normal slot, interval6. No fabricated skill priority/cooldown"
+      }
+    }
+  },
+  "rules": [
+    {
+      "id": "rule/ch5/mephi/native_eligibility",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.targeting.eligibility"
+      }
+    },
+    {
+      "id": "rule/ch5/mephi/injured_eligibility",
+      "kind": "calculation_rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "graph",
+        "nodes": [
+          {
+            "id": "base",
+            "rule": "rule/ch5/mephi/native_eligibility",
+            "inputs": {
+              "source": "inputs.source",
+              "candidate": "inputs.candidate",
+              "selector": "inputs.selector",
+              "parameters": "inputs.parameters",
+              "selection_states": "inputs.selection_states"
+            }
+          },
+          {
+            "id": "injured",
+            "expression": "nodes.base.accepted and 'hp' in inputs.candidate.components.resources and inputs.candidate.components.resources.hp.current < inputs.candidate.components.resources.hp.observed_capacity and not inputs.selection_states.candidate.heal_free and ('parameters' not in inputs.candidate.components.resources.hp.spec or 'healing_allowed' not in inputs.candidate.components.resources.hp.spec.parameters or inputs.candidate.components.resources.hp.spec.parameters.healing_allowed)"
+          },
+          {
+            "id": "result",
+            "expression": "{'accepted': nodes.injured, 'reason': 'source_injured_heal' if nodes.injured else 'native_eligibility_or_full_or_heal_free'}"
+          }
+        ],
+        "output": "nodes.result"
+      }
+    },
+    {
+      "id": "rule/ch5/mephi/steering",
+      "kind": "rule",
+      "contract": "movement.steering",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.movement.steering_velocity"
+      }
+    },
+    {
+      "id": "rule/ch5/mephi/windup",
+      "kind": "calculation_rule",
+      "contract": "ability.windup",
+      "parameters": {
+        "minimum_speed": 0.01
+      },
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.timing_parameters.seconds / max(inputs.attributes.attack_speed_ratio, params.minimum_speed)"
+      }
+    }
+  ],
+  "entities": [
+    {
+      "id": "unit/ch5/mephi/6468197a2a582f8b",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground",
+        "boss"
+      ],
+      "metadata": {
+        "native_reference": {
+          "useDb": true,
+          "id": "enemy_1507_mephi",
+          "level": 0,
+          "overwrittenData": null
+        }
+      },
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 28000,
+            "atk": 500,
+            "def": 200,
+            "mres": 60,
+            "move_speed": 0.5,
+            "attack_interval": 6,
+            "attack_speed_ratio": 1,
+            "mass_level": 3,
+            "block_cost": 1,
+            "hp_recovery_per_sec": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 28000,
+            "capacity_attribute": "max_hp",
+            "role": "health"
+          }
+        },
+        "spatial": {
+          "motion_mode": 0,
+          "steering": {
+            "rule": "rule/ch5/mephi/steering",
+            "parameters": {
+              "response_factor": 8.0,
+              "max_acceleration": 10.0,
+              "arrival_radius": 0.05
+            }
+          }
+        },
+        "selection_state": {
+          "side": 1,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 2
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle",
+          "leak_loss": 1
+        },
+        "abilities": [
+          "ability/ch5/mephi/normal_heal"
+        ],
+        "buffs": {
+          "initial": [
+            "buff/ch5/mephi/global_emitter"
+          ]
+        },
+        "behavior": {
+          "machine": "behavior/ch5/mephi/heal"
+        }
+      }
+    },
+    {
+      "id": "unit/test/mephi/friend",
+      "kind": "entity",
+      "tags": [
+        "probe_char"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 10000,
+            "atk": 0,
+            "def": 999,
+            "mres": 100,
+            "move_speed": 0,
+            "block_count": 0,
+            "hp_recovery_per_sec": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 1000,
+            "capacity_attribute": "max_hp",
+            "role": "health",
+            "parameters": {
+              "healing_allowed": true
+            }
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "side": 1,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 2
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    },
+    {
+      "id": "unit/test/mephi_killer",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 5000,
+            "atk": 50000,
+            "def": 0,
+            "mres": 0,
+            "block_count": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 5000,
+            "capacity": 5000,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "side": 0,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 1
+        },
+        "abilities": [
+          "ability/test/mephi_kill"
+        ],
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/ch5/mephi/heal",
+      "kind": "selector",
+      "region": {
+        "type": "radius",
+        "radius": 20
+      },
+      "filters": [
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 3,
+      "eligibility": {
+        "rule": "rule/ch5/mephi/injured_eligibility",
+        "parameters": {
+          "source_configuration": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -2990437240817222213
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 7080728813803358465
+            },
+            "m_Name": "",
+            "_targetSide": 1,
+            "_targetMotion": 3,
+            "_targetCategory": 1,
+            "_postFilter": 3,
+            "_ignoreTargetFree": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_abnormalFlag": 44,
+            "_abnormalCombo": 2,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_needProfessionMask": 0,
+            "_professionMask": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_excludeAbnormalFlag": 46,
+            "_limitTargetNum": 1,
+            "_maxTargetKey": "max_target",
+            "_maxNum": 3,
+            "_excludeOwner": 0,
+            "_sortByTauntAtLast": 0,
+            "_ignoreHitRange": 0,
+            "_checkUnitType": 0,
+            "_unitTypeMask": 0,
+            "_abilityInputTargetAsSortSource": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject",
+          "defaults": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "profession": 0,
+            "unit_type": 1,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "target_free": false,
+            "ally_target_free": false,
+            "heal_free": false,
+            "camouflage": false,
+            "can_select_camouflage": false
+          }
+        }
+      }
+    },
+    {
+      "id": "selector/ch5/mephi/global_aura",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "state": "alive"
+        }
+      ],
+      "eligibility": {
+        "rule": "rule/ch5/mephi/native_eligibility",
+        "parameters": {
+          "source_configuration": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -2990437240817222213
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 7080728813803358465
+            },
+            "m_Name": "",
+            "_targetSide": 1,
+            "_targetMotion": 3,
+            "_targetCategory": 1,
+            "_postFilter": 3,
+            "_ignoreTargetFree": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_abnormalFlag": 0,
+            "_abnormalCombo": 0,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_needProfessionMask": 0,
+            "_professionMask": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_excludeAbnormalFlag": 46,
+            "_limitTargetNum": 1,
+            "_maxTargetKey": "max_target",
+            "_maxNum": 3,
+            "_excludeOwner": 0,
+            "_sortByTauntAtLast": 0,
+            "_ignoreHitRange": 0,
+            "_checkUnitType": 0,
+            "_unitTypeMask": 0,
+            "_abilityInputTargetAsSortSource": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject",
+          "defaults": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "profession": 0,
+            "unit_type": 1,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "target_free": false,
+            "ally_target_free": false,
+            "heal_free": false,
+            "camouflage": false,
+            "can_select_camouflage": false
+          }
+        }
+      }
+    },
+    {
+      "id": "selector/test/mephi_kill",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "boss"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/ch5/mephi/normal_heal",
+      "kind": "ability",
+      "parameters": {
+        "healing": true
+      },
+      "selector": "selector/ch5/mephi/heal",
+      "activation": {
+        "mode": "automatic_attack",
+        "parameters": {
+          "auto_only": true
+        }
+      },
+      "target_capture": "at_cast",
+      "rules": {
+        "ability.windup": "rule/ch5/mephi/windup"
+      },
+      "timeline": [
+        {
+          "at_seconds": 1.1,
+          "effect": {
+            "op": "heal",
+            "scale": 1,
+            "read_mode": {
+              "source_attributes": "at_hit",
+              "target_attributes": "at_hit"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/test/mephi_kill",
+      "kind": "ability",
+      "selector": "selector/test/mephi_kill",
+      "activation": {
+        "mode": "manual"
+      },
+      "timeline": [
+        {
+          "at": 0,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1
+          }
+        }
+      ]
+    }
+  ],
+  "behaviors": [
+    {
+      "id": "behavior/ch5/mephi/heal",
+      "kind": "behavior",
+      "initial": "active",
+      "states": {
+        "active": {}
+      },
+      "transitions": [],
+      "decision": {
+        "rule": "rule/ark_behavior_decision",
+        "default_mode": 0,
+        "profiles": [
+          {
+            "mode": 0,
+            "selectors": [
+              {
+                "key": "heal",
+                "selector": "selector/ch5/mephi/heal"
+              }
+            ],
+            "cast_groups": [
+              {
+                "key": "heal",
+                "abilities": [
+                  "ability/ch5/mephi/normal_heal"
+                ]
+              }
+            ],
+            "parameters": {
+              "target_key": "heal",
+              "stop_on_target": true,
+              "stop_cast_groups": [
+                "heal"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/ch5/mephi/global_emitter",
+      "kind": "buff",
+      "aura": {
+        "selector": "selector/ch5/mephi/global_aura",
+        "buff": "buff/ch5/mephi/mephi_t_healaura"
+      },
+      "removal": {
+        "on_source_death": "remove"
+      }
+    },
+    {
+      "id": "buff/ch5/mephi/mephi_t_healaura",
+      "kind": "buff",
+      "stacking": {
+        "mode": "independent",
+        "max_stacks": 1
+      },
+      "modifiers": [
+        {
+          "attribute": "hp_recovery_per_sec",
+          "layer": "direct_ratio",
+          "value": 1
+        }
+      ],
+      "removal": {
+        "on_source_death": "remove"
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/ch5/mephi/author_probe",
+    "ruleset": "ruleset/ark_standard",
+    "objectives": {},
+    "map": {
+      "rows": 3,
+      "cols": 50
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/ch5/mephi/6468197a2a582f8b",
+        "instanceAlias": "mephi",
+        "position": {
+          "row": 0,
+          "col": 0
+        },
+        "components": {
+          "resources": {
+            "hp": {
+              "initial": 28000
+            }
+          }
+        }
+      },
+      {
+        "definition": "unit/test/mephi/friend",
+        "instanceAlias": "friend",
+        "position": {
+          "row": 0,
+          "col": 1
+        }
+      },
+      {
+        "definition": "unit/ch5/regen/enemy_1044_zomstr/d7a3f2fb16740407",
+        "instanceAlias": "zomstr",
+        "position": {
+          "row": 0,
+          "col": 30
+        },
+        "components": {
+          "resources": {
+            "hp": {
+              "initial": 1000
+            }
+          }
+        }
+      },
+      {
+        "definition": "unit/ch5/regen/enemy_1043_zomsbr/645365ece3e81647",
+        "instanceAlias": "zomsbr",
+        "position": {
+          "row": 0,
+          "col": 31
+        },
+        "components": {
+          "resources": {
+            "hp": {
+              "initial": 1000
+            }
+          }
+        }
+      },
+      {
+        "definition": "unit/test/mephi_killer",
+        "instanceAlias": "killer",
+        "position": {
+          "row": 2,
+          "col": 49
+        }
+      }
+    ],
+    "scheduledEffects": []
+  }
+}

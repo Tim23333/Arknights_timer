@@ -1,29 +1,12 @@
-"""明日方舟战斗 RNG 引擎纯 Python 复刻 (不依赖 pymem, 可离线单测)
+"""离线 RNG 状态推进工具；不凭类声明声称客户端算法已经核实。
 
-逆向依据 (Ark_data/dump.cs + 现网实测):
-
-  Torappu.LegacyRandom : System.Random   (dump.cs:1256570)
-      Knuth 减法门 (与 .NET System.Random 同型), 56 个 int32 种子
-      字段: inext@0x20, inextp@0x24, SeedArray@0x28
-      mscorlib System.Random 基类同名字段: _inext@0x10, _inextp@0x14, _seedArray@0x18
-      ★ 现网实测游标间距 31 (mscorlib 为 21): (inext,inextp)=(31,0)/(0,31)。
-        追踪/推演均从观测快照克隆出发, 双游标同步自增, 与间距常量无关,
-        故同一复刻代码兼容两者; 仅 tracker 游标合法性校验区分间距。
-
-  现网指针链 (新版, dump.cs 旧版无包装层):
-      BattleController.static_fields +0x30/+0x38
-        -> Torappu.Battle.BattleRandomWrapper (+0x10) -> LegacyRandom
-
-  Rei.Random.MersenneTwister : RandomBase (dump.cs:1256334)
-      标准 MT19937, 字段: mt@0x10, mti@0x18, mag01@0x20
-
-  TrueSync.TSRandom              (dump.cs:1228942)
-      标准 MT19937, 字段: mag01@0x10, mt@0x18, mti@0x20
-
-  BattleController               (dump.cs:317283)
-      private static Random s_randomImp;     // 静态块 +0x30  (关键随机: 暴击/闪避等)
-      private static Random s_randomTrivial; // 静态块 +0x38  (表现随机: 特效等)
-      由 RandomFactory.Create(seed, RANDOM_ALGORITHM=DEFAULT) 创建
+本地 dump.cs 声明 LegacyRandom 的双游标/56元素数组，及 BattleController
+的 IBattleRandom imp/trivial 字段与 BattleRandomWrapper.m_random。
+方法正文为空，不能证明种子构造、DEFAULT工厂分支、转换或每个调用来源。
+DotNetRandom(seed) 是显式 .NET兼容初始化（游标21），不是已恢复的现场
+LegacyRandom游标31种子构造。31来自项目历史观测说明；用捕获数组和完整
+双游标可跳过初始化，但仍需版本锁与独立原始快照/轨迹核实游戏准确性。
+MT实现亦为离线数学模型，不同部署的实际引擎须逐次识别。
 """
 
 MBIG = 2147483647
@@ -95,8 +78,8 @@ class DotNetRandom:
         work = self.clone()
         return [work.next_int() for _ in range(count)]
 
-    def matches(self, seeds, inext):
-        return self.inext == inext and self.seeds == list(seeds)
+    def matches(self, seeds, inext, inextp):
+        return self.inext == inext and self.inextp == inextp and self.seeds == list(seeds)
 
 
 class MT19937:
@@ -155,9 +138,12 @@ class MT19937:
 def recover_advanced(engine, observed_state, max_steps=8192):
     """从 engine (克隆的上次观测状态) 向前推演, 直到与本次观测完全一致。
 
-    observed_state: Knuth -> (seeds, inext) ; MT -> (mt, mti)
+    observed_state: Knuth -> (seeds, inext, inextp) ; MT -> (mt, mti)
     返回 (消耗次数, [原始输出...]) ; 推演 max_steps 步仍不匹配 (换种子/GC) 返回 None。
     """
+    expected_fields = 3 if isinstance(engine, DotNetRandom) else 2
+    if not isinstance(observed_state, (list, tuple)) or len(observed_state) != expected_fields:
+        raise ValueError("Observed endpoint must include complete RNG state/cursors")
     work = engine.clone()
     values = []
     step_fn = work.next_int if isinstance(work, DotNetRandom) else work.next_uint32

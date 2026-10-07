@@ -1,0 +1,241 @@
+{
+  "entities": [
+    {
+      "id": "unit/source",
+      "kind": "entity",
+      "tags": [
+        "source"
+      ],
+      "components": {
+        "spatial": {},
+        "attributes": {
+          "base": {
+            "atk": 40,
+            "max_hp": 200,
+            "def": 0,
+            "mres": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 200,
+            "capacity": 200,
+            "role": "health"
+          }
+        },
+        "abilities": [
+          "ability/fire"
+        ]
+      }
+    },
+    {
+      "id": "unit/target",
+      "kind": "entity",
+      "tags": [
+        "primary",
+        "player"
+      ],
+      "components": {
+        "spatial": {},
+        "attributes": {
+          "base": {
+            "atk": 40,
+            "max_hp": 200,
+            "def": 0,
+            "mres": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 200,
+            "capacity": 200,
+            "role": "health"
+          }
+        },
+        "abilities": []
+      }
+    },
+    {
+      "id": "unit/second",
+      "kind": "entity",
+      "tags": [
+        "secondary",
+        "player"
+      ],
+      "components": {
+        "spatial": {},
+        "attributes": {
+          "base": {
+            "atk": 40,
+            "max_hp": 200,
+            "def": 0,
+            "mres": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 200,
+            "capacity": 200,
+            "role": "health"
+          }
+        },
+        "abilities": []
+      }
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/primary",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "primary"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/motion",
+      "kind": "rule",
+      "contract": "projectile.trajectory",
+      "implementation": {
+        "type": "provider",
+        "provider": "peer.reach"
+      }
+    },
+    {
+      "id": "rule/collision",
+      "kind": "rule",
+      "contract": "projectile.collision",
+      "implementation": {
+        "type": "provider",
+        "provider": "peer.second"
+      }
+    },
+    {
+      "id": "rule/fail",
+      "kind": "rule",
+      "contract": "resource.recovery",
+      "implementation": {
+        "type": "expression",
+        "expression": "1/0"
+      }
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/fire",
+      "kind": "ability",
+      "selector": "selector/primary",
+      "activation": {
+        "mode": "manual"
+      },
+      "parameters": {
+        "wait_for_projectiles": true
+      },
+      "timeline": [
+        {
+          "at_seconds": 0,
+          "effect": {
+            "op": "damage",
+            "damage_type": "true",
+            "projectile_definition": "projectile/probe"
+          }
+        }
+      ]
+    }
+  ],
+  "projectiles": [
+    {
+      "id": "projectile/probe",
+      "kind": "projectile",
+      "motion": {
+        "rule": "rule/motion"
+      },
+      "collision": {
+        "rule": "rule/collision",
+        "allow_other_targets": true
+      },
+      "lifetime_seconds": 0.1,
+      "max_hits": null,
+      "can_hit_same_target": true,
+      "stop_after_max": true,
+      "stop_after_first": true,
+      "attach_at_launch": false,
+      "lifecycle": {
+        "source_invalid": "retain",
+        "source_hidden": "retain",
+        "target_invalid": "retain_position",
+        "target_hidden": "retain_position",
+        "finish_on_reach": false,
+        "hit_on_reach": true,
+        "force_reach_on_expire": false,
+        "hit_on_expire": true
+      },
+      "on_invalid": [
+        {
+          "op": "random",
+          "stream": "imp",
+          "probability": 1,
+          "on_success": [
+            {
+              "op": "modify_resource",
+              "target": "source",
+              "resource": "hp",
+              "amount": -1
+            }
+          ]
+        },
+        {
+          "op": "modify_resource",
+          "target": "source",
+          "resource": "hp",
+          "amount_rule": "rule/fail"
+        }
+      ]
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scenario/independent_unlimited",
+    "ruleset": "ruleset/ark_standard",
+    "map": {
+      "rows": 1,
+      "cols": 4
+    },
+    "objectives": {},
+    "initialEntities": [
+      {
+        "definition": "unit/source",
+        "instanceAlias": "source",
+        "position": {
+          "row": 0,
+          "col": 0
+        }
+      },
+      {
+        "definition": "unit/target",
+        "instanceAlias": "a",
+        "position": {
+          "row": 0,
+          "col": 1
+        }
+      },
+      {
+        "definition": "unit/second",
+        "instanceAlias": "b",
+        "position": {
+          "row": 0,
+          "col": 2
+        }
+      }
+    ]
+  }
+}

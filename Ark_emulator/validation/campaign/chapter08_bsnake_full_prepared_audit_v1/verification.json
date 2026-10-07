@@ -1,0 +1,315 @@
+{
+  "passed": true,
+  "scope": "Prepared source definition inspection and actual public first kill/HP0 tracked transfer only. Whole/source140 rays and future restoration/replay not signed by this audit. Helper/source guards first sampled during the active run, not falsely called run-start guards.",
+  "input_sha": "b41f7cf5f7c671a84533021c5cca75d78014644e193891d0a0b2ff582cc76319",
+  "actual_waiting200_sha": "13f51641f84681b0eb0321663ccf4f19c72346c70726efe2be0a69709d862062",
+  "source_pins": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\bsnake\\four_modes.wave_source.v5.json": "944c66226964c3eac64f6e00295e37839489a12da378377724e34f43cbe67613",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\bsnake\\source.first_restore.review.v1.json": "f0193df50cec0fa2d59eb508216b7636604058c4e75cb61d892721d43b148705",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\flame\\module.v4.joint.json": "fa780e59d9e47067b998a5888d44a56214644808c87b3e83493abc2b81c1762d",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\flame\\loop.profile.v3.json": "8e2f1afbdb2f136b6d01e86de604c4a919effdb3c6f9dd6c9612198589bb18da"
+  },
+  "helper_guards_midrun": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_bsnake_combat\\policies_v1.py": "c82c34c68d8a3ffcfd78716de3305cab0e998aa6a225cba5f1ee1fcaee7a9bbc",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_bsnake_skills\\policies_v1.py": "1a853d4ae1bc87b82c38e42ce911debd7929c2a4183d123dd8022d29f646ef16",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_bsnake\\screen_policy_v1.py": "06dcd983e8899b87ce44180368442cc826099f13b7b302088bc322d4f470ba31",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_buff_lifetime\\policies_v1.py": "b581e083825c2e6a77a6e42d0e9794588ce6e60ec9fea3d0962823b01be9620c",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_flame_device\\policies_v1.py": "ff3bc1ec91be072f529e1093f20f2146706b5dd8cca858c38b64c31c6cdbc07c",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter08_joint_v4\\build_summon_hint_v2.py": "dd2132a06a111f25cf2abfa9460041179798b95f8a4af652dcdf125d07e4c477",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_content_composition_v2.py": "592cb472a5dd6d233c3bc386b79d55bfd029835693d9d9859873c3f64cf0d189",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_ordered_checkpoint.py": "5cdfd500f41e428b67974e5119ef3e3351d9df346cc58fca837bc4420effbc6a"
+  },
+  "actual_hp0_transfer": {
+    "at": 117,
+    "source": 20,
+    "from": 0,
+    "to": 1
+  },
+  "first_restore_rule": {
+    "id": "rule/ch8/bsnake/first_restore",
+    "kind": "rule",
+    "contract": "resource.recovery",
+    "implementation": {
+      "type": "expression",
+      "expression": "inputs.parameters.capacity if context.rebirth.count == 1 else 0"
+    },
+    "metadata": {
+      "reference_policy": "Documentedfirstrestoration full effectiveHP; actualsecondrestore0. Rawrecharge.5 kept separately, not proven finalhpRatio."
+    }
+  },
+  "source_ability_clock_fields": [
+    {
+      "id": "ability/ch8/bsnake/normal/phase0",
+      "activation": {
+        "mode": "automatic_attack",
+        "condition": "inputs.resources.mode.current == 0",
+        "parameters": {
+          "auto_only": true
+        },
+        "settle_blocking": true
+      },
+      "initial_cooldown_seconds": null,
+      "recovery": null
+    },
+    {
+      "id": "ability/ch8/bsnake/normal/phase1",
+      "activation": {
+        "mode": "automatic_attack",
+        "condition": "inputs.resources.mode.current == 1",
+        "parameters": {
+          "auto_only": true
+        },
+        "settle_blocking": true
+      },
+      "initial_cooldown_seconds": null,
+      "recovery": null
+    },
+    {
+      "id": "ability/ch8/bsnake/ignite/phase0",
+      "activation": {
+        "mode": "manual",
+        "condition": "inputs.resources.mode.current == 0",
+        "parameters": {
+          "auto_only": true,
+          "auto_when_ready": true,
+          "requires_targets": true,
+          "blocks_attacks": true
+        }
+      },
+      "initial_cooldown_seconds": 19.0,
+      "recovery": null
+    },
+    {
+      "id": "ability/ch8/bsnake/explode/phase0",
+      "activation": {
+        "mode": "manual",
+        "condition": "inputs.resources.mode.current == 0",
+        "parameters": {
+          "auto_only": true,
+          "auto_when_ready": true,
+          "requires_targets": false,
+          "blocks_attacks": true
+        }
+      },
+      "initial_cooldown_seconds": 35.0,
+      "recovery": null
+    },
+    {
+      "id": "ability/ch8/bsnake/ignite/phase1",
+      "activation": {
+        "mode": "manual",
+        "condition": "inputs.resources.mode.current == 1",
+        "parameters": {
+          "auto_only": true,
+          "auto_when_ready": true,
+          "requires_targets": true,
+          "blocks_attacks": true
+        }
+      },
+      "initial_cooldown_seconds": 19.0,
+      "recovery": null
+    },
+    {
+      "id": "ability/ch8/bsnake/explode/phase1",
+      "activation": {
+        "mode": "manual",
+        "condition": "inputs.resources.mode.current == 1",
+        "parameters": {
+          "auto_only": true,
+          "auto_when_ready": true,
+          "requires_targets": false,
+          "blocks_attacks": true
+        }
+      },
+      "initial_cooldown_seconds": 35.0,
+      "recovery": null
+    },
+    {
+      "id": "ability/ch8/bsnake/firecommon",
+      "activation": {
+        "mode": "manual",
+        "parameters": {
+          "auto_only": true
+        },
+        "condition": "inputs.resources.mode.current >= 2 and inputs.resources.screen_packets.current < 10",
+        "on_start": [
+          {
+            "op": "modify_resource",
+            "target": "source",
+            "resource": "screen_packets",
+            "delta": 1
+          },
+          {
+            "op": "emit",
+            "target": "source",
+            "event": "source.bsnake.screen.volley"
+          }
+        ]
+      },
+      "initial_cooldown_seconds": null,
+      "recovery": null
+    },
+    {
+      "id": "ability/ch8/bsnake/hint",
+      "activation": {
+        "mode": "manual",
+        "parameters": {
+          "auto_only": true,
+          "blocks_attacks": false
+        },
+        "on_start": [
+          {
+            "op": "emit",
+            "event": "source.bsnake.hint.clear"
+          },
+          {
+            "op": "emit",
+            "event": "source.bsnake.hint.show",
+            "payload": {
+              "phase_index": 0,
+              "registration_keys": [
+                "trap_021_flame#2",
+                "trap_021_flame#3",
+                "trap_021_flame#5",
+                "trap_021_flame#8",
+                "trap_021_flame#9"
+              ],
+              "effect_key": "map_fire_crystal_birth_01_buff"
+            },
+            "condition": "inputs.source.components.resources.hint_phase.current == 0 and inputs.source.components.resources.mode.current < 3"
+          },
+          {
+            "op": "emit",
+            "event": "source.bsnake.hint.show",
+            "payload": {
+              "phase_index": 1,
+              "registration_keys": [
+                "trap_021_flame#1",
+                "trap_021_flame#2",
+                "trap_021_flame#4",
+                "trap_021_flame#7",
+                "trap_021_flame#9"
+              ],
+              "effect_key": "map_fire_crystal_birth_01_buff"
+            },
+            "condition": "inputs.source.components.resources.hint_phase.current == 1 and inputs.source.components.resources.mode.current < 3"
+          },
+          {
+            "op": "emit",
+            "event": "source.bsnake.hint.show",
+            "payload": {
+              "phase_index": 2,
+              "registration_keys": [
+                "trap_021_flame#3",
+                "trap_021_flame#4",
+                "trap_021_flame#5",
+                "trap_021_flame#8",
+                "trap_021_flame#10"
+              ],
+              "effect_key": "map_fire_crystal_birth_01_buff"
+            },
+            "condition": "inputs.source.components.resources.hint_phase.current == 2 and inputs.source.components.resources.mode.current < 3"
+          },
+          {
+            "op": "emit",
+            "event": "source.bsnake.hint.show",
+            "payload": {
+              "phase_index": 3,
+              "registration_keys": [
+                "trap_021_flame#1",
+                "trap_021_flame#2",
+                "trap_021_flame#3",
+                "trap_021_flame#6",
+                "trap_021_flame#9"
+              ],
+              "effect_key": "map_fire_crystal_birth_01_buff"
+            },
+            "condition": "inputs.source.components.resources.hint_phase.current == 3 and inputs.source.components.resources.mode.current < 3"
+          },
+          {
+            "op": "emit",
+            "event": "source.bsnake.hint.show",
+            "payload": {
+              "phase_index": 4,
+              "registration_keys": [
+                "trap_021_flame#4",
+                "trap_021_flame#5",
+                "trap_021_flame#6",
+                "trap_021_flame#8",
+                "trap_021_flame#10"
+              ],
+              "effect_key": "map_fire_crystal_birth_01_buff"
+            },
+            "condition": "inputs.source.components.resources.hint_phase.current == 4 and inputs.source.components.resources.mode.current < 3"
+          },
+          {
+            "op": "emit",
+            "event": "source.bsnake.hint.show",
+            "payload": {
+              "phase_index": 5,
+              "registration_keys": [
+                "trap_021_flame#2",
+                "trap_021_flame#6",
+                "trap_021_flame#7",
+                "trap_021_flame#8",
+                "trap_021_flame#9"
+              ],
+              "effect_key": "map_fire_crystal_birth_01_buff"
+            },
+            "condition": "inputs.source.components.resources.hint_phase.current == 5 and inputs.source.components.resources.mode.current < 3"
+          },
+          {
+            "op": "emit",
+            "event": "source.bsnake.hint.show",
+            "payload": {
+              "phase_index": 6,
+              "registration_keys": [
+                "trap_021_flame#2",
+                "trap_021_flame#3",
+                "trap_021_flame#4",
+                "trap_021_flame#5",
+                "trap_021_flame#8"
+              ],
+              "effect_key": "map_fire_crystal_birth_01_buff"
+            },
+            "condition": "inputs.source.components.resources.hint_phase.current == 6 and inputs.source.components.resources.mode.current < 3"
+          }
+        ]
+      },
+      "initial_cooldown_seconds": null,
+      "recovery": null
+    },
+    {
+      "id": "ability/ch8/bsnake/hint_countdown",
+      "activation": {
+        "mode": "manual",
+        "parameters": {
+          "auto_only": true,
+          "blocks_attacks": false
+        },
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/ch8/source/bsnake_t[hint]"
+          }
+        ]
+      },
+      "initial_cooldown_seconds": null,
+      "recovery": null
+    },
+    {
+      "id": "ability/ch8/bsnake/summon_flame",
+      "activation": {
+        "mode": "manual",
+        "parameters": {
+          "auto_only": true,
+          "auto_when_ready": true
+        },
+        "condition": "inputs.resources.mode.current == 1 and inputs.branches.bsnake_flame.available == True"
+      },
+      "initial_cooldown_seconds": 75,
+      "recovery": null
+    }
+  ]
+}

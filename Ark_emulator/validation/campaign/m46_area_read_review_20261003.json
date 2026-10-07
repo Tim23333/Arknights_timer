@@ -1,0 +1,19 @@
+{
+  "schema": "ark-sim/pre-freeze-source-review/v1",
+  "status": "author addressing before freeze",
+  "review_scope": "read-only code evidence; independent execution pending",
+  "findings": [
+    {
+      "issue": "ctx.rules.evaluate bypasses normal ctx.calc context/trace",
+      "effect": "Custom area rule lacks source/target/ability/effect scope and regular calculation journal",
+      "requested_fix": "opt-in ctx.calc with full context; noopt radius unchanged"
+    },
+    {
+      "issue": "membership_rule added globally but consumed only for oparea",
+      "effect": "Other op may accept a declared rule and ignore it",
+      "requested_fix": "schema rejects nonarea membership_rule even with valid existing area.members rule"
+    }
+  ],
+  "author_notified": true,
+  "native_accuracy_claim": false
+}

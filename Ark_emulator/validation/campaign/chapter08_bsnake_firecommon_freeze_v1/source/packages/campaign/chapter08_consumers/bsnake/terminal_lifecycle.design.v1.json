@@ -1,0 +1,57 @@
+{
+  "source_pins": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter08_consumers\\bsnake\\source.closure.v1.json": "742d78443641451c8b54bdf75281c33cd04c198eaee373ca95991e380f05469d",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\validation\\campaign\\chapter08_bsnake_finalzero_isolated_v3\\report.json": "2a3ffe5e4f79670f17c042f43b7336cc6835e085a2bc968b1822574f2040863a"
+  },
+  "literal_requirement": {
+    "native_Reborn_max_count": 2,
+    "native_first_restore_ratio": 0.5,
+    "native_final_restore_ratio": 0,
+    "first_delay_BB": 5,
+    "final_ScreenAttack_BB": {
+      "duration": 28,
+      "interval": 2,
+      "trig_cnt": 10
+    },
+    "final_owned_Buff": {
+      "source_key": "bsnake_s[screen_attack]",
+      "template": "enemy_bsnake_s[final_screen_attack]",
+      "flags": [
+        22,
+        5
+      ]
+    },
+    "final_ON_FINISH": "InstantKill(TARGET,skipRebornFalse,noSourceFalse)",
+    "modes": 4
+  },
+  "proposal_generic_explicit_zero_restore": {
+    "opt_in_component": "rebirth.zero_restore_lifecycle",
+    "required_fields": {
+      "mode": "terminal_active",
+      "counts": "finiteunique positive counts <= max_count; no blanketzero permission",
+      "duration_seconds": "finite bounded>0, anchored actualrebirth.began_at notrestartable",
+      "owned_abilities": "finite exact owned IDs include onlyterminalactions",
+      "retained_buffs": "finite exact definitions, reuse actual selflease/ownedBuffleases",
+      "completion": "retire_dead exactlyonce; optional genuineownedfinalBuff finish maycompleteearly"
+    },
+    "default_behavior": "No spec: existing >0 restore check unchanged; invalid0 source counter remains failure.",
+    "allowed_on_exact_zero_result": "Keep HP0 unchanged, set alive/active only under actual terminal state+generation+internal transition authority and bounded terminal-end job; ordinary attack/skills disabled except finiteowned terminalactions. No1HP and no deletion ofsecondscreen.",
+    "lifecycle_guard": "consume/tick must honor authenticatedterminalhold to avoid recursiveHP0 depletion; fakeworldstate withoutactualjob/ownerUID/gen cannotkeepalive; terminalexpiry/withdraw/cancel/sceneend removeleases andretire exactlyonce.",
+    "scheduler_guard": "Actual terminal-end task ID/kind/payload/gen/due, internal entering context finallyclear; no manualgrant, stale/deathgen rejection, allstate/RNG/events/tasks atomic.",
+    "InstantKill_policy": "Only genuineown finalBuff ON_FINISH completion oractualboundedjob mayclose terminalstate; arbitraryforeign/publickill mustnotrenewhold orrevive. Nativefinalbuff removal/screen cancel mustremain real, not emit-only.",
+    "source_clock_policy": "Source5s rebirth and28s screen/channel/end37frame are separatelypreserved; exactanchoring/attachment finish is explicitreplaceable reference pending nativebody. Firstmodule cannotclaimcompletemode before these clocks exercised."
+  },
+  "required_actual_tests": [
+    "nativefirstboost and first37500 restoration withCP/head",
+    "secondHP0/literal0 result enters terminal withoutpositiveHP",
+    "10actualfullrowvolley emissions withactualqualifieddamages/RNG before genuinefinalbufffinish",
+    "finalscreen interval/duration/start/channel/cancel fullledger",
+    "jobexpiry/ownerwithdraw/sceneend onceKill/leasesclear",
+    "forgedWorldphase/copies/stalegeneration/payloadBool rejected",
+    "oldpositive rebirth/noopt unchanged; callbackfault rollback andcontextfinally",
+    "completebaseline/fullregression plusfreshindependent source review"
+  ],
+  "implementation_started": false,
+  "runtime_gap_counter_actual": true,
+  "scope": "Concrete generic plan only, parentlatestcombined selected byRoot afterrebirthself/dynamic merge. No source or core changes in this design."
+}

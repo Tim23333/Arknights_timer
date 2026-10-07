@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/ch6/training_exit_credit",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "source_locks": {
+        "packages\\campaign\\chapter06_plans\\source.plan.json": "d310c3f98408b2686be3f065ab6212e552451b7505ec083a62418db564941608"
+      },
+      "native_flags": {
+        "combined_action_flag": true,
+        "unharmful": true,
+        "always_count_as_killed": true
+      },
+      "scope": "Source-declared options consumed by explicit exit-only reference policy, no enemy attack/boss/NPC/story implementation",
+      "reference_policy": "Unharmful prevents base life loss on route exit; alwaysCountAsKilled gives scenario kill credit on exit. Real exited actor is not combat dead. Does not suppress outgoing combat damage.",
+      "native_body_verified": false,
+      "whole_stage_executed": false,
+      "client_verified": false
+    }
+  },
+  "rules": [
+    {
+      "id": "rule/ch6/training_exit_credit",
+      "kind": "calculation_rule",
+      "contract": "lifecycle.exit",
+      "implementation": {
+        "type": "expression",
+        "expression": "{'base_life_loss': 0 if inputs.exit_parameters.unharmful else inputs.exit_parameters.loss, 'kills_delta': 1 if inputs.exit_parameters.always_count_as_killed else 0, 'leaks_delta': 0 if inputs.exit_parameters.always_count_as_killed else 1}"
+      }
+    }
+  ],
+  "entities": [
+    {
+      "id": "unit/exit/probe",
+      "kind": "entity",
+      "tags": [
+        "enemy"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 95000,
+            "atk": 0,
+            "def": 300,
+            "mres": 50,
+            "move_speed": 3,
+            "block_cost": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 95000,
+            "capacity": 95000,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle",
+          "leak_loss": 2
+        }
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/exit/probe/False",
+    "ruleset": "ruleset/ark_standard",
+    "map": {
+      "rows": 1,
+      "cols": 3
+    },
+    "resources": {
+      "life": {
+        "initial": 99999,
+        "capacity": 99999
+      }
+    },
+    "objectives": {
+      "type": "waves",
+      "life_resource": "life"
+    },
+    "waves": [
+      {
+        "definition": "unit/exit/probe",
+        "instanceAlias": "enemy",
+        "position": {
+          "row": 0,
+          "col": 0
+        },
+        "route": {
+          "motionMode": "WALK",
+          "startPosition": {
+            "row": 0,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 0,
+            "col": 2
+          },
+          "checkpoints": []
+        }
+      }
+    ]
+  }
+}

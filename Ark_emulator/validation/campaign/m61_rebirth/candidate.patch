@@ -1,0 +1,398 @@
+--- a/ark_sim/adapters/api.py
++++ b/ark_sim/adapters/api.py
+@@ -48,6 +48,13 @@
+             self.ctx.spatial.grid.tile_reader = self.ctx.terrain.tile
+         self.ctx.movement = MovementSystem(self.ctx)
+         self.ctx.lifecycle = LifecycleSystem(self.ctx)
++        def uses_rebirth(value):
++            if isinstance(value,dict) or hasattr(value,"items"):
++                return "rebirth" in value.get("components",{}) or value.get("op")=="instant_kill" or any(uses_rebirth(v) for k,v in value.items() if k not in {"metadata","parameters","payload"})
++            return isinstance(value,(list,tuple)) and any(uses_rebirth(v) for v in value)
++        if uses_rebirth(program.definitions) or uses_rebirth(program.scenario):
++            from ark_sim.domains.rebirth import RebirthSystem
++            self.ctx.rebirth=RebirthSystem(self.ctx)
+         if any(p.get("type")=="contact_lifecycle" for p in self.ctx.spatial.grid.tile_mechanics.values()):
+             from ark_sim.domains.tile_contacts import TileContactSystem
+             self.ctx.tile_contacts=TileContactSystem(self.ctx)
+@@ -122,6 +129,9 @@
+         if self.ctx.terrain is not None:
+             self.session.add_system(self.ctx.terrain.tick, phase=0)
+         self.session.add_system(self.ctx.lifecycle.prune_expired, phase=0)
++        if getattr(self.ctx,"rebirth",None) is not None:
++            for name,handler in self.ctx.rebirth.handlers.items():self.session.register_handler(name,handler)
++            self.session.add_system(self.ctx.rebirth.tick,phase=0)
+         if self.ctx.buffs.has_buffs:
+             # Registered before initial waves and input tasks: expiry at t is
+             # removed before phase-0 commands can capture an at_cast snapshot.
+--- a/ark_sim/content/capabilities.py
++++ b/ark_sim/content/capabilities.py
+@@ -117,7 +117,7 @@
+         op = item.get("op")
+         if op in {"apply_terrain_overlay", "remove_terrain_overlay"} and item.get("target", "selected") in {"source", "self", "battle", "owner"}:
+             raise ContentError(f"{path}: control terrain layers require selected actors or an explicit actor ID")
+-        if op in {"retire", "apply_terrain_overlay", "remove_terrain_overlay"} and not item.get("selector") and item.get("target", "selected") in {"selected", "self", "source", "battle", "owner"}:
++        if op in {"instant_kill", "retire", "apply_terrain_overlay", "remove_terrain_overlay"} and not item.get("selector") and item.get("target", "selected") in {"selected", "self", "source", "battle", "owner"}:
+             raise ContentError(f"{path}: control retirement requires an explicit actor target or nonspatial selector")
+         if op in {"heal", "regenerate", "push"}:
+             raise ContentError(f"{path}: control {op} requires actor source attributes/origin")
+@@ -257,6 +257,8 @@
+             steering = components["spatial"]["steering"]
+             require("movement.steering", f"{identifier}.spatial.steering", scopes, steering.get("rule"))
+         entity_scopes[identifier] = scopes
++        if "rebirth" in components:
++            require("resource.recovery", identifier+".rebirth.restore_rule", scopes, components["rebirth"]["restore_rule"])
+         for overlay in components.get("terrain_overlays", ()):
+             require("terrain.tile_options", f"{identifier}.terrain_overlays", (), overlay.get("rule"))
+         attributes = components.get("attributes", {})
+--- a/ark_sim/content/compiler.py
++++ b/ark_sim/content/compiler.py
+@@ -423,6 +423,9 @@
+                 if stock["resource"] not in (scenario or {}).get("resources",{}):raise CompileError(identifier+": deployment stock resource is absent")
+                 if stock.get("rule") and definitions[stock["rule"]].get("contract")!="resource.cost":raise CompileError(identifier+": stock rule must implement resource.cost")
+             check_freeze(resources, entity.get("components", {}).get("abilities", []), identifier)
++            if "rebirth" in entity.get("components",{}):
++                from ..domains.rebirth import validate
++                validate(entity["components"]["rebirth"],entity["components"],definitions)
+             for ability_id in entity.get("components", {}).get("abilities", []):
+                 ability = definitions[ability_id]
+                 recovery = ability.get("activation", {}).get("parameters", {})
+@@ -475,3 +478,6 @@
+                 from ..domains.selection import validate_state
+                 validate_state(actual["selection_state"], (item.get("instanceAlias") or item["definition"])+".selection_state")
+             check_freeze(actual.get("resources", {}), actual.get("abilities", []), item.get("instanceAlias") or item["definition"])
++            if "rebirth" in actual:
++                from ..domains.rebirth import validate
++                validate(actual["rebirth"],actual,definitions)
+--- a/ark_sim/content/dependencies.py
++++ b/ark_sim/content/dependencies.py
+@@ -5,7 +5,7 @@
+ 
+ REFERENCE_KEYS = {"projectile_definition", "definition", "ability", "buff", "selector", "machine", "policy",
+                   "rule", "ruleset", "extends", "prototype", "behavior"}
+-REFERENCE_LISTS = {"abilities", "requires", "dependencies", "externals", "allowed", "roster", "recovery_freeze_abilities", "interrupt_abilities"}
++REFERENCE_LISTS = {"abilities", "requires", "dependencies", "externals", "allowed", "roster", "recovery_freeze_abilities", "interrupt_abilities", "retain_buffs"}
+ 
+ 
+ def references(value, path="definition", calculation_bindings=None):
+--- a/ark_sim/content/schemas.py
++++ b/ark_sim/content/schemas.py
+@@ -22,6 +22,7 @@
+ }
+ COMPONENT_FIELDS = {
+     "selection_state": None,
++    "rebirth": None,
+     "attributes": {"base", "modifiers", "rules", "growth", "parameters", "layers", "attribute_rules"},
+     "resources": None,
+     "terrain_overlays": None,
+@@ -39,7 +40,7 @@
+ RESOURCE_FIELDS = {"initial", "capacity", "capacity_attribute", "capacity_change_rule", "recovery_rule", "recovery_rate", "recovery", "rules", "parameters", "bounds_rule", "capacity_rule", "role", "events", "recovery_freeze_abilities", "recovery_freeze_rule"}
+ EFFECT_FIELDS = {"membership_rule", "projectile_definition", "center_position", "op", "target", "rules", "read_mode", "damage_type", "scale", "additions", "amount", "delta", "value", "amount_rule", "resource", "buff", "definition", "position", "facing", "tags", "on_success", "on_failure", "effects", "condition", "parameters", "event", "payload", "type", "state", "machine", "distance", "offset", "direction", "kind", "at_seconds", "delay_seconds", "effect", "stacks", "selector", "lifetime_seconds", "remove_all", "metadata", "duration_seconds", "center", "radius", "filters", "owner", "ability", "force", "stream", "probability"}
+ DEFAULT_CAPABILITIES = {
+-    "effects": {"set_motion_mode", "damage", "heal", "regenerate", "modify_resource", "apply_buff", "remove_buff", "spawn", "emit", "move", "state", "schedule", "transition", "area", "trigger_ability", "push", "random", "input_lock", "retire", "apply_terrain_overlay", "remove_terrain_overlay", "activate_predefined"},
++    "effects": {"instant_kill", "set_motion_mode", "damage", "heal", "regenerate", "modify_resource", "apply_buff", "remove_buff", "spawn", "emit", "move", "state", "schedule", "transition", "area", "trigger_ability", "push", "random", "input_lock", "retire", "apply_terrain_overlay", "remove_terrain_overlay", "activate_predefined"},
+     "activations": {"manual", "automatic_attack", "on_deploy", "passive"},
+     "read_modes": {"at_hit", "at_cast", "at_launch"},
+     "stacking": {"refresh", "independent", "add", "extend", "max"},
+@@ -124,6 +125,11 @@
+             raise ContentError(f"{path}: {error}") from error
+     if effect["op"] == "set_motion_mode" and (type(effect.get("value")) is not int or effect["value"] not in (0,1)):
+         raise ContentError(path+": explicit WALK0/FLY1 motion mode required")
++    if effect["op"] == "instant_kill":
++        options=effect.get("parameters")
++        if not isinstance(options,Mapping) or set(options)!={"cause","skip_rebirth"} or not isinstance(options["cause"],str) or not options["cause"] or not options["cause"].replace("_","").replace("-","").isalnum() or type(options["skip_rebirth"]) is not bool:
++            raise ContentError(path+": instant_kill requires event-safe cause and explicit skip_rebirth bool")
++        if effect.get("target","selected") in {"battle","scenario"}:raise ContentError(path+": instant_kill cannot target battle")
+     if effect["op"] == "retire":
+         parameters = effect.get("parameters", {})
+         if not isinstance(parameters, Mapping):
+@@ -280,6 +286,11 @@
+             allowed = COMPONENT_FIELDS[key]
+             if allowed is not None:
+                 fields(value, allowed, f"{identifier}.components.{key}")
++        if "rebirth" in components:
++            from ..domains.rebirth import validate
++            validate(components["rebirth"],components)
++            for key in ("on_begin","on_finish"):
++                for i,effect in enumerate(components["rebirth"].get(key,[])):validate_effect(effect,identifier+".rebirth."+key+"["+str(i)+"]",capabilities)
+         if "selection_state" in components:
+             from ..domains.selection import validate_state
+             validate_state(components["selection_state"], identifier+".selection_state")
+--- a/ark_sim/domains/effects.py
++++ b/ark_sim/domains/effects.py
+@@ -26,6 +26,7 @@
+     def _execute(self, source, targets, effect, ability=None, cast=None, cause=None):
+         source = self.ctx.session.world.resolve(source)
+         ability, cast = ability or {}, cast or {}
++        if getattr(self.ctx,"rebirth",None) is not None and not self.ctx.rebirth.callback_allowed():return
+         if (not self.ctx.get(source, ('runtime', 'active'), True) and self.ctx.get(source, ('runtime', 'state')) == 'dormant'
+                 and effect['op'] not in {'activate_predefined', 'retire', 'emit', 'remove_buff', 'remove_terrain_overlay'}):
+             self.ctx.emit('effect.source_inactive_rejected', {'source': source, 'targets': list(targets), 'operation': effect['op']}, cause)
+@@ -48,16 +49,21 @@
+             operation = effect["op"]
+             if (operation not in {'activate_predefined', 'retire', 'emit', 'remove_buff', 'remove_terrain_overlay'}
+                     and not (operation == 'area' and effect.get('center_position') is not None)
+-                    and not self.ctx.get(target, ('runtime', 'active'), True)):
++                    and not self.ctx.get(target, ('runtime', 'active'), True)
++                    and operation != "instant_kill"
++                    and not (getattr(self.ctx,"rebirth",None) is not None and self.ctx.rebirth.effect_allowed(target))):
+                 self.ctx.emit('effect.inactive_rejected', {'source': source, 'target': target, 'operation': operation}, cause)
+                 continue
+             health_delta = operation == "modify_resource" and (
+                 self.ctx.get(target, ("resources", effect.get("resource"), "spec", "role")) == "health" or
+                 effect.get("resource") == self.ctx.program.ruleset.get("parameters", {}).get("health_resource"))
+-            if not (operation == "area" and effect.get("center_position") is not None) and (health_delta or operation in {"damage", "heal", "regenerate", "apply_buff", "area", "push", "move", "displace", "trigger_ability", "set_motion_mode"}) and not getattr(self.ctx, "effect_target_available", lambda ref: True)(target):
++            if not (operation == "area" and effect.get("center_position") is not None) and (health_delta or operation in {"damage", "heal", "regenerate", "apply_buff", "area", "push", "move", "displace", "trigger_ability", "set_motion_mode"}) and not getattr(self.ctx, "effect_target_available", lambda ref: True)(target) and not (getattr(self.ctx,"rebirth",None) is not None and self.ctx.rebirth.effect_allowed(target)):
+                 self.ctx.emit("effect.visibility_rejected", {"source": source, "target": target, "operation": operation}, cause)
+                 continue
+-            if operation == 'activate_predefined':
++            if operation == "instant_kill":
++                if getattr(self.ctx,"rebirth",None) is None:raise ValueError("instant_kill feature not compiled")
++                self.ctx.rebirth.instant_kill(source,target,effect["parameters"],ability,cast,cause)
++            elif operation == 'activate_predefined':
+                 if target != self.ctx.session.world.resolve('system/battle'):
+                     raise ValueError('predefined activation effect targets battle registry')
+                 self.ctx.lifecycle.activate_predefined(effect['parameters']['key'])
+@@ -242,6 +248,7 @@
+                     phase=self.ctx.effect_phase)
+             else:
+                 raise ValueError(f"unimplemented effect {operation}")
++            if getattr(self.ctx,"rebirth",None) is not None:self.ctx.rebirth.settle_callback(operation)
+             if cast.get("control_instance") and not self.ctx.controls.settle_effect(cast, operation): return
+             for child in effect.get("effects", ()):
+                 self.execute(source, [target], child, ability, cast, cause)
+--- a/ark_sim/domains/lifecycle.py
++++ b/ark_sim/domains/lifecycle.py
+@@ -44,6 +44,10 @@
+                 else:
+                     base[key] = thaw(value)
+         merge(components, thaw(component_overrides or {}))
++        if "rebirth" in components:
++            from .rebirth import validate
++            validate(components["rebirth"],components,self.ctx.program.definitions)
++            if getattr(self.ctx,"rebirth",None) is None:raise ValueError("rebirth feature was not compiled into runtime")
+         parameters = parameters or {}
+         ownership = components.get("ownership", {})
+         owner = owner if owner is not None else parameters.get("owner", ownership.get("owner"))
+@@ -170,6 +174,8 @@
+     def check(self, ref, event):
+         if not self.ctx.get(ref, ('runtime', 'active'), True) and self.ctx.get(ref, ('runtime', 'state')) == 'dormant':
+             return
++        rebirth=getattr(self.ctx,"rebirth",None)
++        if rebirth is not None and rebirth.consume(ref,event):return
+         lifecycle = self.ctx.get(ref, ("lifecycle",), {})
+         if not lifecycle.get("policy"):
+             return
+@@ -199,6 +205,8 @@
+         ref = self.ctx.session.world.resolve(ref)
+         if not self.ctx.alive(ref):
+             return
++        rebirth=getattr(self.ctx,"rebirth",None)
++        if rebirth is not None:rebirth.cancel(ref,reason)
+         self.ctx.set(ref, ("runtime", "alive"), False)
+         if 'active' in self.ctx.get(ref, ('runtime',)):
+             self.ctx.set(ref, ('runtime', 'active'), False)
+@@ -249,7 +257,7 @@
+         self.retire(ref, "exited")
+ 
+     def tick(self, session):
+-        if getattr(self.ctx, "controls", None) is None:
++        if getattr(self.ctx, "controls", None) is None and getattr(self.ctx,"rebirth",None) is None:
+             return self._tick(session)
+         with session.atomic():
+             return self._tick(session)
+@@ -269,6 +277,7 @@
+                     "entity_states": [thaw(e) for e in session.world.entities()]})
+         if result["finished"]:
+             self.ctx.state_update(finished=True, result=result["result"], finished_at=session.time)
++            if getattr(self.ctx,"rebirth",None) is not None:self.ctx.rebirth.cancel_all("battle_terminal")
+             if getattr(self.ctx, "controls", None) is not None:
+                 self.ctx.controls.cancel_all_terminal()
+                 timeline = self.ctx.timeline._state()
+--- a/ark_sim/domains/rebirth.py
++++ b/ark_sim/domains/rebirth.py
+@@ -0,0 +1,169 @@
++"""Opt-in delayed health depletion lifecycle, persistent same-actor recovery."""
++from collections.abc import Mapping
++import math
++from ark_sim.contracts import thaw
++
++FIELDS={'resource','max_count','delay_seconds','restore_ratio','restore_rule','parameters','retain_buffs','on_begin','on_finish','reset_cooldowns','reset_attack_clock'}
++def validate_kill(options):
++ if not isinstance(options,Mapping) or set(options)!={'cause','skip_rebirth'} or not isinstance(options['cause'],str) or not options['cause'] or not options['cause'].replace('_','').replace('-','').isalnum() or type(options['skip_rebirth']) is not bool:raise ValueError('instant kill requires event-safe cause/explicit skip_rebirth bool')
++def validate(spec,components=None,definitions=None):
++ if not isinstance(spec,Mapping) or set(spec)-FIELDS or not {'resource','max_count','delay_seconds','restore_ratio','restore_rule'}<=set(spec):raise ValueError('rebirth requires exact resource/count/delay/ratio/restore_rule')
++ for key in ('resource','restore_rule'):
++  if not isinstance(spec[key],str) or not spec[key]:raise ValueError('rebirth '+key+' must be nonempty string')
++ if type(spec['max_count']) is not int or not 0<=spec['max_count']<=100000:raise ValueError('rebirth max_count must be bounded nonnegative integer')
++ for key in ('delay_seconds','restore_ratio'):
++  v=spec[key]
++  if type(v) not in (int,float) or not math.isfinite(v) or v<0 or (key=='restore_ratio' and v==0):raise ValueError('rebirth finite delay>=0/ratio>0 required')
++ if not isinstance(spec.get('parameters',{}),Mapping):raise ValueError('rebirth parameters record required')
++ retained=spec.get('retain_buffs',[])
++ if not isinstance(retained,(list,tuple)) or any(not isinstance(x,str) or not x for x in retained) or len(set(retained))!=len(retained):raise ValueError('rebirth retained Buff IDs must be unique')
++ if 'reset_attack_clock' in spec and type(spec['reset_attack_clock']) is not bool:raise ValueError('rebirth attack clock policy must be bool')
++ resets=spec.get('reset_cooldowns',[])
++ if not isinstance(resets,(list,tuple)):raise ValueError('rebirth cooldown resets list required')
++ seen=set()
++ for row in resets:
++  if not isinstance(row,Mapping) or set(row)!={'ability','initial_delay_seconds'} or not isinstance(row['ability'],str) or not row['ability'] or row['ability'] in seen:raise ValueError('rebirth unique ability cooldown reset required')
++  seen.add(row['ability']);delay=row['initial_delay_seconds']
++  if type(delay) not in (int,float) or not math.isfinite(delay) or delay<0:raise ValueError('rebirth cooldown delay must be finite nonnegative')
++ for key in ('on_begin','on_finish'):
++  if not isinstance(spec.get(key,[]),(list,tuple)):raise ValueError('rebirth '+key+' effect list required')
++  from ..content.schemas import validate_effect,DEFAULT_CAPABILITIES
++  for i,effect in enumerate(spec.get(key,[])):validate_effect(effect,'rebirth.'+key+'['+str(i)+']',DEFAULT_CAPABILITIES)
++ if components is not None:
++  resources=components.get('resources',{});health=resources.get(spec['resource'])
++  if not isinstance(health,Mapping) or health.get('role')!='health':raise ValueError('rebirth resource must be own declared health resource')
++  if type(health.get('initial')) not in (int,float) or health['initial']<=0:raise ValueError('rebirth requires positive initial health')
++  if not components.get('lifecycle',{}).get('policy'):raise ValueError('rebirth requires explicit lifecycle policy')
++  if seen-set(components.get('abilities',[])):raise ValueError('rebirth cooldown must reference exact owned ability')
++ if definitions is not None:
++  rule=definitions.get(spec['restore_rule'])
++  if not rule or rule.get('kind') not in ('rule','calculation_rule') or rule.get('contract')!='resource.recovery':raise ValueError('rebirth restore_rule must implement resource.recovery')
++  if any(definitions.get(x,{}).get('kind')!='buff' for x in retained):raise ValueError('rebirth retained reference must be Buff')
++  if any(definitions.get(x,{}).get('kind')!='ability' for x in seen):raise ValueError('rebirth cooldown reference must be ability')
++
++class RebirthSystem:
++ def __init__(self,context):
++  self.ctx=context;self._requests={};self._callbacks=[];self._settling=False
++  self.handlers={'domain.rebirth.finish':self.finish}
++ def _spec(self,ref):return self.ctx.get(ref,('rebirth',))
++ def _state(self,ref):return self.ctx.get(ref,('runtime','rebirth'),{})
++ def _same(self,ref,generation,phase):
++  return self.ctx.alive(ref) and self._state(ref).get('generation')==generation and self._state(ref).get('phase')==phase
++ def effect_allowed(self,target):
++  return bool(self._callbacks and self._callbacks[-1][0]==target and self._same(target,self._callbacks[-1][1],self._callbacks[-1][2]))
++ def callback_allowed(self):
++  return not self._callbacks or (not self.ctx.state().get('finished') and self._same(*self._callbacks[-1]))
++ def settle_callback(self,operation):
++  if self._callbacks and operation!='emit' and not self._settling and not self.ctx.state().get('finished'):
++   self._settling=True
++   try:self.ctx.lifecycle.tick(self.ctx.session)
++   finally:self._settling=False
++ def cancel_all(self,reason):
++  for entity in self.ctx.session.world.entities():self.cancel(entity['id'],reason)
++ def _effects(self,ref,generation,phase,effects):
++  self._callbacks.append((ref,generation,phase))
++  try:
++   for effect in effects:
++    if not self._same(ref,generation,phase) or self.ctx.state().get('finished'):return
++    self.ctx.effects.execute(ref,[ref],thaw(effect))
++    self.settle_callback(effect['op'])
++  finally:self._callbacks.pop()
++ def consume(self,ref,event):
++  request=self._requests.get(ref,[]);request=request[-1] if request else {}
++  if request.get('skip_rebirth'):
++   self.ctx.lifecycle.retire(ref,'dead');return True
++  spec=self._spec(ref)
++  if spec is None:return False
++  if self._state(ref).get('phase')=='waiting':return True
++  if self.ctx.resources.current(ref,spec['resource'])>0:return False
++  if request.get('skip_rebirth') or self.ctx.get(ref,('runtime','initializing'),False):return False
++  old=self._state(ref)
++  if old.get('count',0)>=spec['max_count'] or not self.ctx.alive(ref) or self.ctx.state().get('finished'):return False
++  with self.ctx.session.atomic():
++   now=self.ctx.session.time;generation=old.get('generation',0)+1;due=now+self.ctx.quantize(spec['delay_seconds'])
++   state={'phase':'waiting','count':old.get('count',0)+1,'generation':generation,'began_at':now,'due_at':due,'task':None,'cause':thaw(request or event)}
++   self.ctx.set(ref,('runtime','rebirth'),state);self.ctx.set(ref,('runtime','active'),False);self.ctx.set(ref,('runtime','state'),'rebirth')
++   self.ctx.abilities.interrupt(ref,'rebirth');self.ctx.set(ref,('runtime','blocked_by'),None)
++   self._callbacks.append((ref,generation,'waiting'))
++   try:
++    for instance in list(self.ctx.buffs._instances(ref)):
++     if not self._same(ref,generation,'waiting'):return True
++     if instance['definition'] not in spec.get('retain_buffs',[]):self.ctx.buffs.remove(ref,instance['id'])
++   finally:self._callbacks.pop()
++   self.ctx.spatial.blocking();self.ctx.buffs.reconcile()
++   self.ctx.emit('entity.rebirth.started',{'source':ref,'target':ref,'generation':generation,'count':state['count'],'due_at':due,'health':0,'cause':state['cause']})
++   self._effects(ref,generation,'waiting',spec.get('on_begin',[]))
++   if not self._same(ref,generation,'waiting'):return True
++   if self.ctx.state().get('finished'):self.cancel(ref,'battle_terminal');return True
++   if self.ctx.resources.current(ref,spec['resource'])!=0:raise ValueError('rebirth pending phase must retain zero health')
++   if due==now:self.finish(self.ctx.session,{'target':ref,'generation':generation})
++   else:
++    job=self.ctx.session.schedule('domain.rebirth.finish',{'target':ref,'generation':generation},due,phase=0);state=self._state(ref);state['task']=job;self.ctx.set(ref,('runtime','rebirth'),state)
++   return True
++ def cancel(self,ref,reason):
++  state=self._state(ref)
++  if state.get('phase') not in ('waiting','completing'):return
++  task=state.get('task');pending={t['id'] for t in self.ctx.session.scheduler.pending}
++  if task in pending:self.ctx.session.cancel(task)
++  state.update(phase='cancelled',task=None,reason=reason);self.ctx.set(ref,('runtime','rebirth'),state)
++  self.ctx.emit('entity.rebirth.cancelled',{'source':ref,'target':ref,'generation':state['generation'],'reason':reason})
++ def finish(self,session,payload):
++  if not isinstance(payload,Mapping) or set(payload)!={'target','generation'} or type(payload['generation']) is not int or payload['generation']<=0:raise ValueError('rebirth finish requires exact target/positive integer generation')
++  with session.atomic():
++   ref=session.world.resolve(payload['target']);generation=payload['generation']
++   if not self._same(ref,generation,'waiting'):return
++   if session.time<self._state(ref)['due_at']:return
++   if self.ctx.state().get('finished'):self.cancel(ref,'battle_terminal');return
++   spec=self._spec(ref);state=self._state(ref);task=state.get('task')
++   if task in {t['id'] for t in session.scheduler.pending}:session.cancel(task)
++   state.update(phase='completing',task=None);self.ctx.set(ref,('runtime','rebirth'),state)
++   capacity=self.ctx.resources.capacity(ref,spec['resource']);parameters={**thaw(spec.get('parameters',{})),'capacity':capacity,'ratio':spec['restore_ratio']}
++   value=self.ctx.calc('resource.recovery',{'current':0,'delta_seconds':0,'attributes':self.ctx.attributes.values(ref),'parameters':parameters},owner=ref,source=ref,target=ref,rule_id=spec['restore_rule'],extra={'rebirth':state})
++   if type(value) not in (int,float) or not math.isfinite(value) or value<=0:raise ValueError('rebirth restoration must be positive finite')
++   self.ctx.resources.adjust(ref,spec['resource'],value=value,source=ref)
++   if not self._same(ref,generation,'completing'):return
++   if self.ctx.resources.current(ref,spec['resource'])<=0:raise ValueError('rebirth bounds prevented positive restoration')
++   self.ctx.set(ref,('runtime','active'),True);self.ctx.set(ref,('runtime','state'),'alive')
++   if spec.get('reset_cooldowns'):
++    clocks=self.ctx.get(ref,('runtime','cooldowns'),{})
++    for row in spec['reset_cooldowns']:clocks[row['ability']]=session.time+self.ctx.quantize(row['initial_delay_seconds'])
++    self.ctx.set(ref,('runtime','cooldowns'),clocks)
++   if spec.get('reset_attack_clock'):self.ctx.set(ref,('runtime','next_attack'),session.time)
++   self._effects(ref,generation,'completing',spec.get('on_finish',[]))
++   if not self._same(ref,generation,'completing'):return
++   if self.ctx.state().get('finished'):self.cancel(ref,'battle_terminal');return
++   state=self._state(ref);state['phase']='complete';self.ctx.set(ref,('runtime','rebirth'),state)
++   self.ctx.spatial.blocking();self.ctx.buffs.reconcile()
++   if not self.ctx.alive(ref):return
++   if getattr(self.ctx,'tile_contacts',None) is not None:self.ctx.tile_contacts.inspect(ref,'rebirth')
++   if not self.ctx.alive(ref):return
++   self.ctx.emit('entity.rebirth.completed',{'source':ref,'target':ref,'generation':generation,'count':state['count'],'health':self.ctx.resources.current(ref,spec['resource'])})
++ def tick(self,session):
++  for entity in session.world.entities():
++   state=self._state(entity['id'])
++   if state.get('phase')=='waiting':
++    if self.ctx.state().get('finished'):self.cancel(entity['id'],'battle_terminal')
++    elif session.time>=state['due_at']:self.finish(session,{'target':entity['id'],'generation':state['generation']})
++ def instant_kill(self,source,target,options,ability=None,cast=None,cause=None):
++  validate_kill(options)
++  source=self.ctx.session.world.resolve(source);target=self.ctx.session.world.resolve(target)
++  if target==self.ctx.session.world.resolve('system/battle'):raise ValueError('instant kill cannot target battle')
++  resources=self.ctx.get(target,('resources',),{});health=[k for k,v in resources.items() if v['spec'].get('role')=='health']
++  if len(health)!=1:raise ValueError('instant kill requires one declared health resource')
++  if not self.ctx.get(target,('lifecycle','policy')):raise ValueError('instant kill requires declared lifecycle policy')
++  if not self.ctx.alive(target):return
++  pending=self._state(target).get('phase')=='waiting'
++  if not self.ctx.active(target) and not pending:raise ValueError('instant kill cannot target dormant actor')
++  request={'source':source,'target':target,'cause':options['cause'],'skip_rebirth':options['skip_rebirth']};self._requests.setdefault(target,[]).append(request)
++  try:
++   if pending:
++    if options['skip_rebirth']:self.ctx.lifecycle.retire(target,'dead')
++    else:self.ctx.emit('instant_kill.rejected',{**request,'reason':'rebirth_pending'});return
++   else:
++    self.ctx.resources.adjust(target,health[0],value=0,source=source,ability=ability,effect={'op':'instant_kill','parameters':options})
++    if self.ctx.resources.current(target,health[0])!=0:raise ValueError('instant kill bounds prevented zero health')
++   self.ctx.emit('instant_kill.executed',{**request,'alive':self.ctx.alive(target),'ability':(ability or {}).get('id')},cause)
++   if not self.ctx.alive(target):self.ctx.emit('combat.kill',{'source':source,'target':target,'ability':(ability or {}).get('id'),'cast':(cast or {}).get('id'),'target_tags':list(self.ctx.entity(target)['tags'])},cause)
++  finally:
++   self._requests[target].pop()
++   if not self._requests[target]:del self._requests[target]
+--- a/ark_sim/domains/resources.py
++++ b/ark_sim/domains/resources.py
+@@ -183,6 +183,13 @@
+         return [intent], actual
+ 
+     def adjust(self, ref, resource, delta=None, *, value=None, source=None, ability=None, effect=None):
++        canonical=self.ctx.session.world.resolve(ref)
++        rebirth=getattr(self.ctx,"rebirth",None)
++        if rebirth is not None and (self.ctx.get(canonical,("rebirth",)) is not None or canonical in rebirth._requests):
++            with self.ctx.session.atomic():return self._adjust(canonical,resource,delta,value=value,source=source,ability=ability,effect=effect)
++        return self._adjust(canonical,resource,delta,value=value,source=source,ability=ability,effect=effect)
++
++    def _adjust(self, ref, resource, delta=None, *, value=None, source=None, ability=None, effect=None):
+         ref = self.ctx.session.world.resolve(ref)
+         source = self.ctx.session.world.resolve(source) if source is not None else None
+         intents, actual = self.change_plan(ref, resource, delta, value=value, source=source, ability=ability, effect=effect)

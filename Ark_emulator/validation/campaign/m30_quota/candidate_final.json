@@ -1,0 +1,835 @@
+{
+  "schema": "ark-sim/m30-projectile-quota-review/v1",
+  "passed": true,
+  "core_start": "517290e56f59bdf5f57862dbadb8929b37cf6fbe0468116dcb39669df6357b51",
+  "core_end": "517290e56f59bdf5f57862dbadb8929b37cf6fbe0468116dcb39669df6357b51",
+  "base_core": "cb0e7a97a2621aaf4b14dc942181686906733acbcc61f6a5a23ebae9448e997b",
+  "actual_module": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m30_projectile_quota_candidate\\ark_sim\\__init__.py",
+  "source_before": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m30_quota\\verify.py": "92483d50a73b2d8942c2cf74fce6bbf87ae2986ab4b3e3448347804de8d76e72",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m30_quota\\test_quota.py": "ab62d0c2bfa349f32840f987e5b95dfbc2c6ff2223beb7e95183fe1e984da3d4",
+    "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m30_projectile_quota_candidate\\ark_sim\\domains\\projectiles.py": "3dccba01fc013da2318155c2e00e7fb30af39fb8111d7d1c8dfeca61938f0ead",
+    "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m30_projectile_quota_candidate\\ark_sim\\rules\\contracts.json": "af24e8f38ced4b432573f8bb938a19e469fab43558fb69181478d5d0e1289e35",
+    "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m30_projectile_quota_candidate\\ark_sim\\content\\presets\\ark_standard.json": "1070ba6793cee5ded71c0f0b89a96ba72973d49989407e70a858a575febb9814"
+  },
+  "source_after": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m30_quota\\verify.py": "92483d50a73b2d8942c2cf74fce6bbf87ae2986ab4b3e3448347804de8d76e72",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m30_quota\\test_quota.py": "ab62d0c2bfa349f32840f987e5b95dfbc2c6ff2223beb7e95183fe1e984da3d4",
+    "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m30_projectile_quota_candidate\\ark_sim\\domains\\projectiles.py": "3dccba01fc013da2318155c2e00e7fb30af39fb8111d7d1c8dfeca61938f0ead",
+    "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m30_projectile_quota_candidate\\ark_sim\\rules\\contracts.json": "af24e8f38ced4b432573f8bb938a19e469fab43558fb69181478d5d0e1289e35",
+    "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m30_projectile_quota_candidate\\ark_sim\\content\\presets\\ark_standard.json": "1070ba6793cee5ded71c0f0b89a96ba72973d49989407e70a858a575febb9814"
+  },
+  "tests": [
+    {
+      "case": "tools/experiments/m30_quota/test_quota.py::test_stop_first_reach_hit_must_finish_before_future_collision_or_expiry",
+      "result": "passed",
+      "seconds": 0.10473670007195324
+    },
+    {
+      "case": "tools/experiments/m30_quota/test_quota.py::test_first_reach_immediate_finish_finite_and_infinite[None]",
+      "result": "passed",
+      "seconds": 0.22640649997629225
+    },
+    {
+      "case": "tools/experiments/m30_quota/test_quota.py::test_first_reach_immediate_finish_finite_and_infinite[2]",
+      "result": "passed",
+      "seconds": 0.2293492000317201
+    },
+    {
+      "case": "tools/experiments/m30_quota/test_quota.py::test_first_reach_immediate_finish_finite_and_infinite[1]",
+      "result": "passed",
+      "seconds": 0.22783860005438328
+    },
+    {
+      "case": "tools/experiments/m30_quota/test_quota.py::test_expiry_dispatch_one_packet_and_deadline_reason",
+      "result": "passed",
+      "seconds": 0.21422600001096725
+    },
+    {
+      "case": "tools/experiments/m30_quota/test_quota.py::test_no_stopfirst_unlimited_reach_collision_and_expiry_repeat",
+      "result": "passed",
+      "seconds": 0.2899967000121251
+    },
+    {
+      "case": "tools/experiments/m30_quota/test_quota.py::test_no_repeat_targets_still_allow_other_target_before_expiry",
+      "result": "passed",
+      "seconds": 0.2625201999908313
+    },
+    {
+      "case": "tools/experiments/m30_quota/test_quota.py::test_invalid_reach_target_does_not_consume_first_valid_quota",
+      "result": "passed",
+      "seconds": 0.2591410999884829
+    },
+    {
+      "case": "tools/experiments/m30_quota/test_quota.py::test_source_retire_flag_is_preserved[retain-expected0]",
+      "result": "passed",
+      "seconds": 0.2569749999092892
+    },
+    {
+      "case": "tools/experiments/m30_quota/test_quota.py::test_source_retire_flag_is_preserved[cancel-expected1]",
+      "result": "passed",
+      "seconds": 0.23875160003080964
+    },
+    {
+      "case": "tools/experiments/m30_quota/test_quota.py::test_callback_failure_rolls_back_quota_and_reservation",
+      "result": "passed",
+      "seconds": 0.11668340000323951
+    },
+    {
+      "case": "tools/experiments/m30_quota/test_quota.py::test_same_id_reentrant_hit_reservation_protects_first_quota",
+      "result": "passed",
+      "seconds": 0.10393680003471673
+    },
+    {
+      "case": "tools/experiments/m30_quota/test_quota.py::test_reentrant_finish_during_packet_never_reinserts_active_or_reschedules",
+      "result": "passed",
+      "seconds": 0.1024376000277698
+    },
+    {
+      "case": "tools/experiments/m30_quota/test_quota.py::test_invalid_callback_new_projectile_id_allowed_and_wait_counts_release_once",
+      "result": "passed",
+      "seconds": 0.29248679999727756
+    },
+    {
+      "case": "tools/experiments/m30_quota/test_quota.py::test_terminal_target_damage_and_first_quota_preserve_invalid_history",
+      "result": "passed",
+      "seconds": 0.2370682000182569
+    },
+    {
+      "case": "tools/experiments/m30_quota/test_quota.py::test_reentrant_finite_reservations_allow_only_remaining_slots[1-False-1]",
+      "result": "passed",
+      "seconds": 0.1013529000338167
+    },
+    {
+      "case": "tools/experiments/m30_quota/test_quota.py::test_reentrant_finite_reservations_allow_only_remaining_slots[2-True-2]",
+      "result": "passed",
+      "seconds": 0.1168998999055475
+    },
+    {
+      "case": "tools/experiments/m28_unlimited/test_unlimited.py::test_unlimited_two_distinct_targets_dedup_and_lifetime_waiting_cast",
+      "result": "passed",
+      "seconds": 0.29372249997686595
+    },
+    {
+      "case": "tools/experiments/m28_unlimited/test_unlimited.py::test_same_target_repeat_allowed_until_half_open_expiry_and_single_attack_sp",
+      "result": "passed",
+      "seconds": 0.31277269998099655
+    },
+    {
+      "case": "tools/experiments/m28_unlimited/test_unlimited.py::test_stop_after_first_overrides_unlimited_or_multiple_finite_cap[None]",
+      "result": "passed",
+      "seconds": 0.25155310006812215
+    },
+    {
+      "case": "tools/experiments/m28_unlimited/test_unlimited.py::test_stop_after_first_overrides_unlimited_or_multiple_finite_cap[2]",
+      "result": "passed",
+      "seconds": 0.2509136999724433
+    },
+    {
+      "case": "tools/experiments/m28_unlimited/test_unlimited.py::test_stop_after_first_ignores_invalid_first_target_then_hits_valid",
+      "result": "passed",
+      "seconds": 0.27102390001527965
+    },
+    {
+      "case": "tools/experiments/m28_unlimited/test_unlimited.py::test_finite_capacity_unchanged[0]",
+      "result": "passed",
+      "seconds": 0.2326488000107929
+    },
+    {
+      "case": "tools/experiments/m28_unlimited/test_unlimited.py::test_finite_capacity_unchanged[1]",
+      "result": "passed",
+      "seconds": 0.25589750008657575
+    },
+    {
+      "case": "tools/experiments/m28_unlimited/test_unlimited.py::test_finite_capacity_unchanged[2]",
+      "result": "passed",
+      "seconds": 0.2648233000654727
+    },
+    {
+      "case": "tools/experiments/m28_unlimited/test_unlimited.py::test_invalid_cap_failfast[-1]",
+      "result": "passed",
+      "seconds": 0.0017181000439450145
+    },
+    {
+      "case": "tools/experiments/m28_unlimited/test_unlimited.py::test_invalid_cap_failfast[True]",
+      "result": "passed",
+      "seconds": 0.0015673000598326325
+    },
+    {
+      "case": "tools/experiments/m28_unlimited/test_unlimited.py::test_invalid_cap_failfast[1.5]",
+      "result": "passed",
+      "seconds": 0.001657599932514131
+    },
+    {
+      "case": "tools/experiments/m28_unlimited/test_unlimited.py::test_invalid_cap_failfast[unlimited]",
+      "result": "passed",
+      "seconds": 0.0015486000338569283
+    },
+    {
+      "case": "tools/experiments/m28_unlimited/test_unlimited.py::test_missing_cap_not_implicit_unlimited",
+      "result": "passed",
+      "seconds": 0.0015472000231966376
+    },
+    {
+      "case": "tools/experiments/m28_unlimited/test_unlimited.py::test_invalid_callback_rolls_back_world_jobs_events_random",
+      "result": "passed",
+      "seconds": 0.14386189996730536
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_atomic_payment_and_three_relative_hits_in_order",
+      "result": "passed",
+      "seconds": 0.06001259991899133
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_last_resource_insufficient_leaves_all_resources_casts_and_tasks_untouched",
+      "result": "passed",
+      "seconds": 0.056744599947705865
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_invalid_final_scheduled_time_rolls_back_costs_and_cast_creation",
+      "result": "passed",
+      "seconds": 0.05842160002794117
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_interrupt_cancels_remaining_repeat_tasks_and_checkpoint_repeats_result",
+      "result": "passed",
+      "seconds": 0.06419760000426322
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_each_hit_target_capture_and_at_cast_source_snapshot",
+      "result": "passed",
+      "seconds": 0.060371699975803494
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_nonblocking_manual_buff_can_overlap_ordinary_attack",
+      "result": "passed",
+      "seconds": 0.0901292999042198
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_passive_uses_event_payload_condition_and_queued_reaction",
+      "result": "passed",
+      "seconds": 0.06365080003160983
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_refresh_and_periodic_buff_are_half_open_and_modifiers_cleanup",
+      "result": "passed",
+      "seconds": 0.0769878999562934
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_stacking_modes_have_independent_expected_amounts_and_timers[add-2-3]",
+      "result": "passed",
+      "seconds": 0.06732499995268881
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_stacking_modes_have_independent_expected_amounts_and_timers[max-2-2]",
+      "result": "passed",
+      "seconds": 0.06792719999793917
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_stacking_modes_have_independent_expected_amounts_and_timers[extend-2-1]",
+      "result": "passed",
+      "seconds": 0.06776459992397577
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_stacking_modes_have_independent_expected_amounts_and_timers[refresh-2-2]",
+      "result": "passed",
+      "seconds": 0.08158500003628433
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_independent_buff_instances_remove_only_selected_instance",
+      "result": "passed",
+      "seconds": 0.07242979994043708
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_buff_event_subscription_condition_and_identity_source_distinction",
+      "result": "passed",
+      "seconds": 0.07158539991360158
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_auto_replace_readiness_uses_actual_cost_rule_not_raw_cost_amount",
+      "result": "passed",
+      "seconds": 0.06318860000465065
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_auto_manual_readiness_uses_actual_cost_rule_not_raw_cost_amount",
+      "result": "passed",
+      "seconds": 0.062404800090007484
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_replace_interval_failure_preserves_payment_casts_and_all_tasks",
+      "result": "passed",
+      "seconds": 0.060348100028932095
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_charged_cost_rejection_falls_back_to_basic_attack_without_skipping_tick",
+      "result": "passed",
+      "seconds": 0.07508119998965412
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_deployment_activation_reacts_only_for_the_deployed_owner",
+      "result": "passed",
+      "seconds": 0.05811320000793785
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_custom_duration_rule_changes_expiration_without_editing_buff_system",
+      "result": "passed",
+      "seconds": 0.06644299998879433
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_target_death_cleanup_policy_is_explicit_and_customizable",
+      "result": "passed",
+      "seconds": 0.12905490002594888
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_refresh_preserves_instance_blackboard_and_expiry_checkpoint_replays",
+      "result": "passed",
+      "seconds": 0.10371240007225424
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_ability_event_effects_use_owner_condition_and_run_after_emit",
+      "result": "passed",
+      "seconds": 0.0561396999983117
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_missing_buff_source_cleans_instance_and_tasks_without_dangling_reaction",
+      "result": "passed",
+      "seconds": 0.06568569992668927
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_hp_sacrifice_cost_immediately_checks_real_lifecycle_and_interrupts_cast",
+      "result": "passed",
+      "seconds": 0.061301099951379
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_payment_resource_event_activates_passive_after_commit_once_per_resource",
+      "result": "passed",
+      "seconds": 0.06554749992210418
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_postpayment_lifecycle_rule_failure_rolls_back_full_start_transaction",
+      "result": "passed",
+      "seconds": 0.059949400019831955
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_timeline_logic_offset_four_hits_at_tick_four_under_point_one_quantum",
+      "result": "passed",
+      "seconds": 0.06025390001013875
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_timeline_conflicting_logic_and_seconds_offsets_are_explicitly_rejected",
+      "result": "passed",
+      "seconds": 0.0016807999927550554
+    }
+  ],
+  "test_seconds": 8.623668193817139,
+  "actual_command_cases": [
+    {
+      "case": "reach_first_unlimited",
+      "fixture": {
+        "path": "validation/campaign/m30_quota/reach_first_unlimited.fixture.json",
+        "sha256": "8f79c119b3484c047473a604f10bbe325224860b659fb3258472b48276a39279"
+      },
+      "commands": {
+        "path": "validation/campaign/m30_quota/reach_first_unlimited.commands.json",
+        "sha256": "fec52e118c7234bf90cbb0fe1183dacf2ffc8e021c018c48f0a0a5edfba98350"
+      },
+      "checkpoint": {
+        "path": "validation/campaign/m30_quota/reach_first_unlimited.checkpoint.json",
+        "sha256": "a4d35bb6a4607e600746c574c6dc5d9625951857a9257af56ffd873df386ee3e"
+      },
+      "program": "e5ccd3ddcc68d073ceb1bd6520eec3819fab40214efc8dc444c7f14182bc3a5b",
+      "runtime": "78c69a2562f879b6d1295f0426c8f6a40614fd90d5a52c03e4131fc65d0e9f9b",
+      "initial_hp": {
+        "a": 200,
+        "b": 200
+      },
+      "expected_packets": [
+        [
+          1,
+          40
+        ]
+      ],
+      "actual_hp": {
+        "a": 160,
+        "b": 200
+      },
+      "checkpoint_equal": true,
+      "commands_replay_equal": true,
+      "owned_projectile_tasks_remaining": [],
+      "private_reservations_empty": true,
+      "events": [
+        {
+          "id": 68,
+          "type": "projectile.launched",
+          "payload": {
+            "projectile": "projectile/1",
+            "definition": "projectile/probe",
+            "source": 2,
+            "target": 3,
+            "attachment_target": 3,
+            "ability": "ability/fire",
+            "position": {
+              "row": 0,
+              "col": 0
+            },
+            "expires": 3
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 71,
+          "type": "projectile.reached",
+          "payload": {
+            "projectile": "projectile/1",
+            "position": {
+              "row": 0,
+              "col": 0
+            }
+          },
+          "time": 1,
+          "cause": null
+        },
+        {
+          "id": 83,
+          "type": "damage.accepted",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "amount": 40,
+            "ability": "ability/fire",
+            "resource": "hp"
+          },
+          "time": 1,
+          "cause": null
+        },
+        {
+          "id": 84,
+          "type": "projectile.hit",
+          "payload": {
+            "projectile": "projectile/1",
+            "source": 2,
+            "target": 3,
+            "position": {
+              "row": 0,
+              "col": 0
+            },
+            "hit_count": 1
+          },
+          "time": 1,
+          "cause": null
+        },
+        {
+          "id": 85,
+          "type": "projectile.invalid",
+          "payload": {
+            "projectile": "projectile/1",
+            "source": 2,
+            "target": 3,
+            "reason": "max_hit",
+            "position": {
+              "row": 0,
+              "col": 0
+            }
+          },
+          "time": 1,
+          "cause": null
+        },
+        {
+          "id": 86,
+          "type": "ability.finished",
+          "payload": {
+            "source": 2,
+            "ability": "ability/fire",
+            "cast": "cast/2/1"
+          },
+          "time": 1,
+          "cause": null
+        }
+      ]
+    },
+    {
+      "case": "reach_first_finite2",
+      "fixture": {
+        "path": "validation/campaign/m30_quota/reach_first_finite2.fixture.json",
+        "sha256": "4086a574ee5d9b80f319bed23c0fab8497400de31bb33ed3c2211f3882619e4a"
+      },
+      "commands": {
+        "path": "validation/campaign/m30_quota/reach_first_finite2.commands.json",
+        "sha256": "ba11917925ba10c17c2d94ddfa4498e635622d6bdcdca927b1cb9f6df9ca6216"
+      },
+      "checkpoint": {
+        "path": "validation/campaign/m30_quota/reach_first_finite2.checkpoint.json",
+        "sha256": "7af0df8ad6013582b287d065037a2bd03b0627a10ead36a938e57159961e2d69"
+      },
+      "program": "1f13e4a8c0dda4dbd75ff797abdfe5948b1b4de3e7230384fef282cac739d426",
+      "runtime": "78c69a2562f879b6d1295f0426c8f6a40614fd90d5a52c03e4131fc65d0e9f9b",
+      "initial_hp": {
+        "a": 200,
+        "b": 200
+      },
+      "expected_packets": [
+        [
+          1,
+          40
+        ]
+      ],
+      "actual_hp": {
+        "a": 160,
+        "b": 200
+      },
+      "checkpoint_equal": true,
+      "commands_replay_equal": true,
+      "owned_projectile_tasks_remaining": [],
+      "private_reservations_empty": true,
+      "events": [
+        {
+          "id": 68,
+          "type": "projectile.launched",
+          "payload": {
+            "projectile": "projectile/1",
+            "definition": "projectile/probe",
+            "source": 2,
+            "target": 3,
+            "attachment_target": 3,
+            "ability": "ability/fire",
+            "position": {
+              "row": 0,
+              "col": 0
+            },
+            "expires": 3
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 71,
+          "type": "projectile.reached",
+          "payload": {
+            "projectile": "projectile/1",
+            "position": {
+              "row": 0,
+              "col": 0
+            }
+          },
+          "time": 1,
+          "cause": null
+        },
+        {
+          "id": 83,
+          "type": "damage.accepted",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "amount": 40,
+            "ability": "ability/fire",
+            "resource": "hp"
+          },
+          "time": 1,
+          "cause": null
+        },
+        {
+          "id": 84,
+          "type": "projectile.hit",
+          "payload": {
+            "projectile": "projectile/1",
+            "source": 2,
+            "target": 3,
+            "position": {
+              "row": 0,
+              "col": 0
+            },
+            "hit_count": 1
+          },
+          "time": 1,
+          "cause": null
+        },
+        {
+          "id": 85,
+          "type": "projectile.invalid",
+          "payload": {
+            "projectile": "projectile/1",
+            "source": 2,
+            "target": 3,
+            "reason": "max_hit",
+            "position": {
+              "row": 0,
+              "col": 0
+            }
+          },
+          "time": 1,
+          "cause": null
+        },
+        {
+          "id": 86,
+          "type": "ability.finished",
+          "payload": {
+            "source": 2,
+            "ability": "ability/fire",
+            "cast": "cast/2/1"
+          },
+          "time": 1,
+          "cause": null
+        }
+      ]
+    },
+    {
+      "case": "all_contacts_unlimited",
+      "fixture": {
+        "path": "validation/campaign/m30_quota/all_contacts_unlimited.fixture.json",
+        "sha256": "d1d0705f4be9d46c7d67ab8a8349dae0000d4f5e9309d09f99457bd11569dd44"
+      },
+      "commands": {
+        "path": "validation/campaign/m30_quota/all_contacts_unlimited.commands.json",
+        "sha256": "f8b0eb3a5ee099a689fb707a755c25dfb6748cd787a66cdb4769e75b74e10279"
+      },
+      "checkpoint": {
+        "path": "validation/campaign/m30_quota/all_contacts_unlimited.checkpoint.json",
+        "sha256": "8fa3823f7d0dde6af69cae8cf8a5ebcf2325c81bf2dc0f5383e8e30f758fde46"
+      },
+      "program": "7842095e0f97363e3715bdaa12cc77c35eb6b0f23c2de0741df924dc25084a07",
+      "runtime": "78c69a2562f879b6d1295f0426c8f6a40614fd90d5a52c03e4131fc65d0e9f9b",
+      "initial_hp": {
+        "a": 200,
+        "b": 200
+      },
+      "expected_packets": [
+        [
+          1,
+          40
+        ],
+        [
+          2,
+          40
+        ],
+        [
+          2,
+          40
+        ],
+        [
+          3,
+          40
+        ]
+      ],
+      "actual_hp": {
+        "a": 80,
+        "b": 160
+      },
+      "checkpoint_equal": true,
+      "commands_replay_equal": true,
+      "owned_projectile_tasks_remaining": [],
+      "private_reservations_empty": true,
+      "events": [
+        {
+          "id": 68,
+          "type": "projectile.launched",
+          "payload": {
+            "projectile": "projectile/1",
+            "definition": "projectile/probe",
+            "source": 2,
+            "target": 3,
+            "attachment_target": 3,
+            "ability": "ability/fire",
+            "position": {
+              "row": 0,
+              "col": 0
+            },
+            "expires": 3
+          },
+          "time": 0,
+          "cause": null
+        },
+        {
+          "id": 71,
+          "type": "projectile.reached",
+          "payload": {
+            "projectile": "projectile/1",
+            "position": {
+              "row": 0,
+              "col": 0
+            }
+          },
+          "time": 1,
+          "cause": null
+        },
+        {
+          "id": 83,
+          "type": "damage.accepted",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "amount": 40,
+            "ability": "ability/fire",
+            "resource": "hp"
+          },
+          "time": 1,
+          "cause": null
+        },
+        {
+          "id": 84,
+          "type": "projectile.hit",
+          "payload": {
+            "projectile": "projectile/1",
+            "source": 2,
+            "target": 3,
+            "position": {
+              "row": 0,
+              "col": 0
+            },
+            "hit_count": 1
+          },
+          "time": 1,
+          "cause": null
+        },
+        {
+          "id": 98,
+          "type": "damage.accepted",
+          "payload": {
+            "source": 2,
+            "target": 4,
+            "amount": 40,
+            "ability": "ability/fire",
+            "resource": "hp"
+          },
+          "time": 2,
+          "cause": null
+        },
+        {
+          "id": 99,
+          "type": "projectile.hit",
+          "payload": {
+            "projectile": "projectile/1",
+            "source": 2,
+            "target": 4,
+            "position": {
+              "row": 0,
+              "col": 0
+            },
+            "hit_count": 2
+          },
+          "time": 2,
+          "cause": null
+        },
+        {
+          "id": 100,
+          "type": "projectile.reached",
+          "payload": {
+            "projectile": "projectile/1",
+            "position": {
+              "row": 0,
+              "col": 0
+            }
+          },
+          "time": 2,
+          "cause": null
+        },
+        {
+          "id": 112,
+          "type": "damage.accepted",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "amount": 40,
+            "ability": "ability/fire",
+            "resource": "hp"
+          },
+          "time": 2,
+          "cause": null
+        },
+        {
+          "id": 113,
+          "type": "projectile.hit",
+          "payload": {
+            "projectile": "projectile/1",
+            "source": 2,
+            "target": 3,
+            "position": {
+              "row": 0,
+              "col": 0
+            },
+            "hit_count": 3
+          },
+          "time": 2,
+          "cause": null
+        },
+        {
+          "id": 126,
+          "type": "damage.accepted",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "amount": 40,
+            "ability": "ability/fire",
+            "resource": "hp"
+          },
+          "time": 3,
+          "cause": null
+        },
+        {
+          "id": 127,
+          "type": "projectile.hit",
+          "payload": {
+            "projectile": "projectile/1",
+            "source": 2,
+            "target": 3,
+            "position": {
+              "row": 0,
+              "col": 0
+            },
+            "hit_count": 4
+          },
+          "time": 3,
+          "cause": null
+        },
+        {
+          "id": 128,
+          "type": "projectile.invalid",
+          "payload": {
+            "projectile": "projectile/1",
+            "source": 2,
+            "target": 3,
+            "reason": "expired",
+            "position": {
+              "row": 0,
+              "col": 0
+            }
+          },
+          "time": 3,
+          "cause": null
+        },
+        {
+          "id": 129,
+          "type": "ability.finished",
+          "payload": {
+            "source": 2,
+            "ability": "ability/fire",
+            "cast": "cast/2/1"
+          },
+          "time": 3,
+          "cause": null
+        }
+      ]
+    }
+  ],
+  "original_failure": {
+    "path": "validation/campaign/m28_peer/reach_first_original_cb0e_failure.json",
+    "sha256": "2f4e6f4f6b366dcdfcd1d1d1a76b47427fc499ace0910fc57fdf6d18156d57f7"
+  },
+  "finite_compatibility": {
+    "events": 112,
+    "all_values_equal": true,
+    "scope": "finite1 collision fixture; only runtime_fingerprint/rule_fingerprint keys excluded by existing compare helper; other new quota paths have explicit changed expectations"
+  },
+  "patch_sha256": "da8adf43b6f69b3eea5c3115e4115a24f0d587d9b2a7e8c51fa1ff50e57edadb",
+  "changed_files": [
+    {
+      "path": "ark_sim/domains/projectiles.py",
+      "old_sha256": "3c2f238cb925ae661d77b17f15371cd15e77384869133e2358ac0344b2d5c9c1",
+      "new_sha256": "3dccba01fc013da2318155c2e00e7fb30af39fb8111d7d1c8dfeca61938f0ead"
+    }
+  ],
+  "reentrant_tests_scope": "actual API wrapper instrumentation, no fake simulation and no public-command replay claim for instrumentation; ordinary command cases have full CP/replay",
+  "model_policy": "reserve valid dispatch slots privately until effect returns; quota counts valid effect dispatch, not necessarily accepted damage/dodge outcome; deadline expiration and collision stop retain reason priority",
+  "native_body_verified": false,
+  "formal_approval": false
+}

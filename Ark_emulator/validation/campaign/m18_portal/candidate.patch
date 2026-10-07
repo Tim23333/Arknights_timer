@@ -1,0 +1,204 @@
+--- a/ark_sim/content/capabilities.py
++++ b/ark_sim/content/capabilities.py
+@@ -277,6 +277,8 @@
+                     effect(child, f"{identifier}.transitions[{index}]", scopes)
+ 
+     resources(scenario.get("resources", {}), f"{scenario['id']}.resources", [])
++    for key,profile in scenario.get('map',{}).get('tile_mechanics',{}).items():
++        if profile.get('rule'):require('movement.transition',f"{scenario['id']}.map.tile_mechanics.{key}",explicit=profile['rule'])
+     if scenario.get("timeline") is not None:
+         require("time.quantize", f"{scenario['id']}.timeline")
+         for wi, wave in enumerate(scenario["timeline"]["waves"]):
+--- a/ark_sim/content/spatial_validation.py
++++ b/ark_sim/content/spatial_validation.py
+@@ -157,6 +157,28 @@
+             if enum(route.get("motionMode"), MOTION, path+".motionMode") == 0 and not topology.passable(row, col):
+                 fail(location+".effective_position", "ground appearance/offset cannot target an impassable cell")
+     if hidden: fail(path, "route ends disappeared without paired appearance")
++    if map_definition and map_definition.get("tile_mechanics"):
++        from ..domains.tile_mechanics import descriptor,validate_pair,paired_rule
++        from ..domains.spatial import GridTopology
++        grid=GridTopology(map_definition);current=route.get('startPosition');entry=None
++        for index,checkpoint in enumerate(checkpoints):
++            kind=enum(checkpoint.get('type'),CHECKPOINT,path)
++            if kind in (0,6):
++                offset=checkpoint.get('reachOffset',{'x':0,'y':0})
++                signs=route.get('reach_offset_policy',{}).get('parameters',{}).get('axis_signs',{'row':1,'col':1})
++                destination={'row':checkpoint['position']['row']+signs['row']*offset['y'],
++                    'col':checkpoint['position']['col']+signs['col']*offset['x']}
++            if kind==5:
++                if current is None:fail(path,'portal entry requires declared route origin')
++                entry=descriptor(grid,current)
++            elif kind==6:
++                target=descriptor(grid,destination)
++                try:
++                    active=validate_pair(entry['profile'],target['profile'])
++                    if active:paired_rule(entry['profile'],target['profile'],route['transition_policy']['rule'])
++                except ValueError as error:fail(path+f'.checkpoints[{index}]',str(error))
++                entry=None
++            if kind in (0,6):current=destination
+ 
+ 
+ def validate_map(value, path):
+@@ -165,6 +187,10 @@
+     for key in ("rows", "cols"):
+         if type(value.get(key)) is not int or value[key] <= 0:
+             fail(f"{path}.{key}", "expected a positive integer")
++    from ..domains.tile_mechanics import validate_profiles
++    profiles=value.get('tile_mechanics',{})
++    try:validate_profiles(profiles)
++    except ValueError as error:fail(path,str(error))
+     tiles = value.get("tiles")
+     if tiles is None:
+         return
+@@ -175,11 +201,17 @@
+         if not isinstance(tile, Mapping):
+             fail(location, "expected an object")
+         key = tile.get("tileKey", "tile_floor")
+-        if not isinstance(key, str) or key not in BASIC_TILES:
++        if not isinstance(key, str) or (key not in BASIC_TILES and key not in profiles):
+             fail(f"{location}.tileKey", f"unsupported tile mechanic {key!r}")
++        if key in profiles:
++            for field in ('blackboard','effects'):
++                data=tile.get(field)
++                if data is not None and not isinstance(data,(Mapping,list,tuple)):
++                    fail(location+'.'+field,'portal data must be null or an empty data collection')
+         for field in ("passableMask", "buildableType"):
+             number = tile.get(field)
+             if number is not None and (type(number) is not int or not 0 <= number <= 3):
+                 fail(f"{location}.{field}", "expected a normalized integer mask in [0, 3] or null")
+         if tile.get("blackboard"):
+             fail(f"{location}.blackboard", "tile blackboard behavior is unsupported")
++        if tile.get('effects'):fail(location+'.effects','tile effects behavior is unsupported')
+--- a/ark_sim/domains/movement.py
++++ b/ark_sim/domains/movement.py
+@@ -246,8 +246,39 @@
+             prepared = thaw(checkpoint)
+             if kind == 6:
+                 prepared["position"] = self.checkpoint_position(ref, checkpoint, route, spatial)
+-            plan = self.ctx.calc("movement.transition", {"kind": kind, "position": spatial["position"],
+-                "checkpoint": prepared, "parameters": policy["parameters"]}, source=ref, rule_id=policy["rule"])
++            inputs = {"kind": kind, "position": spatial["position"], "checkpoint": prepared, "parameters": policy["parameters"]}
++            transition_rule = policy["rule"]
++            tile_transition = None
++            if self.ctx.spatial.grid.tile_mechanics:
++                from .tile_mechanics import descriptor, validate_pair, paired_rule
++                origin_tile = descriptor(self.ctx.spatial.grid, spatial["position"])
++                if kind == 5:
++                    exit_index = next((i for i in range(state["checkpoint"]+1,len(route.get("checkpoints") or []))
++                                      if self.checkpoint_type(route["checkpoints"][i]) == 6),None)
++                    if exit_index is None:raise ValueError("portal disappearance has no appearance checkpoint")
++                    exit_point = self.checkpoint_position(ref,route["checkpoints"][exit_index],route,spatial)
++                    exit_tile = descriptor(self.ctx.spatial.grid,exit_point)
++                    active = validate_pair(origin_tile["profile"],exit_tile["profile"])
++                    if active:
++                        capture = {"entry": origin_tile, "entry_checkpoint": state["checkpoint"],
++                                   "captured_at": self.ctx.session.time, "exit_checkpoint": exit_index,
++                                   "expected_exit": exit_tile}
++                        spatial["portal_capture"] = capture
++                else:
++                    exit_tile = descriptor(self.ctx.spatial.grid,prepared["position"])
++                    capture = spatial.get("portal_capture")
++                    active = validate_pair(capture["entry"]["profile"] if capture else origin_tile["profile"],exit_tile["profile"])
++                    if active and (capture is None or capture["exit_checkpoint"] != state["checkpoint"] or
++                                   capture["expected_exit"]["cell"] != exit_tile["cell"]):
++                        raise ValueError("portal appearance does not match captured entry/exit checkpoint")
++                    if active and (origin_tile["cell"] != capture["entry"]["cell"] or
++                                   not origin_tile["profile"] or origin_tile["profile"]["role"] != "entry"):
++                        raise ValueError("portal appearance origin conflicts with captured entry cell/profile")
++                if active:
++                    transition_rule = paired_rule(capture["entry"]["profile"],exit_tile["profile"],policy["rule"])
++                    tile_transition = {"origin": origin_tile,"destination": exit_tile,"capture": thaw(capture)}
++                    inputs["tile_transition"] = tile_transition
++            plan = self.ctx.calc("movement.transition", inputs, source=ref, rule_id=transition_rule)
+             if not isinstance(plan, dict) or set(plan) != {"hidden", "relocate", "position"} or type(plan["hidden"]) is not bool or type(plan["relocate"]) is not bool:
+                 raise ValueError("transition rule must return hidden/relocate booleans and position")
+             if plan["hidden"] != (kind == 5) or plan["relocate"] != (kind == 6):
+@@ -257,6 +288,10 @@
+             row, col = self.ctx.spatial.grid._cell(plan["position"])
+             if plan["relocate"] and route_motion_mode(route) == 0 and not self.ctx.spatial.grid.passable(row, col):
+                 raise ValueError("appearance destination is impassable")
++            if tile_transition is not None:
++                intended = prepared["position"] if kind == 6 else spatial["position"]
++                if plan["position"] != dict(intended):
++                    raise ValueError("portal rule position conflicts with authored checkpoint")
+             origin = dict(spatial["position"])
+             if kind == 5:
+                 self.ctx.abilities.interrupt(ref, "route_disappeared")
+@@ -274,15 +309,17 @@
+                 # Relocation is not traveled distance. Preserve the existing
+                 # ledger/cursors so pending periodic packets cannot count teleport.
+                 spatial["position"] = dict(plan["position"])
++                spatial.pop("portal_capture",None)
+             self.ctx.set(ref, ("spatial",), spatial)
+             if self.ctx.spatial.blocked_by(ref) is not None:
+                 self.ctx.set(ref, ("runtime", "blocked_by"), None)
+                 self.ctx.emit("blocking.changed", {"source": None, "target": ref, "reason": "route_transition"})
+             self.ctx.spatial.blocking()
+             self.ctx.buffs.reconcile()
++            consumed = {"tile_transition":tile_transition} if tile_transition is not None else {}
+             self.ctx.emit("movement.visibility_changed", {"source": ref, "target": ref, "hidden": plan["hidden"],
+                 "origin": origin, "position": dict(spatial["position"]), "relocated": plan["relocate"],
+-                "policy": thaw(policy), "distance_recorded": 0})
++                "policy": thaw(policy), "distance_recorded": 0, **consumed})
+ 
+     def tick(self, session):
+         if self.ctx.state().get("finished"):
+--- a/ark_sim/domains/spatial.py
++++ b/ark_sim/domains/spatial.py
+@@ -68,6 +68,7 @@
+         if not isinstance(map_definition, Mapping):
+             raise ValueError("map definition must be an object")
+         self.tile_reader = None
++        self.tile_mechanics = thaw(map_definition.get("tile_mechanics", {}))
+         self.rows, self.cols = map_definition.get("rows"), map_definition.get("cols")
+         for field, value in (("rows", self.rows), ("cols", self.cols)):
+             if type(value) is not int or value <= 0:
+--- a/ark_sim/domains/tile_mechanics.py
++++ b/ark_sim/domains/tile_mechanics.py
+@@ -0,0 +1,31 @@
++"""Declared tile mechanics consume route checkpoints, never tile ID guesses."""
++from collections.abc import Mapping
++from ark_sim.contracts import thaw
++from ark_sim.rules.numeric import validate_data
++from .spatial import project_cell
++
++def validate_profiles(value):
++    if not isinstance(value,Mapping):raise ValueError('map.tile_mechanics requires a mapping of tile keys to profiles')
++    for key,p in value.items():
++        if not isinstance(key,str) or not key:raise ValueError('tile mechanic key must be a nonempty string')
++        if not isinstance(p,Mapping) or set(p)-{'type','role','rule','parameters'}:raise ValueError('tile mechanic unknown profile fields')
++        if p.get('type')!='route_checkpoint_portal' or p.get('role') not in ('entry','exit'):raise ValueError('unsupported tile mechanic profile/role')
++        if p.get('rule') is not None and (not isinstance(p['rule'],str) or not p['rule']):raise ValueError('tile mechanic rule requires definition ID')
++        if 'parameters' in p and not isinstance(p['parameters'],Mapping):raise ValueError('tile mechanic parameters must be data mapping')
++        validate_data(p.get('parameters',{}),'tile mechanic parameters')
++
++def descriptor(grid,position):
++    row,col=project_cell(position)
++    tile=grid.tile(row,col);key=tile.get('tileKey','tile_floor');profile=grid.tile_mechanics.get(key)
++    return {'cell':{'row':row,'col':col},'tile_key':key,'tile_options':tile,'profile':thaw(profile) if profile else None}
++
++def paired_rule(entry,exit,fallback):
++    rules={p.get('rule') for p in (entry,exit) if p and p.get('rule')}
++    if len(rules)>1:raise ValueError('portal entry/exit declare conflicting transition rules')
++    return next(iter(rules)) if rules else fallback
++
++def validate_pair(entry,exit):
++    if not entry and not exit:return False
++    if not entry or not exit or entry['role']!='entry' or exit['role']!='exit':
++        raise ValueError('route portal requires paired entry and exit tile profiles')
++    return True
+--- a/ark_sim/rules/contracts.json
++++ b/ark_sim/rules/contracts.json
+@@ -3087,6 +3087,11 @@
+           "name": "parameters",
+           "type": "value_map",
+           "required": true
++        },
++        {
++          "name": "tile_transition",
++          "type": "value_map",
++          "required": false
+         }
+       ],
+       "outputType": "value_map",

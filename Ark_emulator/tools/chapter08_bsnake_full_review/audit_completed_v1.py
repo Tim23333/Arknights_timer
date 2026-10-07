@@ -37,6 +37,15 @@ assert [(e['time'],e['payload']['source'],e['payload']['from_wave'],e['payload']
 requests=rows('timeline.finish_requested')
 assert [(e['time'],e['payload']['parameters']['track_source_at_next_wave']) for e in requests]==[(57,True),(4500,False)]
 assert len(rows('command.accepted'))==2
-report={'passed':True,'scope':'Controlled source two public defeats, first full75000 restoration, native screen7x10 twice, real Summon+Flame. Not44-birth whole/client; raw recharge mapping and ray/capture/coroutine reference policies explicit.','capture_sha':hashlib.sha256(raw).hexdigest(),'rays':len(rays),'screen_hits':len(hits),'volley_times':[e['time'] for e in volleys],'summon_times':[e['time'] for e in summons],'branch_times':[e['time'] for e in branches],'device_casts':devicecasts,'source_requests':requests,'source_transfers':transfers,'ordinary_casts':ordinary}
+def file_sha(path):
+ h=hashlib.sha256()
+ with path.open('rb') as stream:
+  while part:=stream.read(4*1024*1024):h.update(part)
+ return h.hexdigest()
+capture_pins={name:file_sha(ACT/(name+'.capture.json')) for name in ('forward','restored','head')}
+assert len(set(capture_pins.values()))==1,'Complete captures bytes differ'
+before=json.loads((ACT/'guards.before.json').read_bytes())
+assert all(file_sha(Path(path))==pin for path,pin in before.items())
+report={'passed':True,'scope':'Controlled source two public defeats, first full75000 restoration, native screen7x10 twice, real Summon+Flame. Not44-birth whole/client; raw recharge mapping and ray/capture/coroutine reference policies explicit.','capture_sha':hashlib.sha256(raw).hexdigest(),'complete_captures_exact_byte_equal':True,'capture_pins':capture_pins,'guards_equal':True,'large_capture_retention':'Temporary verified artifacts eligible for terminal cleanup after this compact receipt; this receipt stores exact hashes and numerical witnesses rather than requiring permanent fullcapture copies.','rays':len(rays),'screen_hits':len(hits),'screen_hit_witnesses':hits,'volley_times':[e['time'] for e in volleys],'summon_times':[e['time'] for e in summons],'branch_times':[e['time'] for e in branches],'device_casts':devicecasts,'source_requests':requests,'source_transfers':transfers,'ordinary_casts':ordinary}
 (OUT/'verification.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8')
 print(hashlib.sha256((OUT/'verification.json').read_bytes()).hexdigest())

@@ -1,0 +1,158 @@
+--- M44/content\capabilities.py
++++ M46/content\capabilities.py
+@@ -56,6 +56,8 @@
+ 
+     def effect(item, path, scopes):
+         local = [*scopes, item.get("rules", {})]
++        if item.get("op") == "area" and item.get("membership_rule"):
++            require("area.members", path+".membership_rule", explicit=item["membership_rule"])
+         if item.get("projectile_definition"):
+             projectile=definitions[item["projectile_definition"]]
+             if projectile.get("kind") != "projectile": raise ContentError(path+": projectile reference kind required")
+--- M44/content\schemas.py
++++ M46/content\schemas.py
+@@ -36,7 +36,7 @@
+     "deck": {"on_create"},
+ }
+ RESOURCE_FIELDS = {"initial", "capacity", "capacity_attribute", "capacity_change_rule", "recovery_rule", "recovery_rate", "recovery", "rules", "parameters", "bounds_rule", "capacity_rule", "role", "events", "recovery_freeze_abilities", "recovery_freeze_rule"}
+-EFFECT_FIELDS = {"projectile_definition", "center_position", "op", "target", "rules", "read_mode", "damage_type", "scale", "additions", "amount", "delta", "value", "amount_rule", "resource", "buff", "definition", "position", "facing", "tags", "on_success", "on_failure", "effects", "condition", "parameters", "event", "payload", "type", "state", "machine", "distance", "offset", "direction", "kind", "at_seconds", "delay_seconds", "effect", "stacks", "selector", "lifetime_seconds", "remove_all", "metadata", "duration_seconds", "center", "radius", "filters", "owner", "ability", "force", "stream", "probability"}
++EFFECT_FIELDS = {"membership_rule", "projectile_definition", "center_position", "op", "target", "rules", "read_mode", "damage_type", "scale", "additions", "amount", "delta", "value", "amount_rule", "resource", "buff", "definition", "position", "facing", "tags", "on_success", "on_failure", "effects", "condition", "parameters", "event", "payload", "type", "state", "machine", "distance", "offset", "direction", "kind", "at_seconds", "delay_seconds", "effect", "stacks", "selector", "lifetime_seconds", "remove_all", "metadata", "duration_seconds", "center", "radius", "filters", "owner", "ability", "force", "stream", "probability"}
+ DEFAULT_CAPABILITIES = {
+     "effects": {"set_motion_mode", "damage", "heal", "regenerate", "modify_resource", "apply_buff", "remove_buff", "spawn", "emit", "move", "state", "schedule", "transition", "area", "trigger_ability", "push", "random", "input_lock", "retire", "apply_terrain_overlay", "remove_terrain_overlay", "activate_predefined"},
+     "activations": {"manual", "automatic_attack", "on_deploy", "passive"},
+@@ -72,6 +72,8 @@
+ 
+ def validate_effect(effect, path, capabilities):
+     fields(effect, EFFECT_FIELDS, path)
++    if "membership_rule" in effect and (effect.get("op") != "area" or not isinstance(effect["membership_rule"], str) or not effect["membership_rule"]):
++        raise ContentError(f"{path}.membership_rule: area-only nonempty explicit rule required")
+     if effect.get("op") not in capabilities["effects"]:
+         raise ContentError(f"{path}: unsupported effect op {effect.get('op')!r}")
+     if effect.get("op") == "damage" and effect.get("damage_type", "physical") not in capabilities.get("damage_types", DEFAULT_CAPABILITIES["damage_types"]):
+@@ -147,7 +149,16 @@
+     if effect["op"] == "area":
+         if effect.get("center", "target") not in {"source", "target"}:
+             raise ContentError(f"{path}.center: expected source or target")
+-        number(effect.get("radius"), f"{path}.radius", 0)
++        if effect.get("membership_rule") is None:
++            number(effect.get("radius"), f"{path}.radius", 0)
++        else:
++            if not isinstance(effect["membership_rule"], str) or not effect["membership_rule"]:
++                raise ContentError(f"{path}.membership_rule: nonempty rule required")
++            if "radius" in effect:
++                raise ContentError(f"{path}: radius and membership_rule are mutually exclusive")
++            offsets = effect.get("parameters", {}).get("offsets")
++            if offsets is not None and (not isinstance(offsets, (list, tuple)) or not offsets or any(not isinstance(x, (list, tuple)) or len(x)!=2 or any(type(v) is not int for v in x) for x in offsets)):
++                raise ContentError(f"{path}.parameters.offsets: nonempty integer cell-offset pairs required")
+         if not effect.get("effects"):
+             raise ContentError(f"{path}.effects: area requires effects")
+         for restriction in effect.get("filters", []):
+--- M44/domains\effects.py
++++ M46/domains\effects.py
+@@ -79,7 +79,19 @@
+                 center = source if effect.get("center", "target") == "source" else target
+                 position = effect.get("center_position") or self.ctx.get(center, ("spatial", "position"))
+                 members = []
+-                for entity in self.ctx.session.world.entities():
++                if effect.get("membership_rule"):
++                    candidates = [entity for entity in self.ctx.session.world.entities()
++                        if entity["components"].get("spatial", {}).get("position") is not None
++                        and getattr(self.ctx, "selectable", self.ctx.alive)(entity["id"])
++                        and not any("tag" in f and f["tag"] not in entity["tags"] for f in effect.get("filters", []))]
++                    result = self.ctx.calc("area.members", {"center_position": position,
++                        "candidates": candidates, "parameters": thaw(effect.get("parameters", {}))},
++                        source=source, target=target, owner=source, ability=ability, effect=effect, rule_id=effect["membership_rule"], extra={"ability": ability, "effect": effect})
++                    members = thaw(result)
++                    allowed = {entity["id"] for entity in candidates}
++                    if not isinstance(members, list) or any(type(ref) is not int or ref not in allowed for ref in members) or len(members)!=len(set(members)):
++                        raise ValueError("area.members must return unique allowed integer candidate IDs")
++                for entity in (() if effect.get("membership_rule") else self.ctx.session.world.entities()):
+                     pos = entity["components"].get("spatial", {}).get("position")
+                     if pos is None or not getattr(self.ctx, "selectable", self.ctx.alive)(entity["id"]):
+                         continue
+@@ -89,7 +101,8 @@
+                         continue
+                     members.append(entity["id"])
+                 area_cause = self.ctx.emit("area.resolved", {"source": source, "target": target, "center": position,
+-                    "members": members, "radius": effect["radius"]}, cause)
++                    "members": members, **({"membership_rule": effect["membership_rule"], "parameters": thaw(effect.get("parameters", {}))}
++                    if effect.get("membership_rule") else {"radius": effect["radius"]})}, cause)
+                 for child in effect["effects"]:
+                     self.execute(source, members, child, ability, cast, area_cause)
+                 continue
+--- M44/domains\providers.py
++++ M46/domains\providers.py
+@@ -30,6 +30,7 @@
+     "ark.behavior.player_combat": ark.player_behavior,
+     "ark.behavior.ground_melee": ark.ground_behavior,
+     "ark.selector.grid": ark.selector_grid,
++    "ark.area.cell_offsets": ark.area_cell_offsets,
+     "ark.spatial.route": ark.spatial_route,
+     "ark.spatial.blocking": ark.spatial_blocking,
+     "ark.damage.pipeline": ark.damage_pipeline,
+--- M44/presets\providers.py
++++ M46/presets\providers.py
+@@ -225,6 +225,17 @@
+     if p.get('blocked_target',False):target=blocked and inputs['blocked_by'] in inputs['eligible_ids'].get(p.get('target_key','normal'),[])
+     return {'move':bool(c['move'] and not blocked and not busy and not (p.get('stop_on_target',True) and target)),
+             'attack':bool(c['attack'] and c['abilities'] and not busy and target)}
++
++
++def area_cell_offsets(inputs, params, context):
++    from ark_sim.domains.spatial import project_cell
++    options = dict(params, **dict(inputs["parameters"]))
++    offsets = options.get("offsets")
++    if not isinstance(offsets, (list, tuple)) or not offsets or any(not isinstance(x,(list,tuple)) or len(x)!=2 or any(type(v) is not int for v in x) for x in offsets):
++        raise ValueError("area cell offsets require nonempty integer pairs")
++    row, col = project_cell(inputs["center_position"])
++    cells = {(row+dr,col+dc) for dr,dc in offsets}
++    return [entity["id"] for entity in inputs["candidates"] if project_cell(entity["components"]["spatial"]["position"]) in cells]
+ 
+ 
+ def selector_grid(inputs, params, context):
+--- M44/rules\contracts.json
++++ M46/rules\contracts.json
+@@ -3456,6 +3456,43 @@
+       "contractVersion": 1,
+       "status": "declared",
+       "description": "Explicit model contact eligibility; true permits configured environmental lifecycle settlement."
++    },
++    {
++      "id": "area.members",
++      "kind": "calculation",
++      "owner": "effect",
++      "inputs": [
++        {
++          "name": "center_position",
++          "type": "value_map",
++          "required": true
++        },
++        {
++          "name": "candidates",
++          "type": "entity_list",
++          "required": true
++        },
++        {
++          "name": "parameters",
++          "type": "value_map",
++          "required": true
++        }
++      ],
++      "outputType": "entity_list",
++      "outputSchema": {
++        "type": "entity_list",
++        "items": {
++          "type": "integer"
++        }
++      },
++      "implementations": [
++        "expression",
++        "graph",
++        "provider"
++      ],
++      "pureEvaluation": true,
++      "writesStateDirectly": false,
++      "description": "Opt-in area membership at actual impact center; unique allowed candidate IDs, no selection ordering/randomness."
+     }
+   ],
+   "types": {

@@ -1,0 +1,81 @@
+{
+  "manifest": {
+    "requires": [
+      "preset/ark_standard"
+    ]
+  },
+  "entities": [
+    {
+      "id": "unit/widget",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "spatial": {},
+        "attributes": {
+          "base": {
+            "max_hp": 90
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 90,
+            "capacity": 90,
+            "role": "health"
+          }
+        },
+        "deployable": {
+          "base_cost": 4,
+          "capacity": 0,
+          "cooldown_seconds": 0,
+          "terrain": "ground",
+          "parameters": {
+            "max_instances": 20
+          },
+          "stock": {
+            "resource": "tickets",
+            "amount": 1
+          }
+        }
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/stock/peer",
+    "ruleset": "ruleset/ark_standard",
+    "objectives": {},
+    "roster": [
+      "unit/widget"
+    ],
+    "map": {
+      "rows": 1,
+      "cols": 8
+    },
+    "resources": {
+      "dp": {
+        "initial": 50,
+        "capacity": 50
+      },
+      "tickets": {
+        "initial": 1,
+        "capacity": 3,
+        "bounds_rule": "rule/ticket_floor"
+      }
+    }
+  },
+  "rules": [
+    {
+      "id": "rule/ticket_floor",
+      "kind": "rule",
+      "contract": "resource.bounds",
+      "parameters": {
+        "floor": 1
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "peer.floor"
+      }
+    }
+  ]
+}

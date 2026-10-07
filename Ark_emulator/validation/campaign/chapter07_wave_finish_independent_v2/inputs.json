@@ -1,0 +1,1776 @@
+[
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wave",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "abilities": [
+      {
+        "id": "ability/w/finish",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/w/owner",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 127,
+              "atk": 13,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 127,
+              "capacity": 127,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/w/finish"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/wave_peer",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0.0,
+            "post_delay_seconds": 0.1,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "first",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.23333333333333334,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "delayed",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "pre_delay_seconds": 0.06666666666666667,
+            "post_delay_seconds": 0.0,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "next",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wave",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "abilities": [
+      {
+        "id": "ability/w/finish",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/w/owner",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 127,
+              "atk": 13,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 127,
+              "capacity": 127,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/w/finish"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/wave_peer",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0.0,
+            "post_delay_seconds": 0.1,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "first",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.23333333333333334,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "delayed",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "pre_delay_seconds": 0.06666666666666667,
+            "post_delay_seconds": 0.0,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "next",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wave",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "abilities": [
+      {
+        "id": "ability/w/finish",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/w/owner",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 127,
+              "atk": 13,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 127,
+              "capacity": 127,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/w/finish"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/wave_peer",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0.0,
+            "post_delay_seconds": 0.1,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "first",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.23333333333333334,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "delayed",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "pre_delay_seconds": 0.06666666666666667,
+            "post_delay_seconds": 0.0,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "next",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/w/owner",
+          "instanceAlias": "unmanaged",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wave",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "abilities": [
+      {
+        "id": "ability/w/finish",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/w/owner",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 127,
+              "atk": 13,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 127,
+              "capacity": 127,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/w/finish"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/wave_peer",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0.0,
+            "post_delay_seconds": 0.1,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": true,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "first",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.23333333333333334,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "delayed",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "pre_delay_seconds": 0.06666666666666667,
+            "post_delay_seconds": 0.0,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "next",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wave",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "abilities": [
+      {
+        "id": "ability/w/finish",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": true,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/w/owner",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 127,
+              "atk": 13,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 127,
+              "capacity": 127,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/w/finish"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/wave_peer",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0.0,
+            "post_delay_seconds": 0.1,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "first",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.23333333333333334,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "delayed",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "pre_delay_seconds": 0.06666666666666667,
+            "post_delay_seconds": 0.0,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "next",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wave",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "abilities": [
+      {
+        "id": "ability/w/finish",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": 0,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/w/owner",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 127,
+              "atk": 13,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 127,
+              "capacity": 127,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/w/finish"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/wave_peer",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0.0,
+            "post_delay_seconds": 0.1,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "first",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.23333333333333334,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "delayed",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "pre_delay_seconds": 0.06666666666666667,
+            "post_delay_seconds": 0.0,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "next",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wave",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "abilities": [
+      {
+        "id": "ability/w/finish",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": false,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/w/owner",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 127,
+              "atk": 13,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 127,
+              "capacity": 127,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/w/finish"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/wave_peer",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0.0,
+            "post_delay_seconds": 0.1,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "first",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.23333333333333334,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "delayed",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "pre_delay_seconds": 0.06666666666666667,
+            "post_delay_seconds": 0.0,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "next",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wave",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "abilities": [
+      {
+        "id": "ability/w/finish",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": -1,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/w/owner",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 127,
+              "atk": 13,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 127,
+              "capacity": 127,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/w/finish"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/wave_peer",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0.0,
+            "post_delay_seconds": 0.1,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "first",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.23333333333333334,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "delayed",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "pre_delay_seconds": 0.06666666666666667,
+            "post_delay_seconds": 0.0,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "next",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wave",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "abilities": [
+      {
+        "id": "ability/w/finish",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": NaN,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/w/owner",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 127,
+              "atk": 13,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 127,
+              "capacity": 127,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/w/finish"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/wave_peer",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0.0,
+            "post_delay_seconds": 0.1,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "first",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.23333333333333334,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "delayed",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "pre_delay_seconds": 0.06666666666666667,
+            "post_delay_seconds": 0.0,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "next",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wave",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "abilities": [
+      {
+        "id": "ability/w/finish",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/w/owner",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 127,
+              "atk": 13,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 127,
+              "capacity": 127,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/w/finish"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/wave_peer",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/w/owner",
+          "instanceAlias": "a",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wave",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "abilities": [
+      {
+        "id": "ability/w/finish",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "modify_resource",
+              "target": "source",
+              "resource": "hp",
+              "delta": -3
+            },
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            },
+            {
+              "op": "damage",
+              "target": "source",
+              "damage_type": "true",
+              "rules": {
+                "damage.pipeline": "rule/w/bad"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/w/owner",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 127,
+              "atk": 13,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 127,
+              "capacity": 127,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/w/finish"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/wave_peer",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0.0,
+            "post_delay_seconds": 0.1,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "first",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.23333333333333334,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "delayed",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "pre_delay_seconds": 0.06666666666666667,
+            "post_delay_seconds": 0.0,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "next",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "rules": [
+      {
+        "id": "rule/w/bad",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "bad",
+              "expression": "1/0"
+            }
+          ],
+          "output": "nodes.bad"
+        }
+      }
+    ]
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/wave",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "abilities": [
+      {
+        "id": "ability/w/finish",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "finish_timeline_wave",
+              "target": "source",
+              "parameters": {
+                "finish_and_skip": false,
+                "track_source_at_next_wave": false,
+                "track_source_wave_delta": 0,
+                "track_all_managed_at_next_wave": false
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/w/owner",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 127,
+              "atk": 13,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 127,
+              "capacity": 127,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/w/finish"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/wave_peer",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "timeline": {
+        "policy": "managed_clear",
+        "negative_timeout_policy": "wait_for_clear",
+        "waves": [
+          {
+            "pre_delay_seconds": 0.0,
+            "post_delay_seconds": 0.1,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "first",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  },
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.23333333333333334,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "delayed",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  },
+                  {
+                    "kind": "control",
+                    "definition": "control/w/story",
+                    "instanceAlias": "story",
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "pre_delay_seconds": 0.06666666666666667,
+            "post_delay_seconds": 0.0,
+            "max_wait_seconds": -1,
+            "fragments": [
+              {
+                "pre_delay_seconds": 0,
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "delay_seconds": 0.0,
+                    "managed": true,
+                    "blocks_wave": true,
+                    "blocks_fragment": false,
+                    "spawn": {
+                      "definition": "unit/w/owner",
+                      "instanceAlias": "next",
+                      "position": {
+                        "row": 0,
+                        "col": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "controls": [
+      {
+        "id": "control/w/story",
+        "kind": "control",
+        "clock_policy": "logical",
+        "ack_policy": "external",
+        "steps": [
+          {
+            "kind": "ack",
+            "key": "continue"
+          }
+        ]
+      }
+    ]
+  }
+]

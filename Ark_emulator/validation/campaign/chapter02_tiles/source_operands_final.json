@@ -1,0 +1,100 @@
+{
+  "schema": "ark-sim/chapter02-tile-buff-model-check/v1",
+  "passed": true,
+  "core_before": "7aa11610867291a2274d31a7ae2ec69fb8acc03e808314a8cde29fdedd88aabe",
+  "core_after": "7aa11610867291a2274d31a7ae2ec69fb8acc03e808314a8cde29fdedd88aabe",
+  "source_at_start": {
+    "tools\\build_chapter02_tile_sources.py": "5ad23c89723a45da87fe70a0c8c674bcdb709fcb231659b7096a44ff0777915e",
+    "tools\\build_chapter02_tile_buff_models.py": "db66709c4376237865da80beaae766a91b7b0511f93bac9455187edd83b664cb",
+    "packages\\campaign\\chapter02_tiles\\source.reference.json": "fc5ea7050014f56b5725be44805c9c81d17e157615a7eeb7c5d64401059610af",
+    "packages\\campaign\\chapter02_tiles\\buffs.partial.json": "0101470fa4e3d9426f9e5b10a2f62033b80dfbcf9f9c6458da68ba800b02a697",
+    "tools\\experiments\\chapter02_tiles\\test_tile_buffs.py": "27458ab2c5cb2b8449b46faa5d39c46c53cc1b60c2e510d1277ff0a40016991e"
+  },
+  "source_at_end": {
+    "tools\\build_chapter02_tile_sources.py": "5ad23c89723a45da87fe70a0c8c674bcdb709fcb231659b7096a44ff0777915e",
+    "tools\\build_chapter02_tile_buff_models.py": "db66709c4376237865da80beaae766a91b7b0511f93bac9455187edd83b664cb",
+    "packages\\campaign\\chapter02_tiles\\source.reference.json": "fc5ea7050014f56b5725be44805c9c81d17e157615a7eeb7c5d64401059610af",
+    "packages\\campaign\\chapter02_tiles\\buffs.partial.json": "0101470fa4e3d9426f9e5b10a2f62033b80dfbcf9f9c6458da68ba800b02a697",
+    "tools\\experiments\\chapter02_tiles\\test_tile_buffs.py": "27458ab2c5cb2b8449b46faa5d39c46c53cc1b60c2e510d1277ff0a40016991e"
+  },
+  "actual_runtime": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m26_decision_eligibility_candidate",
+  "tests": 4,
+  "witnesses": [
+    {
+      "name": "healing",
+      "fixture": "validation\\campaign\\chapter02_tiles\\healing.fixture.json",
+      "fixture_sha256": "d0552703d7d908bbfd160b65522acc94563cab9d302c4431d79d3afe8b288a59",
+      "replay": "validation\\campaign\\chapter02_tiles\\healing.replay.json",
+      "replay_sha256": "676d74e2ccf7f00a18779b680d9cc015051f7245a26f107ff29b561fe0ad0283",
+      "seed": 2901,
+      "checkpoint_equal": true,
+      "replay_equal": true,
+      "event_count": 1714,
+      "hp": {
+        "source": 530.0,
+        "ground": 500.0,
+        "fly": 500.0
+      },
+      "damage_events": []
+    },
+    {
+      "name": "gazebo",
+      "fixture": "validation\\campaign\\chapter02_tiles\\gazebo.fixture.json",
+      "fixture_sha256": "d0552703d7d908bbfd160b65522acc94563cab9d302c4431d79d3afe8b288a59",
+      "replay": "validation\\campaign\\chapter02_tiles\\gazebo.replay.json",
+      "replay_sha256": "115d1325e3dd08a70a3f820c3a05f1279aba815a32034357eb25dd3c66b1a9f0",
+      "seed": 2901,
+      "checkpoint_equal": true,
+      "replay_equal": true,
+      "event_count": 575,
+      "hp": {
+        "source": 500.0,
+        "ground": 410.0,
+        "fly": 250.0
+      },
+      "damage_events": [
+        {
+          "id": 178,
+          "type": "damage.accepted",
+          "payload": {
+            "source": 2,
+            "target": 3,
+            "amount": 90.0,
+            "ability": "ability/ground",
+            "resource": "hp"
+          },
+          "time": 1,
+          "cause": 164
+        },
+        {
+          "id": 263,
+          "type": "damage.accepted",
+          "payload": {
+            "source": 2,
+            "target": 4,
+            "amount": 160.0,
+            "ability": "ability/fly",
+            "resource": "hp"
+          },
+          "time": 2,
+          "cause": 248
+        },
+        {
+          "id": 429,
+          "type": "damage.accepted",
+          "payload": {
+            "source": 2,
+            "target": 4,
+            "amount": 90.0,
+            "ability": "ability/fly",
+            "resource": "hp"
+          },
+          "time": 4,
+          "cause": 415
+        }
+      ]
+    }
+  ],
+  "native_tile_occupancy_implemented": false,
+  "actual_game_accuracy_verified": false
+}

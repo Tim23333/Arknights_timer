@@ -1,0 +1,237 @@
+{
+  "entities": [
+    {
+      "id": "unit/owner",
+      "kind": "entity",
+      "tags": [
+        "tile_field_owner"
+      ],
+      "components": {
+        "spatial": {},
+        "attributes": {
+          "base": {
+            "max_hp": 1,
+            "atk": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 1,
+            "capacity": 1
+          }
+        },
+        "buffs": {
+          "initial": [
+            "buff/parent"
+          ]
+        }
+      }
+    },
+    {
+      "id": "unit/target",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "spatial": {},
+        "attributes": {
+          "base": {
+            "max_hp": 100,
+            "def": 0,
+            "regen": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 40,
+            "capacity": 100,
+            "role": "health",
+            "recovery_rule": "rule/regen",
+            "recovery": {
+              "mode": "continuous"
+            }
+          }
+        },
+        "abilities": [
+          "ability/in",
+          "ability/out"
+        ]
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/parent",
+      "kind": "buff",
+      "aura": {
+        "selector": "selector/cell",
+        "buff": "buff/member"
+      }
+    },
+    {
+      "id": "buff/member",
+      "kind": "buff",
+      "stacking": {
+        "mode": "independent"
+      },
+      "modifiers": [
+        {
+          "attribute": "regen",
+          "layer": "flat",
+          "value": 10
+        }
+      ]
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/cell",
+      "kind": "selector",
+      "region": {
+        "type": "grid_offsets",
+        "offsets": [
+          [
+            0,
+            0
+          ]
+        ],
+        "rotate_with_facing": false
+      },
+      "filters": [
+        {
+          "tag": "player"
+        }
+      ]
+    },
+    {
+      "id": "selector/target",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/illegal_owner",
+      "kind": "ability",
+      "selector": "selector/target",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "damage",
+            "damage_type": "physical"
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/in",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "move",
+            "target": "source",
+            "position": {
+              "row": 0,
+              "col": 1
+            }
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/out",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "move",
+            "target": "source",
+            "position": {
+              "row": 0,
+              "col": 2
+            }
+          }
+        ]
+      },
+      "timeline": []
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scenario/static_override_counter",
+    "ruleset": "ruleset/ark_standard",
+    "map": {
+      "rows": 1,
+      "cols": 4,
+      "tiles": [
+        {
+          "tileKey": "tile_floor",
+          "buildableType": 1,
+          "passableMask": 1
+        },
+        {
+          "tileKey": "custom_field",
+          "buildableType": 1,
+          "passableMask": 1,
+          "blackboard": []
+        },
+        {
+          "tileKey": "tile_floor",
+          "buildableType": 1,
+          "passableMask": 1
+        },
+        {
+          "tileKey": "tile_floor",
+          "buildableType": 1,
+          "passableMask": 1
+        }
+      ],
+      "tile_mechanics": {
+        "custom_field": {
+          "type": "occupancy_buff_field",
+          "definition": "unit/owner",
+          "expected_blackboard": {}
+        }
+      }
+    },
+    "objectives": {},
+    "initialEntities": [
+      {
+        "definition": "unit/target",
+        "instanceAlias": "target",
+        "position": {
+          "row": 0,
+          "col": 2
+        }
+      }
+    ]
+  },
+  "rules": [
+    {
+      "id": "rule/regen",
+      "kind": "rule",
+      "contract": "resource.recovery",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.current + inputs.delta_seconds * inputs.attributes.regen"
+      }
+    }
+  ]
+}

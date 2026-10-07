@@ -132,9 +132,9 @@ def test_recover():
         ref.next_int()
     snap = ref.clone()                      # 时刻 A 的内存快照
     expected = [ref.next_int() for _ in range(37)]   # 游戏消耗 37 发
-    rec = recover_advanced(snap, (ref.seeds, ref.inext))
+    rec = recover_advanced(snap, (ref.seeds, ref.inext, ref.inextp))
     check("恢复 37 发", rec is not None and rec[0] == 37 and rec[1] == expected)
-    check("换种子返回 None", recover_advanced(DotNetRandom(1), (ref.seeds, ref.inext), max_steps=200) is None)
+    check("换种子返回 None", recover_advanced(DotNetRandom(1), (ref.seeds, ref.inext, ref.inextp), max_steps=200) is None)
     check("peek 不改动状态", snap.peek(5) == expected[:5] and snap.inext == ref.inext - 37 % 55 or True)
 
     m = MT19937(seed=999)

@@ -1,0 +1,128 @@
+--- a/ark_sim/domains/projectiles.py
++++ b/ark_sim/domains/projectiles.py
+@@ -16,6 +16,19 @@
+   return any(x['state']=='active' and self._definition(x).get('completion_blocking',False) for x in self._state()['instances'].values())
+  def active_casts(self,source):
+   return {x['cast'].get('id') for x in self._state()['instances'].values() if x['state']=='active' and x['source']==source and x['cast'].get('id')}
++ def _trajectory_context(self,definition):
++  if definition['motion'].get('parameters',{}).get('extent_policy')!='map_bounds':return {}
++  grid=self.ctx.spatial.grid
++  return {'projectile_map_bounds':{'min_row':-.5,'max_row':grid.rows-.5,'min_col':-.5,'max_col':grid.cols-.5}}
++ def _collision_context(self,x,definition,candidates):
++  params=thaw(definition['collision'].get('parameters',{}))
++  if params.get('qualified_ray') is not True:return params
++  from .selection import validate_eligibility
++  validate_eligibility(params.get('eligibility'),'qualified projectile eligibility')
++  defaults=params['eligibility']['parameters']['defaults']
++  params['projectile_selection_states']={'source':self.ctx.spatial.selection_state(x['source'],defaults),'candidates':{str(e['id']):self.ctx.spatial.selection_state(e['id'],defaults) for e in candidates}}
++  params['projectile_candidate_previous_positions']=thaw(x.get('candidate_previous_positions',{}))
++  return params
+  def _definition(self,instance):return self.ctx.program.definitions[instance['definition']]
+  def _position(self,ref):return self.ctx.get(ref,('spatial','position'))
+  def _valid_position(self,value):
+@@ -32,7 +45,8 @@
+    now=self.ctx.session.time;life=self.ctx.quantize(d['lifetime_seconds']);wait=ability.get('parameters',{}).get('wait_for_projectiles',False)
+    if wait:self.ctx.abilities.projectile_started(source,c.get('id'))
+    x={'id':key,'definition':d['id'],'source':source,'trace_target':target,'attachment_target':target,'position':b if d.get('attach_at_launch') else a,'start':a,'last_target':b,'previous_target':b,'born':now,'expires':now+life,'last_tick':now,'motion_state':{},'state':'active','jobs':[],'hit_targets':[],'hit_count':0,'cast':c,'ability':thaw(ability),'effect':packet,'cause':cause,'waiting_cast':wait}
+-   motion=d['motion'];plan=self.ctx.calc('projectile.trajectory',{'source':self.ctx.entity(source),'target':self.ctx.entity(target),'positions':[{'position':x['position'],'start':x['start'],'last_target':x['last_target'],'motion_state':{}}],'trajectory_parameters':{**thaw(motion.get('parameters',{})),'age_seconds':0,'delta_seconds':0,'lifetime_seconds':d['lifetime_seconds']}},source=source,target=target,rule_id=motion['rule']);self._valid_position(plan.get('position'));x['position']=plan['position'];x['motion_state']=plan.get('motion_state',{})
++   if d['collision'].get('parameters',{}).get('qualified_ray') is True:x['candidate_previous_positions']={str(e['id']):thaw(e['components']['spatial']['position']) for e in self.ctx.session.world.entities() if e['components'].get('spatial',{}).get('position') is not None}
++   motion=d['motion'];plan=self.ctx.calc('projectile.trajectory',{'source':self.ctx.entity(source),'target':self.ctx.entity(target),'positions':[{'position':x['position'],'start':x['start'],'last_target':x['last_target'],'motion_state':{}}],'trajectory_parameters':{**thaw(motion.get('parameters',{})),'age_seconds':0,'delta_seconds':0,'lifetime_seconds':d['lifetime_seconds']}},source=source,target=target,rule_id=motion['rule'],extra=self._trajectory_context(d));self._valid_position(plan.get('position'));x['position']=plan['position'];x['motion_state']=plan.get('motion_state',{})
+    x['jobs'].append(self.ctx.session.schedule('domain.projectile.expire',{'projectile':key},x['expires'],phase=self.ctx.effect_phase));self._schedule_step(x,now+1);state['instances'][key]=x;self._save(state)
+    self.ctx.emit('projectile.launched',{'projectile':key,'definition':d['id'],'source':source,'target':target,'attachment_target':target,'ability':ability.get('id'),'position':x['position'],'expires':x['expires']},cause)
+    return key
+@@ -101,12 +115,16 @@
+    previous=thaw(x['position']);previous_target=thaw(x['previous_target']);available=self._target_available(x)
+    if available:x['last_target']=self._position(x['trace_target'])
+    motion=d['motion'];params={**thaw(motion.get('parameters',{})),'age_seconds':(session.time-x['born'])*session.quantum,'delta_seconds':(session.time-x['last_tick'])*session.quantum,'lifetime_seconds':d['lifetime_seconds']}
+-   plan=self.ctx.calc('projectile.trajectory',{'source':self.ctx.entity(x['source']),'target':self.ctx.entity(x['trace_target']),'positions':[{'position':x['position'],'start':x['start'],'last_target':x['last_target'],'motion_state':x['motion_state']}],'trajectory_parameters':params},source=x['source'],target=x['trace_target'],rule_id=motion['rule'])
++   plan=self.ctx.calc('projectile.trajectory',{'source':self.ctx.entity(x['source']),'target':self.ctx.entity(x['trace_target']),'positions':[{'position':x['position'],'start':x['start'],'last_target':x['last_target'],'motion_state':x['motion_state']}],'trajectory_parameters':params},source=x['source'],target=x['trace_target'],rule_id=motion['rule'],extra=self._trajectory_context(d))
+    self._valid_position(plan.get('position'));assert type(plan.get('reached')) is bool,'projectile reached must be boolean'
+    x['position']=plan['position'];x['motion_state']=plan.get('motion_state',{});x['last_tick']=session.time;x['previous_target']=x['last_target'];self._put(x)
+    collision=d['collision'];data={'previous_position':previous,'position':x['position'],'previous_target_position':previous_target,'target_position':x['last_target'],'trace_target':x['trace_target'],'target_available':available}
+-   result=self.ctx.calc('projectile.collision',{'projectile':data,'entities':[entity for entity in self.ctx.session.world.entities() if entity['components'].get('spatial',{}).get('position') is not None],'spatial_state':{'map':self.ctx.spatial.map_definition,'parameters':thaw(collision.get('parameters',{}))}},source=x['source'],target=x['trace_target'],rule_id=collision['rule'],extra=thaw(collision.get('parameters',{})))
++   candidates=[entity for entity in self.ctx.session.world.entities() if entity['components'].get('spatial',{}).get('position') is not None]
++   if collision.get('parameters',{}).get('qualified_ray') is True:candidates=[e for e in candidates if self.ctx.alive(e['id']) and self.ctx.selectable(e['id']) and self.ctx.effect_target_available(e['id'])]
++   result=self.ctx.calc('projectile.collision',{'projectile':data,'entities':candidates,'spatial_state':{'map':self.ctx.spatial.map_definition,'parameters':thaw(collision.get('parameters',{}))}},source=x['source'],target=x['trace_target'],rule_id=collision['rule'],extra=self._collision_context(x,d,candidates))
+    if not isinstance(result,dict) or type(result.get('stop')) is not bool or type(result.get('terrain_hit')) is not bool or not isinstance(result.get('hits'),list):raise ValueError('invalid projectile collision plan')
++   if collision.get('parameters',{}).get('qualified_ray') is True:
++    x['candidate_previous_positions']={str(e['id']):thaw(e['components']['spatial']['position']) for e in self.ctx.session.world.entities() if e['components'].get('spatial',{}).get('position') is not None};self._put(x)
+    hits=[self.ctx.session.world.resolve(ref) for ref in result['hits']]
+    if not collision.get('allow_other_targets',False) and any(ref!=x['trace_target'] for ref in hits):raise ValueError('collision profile hit outside captured trace target')
+    for hit in hits:
+@@ -132,7 +150,7 @@
+    if self._target_available(x):
+     x['last_target']=self._position(x['trace_target'])
+     # Follow/fixed placement at expiry is evaluated by the same pure motion.
+-    motion=d['motion'];plan=self.ctx.calc('projectile.trajectory',{'source':self.ctx.entity(x['source']),'target':self.ctx.entity(x['trace_target']),'positions':[{'position':x['position'],'start':x['start'],'last_target':x['last_target'],'motion_state':x['motion_state']}],'trajectory_parameters':{**thaw(motion.get('parameters',{})),'age_seconds':(session.time-x['born'])*session.quantum,'delta_seconds':0,'lifetime_seconds':d['lifetime_seconds']}},source=x['source'],target=x['trace_target'],rule_id=motion['rule']);self._valid_position(plan['position']);x['position']=plan['position']
++    motion=d['motion'];plan=self.ctx.calc('projectile.trajectory',{'source':self.ctx.entity(x['source']),'target':self.ctx.entity(x['trace_target']),'positions':[{'position':x['position'],'start':x['start'],'last_target':x['last_target'],'motion_state':x['motion_state']}],'trajectory_parameters':{**thaw(motion.get('parameters',{})),'age_seconds':(session.time-x['born'])*session.quantum,'delta_seconds':0,'lifetime_seconds':d['lifetime_seconds']}},source=x['source'],target=x['trace_target'],rule_id=motion['rule'],extra=self._trajectory_context(d));self._valid_position(plan['position']);x['position']=plan['position']
+    if d['lifecycle']['force_reach_on_expire']:self.ctx.emit('projectile.reached',{'projectile':x['id'],'position':x['position'],'expiry':True})
+    if d['lifecycle']['hit_on_expire']:
+     self._hit(x,d,finish_reason='expired')
+--- a/ark_sim/domains/providers.py
++++ b/ark_sim/domains/providers.py
+@@ -2,6 +2,7 @@
+ from ark_sim.presets import providers as ark
+ 
+ from . import projectile_profiles
++from . import ray_projectile_profiles
+ from .selection import eligibility_profile
+ from .request_transforms import request_field_transform
+ from .qualified_areas import qualified_cell_offsets
+@@ -11,6 +12,8 @@
+ from .periodic_fields import uniform_trigger,cell_combat_members
+ 
+ BUILTIN_PROVIDERS = {
++    'model.projectile.cardinal_map_ray': ray_projectile_profiles.trajectory,
++    'model.projectile.qualified_swept_ray': ray_projectile_profiles.collision,
+     'model.area.qualified_radius': qualified_radius,
+     "model.field.uniform_trigger": uniform_trigger,
+     "model.field.cell_combat_members": cell_combat_members,
+--- /dev/null
++++ b/ark_sim/domains/ray_projectile_profiles.py
+@@ -0,0 +1,46 @@
++"""Generic cardinal map-bound rays and first qualified swept-circle collisions."""
++import math
++from collections.abc import Mapping
++from ark_sim.contracts import thaw
++from ark_sim.domains.selection import validate_eligibility,validate_state
++DIRECTIONS={'right':(0,1),'left':(0,-1),'down':(1,0),'up':(-1,0)}
++def trajectory(inputs,params,context):
++ p={**thaw(params),**thaw(inputs['trajectory_parameters'])};record=inputs['positions'][0];state=thaw(record.get('motion_state',{}));start=record['start'];bounds=context.get('projectile_map_bounds')
++ if not isinstance(bounds,Mapping) or set(bounds)!={'min_row','max_row','min_col','max_col'}:raise ValueError('directional ray requires actual map bounds projection')
++ speed=p['speed']
++ if type(speed) not in (int,float) or not math.isfinite(speed) or speed<=0:raise ValueError('directional ray speed must be finite positive')
++ if p.get('extent_policy')!='map_bounds':raise ValueError('directional ray extent policy must be explicit map_bounds')
++ if not state:
++  face=inputs['source']['components']['spatial'].get('facing')
++  if face not in DIRECTIONS:raise ValueError('directional ray requires cardinal source facing')
++  dr,dc=DIRECTIONS[face];length=(bounds['max_row']-start['row']) if dr>0 else (start['row']-bounds['min_row']) if dr<0 else (bounds['max_col']-start['col']) if dc>0 else (start['col']-bounds['min_col']);state={'direction':[dr,dc],'length':max(0,length),'traveled':0,'launch_facing':face}
++ dr,dc=state['direction'];state['traveled']=min(state['length'],state['traveled']+speed*p['delta_seconds']);point={'row':start['row']+dr*state['traveled'],'col':start['col']+dc*state['traveled']}
++ if 'height' in start:point['height']=start['height']
++ return {'position':point,'reached':state['traveled']>=state['length'],'motion_state':state}
++def collision(inputs,params,context):
++ p={**thaw(params),**thaw(inputs['spatial_state'].get('parameters',{}))};eligibility=p.get('eligibility');validate_eligibility(eligibility,'qualified ray collision eligibility');projection=context.get('projectile_selection_states');previous=context.get('projectile_candidate_previous_positions',{})
++ if not isinstance(projection,Mapping) or set(projection)!={'source','candidates'}:raise ValueError('qualified ray collision requires effective selection projections')
++ validate_state(projection['source'],complete=True);radius=p['radius']
++ if type(radius) not in (int,float) or not math.isfinite(radius) or radius<0:raise ValueError('qualified ray radius must be nonnegative finite')
++ packet=inputs['projectile'];a=packet['previous_position'];b=packet['position'];contacts=[]
++ for entity in inputs['entities']:
++  if entity['id']==context['source']['id'] and p.get('exclude_source',False):continue
++  key=str(entity['id']);target=entity['components']['spatial']['position'];last=previous.get(key,target);state=projection['candidates'].get(key)
++  if state is None:raise ValueError('qualified ray candidate projection absent')
++  validate_state(state,complete=True);decision=context.calculate('targeting.eligibility',{'source':context['source'],'candidate':entity,'selector':{'healing':False},'parameters':eligibility['parameters'],'selection_states':{'source':projection['source'],'candidate':state}},rule_id=eligibility['rule']).value
++  if not isinstance(decision,Mapping) or type(decision.get('accepted')) is not bool:raise ValueError('qualified ray eligibility must return a strict decision')
++  if not decision['accepted']:continue
++  # Earliest entry, not nearest endpoint; relative motion preserves a mover
++  # crossing the ray inside this real logic tick. Ties have stable actor order.
++  q=(a['row']-last['row'],a['col']-last['col']);v=((b['row']-a['row'])-(target['row']-last['row']),(b['col']-a['col'])-(target['col']-last['col']));rr=radius+entity['components']['spatial'].get('radius',0);aa=v[0]**2+v[1]**2;bb=2*(q[0]*v[0]+q[1]*v[1]);cc=q[0]**2+q[1]**2-rr**2
++  if cc<=0:t=0
++  elif aa==0:continue
++  else:
++   disc=bb*bb-4*aa*cc
++   if disc<0:continue
++   t=(-bb-math.sqrt(disc))/(2*aa)
++   if not 0<=t<=1:continue
++  contacts.append((t,entity['id']))
++ contacts.sort();return {'hits':[x[1] for x in contacts],'terrain_hit':False,'stop':False}
++trajectory.version='cardinal-fixedlaunch-mapbound-ray-v1'
++collision.version='qualified-relative-swept-firstentry-circle-v1'

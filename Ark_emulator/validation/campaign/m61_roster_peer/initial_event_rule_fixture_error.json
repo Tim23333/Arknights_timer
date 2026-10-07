@@ -1,0 +1,2195 @@
+{
+  "passed": false,
+  "core_start": "499dbf069d920e034ef5c4a93fb92b6b8a1f869ca4cd2a1de024c8c0798f5180",
+  "core_end": "499dbf069d920e034ef5c4a93fb92b6b8a1f869ca4cd2a1de024c8c0798f5180",
+  "actual_module": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m61_rebirth_candidate\\ark_sim\\__init__.py",
+  "source_start": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m61_roster_peer\\verify.py": "628da9d98ab09a7f9c07f871caa2a61e4540f6bcad8a212892e2b99602f7465a",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m61_roster_peer\\test_rebirth.py": "cd6787d81c1c1ebd76567997c282fbbba3dd6c401ce89095a262e4ccdd8ff045",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_ordered_checkpoint.py": "5cdfd500f41e428b67974e5119ef3e3351d9df346cc58fca837bc4420effbc6a",
+    "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m61_rebirth_candidate\\ark_sim\\rules\\contracts.json": "a914b70118a5ccfc957e3198802d64c15d169d5409cb99071b6f9f6bcb650ed1"
+  },
+  "source_end": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m61_roster_peer\\verify.py": "628da9d98ab09a7f9c07f871caa2a61e4540f6bcad8a212892e2b99602f7465a",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m61_roster_peer\\test_rebirth.py": "cd6787d81c1c1ebd76567997c282fbbba3dd6c401ce89095a262e4ccdd8ff045",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_ordered_checkpoint.py": "5cdfd500f41e428b67974e5119ef3e3351d9df346cc58fca837bc4420effbc6a",
+    "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m61_rebirth_candidate\\ark_sim\\rules\\contracts.json": "a914b70118a5ccfc957e3198802d64c15d169d5409cb99071b6f9f6bcb650ed1"
+  },
+  "cases": [
+    {
+      "nodeid": "tools/experiments/m61_roster_peer/test_rebirth.py::test_managed_member_same_id_first_down_no_release_final_once",
+      "passed": false
+    },
+    {
+      "nodeid": "tools/experiments/m61_roster_peer/test_rebirth.py::test_zero_delay_preserves_full_damage_not_net_recovered_hp",
+      "passed": false
+    },
+    {
+      "nodeid": "tools/experiments/m61_roster_peer/test_rebirth.py::test_instant_kill_not_damage_or_attack_recovery[False]",
+      "passed": false
+    },
+    {
+      "nodeid": "tools/experiments/m61_roster_peer/test_rebirth.py::test_instant_kill_not_damage_or_attack_recovery[True]",
+      "passed": false
+    },
+    {
+      "nodeid": "tools/experiments/m61_roster_peer/test_rebirth.py::test_pending_instantkill_retained_target_uses_management_semantics[False]",
+      "passed": false
+    },
+    {
+      "nodeid": "tools/experiments/m61_roster_peer/test_rebirth.py::test_pending_instantkill_retained_target_uses_management_semantics[True]",
+      "passed": false
+    },
+    {
+      "nodeid": "tools/experiments/m61_roster_peer/test_rebirth.py::test_owner_scheduled_withdraw_cancels_pending_job_without_kill",
+      "passed": false
+    },
+    {
+      "nodeid": "tools/experiments/m61_roster_peer/test_rebirth.py::test_on_begin_instantkill_has_one_final_kill_from_actual_executor",
+      "passed": false
+    }
+  ],
+  "actual_inputs": [
+    {
+      "sha256": "4123267e13e580301642a30ca42c7f69f274e56957a32b1d2d8c155857d5bf04",
+      "fixture": {
+        "manifest": {
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "entities": [
+          {
+            "id": "unit/phoenix",
+            "kind": "entity",
+            "tags": [
+              "enemy"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 120,
+                  "atk": 20,
+                  "def": 0,
+                  "move_speed": 1.3,
+                  "block_cost": 1
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 120,
+                  "capacity": 120,
+                  "role": "health"
+                },
+                "sp": {
+                  "initial": 0,
+                  "capacity": 100,
+                  "recovery_rate": 30
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              },
+              "rebirth": {
+                "resource": "hp",
+                "max_count": 1,
+                "delay_seconds": 0.2,
+                "restore_ratio": 0.5,
+                "restore_rule": "rule/restore"
+              }
+            }
+          },
+          {
+            "id": "unit/shooter",
+            "kind": "entity",
+            "tags": [
+              "player"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 1000,
+                  "atk": 200,
+                  "def": 0
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 1000,
+                  "capacity": 1000,
+                  "role": "health"
+                },
+                "sp": {
+                  "initial": 0,
+                  "capacity": 10,
+                  "recovery": {
+                    "mode": "event",
+                    "event": "damage.accepted",
+                    "owner_role": "source",
+                    "amount": 1
+                  }
+                }
+              },
+              "abilities": [
+                "ability/damage",
+                "ability/skip",
+                "ability/allow",
+                "ability/delayed_skip",
+                "ability/delayed_allow"
+              ],
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              }
+            }
+          }
+        ],
+        "rules": [
+          {
+            "id": "rule/restore",
+            "kind": "rule",
+            "contract": "resource.recovery",
+            "implementation": {
+              "type": "expression",
+              "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+            }
+          }
+        ],
+        "selectors": [
+          {
+            "id": "selector/boss",
+            "kind": "selector",
+            "region": {
+              "type": "all"
+            },
+            "filters": [
+              {
+                "tag": "enemy"
+              },
+              {
+                "state": "alive"
+              }
+            ],
+            "limit": 1
+          }
+        ],
+        "abilities": [
+          {
+            "id": "ability/damage",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "damage",
+                  "damage_type": "true",
+                  "scale": 1
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/skip",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": true
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/allow",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": false
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/delayed_skip",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 3,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": true
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/delayed_allow",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 3,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": false
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scene/peer_rebirth",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 3,
+            "cols": 5
+          },
+          "resources": {
+            "life": {
+              "initial": 99999,
+              "capacity": 99999
+            }
+          },
+          "objectives": {
+            "life_resource": "life"
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/shooter",
+              "instanceAlias": "hero",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ],
+          "timeline": {
+            "policy": "managed_clear",
+            "negative_timeout_policy": "wait_for_clear",
+            "waves": [
+              {
+                "max_wait_seconds": -1,
+                "fragments": [
+                  {
+                    "actions": [
+                      {
+                        "kind": "spawn",
+                        "managed": true,
+                        "blocks_wave": true,
+                        "spawn": {
+                          "definition": "unit/phoenix",
+                          "instanceAlias": "boss",
+                          "position": {
+                            "row": 1,
+                            "col": 1
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "seed": 610031
+    },
+    {
+      "sha256": "1c10a56adb04056aba454c898cbd5dc206c6dbafe931b3ba44f559717ded29d0",
+      "fixture": {
+        "manifest": {
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "entities": [
+          {
+            "id": "unit/phoenix",
+            "kind": "entity",
+            "tags": [
+              "enemy"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 120,
+                  "atk": 20,
+                  "def": 0,
+                  "move_speed": 1.3,
+                  "block_cost": 1
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 120,
+                  "capacity": 120,
+                  "role": "health"
+                },
+                "sp": {
+                  "initial": 0,
+                  "capacity": 100,
+                  "recovery_rate": 30
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              },
+              "rebirth": {
+                "resource": "hp",
+                "max_count": 1,
+                "delay_seconds": 0,
+                "restore_ratio": 0.5,
+                "restore_rule": "rule/restore"
+              }
+            }
+          },
+          {
+            "id": "unit/shooter",
+            "kind": "entity",
+            "tags": [
+              "player"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 1000,
+                  "atk": 200,
+                  "def": 0
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 1000,
+                  "capacity": 1000,
+                  "role": "health"
+                },
+                "sp": {
+                  "initial": 0,
+                  "capacity": 10,
+                  "recovery": {
+                    "mode": "event",
+                    "event": "damage.accepted",
+                    "owner_role": "source",
+                    "amount": 1
+                  }
+                }
+              },
+              "abilities": [
+                "ability/damage",
+                "ability/skip",
+                "ability/allow",
+                "ability/delayed_skip",
+                "ability/delayed_allow"
+              ],
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              }
+            }
+          }
+        ],
+        "rules": [
+          {
+            "id": "rule/restore",
+            "kind": "rule",
+            "contract": "resource.recovery",
+            "implementation": {
+              "type": "expression",
+              "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+            }
+          }
+        ],
+        "selectors": [
+          {
+            "id": "selector/boss",
+            "kind": "selector",
+            "region": {
+              "type": "all"
+            },
+            "filters": [
+              {
+                "tag": "enemy"
+              },
+              {
+                "state": "alive"
+              }
+            ],
+            "limit": 1
+          }
+        ],
+        "abilities": [
+          {
+            "id": "ability/damage",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "damage",
+                  "damage_type": "true",
+                  "scale": 1
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/skip",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": true
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/allow",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": false
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/delayed_skip",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 3,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": true
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/delayed_allow",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 3,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": false
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scene/peer_rebirth",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 3,
+            "cols": 5
+          },
+          "resources": {
+            "life": {
+              "initial": 99999,
+              "capacity": 99999
+            }
+          },
+          "objectives": {
+            "life_resource": "life"
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/phoenix",
+              "instanceAlias": "boss",
+              "position": {
+                "row": 1,
+                "col": 1
+              }
+            },
+            {
+              "definition": "unit/shooter",
+              "instanceAlias": "hero",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ]
+        }
+      },
+      "seed": 610031
+    },
+    {
+      "sha256": "2381d1186510e3971b7ed8e1547eeef3469dba9bf32780adaee2e138f03615aa",
+      "fixture": {
+        "manifest": {
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "entities": [
+          {
+            "id": "unit/phoenix",
+            "kind": "entity",
+            "tags": [
+              "enemy"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 120,
+                  "atk": 20,
+                  "def": 0,
+                  "move_speed": 1.3,
+                  "block_cost": 1
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 120,
+                  "capacity": 120,
+                  "role": "health"
+                },
+                "sp": {
+                  "initial": 0,
+                  "capacity": 100,
+                  "recovery_rate": 30
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              },
+              "rebirth": {
+                "resource": "hp",
+                "max_count": 1,
+                "delay_seconds": 0.2,
+                "restore_ratio": 0.5,
+                "restore_rule": "rule/restore"
+              }
+            }
+          },
+          {
+            "id": "unit/shooter",
+            "kind": "entity",
+            "tags": [
+              "player"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 1000,
+                  "atk": 200,
+                  "def": 0
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 1000,
+                  "capacity": 1000,
+                  "role": "health"
+                },
+                "sp": {
+                  "initial": 0,
+                  "capacity": 10,
+                  "recovery": {
+                    "mode": "event",
+                    "event": "damage.accepted",
+                    "owner_role": "source",
+                    "amount": 1
+                  }
+                }
+              },
+              "abilities": [
+                "ability/damage",
+                "ability/skip",
+                "ability/allow",
+                "ability/delayed_skip",
+                "ability/delayed_allow"
+              ],
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              }
+            }
+          }
+        ],
+        "rules": [
+          {
+            "id": "rule/restore",
+            "kind": "rule",
+            "contract": "resource.recovery",
+            "implementation": {
+              "type": "expression",
+              "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+            }
+          }
+        ],
+        "selectors": [
+          {
+            "id": "selector/boss",
+            "kind": "selector",
+            "region": {
+              "type": "all"
+            },
+            "filters": [
+              {
+                "tag": "enemy"
+              },
+              {
+                "state": "alive"
+              }
+            ],
+            "limit": 1
+          }
+        ],
+        "abilities": [
+          {
+            "id": "ability/damage",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "damage",
+                  "damage_type": "true",
+                  "scale": 1
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/skip",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": true
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/allow",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": false
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/delayed_skip",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 3,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": true
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/delayed_allow",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 3,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": false
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scene/peer_rebirth",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 3,
+            "cols": 5
+          },
+          "resources": {
+            "life": {
+              "initial": 99999,
+              "capacity": 99999
+            }
+          },
+          "objectives": {
+            "life_resource": "life"
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/phoenix",
+              "instanceAlias": "boss",
+              "position": {
+                "row": 1,
+                "col": 1
+              }
+            },
+            {
+              "definition": "unit/shooter",
+              "instanceAlias": "hero",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ]
+        }
+      },
+      "seed": 610031
+    },
+    {
+      "sha256": "2381d1186510e3971b7ed8e1547eeef3469dba9bf32780adaee2e138f03615aa",
+      "fixture": {
+        "manifest": {
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "entities": [
+          {
+            "id": "unit/phoenix",
+            "kind": "entity",
+            "tags": [
+              "enemy"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 120,
+                  "atk": 20,
+                  "def": 0,
+                  "move_speed": 1.3,
+                  "block_cost": 1
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 120,
+                  "capacity": 120,
+                  "role": "health"
+                },
+                "sp": {
+                  "initial": 0,
+                  "capacity": 100,
+                  "recovery_rate": 30
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              },
+              "rebirth": {
+                "resource": "hp",
+                "max_count": 1,
+                "delay_seconds": 0.2,
+                "restore_ratio": 0.5,
+                "restore_rule": "rule/restore"
+              }
+            }
+          },
+          {
+            "id": "unit/shooter",
+            "kind": "entity",
+            "tags": [
+              "player"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 1000,
+                  "atk": 200,
+                  "def": 0
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 1000,
+                  "capacity": 1000,
+                  "role": "health"
+                },
+                "sp": {
+                  "initial": 0,
+                  "capacity": 10,
+                  "recovery": {
+                    "mode": "event",
+                    "event": "damage.accepted",
+                    "owner_role": "source",
+                    "amount": 1
+                  }
+                }
+              },
+              "abilities": [
+                "ability/damage",
+                "ability/skip",
+                "ability/allow",
+                "ability/delayed_skip",
+                "ability/delayed_allow"
+              ],
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              }
+            }
+          }
+        ],
+        "rules": [
+          {
+            "id": "rule/restore",
+            "kind": "rule",
+            "contract": "resource.recovery",
+            "implementation": {
+              "type": "expression",
+              "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+            }
+          }
+        ],
+        "selectors": [
+          {
+            "id": "selector/boss",
+            "kind": "selector",
+            "region": {
+              "type": "all"
+            },
+            "filters": [
+              {
+                "tag": "enemy"
+              },
+              {
+                "state": "alive"
+              }
+            ],
+            "limit": 1
+          }
+        ],
+        "abilities": [
+          {
+            "id": "ability/damage",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "damage",
+                  "damage_type": "true",
+                  "scale": 1
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/skip",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": true
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/allow",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": false
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/delayed_skip",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 3,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": true
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/delayed_allow",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 3,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": false
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scene/peer_rebirth",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 3,
+            "cols": 5
+          },
+          "resources": {
+            "life": {
+              "initial": 99999,
+              "capacity": 99999
+            }
+          },
+          "objectives": {
+            "life_resource": "life"
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/phoenix",
+              "instanceAlias": "boss",
+              "position": {
+                "row": 1,
+                "col": 1
+              }
+            },
+            {
+              "definition": "unit/shooter",
+              "instanceAlias": "hero",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ]
+        }
+      },
+      "seed": 610031
+    },
+    {
+      "sha256": "2381d1186510e3971b7ed8e1547eeef3469dba9bf32780adaee2e138f03615aa",
+      "fixture": {
+        "manifest": {
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "entities": [
+          {
+            "id": "unit/phoenix",
+            "kind": "entity",
+            "tags": [
+              "enemy"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 120,
+                  "atk": 20,
+                  "def": 0,
+                  "move_speed": 1.3,
+                  "block_cost": 1
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 120,
+                  "capacity": 120,
+                  "role": "health"
+                },
+                "sp": {
+                  "initial": 0,
+                  "capacity": 100,
+                  "recovery_rate": 30
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              },
+              "rebirth": {
+                "resource": "hp",
+                "max_count": 1,
+                "delay_seconds": 0.2,
+                "restore_ratio": 0.5,
+                "restore_rule": "rule/restore"
+              }
+            }
+          },
+          {
+            "id": "unit/shooter",
+            "kind": "entity",
+            "tags": [
+              "player"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 1000,
+                  "atk": 200,
+                  "def": 0
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 1000,
+                  "capacity": 1000,
+                  "role": "health"
+                },
+                "sp": {
+                  "initial": 0,
+                  "capacity": 10,
+                  "recovery": {
+                    "mode": "event",
+                    "event": "damage.accepted",
+                    "owner_role": "source",
+                    "amount": 1
+                  }
+                }
+              },
+              "abilities": [
+                "ability/damage",
+                "ability/skip",
+                "ability/allow",
+                "ability/delayed_skip",
+                "ability/delayed_allow"
+              ],
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              }
+            }
+          }
+        ],
+        "rules": [
+          {
+            "id": "rule/restore",
+            "kind": "rule",
+            "contract": "resource.recovery",
+            "implementation": {
+              "type": "expression",
+              "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+            }
+          }
+        ],
+        "selectors": [
+          {
+            "id": "selector/boss",
+            "kind": "selector",
+            "region": {
+              "type": "all"
+            },
+            "filters": [
+              {
+                "tag": "enemy"
+              },
+              {
+                "state": "alive"
+              }
+            ],
+            "limit": 1
+          }
+        ],
+        "abilities": [
+          {
+            "id": "ability/damage",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "damage",
+                  "damage_type": "true",
+                  "scale": 1
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/skip",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": true
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/allow",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": false
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/delayed_skip",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 3,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": true
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/delayed_allow",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 3,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": false
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scene/peer_rebirth",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 3,
+            "cols": 5
+          },
+          "resources": {
+            "life": {
+              "initial": 99999,
+              "capacity": 99999
+            }
+          },
+          "objectives": {
+            "life_resource": "life"
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/phoenix",
+              "instanceAlias": "boss",
+              "position": {
+                "row": 1,
+                "col": 1
+              }
+            },
+            {
+              "definition": "unit/shooter",
+              "instanceAlias": "hero",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ]
+        }
+      },
+      "seed": 610031
+    },
+    {
+      "sha256": "2381d1186510e3971b7ed8e1547eeef3469dba9bf32780adaee2e138f03615aa",
+      "fixture": {
+        "manifest": {
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "entities": [
+          {
+            "id": "unit/phoenix",
+            "kind": "entity",
+            "tags": [
+              "enemy"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 120,
+                  "atk": 20,
+                  "def": 0,
+                  "move_speed": 1.3,
+                  "block_cost": 1
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 120,
+                  "capacity": 120,
+                  "role": "health"
+                },
+                "sp": {
+                  "initial": 0,
+                  "capacity": 100,
+                  "recovery_rate": 30
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              },
+              "rebirth": {
+                "resource": "hp",
+                "max_count": 1,
+                "delay_seconds": 0.2,
+                "restore_ratio": 0.5,
+                "restore_rule": "rule/restore"
+              }
+            }
+          },
+          {
+            "id": "unit/shooter",
+            "kind": "entity",
+            "tags": [
+              "player"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 1000,
+                  "atk": 200,
+                  "def": 0
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 1000,
+                  "capacity": 1000,
+                  "role": "health"
+                },
+                "sp": {
+                  "initial": 0,
+                  "capacity": 10,
+                  "recovery": {
+                    "mode": "event",
+                    "event": "damage.accepted",
+                    "owner_role": "source",
+                    "amount": 1
+                  }
+                }
+              },
+              "abilities": [
+                "ability/damage",
+                "ability/skip",
+                "ability/allow",
+                "ability/delayed_skip",
+                "ability/delayed_allow"
+              ],
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              }
+            }
+          }
+        ],
+        "rules": [
+          {
+            "id": "rule/restore",
+            "kind": "rule",
+            "contract": "resource.recovery",
+            "implementation": {
+              "type": "expression",
+              "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+            }
+          }
+        ],
+        "selectors": [
+          {
+            "id": "selector/boss",
+            "kind": "selector",
+            "region": {
+              "type": "all"
+            },
+            "filters": [
+              {
+                "tag": "enemy"
+              },
+              {
+                "state": "alive"
+              }
+            ],
+            "limit": 1
+          }
+        ],
+        "abilities": [
+          {
+            "id": "ability/damage",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "damage",
+                  "damage_type": "true",
+                  "scale": 1
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/skip",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": true
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/allow",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": false
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/delayed_skip",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 3,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": true
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/delayed_allow",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 3,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": false
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scene/peer_rebirth",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 3,
+            "cols": 5
+          },
+          "resources": {
+            "life": {
+              "initial": 99999,
+              "capacity": 99999
+            }
+          },
+          "objectives": {
+            "life_resource": "life"
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/phoenix",
+              "instanceAlias": "boss",
+              "position": {
+                "row": 1,
+                "col": 1
+              }
+            },
+            {
+              "definition": "unit/shooter",
+              "instanceAlias": "hero",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ]
+        }
+      },
+      "seed": 610031
+    },
+    {
+      "sha256": "6863fc71a647232236a5d731ac9a4e48b6df0e8594e04a9b05d6118da86e03cb",
+      "fixture": {
+        "manifest": {
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "entities": [
+          {
+            "id": "unit/phoenix",
+            "kind": "entity",
+            "tags": [
+              "enemy"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 120,
+                  "atk": 20,
+                  "def": 0,
+                  "move_speed": 1.3,
+                  "block_cost": 1
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 120,
+                  "capacity": 120,
+                  "role": "health"
+                },
+                "sp": {
+                  "initial": 0,
+                  "capacity": 100,
+                  "recovery_rate": 30
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              },
+              "rebirth": {
+                "resource": "hp",
+                "max_count": 1,
+                "delay_seconds": 0.2,
+                "restore_ratio": 0.5,
+                "restore_rule": "rule/restore",
+                "on_begin": [
+                  {
+                    "op": "schedule",
+                    "delay_seconds": 0.1,
+                    "effect": {
+                      "op": "retire",
+                      "target": "source",
+                      "parameters": {
+                        "reason": "withdrawn"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "unit/shooter",
+            "kind": "entity",
+            "tags": [
+              "player"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 1000,
+                  "atk": 200,
+                  "def": 0
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 1000,
+                  "capacity": 1000,
+                  "role": "health"
+                },
+                "sp": {
+                  "initial": 0,
+                  "capacity": 10,
+                  "recovery": {
+                    "mode": "event",
+                    "event": "damage.accepted",
+                    "owner_role": "source",
+                    "amount": 1
+                  }
+                }
+              },
+              "abilities": [
+                "ability/damage",
+                "ability/skip",
+                "ability/allow",
+                "ability/delayed_skip",
+                "ability/delayed_allow"
+              ],
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              }
+            }
+          }
+        ],
+        "rules": [
+          {
+            "id": "rule/restore",
+            "kind": "rule",
+            "contract": "resource.recovery",
+            "implementation": {
+              "type": "expression",
+              "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+            }
+          }
+        ],
+        "selectors": [
+          {
+            "id": "selector/boss",
+            "kind": "selector",
+            "region": {
+              "type": "all"
+            },
+            "filters": [
+              {
+                "tag": "enemy"
+              },
+              {
+                "state": "alive"
+              }
+            ],
+            "limit": 1
+          }
+        ],
+        "abilities": [
+          {
+            "id": "ability/damage",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "damage",
+                  "damage_type": "true",
+                  "scale": 1
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/skip",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": true
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/allow",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": false
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/delayed_skip",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 3,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": true
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/delayed_allow",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 3,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": false
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scene/peer_rebirth",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 3,
+            "cols": 5
+          },
+          "resources": {
+            "life": {
+              "initial": 99999,
+              "capacity": 99999
+            }
+          },
+          "objectives": {
+            "life_resource": "life"
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/phoenix",
+              "instanceAlias": "boss",
+              "position": {
+                "row": 1,
+                "col": 1
+              }
+            },
+            {
+              "definition": "unit/shooter",
+              "instanceAlias": "hero",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ]
+        }
+      },
+      "seed": 610031
+    },
+    {
+      "sha256": "ec936e80bbe2aa455d8a07e41502d08816e89d054339fdc2dfc24260b8e83ceb",
+      "fixture": {
+        "manifest": {
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "entities": [
+          {
+            "id": "unit/phoenix",
+            "kind": "entity",
+            "tags": [
+              "enemy"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 120,
+                  "atk": 20,
+                  "def": 0,
+                  "move_speed": 1.3,
+                  "block_cost": 1
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 120,
+                  "capacity": 120,
+                  "role": "health"
+                },
+                "sp": {
+                  "initial": 0,
+                  "capacity": 100,
+                  "recovery_rate": 30
+                }
+              },
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              },
+              "rebirth": {
+                "resource": "hp",
+                "max_count": 1,
+                "delay_seconds": 0.2,
+                "restore_ratio": 0.5,
+                "restore_rule": "rule/restore",
+                "on_begin": [
+                  {
+                    "op": "instant_kill",
+                    "target": "source",
+                    "parameters": {
+                      "cause": "callback",
+                      "skip_rebirth": true
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "unit/shooter",
+            "kind": "entity",
+            "tags": [
+              "player"
+            ],
+            "components": {
+              "spatial": {},
+              "attributes": {
+                "base": {
+                  "max_hp": 1000,
+                  "atk": 200,
+                  "def": 0
+                }
+              },
+              "resources": {
+                "hp": {
+                  "initial": 1000,
+                  "capacity": 1000,
+                  "role": "health"
+                },
+                "sp": {
+                  "initial": 0,
+                  "capacity": 10,
+                  "recovery": {
+                    "mode": "event",
+                    "event": "damage.accepted",
+                    "owner_role": "source",
+                    "amount": 1
+                  }
+                }
+              },
+              "abilities": [
+                "ability/damage",
+                "ability/skip",
+                "ability/allow",
+                "ability/delayed_skip",
+                "ability/delayed_allow"
+              ],
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              }
+            }
+          }
+        ],
+        "rules": [
+          {
+            "id": "rule/restore",
+            "kind": "rule",
+            "contract": "resource.recovery",
+            "implementation": {
+              "type": "expression",
+              "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+            }
+          }
+        ],
+        "selectors": [
+          {
+            "id": "selector/boss",
+            "kind": "selector",
+            "region": {
+              "type": "all"
+            },
+            "filters": [
+              {
+                "tag": "enemy"
+              },
+              {
+                "state": "alive"
+              }
+            ],
+            "limit": 1
+          }
+        ],
+        "abilities": [
+          {
+            "id": "ability/damage",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "damage",
+                  "damage_type": "true",
+                  "scale": 1
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/skip",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": true
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/allow",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 0,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": false
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/delayed_skip",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 3,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": true
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "ability/delayed_allow",
+            "kind": "ability",
+            "selector": "selector/boss",
+            "activation": {
+              "mode": "manual"
+            },
+            "timeline": [
+              {
+                "at": 3,
+                "effect": {
+                  "op": "instant_kill",
+                  "parameters": {
+                    "cause": "script",
+                    "skip_rebirth": false
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scene/peer_rebirth",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 3,
+            "cols": 5
+          },
+          "resources": {
+            "life": {
+              "initial": 99999,
+              "capacity": 99999
+            }
+          },
+          "objectives": {
+            "life_resource": "life"
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/phoenix",
+              "instanceAlias": "boss",
+              "position": {
+                "row": 1,
+                "col": 1
+              }
+            },
+            {
+              "definition": "unit/shooter",
+              "instanceAlias": "hero",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ]
+        }
+      },
+      "seed": 610031
+    }
+  ],
+  "fixtures": [],
+  "scope": "independent rebirth health/count/causality model review; no promotion/stage receipt"
+}

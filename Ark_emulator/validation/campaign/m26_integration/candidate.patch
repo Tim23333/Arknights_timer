@@ -1,0 +1,661 @@
+--- a/ark_sim/content/capabilities.py
++++ b/ark_sim/content/capabilities.py
+@@ -38,6 +38,13 @@
+                 require("resource.recovery", f"{path}.{name}", local, spec.get("recovery_rule"))
+             if spec.get("recovery", {}).get("mode") == "periodic":
+                 require("time.quantize", f"{path}.{name}.recovery")
++
++    for _id, _definition in definitions.items():
++        if _definition.get("kind") == "selector" and _definition.get("eligibility"):
++            require("targeting.eligibility", _id+".eligibility", explicit=_definition["eligibility"]["rule"])
++        if _definition.get("kind") == "entity" and "selection_state" in _definition.get("components", {}):
++            from ..domains.selection import validate_state
++            validate_state(_definition["components"]["selection_state"], _id+".selection_state")
+ 
+     selectors_seen = set()
+     def selector(identifier, path, scopes):
+@@ -206,6 +213,25 @@
+             continue
+         components = definition.get("components", {})
+         scopes = [definition.get("rules", {})]
++        machine=definitions.get(components.get('behavior',{}).get('machine'),{})
++        if machine.get('decision'):
++            config=machine['decision'];require('behavior.decision',identifier+'.behavior',scopes,config['rule'])
++            if config.get('mode_resource') and config['mode_resource'] not in components.get('resources',{}):
++                raise ContentError(identifier+': absent behavior mode resource')
++            if config.get('mode_resource'):
++                initial=components['resources'][config['mode_resource']].get('initial',0)
++                if type(initial) not in (int,float) or int(initial)!=initial or int(initial) not in {p['mode'] for p in config['profiles']}:
++                    raise ContentError(identifier+': initial behavior mode must be integral and declared')
++            owned=set(components.get('abilities',[]))
++            for profile in config['profiles']:
++                for group in profile.get('cast_groups',[]):
++                    if any(a not in owned for a in group['abilities']):raise ContentError(identifier+': behavior cast group includes unowned ability')
++                for entry in profile.get('selectors',[]):
++                    selected=definitions[entry['selector']]
++                    if selected.get('kind')!='selector':raise ContentError(identifier+': behavior selector reference is not selector')
++                    if selected.get('limit_attribute') and not selected.get('eligible_rule'):
++                        raise ContentError(identifier+': dynamic selector limit requires explicit pure eligibility rule')
++                    require('selector.eligibility',identifier+'.behavior',scopes,selected.get('eligible_rule'))
+         if components.get("spatial", {}).get("steering"):
+             steering = components["spatial"]["steering"]
+             require("movement.steering", f"{identifier}.spatial.steering", scopes, steering.get("rule"))
+@@ -240,6 +266,7 @@
+             ability(identifier, identifier, [])
+         elif kind == "selector" and identifier not in selectors_seen:
+             selector(identifier, identifier, [])
++            if definition.get('eligible_rule'):require('selector.eligibility',identifier,scopes,definition['eligible_rule'])
+         elif kind == "projectile":
+             require("projectile.trajectory", identifier+".motion", scopes, definition["motion"]["rule"])
+             require("projectile.collision", identifier+".collision", scopes, definition["collision"]["rule"])
+--- a/ark_sim/content/compiler.py
++++ b/ark_sim/content/compiler.py
+@@ -461,4 +461,7 @@
+         for item in instances:
+             base = definitions[item["definition"]].get("components", {})
+             actual = merge(base, item.get("components", {}))
++            if "selection_state" in actual:
++                from ..domains.selection import validate_state
++                validate_state(actual["selection_state"], (item.get("instanceAlias") or item["definition"])+".selection_state")
+             check_freeze(actual.get("resources", {}), actual.get("abilities", []), item.get("instanceAlias") or item["definition"])
+--- a/ark_sim/content/presets/ark_standard.json
++++ b/ark_sim/content/presets/ark_standard.json
+@@ -569,6 +569,27 @@
+       "parameters": {
+         "normal_cost": 1,
+         "obstacle_like_cost": 3
++      }
++    },
++    {
++      "id": "rule/ark_selector_pure_eligibility",
++      "kind": "calculation_rule",
++      "contract": "selector.eligibility",
++      "implementation": {
++        "type": "provider",
++        "provider": "ark.selector.pure_eligibility"
++      },
++      "parameters": {
++        "provider": "ark.selector.grid"
++      }
++    },
++    {
++      "id": "rule/ark_behavior_decision",
++      "kind": "calculation_rule",
++      "contract": "behavior.decision",
++      "implementation": {
++        "type": "provider",
++        "provider": "ark.behavior.decision"
+       }
+     }
+   ],
+@@ -637,7 +658,8 @@
+         "random.check": "rule/ark_random_check",
+         "resource.capacity_change": "rule/ark_capacity_change",
+         "movement.wait_deadline": "rule/ark_wait_deadline",
+-        "terrain.tile_options": "rule/ark_terrain_tile_options"
++        "terrain.tile_options": "rule/ark_terrain_tile_options",
++        "selector.eligibility": "rule/ark_selector_pure_eligibility"
+       },
+       "parameters": {
+         "health_resource": "hp",
+--- a/ark_sim/content/schemas.py
++++ b/ark_sim/content/schemas.py
+@@ -10,9 +10,9 @@
+     "control": {"clock_policy", "ack_policy", "steps", "on_start", "on_complete", "on_cancel"},
+     "entity": {"tags", "components", "growth", "talents", "equipment", "progression"},
+     "ability": {"activation", "selector", "timeline", "target_capture", "interrupt_policy", "success_definition", "duration_seconds", "cooldown_seconds", "events", "parameters"},
+-    "buff": {"duration_seconds", "interval_seconds", "stacking", "modifiers", "events", "effects", "parameters", "removal", "duration_rule", "interval_rule", "control", "aura", "on_remove", "movement_damage", "damage_hooks"},
+-    "selector": {"region", "filters", "ordering", "limit", "limit_attribute", "provider", "parameters"},
+-    "behavior": {"provider", "implementation", "states", "initial", "initial_state", "transitions", "parameters"},
++    "buff": {"selection_flags","duration_seconds", "interval_seconds", "stacking", "modifiers", "events", "effects", "parameters", "removal", "duration_rule", "interval_rule", "control", "aura", "on_remove", "movement_damage", "damage_hooks"},
++    "selector": {"eligibility", "region", "filters", "ordering", "limit", "limit_attribute", "provider", "parameters", "eligible_rule"},
++    "behavior": {"decision", "provider", "implementation", "states", "initial", "initial_state", "transitions", "parameters"},
+     "policy": {"contract", "provider", "implementation", "parameters"},
+     "calculation_rule": {"contract", "implementation", "parameters", "numeric", "contractVersion"},
+     "rule": {"contract", "implementation", "parameters", "numeric", "contractVersion"},
+@@ -21,6 +21,7 @@
+     "scenario": {"ruleset", "map", "initialEntities", "waves", "timeline", "commands", "scheduledEffects", "objectives", "resources", "parameters", "roster", "duration_seconds", "seed", "aliases", "description", "routes", "packages"},
+ }
+ COMPONENT_FIELDS = {
++    "selection_state": None,
+     "attributes": {"base", "modifiers", "rules", "growth", "parameters", "layers", "attribute_rules"},
+     "resources": None,
+     "terrain_overlays": None,
+@@ -265,6 +266,9 @@
+             allowed = COMPONENT_FIELDS[key]
+             if allowed is not None:
+                 fields(value, allowed, f"{identifier}.components.{key}")
++        if "selection_state" in components:
++            from ..domains.selection import validate_state
++            validate_state(components["selection_state"], identifier+".selection_state")
+         if "terrain_overlays" in components:
+             from ark_sim.domains.terrain import validate_spec
+             layers = components["terrain_overlays"]
+@@ -385,6 +389,9 @@
+             for effect in entry.get("effects", []):
+                 validate_effect(effect, f"{path}.effects", capabilities)
+     elif kind == "buff":
++        if "selection_flags" in definition:
++            from ..domains.selection import validate_state
++            validate_state(definition["selection_flags"], identifier+".selection_flags", contribution=True)
+         for index, hook in enumerate(definition.get("damage_hooks", [])):
+             location = f"{identifier}.damage_hooks[{index}]"
+             fields(hook, {"phase", "rule", "condition", "samples", "group", "priority"}, location)
+@@ -440,6 +447,9 @@
+             validate_effect(effect, f"{identifier}.on_remove", capabilities)
+         validate_events(definition.get("events", []), f"{identifier}.events", capabilities)
+     elif kind == "selector":
++        if "eligibility" in definition:
++            from ..domains.selection import validate_eligibility
++            validate_eligibility(definition["eligibility"], identifier+".eligibility")
+         if "limit" in definition and "limit_attribute" in definition:
+             raise ContentError(f"{identifier}: limit and limit_attribute are mutually exclusive")
+         if definition.get("limit") is not None and (type(definition["limit"]) is not int or definition["limit"] < 0):
+@@ -499,6 +509,10 @@
+             if not isinstance(binding.get("attribute", binding.get("attribute_role")), str):
+                 raise ContentError(f"{path}: declare an attribute or attribute_role")
+     elif kind == "behavior":
++        if definition.get('decision'):
++            from ark_sim.domains.behavior_decision import validate_config
++            try:validate_config(definition['decision'])
++            except ValueError as error:raise ContentError(identifier+': '+str(error)) from error
+         if not definition.get("provider") and not definition.get("implementation"):
+             states = definition.get("states")
+             if not isinstance(states, Mapping) or not states:
+--- a/ark_sim/domains/abilities.py
++++ b/ark_sim/domains/abilities.py
+@@ -206,6 +206,8 @@
+                     active["source_snapshot"] = getattr(self.ctx, "capture_view", self.ctx.entity)(source)
+                     active["target_snapshots"] = {str(target): getattr(self.ctx, "capture_view", self.ctx.entity)(target) for target in targets}
+                     self.ctx.set(source, ("runtime", "casts", cast_id), active)
++            if getattr(self.ctx,'behavior',None) is not None:
++                self.ctx.behavior.refresh(source)
+             return cast_id
+ 
+     def _active(self, source, cast_id):
+--- a/ark_sim/domains/behavior.py
++++ b/ark_sim/domains/behavior.py
+@@ -29,6 +29,13 @@
+             return {'move': False, 'attack': False}
+         component = self.ctx.get(ref, ("behavior",), {})
+         definition = self.ctx.program.definitions.get(component.get("machine"), {})
++        if definition.get('decision'):
++            from .behavior_decision import facts
++            inputs=facts(self.ctx,ref,definition['decision'],component.get('state',definition.get('initial',definition.get('initial_state'))))
++            decision=self.ctx.calc('behavior.decision',inputs,source=ref,owner=ref,rule_id=definition['decision']['rule'])
++            if not isinstance(decision,dict) or set(decision)!={'move','attack'} or any(type(x) is not bool for x in decision.values()):
++                raise ValueError('behavior decision requires exactly move/attack booleans')
++            return decision
+         provider = definition.get("provider") or definition.get("implementation", {}).get("provider")
+         if provider:
+             decision = self.ctx.provider(provider, {"source": self.ctx.entity(ref),
+@@ -37,6 +44,14 @@
+                 raise ValueError("behavior provider must return boolean move and attack decisions")
+             return decision
+         return {"move": True, "attack": True}
++
++    def refresh(self, ref):
++        component=self.ctx.get(ref,('behavior',),{})
++        definition=self.ctx.program.definitions.get(component.get('machine'),{})
++        if definition.get('decision') and self.ctx.active(ref):
++            decision=self.plan(ref)
++            if decision!=self.ctx.get(ref,('runtime','behavior_decision')):
++                self.ctx.set(ref,('runtime','behavior_decision'),decision)
+ 
+     def tick(self, session):
+         if self.ctx.state().get("finished"):
+--- a/ark_sim/domains/behavior_decision.py
++++ b/ark_sim/domains/behavior_decision.py
+@@ -0,0 +1,45 @@
++"""Opt-in strict behavior decisions from declared profiles and pure facts."""
++from collections.abc import Mapping
++from ark_sim.contracts import thaw
++def validate_config(config):
++ if not isinstance(config,Mapping) or set(config)-{'rule','mode_resource','default_mode','profiles'}:raise ValueError('behavior decision unknown fields')
++ if not isinstance(config.get('rule'),str) or not config['rule']:raise ValueError('behavior decision rule ID required')
++ if 'mode_resource' in config:
++  if not isinstance(config['mode_resource'],str) or not config['mode_resource'] or 'default_mode' in config:raise ValueError('mode_resource requires nonempty name and cannot fallback to default_mode')
++ elif type(config.get('default_mode')) is not int:raise ValueError('decision without mode resource requires explicit integer default_mode')
++ profiles=config.get('profiles')
++ if not isinstance(profiles,(list,tuple)) or not profiles:raise ValueError('decision requires nonempty profiles')
++ modes=set()
++ for p in profiles:
++  if not isinstance(p,Mapping) or set(p)-{'mode','selectors','cast_groups','parameters'} or type(p.get('mode')) is not int or p['mode'] in modes:raise ValueError('decision profile requires unique integer mode')
++  modes.add(p['mode'])
++  keys=set()
++  for s in p.get('selectors',[]):
++   if not isinstance(s,Mapping) or set(s)!={'key','selector'} or not isinstance(s['key'],str) or not s['key'] or s['key'] in keys or not isinstance(s['selector'],str) or not s['selector']:raise ValueError('decision selector key/reference invalid or duplicated')
++   keys.add(s['key'])
++  groups=set()
++  for g in p.get('cast_groups',[]):
++   if not isinstance(g,Mapping) or set(g)!={'key','abilities'} or not isinstance(g['key'],str) or not g['key'] or g['key'] in groups or not isinstance(g['abilities'],(list,tuple)) or not all(isinstance(x,str) and x for x in g['abilities']):raise ValueError('decision cast group invalid')
++   groups.add(g['key'])
++  params=p.get('parameters',{})
++  if not isinstance(params,Mapping):raise ValueError('decision profile parameters require record')
++ if 'default_mode' in config and config['default_mode'] not in modes:raise ValueError('default mode must name a declared profile')
++
++def facts(ctx,ref,config,state):
++ if 'mode_resource' in config:
++  resources=ctx.get(ref,('resources',),{})
++  if config['mode_resource'] not in resources:raise ValueError('behavior mode resource is absent')
++  mode=resources[config['mode_resource']]['current']
++  if type(mode) not in (int,float) or int(mode)!=mode:raise ValueError('behavior mode resource must be integral numeric (not bool)')
++  mode=int(mode)
++ else:mode=config['default_mode']
++ profiles=[p for p in config['profiles'] if p['mode']==mode]
++ if len(profiles)!=1:raise ValueError('behavior mode has no declared profile')
++ profile=profiles[0];runtime=ctx.get(ref,('runtime',),{});casts=runtime.get('casts',{})
++ selectors={s['key']:ctx.spatial.eligible(ref,s['selector']) for s in profile.get('selectors',[])}
++ groups={g['key']:[c['id'] for c in casts.values() if c['ability'] in g['abilities']] for g in profile.get('cast_groups',[])}
++ return {'source':ctx.entity(ref),'state':state,'mode':mode,'casts':casts,'cast_groups':groups,
++   'next_attack':runtime.get('next_attack',0),'blocked_by':ctx.spatial.blocked_by(ref),
++   'visibility':{'alive':ctx.alive(ref),'active':ctx.active(ref),'hidden':ctx.route_hidden(ref)},
++   'controls':ctx.buffs.controls(ref),'clock':{'time':ctx.session.time,'quantum':ctx.session.quantum},
++   'eligible_ids':selectors,'parameters':thaw(profile.get('parameters',{}))}
+--- a/ark_sim/domains/movement.py
++++ b/ark_sim/domains/movement.py
+@@ -20,7 +20,28 @@
+     def blocked_by(self, ref):
+         return self.ctx.get(ref, ("runtime", "blocked_by"))
+ 
+-    def select(self, source, selector_id, ability=None, effect=None, primary=None):
++    def selection_state(self, ref, defaults=None):
++        from .selection import project_state
++        return project_state(self.ctx, ref, defaults or {})
++
++    def qualifies(self, source, candidate, selector, ability=None, effect=None):
++        """Readonly per-candidate eligibility. No ordering, sampling or traces."""
++        spec = selector.get("eligibility")
++        if spec is None:
++            return True
++        if not self.ctx.active(source) or not self.ctx.active(candidate) or self.ctx.route_hidden(source) or self.ctx.route_hidden(candidate):
++            return False
++        params = thaw(spec["parameters"])
++        inputs = {"source": self.ctx.entity(source), "candidate": self.ctx.entity(candidate),
++                  "selector": {**thaw(selector), "healing": bool((ability or {}).get("parameters", {}).get("healing"))}, "parameters": params,
++                  "selection_states": {"source": self.selection_state(source, params["defaults"]),
++                                       "candidate": self.selection_state(candidate, params["defaults"])}}
++        decision = self.ctx.rules.evaluate("targeting.eligibility", inputs, rule_id=spec["rule"]).value
++        if not isinstance(decision, Mapping) or set(decision) != {"accepted", "reason"} or type(decision["accepted"]) is not bool or not isinstance(decision["reason"], str):
++            raise ValueError("targeting.eligibility must return strict accepted/reason decision")
++        return decision["accepted"]
++
++    def _candidate_input(self, source, selector_id, primary=None):
+         definition = self.ctx.program.definitions[selector_id]
+         entity = self.ctx.entity(source)
+         candidates = [thaw(e) for e in self.ctx.session.world.entities() if e["id"] != self.ctx.session.world.resolve("system/battle")
+@@ -64,6 +85,29 @@
+                 candidates = [e for e in candidates if e["components"].get("ownership", {}).get("owner") == entity["id"]]
+         if definition.get("region", {}).get("blocked_only"):
+             candidates = [e for e in candidates if e["id"] == self.blocked_by(source)]
++        return definition, entity, candidates
++
++    def eligible(self, source, selector_id, ability=None, effect=None, primary=None):
++        if (ability or {}).get('parameters', {}).get('healing') or (effect or {}).get('op') in {'heal', 'regenerate'}:
++            raise ValueError('healing eligibility requires its explicit pure availability contract')
++        definition, entity, candidates = self._candidate_input(source, selector_id, primary)
++        if definition.get('limit_attribute') and not definition.get('eligible_rule'):
++            raise ValueError('dynamic limit eligibility requires an explicit pure eligibility rule')
++        if definition.get('limit')==0:return []
++        result = self.ctx.rules.evaluate('selector.eligibility', {
++            'source': entity, 'candidates': candidates, 'region': thaw(definition.get('region', {})),
++            'selector_parameters': thaw(definition.get('parameters', {})),
++            'selector':thaw(definition),
++            'selector_provider': definition.get('provider', 'ark.selector.grid')},
++            scope={'scenario':thaw(self.ctx.program.scenario.get('rules',{})), 'source':thaw(self.ctx.definition(source).get('rules',{}))},
++            rule_id=definition.get('eligible_rule'), context={'time':self.ctx.session.time, 'quantum':self.ctx.session.quantum,'source':entity,'owner':entity})
++        ids=thaw(result.value);allowed={x['id'] for x in candidates}
++        if not isinstance(ids,list) or any(type(ref) is not int or ref not in allowed for ref in ids):
++            raise ValueError('pure selector returned undeclared candidate identity')
++        return [ref for ref in ids if self.qualifies(source, ref, definition, ability, effect)]
++
++    def select(self, source, selector_id, ability=None, effect=None, primary=None):
++        definition, entity, candidates = self._candidate_input(source, selector_id, primary)
+         provider = definition.get("provider", "ark.selector.grid")
+         ids = self.ctx.provider(provider, {"source": entity, "candidates": candidates,
+                 "region": thaw(definition.get("region", {}))}, definition.get("parameters", {}))
+@@ -76,6 +120,8 @@
+         if position is None and definition.get("region", {}).get("type") != "all":
+             raise ValueError("spatial selector requires an explicit source position")
+         for ref in ids:
++            if not self.qualifies(source, ref, definition, ability, effect):
++                continue
+             candidate = self.ctx.entity(ref)
+             target_pos = candidate.get("components", {}).get("spatial", {}).get("position")
+             distance = math.hypot(position["row"]-target_pos["row"], position["col"]-target_pos["col"]) if position is not None and target_pos is not None else 0
+--- a/ark_sim/domains/providers.py
++++ b/ark_sim/domains/providers.py
+@@ -2,8 +2,12 @@
+ from ark_sim.presets import providers as ark
+ 
+ from . import projectile_profiles
++from .selection import eligibility_profile
+ 
+ BUILTIN_PROVIDERS = {
++    "ark.selector.pure_eligibility": ark.pure_eligibility,
++    "ark.behavior.decision": ark.behavior_decision,
++    "model.targeting.eligibility": eligibility_profile,
+     "ark.terrain.tile_options": ark.terrain_tile_options,
+     "model.projectile.trajectory": projectile_profiles.trajectory,
+     "model.projectile.collision": projectile_profiles.collision,
+--- a/ark_sim/domains/selection.py
++++ b/ark_sim/domains/selection.py
+@@ -0,0 +1,94 @@
++"""Explicit model eligibility; native ValidateTarget bodies remain unverified."""
++from collections.abc import Mapping
++from ark_sim.contracts import thaw
++
++BOOLS = {"target_free", "ally_target_free", "heal_free", "camouflage", "can_select_camouflage"}
++MASKS = {"motion": 3, "category": 7, "profession": 1023, "unit_type": 7}
++SETS = {"abnormal_flags": 46, "abnormal_combos": 2, "target_free_flags": 46, "target_free_combos": 2}
++FIELDS = BOOLS | set(MASKS) | set(SETS) | {"side"}
++SWITCHES = ("_ignoreTargetFree", "_onlyIgnoreSomeOfTargetFreeCase", "_excludeSomeAbnormalFlags", "_needProfessionMask", "_ignoreAllyTargetFree", "_ignoreHealFree", "_ignoreMotionMode", "_forceIgnoreCamouflage", "_checkUnitType")
++
++def validate_state(state, path="selection_state", contribution=False, complete=False):
++    if not isinstance(state, Mapping) or set(state)-FIELDS:
++        raise ValueError(path+": unknown selection state fields")
++    if complete and set(state) != FIELDS:
++        raise ValueError(path+": explicit complete typed defaults required")
++    if contribution and set(state)-(BOOLS | set(SETS)):
++        raise ValueError(path+": Buff contributions may only union status flags")
++    for k,v in state.items():
++        if k in BOOLS and type(v) is not bool:
++            raise ValueError(path+"."+k+": bool required")
++        if k == "side" and (type(v) is not int or v not in (0,1,2)):
++            raise ValueError(path+".side: absolute SideTypeIndex required")
++        if k in MASKS and (type(v) is not int or v < 0 or v & ~MASKS[k]):
++            raise ValueError(path+"."+k+": typed mask invalid")
++        if k in SETS and (not isinstance(v,(list,tuple)) or any(type(x) is not int or not 0 <= x < SETS[k] for x in v) or len(set(v)) != len(v)):
++            raise ValueError(path+"."+k+": known enum indices required; E_NUM is not a state")
++
++def validate_eligibility(spec, path="eligibility"):
++    if not isinstance(spec, Mapping) or set(spec) != {"rule","parameters"} or not isinstance(spec["rule"],str) or not spec["rule"]:
++        raise ValueError(path+": exact rule and parameters required")
++    p=spec["parameters"]
++    if not isinstance(p,Mapping) or set(p) != {"source_configuration","side_policy","neutral_policy","defaults"}:
++        raise ValueError(path+": explicit source_configuration/side_policy/neutral_policy/defaults required")
++    if p["side_policy"] != "relative_ally_enemy" or p["neutral_policy"] not in {"reject", "absolute_mask"}:
++        raise ValueError(path+": unsupported declared side/neutral model policy")
++    validate_state(p["defaults"],path+".defaults",complete=True)
++    c=p["source_configuration"]
++    if not isinstance(c,Mapping): raise ValueError(path+": raw configuration record required")
++    for k in SWITCHES:
++        if k not in c or type(c[k]) not in (bool,int) or c[k] not in (0,1): raise ValueError(path+"."+k+": bool or serialized0/1 required")
++    for k,mask,enabled in (("_targetSide",7,True),("_targetCategory",7,True),("_targetMotion",3,not c["_ignoreMotionMode"]),("_professionMask",1023,c["_needProfessionMask"]),("_unitTypeMask",7,c["_checkUnitType"])):
++        if enabled and (type(c.get(k)) is not int or c[k]<0 or c[k]&~mask): raise ValueError(path+"."+k+": enabled typed mask invalid")
++    if c["_ignoreTargetFree"] and c["_onlyIgnoreSomeOfTargetFreeCase"]:
++        for k,bound in (("_abnormalFlag",46),("_abnormalCombo",2)):
++            if type(c.get(k)) is not int or not 0 <= c[k] < bound: raise ValueError(path+"."+k+": enabled enum must be known, not E_NUM")
++    if c["_excludeSomeAbnormalFlags"] and (type(c.get("_excludeAbnormalFlag")) is not int or not 0 <= c["_excludeAbnormalFlag"] < 46):
++        raise ValueError(path+"._excludeAbnormalFlag: enabled known enum required")
++
++def project_state(ctx, ref, defaults):
++    validate_state(defaults, "projection.defaults", complete=True)
++    result=thaw(defaults)
++    base=ctx.entity(ref)["components"].get("selection_state",{})
++    validate_state(base)
++    result.update(thaw(base))
++    for key in SETS: result[key]=set(result[key])
++    now=ctx.session.time
++    for instance in ctx.get(ref,("buffs","instances"),[]):
++        if instance.get("expires_at") is not None and now >= instance["expires_at"]: continue
++        flags=ctx.program.definitions[instance["definition"]].get("selection_flags",{})
++        for key,value in flags.items():
++            if key in SETS: result[key].update(value)
++            elif value: result[key]=True
++    for key in SETS: result[key]=sorted(result[key])
++    # Only explicit native named status indices become corresponding flags.
++    flags=result["abnormal_flags"]
++    for name,index in (("target_free",2),("ally_target_free",15),("heal_free",7),("camouflage",17)):
++        result[name]=result[name] or index in flags
++    return result
++
++def eligibility_profile(inputs, params, context):
++    p=inputs["parameters"];c=p["source_configuration"]
++    s=inputs["selection_states"]["source"];t=inputs["selection_states"]["candidate"]
++    def no(reason): return {"accepted":False,"reason":reason}
++    side=c["_targetSide"]
++    if s["side"]==2 or t["side"]==2:
++        if p["neutral_policy"]=="reject": return no("neutral_policy")
++        bit=1<<t["side"]
++    else: bit=1 if s["side"]==t["side"] else 2
++    if not side & bit: return no("side")
++    if not c["_targetCategory"] & t["category"]: return no("category")
++    if not c["_ignoreMotionMode"] and not c["_targetMotion"] & t["motion"]: return no("motion")
++    if c["_needProfessionMask"] and not c["_professionMask"] & t["profession"]: return no("profession")
++    if c["_checkUnitType"] and not c["_unitTypeMask"] & t["unit_type"]: return no("unit_type")
++    if c["_excludeSomeAbnormalFlags"] and c["_excludeAbnormalFlag"] in t["abnormal_flags"]: return no("excluded_abnormal")
++    if t["target_free"]:
++        if not c["_ignoreTargetFree"]: return no("target_free")
++        if c["_onlyIgnoreSomeOfTargetFreeCase"]:
++            # Explicit reason-set model; unexplained aggregate free is not bypassed.
++            flags=set(t["target_free_flags"]);combos=set(t["target_free_combos"])
++            if not flags and not combos or flags-{c["_abnormalFlag"]} or combos-{c["_abnormalCombo"]}: return no("remaining_target_free_cause")
++    if s["side"]==t["side"] and t["ally_target_free"] and not c["_ignoreAllyTargetFree"]: return no("ally_target_free")
++    if inputs["selector"].get("healing") and t["heal_free"] and not c["_ignoreHealFree"]: return no("heal_free")
++    if t["camouflage"] and not c["_forceIgnoreCamouflage"] and not s["can_select_camouflage"]: return no("camouflage")
++    return {"accepted":True,"reason":"eligible_declared_profile"}
+--- a/ark_sim/presets/providers.py
++++ b/ark_sim/presets/providers.py
+@@ -205,6 +205,26 @@
+ def ground_behavior(inputs, params, context):
+     return {"move": not inputs.get("blocked_by"), "attack": bool(inputs.get("blocked_by")),
+             "state": "alive"}
++
++
++def pure_eligibility(inputs,params,context):
++    return context.invoke_provider(inputs['selector_provider'],{'source':inputs['source'],'candidates':inputs['candidates'],'region':inputs['region']},inputs['selector_parameters'])
++
++
++def behavior_decision(inputs,params,context):
++    p={**dict(params),**dict(inputs['parameters'])};v=inputs['visibility'];c=inputs['controls']
++    if set(p)-{'stop_cast_groups','target_key','blocked_target','stop_on_target'}:raise ValueError('unsupported declared behavior decision parameter')
++    for name in ('blocked_target','stop_on_target'):
++        if name in p and type(p[name]) is not bool:raise ValueError('behavior decision boolean parameter required')
++    if not isinstance(p.get('stop_cast_groups',[]),(list,tuple)) or any(key not in inputs['cast_groups'] for key in p.get('stop_cast_groups',[])):raise ValueError('behavior stop_cast_groups must name declared groups')
++    if p.get('target_key','normal') not in inputs['eligible_ids']:raise ValueError('behavior target_key must name declared selector')
++    if not v['alive'] or not v['active'] or v['hidden']:return {'move':False,'attack':False}
++    busy=any(inputs['cast_groups'].get(key) for key in p.get('stop_cast_groups',[]))
++    target=bool(inputs['eligible_ids'].get(p.get('target_key','normal'),[]))
++    blocked=inputs['blocked_by'] is not None
++    if p.get('blocked_target',False):target=blocked and inputs['blocked_by'] in inputs['eligible_ids'].get(p.get('target_key','normal'),[])
++    return {'move':bool(c['move'] and not blocked and not busy and not (p.get('stop_on_target',True) and target)),
++            'attack':bool(c['attack'] and c['abilities'] and not busy and target)}
+ 
+ 
+ def selector_grid(inputs, params, context):
+--- a/ark_sim/rules/contracts.json
++++ b/ark_sim/rules/contracts.json
+@@ -3189,7 +3189,7 @@
+         "graph",
+         "provider"
+       ],
+-      "description": "Explicit final Boolean override; metadata authority may\u89e3\u9664 legacy/ability freeze. No implicit/default binding.",
++      "description": "Explicit final Boolean override; metadata authority may解除 legacy/ability freeze. No implicit/default binding.",
+       "pureEvaluation": true,
+       "writesStateDirectly": false,
+       "versionsRequired": true,
+@@ -3227,6 +3227,183 @@
+         "provider"
+       ],
+       "description": "Pure stable owned tile-layer merge; movement and deployment consume normalized effective options."
++    },
++    {
++      "id": "behavior.decision",
++      "kind": "calculation",
++      "owner": "source",
++      "inputs": [
++        {
++          "name": "source",
++          "type": "entity_snapshot",
++          "required": true
++        },
++        {
++          "name": "state",
++          "type": "string",
++          "required": true
++        },
++        {
++          "name": "mode",
++          "type": "integer",
++          "required": true
++        },
++        {
++          "name": "casts",
++          "type": "record",
++          "required": true
++        },
++        {
++          "name": "cast_groups",
++          "type": "record",
++          "required": true
++        },
++        {
++          "name": "next_attack",
++          "type": "logic_time",
++          "required": true
++        },
++        {
++          "name": "blocked_by",
++          "type": "entity_ref",
++          "required": true,
++          "nullable": true
++        },
++        {
++          "name": "visibility",
++          "type": "record",
++          "required": true
++        },
++        {
++          "name": "controls",
++          "type": "record",
++          "required": true
++        },
++        {
++          "name": "clock",
++          "type": "record",
++          "required": true
++        },
++        {
++          "name": "eligible_ids",
++          "type": "record",
++          "required": true
++        },
++        {
++          "name": "parameters",
++          "type": "record",
++          "required": true
++        }
++      ],
++      "outputType": "record",
++      "implementations": [
++        "expression",
++        "graph",
++        "provider"
++      ],
++      "description": "Explicit pure declared model, not native-body recovery",
++      "outputSchema": {
++        "type": "record",
++        "fields": {
++          "move": {
++            "type": "boolean"
++          },
++          "attack": {
++            "type": "boolean"
++          }
++        }
++      }
++    },
++    {
++      "id": "selector.eligibility",
++      "kind": "calculation",
++      "owner": "source",
++      "inputs": [
++        {
++          "name": "source",
++          "type": "entity_snapshot",
++          "required": true
++        },
++        {
++          "name": "candidates",
++          "type": "entity_list",
++          "required": true
++        },
++        {
++          "name": "region",
++          "type": "record",
++          "required": true
++        },
++        {
++          "name": "selector_parameters",
++          "type": "record",
++          "required": true
++        },
++        {
++          "name": "selector_provider",
++          "type": "string",
++          "required": true
++        }
++      ],
++      "outputType": "entity_list",
++      "implementations": [
++        "provider"
++      ],
++      "description": "Explicit pure declared model, not native-body recovery",
++      "outputSchema": {
++        "type": "entity_list",
++        "items": {
++          "type": "integer"
++        }
++      }
++    },
++    {
++      "id": "targeting.eligibility",
++      "kind": "calculation",
++      "owner": "source",
++      "inputs": [
++        {
++          "name": "source",
++          "type": "record"
++        },
++        {
++          "name": "candidate",
++          "type": "record"
++        },
++        {
++          "name": "selector",
++          "type": "record"
++        },
++        {
++          "name": "selection_states",
++          "type": "record"
++        },
++        {
++          "name": "parameters",
++          "type": "record"
++        }
++      ],
++      "implementations": [
++        "expression",
++        "graph",
++        "provider"
++      ],
++      "outputType": "record",
++      "outputSchema": {
++        "type": "record",
++        "fields": {
++          "accepted": {
++            "type": "boolean"
++          },
++          "reason": {
++            "type": "string"
++          }
++        },
++        "additionalProperties": false
++      },
++      "pureEvaluation": true,
++      "writesStateDirectly": false,
++      "contractVersion": 1
+     }
+   ],
+   "types": {

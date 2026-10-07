@@ -1,0 +1,2036 @@
+[
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/native_flame_loop",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "buffs": [
+      {
+        "id": "buff/peer/device25",
+        "kind": "buff",
+        "duration_seconds": 25,
+        "on_remove": [
+          {
+            "op": "retire",
+            "target": "self",
+            "parameters": {
+              "reason": "withdrawn"
+            }
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/dummy_flame",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "atk": 0,
+              "def": 0,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100,
+              "role": "health"
+            }
+          },
+          "buffs": {
+            "initial": [
+              "buff/peer/device25"
+            ]
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/controller",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/next"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/next",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "advance_branch",
+              "target": "battle",
+              "parameters": {
+                "branch": "bsnake_flame"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/loop",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 9,
+        "cols": 13
+      },
+      "branches": {
+        "bsnake_flame": {
+          "phases": [
+            {
+              "pre_delay_seconds": 0.0,
+              "actions": [
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#2"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#3"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#5"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#8"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#9"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "pre_delay_seconds": 0.0,
+              "actions": [
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#1"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#2"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#4"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#7"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#9"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "pre_delay_seconds": 0.0,
+              "actions": [
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#3"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#4"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#5"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#8"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#10"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "pre_delay_seconds": 0.0,
+              "actions": [
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#1"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#2"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#3"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#6"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#9"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "pre_delay_seconds": 0.0,
+              "actions": [
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#4"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#5"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#6"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#8"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#10"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "pre_delay_seconds": 0.0,
+              "actions": [
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#2"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#6"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#7"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#8"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#9"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "pre_delay_seconds": 0.0,
+              "actions": [
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#2"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#3"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#4"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#5"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#8"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "loop": true
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/dummy_flame",
+          "position": {
+            "row": 5,
+            "col": 4
+          },
+          "facing": "up",
+          "active": false,
+          "registration_key": "trap_021_flame#1",
+          "reactivation": {
+            "max_activations": 6,
+            "after_reasons": [
+              "withdrawn",
+              "dead"
+            ]
+          },
+          "parameters": {
+            "native_bucket": "tokenInsts",
+            "native_instance": {
+              "position": {
+                "row": 3,
+                "col": 4
+              },
+              "direction": "UP",
+              "hidden": true,
+              "alias": "trap_021_flame#1",
+              "uniEquipIds": null,
+              "showSpIllust": false,
+              "masterInfos": null,
+              "inst": {
+                "characterKey": "trap_021_flame",
+                "level": 1,
+                "phase": "PHASE_0",
+                "favorPoint": 0,
+                "potentialRank": 0
+              },
+              "skillIndex": 0,
+              "mainSkillLvl": 1,
+              "skinId": null,
+              "tmplId": null,
+              "overrideSkillBlackboard": null,
+              "overrideTalents": null
+            }
+          }
+        },
+        {
+          "definition": "unit/peer/dummy_flame",
+          "position": {
+            "row": 3,
+            "col": 5
+          },
+          "facing": "up",
+          "active": false,
+          "registration_key": "trap_021_flame#2",
+          "reactivation": {
+            "max_activations": 15,
+            "after_reasons": [
+              "withdrawn",
+              "dead"
+            ]
+          },
+          "parameters": {
+            "native_bucket": "tokenInsts",
+            "native_instance": {
+              "position": {
+                "row": 5,
+                "col": 5
+              },
+              "direction": "UP",
+              "hidden": true,
+              "alias": "trap_021_flame#2",
+              "uniEquipIds": null,
+              "showSpIllust": false,
+              "masterInfos": null,
+              "inst": {
+                "characterKey": "trap_021_flame",
+                "level": 1,
+                "phase": "PHASE_0",
+                "favorPoint": 0,
+                "potentialRank": 0
+              },
+              "skillIndex": 0,
+              "mainSkillLvl": 1,
+              "skinId": null,
+              "tmplId": null,
+              "overrideSkillBlackboard": null,
+              "overrideTalents": null
+            }
+          }
+        },
+        {
+          "definition": "unit/peer/dummy_flame",
+          "position": {
+            "row": 6,
+            "col": 6
+          },
+          "facing": "up",
+          "active": false,
+          "registration_key": "trap_021_flame#3",
+          "reactivation": {
+            "max_activations": 12,
+            "after_reasons": [
+              "withdrawn",
+              "dead"
+            ]
+          },
+          "parameters": {
+            "native_bucket": "tokenInsts",
+            "native_instance": {
+              "position": {
+                "row": 2,
+                "col": 6
+              },
+              "direction": "UP",
+              "hidden": true,
+              "alias": "trap_021_flame#3",
+              "uniEquipIds": null,
+              "showSpIllust": false,
+              "masterInfos": null,
+              "inst": {
+                "characterKey": "trap_021_flame",
+                "level": 1,
+                "phase": "PHASE_0",
+                "favorPoint": 0,
+                "potentialRank": 0
+              },
+              "skillIndex": 0,
+              "mainSkillLvl": 1,
+              "skinId": null,
+              "tmplId": null,
+              "overrideSkillBlackboard": null,
+              "overrideTalents": null
+            }
+          }
+        },
+        {
+          "definition": "unit/peer/dummy_flame",
+          "position": {
+            "row": 2,
+            "col": 7
+          },
+          "facing": "up",
+          "active": false,
+          "registration_key": "trap_021_flame#4",
+          "reactivation": {
+            "max_activations": 12,
+            "after_reasons": [
+              "withdrawn",
+              "dead"
+            ]
+          },
+          "parameters": {
+            "native_bucket": "tokenInsts",
+            "native_instance": {
+              "position": {
+                "row": 6,
+                "col": 7
+              },
+              "direction": "UP",
+              "hidden": true,
+              "alias": "trap_021_flame#4",
+              "uniEquipIds": null,
+              "showSpIllust": false,
+              "masterInfos": null,
+              "inst": {
+                "characterKey": "trap_021_flame",
+                "level": 1,
+                "phase": "PHASE_0",
+                "favorPoint": 0,
+                "potentialRank": 0
+              },
+              "skillIndex": 0,
+              "mainSkillLvl": 1,
+              "skinId": null,
+              "tmplId": null,
+              "overrideSkillBlackboard": null,
+              "overrideTalents": null
+            }
+          }
+        },
+        {
+          "definition": "unit/peer/dummy_flame",
+          "position": {
+            "row": 4,
+            "col": 8
+          },
+          "facing": "up",
+          "active": false,
+          "registration_key": "trap_021_flame#5",
+          "reactivation": {
+            "max_activations": 12,
+            "after_reasons": [
+              "withdrawn",
+              "dead"
+            ]
+          },
+          "parameters": {
+            "native_bucket": "tokenInsts",
+            "native_instance": {
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "direction": "UP",
+              "hidden": true,
+              "alias": "trap_021_flame#5",
+              "uniEquipIds": null,
+              "showSpIllust": false,
+              "masterInfos": null,
+              "inst": {
+                "characterKey": "trap_021_flame",
+                "level": 1,
+                "phase": "PHASE_0",
+                "favorPoint": 0,
+                "potentialRank": 0
+              },
+              "skillIndex": 0,
+              "mainSkillLvl": 1,
+              "skinId": null,
+              "tmplId": null,
+              "overrideSkillBlackboard": null,
+              "overrideTalents": null
+            }
+          }
+        },
+        {
+          "definition": "unit/peer/dummy_flame",
+          "position": {
+            "row": 2,
+            "col": 9
+          },
+          "facing": "up",
+          "active": false,
+          "registration_key": "trap_021_flame#6",
+          "reactivation": {
+            "max_activations": 9,
+            "after_reasons": [
+              "withdrawn",
+              "dead"
+            ]
+          },
+          "parameters": {
+            "native_bucket": "tokenInsts",
+            "native_instance": {
+              "position": {
+                "row": 6,
+                "col": 9
+              },
+              "direction": "UP",
+              "hidden": true,
+              "alias": "trap_021_flame#6",
+              "uniEquipIds": null,
+              "showSpIllust": false,
+              "masterInfos": null,
+              "inst": {
+                "characterKey": "trap_021_flame",
+                "level": 1,
+                "phase": "PHASE_0",
+                "favorPoint": 0,
+                "potentialRank": 0
+              },
+              "skillIndex": 0,
+              "mainSkillLvl": 1,
+              "skinId": null,
+              "tmplId": null,
+              "overrideSkillBlackboard": null,
+              "overrideTalents": null
+            }
+          }
+        },
+        {
+          "definition": "unit/peer/dummy_flame",
+          "position": {
+            "row": 2,
+            "col": 10
+          },
+          "facing": "up",
+          "active": false,
+          "registration_key": "trap_021_flame#7",
+          "reactivation": {
+            "max_activations": 6,
+            "after_reasons": [
+              "withdrawn",
+              "dead"
+            ]
+          },
+          "parameters": {
+            "native_bucket": "tokenInsts",
+            "native_instance": {
+              "position": {
+                "row": 6,
+                "col": 10
+              },
+              "direction": "UP",
+              "hidden": true,
+              "alias": "trap_021_flame#7",
+              "uniEquipIds": null,
+              "showSpIllust": false,
+              "masterInfos": null,
+              "inst": {
+                "characterKey": "trap_021_flame",
+                "level": 1,
+                "phase": "PHASE_0",
+                "favorPoint": 0,
+                "potentialRank": 0
+              },
+              "skillIndex": 0,
+              "mainSkillLvl": 1,
+              "skinId": null,
+              "tmplId": null,
+              "overrideSkillBlackboard": null,
+              "overrideTalents": null
+            }
+          }
+        },
+        {
+          "definition": "unit/peer/dummy_flame",
+          "position": {
+            "row": 5,
+            "col": 10
+          },
+          "facing": "up",
+          "active": false,
+          "registration_key": "trap_021_flame#8",
+          "reactivation": {
+            "max_activations": 15,
+            "after_reasons": [
+              "withdrawn",
+              "dead"
+            ]
+          },
+          "parameters": {
+            "native_bucket": "tokenInsts",
+            "native_instance": {
+              "position": {
+                "row": 3,
+                "col": 10
+              },
+              "direction": "UP",
+              "hidden": true,
+              "alias": "trap_021_flame#8",
+              "uniEquipIds": null,
+              "showSpIllust": false,
+              "masterInfos": null,
+              "inst": {
+                "characterKey": "trap_021_flame",
+                "level": 1,
+                "phase": "PHASE_0",
+                "favorPoint": 0,
+                "potentialRank": 0
+              },
+              "skillIndex": 0,
+              "mainSkillLvl": 1,
+              "skinId": null,
+              "tmplId": null,
+              "overrideSkillBlackboard": null,
+              "overrideTalents": null
+            }
+          }
+        },
+        {
+          "definition": "unit/peer/dummy_flame",
+          "position": {
+            "row": 4,
+            "col": 11
+          },
+          "facing": "up",
+          "active": false,
+          "registration_key": "trap_021_flame#9",
+          "reactivation": {
+            "max_activations": 12,
+            "after_reasons": [
+              "withdrawn",
+              "dead"
+            ]
+          },
+          "parameters": {
+            "native_bucket": "tokenInsts",
+            "native_instance": {
+              "position": {
+                "row": 4,
+                "col": 11
+              },
+              "direction": "UP",
+              "hidden": true,
+              "alias": "trap_021_flame#9",
+              "uniEquipIds": null,
+              "showSpIllust": false,
+              "masterInfos": null,
+              "inst": {
+                "characterKey": "trap_021_flame",
+                "level": 1,
+                "phase": "PHASE_0",
+                "favorPoint": 0,
+                "potentialRank": 0
+              },
+              "skillIndex": 0,
+              "mainSkillLvl": 1,
+              "skinId": null,
+              "tmplId": null,
+              "overrideSkillBlackboard": null,
+              "overrideTalents": null
+            }
+          }
+        },
+        {
+          "definition": "unit/peer/dummy_flame",
+          "position": {
+            "row": 6,
+            "col": 12
+          },
+          "facing": "up",
+          "active": false,
+          "registration_key": "trap_021_flame#10",
+          "reactivation": {
+            "max_activations": 6,
+            "after_reasons": [
+              "withdrawn",
+              "dead"
+            ]
+          },
+          "parameters": {
+            "native_bucket": "tokenInsts",
+            "native_instance": {
+              "position": {
+                "row": 2,
+                "col": 12
+              },
+              "direction": "UP",
+              "hidden": true,
+              "alias": "trap_021_flame#10",
+              "uniEquipIds": null,
+              "showSpIllust": false,
+              "masterInfos": null,
+              "inst": {
+                "characterKey": "trap_021_flame",
+                "level": 1,
+                "phase": "PHASE_0",
+                "favorPoint": 0,
+                "potentialRank": 0
+              },
+              "skillIndex": 0,
+              "mainSkillLvl": 1,
+              "skinId": null,
+              "tmplId": null,
+              "overrideSkillBlackboard": null,
+              "overrideTalents": null
+            }
+          }
+        },
+        {
+          "definition": "unit/peer/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/native_flame_loop",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "buffs": [
+      {
+        "id": "buff/peer/device25",
+        "kind": "buff",
+        "duration_seconds": 25,
+        "on_remove": [
+          {
+            "op": "retire",
+            "target": "self",
+            "parameters": {
+              "reason": "withdrawn"
+            }
+          }
+        ]
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/dummy_flame",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "atk": 0,
+              "def": 0,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100,
+              "role": "health"
+            }
+          },
+          "buffs": {
+            "initial": [
+              "buff/peer/device25"
+            ]
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/controller",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "abilities": [
+            "ability/peer/next"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/next",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "advance_branch",
+              "target": "battle",
+              "parameters": {
+                "branch": "bsnake_flame"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/loop",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 9,
+        "cols": 13
+      },
+      "branches": {
+        "bsnake_flame": {
+          "phases": [
+            {
+              "pre_delay_seconds": 0.0,
+              "actions": [
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#2"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#3"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#5"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#8"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#9"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "pre_delay_seconds": 0.0,
+              "actions": [
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#1"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#2"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#4"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#7"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#9"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "pre_delay_seconds": 0.0,
+              "actions": [
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#3"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#4"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#5"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#8"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#10"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "pre_delay_seconds": 0.0,
+              "actions": [
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#1"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#2"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#3"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#6"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#9"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "pre_delay_seconds": 0.0,
+              "actions": [
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#4"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#5"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#6"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#8"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#10"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "pre_delay_seconds": 0.0,
+              "actions": [
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#2"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#6"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#7"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#8"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#9"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "pre_delay_seconds": 0.0,
+              "actions": [
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#2"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#3"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#4"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#5"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "delay_seconds": 0.0,
+                  "effects": [
+                    {
+                      "op": "activate_predefined",
+                      "target": "battle",
+                      "parameters": {
+                        "key": "trap_021_flame#8"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "loop": true
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/dummy_flame",
+          "position": {
+            "row": 5,
+            "col": 4
+          },
+          "facing": "up",
+          "active": false,
+          "registration_key": "trap_021_flame#1",
+          "reactivation": {
+            "max_activations": 6,
+            "after_reasons": [
+              "withdrawn",
+              "dead"
+            ]
+          },
+          "parameters": {
+            "native_bucket": "tokenInsts",
+            "native_instance": {
+              "position": {
+                "row": 3,
+                "col": 4
+              },
+              "direction": "UP",
+              "hidden": true,
+              "alias": "trap_021_flame#1",
+              "uniEquipIds": null,
+              "showSpIllust": false,
+              "masterInfos": null,
+              "inst": {
+                "characterKey": "trap_021_flame",
+                "level": 1,
+                "phase": "PHASE_0",
+                "favorPoint": 0,
+                "potentialRank": 0
+              },
+              "skillIndex": 0,
+              "mainSkillLvl": 1,
+              "skinId": null,
+              "tmplId": null,
+              "overrideSkillBlackboard": null,
+              "overrideTalents": null
+            }
+          }
+        },
+        {
+          "definition": "unit/peer/dummy_flame",
+          "position": {
+            "row": 3,
+            "col": 5
+          },
+          "facing": "up",
+          "active": false,
+          "registration_key": "trap_021_flame#2",
+          "reactivation": {
+            "max_activations": 15,
+            "after_reasons": [
+              "withdrawn",
+              "dead"
+            ]
+          },
+          "parameters": {
+            "native_bucket": "tokenInsts",
+            "native_instance": {
+              "position": {
+                "row": 5,
+                "col": 5
+              },
+              "direction": "UP",
+              "hidden": true,
+              "alias": "trap_021_flame#2",
+              "uniEquipIds": null,
+              "showSpIllust": false,
+              "masterInfos": null,
+              "inst": {
+                "characterKey": "trap_021_flame",
+                "level": 1,
+                "phase": "PHASE_0",
+                "favorPoint": 0,
+                "potentialRank": 0
+              },
+              "skillIndex": 0,
+              "mainSkillLvl": 1,
+              "skinId": null,
+              "tmplId": null,
+              "overrideSkillBlackboard": null,
+              "overrideTalents": null
+            }
+          }
+        },
+        {
+          "definition": "unit/peer/dummy_flame",
+          "position": {
+            "row": 6,
+            "col": 6
+          },
+          "facing": "up",
+          "active": false,
+          "registration_key": "trap_021_flame#3",
+          "reactivation": {
+            "max_activations": 12,
+            "after_reasons": [
+              "withdrawn",
+              "dead"
+            ]
+          },
+          "parameters": {
+            "native_bucket": "tokenInsts",
+            "native_instance": {
+              "position": {
+                "row": 2,
+                "col": 6
+              },
+              "direction": "UP",
+              "hidden": true,
+              "alias": "trap_021_flame#3",
+              "uniEquipIds": null,
+              "showSpIllust": false,
+              "masterInfos": null,
+              "inst": {
+                "characterKey": "trap_021_flame",
+                "level": 1,
+                "phase": "PHASE_0",
+                "favorPoint": 0,
+                "potentialRank": 0
+              },
+              "skillIndex": 0,
+              "mainSkillLvl": 1,
+              "skinId": null,
+              "tmplId": null,
+              "overrideSkillBlackboard": null,
+              "overrideTalents": null
+            }
+          }
+        },
+        {
+          "definition": "unit/peer/dummy_flame",
+          "position": {
+            "row": 2,
+            "col": 7
+          },
+          "facing": "up",
+          "active": false,
+          "registration_key": "trap_021_flame#4",
+          "reactivation": {
+            "max_activations": 12,
+            "after_reasons": [
+              "withdrawn",
+              "dead"
+            ]
+          },
+          "parameters": {
+            "native_bucket": "tokenInsts",
+            "native_instance": {
+              "position": {
+                "row": 6,
+                "col": 7
+              },
+              "direction": "UP",
+              "hidden": true,
+              "alias": "trap_021_flame#4",
+              "uniEquipIds": null,
+              "showSpIllust": false,
+              "masterInfos": null,
+              "inst": {
+                "characterKey": "trap_021_flame",
+                "level": 1,
+                "phase": "PHASE_0",
+                "favorPoint": 0,
+                "potentialRank": 0
+              },
+              "skillIndex": 0,
+              "mainSkillLvl": 1,
+              "skinId": null,
+              "tmplId": null,
+              "overrideSkillBlackboard": null,
+              "overrideTalents": null
+            }
+          }
+        },
+        {
+          "definition": "unit/peer/dummy_flame",
+          "position": {
+            "row": 4,
+            "col": 8
+          },
+          "facing": "up",
+          "active": false,
+          "registration_key": "trap_021_flame#5",
+          "reactivation": {
+            "max_activations": 12,
+            "after_reasons": [
+              "withdrawn",
+              "dead"
+            ]
+          },
+          "parameters": {
+            "native_bucket": "tokenInsts",
+            "native_instance": {
+              "position": {
+                "row": 4,
+                "col": 8
+              },
+              "direction": "UP",
+              "hidden": true,
+              "alias": "trap_021_flame#5",
+              "uniEquipIds": null,
+              "showSpIllust": false,
+              "masterInfos": null,
+              "inst": {
+                "characterKey": "trap_021_flame",
+                "level": 1,
+                "phase": "PHASE_0",
+                "favorPoint": 0,
+                "potentialRank": 0
+              },
+              "skillIndex": 0,
+              "mainSkillLvl": 1,
+              "skinId": null,
+              "tmplId": null,
+              "overrideSkillBlackboard": null,
+              "overrideTalents": null
+            }
+          }
+        },
+        {
+          "definition": "unit/peer/dummy_flame",
+          "position": {
+            "row": 2,
+            "col": 9
+          },
+          "facing": "up",
+          "active": false,
+          "registration_key": "trap_021_flame#6",
+          "reactivation": {
+            "max_activations": 9,
+            "after_reasons": [
+              "withdrawn",
+              "dead"
+            ]
+          },
+          "parameters": {
+            "native_bucket": "tokenInsts",
+            "native_instance": {
+              "position": {
+                "row": 6,
+                "col": 9
+              },
+              "direction": "UP",
+              "hidden": true,
+              "alias": "trap_021_flame#6",
+              "uniEquipIds": null,
+              "showSpIllust": false,
+              "masterInfos": null,
+              "inst": {
+                "characterKey": "trap_021_flame",
+                "level": 1,
+                "phase": "PHASE_0",
+                "favorPoint": 0,
+                "potentialRank": 0
+              },
+              "skillIndex": 0,
+              "mainSkillLvl": 1,
+              "skinId": null,
+              "tmplId": null,
+              "overrideSkillBlackboard": null,
+              "overrideTalents": null
+            }
+          }
+        },
+        {
+          "definition": "unit/peer/dummy_flame",
+          "position": {
+            "row": 2,
+            "col": 10
+          },
+          "facing": "up",
+          "active": false,
+          "registration_key": "trap_021_flame#7",
+          "reactivation": {
+            "max_activations": 6,
+            "after_reasons": [
+              "withdrawn",
+              "dead"
+            ]
+          },
+          "parameters": {
+            "native_bucket": "tokenInsts",
+            "native_instance": {
+              "position": {
+                "row": 6,
+                "col": 10
+              },
+              "direction": "UP",
+              "hidden": true,
+              "alias": "trap_021_flame#7",
+              "uniEquipIds": null,
+              "showSpIllust": false,
+              "masterInfos": null,
+              "inst": {
+                "characterKey": "trap_021_flame",
+                "level": 1,
+                "phase": "PHASE_0",
+                "favorPoint": 0,
+                "potentialRank": 0
+              },
+              "skillIndex": 0,
+              "mainSkillLvl": 1,
+              "skinId": null,
+              "tmplId": null,
+              "overrideSkillBlackboard": null,
+              "overrideTalents": null
+            }
+          }
+        },
+        {
+          "definition": "unit/peer/dummy_flame",
+          "position": {
+            "row": 5,
+            "col": 10
+          },
+          "facing": "up",
+          "active": false,
+          "registration_key": "trap_021_flame#8",
+          "reactivation": {
+            "max_activations": 15,
+            "after_reasons": [
+              "withdrawn",
+              "dead"
+            ]
+          },
+          "parameters": {
+            "native_bucket": "tokenInsts",
+            "native_instance": {
+              "position": {
+                "row": 3,
+                "col": 10
+              },
+              "direction": "UP",
+              "hidden": true,
+              "alias": "trap_021_flame#8",
+              "uniEquipIds": null,
+              "showSpIllust": false,
+              "masterInfos": null,
+              "inst": {
+                "characterKey": "trap_021_flame",
+                "level": 1,
+                "phase": "PHASE_0",
+                "favorPoint": 0,
+                "potentialRank": 0
+              },
+              "skillIndex": 0,
+              "mainSkillLvl": 1,
+              "skinId": null,
+              "tmplId": null,
+              "overrideSkillBlackboard": null,
+              "overrideTalents": null
+            }
+          }
+        },
+        {
+          "definition": "unit/peer/dummy_flame",
+          "position": {
+            "row": 4,
+            "col": 11
+          },
+          "facing": "up",
+          "active": false,
+          "registration_key": "trap_021_flame#9",
+          "reactivation": {
+            "max_activations": 12,
+            "after_reasons": [
+              "withdrawn",
+              "dead"
+            ]
+          },
+          "parameters": {
+            "native_bucket": "tokenInsts",
+            "native_instance": {
+              "position": {
+                "row": 4,
+                "col": 11
+              },
+              "direction": "UP",
+              "hidden": true,
+              "alias": "trap_021_flame#9",
+              "uniEquipIds": null,
+              "showSpIllust": false,
+              "masterInfos": null,
+              "inst": {
+                "characterKey": "trap_021_flame",
+                "level": 1,
+                "phase": "PHASE_0",
+                "favorPoint": 0,
+                "potentialRank": 0
+              },
+              "skillIndex": 0,
+              "mainSkillLvl": 1,
+              "skinId": null,
+              "tmplId": null,
+              "overrideSkillBlackboard": null,
+              "overrideTalents": null
+            }
+          }
+        },
+        {
+          "definition": "unit/peer/dummy_flame",
+          "position": {
+            "row": 6,
+            "col": 12
+          },
+          "facing": "up",
+          "active": false,
+          "registration_key": "trap_021_flame#10",
+          "reactivation": {
+            "max_activations": 6,
+            "after_reasons": [
+              "withdrawn",
+              "dead"
+            ]
+          },
+          "parameters": {
+            "native_bucket": "tokenInsts",
+            "native_instance": {
+              "position": {
+                "row": 2,
+                "col": 12
+              },
+              "direction": "UP",
+              "hidden": true,
+              "alias": "trap_021_flame#10",
+              "uniEquipIds": null,
+              "showSpIllust": false,
+              "masterInfos": null,
+              "inst": {
+                "characterKey": "trap_021_flame",
+                "level": 1,
+                "phase": "PHASE_0",
+                "favorPoint": 0,
+                "potentialRank": 0
+              },
+              "skillIndex": 0,
+              "mainSkillLvl": 1,
+              "skinId": null,
+              "tmplId": null,
+              "overrideSkillBlackboard": null,
+              "overrideTalents": null
+            }
+          }
+        },
+        {
+          "definition": "unit/peer/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  }
+]

@@ -1,0 +1,85 @@
+{
+  "schema": "ark-sim/design-review/v1",
+  "status": "source_read_design_only_not_executed",
+  "design_sha256": "0206ef89251b4b11614744dd3ea07158d49adc90fdab3501730419c13d96845f",
+  "source_sha256": "148a5a8648801f8c7eee655d5c0daa1f4f7469cefe3abd2d304dcdc33a121dc8",
+  "actual_uniform_trigger": {
+    "script_path_id": -6273563539880628122,
+    "gameobject_path_id": 3427967721682119493,
+    "gameobject_name": "tile_volcano",
+    "raw": {
+      "m_GameObject": {
+        "m_FileID": 0,
+        "m_PathID": 3427967721682119493
+      },
+      "m_Enabled": 1,
+      "m_Script": {
+        "m_FileID": 1,
+        "m_PathID": -6273563539880628122
+      },
+      "m_Name": "",
+      "_preDelay": -1.0,
+      "_preDelayEffect": "",
+      "_defaultInterval": 1.0
+    },
+    "script_key": "CAB-658d74aab777086fc32b93f385be999a:-6273563539880628122",
+    "native_class": "UniformRandomTrigger"
+  },
+  "actual_cast_fields": {
+    "_injectEnvDmgFlagToBlackboard": 1,
+    "_targetOptions": {
+      "targetSide": 3,
+      "targetMotion": 1,
+      "targetCategory": 1,
+      "enableAdvancedOptions": 1,
+      "ignoreTargetFree": 0,
+      "ignoreAllyTargetFree": 0,
+      "ignoreHealFree": 0,
+      "ignoreMotionMode": 0,
+      "ignoreTargetSide": 0,
+      "excludeSomeAbnormalFlags": 0,
+      "containSomeAbnormalFlags": 0,
+      "excludeAbnormalFlag": 0,
+      "containAbnormalFlag": 0,
+      "purposeMask": 0,
+      "professionMask": 0,
+      "checkUnitType": 0,
+      "unitTypeMask": 0,
+      "onlyIgnoreSomeOfTargetFreeCase": 0,
+      "abnormalFlag": 0,
+      "abnormalCombo": 0
+    },
+    "_sourceSide": 0,
+    "_castMaxCnt": -1,
+    "_extraTargetRange": {
+      "m_FileID": 0,
+      "m_PathID": 3910120178923023173
+    },
+    "_onlyCombatEnemyInExtraRange": 1
+  },
+  "actual_action": {
+    "_damageType": "PURE",
+    "_damageKey": "damage",
+    "_ignoreForSp": false,
+    "_damageWithoutModify": false,
+    "_attackType": "NONE",
+    "_isEnvDamage": false,
+    "_isUndeadable": false,
+    "_ignoreCancelReasonMask": "NONE",
+    "_instantKillLikeDamage": false,
+    "_isNotChangeableValue": false,
+    "_multiplierByKey": false,
+    "_multiplierKey": "cnt",
+    "_modifierKey": "",
+    "$type": "Torappu.Battle.Action.Nodes+NoSourceDamage"
+  },
+  "source_stage_tile_count": 8,
+  "findings": [
+    "onlyCombatEnemyInExtraRange is not a proven synonym for blocked_by; choose explicit model adapter and test ranged-combat mode independently",
+    "native raw default _data passableMask0/buildable3 must not replace actual stage ALL/MELEE",
+    "NoSourceDamage damageWithoutModifyFalse/isNotChangeableValueFalse retain target damage hooks; _isEnvDamageFalse differs from injectEnvDmgFlag1",
+    "preDelay-1/defaultInterval1 and declared stream/first sampling policy must be explicit; never infer source algorithm from UniformRandomTrigger class",
+    "_castMaxCnt-1 must be explicitly represented as unlimited; profile parameter unused must reject",
+    "callbacks can finish stage/retire targets during first selected target; re-read remaining eligibility and stop scheduler/extra effects/RNG synchronously"
+  ]
+}

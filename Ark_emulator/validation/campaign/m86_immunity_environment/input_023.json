@@ -1,0 +1,251 @@
+{
+  "manifest": {
+    "requires": [
+      "preset/ark_standard"
+    ]
+  },
+  "entities": [
+    {
+      "id": "unit/subject",
+      "kind": "entity",
+      "tags": [
+        "enemy"
+      ],
+      "components": {
+        "spatial": {},
+        "selection_state": {
+          "side": 1
+        },
+        "attributes": {
+          "base": {
+            "max_hp": 1000,
+            "atk": 100,
+            "def": 0,
+            "mres": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 1000,
+            "capacity": 1000,
+            "role": "health"
+          }
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "abilities": [
+          "ability/stun",
+          "ability/immune",
+          "ability/silence",
+          "ability/mixed",
+          "ability/removeimmune"
+        ]
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/stun",
+      "kind": "rule",
+      "contract": "buff.applicability",
+      "implementation": {
+        "type": "expression",
+        "expression": "0 in inputs.status.abnormal_flags"
+      }
+    },
+    {
+      "id": "rule/notsilenced",
+      "kind": "rule",
+      "contract": "buff.applicability",
+      "implementation": {
+        "type": "expression",
+        "expression": "12 not in inputs.status.abnormal_flags"
+      }
+    },
+    {
+      "id": "rule/double",
+      "kind": "rule",
+      "contract": "damage.request",
+      "implementation": {
+        "type": "graph",
+        "nodes": [
+          {
+            "id": "result",
+            "expression": "{'accepted':True,'effect':{'op':'damage','damage_type':inputs.effect.damage_type,'attack':inputs.effect.attack,'defense':inputs.effect.defense,'resistance':inputs.effect.resistance,'scale':inputs.effect.scale*2,'additions':inputs.effect.additions},'effects':[]}"
+          }
+        ],
+        "output": "nodes.result"
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/stun",
+      "kind": "buff",
+      "duration_seconds": 1,
+      "control_rule": "rule/stun",
+      "control": {
+        "move": false,
+        "attack": false,
+        "abilities": false,
+        "block": false,
+        "interrupt": true
+      },
+      "selection_flags": {
+        "abnormal_flags": [
+          0
+        ]
+      },
+      "modifiers": [
+        {
+          "attribute": "atk",
+          "layer": "flat",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "id": "buff/immune",
+      "kind": "buff",
+      "duration_seconds": 0.1,
+      "selection_flags": {
+        "abnormal_immunes": [
+          0
+        ]
+      }
+    },
+    {
+      "id": "buff/silence",
+      "kind": "buff",
+      "duration_seconds": 0.1,
+      "selection_flags": {
+        "abnormal_flags": [
+          12
+        ]
+      }
+    },
+    {
+      "id": "buff/mixed",
+      "kind": "buff",
+      "active_rule": "rule/notsilenced",
+      "modifiers": [
+        {
+          "attribute": "atk",
+          "layer": "flat",
+          "value": 20
+        }
+      ],
+      "selection_flags": {
+        "abnormal_flags": [
+          9
+        ],
+        "abnormal_immunes": [
+          0
+        ]
+      },
+      "damage_hooks": [
+        {
+          "phase": "before",
+          "rule": "rule/double"
+        }
+      ]
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/stun",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/stun"
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/immune",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/immune"
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/silence",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/silence"
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/mixed",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/mixed"
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/removeimmune",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "remove_buff",
+            "target": "source",
+            "buff": "buff/immune"
+          }
+        ]
+      },
+      "timeline": []
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/applicability",
+    "ruleset": "ruleset/ark_standard",
+    "objectives": {},
+    "map": {
+      "rows": 2,
+      "cols": 4
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/subject",
+        "instanceAlias": "subject",
+        "position": {
+          "row": 0,
+          "col": 0
+        }
+      }
+    ]
+  }
+}

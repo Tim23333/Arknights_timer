@@ -1,0 +1,171 @@
+{
+  "abilities": [
+    {
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "delta": 3,
+            "op": "modify_resource",
+            "resource": "sp",
+            "target": 2
+          }
+        ]
+      },
+      "id": "ability/grant",
+      "kind": "ability",
+      "timeline": []
+    },
+    {
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "activate_predefined",
+            "parameters": {
+              "key": "latent-key"
+            },
+            "target": "battle"
+          }
+        ]
+      },
+      "id": "ability/activate",
+      "kind": "ability",
+      "timeline": []
+    },
+    {
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "event": "signal",
+            "op": "emit",
+            "target": "source"
+          }
+        ]
+      },
+      "id": "ability/emit",
+      "kind": "ability",
+      "timeline": []
+    },
+    {
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "heal",
+            "scale": 1,
+            "target": "source"
+          }
+        ]
+      },
+      "id": "ability/heal",
+      "kind": "ability",
+      "timeline": []
+    }
+  ],
+  "entities": [
+    {
+      "components": {
+        "abilities": [],
+        "attributes": {
+          "base": {
+            "atk": 20,
+            "def": 0,
+            "max_hp": 100,
+            "mres": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "capacity": 100,
+            "initial": 100,
+            "role": "health"
+          },
+          "sp": {
+            "capacity": 20,
+            "initial": 0,
+            "recovery_rate": 1
+          }
+        },
+        "spatial": {}
+      },
+      "id": "unit/latent",
+      "kind": "entity",
+      "tags": [
+        "ally",
+        "player"
+      ]
+    },
+    {
+      "components": {
+        "abilities": [
+          "ability/grant",
+          "ability/activate",
+          "ability/emit",
+          "ability/heal"
+        ],
+        "attributes": {
+          "base": {
+            "atk": 10,
+            "def": 0,
+            "max_hp": 100,
+            "mres": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "capacity": 100,
+            "initial": 50,
+            "role": "health"
+          },
+          "sp": {
+            "capacity": 20,
+            "initial": 10
+          }
+        },
+        "spatial": {}
+      },
+      "id": "unit/director",
+      "kind": "entity",
+      "tags": [
+        "ally"
+      ]
+    }
+  ],
+  "manifest": {
+    "requires": [
+      "preset/ark_standard"
+    ]
+  },
+  "scenarioDraft": {
+    "id": "scenario/independent_dormant",
+    "initialEntities": [
+      {
+        "active": false,
+        "definition": "unit/latent",
+        "position": {
+          "col": 0,
+          "row": 0
+        },
+        "registration_key": "latent-key"
+      },
+      {
+        "definition": "unit/director",
+        "instanceAlias": "director",
+        "position": {
+          "col": 2,
+          "row": 0
+        }
+      }
+    ],
+    "map": {
+      "cols": 3,
+      "rows": 1
+    },
+    "objectives": {},
+    "ruleset": "ruleset/ark_standard",
+    "waves": []
+  },
+  "schemaVersion": 2
+}

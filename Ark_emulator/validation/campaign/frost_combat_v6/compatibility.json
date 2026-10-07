@@ -1,0 +1,1608 @@
+{
+  "role": "Frost combat author compatibility and frozen-byte rebuilding",
+  "core_start": "df98feb41687d1b560d27d24bcbc7aad8bbb2f7ace48aaa67aca5816fe95e86b",
+  "core_end": "df98feb41687d1b560d27d24bcbc7aad8bbb2f7ace48aaa67aca5816fe95e86b",
+  "guards_equal": true,
+  "fresh_rebuild_equal": true,
+  "source_and_module_byte_checks": true,
+  "start_manifest": {
+    "source": {
+      "__init__.py": "8841ee6e2da617783444719d8cdd59c697b32f18e9f48a702b0f68a198e819f6",
+      "__main__.py": "00b2ebc969893931d864f0bf4dbb043b18483dc99b583d4fd3b2249efadf5e60",
+      "adapters\\api.py": "2e20d972e4a24e6dae0303d8a57a0cecc415a10b3ab4f3051ba231d35fb5f20a",
+      "adapters\\imports\\ark_level.py": "001f65046e07db643e126723cb7e081bd7a6f8cd51c94cfc841e121e1e525692",
+      "content\\__init__.py": "1ebaf2030e9838bde745c25a9e6462f0a179fa9ed3d7d984f4a135f94075fdd7",
+      "content\\capabilities.py": "3e3784177add7ed1b7f0a905cf87163c68201ef2c718a362db58c6cebd443fda",
+      "content\\compiler.py": "05b17c0dcda8d0b1d91801fe08079c589b44a5198b915c744691bc7c4625a90a",
+      "content\\dependencies.py": "142bec854be31b9c19439bb49892095a25028492f19ed9956843125518556d25",
+      "content\\overlays.py": "6f60a60ab19af6505ae5d8fcca2a94aba7060606926dbff12daa026d30ff577a",
+      "content\\repository.py": "a93a686ca4e0c247c210af723af88ed4e51ce28cbf723bd692822ec75632cce6",
+      "content\\schemas.py": "88abb198aee286e097962e6bd15731049412b1cdf5dab55a024f88494a1228b0",
+      "content\\spatial_validation.py": "67b096fc3082d877423bb2cc3de2d68d3a55ee8456b5257522e3b6011a4c252d",
+      "content\\timeline_validation.py": "567e547d197c424b5b4ca594a388a65a772e98597234341421290bf8a13b9169",
+      "contracts\\__init__.py": "146cb344e03673734c6a55836730d8715a568050760091123baedf116a547aa2",
+      "contracts\\models.py": "00e8bc162caffde0b5a0e7e96cebb61f9bf6fe9cfdd0370ca25c5b6480f55882",
+      "domains\\abilities.py": "09d5fbc113b92a1e27b586dc495ef22e97d952817a00dcdb04dfd19594e4688e",
+      "domains\\ability_timing.py": "34f56b2c1fedb9e1cff12dc801e6fc24da9f9ed1ab47bc94f4b4642285a0048b",
+      "domains\\applicability.py": "3068f8853aeb3c5c2b67826f246a76be77b03fb3939ffe020fdafbd4229630de",
+      "domains\\attachments.py": "ce3d23620bc21ef981ef95efa2af4117dfd01e763d62896680bd10b30743f6fa",
+      "domains\\attributes.py": "f13e98b4f39ba2625457bb884467d7ff6af3f9da738ced76a4c455af8ce5343e",
+      "domains\\behavior.py": "06f3efb3bb9ba7ccb2c86e149e9744583dc433f08289580ef129e5bbff1432c9",
+      "domains\\behavior_decision.py": "e3cba73cdfbb4b80f7051f2136ed18c0037622b4fb4f53fb0b7eeb2ce632e1fa",
+      "domains\\buffs.py": "fb23d69455d55f1b55662bdbb758ab51f6c1e550e5123959bd7fb9ff4e054516",
+      "domains\\context.py": "bbd86a5d73c434b6baebfc9edba4c095a5e553cb12bd060867b28cf25d739f98",
+      "domains\\controls.py": "25a3b9c2c9c4f138fed56f5989dbd98776efb7ec9823edb5e47d1982da0749e2",
+      "domains\\death_projectiles.py": "d7ae4ed5367211bfbd65b7eab2c832958eaab334b7e80283df16c01af27ef5a0",
+      "domains\\deploy_connectivity.py": "190ca72808acb9a5a4e73a33b4b13740135ca53a88d967f3ba4725ae690aade1",
+      "domains\\deployment.py": "667460863bd218cd2b13118b7fdf89cfc8ee892360ad2329783f18484f88375f",
+      "domains\\effects.py": "b551039cd043a204176287c5b0c3b790ed8cd826ceda7cd19dff4e3d9d82df3d",
+      "domains\\lifecycle.py": "7c14cad45f023702bd12a4ea52ddb473768c3c9dfac54537352df4ed242f7ad8",
+      "domains\\movement.py": "cb09dec026befca20910918b20a31edcb2c2fa4ac30ae0d1402b4a0891948d23",
+      "domains\\no_source_damage.py": "6bd26d624e92f317158daecbf9c334e4f9eff6be42670ae18d56b9cba573a1ae",
+      "domains\\periodic_fields.py": "41d46b14244ca186accbad8daf1ae6a960fe0e6811402f6c2c30ad75188668db",
+      "domains\\projectile_profiles.py": "441e399ce5820b0118a739d0c40d320675e031c7960d53179b8ace4996903f98",
+      "domains\\projectiles.py": "00ba645e141eee5f1ce4dbf60dd0013f78651701894847db817643c43c592539",
+      "domains\\providers.py": "6e6d0dd4e42151b77dc9a434acd949778fc8a8abdfb52552c42d37940441c364",
+      "domains\\qualified_areas.py": "9182208222bb71322ef600c3082aa6a607351e84720a83d0eaa2eebf45d500b1",
+      "domains\\rebirth.py": "014787af1f7735fc67d9d422d240abfe3a30b19148de21a8df3234136dc1c88e",
+      "domains\\request_transforms.py": "e6cfccffe2c4772a91d9dec36ddb502cbae0f36df2d9bdc36eb21cbeb81955ab",
+      "domains\\resources.py": "171ac9c61c856b0785ca4a8b6a5bbf7c17569ed8093256893d28c678a28692d8",
+      "domains\\selection.py": "25a79f2565b5759bf75f91f1fff2443df2fe724dda9a6872cd55ff1e27673a61",
+      "domains\\spatial.py": "3bddbbe5c2188a34cf079e466beb300ad5acc7130f23872c48c5673a07a45222",
+      "domains\\terrain.py": "b4207ad8e2f685d75149e0cb4f69853ea5bc85c9a3de3f44594e1f73a16b0fcd",
+      "domains\\tile_contacts.py": "20d7040055d8e9c3f4263636671228dd12eaa07e01fff2b268c2847f8703a7dd",
+      "domains\\tile_fields.py": "115a23bdd990d625fdcff88a6619e2e488ab5670760f6e463cd8b3e4f7721ec1",
+      "domains\\tile_mechanics.py": "9474d12905563e9c64587e1fc2bd836ff5868a6560333ef7ac079409762a295e",
+      "domains\\timeline.py": "5f13756704f5f58239f3233f3370ceee0e0268032d2c47748b552657d6e78313",
+      "domains\\toggles.py": "5aa42e23cf718d1003b63a3d9e7be6cc729703d7ccad10c0a2d3c593b006b15c",
+      "kernel\\__init__.py": "66059ad6884308b5b74d502cd7e202c76be93379364140a10acb7ab89b672cd9",
+      "kernel\\_data.py": "0f5c6f0e4e49be748f04eed69bf1146a59553e6c700f5d6a8491adea70e5ceff",
+      "kernel\\clock.py": "d56fa38c703ba9dc0f31b0752e2130c7342ba2f915ee7b1f07e82f6cae8657bd",
+      "kernel\\events.py": "ee470d4402176536ee86d08da77faf3c5743cfe14906f1116c70e60352dc92b6",
+      "kernel\\interning.py": "fe23f63c2c2f872c41e11e8cef619d7537472613dd85c6f7a134b171e6842deb",
+      "kernel\\journal.py": "e9cdff5e776e138de39e38f1ef28641cf090c35e093baa3b84c37d5cd845322a",
+      "kernel\\random.py": "a880cd9a4978e020557c36b8396ca8e9210e9ccebf38a0e26ff4294b897ed38f",
+      "kernel\\scheduler.py": "4fe886da0c08a2c42b4ff6558399f062754be9035e8e18e61b72fec4ea0f6b57",
+      "kernel\\session.py": "69db7a5051259373fe1f134888f9bb9ee0b21b2d9f5a765a13bada7b49529732",
+      "kernel\\snapshot.py": "9333d60eec1cca09fedffa475bf700c54c30f998dc8308006327973ba84cbfa9",
+      "kernel\\transaction.py": "b644590e4b21e938fb8483a11053c986b9a6e6bceaf86bc4df0114e3f47bc0e0",
+      "kernel\\world.py": "96dd8cb3ba346d85dc0384ee066881e0a4dd68da6b86d099960c422bd346b974",
+      "presets\\__init__.py": "b2e3a12ffcb0802e13d2f9ac937494e6cfc095e077d0119980dcc25b7bed6280",
+      "presets\\providers.py": "603e9db412383e3942620a5d0f122320ef63e9236a60f1adf6c1ba6eab42e8e8",
+      "rules\\__init__.py": "f94018916acb48bcd606af2932782122ad289421ea21e3f371780943a6396e02",
+      "rules\\catalog.py": "88bdab29510db1a07e7c05ba19b497a49672ba0530d996284201b24eda209097",
+      "rules\\context.py": "789f616adc30a5139782629e51868775a0df3956e24577e871b38345f0860a0c",
+      "rules\\errors.py": "039a7903f7e2d9f70bd21ef85ee7d3cca1ad02b1a1221031244bbbd429104a5d",
+      "rules\\expressions.py": "ba7e88f3ce5630c423c2edc3686c04eba091373c0fdaafb6b9692d2af52ddd34",
+      "rules\\numeric.py": "67bd221c798bad9a7dfd4608e2f20f406757a91b1ea36cc1fb575f1b3c70375e",
+      "rules\\pipeline.py": "a9cb2fa9001b10a797a4ad8b96959e1b26f89d9ee029a84d5277dd2eb9baf5c6",
+      "rules\\resolver.py": "a8dccabf2a18114592d0113ed5309a99efa9a5b43407c52bf69c365e499bfcb4",
+      "rules\\runtime.py": "83a980ae2fe2c047fe497e21d3b0f2654cbeb902a864b92253cb32862000d7f5",
+      "tools\\authoring.py": "7beaa6b08f3186c86923b8ed15f2a2dfb8d2fe313ac6f431a8f52113401b5c44",
+      "tools\\cli.py": "315a6ca9cecf4ae8eb3946573454ff26e505624ac721ef128017812bda40711a",
+      "tools\\compare.py": "d3cf5e40f9338ed04c5cc4594adb319d5228f9ec003e558cb2d27c4c8917a578",
+      "tools\\inspect.py": "6311e34201adb3133df1f5c37f492d5f89d6afd902ad0f3c86da9572e56723df",
+      "tools\\replay.py": "62d9149ecc857e108fc390cd5a64091ca4e49f96673a3c66806f62fc8549c5ba"
+    },
+    "catalog": {
+      "content\\presets\\ark_standard.json": "1070ba6793cee5ded71c0f0b89a96ba72973d49989407e70a858a575febb9814",
+      "rules\\contracts.json": "bec1a8b7955cc40e0ce660f743660d3c6cb149a583a12d31d61524713962c8c6",
+      "validation\\reports\\ark_00_01_20261002.performance.json": "9134d208a7f063a5d1270eea37df7bc9823e44635969750353931f9d9eca9e3a",
+      "validation\\reports\\custom_balance_20261002.json": "974dda649dd15ea380d90b179bcd71cc5a08644863a08f9396fd163faf8c4ed3",
+      "validation\\reports\\custom_standard_20261002.json": "5546e4f9bdb9d2e35d38458839a324b85f1d96d48427d80de89ebd23c277c922",
+      "validation\\reports\\custom_standard_20261002.replay.json": "84d280a479f3c9f93f8a32214543ac721a04d4d12e88b254d2cac4507f800bba",
+      "validation\\reports\\custom_standard_20261002.replayed.json": "5546e4f9bdb9d2e35d38458839a324b85f1d96d48427d80de89ebd23c277c922",
+      "validation\\reports\\performance_after_20261002.json": "abe4ff249dbf90da26f41ed6cee33c1d24a87ea4f2047d74e021d276330fb351",
+      "validation\\reports\\v2_baseline_20261002.json": "7e2466405f1c94ee8006b586ddbb847dc216e3c0defb49baebea8d995e3a3d65",
+      "validation\\reports\\v2_baseline_20261002.replay.json": "deba0243dcad82b12fcc3933de90dcbf57b77992a12022aa90cd58829d9854d8",
+      "validation\\reports\\v2_tests_20261002.json": "e0cf61b9af4042cc83e788029f114d8a557eed99bebc895876f11ecbd896020c"
+    },
+    "parent": {
+      "__init__.py": "8841ee6e2da617783444719d8cdd59c697b32f18e9f48a702b0f68a198e819f6",
+      "__main__.py": "00b2ebc969893931d864f0bf4dbb043b18483dc99b583d4fd3b2249efadf5e60",
+      "adapters\\api.py": "2e20d972e4a24e6dae0303d8a57a0cecc415a10b3ab4f3051ba231d35fb5f20a",
+      "adapters\\imports\\ark_level.py": "001f65046e07db643e126723cb7e081bd7a6f8cd51c94cfc841e121e1e525692",
+      "content\\__init__.py": "1ebaf2030e9838bde745c25a9e6462f0a179fa9ed3d7d984f4a135f94075fdd7",
+      "content\\capabilities.py": "ec563e5ee0beb3792d3d368a43dab36616eb98b95999cb1c5991e5f1d5861b2e",
+      "content\\compiler.py": "05b17c0dcda8d0b1d91801fe08079c589b44a5198b915c744691bc7c4625a90a",
+      "content\\dependencies.py": "142bec854be31b9c19439bb49892095a25028492f19ed9956843125518556d25",
+      "content\\overlays.py": "6f60a60ab19af6505ae5d8fcca2a94aba7060606926dbff12daa026d30ff577a",
+      "content\\repository.py": "a93a686ca4e0c247c210af723af88ed4e51ce28cbf723bd692822ec75632cce6",
+      "content\\schemas.py": "056519564f4e4d24e155d2d192e1bab976b48c23c10dd103d0400571694f3274",
+      "content\\spatial_validation.py": "67b096fc3082d877423bb2cc3de2d68d3a55ee8456b5257522e3b6011a4c252d",
+      "content\\timeline_validation.py": "567e547d197c424b5b4ca594a388a65a772e98597234341421290bf8a13b9169",
+      "contracts\\__init__.py": "146cb344e03673734c6a55836730d8715a568050760091123baedf116a547aa2",
+      "contracts\\models.py": "00e8bc162caffde0b5a0e7e96cebb61f9bf6fe9cfdd0370ca25c5b6480f55882",
+      "domains\\abilities.py": "09d5fbc113b92a1e27b586dc495ef22e97d952817a00dcdb04dfd19594e4688e",
+      "domains\\applicability.py": "3068f8853aeb3c5c2b67826f246a76be77b03fb3939ffe020fdafbd4229630de",
+      "domains\\attachments.py": "ce3d23620bc21ef981ef95efa2af4117dfd01e763d62896680bd10b30743f6fa",
+      "domains\\attributes.py": "f13e98b4f39ba2625457bb884467d7ff6af3f9da738ced76a4c455af8ce5343e",
+      "domains\\behavior.py": "06f3efb3bb9ba7ccb2c86e149e9744583dc433f08289580ef129e5bbff1432c9",
+      "domains\\behavior_decision.py": "e3cba73cdfbb4b80f7051f2136ed18c0037622b4fb4f53fb0b7eeb2ce632e1fa",
+      "domains\\buffs.py": "fb23d69455d55f1b55662bdbb758ab51f6c1e550e5123959bd7fb9ff4e054516",
+      "domains\\context.py": "bbd86a5d73c434b6baebfc9edba4c095a5e553cb12bd060867b28cf25d739f98",
+      "domains\\controls.py": "25a3b9c2c9c4f138fed56f5989dbd98776efb7ec9823edb5e47d1982da0749e2",
+      "domains\\death_projectiles.py": "e0e185e2e4442acb837f293eacf806d34c0662e364f90edecfede7bc75c7b72a",
+      "domains\\deploy_connectivity.py": "190ca72808acb9a5a4e73a33b4b13740135ca53a88d967f3ba4725ae690aade1",
+      "domains\\deployment.py": "667460863bd218cd2b13118b7fdf89cfc8ee892360ad2329783f18484f88375f",
+      "domains\\effects.py": "b551039cd043a204176287c5b0c3b790ed8cd826ceda7cd19dff4e3d9d82df3d",
+      "domains\\lifecycle.py": "4795d9df79dae7f1ae0b44ee135d59a44babb5467a076d2d969edd7e67f9855a",
+      "domains\\movement.py": "cb09dec026befca20910918b20a31edcb2c2fa4ac30ae0d1402b4a0891948d23",
+      "domains\\no_source_damage.py": "6bd26d624e92f317158daecbf9c334e4f9eff6be42670ae18d56b9cba573a1ae",
+      "domains\\periodic_fields.py": "41d46b14244ca186accbad8daf1ae6a960fe0e6811402f6c2c30ad75188668db",
+      "domains\\projectile_profiles.py": "441e399ce5820b0118a739d0c40d320675e031c7960d53179b8ace4996903f98",
+      "domains\\projectiles.py": "00ba645e141eee5f1ce4dbf60dd0013f78651701894847db817643c43c592539",
+      "domains\\providers.py": "6e6d0dd4e42151b77dc9a434acd949778fc8a8abdfb52552c42d37940441c364",
+      "domains\\qualified_areas.py": "9182208222bb71322ef600c3082aa6a607351e84720a83d0eaa2eebf45d500b1",
+      "domains\\rebirth.py": "014787af1f7735fc67d9d422d240abfe3a30b19148de21a8df3234136dc1c88e",
+      "domains\\request_transforms.py": "e6cfccffe2c4772a91d9dec36ddb502cbae0f36df2d9bdc36eb21cbeb81955ab",
+      "domains\\resources.py": "171ac9c61c856b0785ca4a8b6a5bbf7c17569ed8093256893d28c678a28692d8",
+      "domains\\selection.py": "25a79f2565b5759bf75f91f1fff2443df2fe724dda9a6872cd55ff1e27673a61",
+      "domains\\spatial.py": "3bddbbe5c2188a34cf079e466beb300ad5acc7130f23872c48c5673a07a45222",
+      "domains\\terrain.py": "b4207ad8e2f685d75149e0cb4f69853ea5bc85c9a3de3f44594e1f73a16b0fcd",
+      "domains\\tile_contacts.py": "20d7040055d8e9c3f4263636671228dd12eaa07e01fff2b268c2847f8703a7dd",
+      "domains\\tile_fields.py": "115a23bdd990d625fdcff88a6619e2e488ab5670760f6e463cd8b3e4f7721ec1",
+      "domains\\tile_mechanics.py": "9474d12905563e9c64587e1fc2bd836ff5868a6560333ef7ac079409762a295e",
+      "domains\\timeline.py": "5f13756704f5f58239f3233f3370ceee0e0268032d2c47748b552657d6e78313",
+      "domains\\toggles.py": "5aa42e23cf718d1003b63a3d9e7be6cc729703d7ccad10c0a2d3c593b006b15c",
+      "kernel\\__init__.py": "66059ad6884308b5b74d502cd7e202c76be93379364140a10acb7ab89b672cd9",
+      "kernel\\_data.py": "0f5c6f0e4e49be748f04eed69bf1146a59553e6c700f5d6a8491adea70e5ceff",
+      "kernel\\clock.py": "d56fa38c703ba9dc0f31b0752e2130c7342ba2f915ee7b1f07e82f6cae8657bd",
+      "kernel\\events.py": "ee470d4402176536ee86d08da77faf3c5743cfe14906f1116c70e60352dc92b6",
+      "kernel\\interning.py": "fe23f63c2c2f872c41e11e8cef619d7537472613dd85c6f7a134b171e6842deb",
+      "kernel\\journal.py": "e9cdff5e776e138de39e38f1ef28641cf090c35e093baa3b84c37d5cd845322a",
+      "kernel\\random.py": "a880cd9a4978e020557c36b8396ca8e9210e9ccebf38a0e26ff4294b897ed38f",
+      "kernel\\scheduler.py": "4fe886da0c08a2c42b4ff6558399f062754be9035e8e18e61b72fec4ea0f6b57",
+      "kernel\\session.py": "69db7a5051259373fe1f134888f9bb9ee0b21b2d9f5a765a13bada7b49529732",
+      "kernel\\snapshot.py": "9333d60eec1cca09fedffa475bf700c54c30f998dc8308006327973ba84cbfa9",
+      "kernel\\transaction.py": "b644590e4b21e938fb8483a11053c986b9a6e6bceaf86bc4df0114e3f47bc0e0",
+      "kernel\\world.py": "96dd8cb3ba346d85dc0384ee066881e0a4dd68da6b86d099960c422bd346b974",
+      "presets\\__init__.py": "b2e3a12ffcb0802e13d2f9ac937494e6cfc095e077d0119980dcc25b7bed6280",
+      "presets\\providers.py": "603e9db412383e3942620a5d0f122320ef63e9236a60f1adf6c1ba6eab42e8e8",
+      "rules\\__init__.py": "f94018916acb48bcd606af2932782122ad289421ea21e3f371780943a6396e02",
+      "rules\\catalog.py": "88bdab29510db1a07e7c05ba19b497a49672ba0530d996284201b24eda209097",
+      "rules\\context.py": "789f616adc30a5139782629e51868775a0df3956e24577e871b38345f0860a0c",
+      "rules\\errors.py": "039a7903f7e2d9f70bd21ef85ee7d3cca1ad02b1a1221031244bbbd429104a5d",
+      "rules\\expressions.py": "ba7e88f3ce5630c423c2edc3686c04eba091373c0fdaafb6b9692d2af52ddd34",
+      "rules\\numeric.py": "67bd221c798bad9a7dfd4608e2f20f406757a91b1ea36cc1fb575f1b3c70375e",
+      "rules\\pipeline.py": "a9cb2fa9001b10a797a4ad8b96959e1b26f89d9ee029a84d5277dd2eb9baf5c6",
+      "rules\\resolver.py": "a8dccabf2a18114592d0113ed5309a99efa9a5b43407c52bf69c365e499bfcb4",
+      "rules\\runtime.py": "83a980ae2fe2c047fe497e21d3b0f2654cbeb902a864b92253cb32862000d7f5",
+      "tools\\authoring.py": "7beaa6b08f3186c86923b8ed15f2a2dfb8d2fe313ac6f431a8f52113401b5c44",
+      "tools\\cli.py": "315a6ca9cecf4ae8eb3946573454ff26e505624ac721ef128017812bda40711a",
+      "tools\\compare.py": "d3cf5e40f9338ed04c5cc4594adb319d5228f9ec003e558cb2d27c4c8917a578",
+      "tools\\inspect.py": "6311e34201adb3133df1f5c37f492d5f89d6afd902ad0f3c86da9572e56723df",
+      "tools\\replay.py": "62d9149ecc857e108fc390cd5a64091ca4e49f96673a3c66806f62fc8549c5ba"
+    },
+    "tools": {
+      "ability_timing.py": "34f56b2c1fedb9e1cff12dc801e6fc24da9f9ed1ab47bc94f4b4642285a0048b",
+      "audit.py": "e3e2a715f4aa15c5a635dfe425d9dddf3b54001f756ceb30a6bf25c6b4c029a5",
+      "build.py": "4422f2f58d9ef159e5033a3ce7b82ebcc5b40b22bfd43813ff53fc737c8e6694",
+      "module.py": "ce7941460e0f010b9983b1dada418ac820f726a242c499b9296c803766418ee2",
+      "module_v2.py": "774944810959046cfc76becb90819bb888a0dfaec9b4e53eb0d7c8929ecb2e58",
+      "module_v3.py": "f99a056f1cb6d2fe527b015cd77ae702f8d3e5ad0105fcfae4d97df0dd85dba1",
+      "module_v4.py": "827fe8947c43781da3d678eec31bac075579002e716f1671159fc489d6f41aea",
+      "module_v5.py": "96aa33f7fcffd23b9a5bd4d9903c33d208c51b4a00e0d62c020301ee51e0424a",
+      "module_v6.py": "c0c78b8608040cc1340e3e06880fdb338885d46bd35aeed5644bb74de7cddee6",
+      "radius_validation.py": "d92b9c27c9bb52d1fcde552d18bd8c49a146992258746009908e01fee6e315a2"
+    },
+    "experiments": {
+      "test_combat.py": "caff764b18aa4c185a8d5c75b8ac65d825efc8df28dcf620a36b882e7c252e6b",
+      "verify.py": "dba489037382c5fc8e42feca56a5c4d69c785e560e650210b050f2fd85dd6125"
+    },
+    "compat_helper": {
+      "compare_parent.py": "792f8304e8cb2a8ca32094b9ef38bb671f2706fae8d7591dffd3a1f4028b1065",
+      "verify.py": "5dfc7c19cffb29c9048dba4cebf2f2eb6626cc94298a94c6cfcf9edc5e70c68d"
+    },
+    "models": {
+      "both17_28.bb8.reference_ground.json": "20536aaf64aac6247bdb5782b0579659c93f4675e08a501233a4ae18fd9cb6b7",
+      "first17.bb8.reference_ground.json": "8ba0c5745735b55136fa8ba49fd277a293c0664da3701b4715594cd4139c2377",
+      "first17.raw4.source_motion3.json": "9263f0ee48a85aba9f77bdbfe8992982697910e298b5f6979c7583b0dcb816d7",
+      "last28.bb8.reference_ground.json": "8c683fb7a6dc711db1db1c81dd3d437941672b02d2ae2032023d3b350c26460a"
+    },
+    "selected_and_consumed": {
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m78_attachments\\test_attachment.py": "f108e90f57475043c5e52e4e5f1fe7663696a360dbb1d342eae87335ae4102ab",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m93_world_cast_leases\\test_leases.py": "2990dd31184c0eb00cb0258aca93aa4375eb3104d06acf3a806737a2c5f0daee",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m93_world_cast_leases\\test_author_boundary.py": "f97f730c584bd7ea03c2337dbd9dcf8dd96b6c362a6aee29530643fc1118cb1c",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m96_immunity_independent_peer\\test_cross.py": "a06e31c1712a90ed8e28fb66b585f3523db4d0564a19dc49e1aab9cd3892f2ff",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m94_independent_boundary_peer_v2\\test_boundary.py": "788ba095f2887cbb8771d32c3c198fea26e178e8daf0e66c553e830f991cd771",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m75_packet_order\\test_packets.py": "94259675ed1446f7ff11481e75e6827de8e31f59d14e67e9915ca524dff3fe8b",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m72_no_source_damage\\test_no_source.py": "722b45736c33a7aa3b633f7a0ac32772d700cb63cb50f0ffd19f62ec2c86213d",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m84_catalog_peer\\test_peer.py": "8b149fbb3e2e41a14d9fb3580b4b95745b8560d2b96c8058a6eb30a7e7edd21c",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tests_v2\\test_abilities.py": "d7286832d1a39340330bac343b0ee25f7aeee8f3ae760bfc0fc551ab921e16bf",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tests_v2\\test_auras.py": "08209ae0f23524481639a48b49ecc2e0201ca1099bee19144d84e69738d83150",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tests_v2\\test_event_resources.py": "d4943bcd59ff1358760e6b46ddc1d9f77b6a68b7068fb3ab841109553cb04b58",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tests_v2\\test_damage_hooks_random.py": "6f1a9952fb32d541155df9f73b28accdb92b3c0fb051a8db8f153231e7b99a7a",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter04_boss\\frost_combat_v1\\source.audit.json": "3202824733c3f49e4404b5c168a546171b69e636dcf8866802293b5c92791029",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter04_boss_plan\\source.reference.json": "7ad2fb46b3e281711b6faf8b7a3bacfb9df6bc11ff32212a8439d8925d6893ec",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter04_sources\\native.reference.json": "3e392d80d000e27a50f11f2f33b0fa0f6be35dc1e91d7e321e2b9cf9681c4603",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter04_boss\\m86\\rebirth_immunity.reference_model.json": "41bfb7ff3e7dc2cf9efadcdcf2007c7e70cdcb311b5a9712eda8232eca64c5d0",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter04_dmage\\module.immunity_guard.reference.json": "2b3804fcd456e456b137b8145afe655d031db4dbf331a6115af3fded168f51e6",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_ordered_checkpoint.py": "5cdfd500f41e428b67974e5119ef3e3351d9df346cc58fca837bc4420effbc6a",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tests_v2\\test_campaign_acceptance.py": "e5ba2d1a27e85befa0e5204cf7db2eb6cb8b803dbc66f39f2e91e37ddd624302"
+    }
+  },
+  "end_manifest": {
+    "source": {
+      "__init__.py": "8841ee6e2da617783444719d8cdd59c697b32f18e9f48a702b0f68a198e819f6",
+      "__main__.py": "00b2ebc969893931d864f0bf4dbb043b18483dc99b583d4fd3b2249efadf5e60",
+      "adapters\\api.py": "2e20d972e4a24e6dae0303d8a57a0cecc415a10b3ab4f3051ba231d35fb5f20a",
+      "adapters\\imports\\ark_level.py": "001f65046e07db643e126723cb7e081bd7a6f8cd51c94cfc841e121e1e525692",
+      "content\\__init__.py": "1ebaf2030e9838bde745c25a9e6462f0a179fa9ed3d7d984f4a135f94075fdd7",
+      "content\\capabilities.py": "3e3784177add7ed1b7f0a905cf87163c68201ef2c718a362db58c6cebd443fda",
+      "content\\compiler.py": "05b17c0dcda8d0b1d91801fe08079c589b44a5198b915c744691bc7c4625a90a",
+      "content\\dependencies.py": "142bec854be31b9c19439bb49892095a25028492f19ed9956843125518556d25",
+      "content\\overlays.py": "6f60a60ab19af6505ae5d8fcca2a94aba7060606926dbff12daa026d30ff577a",
+      "content\\repository.py": "a93a686ca4e0c247c210af723af88ed4e51ce28cbf723bd692822ec75632cce6",
+      "content\\schemas.py": "88abb198aee286e097962e6bd15731049412b1cdf5dab55a024f88494a1228b0",
+      "content\\spatial_validation.py": "67b096fc3082d877423bb2cc3de2d68d3a55ee8456b5257522e3b6011a4c252d",
+      "content\\timeline_validation.py": "567e547d197c424b5b4ca594a388a65a772e98597234341421290bf8a13b9169",
+      "contracts\\__init__.py": "146cb344e03673734c6a55836730d8715a568050760091123baedf116a547aa2",
+      "contracts\\models.py": "00e8bc162caffde0b5a0e7e96cebb61f9bf6fe9cfdd0370ca25c5b6480f55882",
+      "domains\\abilities.py": "09d5fbc113b92a1e27b586dc495ef22e97d952817a00dcdb04dfd19594e4688e",
+      "domains\\ability_timing.py": "34f56b2c1fedb9e1cff12dc801e6fc24da9f9ed1ab47bc94f4b4642285a0048b",
+      "domains\\applicability.py": "3068f8853aeb3c5c2b67826f246a76be77b03fb3939ffe020fdafbd4229630de",
+      "domains\\attachments.py": "ce3d23620bc21ef981ef95efa2af4117dfd01e763d62896680bd10b30743f6fa",
+      "domains\\attributes.py": "f13e98b4f39ba2625457bb884467d7ff6af3f9da738ced76a4c455af8ce5343e",
+      "domains\\behavior.py": "06f3efb3bb9ba7ccb2c86e149e9744583dc433f08289580ef129e5bbff1432c9",
+      "domains\\behavior_decision.py": "e3cba73cdfbb4b80f7051f2136ed18c0037622b4fb4f53fb0b7eeb2ce632e1fa",
+      "domains\\buffs.py": "fb23d69455d55f1b55662bdbb758ab51f6c1e550e5123959bd7fb9ff4e054516",
+      "domains\\context.py": "bbd86a5d73c434b6baebfc9edba4c095a5e553cb12bd060867b28cf25d739f98",
+      "domains\\controls.py": "25a3b9c2c9c4f138fed56f5989dbd98776efb7ec9823edb5e47d1982da0749e2",
+      "domains\\death_projectiles.py": "d7ae4ed5367211bfbd65b7eab2c832958eaab334b7e80283df16c01af27ef5a0",
+      "domains\\deploy_connectivity.py": "190ca72808acb9a5a4e73a33b4b13740135ca53a88d967f3ba4725ae690aade1",
+      "domains\\deployment.py": "667460863bd218cd2b13118b7fdf89cfc8ee892360ad2329783f18484f88375f",
+      "domains\\effects.py": "b551039cd043a204176287c5b0c3b790ed8cd826ceda7cd19dff4e3d9d82df3d",
+      "domains\\lifecycle.py": "7c14cad45f023702bd12a4ea52ddb473768c3c9dfac54537352df4ed242f7ad8",
+      "domains\\movement.py": "cb09dec026befca20910918b20a31edcb2c2fa4ac30ae0d1402b4a0891948d23",
+      "domains\\no_source_damage.py": "6bd26d624e92f317158daecbf9c334e4f9eff6be42670ae18d56b9cba573a1ae",
+      "domains\\periodic_fields.py": "41d46b14244ca186accbad8daf1ae6a960fe0e6811402f6c2c30ad75188668db",
+      "domains\\projectile_profiles.py": "441e399ce5820b0118a739d0c40d320675e031c7960d53179b8ace4996903f98",
+      "domains\\projectiles.py": "00ba645e141eee5f1ce4dbf60dd0013f78651701894847db817643c43c592539",
+      "domains\\providers.py": "6e6d0dd4e42151b77dc9a434acd949778fc8a8abdfb52552c42d37940441c364",
+      "domains\\qualified_areas.py": "9182208222bb71322ef600c3082aa6a607351e84720a83d0eaa2eebf45d500b1",
+      "domains\\rebirth.py": "014787af1f7735fc67d9d422d240abfe3a30b19148de21a8df3234136dc1c88e",
+      "domains\\request_transforms.py": "e6cfccffe2c4772a91d9dec36ddb502cbae0f36df2d9bdc36eb21cbeb81955ab",
+      "domains\\resources.py": "171ac9c61c856b0785ca4a8b6a5bbf7c17569ed8093256893d28c678a28692d8",
+      "domains\\selection.py": "25a79f2565b5759bf75f91f1fff2443df2fe724dda9a6872cd55ff1e27673a61",
+      "domains\\spatial.py": "3bddbbe5c2188a34cf079e466beb300ad5acc7130f23872c48c5673a07a45222",
+      "domains\\terrain.py": "b4207ad8e2f685d75149e0cb4f69853ea5bc85c9a3de3f44594e1f73a16b0fcd",
+      "domains\\tile_contacts.py": "20d7040055d8e9c3f4263636671228dd12eaa07e01fff2b268c2847f8703a7dd",
+      "domains\\tile_fields.py": "115a23bdd990d625fdcff88a6619e2e488ab5670760f6e463cd8b3e4f7721ec1",
+      "domains\\tile_mechanics.py": "9474d12905563e9c64587e1fc2bd836ff5868a6560333ef7ac079409762a295e",
+      "domains\\timeline.py": "5f13756704f5f58239f3233f3370ceee0e0268032d2c47748b552657d6e78313",
+      "domains\\toggles.py": "5aa42e23cf718d1003b63a3d9e7be6cc729703d7ccad10c0a2d3c593b006b15c",
+      "kernel\\__init__.py": "66059ad6884308b5b74d502cd7e202c76be93379364140a10acb7ab89b672cd9",
+      "kernel\\_data.py": "0f5c6f0e4e49be748f04eed69bf1146a59553e6c700f5d6a8491adea70e5ceff",
+      "kernel\\clock.py": "d56fa38c703ba9dc0f31b0752e2130c7342ba2f915ee7b1f07e82f6cae8657bd",
+      "kernel\\events.py": "ee470d4402176536ee86d08da77faf3c5743cfe14906f1116c70e60352dc92b6",
+      "kernel\\interning.py": "fe23f63c2c2f872c41e11e8cef619d7537472613dd85c6f7a134b171e6842deb",
+      "kernel\\journal.py": "e9cdff5e776e138de39e38f1ef28641cf090c35e093baa3b84c37d5cd845322a",
+      "kernel\\random.py": "a880cd9a4978e020557c36b8396ca8e9210e9ccebf38a0e26ff4294b897ed38f",
+      "kernel\\scheduler.py": "4fe886da0c08a2c42b4ff6558399f062754be9035e8e18e61b72fec4ea0f6b57",
+      "kernel\\session.py": "69db7a5051259373fe1f134888f9bb9ee0b21b2d9f5a765a13bada7b49529732",
+      "kernel\\snapshot.py": "9333d60eec1cca09fedffa475bf700c54c30f998dc8308006327973ba84cbfa9",
+      "kernel\\transaction.py": "b644590e4b21e938fb8483a11053c986b9a6e6bceaf86bc4df0114e3f47bc0e0",
+      "kernel\\world.py": "96dd8cb3ba346d85dc0384ee066881e0a4dd68da6b86d099960c422bd346b974",
+      "presets\\__init__.py": "b2e3a12ffcb0802e13d2f9ac937494e6cfc095e077d0119980dcc25b7bed6280",
+      "presets\\providers.py": "603e9db412383e3942620a5d0f122320ef63e9236a60f1adf6c1ba6eab42e8e8",
+      "rules\\__init__.py": "f94018916acb48bcd606af2932782122ad289421ea21e3f371780943a6396e02",
+      "rules\\catalog.py": "88bdab29510db1a07e7c05ba19b497a49672ba0530d996284201b24eda209097",
+      "rules\\context.py": "789f616adc30a5139782629e51868775a0df3956e24577e871b38345f0860a0c",
+      "rules\\errors.py": "039a7903f7e2d9f70bd21ef85ee7d3cca1ad02b1a1221031244bbbd429104a5d",
+      "rules\\expressions.py": "ba7e88f3ce5630c423c2edc3686c04eba091373c0fdaafb6b9692d2af52ddd34",
+      "rules\\numeric.py": "67bd221c798bad9a7dfd4608e2f20f406757a91b1ea36cc1fb575f1b3c70375e",
+      "rules\\pipeline.py": "a9cb2fa9001b10a797a4ad8b96959e1b26f89d9ee029a84d5277dd2eb9baf5c6",
+      "rules\\resolver.py": "a8dccabf2a18114592d0113ed5309a99efa9a5b43407c52bf69c365e499bfcb4",
+      "rules\\runtime.py": "83a980ae2fe2c047fe497e21d3b0f2654cbeb902a864b92253cb32862000d7f5",
+      "tools\\authoring.py": "7beaa6b08f3186c86923b8ed15f2a2dfb8d2fe313ac6f431a8f52113401b5c44",
+      "tools\\cli.py": "315a6ca9cecf4ae8eb3946573454ff26e505624ac721ef128017812bda40711a",
+      "tools\\compare.py": "d3cf5e40f9338ed04c5cc4594adb319d5228f9ec003e558cb2d27c4c8917a578",
+      "tools\\inspect.py": "6311e34201adb3133df1f5c37f492d5f89d6afd902ad0f3c86da9572e56723df",
+      "tools\\replay.py": "62d9149ecc857e108fc390cd5a64091ca4e49f96673a3c66806f62fc8549c5ba"
+    },
+    "catalog": {
+      "content\\presets\\ark_standard.json": "1070ba6793cee5ded71c0f0b89a96ba72973d49989407e70a858a575febb9814",
+      "rules\\contracts.json": "bec1a8b7955cc40e0ce660f743660d3c6cb149a583a12d31d61524713962c8c6",
+      "validation\\reports\\ark_00_01_20261002.performance.json": "9134d208a7f063a5d1270eea37df7bc9823e44635969750353931f9d9eca9e3a",
+      "validation\\reports\\custom_balance_20261002.json": "974dda649dd15ea380d90b179bcd71cc5a08644863a08f9396fd163faf8c4ed3",
+      "validation\\reports\\custom_standard_20261002.json": "5546e4f9bdb9d2e35d38458839a324b85f1d96d48427d80de89ebd23c277c922",
+      "validation\\reports\\custom_standard_20261002.replay.json": "84d280a479f3c9f93f8a32214543ac721a04d4d12e88b254d2cac4507f800bba",
+      "validation\\reports\\custom_standard_20261002.replayed.json": "5546e4f9bdb9d2e35d38458839a324b85f1d96d48427d80de89ebd23c277c922",
+      "validation\\reports\\performance_after_20261002.json": "abe4ff249dbf90da26f41ed6cee33c1d24a87ea4f2047d74e021d276330fb351",
+      "validation\\reports\\v2_baseline_20261002.json": "7e2466405f1c94ee8006b586ddbb847dc216e3c0defb49baebea8d995e3a3d65",
+      "validation\\reports\\v2_baseline_20261002.replay.json": "deba0243dcad82b12fcc3933de90dcbf57b77992a12022aa90cd58829d9854d8",
+      "validation\\reports\\v2_tests_20261002.json": "e0cf61b9af4042cc83e788029f114d8a557eed99bebc895876f11ecbd896020c"
+    },
+    "parent": {
+      "__init__.py": "8841ee6e2da617783444719d8cdd59c697b32f18e9f48a702b0f68a198e819f6",
+      "__main__.py": "00b2ebc969893931d864f0bf4dbb043b18483dc99b583d4fd3b2249efadf5e60",
+      "adapters\\api.py": "2e20d972e4a24e6dae0303d8a57a0cecc415a10b3ab4f3051ba231d35fb5f20a",
+      "adapters\\imports\\ark_level.py": "001f65046e07db643e126723cb7e081bd7a6f8cd51c94cfc841e121e1e525692",
+      "content\\__init__.py": "1ebaf2030e9838bde745c25a9e6462f0a179fa9ed3d7d984f4a135f94075fdd7",
+      "content\\capabilities.py": "ec563e5ee0beb3792d3d368a43dab36616eb98b95999cb1c5991e5f1d5861b2e",
+      "content\\compiler.py": "05b17c0dcda8d0b1d91801fe08079c589b44a5198b915c744691bc7c4625a90a",
+      "content\\dependencies.py": "142bec854be31b9c19439bb49892095a25028492f19ed9956843125518556d25",
+      "content\\overlays.py": "6f60a60ab19af6505ae5d8fcca2a94aba7060606926dbff12daa026d30ff577a",
+      "content\\repository.py": "a93a686ca4e0c247c210af723af88ed4e51ce28cbf723bd692822ec75632cce6",
+      "content\\schemas.py": "056519564f4e4d24e155d2d192e1bab976b48c23c10dd103d0400571694f3274",
+      "content\\spatial_validation.py": "67b096fc3082d877423bb2cc3de2d68d3a55ee8456b5257522e3b6011a4c252d",
+      "content\\timeline_validation.py": "567e547d197c424b5b4ca594a388a65a772e98597234341421290bf8a13b9169",
+      "contracts\\__init__.py": "146cb344e03673734c6a55836730d8715a568050760091123baedf116a547aa2",
+      "contracts\\models.py": "00e8bc162caffde0b5a0e7e96cebb61f9bf6fe9cfdd0370ca25c5b6480f55882",
+      "domains\\abilities.py": "09d5fbc113b92a1e27b586dc495ef22e97d952817a00dcdb04dfd19594e4688e",
+      "domains\\applicability.py": "3068f8853aeb3c5c2b67826f246a76be77b03fb3939ffe020fdafbd4229630de",
+      "domains\\attachments.py": "ce3d23620bc21ef981ef95efa2af4117dfd01e763d62896680bd10b30743f6fa",
+      "domains\\attributes.py": "f13e98b4f39ba2625457bb884467d7ff6af3f9da738ced76a4c455af8ce5343e",
+      "domains\\behavior.py": "06f3efb3bb9ba7ccb2c86e149e9744583dc433f08289580ef129e5bbff1432c9",
+      "domains\\behavior_decision.py": "e3cba73cdfbb4b80f7051f2136ed18c0037622b4fb4f53fb0b7eeb2ce632e1fa",
+      "domains\\buffs.py": "fb23d69455d55f1b55662bdbb758ab51f6c1e550e5123959bd7fb9ff4e054516",
+      "domains\\context.py": "bbd86a5d73c434b6baebfc9edba4c095a5e553cb12bd060867b28cf25d739f98",
+      "domains\\controls.py": "25a3b9c2c9c4f138fed56f5989dbd98776efb7ec9823edb5e47d1982da0749e2",
+      "domains\\death_projectiles.py": "e0e185e2e4442acb837f293eacf806d34c0662e364f90edecfede7bc75c7b72a",
+      "domains\\deploy_connectivity.py": "190ca72808acb9a5a4e73a33b4b13740135ca53a88d967f3ba4725ae690aade1",
+      "domains\\deployment.py": "667460863bd218cd2b13118b7fdf89cfc8ee892360ad2329783f18484f88375f",
+      "domains\\effects.py": "b551039cd043a204176287c5b0c3b790ed8cd826ceda7cd19dff4e3d9d82df3d",
+      "domains\\lifecycle.py": "4795d9df79dae7f1ae0b44ee135d59a44babb5467a076d2d969edd7e67f9855a",
+      "domains\\movement.py": "cb09dec026befca20910918b20a31edcb2c2fa4ac30ae0d1402b4a0891948d23",
+      "domains\\no_source_damage.py": "6bd26d624e92f317158daecbf9c334e4f9eff6be42670ae18d56b9cba573a1ae",
+      "domains\\periodic_fields.py": "41d46b14244ca186accbad8daf1ae6a960fe0e6811402f6c2c30ad75188668db",
+      "domains\\projectile_profiles.py": "441e399ce5820b0118a739d0c40d320675e031c7960d53179b8ace4996903f98",
+      "domains\\projectiles.py": "00ba645e141eee5f1ce4dbf60dd0013f78651701894847db817643c43c592539",
+      "domains\\providers.py": "6e6d0dd4e42151b77dc9a434acd949778fc8a8abdfb52552c42d37940441c364",
+      "domains\\qualified_areas.py": "9182208222bb71322ef600c3082aa6a607351e84720a83d0eaa2eebf45d500b1",
+      "domains\\rebirth.py": "014787af1f7735fc67d9d422d240abfe3a30b19148de21a8df3234136dc1c88e",
+      "domains\\request_transforms.py": "e6cfccffe2c4772a91d9dec36ddb502cbae0f36df2d9bdc36eb21cbeb81955ab",
+      "domains\\resources.py": "171ac9c61c856b0785ca4a8b6a5bbf7c17569ed8093256893d28c678a28692d8",
+      "domains\\selection.py": "25a79f2565b5759bf75f91f1fff2443df2fe724dda9a6872cd55ff1e27673a61",
+      "domains\\spatial.py": "3bddbbe5c2188a34cf079e466beb300ad5acc7130f23872c48c5673a07a45222",
+      "domains\\terrain.py": "b4207ad8e2f685d75149e0cb4f69853ea5bc85c9a3de3f44594e1f73a16b0fcd",
+      "domains\\tile_contacts.py": "20d7040055d8e9c3f4263636671228dd12eaa07e01fff2b268c2847f8703a7dd",
+      "domains\\tile_fields.py": "115a23bdd990d625fdcff88a6619e2e488ab5670760f6e463cd8b3e4f7721ec1",
+      "domains\\tile_mechanics.py": "9474d12905563e9c64587e1fc2bd836ff5868a6560333ef7ac079409762a295e",
+      "domains\\timeline.py": "5f13756704f5f58239f3233f3370ceee0e0268032d2c47748b552657d6e78313",
+      "domains\\toggles.py": "5aa42e23cf718d1003b63a3d9e7be6cc729703d7ccad10c0a2d3c593b006b15c",
+      "kernel\\__init__.py": "66059ad6884308b5b74d502cd7e202c76be93379364140a10acb7ab89b672cd9",
+      "kernel\\_data.py": "0f5c6f0e4e49be748f04eed69bf1146a59553e6c700f5d6a8491adea70e5ceff",
+      "kernel\\clock.py": "d56fa38c703ba9dc0f31b0752e2130c7342ba2f915ee7b1f07e82f6cae8657bd",
+      "kernel\\events.py": "ee470d4402176536ee86d08da77faf3c5743cfe14906f1116c70e60352dc92b6",
+      "kernel\\interning.py": "fe23f63c2c2f872c41e11e8cef619d7537472613dd85c6f7a134b171e6842deb",
+      "kernel\\journal.py": "e9cdff5e776e138de39e38f1ef28641cf090c35e093baa3b84c37d5cd845322a",
+      "kernel\\random.py": "a880cd9a4978e020557c36b8396ca8e9210e9ccebf38a0e26ff4294b897ed38f",
+      "kernel\\scheduler.py": "4fe886da0c08a2c42b4ff6558399f062754be9035e8e18e61b72fec4ea0f6b57",
+      "kernel\\session.py": "69db7a5051259373fe1f134888f9bb9ee0b21b2d9f5a765a13bada7b49529732",
+      "kernel\\snapshot.py": "9333d60eec1cca09fedffa475bf700c54c30f998dc8308006327973ba84cbfa9",
+      "kernel\\transaction.py": "b644590e4b21e938fb8483a11053c986b9a6e6bceaf86bc4df0114e3f47bc0e0",
+      "kernel\\world.py": "96dd8cb3ba346d85dc0384ee066881e0a4dd68da6b86d099960c422bd346b974",
+      "presets\\__init__.py": "b2e3a12ffcb0802e13d2f9ac937494e6cfc095e077d0119980dcc25b7bed6280",
+      "presets\\providers.py": "603e9db412383e3942620a5d0f122320ef63e9236a60f1adf6c1ba6eab42e8e8",
+      "rules\\__init__.py": "f94018916acb48bcd606af2932782122ad289421ea21e3f371780943a6396e02",
+      "rules\\catalog.py": "88bdab29510db1a07e7c05ba19b497a49672ba0530d996284201b24eda209097",
+      "rules\\context.py": "789f616adc30a5139782629e51868775a0df3956e24577e871b38345f0860a0c",
+      "rules\\errors.py": "039a7903f7e2d9f70bd21ef85ee7d3cca1ad02b1a1221031244bbbd429104a5d",
+      "rules\\expressions.py": "ba7e88f3ce5630c423c2edc3686c04eba091373c0fdaafb6b9692d2af52ddd34",
+      "rules\\numeric.py": "67bd221c798bad9a7dfd4608e2f20f406757a91b1ea36cc1fb575f1b3c70375e",
+      "rules\\pipeline.py": "a9cb2fa9001b10a797a4ad8b96959e1b26f89d9ee029a84d5277dd2eb9baf5c6",
+      "rules\\resolver.py": "a8dccabf2a18114592d0113ed5309a99efa9a5b43407c52bf69c365e499bfcb4",
+      "rules\\runtime.py": "83a980ae2fe2c047fe497e21d3b0f2654cbeb902a864b92253cb32862000d7f5",
+      "tools\\authoring.py": "7beaa6b08f3186c86923b8ed15f2a2dfb8d2fe313ac6f431a8f52113401b5c44",
+      "tools\\cli.py": "315a6ca9cecf4ae8eb3946573454ff26e505624ac721ef128017812bda40711a",
+      "tools\\compare.py": "d3cf5e40f9338ed04c5cc4594adb319d5228f9ec003e558cb2d27c4c8917a578",
+      "tools\\inspect.py": "6311e34201adb3133df1f5c37f492d5f89d6afd902ad0f3c86da9572e56723df",
+      "tools\\replay.py": "62d9149ecc857e108fc390cd5a64091ca4e49f96673a3c66806f62fc8549c5ba"
+    },
+    "tools": {
+      "ability_timing.py": "34f56b2c1fedb9e1cff12dc801e6fc24da9f9ed1ab47bc94f4b4642285a0048b",
+      "audit.py": "e3e2a715f4aa15c5a635dfe425d9dddf3b54001f756ceb30a6bf25c6b4c029a5",
+      "build.py": "4422f2f58d9ef159e5033a3ce7b82ebcc5b40b22bfd43813ff53fc737c8e6694",
+      "module.py": "ce7941460e0f010b9983b1dada418ac820f726a242c499b9296c803766418ee2",
+      "module_v2.py": "774944810959046cfc76becb90819bb888a0dfaec9b4e53eb0d7c8929ecb2e58",
+      "module_v3.py": "f99a056f1cb6d2fe527b015cd77ae702f8d3e5ad0105fcfae4d97df0dd85dba1",
+      "module_v4.py": "827fe8947c43781da3d678eec31bac075579002e716f1671159fc489d6f41aea",
+      "module_v5.py": "96aa33f7fcffd23b9a5bd4d9903c33d208c51b4a00e0d62c020301ee51e0424a",
+      "module_v6.py": "c0c78b8608040cc1340e3e06880fdb338885d46bd35aeed5644bb74de7cddee6",
+      "radius_validation.py": "d92b9c27c9bb52d1fcde552d18bd8c49a146992258746009908e01fee6e315a2"
+    },
+    "experiments": {
+      "test_combat.py": "caff764b18aa4c185a8d5c75b8ac65d825efc8df28dcf620a36b882e7c252e6b",
+      "verify.py": "dba489037382c5fc8e42feca56a5c4d69c785e560e650210b050f2fd85dd6125"
+    },
+    "compat_helper": {
+      "compare_parent.py": "792f8304e8cb2a8ca32094b9ef38bb671f2706fae8d7591dffd3a1f4028b1065",
+      "verify.py": "5dfc7c19cffb29c9048dba4cebf2f2eb6626cc94298a94c6cfcf9edc5e70c68d"
+    },
+    "models": {
+      "both17_28.bb8.reference_ground.json": "20536aaf64aac6247bdb5782b0579659c93f4675e08a501233a4ae18fd9cb6b7",
+      "first17.bb8.reference_ground.json": "8ba0c5745735b55136fa8ba49fd277a293c0664da3701b4715594cd4139c2377",
+      "first17.raw4.source_motion3.json": "9263f0ee48a85aba9f77bdbfe8992982697910e298b5f6979c7583b0dcb816d7",
+      "last28.bb8.reference_ground.json": "8c683fb7a6dc711db1db1c81dd3d437941672b02d2ae2032023d3b350c26460a"
+    },
+    "selected_and_consumed": {
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m78_attachments\\test_attachment.py": "f108e90f57475043c5e52e4e5f1fe7663696a360dbb1d342eae87335ae4102ab",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m93_world_cast_leases\\test_leases.py": "2990dd31184c0eb00cb0258aca93aa4375eb3104d06acf3a806737a2c5f0daee",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m93_world_cast_leases\\test_author_boundary.py": "f97f730c584bd7ea03c2337dbd9dcf8dd96b6c362a6aee29530643fc1118cb1c",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m96_immunity_independent_peer\\test_cross.py": "a06e31c1712a90ed8e28fb66b585f3523db4d0564a19dc49e1aab9cd3892f2ff",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m94_independent_boundary_peer_v2\\test_boundary.py": "788ba095f2887cbb8771d32c3c198fea26e178e8daf0e66c553e830f991cd771",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m75_packet_order\\test_packets.py": "94259675ed1446f7ff11481e75e6827de8e31f59d14e67e9915ca524dff3fe8b",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m72_no_source_damage\\test_no_source.py": "722b45736c33a7aa3b633f7a0ac32772d700cb63cb50f0ffd19f62ec2c86213d",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m84_catalog_peer\\test_peer.py": "8b149fbb3e2e41a14d9fb3580b4b95745b8560d2b96c8058a6eb30a7e7edd21c",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tests_v2\\test_abilities.py": "d7286832d1a39340330bac343b0ee25f7aeee8f3ae760bfc0fc551ab921e16bf",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tests_v2\\test_auras.py": "08209ae0f23524481639a48b49ecc2e0201ca1099bee19144d84e69738d83150",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tests_v2\\test_event_resources.py": "d4943bcd59ff1358760e6b46ddc1d9f77b6a68b7068fb3ab841109553cb04b58",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tests_v2\\test_damage_hooks_random.py": "6f1a9952fb32d541155df9f73b28accdb92b3c0fb051a8db8f153231e7b99a7a",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter04_boss\\frost_combat_v1\\source.audit.json": "3202824733c3f49e4404b5c168a546171b69e636dcf8866802293b5c92791029",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter04_boss_plan\\source.reference.json": "7ad2fb46b3e281711b6faf8b7a3bacfb9df6bc11ff32212a8439d8925d6893ec",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter04_sources\\native.reference.json": "3e392d80d000e27a50f11f2f33b0fa0f6be35dc1e91d7e321e2b9cf9681c4603",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter04_boss\\m86\\rebirth_immunity.reference_model.json": "41bfb7ff3e7dc2cf9efadcdcf2007c7e70cdcb311b5a9712eda8232eca64c5d0",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\chapter04_dmage\\module.immunity_guard.reference.json": "2b3804fcd456e456b137b8145afe655d031db4dbf331a6115af3fded168f51e6",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_ordered_checkpoint.py": "5cdfd500f41e428b67974e5119ef3e3351d9df346cc58fca837bc4420effbc6a",
+      "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tests_v2\\test_campaign_acceptance.py": "e5ba2d1a27e85befa0e5204cf7db2eb6cb8b803dbc66f39f2e91e37ddd624302"
+    }
+  },
+  "cases": [
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_source_priority_one_charge_begin26_flight10_contact32_and_no_normal_attack",
+      "outcome": "passed",
+      "seconds": 0.41963170003145933,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_infinite_target_stun_no_expiry_gap_at_one_second_refresh",
+      "outcome": "passed",
+      "seconds": 1.0543676000088453,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_source_silence_cancel_same_tick_clears_both_owned_leases",
+      "outcome": "passed",
+      "seconds": 1.0207078999374062,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_real_source_retire_clears_owned_target_immediately_not_at_next_tick",
+      "outcome": "passed",
+      "seconds": 0.5965117000741884,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_public_interrupt_during_windup_cleans_self_owned_hold",
+      "outcome": "passed",
+      "seconds": 0.1994658000767231,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_native_postfilter12_stun_exclusion_vs_basic4_and_newest_priority",
+      "outcome": "passed",
+      "seconds": 0.29893129994161427,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_init_silence_does_not_spend_charge_can_activate_after_status_removed",
+      "outcome": "passed",
+      "seconds": 0.18722890003118664,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_live_at_hit_source_attack_and_target_res_during_integral",
+      "outcome": "passed",
+      "seconds": 0.41960999998264015,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_actual_ordered_checkpoint_mid_flight_and_held_resume_public_replay",
+      "outcome": "passed",
+      "seconds": 8.039167399983853,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_natural_end_half_open600_integral_packets_exact20s_and_recovery21",
+      "outcome": "passed",
+      "seconds": 13.605445699999109,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_target_retire_breaks_link_and_clears_owned_leases_same_tick",
+      "outcome": "passed",
+      "seconds": 0.581539300037548,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_target_cleanse_can_act_until_exact_next_refresh_without_fake_expiry",
+      "outcome": "passed",
+      "seconds": 1.039279800024815,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_force_reach_timeout_raw_true_vs_explicit_false_policy",
+      "outcome": "passed",
+      "seconds": 1.0653107999823987,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_explicit_buff_damage_sp_switch_and_no_attack_sp[False-1]",
+      "outcome": "passed",
+      "seconds": 0.4289983999915421,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_explicit_buff_damage_sp_switch_and_no_attack_sp[True-0]",
+      "outcome": "passed",
+      "seconds": 0.4364579999819398,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_own_source_stun_exception_does_not_hide_cast_owned_silence",
+      "outcome": "passed",
+      "seconds": 0.3814233000157401,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_step_after_damage_hook_error_atomic_stores_and_binding_refresh",
+      "outcome": "passed",
+      "seconds": 0.5207874000770971,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_inactive_target_during_windup_ends_without_stuck_source_hold",
+      "outcome": "passed",
+      "seconds": 0.3336498000426218,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_bad_generic_profile_rejected[completion_blocking-1]",
+      "outcome": "passed",
+      "seconds": 0.0037498000310733914,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_bad_generic_profile_rejected[source_cancel_flags-value1]",
+      "outcome": "passed",
+      "seconds": 0.0031769999768584967,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_bad_generic_profile_rejected[ignored_owned_source_flags-value2]",
+      "outcome": "passed",
+      "seconds": 0.0031125000678002834,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_bad_generic_profile_rejected[force_reach_on_timeout-None]",
+      "outcome": "passed",
+      "seconds": 0.003102299990132451,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_bad_generic_profile_rejected[step_interval_seconds-0]",
+      "outcome": "passed",
+      "seconds": 0.003548900014720857,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_bad_generic_profile_rejected[max_packets--1]",
+      "outcome": "passed",
+      "seconds": 0.002908599912188947,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_bad_generic_profile_rejected[duration_seconds-nan]",
+      "outcome": "passed",
+      "seconds": 0.003002000041306019,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_explicit_completion_blocking_policy_and_terminal_owned_cleanup[False]",
+      "outcome": "passed",
+      "seconds": 0.658932099933736,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_explicit_completion_blocking_policy_and_terminal_owned_cleanup[True]",
+      "outcome": "passed",
+      "seconds": 0.6781152000185102,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_duplicate_owned_step_payload_cannot_deliver_or_refresh_twice",
+      "outcome": "passed",
+      "seconds": 0.45864790002815425,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_terminal_owned_buff_callback_failure_restores_goal_link_rng_tasks_and_events",
+      "outcome": "passed",
+      "seconds": 0.7450845999410376,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_undeclared_channel_waiting_and_bad_actor_damage_flags_compile_rejected",
+      "outcome": "passed",
+      "seconds": 0.048689099960029125,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m78_attachments/test_attachment.py::test_direct_explicit_damage_flags_and_orphan_buff_binding_fail_without_writes",
+      "outcome": "passed",
+      "seconds": 0.12196909997146577,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m93_world_cast_leases/test_leases.py::test_attachment_conflict_restores_generation_source_controls_rng_tasks_events",
+      "outcome": "passed",
+      "seconds": 0.833594600087963,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m93_world_cast_leases/test_leases.py::test_bound_effect_conflict_random_refresh_effects_are_atomic",
+      "outcome": "passed",
+      "seconds": 0.5148833999410272,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m93_world_cast_leases/test_leases.py::test_same_source_same_cast_rebinding_is_exactly_idempotent",
+      "outcome": "passed",
+      "seconds": 0.827688799938187,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m93_world_cast_leases/test_leases.py::test_external_default_identity_survives_caster_retirement",
+      "outcome": "passed",
+      "seconds": 0.7814583000726998,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m93_world_cast_leases/test_leases.py::test_retired_holder_releases_uid_and_new_source_can_acquire",
+      "outcome": "passed",
+      "seconds": 0.40687559999059886,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m93_world_cast_leases/test_author_boundary.py::test_same_source_distinct_cast_rejected_with_all_refresh_writes_rolled_back",
+      "outcome": "passed",
+      "seconds": 0.43960729998070747,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m93_world_cast_leases/test_author_boundary.py::test_lazy_expired_uid_is_removed_normally_and_stale_row_does_not_lock_new_uid",
+      "outcome": "passed",
+      "seconds": 0.4420927999308333,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m93_world_cast_leases/test_author_boundary.py::test_canceled_holder_releases_and_can_reacquire_without_editing_history",
+      "outcome": "passed",
+      "seconds": 0.3637264999561012,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m93_world_cast_leases/test_author_boundary.py::test_direct_bind_missing_uid_rejected_without_writes[missing]",
+      "outcome": "passed",
+      "seconds": 0.378744300105609,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m93_world_cast_leases/test_author_boundary.py::test_direct_bind_missing_uid_rejected_without_writes[buff/3/999]",
+      "outcome": "passed",
+      "seconds": 0.34791990008670837,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m96_immunity_independent_peer/test_cross.py::test_true_frost_native_immunity_sleep_rebirth_and_no_source_final_claim",
+      "outcome": "passed",
+      "seconds": 3.2380129999946803,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m96_immunity_independent_peer/test_cross.py::test_source_owned_target_stun_native_immunity_must_not_disable_control_but_buff_damage_survives",
+      "outcome": "passed",
+      "seconds": 0.9445464999880642,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m96_immunity_independent_peer/test_cross.py::test_source_silence_immunity_and_cleanup_preserve_external_same_definition[False]",
+      "outcome": "passed",
+      "seconds": 6.412360800080933,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m96_immunity_independent_peer/test_cross.py::test_source_silence_immunity_and_cleanup_preserve_external_same_definition[True]",
+      "outcome": "passed",
+      "seconds": 8.38416060002055,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m94_independent_boundary_peer_v2/test_boundary.py::test_actual_native_stun_at_exact_immunity_expiry_control_attrs_agree_without_dispatching_due_public_command",
+      "outcome": "passed",
+      "seconds": 1.783848899998702,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m94_independent_boundary_peer_v2/test_boundary.py::test_public_zero_delay_callback_remove_restore_then_true_damage_death_owned_chain_exact_disk_and_replay[2-cast_interrupted]",
+      "outcome": "passed",
+      "seconds": 1.8138713999651372,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m94_independent_boundary_peer_v2/test_boundary.py::test_public_zero_delay_callback_remove_restore_then_true_damage_death_owned_chain_exact_disk_and_replay[3-target_invalid]",
+      "outcome": "passed",
+      "seconds": 1.9385876000160351,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m75_packet_order/test_packets.py::test_preserved_actual_m73_legal_callback_now_prevents_second_packet[retire_second]",
+      "outcome": "passed",
+      "seconds": 0.1207972998963669,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m75_packet_order/test_packets.py::test_preserved_actual_m73_legal_callback_now_prevents_second_packet[move_second]",
+      "outcome": "passed",
+      "seconds": 0.11946820002049208,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m75_packet_order/test_packets.py::test_delay0_ability_cascade_completes_before_next_packet",
+      "outcome": "passed",
+      "seconds": 0.1270461999811232,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m75_packet_order/test_packets.py::test_two_cells_one_global_fifo_after_each_packet_callback",
+      "outcome": "passed",
+      "seconds": 0.14093180000782013,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m75_packet_order/test_packets.py::test_legal_life_resource_callback_finishes_before_remaining_packet_or_draw",
+      "outcome": "passed",
+      "seconds": 0.12032029998954386,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m75_packet_order/test_packets.py::test_public_host_callback_removes_field_cancels_owned_continuation_without_draw",
+      "outcome": "passed",
+      "seconds": 0.11137909989338368,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m75_packet_order/test_packets.py::test_failed_queued_callback_atomic_only_its_boundary_retains_completed_packet",
+      "outcome": "passed",
+      "seconds": 0.21719669993035495,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m75_packet_order/test_packets.py::test_duplicate_pulse_owned_dispatch_seq_prevents_early_or_double_trigger",
+      "outcome": "passed",
+      "seconds": 0.27682419994380325,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m75_packet_order/test_packets.py::test_duplicate_packet_payload_rejected_by_actual_dispatch_identity",
+      "outcome": "passed",
+      "seconds": 0.12734839995391667,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m75_packet_order/test_packets.py::test_reaction_cycle_hits_existing_budget_without_running_next_packet",
+      "outcome": "passed",
+      "seconds": 0.13293189997784793,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m75_packet_order/test_packets.py::test_ordered_actual_checkpoint_and_replay_keep_owned_task_chain",
+      "outcome": "passed",
+      "seconds": 0.6105866000289097,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m75_packet_order/test_packets.py::test_external_same_tick_higher_phase_task_has_deterministic_order",
+      "outcome": "passed",
+      "seconds": 0.25448310002684593,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m75_packet_order/test_packets.py::test_synchronous_field_triggered_toggle_callback_cannot_recreate_removed_chain[remove]",
+      "outcome": "passed",
+      "seconds": 0.12408920004963875,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m75_packet_order/test_packets.py::test_synchronous_field_triggered_toggle_callback_cannot_recreate_removed_chain[finish]",
+      "outcome": "passed",
+      "seconds": 0.2634416000219062,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m75_packet_order/test_packets.py::test_scheduler_owned_pulse_sync_callback_error_rolls_back_actual_boundary",
+      "outcome": "passed",
+      "seconds": 0.10623890010174364,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m75_packet_order/test_packets.py::test_duplicate_schedule_rejected_before_rng_or_allocator_consumption",
+      "outcome": "passed",
+      "seconds": 0.09863639995455742,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m75_packet_order/test_packets.py::test_no_profile_high_numeric_phase_retains_old_backward_reaction_rejection",
+      "outcome": "passed",
+      "seconds": 0.09019270003773272,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_fixed_pure700_not_def_res_actual100_health_counter_origin_and_death",
+      "outcome": "passed",
+      "seconds": 0.08384199999272823,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_actual_decoded_environment_source_request_fields_consumed",
+      "outcome": "passed",
+      "seconds": 0.08745289989747107,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_pipeline_replacement_target_context_source_empty",
+      "outcome": "passed",
+      "seconds": 0.08231079997494817,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_custom_pipeline_target_attribute_binding_consumed_at_hit",
+      "outcome": "passed",
+      "seconds": 0.08093950001057237,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_invalid_fixed_amount_compile_and_runtime_atomic[-1]",
+      "outcome": "passed",
+      "seconds": 0.07878440001513809,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_invalid_fixed_amount_compile_and_runtime_atomic[nan]",
+      "outcome": "passed",
+      "seconds": 0.08081809990108013,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_invalid_fixed_amount_compile_and_runtime_atomic[True]",
+      "outcome": "passed",
+      "seconds": 0.08522900007665157,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_ordinary_none_and_actor_on_no_source_rejected_without_state_changes",
+      "outcome": "passed",
+      "seconds": 0.0797562999650836,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_source_attribute_pipeline_binding_rejected_at_compile_and_new_fields_scoped",
+      "outcome": "passed",
+      "seconds": 0.037931200000457466,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_unknown_or_unconsumed_source_flags_rejected[change0]",
+      "outcome": "passed",
+      "seconds": 0.001137700048275292,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_unknown_or_unconsumed_source_flags_rejected[change1]",
+      "outcome": "passed",
+      "seconds": 0.001218999968841672,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_unknown_or_unconsumed_source_flags_rejected[change2]",
+      "outcome": "passed",
+      "seconds": 0.0010630999458953738,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_unknown_or_unconsumed_source_flags_rejected[change3]",
+      "outcome": "passed",
+      "seconds": 0.0010354999685660005,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_unknown_or_unconsumed_source_flags_rejected[change4]",
+      "outcome": "passed",
+      "seconds": 0.0010945999529212713,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_unknown_or_unconsumed_source_flags_rejected[change5]",
+      "outcome": "passed",
+      "seconds": 0.001062900060787797,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_unknown_or_unconsumed_source_flags_rejected[change6]",
+      "outcome": "passed",
+      "seconds": 0.001035400084219873,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_origin_is_opaque_json_not_rule_provider_or_expression_references",
+      "outcome": "passed",
+      "seconds": 0.08673350000753999,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_target_invulnerability_after_hook_and_custom_cap_remain",
+      "outcome": "passed",
+      "seconds": 0.33882920001633465,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_environment_projection_flag_and_original_node_flag_are_distinct",
+      "outcome": "passed",
+      "seconds": 0.26282780000474304,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_mixed_shield_and_custom_health_allocations_stats_exclude_shield",
+      "outcome": "passed",
+      "seconds": 0.09977740002796054,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_source_before_hooks_not_run_or_sampled_target_after_still_samples",
+      "outcome": "passed",
+      "seconds": 0.0916525999782607,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_after_hook_failure_rolls_back_sample_rng_scheduler_world_events",
+      "outcome": "passed",
+      "seconds": 0.08970879996195436,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_lethal_policy_revive_is_not_forced_kill_and_origin_death_is_retained",
+      "outcome": "passed",
+      "seconds": 0.0811536000110209,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_lifecycle_callback_exception_after_health_commit_rolls_back_all",
+      "outcome": "passed",
+      "seconds": 0.08239749993663281,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_real_death_aura_on_remove_exception_rolls_back_random_and_complete_state",
+      "outcome": "passed",
+      "seconds": 0.11916080000810325,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_actual_death_subscription_alive_observer_and_no_actor_kill_credit",
+      "outcome": "passed",
+      "seconds": 0.09453800006303936,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_positive_health_allocation_is_not_counted_as_damage",
+      "outcome": "passed",
+      "seconds": 0.09602299996186048,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_bad_allocation_rejected_without_partial_commits[allocation0]",
+      "outcome": "passed",
+      "seconds": 0.24915330007206649,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_bad_allocation_rejected_without_partial_commits[allocation1]",
+      "outcome": "passed",
+      "seconds": 0.09145509998779744,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_bad_allocation_rejected_without_partial_commits[allocation2]",
+      "outcome": "passed",
+      "seconds": 0.09462380001787096,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_bad_allocation_rejected_without_partial_commits[allocation3]",
+      "outcome": "passed",
+      "seconds": 0.09176950005348772,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_source_allocation_fails_and_mixed_plan_last_invalid_resource_rolls_back",
+      "outcome": "passed",
+      "seconds": 0.1898588000331074,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_typed_flag9_availability_none_source_side2_and_immunity",
+      "outcome": "passed",
+      "seconds": 0.08590669999830425,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_target_event_sp_and_emission_time_freeze[False-False-1]",
+      "outcome": "passed",
+      "seconds": 0.0935326999751851,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_target_event_sp_and_emission_time_freeze[True-False-0]",
+      "outcome": "passed",
+      "seconds": 0.08862579998094589,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_target_event_sp_and_emission_time_freeze[False-True-0]",
+      "outcome": "passed",
+      "seconds": 0.09139189997222275,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_finished_by_first_packet_skips_next_target_and_no_additional_samples",
+      "outcome": "passed",
+      "seconds": 0.08790219994261861,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m72_no_source_damage/test_no_source.py::test_public_scheduled_no_source_checkpoint_file_reload_and_replay",
+      "outcome": "passed",
+      "seconds": 0.3665191000327468,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m84_catalog_peer/test_peer.py::test_exact_three_boundary_mixed_state_control_agree_and_command_at_three_not_run",
+      "outcome": "passed",
+      "seconds": 0.3062825999222696,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m84_catalog_peer/test_peer.py::test_actual_public_commands_disk_checkpoint_exact_boundary_and_segmentation_replay",
+      "outcome": "passed",
+      "seconds": 0.8952362999552861,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m84_catalog_peer/test_peer.py::test_zero_advance_and_multiple_observer_order_do_not_dispatch_new_clock_tasks",
+      "outcome": "passed",
+      "seconds": 0.0024375999346375465,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m84_catalog_peer/test_peer.py::test_wrong_checkpoint_boundary_registration_is_atomic[False]",
+      "outcome": "passed",
+      "seconds": 0.0020683000329881907,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m84_catalog_peer/test_peer.py::test_wrong_checkpoint_boundary_registration_is_atomic[bad1]",
+      "outcome": "passed",
+      "seconds": 0.0019466000376269221,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m84_catalog_peer/test_peer.py::test_wrong_checkpoint_boundary_registration_is_atomic[bad2]",
+      "outcome": "passed",
+      "seconds": 0.0018211000133305788,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m84_catalog_peer/test_peer.py::test_wrong_checkpoint_boundary_registration_is_atomic[1]",
+      "outcome": "passed",
+      "seconds": 0.0019446000223979354,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m84_catalog_peer/test_peer.py::test_wrong_checkpoint_boundary_registration_is_atomic[true]",
+      "outcome": "passed",
+      "seconds": 0.001832099980674684,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m84_catalog_peer/test_peer.py::test_wrong_checkpoint_boundary_registration_is_atomic[None]",
+      "outcome": "passed",
+      "seconds": 0.001782399951480329,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m84_catalog_peer/test_peer.py::test_observer_failure_rolls_its_world_rng_events_tasks_but_clock_failure_is_retained",
+      "outcome": "passed",
+      "seconds": 0.002160700038075447,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m84_catalog_peer/test_peer.py::test_bad_registration_rejects_before_reserving_sequence_or_checkpoint_mutation[None]",
+      "outcome": "passed",
+      "seconds": 0.0016500999918207526,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m84_catalog_peer/test_peer.py::test_bad_registration_rejects_before_reserving_sequence_or_checkpoint_mutation[bad1]",
+      "outcome": "passed",
+      "seconds": 0.0017200000584125519,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m84_catalog_peer/test_peer.py::test_bad_registration_rejects_before_reserving_sequence_or_checkpoint_mutation[1]",
+      "outcome": "passed",
+      "seconds": 0.0018597999587655067,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m84_catalog_peer/test_peer.py::test_boundary_budget_counts_observers_and_failure_does_not_run_unentered_second_callback",
+      "outcome": "passed",
+      "seconds": 0.0016502999933436513,
+      "failure": null
+    },
+    {
+      "case": "tools/experiments/m84_catalog_peer/test_peer.py::test_real_expiry_stabilization_cycle_rolls_observer_mutations_and_clears_private_guards",
+      "outcome": "passed",
+      "seconds": 0.6217944000381976,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_atomic_payment_and_three_relative_hits_in_order",
+      "outcome": "passed",
+      "seconds": 0.07425710000097752,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_last_resource_insufficient_leaves_all_resources_casts_and_tasks_untouched",
+      "outcome": "passed",
+      "seconds": 0.07346210000105202,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_invalid_final_scheduled_time_rolls_back_costs_and_cast_creation",
+      "outcome": "passed",
+      "seconds": 0.07146090001333505,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_interrupt_cancels_remaining_repeat_tasks_and_checkpoint_repeats_result",
+      "outcome": "passed",
+      "seconds": 0.08203429996501654,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_each_hit_target_capture_and_at_cast_source_snapshot",
+      "outcome": "passed",
+      "seconds": 0.07165399997029454,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_nonblocking_manual_buff_can_overlap_ordinary_attack",
+      "outcome": "passed",
+      "seconds": 0.10369050002191216,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_passive_uses_event_payload_condition_and_queued_reaction",
+      "outcome": "passed",
+      "seconds": 0.07362699997611344,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_refresh_and_periodic_buff_are_half_open_and_modifiers_cleanup",
+      "outcome": "passed",
+      "seconds": 0.25375749997328967,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_stacking_modes_have_independent_expected_amounts_and_timers[add-2-3]",
+      "outcome": "passed",
+      "seconds": 0.08758779999334365,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_stacking_modes_have_independent_expected_amounts_and_timers[max-2-2]",
+      "outcome": "passed",
+      "seconds": 0.08936009998433292,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_stacking_modes_have_independent_expected_amounts_and_timers[extend-2-1]",
+      "outcome": "passed",
+      "seconds": 0.10050349996890873,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_stacking_modes_have_independent_expected_amounts_and_timers[refresh-2-2]",
+      "outcome": "passed",
+      "seconds": 0.08690540003590286,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_independent_buff_instances_remove_only_selected_instance",
+      "outcome": "passed",
+      "seconds": 0.0961126999463886,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_buff_event_subscription_condition_and_identity_source_distinction",
+      "outcome": "passed",
+      "seconds": 0.09093229996506125,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_auto_replace_readiness_uses_actual_cost_rule_not_raw_cost_amount",
+      "outcome": "passed",
+      "seconds": 0.0771669999230653,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_auto_manual_readiness_uses_actual_cost_rule_not_raw_cost_amount",
+      "outcome": "passed",
+      "seconds": 0.07485809992067516,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_replace_interval_failure_preserves_payment_casts_and_all_tasks",
+      "outcome": "passed",
+      "seconds": 0.07112320000305772,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_charged_cost_rejection_falls_back_to_basic_attack_without_skipping_tick",
+      "outcome": "passed",
+      "seconds": 0.07097750005777925,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_deployment_activation_reacts_only_for_the_deployed_owner",
+      "outcome": "passed",
+      "seconds": 0.06756200001109391,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_custom_duration_rule_changes_expiration_without_editing_buff_system",
+      "outcome": "passed",
+      "seconds": 0.23268530005589128,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_target_death_cleanup_policy_is_explicit_and_customizable",
+      "outcome": "passed",
+      "seconds": 0.160660499939695,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_refresh_preserves_instance_blackboard_and_expiry_checkpoint_replays",
+      "outcome": "passed",
+      "seconds": 0.13009869994129986,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_ability_event_effects_use_owner_condition_and_run_after_emit",
+      "outcome": "passed",
+      "seconds": 0.06354010000359267,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_missing_buff_source_cleans_instance_and_tasks_without_dangling_reaction",
+      "outcome": "passed",
+      "seconds": 0.08219630003441125,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_hp_sacrifice_cost_immediately_checks_real_lifecycle_and_interrupts_cast",
+      "outcome": "passed",
+      "seconds": 0.07306959992274642,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_payment_resource_event_activates_passive_after_commit_once_per_resource",
+      "outcome": "passed",
+      "seconds": 0.07924759993329644,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_postpayment_lifecycle_rule_failure_rolls_back_full_start_transaction",
+      "outcome": "passed",
+      "seconds": 0.07047069992404431,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_timeline_logic_offset_four_hits_at_tick_four_under_point_one_quantum",
+      "outcome": "passed",
+      "seconds": 0.07008830003906041,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_abilities.py::test_timeline_conflicting_logic_and_seconds_offsets_are_explicitly_rejected",
+      "outcome": "passed",
+      "seconds": 0.0017019999213516712,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_auras.py::test_apply_selects_synchronously_and_only_changes_in_range_members",
+      "outcome": "passed",
+      "seconds": 0.27954809996299446,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_auras.py::test_new_actor_joins_existing_live_aura_before_first_tick",
+      "outcome": "passed",
+      "seconds": 0.15416119992733002,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_auras.py::test_leave_and_reenter_create_new_owned_instance_and_restore_attributes",
+      "outcome": "passed",
+      "seconds": 0.167882600100711,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_auras.py::test_effect_phase_displacement_updates_aura_in_same_atomic_effect",
+      "outcome": "passed",
+      "seconds": 0.15613380004651845,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_auras.py::test_overlap_removes_only_one_parent_including_center_self_members",
+      "outcome": "passed",
+      "seconds": 0.20225329999811947,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_auras.py::test_source_retirement_cleans_members_synchronously[dead]",
+      "outcome": "passed",
+      "seconds": 0.15028259996324778,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_auras.py::test_source_retirement_cleans_members_synchronously[withdrawn]",
+      "outcome": "passed",
+      "seconds": 0.14892819989472628,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_auras.py::test_half_open_expiry_cleans_before_other_tick_consumers",
+      "outcome": "passed",
+      "seconds": 0.499395800055936,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_auras.py::test_expiry_precedes_phase_zero_command_at_cast_snapshot[True]",
+      "outcome": "passed",
+      "seconds": 0.6719785999739543,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_auras.py::test_expiry_precedes_phase_zero_command_at_cast_snapshot[False]",
+      "outcome": "passed",
+      "seconds": 0.15999590000137687,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_auras.py::test_pre_expiry_historical_at_cast_snapshot_keeps_its_buff_after_expiry",
+      "outcome": "passed",
+      "seconds": 0.5433073999593034,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_auras.py::test_refresh_keeps_child_instances_and_extends_parent_lifetime",
+      "outcome": "passed",
+      "seconds": 0.5122067000484094,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_auras.py::test_member_failure_rolls_back_parent_members_tasks_and_events",
+      "outcome": "passed",
+      "seconds": 0.13061280001420528,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_auras.py::test_membership_survives_checkpoint_and_command_replay_exactly",
+      "outcome": "passed",
+      "seconds": 1.9123731999425218,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_auras.py::test_invalid_member_contract_is_rejected_before_execution[change0]",
+      "outcome": "passed",
+      "seconds": 0.03628030000254512,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_auras.py::test_invalid_member_contract_is_rejected_before_execution[change1]",
+      "outcome": "passed",
+      "seconds": 0.03606940002646297,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_auras.py::test_invalid_member_contract_is_rejected_before_execution[change2]",
+      "outcome": "passed",
+      "seconds": 0.0017374000744894147,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_auras.py::test_regeneration_uses_effective_source_attack_without_healing_event",
+      "outcome": "passed",
+      "seconds": 0.2730562000069767,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_event_resources.py::test_two_targets_two_hits_charge_source_once_per_attack",
+      "outcome": "passed",
+      "seconds": 0.15161360008642077,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_event_resources.py::test_taken_damage_charges_each_target_for_each_accepted_hit",
+      "outcome": "passed",
+      "seconds": 0.16003200004342943,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_event_resources.py::test_skill_freeze_is_sampled_before_same_tick_cast_finish",
+      "outcome": "passed",
+      "seconds": 0.14524519990663975,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_event_resources.py::test_event_rule_can_cool_instead_of_assuming_positive_sp",
+      "outcome": "passed",
+      "seconds": 0.15076800005044788,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_event_resources.py::test_event_recovery_with_checkpoint_and_replay_has_identical_results",
+      "outcome": "passed",
+      "seconds": 0.5755084999836981,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_event_resources.py::test_event_resource_does_not_recover_on_clock_ticks_alone",
+      "outcome": "passed",
+      "seconds": 0.11355889996048063,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_event_resources.py::test_invalid_event_driver_is_rejected_before_runtime[change0]",
+      "outcome": "passed",
+      "seconds": 0.002290799980983138,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_event_resources.py::test_invalid_event_driver_is_rejected_before_runtime[change1]",
+      "outcome": "passed",
+      "seconds": 0.0015227000694721937,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_event_resources.py::test_invalid_event_driver_is_rejected_before_runtime[change2]",
+      "outcome": "passed",
+      "seconds": 0.001549100037664175,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_event_resources.py::test_invalid_event_driver_is_rejected_before_runtime[change3]",
+      "outcome": "passed",
+      "seconds": 0.0014918000670149922,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_event_resources.py::test_event_driver_requires_an_explicit_formula",
+      "outcome": "passed",
+      "seconds": 0.0015839999541640282,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_damage_hooks_random.py::test_source_hook_scales_primary_and_excludes_primary_from_nonrecursive_extra",
+      "outcome": "passed",
+      "seconds": 0.1372819000389427,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_damage_hooks_random.py::test_receiver_hook_cancels_packet_without_binding_incoming_effect",
+      "outcome": "passed",
+      "seconds": 0.11159480002243072,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_damage_hooks_random.py::test_failed_deferred_effect_rolls_back_health_random_stream_queue_and_events",
+      "outcome": "passed",
+      "seconds": 0.13424919999670237,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_damage_hooks_random.py::test_random_resource_uses_float_sample_and_not_an_untraced_second_draw",
+      "outcome": "passed",
+      "seconds": 0.11427690007258207,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_damage_hooks_random.py::test_random_target_selection_empty_consumes_none_and_samples_without_replacement",
+      "outcome": "passed",
+      "seconds": 0.10765130002982914,
+      "failure": null
+    },
+    {
+      "case": "tests_v2/test_damage_hooks_random.py::test_random_hooks_restore_and_replay_identical_consumption",
+      "outcome": "passed",
+      "seconds": 0.3958742000395432,
+      "failure": null
+    }
+  ],
+  "actual_modules": {
+    "ark_sim.contracts.models": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\contracts\\models.py",
+    "ark_sim.contracts": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\contracts\\__init__.py",
+    "ark_sim.content.repository": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\content\\repository.py",
+    "ark_sim.content.overlays": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\content\\overlays.py",
+    "ark_sim.content.dependencies": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\content\\dependencies.py",
+    "ark_sim.content.spatial_validation": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\content\\spatial_validation.py",
+    "ark_sim.content.schemas": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\content\\schemas.py",
+    "ark_sim.content.capabilities": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\content\\capabilities.py",
+    "ark_sim.content.compiler": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\content\\compiler.py",
+    "ark_sim.content": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\content\\__init__.py",
+    "ark_sim": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\__init__.py",
+    "ark_sim.kernel._data": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\kernel\\_data.py",
+    "ark_sim.kernel.interning": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\kernel\\interning.py",
+    "ark_sim.kernel.journal": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\kernel\\journal.py",
+    "ark_sim.kernel.events": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\kernel\\events.py",
+    "ark_sim.kernel.random": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\kernel\\random.py",
+    "ark_sim.kernel.scheduler": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\kernel\\scheduler.py",
+    "ark_sim.kernel.clock": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\kernel\\clock.py",
+    "ark_sim.kernel.world": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\kernel\\world.py",
+    "ark_sim.kernel.transaction": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\kernel\\transaction.py",
+    "ark_sim.kernel.session": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\kernel\\session.py",
+    "ark_sim.kernel": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\kernel\\__init__.py",
+    "ark_sim.rules.errors": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\rules\\errors.py",
+    "ark_sim.rules.numeric": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\rules\\numeric.py",
+    "ark_sim.rules.catalog": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\rules\\catalog.py",
+    "ark_sim.rules.expressions": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\rules\\expressions.py",
+    "ark_sim.rules.pipeline": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\rules\\pipeline.py",
+    "ark_sim.rules.resolver": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\rules\\resolver.py",
+    "ark_sim.rules.context": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\rules\\context.py",
+    "ark_sim.rules.runtime": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\rules\\runtime.py",
+    "ark_sim.rules": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\rules\\__init__.py",
+    "ark_sim.presets": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\presets\\__init__.py",
+    "ark_sim.presets.providers": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\presets\\providers.py",
+    "ark_sim.domains.projectile_profiles": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\projectile_profiles.py",
+    "ark_sim.domains.selection": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\selection.py",
+    "ark_sim.domains.request_transforms": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\request_transforms.py",
+    "ark_sim.domains.spatial": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\spatial.py",
+    "ark_sim.domains.qualified_areas": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\qualified_areas.py",
+    "ark_sim.domains.deploy_connectivity": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\deploy_connectivity.py",
+    "ark_sim.domains.death_projectiles": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\death_projectiles.py",
+    "ark_sim.domains.tile_fields": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\tile_fields.py",
+    "ark_sim.domains.periodic_fields": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\periodic_fields.py",
+    "ark_sim.domains.providers": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\providers.py",
+    "ark_sim.domains.context": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\context.py",
+    "ark_sim.domains.attributes": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\attributes.py",
+    "ark_sim.domains.resources": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\resources.py",
+    "ark_sim.domains.effects": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\effects.py",
+    "ark_sim.domains.buffs": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\buffs.py",
+    "ark_sim.domains.abilities": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\abilities.py",
+    "ark_sim.domains.behavior": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\behavior.py",
+    "ark_sim.domains.movement": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\movement.py",
+    "ark_sim.domains.lifecycle": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\lifecycle.py",
+    "ark_sim.domains.timeline": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\timeline.py",
+    "ark_sim.domains.controls": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\controls.py",
+    "ark_sim.domains.terrain": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\terrain.py",
+    "ark_sim.domains.projectiles": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\projectiles.py",
+    "ark_sim.adapters.api": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\adapters\\api.py",
+    "ark_sim.tools.replay": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\tools\\replay.py",
+    "ark_sim.tools.compare": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\tools\\compare.py",
+    "ark_sim.domains.tile_mechanics": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\tile_mechanics.py",
+    "ark_sim.domains.attachments": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\attachments.py",
+    "ark_sim.domains.behavior_decision": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\behavior_decision.py",
+    "ark_sim.domains.deployment": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\deployment.py",
+    "ark_sim.domains.applicability": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\applicability.py",
+    "ark_sim.domains.toggles": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\toggles.py",
+    "ark_sim.domains.ability_timing": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\ability_timing.py",
+    "ark_sim.domains.no_source_damage": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\no_source_damage.py",
+    "ark_sim.domains.rebirth": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_frost_combat_v5_candidate\\ark_sim\\domains\\rebirth.py"
+  },
+  "passed": true,
+  "limits": "Selected compatibility only; not independent acceptance, full suite or 4-10"
+}

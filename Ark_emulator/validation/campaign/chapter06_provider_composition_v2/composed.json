@@ -1,0 +1,1727 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/ch6/composition_provider_probe",
+    "version": "1.0.0",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "composition": {
+        "schema": "ark-sim/reference-stage-composition/v1",
+        "retained_ids": [
+          "ability/ch6/npc/huang_normal",
+          "ability/ch6/predefined/frosts/source_cold",
+          "buff/ch6/cold/e2c_cold",
+          "buff/ch6/cold/e2c_freeze",
+          "buff/ch6/npc/huang_lock",
+          "buff/ch6/npc/huang_once",
+          "buff/ch6/npc/huang_reaction",
+          "buff/ch6/npc/huang_resistance",
+          "buff/ch6/npc/huang_resistance_wait",
+          "rule/ch6/cold/application",
+          "rule/ch6/cold/cold_active",
+          "rule/ch6/cold/frozen_active",
+          "rule/ch6/cold/status_duration",
+          "rule/ch6/npc/huang_eligible",
+          "rule/ch6/npc/huang_heal_eligible",
+          "rule/ch6/npc/huang_heal_power",
+          "rule/ch6/npc/huang_hp_lock",
+          "rule/ch6/npc/huang_low_hp",
+          "rule/ch6/npc/huang_undead",
+          "rule/ch6/npc/huang_windup",
+          "rule/ch6/predefined/frosts/area",
+          "rule/ch6/predefined/frosts/eligibility",
+          "rule/ch6/predefined/frosts/source_identity",
+          "rule/ch6/predefined/frosts/time_sp",
+          "selector/ch6/npc/huang",
+          "selector/ch6/npc/huang_heal_self",
+          "selector/ch6/predefined/frosts/anchor",
+          "unit/ch6/npc/char_017_huang",
+          "unit/ch6/predefined/frosts/source_level1"
+        ],
+        "removed_ids": [
+          "ability/ch6/cold/apply10",
+          "ability/ch6/cold/apply5",
+          "ability/ch6/npc/amiya_normal",
+          "ability/ch6/npc/swllow_normal",
+          "ability/unit/ch6/enemy_1006_shield_2/1b3c182b7c843247",
+          "ability/unit/ch6/enemy_1064_snsbr/46d19a92399ca050",
+          "ability/unit/ch6/enemy_1065_snwolf_2/a153592b593567e5",
+          "ability/unit/ch6/enemy_1069_icebrk/2115d20b3e309ca7",
+          "ability/unit/ch6/snbow/fc7412f7cf3aee2d",
+          "ability/unit/ch6/snmage/36f9c16582d28dfa/coldattack",
+          "ability/unit/ch6/snmage/36f9c16582d28dfa/normal",
+          "ability/unit/ch6/snslime/142dfde9301f6888",
+          "behavior/unit/ch6/enemy_1006_shield_2/1b3c182b7c843247",
+          "behavior/unit/ch6/enemy_1064_snsbr/46d19a92399ca050",
+          "behavior/unit/ch6/enemy_1065_snwolf_2/a153592b593567e5",
+          "behavior/unit/ch6/enemy_1069_icebrk/2115d20b3e309ca7",
+          "behavior/unit/ch6/snbow/fc7412f7cf3aee2d",
+          "behavior/unit/ch6/snmage/36f9c16582d28dfa",
+          "behavior/unit/ch6/snslime/142dfde9301f6888",
+          "buff/ch6/cold/frozen_atkscale1.5",
+          "buff/ch6/cold/frozen_atkscale2.5",
+          "buff/ch6/npc/amiya_sp_talent",
+          "buff/ch6/npc/swllow_talent",
+          "buff/unit/ch6/snmage/36f9c16582d28dfa/ready",
+          "buff/unit/ch6/snmage/36f9c16582d28dfa/ready_parent",
+          "control/ch6/main_06-15_a",
+          "control/ch6/main_06-15_b1",
+          "control/ch6/main_06-15_b2",
+          "control/ch6/main_06-15_b3",
+          "control/ch6/main_06-15_c",
+          "projectile/ch6/npc/amiya",
+          "projectile/ch6/npc/swllow",
+          "projectile/unit/ch6/snbow/fc7412f7cf3aee2d",
+          "projectile/unit/ch6/snmage/36f9c16582d28dfa",
+          "projectile/unit/ch6/snslime/142dfde9301f6888",
+          "rule/ability/unit/ch6/enemy_1006_shield_2/1b3c182b7c843247/source_windup_v2",
+          "rule/ability/unit/ch6/enemy_1064_snsbr/46d19a92399ca050/source_windup_v2",
+          "rule/ability/unit/ch6/enemy_1065_snwolf_2/a153592b593567e5/windup",
+          "rule/ability/unit/ch6/enemy_1069_icebrk/2115d20b3e309ca7/windup",
+          "rule/ability/unit/ch6/snmage/36f9c16582d28dfa/coldattack/source_windup_v2",
+          "rule/ability/unit/ch6/snmage/36f9c16582d28dfa/normal/source_windup_v2",
+          "rule/ch6/cold/frozen_atkscale1.5",
+          "rule/ch6/cold/frozen_atkscale2.5",
+          "rule/ch6/cold/frozen_recovery",
+          "rule/ch6/npc/amiya_collision",
+          "rule/ch6/npc/amiya_eligible",
+          "rule/ch6/npc/amiya_motion",
+          "rule/ch6/npc/swllow_collision",
+          "rule/ch6/npc/swllow_critical",
+          "rule/ch6/npc/swllow_eligible",
+          "rule/ch6/npc/swllow_trajectory",
+          "rule/ch6/npc/swllow_windup",
+          "rule/ch6/snslime_collision",
+          "rule/ch6/snslime_death_gate",
+          "rule/ch6/snslime_fixed",
+          "rule/ch6/snslime_qualification",
+          "rule/ch6/snslime_qualified_radius",
+          "rule/ch6/snslime_steering",
+          "rule/ch6/snslime_windup",
+          "rule/ch6/units/steering",
+          "rule/unit/ch6/snbow/fc7412f7cf3aee2d/collision",
+          "rule/unit/ch6/snbow/fc7412f7cf3aee2d/eligibility",
+          "rule/unit/ch6/snbow/fc7412f7cf3aee2d/eligibility/input_target2",
+          "rule/unit/ch6/snbow/fc7412f7cf3aee2d/hatred",
+          "rule/unit/ch6/snbow/fc7412f7cf3aee2d/steering",
+          "rule/unit/ch6/snbow/fc7412f7cf3aee2d/trajectory",
+          "rule/unit/ch6/snbow/fc7412f7cf3aee2d/windup",
+          "rule/unit/ch6/snmage/36f9c16582d28dfa/collision",
+          "rule/unit/ch6/snmage/36f9c16582d28dfa/eligibility",
+          "rule/unit/ch6/snmage/36f9c16582d28dfa/eligibility/input_target2",
+          "rule/unit/ch6/snmage/36f9c16582d28dfa/hatred",
+          "rule/unit/ch6/snmage/36f9c16582d28dfa/ready_held",
+          "rule/unit/ch6/snmage/36f9c16582d28dfa/sp",
+          "rule/unit/ch6/snmage/36f9c16582d28dfa/steer",
+          "rule/unit/ch6/snmage/36f9c16582d28dfa/trajectory",
+          "selector/ch6/cold/receiver",
+          "selector/ch6/npc/amiya",
+          "selector/ch6/npc/swllow",
+          "selector/unit/ch6/enemy_1006_shield_2/1b3c182b7c843247",
+          "selector/unit/ch6/enemy_1064_snsbr/46d19a92399ca050",
+          "selector/unit/ch6/enemy_1065_snwolf_2/a153592b593567e5",
+          "selector/unit/ch6/enemy_1069_icebrk/2115d20b3e309ca7",
+          "selector/unit/ch6/snbow/fc7412f7cf3aee2d",
+          "selector/unit/ch6/snmage/36f9c16582d28dfa",
+          "selector/unit/ch6/snslime/142dfde9301f6888",
+          "unit/ch6/enemy_1006_shield_2/1b3c182b7c843247",
+          "unit/ch6/enemy_1064_snsbr/46d19a92399ca050",
+          "unit/ch6/enemy_1065_snwolf_2/a153592b593567e5",
+          "unit/ch6/enemy_1069_icebrk/2115d20b3e309ca7",
+          "unit/ch6/npc/char_002_amiya",
+          "unit/ch6/npc/char_367_swllow",
+          "unit/ch6/snbow/fc7412f7cf3aee2d",
+          "unit/ch6/snmage/36f9c16582d28dfa",
+          "unit/ch6/snslime/142dfde9301f6888"
+        ],
+        "definition_provenance": {
+          "ability/ch6/npc/huang_normal": [
+            {
+              "module": "source_content",
+              "definition_digest": "4bab916c52992ef69ee6c757e72fc2f14e59bc567ee4cebdcec028395630c8c5"
+            }
+          ],
+          "ability/ch6/predefined/frosts/source_cold": [
+            {
+              "module": "source_content",
+              "definition_digest": "0b0576d06a295a5f513f7fe5eea9f99536ff7636e768e65215263bedac9b2d77"
+            }
+          ],
+          "buff/ch6/cold/e2c_cold": [
+            {
+              "module": "source_content",
+              "definition_digest": "39fbba779c006923bbea1c3beceb6e565a10a496fb40d37a55662ba6d47edb23"
+            }
+          ],
+          "buff/ch6/cold/e2c_freeze": [
+            {
+              "module": "source_content",
+              "definition_digest": "0aef20376ea2b67547343757c761101c9fed639c8c09f5a02b1c23b2042ef060"
+            }
+          ],
+          "buff/ch6/npc/huang_lock": [
+            {
+              "module": "source_content",
+              "definition_digest": "ffbdd804fc79428db9c66ab90579a144ab3f3465dced6c1748f494fb6b94d53d"
+            }
+          ],
+          "buff/ch6/npc/huang_once": [
+            {
+              "module": "source_content",
+              "definition_digest": "759f4ccb8541153e66532ec821b06c139cdb5f79e5f6c4f917378f867b37f16a"
+            }
+          ],
+          "buff/ch6/npc/huang_reaction": [
+            {
+              "module": "source_content",
+              "definition_digest": "d9df45af4d832880fc67a5c66b6f1a424f328318d3b63522bb8ba1f8c95f86ac"
+            }
+          ],
+          "buff/ch6/npc/huang_resistance": [
+            {
+              "module": "source_content",
+              "definition_digest": "6b665cc161719ef56f3ef6131d0fc1975569bc83e7392133aab65ace34c0f72c"
+            }
+          ],
+          "buff/ch6/npc/huang_resistance_wait": [
+            {
+              "module": "source_content",
+              "definition_digest": "fd20328f8991ad9927becf092c57e81d3589089b31c128698e1f278469c61369"
+            }
+          ],
+          "rule/ch6/cold/application": [
+            {
+              "module": "source_content",
+              "definition_digest": "7e61482cb4405938295d87f3dddd25fb328edb784b5fa5a05a87ca344266c6ba"
+            }
+          ],
+          "rule/ch6/cold/cold_active": [
+            {
+              "module": "source_content",
+              "definition_digest": "7bf4a76dd01c390fea0e1d60f35a9e78b07f7acbdf44d19c82167ed1dfb219a3"
+            }
+          ],
+          "rule/ch6/cold/frozen_active": [
+            {
+              "module": "source_content",
+              "definition_digest": "e6702b593e144869d702f3d547cb0b95580196c0a8a0296b88e41d1ecc168856"
+            }
+          ],
+          "rule/ch6/cold/status_duration": [
+            {
+              "module": "source_content",
+              "definition_digest": "b96cc9b3ae75e6605e50ce0504db3d27fd82d1d9756f30dba1d8186e7824d285"
+            }
+          ],
+          "rule/ch6/npc/huang_eligible": [
+            {
+              "module": "source_content",
+              "definition_digest": "3a4cd72a674ca6c12bccc8dffe40d736c545d3343c37cbaffe1a884602e3affc"
+            }
+          ],
+          "rule/ch6/npc/huang_heal_eligible": [
+            {
+              "module": "source_content",
+              "definition_digest": "c548db48dd79653672f95a38a0f6fd09047a55fdbacdc5b5a0ba8c472283f61f"
+            }
+          ],
+          "rule/ch6/npc/huang_heal_power": [
+            {
+              "module": "source_content",
+              "definition_digest": "d80d311bf0c31a27a1b2d1cf6e234c390888c834e5e69fc66eed2960e69b0b63"
+            }
+          ],
+          "rule/ch6/npc/huang_hp_lock": [
+            {
+              "module": "source_content",
+              "definition_digest": "0341f9da4e8f32e8015cb137e70a0a344d9337be86aecf0a175155a83b42589d"
+            }
+          ],
+          "rule/ch6/npc/huang_low_hp": [
+            {
+              "module": "source_content",
+              "definition_digest": "d3926ff2bbd8014d2fbc44bdc5c48ee842d49fed15276d3e2492e31fb2ae602d"
+            }
+          ],
+          "rule/ch6/npc/huang_undead": [
+            {
+              "module": "source_content",
+              "definition_digest": "435d2628abc4419054f88b770987e05c69cb02335a7e88ce507ffdee78467db5"
+            }
+          ],
+          "rule/ch6/npc/huang_windup": [
+            {
+              "module": "source_content",
+              "definition_digest": "bacb7e6de3884ba71c9489d6796dbd7492dcefff83a9a8e139bbef5ccae10df2"
+            }
+          ],
+          "rule/ch6/predefined/frosts/area": [
+            {
+              "module": "source_content",
+              "definition_digest": "40f4e22b394b96e353f1f9cc7ad0f4b9a529d959c215f9b8d702e0007e6e1a78"
+            }
+          ],
+          "rule/ch6/predefined/frosts/eligibility": [
+            {
+              "module": "source_content",
+              "definition_digest": "efdc8f8832aae5edb625b06d5e8115ce2453bc6b24a5f69f6090349dc0972439"
+            }
+          ],
+          "rule/ch6/predefined/frosts/source_identity": [
+            {
+              "module": "source_content",
+              "definition_digest": "548c6fd3c64a1978e4a9e2f26524a2b351c2da1c3f3ab5e6815724e6f1abab44"
+            }
+          ],
+          "rule/ch6/predefined/frosts/time_sp": [
+            {
+              "module": "source_content",
+              "definition_digest": "93e615db58c9a384d91c0868e05467e09eace7598bafb5d3242ea5a7868c3128"
+            }
+          ],
+          "selector/ch6/npc/huang": [
+            {
+              "module": "source_content",
+              "definition_digest": "f12657821081905ec698e9ff8ef15a0550cb9b724886928f8ec33d0a0cfcc067"
+            }
+          ],
+          "selector/ch6/npc/huang_heal_self": [
+            {
+              "module": "source_content",
+              "definition_digest": "60176a0393aaf120cd1d3cf58e74e71a721954a041ac713fbb7f21fcdfb6a9bf"
+            }
+          ],
+          "selector/ch6/predefined/frosts/anchor": [
+            {
+              "module": "source_content",
+              "definition_digest": "0b7868276cc931d8375ef564abe222ee85189a7f63013361f38831953fc5346b"
+            }
+          ],
+          "unit/ch6/npc/char_017_huang": [
+            {
+              "module": "source_content",
+              "definition_digest": "aa6c30d9111e7ab0650466f056a644be5bb96043b7e68225c4ab199f7d53bf26"
+            }
+          ],
+          "unit/ch6/predefined/frosts/source_level1": [
+            {
+              "module": "source_content",
+              "definition_digest": "d443482079cf5f3f309e6b316d3d702ce3673e4e77c25c70b7e1ef4bbc40799b"
+            }
+          ]
+        },
+        "dependency_edges": {
+          "ruleset/ark_standard": [
+            "rule/ark_ability_duration",
+            "rule/ark_ability_recovery",
+            "rule/ark_ability_repeat",
+            "rule/ark_ability_windup",
+            "rule/ark_attack_interval",
+            "rule/ark_attribute_layers",
+            "rule/ark_basic_power",
+            "rule/ark_battle_result",
+            "rule/ark_block_capacity",
+            "rule/ark_block_eligibility",
+            "rule/ark_block_occupancy",
+            "rule/ark_buff_duration",
+            "rule/ark_buff_interval",
+            "rule/ark_buff_stack_amount",
+            "rule/ark_capacity_change",
+            "rule/ark_damage_pipeline",
+            "rule/ark_deploy_capacity",
+            "rule/ark_deploy_cooldown",
+            "rule/ark_deploy_cost",
+            "rule/ark_deploy_eligibility",
+            "rule/ark_deploy_refund",
+            "rule/ark_growth",
+            "rule/ark_healing_power",
+            "rule/ark_leak_loss",
+            "rule/ark_lifecycle_death",
+            "rule/ark_modifier_layer",
+            "rule/ark_movement_distance",
+            "rule/ark_movement_path",
+            "rule/ark_movement_speed",
+            "rule/ark_projectile_flight",
+            "rule/ark_projectile_speed",
+            "rule/ark_random_check",
+            "rule/ark_resource_bounds",
+            "rule/ark_resource_capacity",
+            "rule/ark_resource_cost",
+            "rule/ark_resource_recovery",
+            "rule/ark_selector_pure_eligibility",
+            "rule/ark_standard_mitigation",
+            "rule/ark_targeting_score",
+            "rule/ark_targeting_selection",
+            "rule/ark_terrain_tile_options",
+            "rule/ark_time_quantize",
+            "rule/ark_wait_deadline"
+          ],
+          "rule/ark_ability_duration": [],
+          "rule/ark_ability_recovery": [],
+          "rule/ark_ability_repeat": [],
+          "rule/ark_ability_windup": [],
+          "rule/ark_attack_interval": [],
+          "rule/ark_attribute_layers": [
+            "rule/ark_modifier_layer"
+          ],
+          "rule/ark_modifier_layer": [],
+          "rule/ark_basic_power": [],
+          "rule/ark_battle_result": [],
+          "rule/ark_block_capacity": [],
+          "rule/ark_block_eligibility": [],
+          "rule/ark_block_occupancy": [],
+          "rule/ark_buff_duration": [],
+          "rule/ark_buff_interval": [],
+          "rule/ark_buff_stack_amount": [],
+          "rule/ark_capacity_change": [],
+          "rule/ark_damage_pipeline": [
+            "rule/ark_basic_power",
+            "rule/ark_standard_mitigation"
+          ],
+          "rule/ark_standard_mitigation": [],
+          "rule/ark_deploy_capacity": [],
+          "rule/ark_deploy_cooldown": [],
+          "rule/ark_deploy_cost": [],
+          "rule/ark_deploy_eligibility": [],
+          "rule/ark_deploy_refund": [],
+          "rule/ark_growth": [],
+          "rule/ark_healing_power": [],
+          "rule/ark_leak_loss": [],
+          "rule/ark_lifecycle_death": [],
+          "rule/ark_movement_distance": [],
+          "rule/ark_movement_path": [],
+          "rule/ark_movement_speed": [],
+          "rule/ark_projectile_flight": [],
+          "rule/ark_projectile_speed": [],
+          "rule/ark_random_check": [],
+          "rule/ark_resource_bounds": [],
+          "rule/ark_resource_capacity": [],
+          "rule/ark_resource_cost": [],
+          "rule/ark_resource_recovery": [],
+          "rule/ark_selector_pure_eligibility": [],
+          "rule/ark_targeting_score": [],
+          "rule/ark_targeting_selection": [],
+          "rule/ark_terrain_tile_options": [],
+          "rule/ark_time_quantize": [],
+          "rule/ark_wait_deadline": [
+            "rule/ark_time_quantize"
+          ],
+          "scene/ch6/source_content_closure_v7": [
+            "ruleset/ark_standard",
+            "unit/ch6/npc/char_017_huang",
+            "unit/ch6/predefined/frosts/source_level1"
+          ],
+          "unit/ch6/npc/char_017_huang": [
+            "ability/ch6/npc/huang_normal",
+            "buff/ch6/npc/huang_once",
+            "buff/ch6/npc/huang_resistance_wait",
+            "policy/ark_lifecycle"
+          ],
+          "ability/ch6/npc/huang_normal": [
+            "rule/ch6/npc/huang_windup",
+            "selector/ch6/npc/huang"
+          ],
+          "rule/ch6/npc/huang_windup": [],
+          "selector/ch6/npc/huang": [
+            "rule/ch6/npc/huang_eligible"
+          ],
+          "rule/ch6/npc/huang_eligible": [],
+          "buff/ch6/npc/huang_once": [
+            "buff/ch6/npc/huang_reaction",
+            "rule/ch6/npc/huang_low_hp",
+            "rule/ch6/npc/huang_undead"
+          ],
+          "buff/ch6/npc/huang_reaction": [
+            "buff/ch6/npc/huang_lock",
+            "rule/ch6/npc/huang_heal_power",
+            "selector/ch6/npc/huang_heal_self"
+          ],
+          "buff/ch6/npc/huang_lock": [
+            "rule/ch6/npc/huang_hp_lock"
+          ],
+          "rule/ch6/npc/huang_hp_lock": [
+            "rule/ark_attribute_layers"
+          ],
+          "rule/ch6/npc/huang_heal_power": [
+            "rule/ark_attribute_layers"
+          ],
+          "selector/ch6/npc/huang_heal_self": [
+            "rule/ch6/npc/huang_heal_eligible"
+          ],
+          "rule/ch6/npc/huang_heal_eligible": [],
+          "rule/ch6/npc/huang_low_hp": [],
+          "rule/ch6/npc/huang_undead": [],
+          "buff/ch6/npc/huang_resistance_wait": [
+            "buff/ch6/npc/huang_resistance"
+          ],
+          "buff/ch6/npc/huang_resistance": [],
+          "policy/ark_lifecycle": [],
+          "unit/ch6/predefined/frosts/source_level1": [
+            "ability/ch6/predefined/frosts/source_cold",
+            "policy/ark_lifecycle",
+            "rule/ch6/predefined/frosts/time_sp"
+          ],
+          "ability/ch6/predefined/frosts/source_cold": [
+            "buff/ch6/cold/e2c_cold",
+            "buff/ch6/cold/e2c_freeze",
+            "rule/ch6/cold/application",
+            "rule/ch6/predefined/frosts/area",
+            "selector/ch6/predefined/frosts/anchor"
+          ],
+          "buff/ch6/cold/e2c_cold": [
+            "rule/ch6/cold/cold_active"
+          ],
+          "rule/ch6/cold/cold_active": [],
+          "buff/ch6/cold/e2c_freeze": [
+            "rule/ch6/cold/frozen_active"
+          ],
+          "rule/ch6/cold/frozen_active": [],
+          "rule/ch6/cold/application": [
+            "rule/ch6/cold/status_duration"
+          ],
+          "rule/ch6/cold/status_duration": [],
+          "rule/ch6/predefined/frosts/area": [
+            "rule/ch6/predefined/frosts/eligibility"
+          ],
+          "rule/ch6/predefined/frosts/eligibility": [],
+          "selector/ch6/predefined/frosts/anchor": [
+            "rule/ch6/predefined/frosts/source_identity"
+          ],
+          "rule/ch6/predefined/frosts/source_identity": [],
+          "rule/ch6/predefined/frosts/time_sp": []
+        },
+        "compiled_fingerprint": "eeacf664402257aec2adfdb3fbd1aecda672ff7c59579c5c05baac17fba993d7",
+        "scene_digest": "0605e270d03bd8781124addd95c8d228d4fb00a457aa992a38cd7854a04c9b8a",
+        "actual_client_verified": false
+      }
+    }
+  },
+  "definitions": [
+    {
+      "id": "ability/ch6/npc/huang_normal",
+      "kind": "ability",
+      "activation": {
+        "mode": "automatic_attack",
+        "settle_blocking": true,
+        "parameters": {
+          "auto_only": true
+        }
+      },
+      "rules": {
+        "ability.windup": "rule/ch6/npc/huang_windup"
+      },
+      "selector": "selector/ch6/npc/huang",
+      "target_capture": "at_cast",
+      "timeline": [
+        {
+          "at_seconds": 0.3333333333333333,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1,
+            "damage_flags": {
+              "source_attack_type": "NORMAL",
+              "ignore_for_sp": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/ch6/predefined/frosts/source_cold",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "costs": [
+          {
+            "resource": "sp",
+            "amount": 15
+          }
+        ],
+        "parameters": {
+          "auto_when_ready": true,
+          "auto_only": true,
+          "blocks_new_activations": true
+        }
+      },
+      "duration_seconds": 0.800000011920929,
+      "selector": "selector/ch6/predefined/frosts/anchor",
+      "timeline": [
+        {
+          "at_seconds": 0.800000011920929,
+          "effect": {
+            "op": "area",
+            "center": "source",
+            "membership_rule": "rule/ch6/predefined/frosts/area",
+            "effects": [
+              {
+                "op": "buff_application",
+                "application_rule": "rule/ch6/cold/application",
+                "allowed": [
+                  "buff/ch6/cold/e2c_cold",
+                  "buff/ch6/cold/e2c_freeze"
+                ],
+                "parameters": {
+                  "duration_seconds": 10
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "metadata": {
+        "source_skill": "sktok_frosts",
+        "source_predelay": 0.800000011920929,
+        "source_raw": {
+          "AdvancedSelector": {
+            "path_id": "-8981697271233868022",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -8291732544019132662
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 7080728813803358465
+              },
+              "m_Name": "",
+              "_targetSide": 2,
+              "_targetMotion": 3,
+              "_targetCategory": 1,
+              "_postFilter": 4,
+              "_ignoreTargetFree": 0,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_abnormalFlag": 46,
+              "_abnormalCombo": 2,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 0,
+              "_needProfessionMask": 0,
+              "_professionMask": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_excludeAbnormalFlag": 46,
+              "_limitTargetNum": 0,
+              "_maxTargetKey": "max_target",
+              "_maxNum": 1,
+              "_excludeOwner": 0,
+              "_sortByTauntAtLast": 0,
+              "_ignoreHitRange": 0,
+              "_checkUnitType": 0,
+              "_unitTypeMask": 0,
+              "_abilityInputTargetAsSortSource": 0
+            }
+          },
+          "AlwaysTrigger": {
+            "path_id": "-7381120536553615606",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 2984640588876975882
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": -2995189732062982133
+              },
+              "m_Name": ""
+            }
+          },
+          "UberEffectEmitter": {
+            "path_id": "-4480435184301207798",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 2984640588876975882
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": -550693537895634864
+              },
+              "m_Name": "",
+              "_hitEffects": [],
+              "_castEffects": [
+                {
+                  "_directionType": 0,
+                  "_effects": [
+                    "icer_buff_01_start",
+                    "",
+                    "",
+                    ""
+                  ],
+                  "_oneshot": 1,
+                  "_startEvent": 2,
+                  "_endEvent": 3,
+                  "_onlyOnce": 0,
+                  "_useFourDirectionalFace": 0,
+                  "_delayIfFirstAttack": 0.0,
+                  "_hookEffectAfterFirstAttack": ""
+                }
+              ],
+              "_attachEffects": [],
+              "_inputTargetEffects": [],
+              "_castTargetEffects": [],
+              "_convertCastEndToAttachFinish": 0,
+              "_recalculatePlaybackSpeed": 0,
+              "_preDelayFactor": 0.0
+            }
+          },
+          "AutoLoadBoxRange": {
+            "path_id": "3694340211198955274",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -8291732544019132662
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": -2891200616113119906
+              },
+              "m_Name": "",
+              "_extendable": 0
+            }
+          },
+          "CastSkill": {
+            "path_id": "6733401267910053642",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 2984640588876975882
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 6851783972288338031
+              },
+              "m_Name": "",
+              "_maxTriggerTime": -1,
+              "_allowSpRecoveryWhenAffecting": 0,
+              "_limitGlobalTriggerTime": 0,
+              "_hidden": 0,
+              "_showSpBarEvenHidden": 0,
+              "_showSpAsBulletMode": 0,
+              "_showSpRatioAsProgress": 0,
+              "_playCharWordVoice": 1,
+              "_playCharWordWithPassiveType": 0,
+              "_earlyVoice": 0,
+              "_canCastWithNoSp": 0,
+              "_canSilenced": 0,
+              "_canUseInAbnormalState": 0,
+              "_defaultModeIndex": -1,
+              "_attackBlackboardModeIndex": -1,
+              "_extraAttackBlackboardModeIndices": [],
+              "_rangeIdModeIndex": -1,
+              "_extraRangeIdModeIndices": [],
+              "_rangeIdUsageType": 7,
+              "_writeDurationToAttackBlackboard": 0,
+              "_attachSignalIds": 0,
+              "_extraAbilities": [],
+              "_useEscapeTime": 0,
+              "_earlySkillFinishAtAttackFinished": 0,
+              "_stopAffectOnInterrupt": 0,
+              "_showProgressToNext": 0,
+              "_hideSkillStackCount": 0,
+              "_hideHudSkillStackCount": 0,
+              "_playSkillBeginAnim": 0,
+              "_beginAnim": "",
+              "_beginAnimDown": "",
+              "_beginEffect": [],
+              "_useFaceVector": 0,
+              "_beginAnimValidator": {
+                "m_FileID": 0,
+                "m_PathID": 0
+              },
+              "_availableValidator": {
+                "m_FileID": 0,
+                "m_PathID": 0
+              },
+              "_trigger": {
+                "m_FileID": 0,
+                "m_PathID": 0
+              },
+              "_switchToState": 1,
+              "_uninterruptibleOnAbilityPredelay": 0,
+              "_canSwitchDuringBorn": 1,
+              "_canCastDuringBorn": 1,
+              "_checkHasTargetBeforeDoCast": 0,
+              "_useTriggerInManualMode": 0,
+              "_allowNoTarget": 1,
+              "_shouldCastLikeAttack": 0,
+              "_isRemoteControlled": 0,
+              "_hideRangeToShow": 0,
+              "_forceToShowRange": 0,
+              "_forceUseBaseShowRange": 0,
+              "_rangeToShow": {
+                "m_FileID": 0,
+                "m_PathID": 0
+              },
+              "_recoverSpIfNoTarget": 0,
+              "_resetAbilityCooldownWhenCastEnd": 0,
+              "_onlyAvailableWhenTokenValid": 0,
+              "_hasUniStackColor": 0
+            }
+          },
+          "AnimatedActionToTargetAbility": {
+            "path_id": "8123417884813659914",
+            "raw": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": 2984640588876975882
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 2165892974539515790
+              },
+              "m_Name": "",
+              "_selector": {
+                "m_FileID": 0,
+                "m_PathID": -8981697271233868022
+              },
+              "_metadata": {
+                "namedAsAlias": "",
+                "blackboardPrefix": ""
+              },
+              "_interruptAbilityOnDetach": 0,
+              "_attachPassiveBuffsOnDummy": 1,
+              "_ignoreIfOwnerDead": 0,
+              "_forceAsDmgOrHealAbility": 0,
+              "_waitForAttackEvent": 0,
+              "_interuptIfTargetDead": 0,
+              "_resetCdStrategy": 1,
+              "_selectTargetSource": 1,
+              "_selectTargetTiming": 0,
+              "_timeMode": 2,
+              "_alwaysIncludeTarget": 0,
+              "_allowNoTarget": 1,
+              "_animKey": "",
+              "_endAnimKey": "",
+              "_downAnimKey": "",
+              "_downEndAnimKey": "",
+              "_upAnimKey": "",
+              "_upEndAnimKey": "",
+              "_cooldown": 1.0,
+              "_cooldownKey": "duration",
+              "_preDelay": 0.800000011920929,
+              "_escapeTime": 0.0,
+              "_faceToTarget": 1,
+              "_faceToDefault": 0,
+              "_faceToFront": 0,
+              "_faceToFirstCastTarget": 0,
+              "_checkFaceToFirstCastTargetDownAttack": 0,
+              "_forceFaceToDirection": 0,
+              "_activeBuffs": [
+                {
+                  "attributes": {
+                    "abnormalFlags": [],
+                    "abnormalImmunes": [],
+                    "abnormalAntis": [],
+                    "abnormalCombos": [],
+                    "abnormalComboImmunes": [],
+                    "attributeModifiers": []
+                  },
+                  "buffKey": "e2c_cold",
+                  "loadFromDB": 1,
+                  "isDurableBuff": 0,
+                  "isDamageMissable": 0,
+                  "isSilenceable": 0,
+                  "isStunnable": 0,
+                  "isFreezable": 0,
+                  "isLevitatable": 0,
+                  "isGroundBoundable": 0,
+                  "statusResistable": 2,
+                  "templateKey": "empty",
+                  "disableOverride": 0,
+                  "overrideKey": "",
+                  "overrideType": 0,
+                  "maxStackCnt": 1,
+                  "refreshRemainingTimeWhenStackMax": 0,
+                  "clearAllStackCntWhenTimeUp": 0,
+                  "maxValidStackCnt": -1,
+                  "independentCharacterSource": 0,
+                  "overrideEffectKey": "",
+                  "overrideOnEventPriority": 0,
+                  "onEventPriority": 0,
+                  "audioSignal": "",
+                  "lifeTimeType": 1,
+                  "takeSnapshotWhenExtend": 0,
+                  "durationKey": "",
+                  "lifeTime": 0.0,
+                  "triggerLifeType": 0,
+                  "triggerCnt": 0,
+                  "triggerInterval": -1.0,
+                  "waitFirstTriggerInterval": 1,
+                  "firstTriggerInterval": -1.0,
+                  "priority": -1,
+                  "priorityBBKeys": [],
+                  "stripBlackboardParamsWithBuffKey": 0,
+                  "blackboard": [],
+                  "enableInitDirectionFromSource": 0
+                }
+              ],
+              "_maxAnimScale": -1.0,
+              "_onlyPlayEndAnimWhenIsLastAbility": 0,
+              "_ignorePalsyInterrupt": 0,
+              "_affectedBySlowDown": 0,
+              "_actions": {
+                "SerializedState": "[]",
+                "SerializedObjectReferences": []
+              },
+              "_attackType": 1,
+              "_useDynamicAttackType": 0
+            }
+          }
+        },
+        "no_dummy_target": true
+      }
+    },
+    {
+      "id": "buff/ch6/cold/e2c_cold",
+      "kind": "buff",
+      "duration_seconds": 10,
+      "active_rule": "rule/ch6/cold/cold_active",
+      "stacking": {
+        "mode": "refresh",
+        "identity": [
+          "definition",
+          "target"
+        ],
+        "max_stacks": 1
+      },
+      "selection_flags": {
+        "abnormal_flags": [
+          23
+        ]
+      },
+      "modifiers": [
+        {
+          "attribute": "attack_speed_ratio",
+          "layer": "flat",
+          "value": -0.3
+        }
+      ]
+    },
+    {
+      "id": "buff/ch6/cold/e2c_freeze",
+      "kind": "buff",
+      "duration_seconds": 10,
+      "active_rule": "rule/ch6/cold/frozen_active",
+      "control_rule": "rule/ch6/cold/frozen_active",
+      "stacking": {
+        "mode": "refresh",
+        "identity": [
+          "definition",
+          "target"
+        ],
+        "max_stacks": 1
+      },
+      "selection_flags": {
+        "abnormal_flags": [
+          16
+        ]
+      },
+      "control": {
+        "move": false,
+        "attack": false,
+        "abilities": false,
+        "interrupt": true
+      }
+    },
+    {
+      "id": "buff/ch6/npc/huang_lock",
+      "kind": "buff",
+      "duration_seconds": 6,
+      "damage_hooks": [
+        {
+          "phase": "after",
+          "rule": "rule/ch6/npc/huang_hp_lock"
+        }
+      ]
+    },
+    {
+      "id": "buff/ch6/npc/huang_once",
+      "kind": "buff",
+      "selection_flags": {
+        "abnormal_flags": [
+          6
+        ]
+      },
+      "damage_hooks": [
+        {
+          "phase": "after",
+          "rule": "rule/ch6/npc/huang_undead"
+        }
+      ],
+      "events": [
+        {
+          "event": "damage.accepted",
+          "condition": "inputs.payload.target == context.owner.id",
+          "effects": [
+            {
+              "op": "buff_application",
+              "application_rule": "rule/ch6/npc/huang_low_hp",
+              "allowed": [
+                "buff/ch6/npc/huang_reaction"
+              ]
+            }
+          ]
+        },
+        {
+          "event": "buff.applied",
+          "condition": "inputs.payload.target == context.owner.id and inputs.payload.buff == 'buff/ch6/npc/huang_reaction'",
+          "effects": [
+            {
+              "op": "remove_buff",
+              "buff": "buff/ch6/npc/huang_once"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "buff/ch6/npc/huang_reaction",
+      "kind": "buff",
+      "effects": [
+        {
+          "op": "heal",
+          "rules": {
+            "healing.base": "rule/ch6/npc/huang_heal_power"
+          },
+          "selector": "selector/ch6/npc/huang_heal_self",
+          "parameters": {
+            "healing": true
+          }
+        },
+        {
+          "op": "apply_buff",
+          "buff": "buff/ch6/npc/huang_lock"
+        }
+      ]
+    },
+    {
+      "id": "buff/ch6/npc/huang_resistance",
+      "kind": "buff",
+      "modifiers": [
+        {
+          "attribute": "one_minus_status_resistance",
+          "layer": "flat",
+          "value": -0.5
+        }
+      ]
+    },
+    {
+      "id": "buff/ch6/npc/huang_resistance_wait",
+      "kind": "buff",
+      "interval_seconds": 15,
+      "effects": [
+        {
+          "op": "apply_buff",
+          "buff": "buff/ch6/npc/huang_resistance"
+        },
+        {
+          "op": "remove_buff",
+          "buff": "buff/ch6/npc/huang_resistance_wait"
+        }
+      ]
+    },
+    {
+      "id": "rule/ch6/cold/application",
+      "kind": "rule",
+      "contract": "buff.application",
+      "dependencies": [
+        "rule/ch6/cold/status_duration"
+      ],
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c6.cold_application"
+      },
+      "parameters": {
+        "cold": "buff/ch6/cold/e2c_cold",
+        "frozen": "buff/ch6/cold/e2c_freeze",
+        "duration_rule": "rule/ch6/cold/status_duration"
+      }
+    },
+    {
+      "id": "rule/ch6/cold/cold_active",
+      "kind": "rule",
+      "contract": "buff.applicability",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.owner.components.runtime.alive and 23 not in inputs.status.abnormal_immunes"
+      }
+    },
+    {
+      "id": "rule/ch6/cold/frozen_active",
+      "kind": "rule",
+      "contract": "buff.applicability",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.owner.components.runtime.alive and 16 not in inputs.status.abnormal_immunes"
+      }
+    },
+    {
+      "id": "rule/ch6/cold/status_duration",
+      "kind": "calculation_rule",
+      "contract": "buff.duration",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.buff_parameters.duration_seconds * inputs.buff_parameters.status_duration_factor"
+      }
+    },
+    {
+      "id": "rule/ch6/npc/huang_eligible",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.targeting.eligibility"
+      }
+    },
+    {
+      "id": "rule/ch6/npc/huang_heal_eligible",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c6.npc_owner_heal"
+      }
+    },
+    {
+      "id": "rule/ch6/npc/huang_heal_power",
+      "kind": "rule",
+      "contract": "healing.base",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c6.npc_maxhp_heal"
+      },
+      "parameters": {
+        "ratio": 0.5
+      },
+      "dependencies": [
+        "rule/ark_attribute_layers"
+      ]
+    },
+    {
+      "id": "rule/ch6/npc/huang_hp_lock",
+      "kind": "calculation_rule",
+      "contract": "damage.pipeline",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c6.npc_hp_lock"
+      },
+      "parameters": {
+        "ratio": 0.5
+      },
+      "dependencies": [
+        "rule/ark_attribute_layers"
+      ]
+    },
+    {
+      "id": "rule/ch6/npc/huang_low_hp",
+      "kind": "calculation_rule",
+      "contract": "buff.application",
+      "implementation": {
+        "type": "provider",
+        "provider": "reference.c6.npc_low_hp"
+      },
+      "parameters": {
+        "reaction": "buff/ch6/npc/huang_reaction",
+        "threshold": 0.25
+      }
+    },
+    {
+      "id": "rule/ch6/npc/huang_undead",
+      "kind": "calculation_rule",
+      "contract": "damage.pipeline",
+      "implementation": {
+        "type": "graph",
+        "nodes": [
+          {
+            "id": "settled",
+            "expression": "{'accepted':inputs.effect.settlement.accepted,'amount':min(inputs.effect.settlement.amount,max(0,inputs.target.components.resources.hp.current-1)),'allocations':[],'events':[]}"
+          }
+        ],
+        "output": "nodes.settled"
+      }
+    },
+    {
+      "id": "rule/ch6/npc/huang_windup",
+      "kind": "calculation_rule",
+      "contract": "ability.windup",
+      "parameters": {
+        "minimum_speed": 0.01
+      },
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.timing_parameters.seconds/max(inputs.attributes.attack_speed_ratio,params.minimum_speed)"
+      }
+    },
+    {
+      "id": "rule/ch6/predefined/frosts/area",
+      "kind": "rule",
+      "dependencies": [
+        "rule/ch6/predefined/frosts/eligibility"
+      ],
+      "contract": "area.members",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.area.qualified_cell_offsets"
+      },
+      "parameters": {
+        "offsets": [
+          [
+            -2,
+            0
+          ],
+          [
+            -1,
+            -1
+          ],
+          [
+            -1,
+            0
+          ],
+          [
+            -1,
+            1
+          ],
+          [
+            0,
+            -2
+          ],
+          [
+            0,
+            -1
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            -1
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            2,
+            0
+          ]
+        ],
+        "eligibility": {
+          "rule": "rule/ch6/predefined/frosts/eligibility",
+          "parameters": {
+            "source_configuration": {
+              "m_GameObject": {
+                "m_FileID": 0,
+                "m_PathID": -8291732544019132662
+              },
+              "m_Enabled": 1,
+              "m_Script": {
+                "m_FileID": 1,
+                "m_PathID": 7080728813803358465
+              },
+              "m_Name": "",
+              "_targetSide": 2,
+              "_targetMotion": 3,
+              "_targetCategory": 1,
+              "_postFilter": 4,
+              "_ignoreTargetFree": 0,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_abnormalFlag": 46,
+              "_abnormalCombo": 2,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_forceIgnoreCamouflage": 0,
+              "_needProfessionMask": 0,
+              "_professionMask": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_excludeAbnormalFlag": 46,
+              "_limitTargetNum": 0,
+              "_maxTargetKey": "max_target",
+              "_maxNum": 1,
+              "_excludeOwner": 0,
+              "_sortByTauntAtLast": 0,
+              "_ignoreHitRange": 0,
+              "_checkUnitType": 0,
+              "_unitTypeMask": 0,
+              "_abilityInputTargetAsSortSource": 0
+            },
+            "side_policy": "relative_ally_enemy",
+            "neutral_policy": "reject",
+            "defaults": {
+              "heal_free": false,
+              "ally_target_free": false,
+              "can_select_camouflage": false,
+              "target_free": false,
+              "camouflage": false,
+              "motion": 0,
+              "category": 0,
+              "profession": 0,
+              "unit_type": 0,
+              "abnormal_flags": [],
+              "abnormal_combos": [],
+              "target_free_flags": [],
+              "target_free_combos": [],
+              "abnormal_immunes": [],
+              "side": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "rule/ch6/predefined/frosts/eligibility",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.targeting.eligibility"
+      }
+    },
+    {
+      "id": "rule/ch6/predefined/frosts/source_identity",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "graph",
+        "nodes": [
+          {
+            "id": "result",
+            "expression": "{'accepted':inputs.source.id == inputs.candidate.id,'reason':'actual_source_identity'}"
+          }
+        ],
+        "output": "nodes.result"
+      }
+    },
+    {
+      "id": "rule/ch6/predefined/frosts/time_sp",
+      "kind": "rule",
+      "contract": "resource.recovery",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.current + inputs.attributes.sp_recovery_rate * inputs.delta_seconds"
+      }
+    },
+    {
+      "id": "selector/ch6/npc/huang",
+      "kind": "selector",
+      "region": {
+        "type": "grid_offsets",
+        "offsets": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      "filters": [
+        {
+          "tag": "enemy"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit_attribute": "block_count",
+      "parameters": {
+        "include_blocked": true
+      },
+      "eligibility": {
+        "rule": "rule/ch6/npc/huang_eligible",
+        "parameters": {
+          "source_configuration": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -1175145734775623267
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 840206743537877183
+            },
+            "m_Name": "",
+            "_targetSide": 2,
+            "_targetMotion": 1,
+            "_targetCategory": 1,
+            "_postFilter": 4,
+            "_ignoreTargetFree": 0,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_abnormalFlag": 29,
+            "_abnormalCombo": 2,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_forceIgnoreCamouflage": 0,
+            "_needProfessionMask": 0,
+            "_professionMask": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_excludeAbnormalFlag": 46,
+            "_limitTargetNum": 0,
+            "_maxTargetKey": "max_target",
+            "_maxNum": 1,
+            "_excludeOwner": 0,
+            "_sortByTauntAtLast": 0,
+            "_ignoreHitRange": 0,
+            "_checkUnitType": 0,
+            "_unitTypeMask": 0,
+            "_abilityInputTargetAsSortSource": 0,
+            "_limitedMaxTargetNumToBlockedCnt": 1,
+            "_allowZeroBlockCntLimit": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject",
+          "defaults": {
+            "target_free": false,
+            "can_select_camouflage": false,
+            "ally_target_free": false,
+            "heal_free": false,
+            "camouflage": false,
+            "motion": 1,
+            "category": 1,
+            "profession": 0,
+            "unit_type": 1,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "abnormal_immunes": [],
+            "side": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "selector/ch6/npc/huang_heal_self",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1,
+      "eligibility": {
+        "rule": "rule/ch6/npc/huang_heal_eligible",
+        "parameters": {
+          "source_configuration": {
+            "_targetSide": 1,
+            "_targetCategory": 7,
+            "_targetMotion": 3,
+            "_professionMask": 0,
+            "_unitTypeMask": 0,
+            "_ignoreTargetFree": 1,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_needProfessionMask": 0,
+            "_ignoreAllyTargetFree": 1,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 1,
+            "_forceIgnoreCamouflage": 1,
+            "_checkUnitType": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "reject",
+          "defaults": {
+            "camouflage": false,
+            "ally_target_free": false,
+            "can_select_camouflage": false,
+            "target_free": false,
+            "heal_free": false,
+            "motion": 1,
+            "category": 1,
+            "profession": 0,
+            "unit_type": 1,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "abnormal_immunes": [],
+            "side": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "selector/ch6/predefined/frosts/anchor",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1,
+      "eligibility": {
+        "rule": "rule/ch6/predefined/frosts/source_identity",
+        "parameters": {
+          "source_configuration": {
+            "m_GameObject": {
+              "m_FileID": 0,
+              "m_PathID": -8291732544019132662
+            },
+            "m_Enabled": 1,
+            "m_Script": {
+              "m_FileID": 1,
+              "m_PathID": 7080728813803358465
+            },
+            "m_Name": "",
+            "_targetSide": 7,
+            "_targetMotion": 3,
+            "_targetCategory": 7,
+            "_postFilter": 4,
+            "_ignoreTargetFree": 1,
+            "_onlyIgnoreSomeOfTargetFreeCase": 0,
+            "_abnormalFlag": 46,
+            "_abnormalCombo": 2,
+            "_ignoreAllyTargetFree": 0,
+            "_ignoreHealFree": 0,
+            "_ignoreMotionMode": 0,
+            "_forceIgnoreCamouflage": 1,
+            "_needProfessionMask": 0,
+            "_professionMask": 0,
+            "_excludeSomeAbnormalFlags": 0,
+            "_excludeAbnormalFlag": 46,
+            "_limitTargetNum": 0,
+            "_maxTargetKey": "max_target",
+            "_maxNum": 1,
+            "_excludeOwner": 0,
+            "_sortByTauntAtLast": 0,
+            "_ignoreHitRange": 0,
+            "_checkUnitType": 0,
+            "_unitTypeMask": 0,
+            "_abilityInputTargetAsSortSource": 0
+          },
+          "side_policy": "relative_ally_enemy",
+          "neutral_policy": "absolute_mask",
+          "defaults": {
+            "heal_free": false,
+            "ally_target_free": false,
+            "can_select_camouflage": false,
+            "target_free": false,
+            "camouflage": false,
+            "motion": 0,
+            "category": 0,
+            "profession": 0,
+            "unit_type": 0,
+            "abnormal_flags": [],
+            "abnormal_combos": [],
+            "target_free_flags": [],
+            "target_free_combos": [],
+            "abnormal_immunes": [],
+            "side": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "unit/ch6/npc/char_017_huang",
+      "kind": "entity",
+      "tags": [
+        "player",
+        "ground",
+        "native_npc"
+      ],
+      "metadata": {
+        "native_character": "char_017_huang",
+        "native_instance": {
+          "position": {
+            "row": 3,
+            "col": 3
+          },
+          "direction": "RIGHT",
+          "hidden": true,
+          "alias": null,
+          "uniEquipIds": null,
+          "showSpIllust": false,
+          "masterInfos": null,
+          "inst": {
+            "characterKey": "char_017_huang",
+            "level": 25,
+            "phase": "PHASE_2",
+            "favorPoint": 0,
+            "potentialRank": 0
+          },
+          "skillIndex": -1,
+          "mainSkillLvl": 1,
+          "skinId": null,
+          "tmplId": null,
+          "overrideSkillBlackboard": null,
+          "overrideTalents": null
+        }
+      },
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 2305,
+            "atk": 631,
+            "def": 321,
+            "mres": 0.0,
+            "attack_interval": 1.2,
+            "attack_speed_ratio": 1,
+            "block_count": 3,
+            "one_minus_status_resistance": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 2305,
+            "capacity_attribute": "max_hp",
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "target_free": false,
+          "can_select_camouflage": false,
+          "ally_target_free": false,
+          "heal_free": false,
+          "camouflage": false,
+          "motion": 1,
+          "category": 1,
+          "profession": 0,
+          "unit_type": 1,
+          "abnormal_flags": [],
+          "abnormal_combos": [],
+          "target_free_flags": [],
+          "target_free_combos": [],
+          "abnormal_immunes": [],
+          "side": 0
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "abilities": [
+          "ability/ch6/npc/huang_normal"
+        ],
+        "buffs": {
+          "initial": [
+            "buff/ch6/npc/huang_once",
+            "buff/ch6/npc/huang_resistance_wait"
+          ]
+        }
+      }
+    },
+    {
+      "id": "unit/ch6/predefined/frosts/source_level1",
+      "kind": "entity",
+      "tags": [
+        "device",
+        "map_dependent_trap",
+        "frost_source"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 100,
+            "atk": 0,
+            "def": 0,
+            "mres": 0,
+            "sp_recovery_rate": 1,
+            "move_speed": 1,
+            "block_count": 0,
+            "deploy_cost": 5,
+            "redeploy_time": 5
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100,
+            "role": "health"
+          },
+          "sp": {
+            "initial": 0,
+            "capacity": 15,
+            "recovery_rate": 1,
+            "recovery_rule": "rule/ch6/predefined/frosts/time_sp",
+            "recovery": {
+              "mode": "periodic",
+              "interval_seconds": 0.03333333333333333
+            },
+            "parameters": {
+              "freeze_cast_modes": [
+                "manual"
+              ],
+              "freeze_while_cast": true,
+              "pause_at_full": true
+            }
+          }
+        },
+        "selection_state": {
+          "side": 1,
+          "category": 2,
+          "motion": 1,
+          "unit_type": 4
+        },
+        "spatial": {
+          "motion_mode": 0,
+          "blocking": false
+        },
+        "abilities": [
+          "ability/ch6/predefined/frosts/source_cold"
+        ],
+        "terrain_overlays": [
+          {
+            "key": "native_frost_trap_mode",
+            "priority": 0,
+            "values": {
+              "buildableType": 0,
+              "passableMask": 2,
+              "physicalHeight": 0.4000000059604645
+            },
+            "preserve": [
+              "heightType",
+              "advancedBuildMask"
+            ]
+          }
+        ],
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "kind": "scenario",
+    "id": "scene/ch6/source_content_closure_v7",
+    "ruleset": "ruleset/ark_standard",
+    "map": {
+      "rows": 1,
+      "cols": 1
+    },
+    "objectives": {},
+    "dependencies": [
+      "unit/ch6/npc/char_017_huang",
+      "unit/ch6/predefined/frosts/source_level1"
+    ]
+  }
+}

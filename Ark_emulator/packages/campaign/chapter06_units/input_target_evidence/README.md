@@ -1,0 +1,11 @@
+# Required ranged INPUT_TARGET2 content correction
+
+Independent source review found the original snmage_v2 and snbow modules admitted a higher-taunt ranged candidate while a real blocker was held. Their native `_combat/_attack` selectTargetSource2 requires the actual input/blocking target. The preserved old modules and peer failures are not reclassified as approved optional policies.
+
+New immutable content paths are snmage_v3 and snbow_v2. Both retain the entire original native typed eligibility and region, then apply a pure graph hardgate: runtime.blocked_by!=None requires candidate.id equal that actual blocker. No finite score bonus or ActorID kernel branch is used. If a held blocker fails native motion/category/side/target-free/camouflage/range rules, every other candidate is denied. A genuinely released relation(None) restores ordinary original unblocked eligibility and selection. Normal and ColdAttack activations use existing settle_blockingTrue to resolve the first same-tick cast before target selection.
+
+11 public source-hardgate tests passed on read-only a705: same-grid block_count3 actor versus taunt1e100 bait for mage normal, mage initialSP2 Cold and bow; category2 held blocker yields no fallback; unblocked preserves original bait selection; public withdrawal releases relation; actual first-tick blocked_by and diskCP/full head replay are equal. All38 original supported normal/Cold/Ready/status/retained/capture/qualification assertions also pass on the new content, without changing mechanism expectations.
+
+Five persisted source proofs save actual disk CP at1 after the blocking relation has been settled, then replay all public inputs from start: mage normal blocked, mage Cold blocked, bow blocked, native-ineligible mage blocker and native-ineligible bow blocker. Full journals and snapshot/event/continuation hashes match. The bait HP remains20000 and every accepted packet/cast uses the blocker; ineligible held blockers produce no damage despite legal other targets.
+
+No old6ec/f8 modules, old inventory, runtime, registry or prior pins are edited. Independent review, complete-source-policies, stage and client gates remain false. The earlier expression `is` and FrozenTuple-list author fixture mistakes are retained as development failure receipts; final content uses supported equality syntax and compares actual target values.

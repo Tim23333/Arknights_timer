@@ -1,0 +1,218 @@
+{
+  "input": {
+    "manifest": {
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/parent",
+        "kind": "entity",
+        "tags": [
+          "emitter"
+        ],
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "def": 10
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100
+            }
+          },
+          "buffs": {
+            "initial": [
+              "buff/parent"
+            ]
+          }
+        }
+      },
+      {
+        "id": "unit/a",
+        "kind": "entity",
+        "tags": [
+          "member"
+        ],
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "def": 10,
+              "atk": 100
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100
+            }
+          },
+          "buffs": {
+            "initial": []
+          },
+          "abilities": [
+            "ability/leave"
+          ]
+        }
+      },
+      {
+        "id": "unit/b",
+        "kind": "entity",
+        "tags": [
+          "member",
+          "victim"
+        ],
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "def": 10
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100
+            }
+          },
+          "buffs": {
+            "initial": []
+          }
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/parent",
+        "kind": "buff",
+        "aura": {
+          "selector": "selector/members",
+          "buff": "buff/child"
+        }
+      },
+      {
+        "id": "buff/child",
+        "kind": "buff",
+        "stacking": {
+          "mode": "independent"
+        },
+        "modifiers": [
+          {
+            "attribute": "def",
+            "layer": "flat",
+            "value": 5
+          }
+        ],
+        "on_remove": [
+          {
+            "op": "retire",
+            "target": "source",
+            "parameters": {
+              "reason": "withdraw"
+            }
+          }
+        ]
+      }
+    ],
+    "selectors": [
+      {
+        "id": "selector/members",
+        "kind": "selector",
+        "region": {
+          "type": "circle",
+          "radius": 2
+        },
+        "filters": [
+          {
+            "tag": "member"
+          },
+          {
+            "state": "alive"
+          }
+        ]
+      },
+      {
+        "id": "selector/victim",
+        "kind": "selector",
+        "region": {
+          "type": "all"
+        },
+        "filters": [
+          {
+            "tag": "victim"
+          }
+        ]
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/leave",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "move",
+              "target": "source",
+              "position": {
+                "row": 0,
+                "col": 3
+              }
+            },
+            {
+              "op": "damage",
+              "damage_type": "physical"
+            }
+          ]
+        },
+        "timeline": [],
+        "selector": "selector/victim"
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/remove",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 1,
+        "cols": 4
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/parent",
+          "instanceAlias": "parent",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/a",
+          "instanceAlias": "a",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        },
+        {
+          "definition": "unit/b",
+          "instanceAlias": "b",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        }
+      ]
+    }
+  },
+  "positional_options": [],
+  "keyword_options": {}
+}

@@ -1,0 +1,1098 @@
+[
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/ch8/volcano",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/ch8/volcano_fixed_damage",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "settle",
+              "expression": "{'accepted':True,'amount':inputs.effect.fixed_amount,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.settle"
+        }
+      },
+      {
+        "id": "rule/ch8/volcano_clock",
+        "kind": "rule",
+        "contract": "field.trigger",
+        "parameters": {
+          "minimum_key": "cd_min",
+          "maximum_key": "cd_max"
+        },
+        "implementation": {
+          "type": "provider",
+          "provider": "model.field.uniform_trigger"
+        }
+      },
+      {
+        "id": "rule/ch8/volcano_members",
+        "kind": "rule",
+        "contract": "field.members",
+        "parameters": {
+          "side_mask": 3,
+          "motion_mask": 1,
+          "category_mask": 1,
+          "extra_offsets": [
+            [
+              -1,
+              0
+            ],
+            [
+              0,
+              -1
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              0
+            ]
+          ],
+          "combat_policy": "blocked_or_attacking",
+          "exclude_flags": [
+            9,
+            17
+          ],
+          "respect_target_free": true
+        },
+        "implementation": {
+          "type": "provider",
+          "provider": "model.field.cell_combat_members"
+        }
+      },
+      {
+        "id": "rule/peer/half",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "half",
+              "expression": "{'accepted':True,'amount':inputs.effect.settlement.amount*.5,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.half"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/half",
+        "kind": "buff",
+        "damage_hooks": [
+          {
+            "phase": "after",
+            "rule": "rule/peer/half"
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/camo",
+        "kind": "buff",
+        "selection_flags": {
+          "abnormal_flags": [
+            17
+          ]
+        }
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/center",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 10000,
+              "atk": 31,
+              "def": 777,
+              "mres": 87
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 10000,
+              "capacity": 10000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "unit_type": 1
+          },
+          "abilities": [
+            "ability/peer/pose"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/enemy_cast",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 10000,
+              "atk": 31,
+              "def": 777,
+              "mres": 87
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 10000,
+              "capacity": 10000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1,
+            "unit_type": 1
+          },
+          "abilities": [
+            "ability/peer/pose"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/ally_cast",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 10000,
+              "atk": 31,
+              "def": 777,
+              "mres": 87
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 10000,
+              "capacity": 10000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "unit_type": 1
+          },
+          "abilities": [
+            "ability/peer/pose"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/enemy_diagonal",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 10000,
+              "atk": 31,
+              "def": 777,
+              "mres": 87
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 10000,
+              "capacity": 10000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1,
+            "unit_type": 1
+          },
+          "abilities": [
+            "ability/peer/pose"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/enemy_idle",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 10000,
+              "atk": 31,
+              "def": 777,
+              "mres": 87
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 10000,
+              "capacity": 10000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1,
+            "unit_type": 1
+          },
+          "abilities": [
+            "ability/peer/pose"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 4,
+            "unit_type": 4
+          },
+          "abilities": [
+            "ability/peer/half",
+            "ability/peer/camo"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/pose",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 1000,
+            "effect": {
+              "op": "emit",
+              "event": "peer.pose.done"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/half",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/half"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/camo",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 3,
+              "buff": "buff/peer/camo"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/ch8/volcano",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 3,
+        "cols": 4,
+        "tiles": [
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0
+          },
+          {
+            "tileKey": "tile_volcano",
+            "buildableType": 0,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": [
+              {
+                "key": "damage",
+                "value": 1000.0,
+                "valueStr": null
+              },
+              {
+                "key": "cd_min",
+                "value": 8.0,
+                "valueStr": null
+              },
+              {
+                "key": "cd_max",
+                "value": 12.0,
+                "valueStr": null
+              }
+            ],
+            "effects": null
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0
+          }
+        ],
+        "tile_mechanics": {
+          "tile_volcano": {
+            "type": "periodic_effect_field",
+            "expected_blackboard": {
+              "damage": 1000.0,
+              "cd_min": 8.0,
+              "cd_max": 12.0
+            },
+            "origin": {
+              "native_prefab": "tile_volcano",
+              "native_component": "-4218245673668302011",
+              "source_sha256": "c813f7c2308c2308baaa19a88a3e18305db7a18d1404f6a7f1351b018296d976"
+            },
+            "trigger": {
+              "rule": "rule/ch8/volcano_clock",
+              "stream": "field/volcano",
+              "sample_count": 1,
+              "parameters": {},
+              "initial": {
+                "mode": "sampled"
+              }
+            },
+            "membership": {
+              "rule": "rule/ch8/volcano_members",
+              "parameters": {}
+            },
+            "effects": [
+              {
+                "op": "no_source_damage",
+                "fixed_amount": 1000,
+                "damage_type": "true",
+                "attack_type": "NONE",
+                "damage_without_modify": false,
+                "ignore_for_sp": false,
+                "node_is_env_damage": false,
+                "env_blackboard_injected": true,
+                "environmental": true,
+                "origin": {
+                  "native_node": "Torappu.Battle.Action.Nodes+NoSourceDamage"
+                },
+                "rules": {
+                  "damage.pipeline": "rule/ch8/volcano_fixed_damage"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/center",
+          "instanceAlias": "center",
+          "position": {
+            "row": 1,
+            "col": 1
+          }
+        },
+        {
+          "definition": "unit/peer/enemy_cast",
+          "instanceAlias": "enemy_cast",
+          "position": {
+            "row": 1,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/peer/ally_cast",
+          "instanceAlias": "ally_cast",
+          "position": {
+            "row": 1,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/peer/enemy_diagonal",
+          "instanceAlias": "enemy_diagonal",
+          "position": {
+            "row": 2,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/peer/enemy_idle",
+          "instanceAlias": "enemy_idle",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 2,
+            "col": 3
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/ch8/volcano",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/ch8/volcano_fixed_damage",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "settle",
+              "expression": "{'accepted':True,'amount':inputs.effect.fixed_amount,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.settle"
+        }
+      },
+      {
+        "id": "rule/ch8/volcano_clock",
+        "kind": "rule",
+        "contract": "field.trigger",
+        "parameters": {
+          "minimum_key": "cd_min",
+          "maximum_key": "cd_max"
+        },
+        "implementation": {
+          "type": "provider",
+          "provider": "model.field.uniform_trigger"
+        }
+      },
+      {
+        "id": "rule/ch8/volcano_members",
+        "kind": "rule",
+        "contract": "field.members",
+        "parameters": {
+          "side_mask": 3,
+          "motion_mask": 1,
+          "category_mask": 1,
+          "extra_offsets": [
+            [
+              -1,
+              0
+            ],
+            [
+              0,
+              -1
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              0
+            ]
+          ],
+          "combat_policy": "blocked_or_attacking",
+          "exclude_flags": [
+            9,
+            17
+          ],
+          "respect_target_free": true
+        },
+        "implementation": {
+          "type": "provider",
+          "provider": "model.field.cell_combat_members"
+        }
+      },
+      {
+        "id": "rule/peer/half",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "half",
+              "expression": "{'accepted':True,'amount':inputs.effect.settlement.amount*.5,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.half"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/half",
+        "kind": "buff",
+        "damage_hooks": [
+          {
+            "phase": "after",
+            "rule": "rule/peer/half"
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/camo",
+        "kind": "buff",
+        "selection_flags": {
+          "abnormal_flags": [
+            17
+          ]
+        }
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/center",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 10000,
+              "atk": 31,
+              "def": 777,
+              "mres": 87
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 10000,
+              "capacity": 10000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "unit_type": 1
+          },
+          "abilities": [
+            "ability/peer/pose"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/enemy_cast",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 10000,
+              "atk": 31,
+              "def": 777,
+              "mres": 87
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 10000,
+              "capacity": 10000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1,
+            "unit_type": 1
+          },
+          "abilities": [
+            "ability/peer/pose"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/ally_cast",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 10000,
+              "atk": 31,
+              "def": 777,
+              "mres": 87
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 10000,
+              "capacity": 10000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "unit_type": 1
+          },
+          "abilities": [
+            "ability/peer/pose"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/enemy_diagonal",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 10000,
+              "atk": 31,
+              "def": 777,
+              "mres": 87
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 10000,
+              "capacity": 10000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1,
+            "unit_type": 1
+          },
+          "abilities": [
+            "ability/peer/pose"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/enemy_idle",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 10000,
+              "atk": 31,
+              "def": 777,
+              "mres": 87
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 10000,
+              "capacity": 10000,
+              "role": "health"
+            }
+          },
+          "spatial": {},
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1,
+            "unit_type": 1
+          },
+          "abilities": [
+            "ability/peer/pose"
+          ],
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 4,
+            "unit_type": 4
+          },
+          "abilities": [
+            "ability/peer/half",
+            "ability/peer/camo"
+          ]
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/pose",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 1000,
+            "effect": {
+              "op": "emit",
+              "event": "peer.pose.done"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/half",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/half"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/camo",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 3,
+              "buff": "buff/peer/camo"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/ch8/volcano",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 3,
+        "cols": 4,
+        "tiles": [
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0
+          },
+          {
+            "tileKey": "tile_volcano",
+            "buildableType": 0,
+            "passableMask": 1,
+            "heightType": 0,
+            "blackboard": [
+              {
+                "key": "damage",
+                "value": 1000.0,
+                "valueStr": null
+              },
+              {
+                "key": "cd_min",
+                "value": 8.0,
+                "valueStr": null
+              },
+              {
+                "key": "cd_max",
+                "value": 12.0,
+                "valueStr": null
+              }
+            ],
+            "effects": null
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0
+          },
+          {
+            "tileKey": "tile_floor",
+            "buildableType": 1,
+            "passableMask": 1,
+            "heightType": 0
+          }
+        ],
+        "tile_mechanics": {
+          "tile_volcano": {
+            "type": "periodic_effect_field",
+            "expected_blackboard": {
+              "damage": 1000.0,
+              "cd_min": 8.0,
+              "cd_max": 12.0
+            },
+            "origin": {
+              "native_prefab": "tile_volcano",
+              "native_component": "-4218245673668302011",
+              "source_sha256": "c813f7c2308c2308baaa19a88a3e18305db7a18d1404f6a7f1351b018296d976"
+            },
+            "trigger": {
+              "rule": "rule/ch8/volcano_clock",
+              "stream": "field/volcano",
+              "sample_count": 1,
+              "parameters": {},
+              "initial": {
+                "mode": "sampled"
+              }
+            },
+            "membership": {
+              "rule": "rule/ch8/volcano_members",
+              "parameters": {}
+            },
+            "effects": [
+              {
+                "op": "no_source_damage",
+                "fixed_amount": 1000,
+                "damage_type": "true",
+                "attack_type": "NONE",
+                "damage_without_modify": false,
+                "ignore_for_sp": false,
+                "node_is_env_damage": false,
+                "env_blackboard_injected": true,
+                "environmental": true,
+                "origin": {
+                  "native_node": "Torappu.Battle.Action.Nodes+NoSourceDamage"
+                },
+                "rules": {
+                  "damage.pipeline": "rule/ch8/volcano_fixed_damage"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/peer/center",
+          "instanceAlias": "center",
+          "position": {
+            "row": 1,
+            "col": 1
+          }
+        },
+        {
+          "definition": "unit/peer/enemy_cast",
+          "instanceAlias": "enemy_cast",
+          "position": {
+            "row": 1,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/peer/ally_cast",
+          "instanceAlias": "ally_cast",
+          "position": {
+            "row": 1,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/peer/enemy_diagonal",
+          "instanceAlias": "enemy_diagonal",
+          "position": {
+            "row": 2,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/peer/enemy_idle",
+          "instanceAlias": "enemy_idle",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 2,
+            "col": 3
+          }
+        }
+      ]
+    }
+  }
+]

@@ -1,0 +1,208 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "requires": [
+      "preset/ark_standard"
+    ]
+  },
+  "entities": [
+    {
+      "id": "unit/walker",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground"
+      ],
+      "dependencies": [
+        "buff/ledger_observer"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "move_speed": 3,
+            "max_hp": 100
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "abilities": [
+          "ability/remove",
+          "ability/rng"
+        ]
+      }
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/remove",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual"
+      },
+      "timeline": [
+        {
+          "at": 0,
+          "effect": {
+            "op": "retire",
+            "target": "source",
+            "parameters": {
+              "reason": "removed"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/rng",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual"
+      },
+      "timeline": [
+        {
+          "at": 0,
+          "effect": {
+            "op": "random",
+            "target": "source",
+            "stream": "imp",
+            "probability": 0.5,
+            "on_success": [
+              {
+                "op": "emit",
+                "event": "probe"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/ledger_observer",
+      "kind": "buff",
+      "interval_seconds": 1,
+      "movement_damage": {
+        "effect": {
+          "op": "damage",
+          "scale": 0,
+          "damage_type": "true"
+        }
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/portal_transition",
+      "kind": "calculation_rule",
+      "contract": "movement.transition",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.movement.living_transition"
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scenario/portal",
+    "ruleset": "ruleset/ark_standard",
+    "map": {
+      "rows": 1,
+      "cols": 6,
+      "tiles": [
+        {
+          "tileKey": "tile_floor",
+          "buildableType": 0,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_floor",
+          "buildableType": 1,
+          "passableMask": 1
+        },
+        {
+          "tileKey": "tile_floor",
+          "buildableType": 1,
+          "passableMask": 1
+        },
+        {
+          "tileKey": "tile_floor",
+          "buildableType": 0,
+          "passableMask": 3,
+          "heightType": "LOWLAND",
+          "blackboard": null,
+          "effects": null
+        },
+        {
+          "tileKey": "tile_floor",
+          "buildableType": 1,
+          "passableMask": 1
+        },
+        {
+          "tileKey": "tile_floor",
+          "buildableType": 1,
+          "passableMask": 1
+        }
+      ]
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/walker",
+        "instanceAlias": "walker",
+        "position": {
+          "row": 0,
+          "col": 0
+        },
+        "route": {
+          "motionMode": 0,
+          "startPosition": {
+            "row": 0,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 0,
+            "col": 5
+          },
+          "transition_policy": {
+            "rule": "rule/portal_transition",
+            "parameters": {
+              "hidden_effects": "reject",
+              "hidden_auras": "suspend",
+              "launched_source_effects": "retain",
+              "resource_timers": "continue"
+            }
+          },
+          "checkpoints": [
+            {
+              "type": 5
+            },
+            {
+              "type": 1,
+              "time": 0.1
+            },
+            {
+              "type": 6,
+              "position": {
+                "row": 0,
+                "col": 3
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "waves": [],
+    "objectives": {}
+  }
+}

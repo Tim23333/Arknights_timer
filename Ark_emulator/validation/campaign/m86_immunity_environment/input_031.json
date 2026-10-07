@@ -1,0 +1,820 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/ch4/bslime_source",
+    "requires": [
+      "preset/ark_standard"
+    ],
+    "metadata": {
+      "source_locks": {
+        "packages\\campaign\\chapter04_sources\\native.reference.json": "3e392d80d000e27a50f11f2f33b0fa0f6be35dc1e91d7e321e2b9cf9681c4603"
+      },
+      "builder_sha256": "9affd82f8880bca9513c1b63b61a8b8610830739ab51786bbcdb44a22327da51",
+      "native_variant_id": "enemy_1021_bslime@0/3e97bdbf48770468",
+      "source_talent": {
+        "path_id": "-3150361033290058478",
+        "class": "BslimeTalent_1",
+        "raw": {
+          "m_GameObject": {
+            "m_FileID": 0,
+            "m_PathID": -4957686894431144686
+          },
+          "m_Enabled": 1,
+          "m_Script": {
+            "m_FileID": 1,
+            "m_PathID": 2574888870568471093
+          },
+          "m_Name": "",
+          "_selector": {
+            "m_FileID": 0,
+            "m_PathID": 0
+          },
+          "_metadata": {
+            "namedAsAlias": "",
+            "blackboardPrefix": ""
+          },
+          "_interruptAbilityOnDetach": 0,
+          "_attachPassiveBuffsOnDummy": 1,
+          "_ignoreIfOwnerDead": 0,
+          "_forceAsDmgOrHealAbility": 0,
+          "_buffs": [
+            {
+              "attributes": {
+                "abnormalFlags": [],
+                "abnormalImmunes": [],
+                "abnormalAntis": [],
+                "abnormalCombos": [],
+                "abnormalComboImmunes": [],
+                "attributeModifiers": []
+              },
+              "buffKey": "bslime_t_boom",
+              "loadFromDB": 0,
+              "isDurableBuff": 0,
+              "isDamageMissable": 0,
+              "isSilenceable": 0,
+              "isStunnable": 0,
+              "isFreezable": 0,
+              "isLevitatable": 0,
+              "isGroundBoundable": 0,
+              "statusResistable": 2,
+              "templateKey": "projectile_on_killed",
+              "disableOverride": 1,
+              "overrideKey": "",
+              "overrideType": 0,
+              "maxStackCnt": 1,
+              "refreshRemainingTimeWhenStackMax": 0,
+              "clearAllStackCntWhenTimeUp": 0,
+              "maxValidStackCnt": -1,
+              "independentCharacterSource": 0,
+              "overrideEffectKey": "",
+              "overrideOnEventPriority": 0,
+              "onEventPriority": 0,
+              "audioSignal": "",
+              "lifeTimeType": 2,
+              "takeSnapshotWhenExtend": 0,
+              "durationKey": "",
+              "lifeTime": 0.0,
+              "triggerLifeType": 0,
+              "triggerCnt": 2,
+              "triggerInterval": -1.0,
+              "waitFirstTriggerInterval": 1,
+              "firstTriggerInterval": -1.0,
+              "priority": -1,
+              "priorityBBKeys": [],
+              "stripBlackboardParamsWithBuffKey": 0,
+              "blackboard": [
+                {
+                  "key": "projectile",
+                  "value": 0.0,
+                  "valueStr": "projectile_bslime"
+                }
+              ],
+              "enableInitDirectionFromSource": 0
+            }
+          ],
+          "_projectileActions": {
+            "SerializedState": "[{\"_sourceType\":\"SOURCE\",\"_targetType\":\"TARGET\",\"_damageType\":\"PHYSICAL\",\"_atkScaleVar\":\"atk_scale\",\"_defaultAtkScale\":1.0,\"_applyWay\":\"NONE\",\"_baseOnHostAtk\":false,\"_emitSourceOnCalculateDamage\":false,\"_attackType\":\"SPLASH\",\"_forceUseProjectileCachedAtk\":false,\"_ignoreForSp\":false,\"_ignoreMissFlag\":\"NONE\",\"_ignoreCancelReasonMask\":\"NONE\",\"_modifierKey\":\"\",\"_assignRealDamageToBB\":false,\"_assignFinalDamageToBB\":false,\"_skipModifierEvent\":false,\"_noSource\":false,\"_onlyUseSourceOnCalculateDamage\":false,\"_getCachedAtkFromBlackboard\":false,\"_cachedAtkKey\":\"atk\",\"_useSourceWhenUseCachedAtk\":false,\"_setSharedFlag\":false,\"_sharedFlagIndex\":\"IS_CONTINUOUS\",\"$type\":\"Torappu.Battle.Action.Nodes+AdvancedApplyDamage\"}]",
+            "SerializedObjectReferences": []
+          },
+          "_projectileBuffs": [],
+          "_ignoredProjectileEvents": []
+        }
+      },
+      "source_template": [
+        {
+          "$type": "Torappu.Battle.Action.Nodes+CheckAbnormalFlag, Assembly-CSharp",
+          "_abnormalFlag": "SILENCED",
+          "_targetType": "SOURCE",
+          "_isUnset": true,
+          "_abnormalFlagKey": ""
+        },
+        {
+          "$type": "Torappu.Battle.Action.Nodes+EmitProjectile, Assembly-CSharp",
+          "_mountPoint": "MUZZLE",
+          "_emitOnRootTile": false,
+          "_ev": "ON_HIT_OBJECT",
+          "_actions": [],
+          "_overwriteActions": false,
+          "_buffDataList": [],
+          "_overwriteBuffs": false,
+          "_sourceType": "BUFF_OWNER",
+          "_targetType": "TARGET",
+          "_targetPosFromBB": false,
+          "_projectileKey": "",
+          "_useSourceAsProjectileSource": false,
+          "_useProjectileAsTarget": false,
+          "_useTargetAsStartPoint": false,
+          "_useSourceProjectileAsStartPoint": false,
+          "_extraBlackboard": false,
+          "_overwriteBlackboard": false,
+          "_useTileAsTarget": false,
+          "_cacheAtkToActions": false,
+          "_useSnapshotAbilityWhenFromBuff": false,
+          "_useTargetRootTile": false,
+          "_useAbilityTileSelector": false,
+          "_abilityName": "",
+          "_useAbilityFromOther": false,
+          "_abilityOwner": "SOURCE"
+        }
+      ],
+      "source_action": {
+        "_sourceType": "SOURCE",
+        "_targetType": "TARGET",
+        "_damageType": "PHYSICAL",
+        "_atkScaleVar": "atk_scale",
+        "_defaultAtkScale": 1.0,
+        "_applyWay": "NONE",
+        "_baseOnHostAtk": false,
+        "_emitSourceOnCalculateDamage": false,
+        "_attackType": "SPLASH",
+        "_forceUseProjectileCachedAtk": false,
+        "_ignoreForSp": false,
+        "_ignoreMissFlag": "NONE",
+        "_ignoreCancelReasonMask": "NONE",
+        "_modifierKey": "",
+        "_assignRealDamageToBB": false,
+        "_assignFinalDamageToBB": false,
+        "_skipModifierEvent": false,
+        "_noSource": false,
+        "_onlyUseSourceOnCalculateDamage": false,
+        "_getCachedAtkFromBlackboard": false,
+        "_cachedAtkKey": "atk",
+        "_useSourceWhenUseCachedAtk": false,
+        "_setSharedFlag": false,
+        "_sharedFlagIndex": "IS_CONTINUOUS",
+        "$type": "Torappu.Battle.Action.Nodes+AdvancedApplyDamage"
+      },
+      "source_simple": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": 6142225795945806900
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": -8797129986015012478
+        },
+        "m_Name": "",
+        "_randomDelayToBorn": 0.0,
+        "_bodyTransform": {
+          "m_FileID": 0,
+          "m_PathID": -7335143143815365580
+        },
+        "_keepAlreadyHitTime": -1.0,
+        "_mainEffect": "",
+        "_clearMainEffectWhenReached": 0,
+        "_actionController": {
+          "_detachBuffsWhenTargetLeave": 0,
+          "_detachAllBuffsWhenStopped": 0,
+          "_onlyAddBuffsToTraceTarget": 0,
+          "_onlyAddBuffsToTargetOnce": 0,
+          "_dontAddBuffs": 0,
+          "_excludeAttachments": 0,
+          "_useSelfBlackboard": 0,
+          "_extraBuffsInTheEnd": [],
+          "_useExtraBuffsWhenStopHit": 0,
+          "_addExtraBuffsWhenReached": 0,
+          "_detachAllExtraBuffsWhenStopped": 0
+        },
+        "_fixDealHitTargetLeft": 0,
+        "_stopGraphicProjectileWhenClearMainEffect": 0,
+        "_overrideAudioSignal": "",
+        "_fireProjectileReachedEvent": 0,
+        "_eliminatableStatus": 0,
+        "_movementAdjustableStatus": 0,
+        "_managedBySource": 0,
+        "_projectileType": 0,
+        "_containsChildrenBehaviours": 0,
+        "_canHitSameTargetMultipleTimes": 0,
+        "_lifeTimeType": 1,
+        "_lifeTime": 1.0,
+        "_getLifeTimeFromBB": 0,
+        "_hitNumType": 2,
+        "_maxHitNum": 0,
+        "_getMaxHitNumFromBB": 0,
+        "_maxHitNumBBKey": "",
+        "_stopAfterMaxHit": 0,
+        "_stopAfterFirstHit": 0,
+        "_stopWhenSourceInvalid": 0,
+        "_alwaysHitTraceTargetInTheEnd": 0,
+        "_alwaysHitTraceTargetWhenReached": 0,
+        "_alwaysReachInTheEnd": 1,
+        "_limitedMaxHitNumToSourceBlockedCnt": 0,
+        "_allowZeroBlockCntLimit": 0
+      },
+      "source_hit": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": 6142225795945806900
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": -3494225671239136090
+        },
+        "m_Name": "",
+        "_targetOptions": {
+          "targetSide": 2,
+          "targetMotion": 1,
+          "targetCategory": 1,
+          "enableAdvancedOptions": 1,
+          "ignoreTargetFree": 0,
+          "ignoreAllyTargetFree": 0,
+          "ignoreHealFree": 0,
+          "ignoreMotionMode": 0,
+          "ignoreTargetSide": 0,
+          "excludeSomeAbnormalFlags": 0,
+          "containSomeAbnormalFlags": 0,
+          "excludeAbnormalFlag": 0,
+          "containAbnormalFlag": 0,
+          "purposeMask": 0,
+          "professionMask": 0,
+          "checkUnitType": 0,
+          "unitTypeMask": 0,
+          "onlyIgnoreSomeOfTargetFreeCase": 0,
+          "abnormalFlag": 0,
+          "abnormalCombo": 0
+        },
+        "_goThroughWall": 1,
+        "_onlyCheckHitWhenReachTarget": 1,
+        "_onlyCheckHitWhenStop": 0,
+        "_canFlyThroughTheDeathArea": 0,
+        "_exceptTraceTarget": 0,
+        "_overridePurposeMaskWithTargetOptions": 0,
+        "_rangeToLoad": {
+          "m_FileID": 0,
+          "m_PathID": 0
+        },
+        "_onlyTraceTarget": 0,
+        "_ignoreCamouflage": 1,
+        "_ignoreRangeScale": 0,
+        "_exceptSource": 0,
+        "_mergeTraceTargetMotion": 0,
+        "_markReachedOnlyWhenTargetEnter": 0,
+        "_exceptFlyCharacter": 0
+      },
+      "source_circle": {
+        "path_id": 7482950930513804340,
+        "gameobject_path_id": 6142225795945806900,
+        "gameobject_name": "projectile_bslime",
+        "unity_type": "CircleCollider2D",
+        "raw": {
+          "m_GameObject": {
+            "m_FileID": 0,
+            "m_PathID": 6142225795945806900
+          },
+          "m_Enabled": 1,
+          "m_Density": 1.0,
+          "m_Material": {
+            "m_FileID": 0,
+            "m_PathID": 0
+          },
+          "m_IsTrigger": false,
+          "m_UsedByEffector": false,
+          "m_UsedByComposite": false,
+          "m_Offset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "m_Radius": 1.25
+        }
+      },
+      "policies": {
+        "death_boundary": "TRUE death only; emission before retirement while exact source active, immutable anchor body point; source ATK at_hit",
+        "impact": "one-second expiry; point radius1.25 versus actual body overlap pending",
+        "source": "dead real enemy retained; no fake actor or no-source conversion",
+        "completion": "declared pending death projectile blocks victory, defeat may cancel",
+        "silence": "typed SILENCED12 at death boundary; actual game timing feedback pending"
+      },
+      "whole_stage_executed": false,
+      "actual_client_verified": false
+    }
+  },
+  "entities": [
+    {
+      "id": "unit/ch4/bslime/3e97bdbf48770468",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground"
+      ],
+      "metadata": {
+        "native_variant_id": "enemy_1021_bslime@0/3e97bdbf48770468"
+      },
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 2460,
+            "atk": 260,
+            "def": 0,
+            "mres": 0.0,
+            "attack_interval": 1.7,
+            "attack_speed_ratio": 1.0,
+            "move_speed": 1.0,
+            "mass_level": 0,
+            "block_cost": 1
+          }
+        },
+        "selection_state": {
+          "side": 1,
+          "motion": 1,
+          "category": 1,
+          "unit_type": 2
+        },
+        "resources": {
+          "hp": {
+            "initial": 2460,
+            "capacity": 2460,
+            "role": "health"
+          }
+        },
+        "spatial": {
+          "motion_mode": 0,
+          "steering": {
+            "rule": "rule/ch4/bslime_steering",
+            "parameters": {
+              "response_factor": 8.0,
+              "max_acceleration": 10.0,
+              "arrival_radius": 0.05
+            }
+          }
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle",
+          "leak_loss": 1,
+          "death_projectiles": [
+            {
+              "rule": "rule/ch4/bslime_death_gate",
+              "parameters": {},
+              "projectile_definition": "projectile/unit/ch4/bslime/3e97bdbf48770468",
+              "effect": {
+                "op": "area",
+                "center": "source",
+                "membership_rule": "rule/ch4/bslime_qualified_radius",
+                "filters": [
+                  {
+                    "tag": "player"
+                  }
+                ],
+                "effects": [
+                  {
+                    "op": "damage",
+                    "damage_type": "physical",
+                    "scale": 4.0,
+                    "read_mode": {
+                      "source_attributes": "at_hit",
+                      "target_attributes": "at_hit"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "abilities": [
+          "ability/unit/ch4/bslime/3e97bdbf48770468"
+        ],
+        "behavior": {
+          "machine": "behavior/unit/ch4/bslime/3e97bdbf48770468"
+        }
+      }
+    },
+    {
+      "id": "unit/hero",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "spatial": {},
+        "selection_state": {
+          "side": 0,
+          "motion": 1,
+          "category": 1
+        },
+        "attributes": {
+          "base": {
+            "max_hp": 5000,
+            "atk": 3000,
+            "def": 100,
+            "mres": 90
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 5000,
+            "capacity": 5000,
+            "role": "health"
+          }
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "abilities": [
+          "ability/kill"
+        ]
+      }
+    },
+    {
+      "id": "unit/fly",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "spatial": {},
+        "selection_state": {
+          "side": 0,
+          "motion": 2,
+          "category": 1
+        },
+        "attributes": {
+          "base": {
+            "max_hp": 5000,
+            "atk": 3000,
+            "def": 100,
+            "mres": 90
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 5000,
+            "capacity": 5000,
+            "role": "health"
+          }
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "abilities": [
+          "ability/kill"
+        ]
+      }
+    },
+    {
+      "id": "unit/device",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "spatial": {},
+        "selection_state": {
+          "side": 0,
+          "motion": 1,
+          "category": 4
+        },
+        "attributes": {
+          "base": {
+            "max_hp": 5000,
+            "atk": 3000,
+            "def": 100,
+            "mres": 90
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 5000,
+            "capacity": 5000,
+            "role": "health"
+          }
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "abilities": [
+          "ability/kill"
+        ]
+      }
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/unit/ch4/bslime/3e97bdbf48770468",
+      "kind": "ability",
+      "selector": "selector/unit/ch4/bslime/3e97bdbf48770468",
+      "activation": {
+        "mode": "automatic_attack",
+        "parameters": {
+          "auto_only": true
+        }
+      },
+      "timeline": [
+        {
+          "at_seconds": 0.4666666666666667,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/kill",
+      "kind": "ability",
+      "selector": "selector/kill",
+      "activation": {
+        "mode": "manual"
+      },
+      "timeline": [
+        {
+          "at_seconds": 0,
+          "effect": {
+            "op": "damage",
+            "damage_type": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/unit/ch4/bslime/3e97bdbf48770468",
+      "kind": "selector",
+      "region": {
+        "type": "all",
+        "blocked_only": true
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1
+    },
+    {
+      "id": "selector/kill",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "enemy"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "behaviors": [
+    {
+      "id": "behavior/unit/ch4/bslime/3e97bdbf48770468",
+      "kind": "behavior",
+      "initial": "active",
+      "states": {
+        "active": {}
+      },
+      "transitions": [],
+      "decision": {
+        "rule": "rule/ark_behavior_decision",
+        "default_mode": 0,
+        "profiles": [
+          {
+            "mode": 0,
+            "selectors": [
+              {
+                "key": "normal",
+                "selector": "selector/unit/ch4/bslime/3e97bdbf48770468"
+              }
+            ],
+            "cast_groups": [
+              {
+                "key": "normal",
+                "abilities": [
+                  "ability/unit/ch4/bslime/3e97bdbf48770468"
+                ]
+              }
+            ],
+            "parameters": {
+              "target_key": "normal",
+              "blocked_target": true,
+              "stop_on_target": false,
+              "stop_cast_groups": [
+                "normal"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/ch4/bslime_death_gate",
+      "kind": "rule",
+      "contract": "lifecycle.death_emission",
+      "implementation": {
+        "type": "expression",
+        "expression": "12 not in inputs.selection_state.abnormal_flags"
+      }
+    },
+    {
+      "id": "rule/ch4/bslime_steering",
+      "kind": "rule",
+      "contract": "movement.steering",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.movement.steering_velocity"
+      }
+    },
+    {
+      "id": "rule/ch4/bslime_fixed",
+      "kind": "rule",
+      "contract": "projectile.trajectory",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.projectile.trajectory"
+      }
+    },
+    {
+      "id": "rule/ch4/bslime_collision",
+      "kind": "rule",
+      "contract": "projectile.collision",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.projectile.collision"
+      }
+    },
+    {
+      "id": "rule/ch4/bslime_qualified_radius",
+      "kind": "rule",
+      "contract": "area.members",
+      "dependencies": [
+        "rule/ch4/bslime_qualification"
+      ],
+      "parameters": {
+        "radius": 1.25,
+        "eligibility": {
+          "rule": "rule/ch4/bslime_qualification",
+          "parameters": {
+            "source_configuration": {
+              "_targetSide": 2,
+              "_targetMotion": 1,
+              "_targetCategory": 1,
+              "_enableAdvancedOptions": 1,
+              "_ignoreTargetFree": 0,
+              "_ignoreAllyTargetFree": 0,
+              "_ignoreHealFree": 0,
+              "_ignoreMotionMode": 0,
+              "_ignoreTargetSide": 0,
+              "_excludeSomeAbnormalFlags": 0,
+              "_containSomeAbnormalFlags": 0,
+              "_excludeAbnormalFlag": 0,
+              "_containAbnormalFlag": 0,
+              "_purposeMask": 0,
+              "_professionMask": 0,
+              "_checkUnitType": 0,
+              "_unitTypeMask": 0,
+              "_onlyIgnoreSomeOfTargetFreeCase": 0,
+              "_abnormalFlag": 0,
+              "_abnormalCombo": 0,
+              "_needProfessionMask": 0,
+              "_forceIgnoreCamouflage": 1
+            },
+            "side_policy": "relative_ally_enemy",
+            "neutral_policy": "reject",
+            "defaults": {
+              "side": 0,
+              "motion": 1,
+              "category": 1,
+              "profession": 0,
+              "unit_type": 1,
+              "abnormal_flags": [],
+              "abnormal_combos": [],
+              "target_free_flags": [],
+              "target_free_combos": [],
+              "target_free": false,
+              "ally_target_free": false,
+              "heal_free": false,
+              "camouflage": false,
+              "can_select_camouflage": false
+            }
+          }
+        }
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "model.area.qualified_radius"
+      }
+    },
+    {
+      "id": "rule/ch4/bslime_qualification",
+      "kind": "rule",
+      "contract": "targeting.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "model.targeting.eligibility"
+      }
+    }
+  ],
+  "projectiles": [
+    {
+      "id": "projectile/unit/ch4/bslime/3e97bdbf48770468",
+      "kind": "projectile",
+      "motion": {
+        "rule": "rule/ch4/bslime_fixed",
+        "parameters": {
+          "mode": "fixed"
+        }
+      },
+      "collision": {
+        "rule": "rule/ch4/bslime_collision",
+        "parameters": {
+          "enabled": false,
+          "radius": 0
+        }
+      },
+      "lifetime_seconds": 1.0,
+      "max_hits": null,
+      "can_hit_same_target": false,
+      "stop_after_max": false,
+      "stop_after_first": false,
+      "attach_at_launch": true,
+      "completion_blocking": true,
+      "lifecycle": {
+        "source_invalid": "retain",
+        "source_hidden": "retain",
+        "target_invalid": "retain_position",
+        "target_hidden": "retain_position",
+        "finish_on_reach": false,
+        "hit_on_reach": false,
+        "force_reach_on_expire": true,
+        "hit_on_expire": true
+      },
+      "on_invalid": []
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/death/projectile",
+    "ruleset": "ruleset/ark_standard",
+    "objectives": {},
+    "resources": {
+      "life": {
+        "initial": 99999,
+        "capacity": 99999
+      }
+    },
+    "map": {
+      "rows": 3,
+      "cols": 5
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/ch4/bslime/3e97bdbf48770468",
+        "instanceAlias": "slime",
+        "position": {
+          "row": 1,
+          "col": 1
+        }
+      },
+      {
+        "definition": "unit/hero",
+        "instanceAlias": "hero",
+        "position": {
+          "row": 1,
+          "col": 2
+        }
+      },
+      {
+        "definition": "unit/fly",
+        "instanceAlias": "fly",
+        "position": {
+          "row": 1,
+          "col": 2
+        }
+      },
+      {
+        "definition": "unit/device",
+        "instanceAlias": "device",
+        "position": {
+          "row": 1,
+          "col": 2
+        }
+      }
+    ]
+  }
+}

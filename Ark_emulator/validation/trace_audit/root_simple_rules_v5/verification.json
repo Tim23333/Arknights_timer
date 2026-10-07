@@ -1,0 +1,95 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "case": "quantization",
+      "seconds": 1.0,
+      "expected": 30,
+      "actual": 30
+    },
+    {
+      "case": "quantization",
+      "seconds": 0.3333333333333333,
+      "expected": 10,
+      "actual": 10
+    },
+    {
+      "case": "quantization",
+      "seconds": 0.04,
+      "expected": 2,
+      "actual": 2
+    },
+    {
+      "case": "quantization",
+      "seconds": 0.0333333333333333,
+      "expected": 1,
+      "actual": 1
+    },
+    {
+      "case": "quantization",
+      "seconds": 0.033333333334,
+      "expected": 2,
+      "actual": 2
+    },
+    {
+      "case": "windup configured0.4",
+      "passed": true
+    },
+    {
+      "case": "refund",
+      "actual": 5.0,
+      "expected": 5.0
+    },
+    {
+      "case": "refund",
+      "actual": 7.0,
+      "expected": 7.0
+    },
+    {
+      "case": "actual_input_changed_same_output",
+      "rule": "rule/ark_time_quantize",
+      "rejected": true,
+      "first_difference": {
+        "event": 229,
+        "time": 0,
+        "field": "trace.raw",
+        "reason": "independent source-formula mismatch",
+        "expected": 30,
+        "actual": 0
+      }
+    },
+    {
+      "case": "actual_input_changed_same_output",
+      "rule": "rule/ark_ability_windup",
+      "rejected": true,
+      "first_difference": {
+        "event": 31615,
+        "time": 150,
+        "field": "trace.raw",
+        "reason": "independent source-formula mismatch",
+        "expected": 1.1669999957084656,
+        "actual": 0.16699999570846558
+      }
+    },
+    {
+      "case": "actual_input_changed_same_output",
+      "rule": "rule/ark_deploy_refund",
+      "rejected": true,
+      "first_difference": {
+        "event": 77960,
+        "time": 360,
+        "field": "trace.raw",
+        "reason": "independent source-formula mismatch",
+        "expected": 0.0,
+        "actual": 5.0
+      }
+    }
+  ],
+  "pin_sha": "0c89e3cee6e2b432f2aa799fefd93dea92492fa645c93fc0d30c31d46b5e1030",
+  "oracle_sources": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\trace_audit\\stream_oracle_v5.py": "1b9bcdb3a8001d7c97ad4df3e174b515d5bbc66966d069b445bdf3e8a962875d",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\trace_audit\\stream_oracle_v5_math.py": "0a0b40afee7b45a9fbc09e39e6189b9f4ff697d5ee890df38e211a331a6e314c",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\trace_audit\\stream_oracle_v5_identity.py": "b1adf69067706250b91b899fb68c1a3b6bb636d39c9537c5ee20f3200147f61b"
+  },
+  "scope": "Independent extra literals and actual input mutations, source formula subset only; not full intermediate/client approval"
+}

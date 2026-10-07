@@ -1,0 +1,83 @@
+{
+  "schema": "ark-sim/chapter02-rune-policy-audit/v1",
+  "native_level_sha256": "273821d71589c227e9fd101ca62c1989fff27a0d18ee46ad7537a2e02ceabdcf",
+  "enums": {
+    "NONE": 0,
+    "NORMAL": 1,
+    "FOUR_STAR": 2,
+    "EASY": 4,
+    "SIX_STAR": 8,
+    "ALL": 15
+  },
+  "runes": [
+    {
+      "index": 0,
+      "raw": {
+        "difficultyMask": "FOUR_STAR",
+        "key": "gbuff_lifepoint",
+        "professionMask": 1023,
+        "buildableMask": "ALL",
+        "blackboard": [
+          {
+            "key": "value",
+            "value": 1.0,
+            "valueStr": null
+          }
+        ]
+      },
+      "normal_policy_active": false,
+      "policy": "explicit difficulty mask bit1; raw NONE0 and FOUR_STAR2 retained inactive in standard model",
+      "feedback_pending": "native CheckValidForDifficulty body not captured; unknown/active rune never silently omitted"
+    },
+    {
+      "index": 1,
+      "raw": {
+        "difficultyMask": "FOUR_STAR",
+        "key": "ebuff_attribute",
+        "professionMask": 1023,
+        "buildableMask": "ALL",
+        "blackboard": [
+          {
+            "key": "atk",
+            "value": 1.2,
+            "valueStr": null
+          },
+          {
+            "key": "def",
+            "value": 1.1,
+            "valueStr": null
+          },
+          {
+            "key": "max_hp",
+            "value": 2.0,
+            "valueStr": null
+          }
+        ]
+      },
+      "normal_policy_active": false,
+      "policy": "explicit difficulty mask bit1; raw NONE0 and FOUR_STAR2 retained inactive in standard model",
+      "feedback_pending": "native CheckValidForDifficulty body not captured; unknown/active rune never silently omitted"
+    },
+    {
+      "index": 2,
+      "raw": {
+        "difficultyMask": "NONE",
+        "key": "cbuff_char_cost",
+        "professionMask": 66,
+        "buildableMask": "ALL",
+        "blackboard": [
+          {
+            "key": "scale",
+            "value": 2.0,
+            "valueStr": null
+          }
+        ]
+      },
+      "normal_policy_active": false,
+      "policy": "explicit difficulty mask bit1; raw NONE0 and FOUR_STAR2 retained inactive in standard model",
+      "feedback_pending": "native CheckValidForDifficulty body not captured; unknown/active rune never silently omitted"
+    }
+  ],
+  "source_enum": "Ark_data/Il2CppDumper_current/dump.cs LevelData.Difficulty and LegacyInLevelRuneData.CheckValidForDifficulty",
+  "status": "reference model policy/source raw preservation; not client proof"
+}

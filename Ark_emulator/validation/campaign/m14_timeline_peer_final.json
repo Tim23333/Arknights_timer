@@ -1,0 +1,2312 @@
+{
+  "schema": "ark-sim/bounded-timeline-peer-review/v1",
+  "passed": true,
+  "implementation_sha256": "bd60c068f0af7694e8e62c16868f4d310b6bb92681f8ebbf5d97814fba28ac11",
+  "input_package_sha256": "83bfa1829958f80a4f1da95740466326db3f5a8c7143737d728887b3670116d2",
+  "runtime_module": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m12_projection_candidate\\ark_sim\\__init__.py",
+  "source_at_start": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m14_peer\\verify.py": "024c1e3fbbf93916da4b687d40a332e4b31d28ec353833c7d166d87f73f60ddb",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\mainline_models\\level_main_00-10.m14_timeline.json": "83bfa1829958f80a4f1da95740466326db3f5a8c7143737d728887b3670116d2",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\native_reference\\level_main_00-10.json": "f9dd4ac486b4dccfc4a152b86fbe698355b626df6b90a88992c85e6bb307cfe6",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\mainline_models\\level_main_00-10.m12_projection.json": "0fbba3f0548d2efaef97d7c1be98a620e65b6408755bfddbd49a132ef72fddf4",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\controls.00_10.reference.json": "a4b30e9ada6fef1a1e84a9f544fdb91af1cfb768d8be0a84a7be9ecbc733ce10"
+  },
+  "source_at_completion": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m14_peer\\verify.py": "024c1e3fbbf93916da4b687d40a332e4b31d28ec353833c7d166d87f73f60ddb",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\mainline_models\\level_main_00-10.m14_timeline.json": "83bfa1829958f80a4f1da95740466326db3f5a8c7143737d728887b3670116d2",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\native_reference\\level_main_00-10.json": "f9dd4ac486b4dccfc4a152b86fbe698355b626df6b90a88992c85e6bb307cfe6",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\mainline_models\\level_main_00-10.m12_projection.json": "0fbba3f0548d2efaef97d7c1be98a620e65b6408755bfddbd49a132ef72fddf4",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\controls.00_10.reference.json": "a4b30e9ada6fef1a1e84a9f544fdb91af1cfb768d8be0a84a7be9ecbc733ce10"
+  },
+  "identity_stable": true,
+  "cases": [
+    {
+      "case": "raw_source_projection",
+      "result": "passed",
+      "actual": {
+        "population": {
+          "unit/enemy_1000_gopro": 14,
+          "unit/enemy_1027_mob": 5,
+          "unit/enemy_1030_wteeth": 2,
+          "unit/enemy_1007_slime": 12,
+          "unit/enemy_1005_yokai": 2
+        },
+        "route_indices": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18
+        ],
+        "controls": [
+          [
+            0,
+            0,
+            0,
+            "STORY"
+          ],
+          [
+            0,
+            3,
+            3,
+            "DISPLAY_ENEMY_INFO"
+          ]
+        ],
+        "zero_lifetime_profile_not_native_callback": true
+      }
+    },
+    {
+      "case": "real_kill_wave_gate",
+      "result": "passed",
+      "actual": {
+        "expected": {
+          "real_skill_kills_at12_releases_after_effect_phase13": true,
+          "second_born28": true,
+          "no_shadow_actors": true,
+          "UI_lifetime0": false
+        },
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "program_fingerprint": "397f1918bddd3fa89b5085ee635289eb6046245edcdd5c74c1f31da8cd0749a8",
+        "runtime_fingerprint": "f030568116172ceee58cf2e3fba137cf07d953e0d204a3b810fe78cbf53cbb87",
+        "commands": {
+          "schema": "ark-sim/replay/v2",
+          "program_fingerprint": "397f1918bddd3fa89b5085ee635289eb6046245edcdd5c74c1f31da8cd0749a8",
+          "runtime_fingerprint": "f030568116172ceee58cf2e3fba137cf07d953e0d204a3b810fe78cbf53cbb87",
+          "seed": 1401,
+          "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+          "until": 31,
+          "commands": [
+            {
+              "order": 1,
+              "submitted_at": 12,
+              "at": 12,
+              "action": {
+                "action": "skill",
+                "source": "killer",
+                "ability": "ability/peer_kill"
+              }
+            }
+          ]
+        },
+        "fixture_initial_state": {
+          "id": "scenario/m14_peer",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 3,
+            "cols": 4
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/peer_killer",
+              "instanceAlias": "killer",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ],
+          "timeline": {
+            "policy": "managed_clear",
+            "negative_timeout_policy": "wait_for_clear",
+            "waves": [
+              {
+                "pre_delay_seconds": 0.1,
+                "post_delay_seconds": 0.2,
+                "max_wait_seconds": -1,
+                "fragments": [
+                  {
+                    "pre_delay_seconds": 0.1,
+                    "actions": [
+                      {
+                        "kind": "spawn",
+                        "managed": true,
+                        "blocks_wave": true,
+                        "blocks_fragment": false,
+                        "spawn": {
+                          "definition": "unit/peer_enemy",
+                          "instanceAlias": "first",
+                          "position": {
+                            "row": 1,
+                            "col": 1
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "actions": [
+                      {
+                        "kind": "effects",
+                        "effects": [
+                          {
+                            "op": "emit",
+                            "target": "battle",
+                            "event": "peer.same_fragment_after_member"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "pre_delay_seconds": 0.1,
+                "fragments": [
+                  {
+                    "pre_delay_seconds": 0.1,
+                    "actions": [
+                      {
+                        "kind": "spawn",
+                        "managed": true,
+                        "blocks_wave": true,
+                        "blocks_fragment": false,
+                        "spawn": {
+                          "definition": "unit/peer_enemy",
+                          "instanceAlias": "second",
+                          "position": {
+                            "row": 1,
+                            "col": 1
+                          }
+                        },
+                        "delay_seconds": 0.1
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "kind": "scenario"
+        },
+        "state": {
+          "finished": false,
+          "result": "running",
+          "pending_waves": 0,
+          "kills": 1,
+          "leaks": 0,
+          "damage_dealt": 10,
+          "deployments": {},
+          "command_results": {},
+          "timeline": {
+            "phase": "wave_gate",
+            "wave_index": 1,
+            "fragment_index": 1,
+            "members": {
+              "4": {
+                "wave": 1,
+                "fragment": 0,
+                "blocks_wave": true,
+                "blocks_fragment": false
+              }
+            },
+            "remaining_actions": 0,
+            "wake_token": 10,
+            "wake_at": null,
+            "done": false,
+            "play_start": 0,
+            "wave_start": 19,
+            "fragment_start": 25,
+            "gate_start": 28
+          }
+        },
+        "events": [
+          {
+            "id": 1,
+            "type": "entity.created",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "definition": "unit/peer_killer"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 19,
+            "type": "entity.created",
+            "payload": {
+              "source": 3,
+              "target": 3,
+              "definition": "unit/peer_enemy"
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 20,
+            "type": "timeline.action",
+            "payload": {
+              "wave": 0,
+              "fragment": 0,
+              "action": 0,
+              "repeat": 0,
+              "action_start": 6,
+              "origins": {
+                "play_start": 0,
+                "wave_start": 0,
+                "fragment_start": 6,
+                "action_start": 6
+              },
+              "kind": "spawn"
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 24,
+            "type": "peer.same_fragment_after_member",
+            "payload": {
+              "source": 1,
+              "target": 1
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 25,
+            "type": "timeline.action",
+            "payload": {
+              "wave": 0,
+              "fragment": 1,
+              "action": 0,
+              "repeat": 0,
+              "action_start": 6,
+              "origins": {
+                "play_start": 0,
+                "wave_start": 0,
+                "fragment_start": 6,
+                "action_start": 6
+              },
+              "kind": "effects"
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 41,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "killer",
+                "ability": "ability/peer_kill"
+              },
+              "result": "cast/2/1"
+            },
+            "time": 12,
+            "cause": null
+          },
+          {
+            "id": 54,
+            "type": "entity.died",
+            "payload": {
+              "source": 3,
+              "target": 3
+            },
+            "time": 12,
+            "cause": null
+          },
+          {
+            "id": 55,
+            "type": "timeline.member_released",
+            "payload": {
+              "target": 3,
+              "reason": "dead",
+              "wave": 0,
+              "fragment": 0,
+              "blocks_wave": true,
+              "blocks_fragment": false
+            },
+            "time": 12,
+            "cause": null
+          },
+          {
+            "id": 56,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "amount": 10,
+              "ability": "ability/peer_kill",
+              "resource": "hp"
+            },
+            "time": 12,
+            "cause": null
+          },
+          {
+            "id": 57,
+            "type": "combat.kill",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "ability": "ability/peer_kill",
+              "cast": "cast/2/1",
+              "target_tags": [
+                "enemy",
+                "ground"
+              ]
+            },
+            "time": 12,
+            "cause": null
+          },
+          {
+            "id": 59,
+            "type": "timeline.wave_completed",
+            "payload": {
+              "wave": 0,
+              "remaining_managed": 0,
+              "policy": "managed_clear"
+            },
+            "time": 13,
+            "cause": null
+          },
+          {
+            "id": 78,
+            "type": "entity.created",
+            "payload": {
+              "source": 4,
+              "target": 4,
+              "definition": "unit/peer_enemy"
+            },
+            "time": 28,
+            "cause": null
+          },
+          {
+            "id": 79,
+            "type": "timeline.action",
+            "payload": {
+              "wave": 1,
+              "fragment": 0,
+              "action": 0,
+              "repeat": 0,
+              "action_start": 28,
+              "origins": {
+                "play_start": 0,
+                "wave_start": 19,
+                "fragment_start": 25,
+                "action_start": 28
+              },
+              "kind": "spawn"
+            },
+            "time": 28,
+            "cause": null
+          }
+        ]
+      }
+    },
+    {
+      "case": "real_kill_fragment_gate",
+      "result": "passed",
+      "actual": {
+        "expected": {
+          "real_skill_kills_at12_releases_after_effect_phase13": true,
+          "second_born28": true,
+          "no_shadow_actors": true,
+          "UI_lifetime0": false
+        },
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "program_fingerprint": "5eedd0bd3f07ebae5e8eebca69d4f1a62436901264c761745a438e0106a970df",
+        "runtime_fingerprint": "f030568116172ceee58cf2e3fba137cf07d953e0d204a3b810fe78cbf53cbb87",
+        "commands": {
+          "schema": "ark-sim/replay/v2",
+          "program_fingerprint": "5eedd0bd3f07ebae5e8eebca69d4f1a62436901264c761745a438e0106a970df",
+          "runtime_fingerprint": "f030568116172ceee58cf2e3fba137cf07d953e0d204a3b810fe78cbf53cbb87",
+          "seed": 1401,
+          "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+          "until": 31,
+          "commands": [
+            {
+              "order": 1,
+              "submitted_at": 12,
+              "at": 12,
+              "action": {
+                "action": "skill",
+                "source": "killer",
+                "ability": "ability/peer_kill"
+              }
+            }
+          ]
+        },
+        "fixture_initial_state": {
+          "id": "scenario/m14_peer",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 3,
+            "cols": 4
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/peer_killer",
+              "instanceAlias": "killer",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ],
+          "timeline": {
+            "policy": "managed_clear",
+            "negative_timeout_policy": "wait_for_clear",
+            "waves": [
+              {
+                "pre_delay_seconds": 0.1,
+                "post_delay_seconds": 0.2,
+                "max_wait_seconds": -1,
+                "fragments": [
+                  {
+                    "pre_delay_seconds": 0.1,
+                    "actions": [
+                      {
+                        "kind": "spawn",
+                        "managed": true,
+                        "blocks_wave": true,
+                        "blocks_fragment": true,
+                        "spawn": {
+                          "definition": "unit/peer_enemy",
+                          "instanceAlias": "first",
+                          "position": {
+                            "row": 1,
+                            "col": 1
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "actions": [
+                      {
+                        "kind": "effects",
+                        "effects": [
+                          {
+                            "op": "emit",
+                            "target": "battle",
+                            "event": "peer.same_fragment_after_member"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "pre_delay_seconds": 0.1,
+                "fragments": [
+                  {
+                    "pre_delay_seconds": 0.1,
+                    "actions": [
+                      {
+                        "kind": "spawn",
+                        "managed": true,
+                        "blocks_wave": true,
+                        "blocks_fragment": false,
+                        "spawn": {
+                          "definition": "unit/peer_enemy",
+                          "instanceAlias": "second",
+                          "position": {
+                            "row": 1,
+                            "col": 1
+                          }
+                        },
+                        "delay_seconds": 0.1
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "kind": "scenario"
+        },
+        "state": {
+          "finished": false,
+          "result": "running",
+          "pending_waves": 0,
+          "kills": 1,
+          "leaks": 0,
+          "damage_dealt": 10,
+          "deployments": {},
+          "command_results": {},
+          "timeline": {
+            "phase": "wave_gate",
+            "wave_index": 1,
+            "fragment_index": 1,
+            "members": {
+              "4": {
+                "wave": 1,
+                "fragment": 0,
+                "blocks_wave": true,
+                "blocks_fragment": false
+              }
+            },
+            "remaining_actions": 0,
+            "wake_token": 10,
+            "wake_at": null,
+            "done": false,
+            "play_start": 0,
+            "wave_start": 19,
+            "fragment_start": 25,
+            "gate_start": 28
+          }
+        },
+        "events": [
+          {
+            "id": 1,
+            "type": "entity.created",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "definition": "unit/peer_killer"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 19,
+            "type": "entity.created",
+            "payload": {
+              "source": 3,
+              "target": 3,
+              "definition": "unit/peer_enemy"
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 20,
+            "type": "timeline.action",
+            "payload": {
+              "wave": 0,
+              "fragment": 0,
+              "action": 0,
+              "repeat": 0,
+              "action_start": 6,
+              "origins": {
+                "play_start": 0,
+                "wave_start": 0,
+                "fragment_start": 6,
+                "action_start": 6
+              },
+              "kind": "spawn"
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 36,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "killer",
+                "ability": "ability/peer_kill"
+              },
+              "result": "cast/2/1"
+            },
+            "time": 12,
+            "cause": null
+          },
+          {
+            "id": 49,
+            "type": "entity.died",
+            "payload": {
+              "source": 3,
+              "target": 3
+            },
+            "time": 12,
+            "cause": null
+          },
+          {
+            "id": 50,
+            "type": "timeline.member_released",
+            "payload": {
+              "target": 3,
+              "reason": "dead",
+              "wave": 0,
+              "fragment": 0,
+              "blocks_wave": true,
+              "blocks_fragment": true
+            },
+            "time": 12,
+            "cause": null
+          },
+          {
+            "id": 51,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "amount": 10,
+              "ability": "ability/peer_kill",
+              "resource": "hp"
+            },
+            "time": 12,
+            "cause": null
+          },
+          {
+            "id": 52,
+            "type": "combat.kill",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "ability": "ability/peer_kill",
+              "cast": "cast/2/1",
+              "target_tags": [
+                "enemy",
+                "ground"
+              ]
+            },
+            "time": 12,
+            "cause": null
+          },
+          {
+            "id": 57,
+            "type": "peer.same_fragment_after_member",
+            "payload": {
+              "source": 1,
+              "target": 1
+            },
+            "time": 13,
+            "cause": null
+          },
+          {
+            "id": 58,
+            "type": "timeline.action",
+            "payload": {
+              "wave": 0,
+              "fragment": 1,
+              "action": 0,
+              "repeat": 0,
+              "action_start": 13,
+              "origins": {
+                "play_start": 0,
+                "wave_start": 0,
+                "fragment_start": 13,
+                "action_start": 13
+              },
+              "kind": "effects"
+            },
+            "time": 13,
+            "cause": null
+          },
+          {
+            "id": 59,
+            "type": "timeline.wave_completed",
+            "payload": {
+              "wave": 0,
+              "remaining_managed": 0,
+              "policy": "managed_clear"
+            },
+            "time": 13,
+            "cause": null
+          },
+          {
+            "id": 78,
+            "type": "entity.created",
+            "payload": {
+              "source": 4,
+              "target": 4,
+              "definition": "unit/peer_enemy"
+            },
+            "time": 28,
+            "cause": null
+          },
+          {
+            "id": 79,
+            "type": "timeline.action",
+            "payload": {
+              "wave": 1,
+              "fragment": 0,
+              "action": 0,
+              "repeat": 0,
+              "action_start": 28,
+              "origins": {
+                "play_start": 0,
+                "wave_start": 19,
+                "fragment_start": 25,
+                "action_start": 28
+              },
+              "kind": "spawn"
+            },
+            "time": 28,
+            "cause": null
+          }
+        ]
+      }
+    },
+    {
+      "case": "UI_same_tick_gate_equivalence",
+      "result": "passed",
+      "actual": {
+        "expected": {
+          "real_skill_kills_at12_releases_after_effect_phase13": true,
+          "second_born28": true,
+          "no_shadow_actors": true,
+          "UI_lifetime0": true
+        },
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "program_fingerprint": "441665be363fdeec76bbcb30fd8f62c4bb62a38b8d7640736010472f255618c0",
+        "runtime_fingerprint": "f030568116172ceee58cf2e3fba137cf07d953e0d204a3b810fe78cbf53cbb87",
+        "commands": {
+          "schema": "ark-sim/replay/v2",
+          "program_fingerprint": "441665be363fdeec76bbcb30fd8f62c4bb62a38b8d7640736010472f255618c0",
+          "runtime_fingerprint": "f030568116172ceee58cf2e3fba137cf07d953e0d204a3b810fe78cbf53cbb87",
+          "seed": 1401,
+          "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+          "until": 31,
+          "commands": [
+            {
+              "order": 1,
+              "submitted_at": 12,
+              "at": 12,
+              "action": {
+                "action": "skill",
+                "source": "killer",
+                "ability": "ability/peer_kill"
+              }
+            }
+          ]
+        },
+        "fixture_initial_state": {
+          "id": "scenario/m14_peer",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 3,
+            "cols": 4
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/peer_killer",
+              "instanceAlias": "killer",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ],
+          "timeline": {
+            "policy": "managed_clear",
+            "negative_timeout_policy": "wait_for_clear",
+            "waves": [
+              {
+                "pre_delay_seconds": 0.1,
+                "post_delay_seconds": 0.2,
+                "max_wait_seconds": -1,
+                "fragments": [
+                  {
+                    "pre_delay_seconds": 0.1,
+                    "actions": [
+                      {
+                        "kind": "effects",
+                        "count": 1,
+                        "delay_seconds": 0.0,
+                        "interval_seconds": 1.0,
+                        "effects": [
+                          {
+                            "op": "emit",
+                            "target": "battle",
+                            "event": "m14.ui.started",
+                            "payload": {
+                              "native_action": {
+                                "actionType": "STORY",
+                                "managedByScheduler": true,
+                                "key": "obt/tutorial/level/main_00-10",
+                                "count": 1,
+                                "preDelay": 0.0,
+                                "interval": 1.0,
+                                "routeIndex": 0,
+                                "blockFragment": false,
+                                "autoPreviewRoute": false,
+                                "autoDisplayEnemyInfo": false,
+                                "isUnharmfulAndAlwaysCountAsKilled": false,
+                                "hiddenGroup": null,
+                                "randomSpawnGroupKey": null,
+                                "randomSpawnGroupPackKey": null,
+                                "randomType": "ALWAYS",
+                                "refreshType": "ALWAYS",
+                                "weight": 0,
+                                "dontBlockWave": false,
+                                "forceBlockWaveInBranch": false
+                              },
+                              "native_wave": 0,
+                              "native_fragment": 0,
+                              "native_action_index": 0,
+                              "action_start_source": "timeline.action.origins.action_start",
+                              "profile": "zero_lifetime_headless_UI_v1"
+                            }
+                          },
+                          {
+                            "op": "input_lock",
+                            "target": "battle",
+                            "parameters": {
+                              "key": "obt/tutorial/level/main_00-10",
+                              "enabled": true
+                            }
+                          },
+                          {
+                            "op": "emit",
+                            "target": "battle",
+                            "event": "m14.ui.command_observed",
+                            "payload": {
+                              "native_action": {
+                                "actionType": "STORY",
+                                "managedByScheduler": true,
+                                "key": "obt/tutorial/level/main_00-10",
+                                "count": 1,
+                                "preDelay": 0.0,
+                                "interval": 1.0,
+                                "routeIndex": 0,
+                                "blockFragment": false,
+                                "autoPreviewRoute": false,
+                                "autoDisplayEnemyInfo": false,
+                                "isUnharmfulAndAlwaysCountAsKilled": false,
+                                "hiddenGroup": null,
+                                "randomSpawnGroupKey": null,
+                                "randomSpawnGroupPackKey": null,
+                                "randomType": "ALWAYS",
+                                "refreshType": "ALWAYS",
+                                "weight": 0,
+                                "dontBlockWave": false,
+                                "forceBlockWaveInBranch": false
+                              },
+                              "native_wave": 0,
+                              "native_fragment": 0,
+                              "native_action_index": 0,
+                              "action_start_source": "timeline.action.origins.action_start",
+                              "profile": "zero_lifetime_headless_UI_v1",
+                              "command": {
+                                "command": "HEADER",
+                                "native_parameters": "is_skippable=true, is_autoable=false",
+                                "text": "\u4e3b\u7ebf00-10\u5173\u5361\u5185\u5267\u60c5"
+                              },
+                              "UI_text_is_metadata": true
+                            }
+                          },
+                          {
+                            "op": "emit",
+                            "target": "battle",
+                            "event": "m14.ui.command_observed",
+                            "payload": {
+                              "native_action": {
+                                "actionType": "STORY",
+                                "managedByScheduler": true,
+                                "key": "obt/tutorial/level/main_00-10",
+                                "count": 1,
+                                "preDelay": 0.0,
+                                "interval": 1.0,
+                                "routeIndex": 0,
+                                "blockFragment": false,
+                                "autoPreviewRoute": false,
+                                "autoDisplayEnemyInfo": false,
+                                "isUnharmfulAndAlwaysCountAsKilled": false,
+                                "hiddenGroup": null,
+                                "randomSpawnGroupKey": null,
+                                "randomSpawnGroupPackKey": null,
+                                "randomType": "ALWAYS",
+                                "refreshType": "ALWAYS",
+                                "weight": 0,
+                                "dontBlockWave": false,
+                                "forceBlockWaveInBranch": false
+                              },
+                              "native_wave": 0,
+                              "native_fragment": 0,
+                              "native_action_index": 0,
+                              "action_start_source": "timeline.action.origins.action_start",
+                              "profile": "zero_lifetime_headless_UI_v1",
+                              "command": {
+                                "command": "PopupDialog",
+                                "native_parameters": "dialogHead=\"$avatar_amiya\"",
+                                "text": "\u654c\u65b9\u5355\u4f4d\u201c\u62fe\u8352\u8005\u201d\u7684\u653b\u51fb\u529b\u5f88\u5f3a......\u6211\u4eec\u9700\u8981\u5c0f\u5fc3\u5e94\u5bf9\u3002"
+                              },
+                              "UI_text_is_metadata": true
+                            }
+                          },
+                          {
+                            "op": "emit",
+                            "target": "battle",
+                            "event": "m14.ui.command_observed",
+                            "payload": {
+                              "native_action": {
+                                "actionType": "STORY",
+                                "managedByScheduler": true,
+                                "key": "obt/tutorial/level/main_00-10",
+                                "count": 1,
+                                "preDelay": 0.0,
+                                "interval": 1.0,
+                                "routeIndex": 0,
+                                "blockFragment": false,
+                                "autoPreviewRoute": false,
+                                "autoDisplayEnemyInfo": false,
+                                "isUnharmfulAndAlwaysCountAsKilled": false,
+                                "hiddenGroup": null,
+                                "randomSpawnGroupKey": null,
+                                "randomSpawnGroupPackKey": null,
+                                "randomType": "ALWAYS",
+                                "refreshType": "ALWAYS",
+                                "weight": 0,
+                                "dontBlockWave": false,
+                                "forceBlockWaveInBranch": false
+                              },
+                              "native_wave": 0,
+                              "native_fragment": 0,
+                              "native_action_index": 0,
+                              "action_start_source": "timeline.action.origins.action_start",
+                              "profile": "zero_lifetime_headless_UI_v1",
+                              "command": {
+                                "command": "PopupDialog",
+                                "native_parameters": "dialogHead=\"$avatar_doberm\"",
+                                "text": "\u535a\u58eb\uff0c\u5efa\u8bae\u90e8\u7f72\u91cd\u88c5\u5e72\u5458\u9632\u5b88\u3002"
+                              },
+                              "UI_text_is_metadata": true
+                            }
+                          },
+                          {
+                            "op": "emit",
+                            "target": "battle",
+                            "event": "m14.ui.command_observed",
+                            "payload": {
+                              "native_action": {
+                                "actionType": "STORY",
+                                "managedByScheduler": true,
+                                "key": "obt/tutorial/level/main_00-10",
+                                "count": 1,
+                                "preDelay": 0.0,
+                                "interval": 1.0,
+                                "routeIndex": 0,
+                                "blockFragment": false,
+                                "autoPreviewRoute": false,
+                                "autoDisplayEnemyInfo": false,
+                                "isUnharmfulAndAlwaysCountAsKilled": false,
+                                "hiddenGroup": null,
+                                "randomSpawnGroupKey": null,
+                                "randomSpawnGroupPackKey": null,
+                                "randomType": "ALWAYS",
+                                "refreshType": "ALWAYS",
+                                "weight": 0,
+                                "dontBlockWave": false,
+                                "forceBlockWaveInBranch": false
+                              },
+                              "native_wave": 0,
+                              "native_fragment": 0,
+                              "native_action_index": 0,
+                              "action_start_source": "timeline.action.origins.action_start",
+                              "profile": "zero_lifetime_headless_UI_v1",
+                              "command": {
+                                "command": "PopupDialog",
+                                "native_parameters": "dialogHead=\"$avatar_ace\"",
+                                "text": "\u53ea\u6709\u51fb\u6e83\u4ed6\uff0c\u6211\u4eec\u624d\u80fd\u6709\u66f4\u5927\u7684\u53d1\u6325\u7a7a\u95f4\uff01"
+                              },
+                              "UI_text_is_metadata": true
+                            }
+                          },
+                          {
+                            "op": "emit",
+                            "target": "battle",
+                            "event": "m14.ui.command_observed",
+                            "payload": {
+                              "native_action": {
+                                "actionType": "STORY",
+                                "managedByScheduler": true,
+                                "key": "obt/tutorial/level/main_00-10",
+                                "count": 1,
+                                "preDelay": 0.0,
+                                "interval": 1.0,
+                                "routeIndex": 0,
+                                "blockFragment": false,
+                                "autoPreviewRoute": false,
+                                "autoDisplayEnemyInfo": false,
+                                "isUnharmfulAndAlwaysCountAsKilled": false,
+                                "hiddenGroup": null,
+                                "randomSpawnGroupKey": null,
+                                "randomSpawnGroupPackKey": null,
+                                "randomType": "ALWAYS",
+                                "refreshType": "ALWAYS",
+                                "weight": 0,
+                                "dontBlockWave": false,
+                                "forceBlockWaveInBranch": false
+                              },
+                              "native_wave": 0,
+                              "native_fragment": 0,
+                              "native_action_index": 0,
+                              "action_start_source": "timeline.action.origins.action_start",
+                              "profile": "zero_lifetime_headless_UI_v1",
+                              "command": {
+                                "command": "Blocker",
+                                "native_parameters": "fadetime=0.3, block=true, a=0",
+                                "text": ""
+                              },
+                              "UI_text_is_metadata": true
+                            }
+                          },
+                          {
+                            "op": "input_lock",
+                            "target": "battle",
+                            "parameters": {
+                              "key": "obt/tutorial/level/main_00-10",
+                              "enabled": false
+                            }
+                          },
+                          {
+                            "op": "emit",
+                            "target": "battle",
+                            "event": "m14.ui.ack_finished",
+                            "payload": {
+                              "native_action": {
+                                "actionType": "STORY",
+                                "managedByScheduler": true,
+                                "key": "obt/tutorial/level/main_00-10",
+                                "count": 1,
+                                "preDelay": 0.0,
+                                "interval": 1.0,
+                                "routeIndex": 0,
+                                "blockFragment": false,
+                                "autoPreviewRoute": false,
+                                "autoDisplayEnemyInfo": false,
+                                "isUnharmfulAndAlwaysCountAsKilled": false,
+                                "hiddenGroup": null,
+                                "randomSpawnGroupKey": null,
+                                "randomSpawnGroupPackKey": null,
+                                "randomType": "ALWAYS",
+                                "refreshType": "ALWAYS",
+                                "weight": 0,
+                                "dontBlockWave": false,
+                                "forceBlockWaveInBranch": false
+                              },
+                              "native_wave": 0,
+                              "native_fragment": 0,
+                              "native_action_index": 0,
+                              "action_start_source": "timeline.action.origins.action_start",
+                              "profile": "zero_lifetime_headless_UI_v1",
+                              "completion_lifetime_ticks": 0,
+                              "native_UI_callback_verified": false
+                            }
+                          }
+                        ],
+                        "metadata": {
+                          "native_action": {
+                            "actionType": "STORY",
+                            "managedByScheduler": true,
+                            "key": "obt/tutorial/level/main_00-10",
+                            "count": 1,
+                            "preDelay": 0.0,
+                            "interval": 1.0,
+                            "routeIndex": 0,
+                            "blockFragment": false,
+                            "autoPreviewRoute": false,
+                            "autoDisplayEnemyInfo": false,
+                            "isUnharmfulAndAlwaysCountAsKilled": false,
+                            "hiddenGroup": null,
+                            "randomSpawnGroupKey": null,
+                            "randomSpawnGroupPackKey": null,
+                            "randomType": "ALWAYS",
+                            "refreshType": "ALWAYS",
+                            "weight": 0,
+                            "dontBlockWave": false,
+                            "forceBlockWaveInBranch": false
+                          },
+                          "native_wave": 0,
+                          "native_fragment": 0,
+                          "native_action_index": 0,
+                          "native_gate_flags": {
+                            "managedByScheduler": true,
+                            "dontBlockWave": false,
+                            "blockFragment": false
+                          },
+                          "zero_lifetime_member_elision": true,
+                          "completion_profile": "true_started_observation_ack_finished_same_tick"
+                        }
+                      },
+                      {
+                        "kind": "spawn",
+                        "managed": true,
+                        "blocks_wave": true,
+                        "blocks_fragment": true,
+                        "spawn": {
+                          "definition": "unit/peer_enemy",
+                          "instanceAlias": "first",
+                          "position": {
+                            "row": 1,
+                            "col": 1
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "actions": [
+                      {
+                        "kind": "effects",
+                        "effects": [
+                          {
+                            "op": "emit",
+                            "target": "battle",
+                            "event": "peer.same_fragment_after_member"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "pre_delay_seconds": 0.1,
+                "fragments": [
+                  {
+                    "pre_delay_seconds": 0.1,
+                    "actions": [
+                      {
+                        "kind": "spawn",
+                        "managed": true,
+                        "blocks_wave": true,
+                        "blocks_fragment": false,
+                        "spawn": {
+                          "definition": "unit/peer_enemy",
+                          "instanceAlias": "second",
+                          "position": {
+                            "row": 1,
+                            "col": 1
+                          }
+                        },
+                        "delay_seconds": 0.1
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "kind": "scenario"
+        },
+        "state": {
+          "finished": false,
+          "result": "running",
+          "pending_waves": 0,
+          "kills": 1,
+          "leaks": 0,
+          "damage_dealt": 10,
+          "deployments": {},
+          "command_results": {},
+          "timeline": {
+            "phase": "wave_gate",
+            "wave_index": 1,
+            "fragment_index": 1,
+            "members": {
+              "4": {
+                "wave": 1,
+                "fragment": 0,
+                "blocks_wave": true,
+                "blocks_fragment": false
+              }
+            },
+            "remaining_actions": 0,
+            "wake_token": 10,
+            "wake_at": null,
+            "done": false,
+            "play_start": 0,
+            "wave_start": 19,
+            "fragment_start": 25,
+            "gate_start": 28
+          },
+          "input_locks": []
+        },
+        "events": [
+          {
+            "id": 1,
+            "type": "entity.created",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "definition": "unit/peer_killer"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 8,
+            "type": "m14.ui.started",
+            "payload": {
+              "native_action": {
+                "actionType": "STORY",
+                "managedByScheduler": true,
+                "key": "obt/tutorial/level/main_00-10",
+                "count": 1,
+                "preDelay": 0.0,
+                "interval": 1.0,
+                "routeIndex": 0,
+                "blockFragment": false,
+                "autoPreviewRoute": false,
+                "autoDisplayEnemyInfo": false,
+                "isUnharmfulAndAlwaysCountAsKilled": false,
+                "hiddenGroup": null,
+                "randomSpawnGroupKey": null,
+                "randomSpawnGroupPackKey": null,
+                "randomType": "ALWAYS",
+                "refreshType": "ALWAYS",
+                "weight": 0,
+                "dontBlockWave": false,
+                "forceBlockWaveInBranch": false
+              },
+              "native_wave": 0,
+              "native_fragment": 0,
+              "native_action_index": 0,
+              "action_start_source": "timeline.action.origins.action_start",
+              "profile": "zero_lifetime_headless_UI_v1",
+              "source": 1,
+              "target": 1
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 9,
+            "type": "input.lock_changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "key": "obt/tutorial/level/main_00-10",
+              "enabled": true
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 10,
+            "type": "m14.ui.command_observed",
+            "payload": {
+              "native_action": {
+                "actionType": "STORY",
+                "managedByScheduler": true,
+                "key": "obt/tutorial/level/main_00-10",
+                "count": 1,
+                "preDelay": 0.0,
+                "interval": 1.0,
+                "routeIndex": 0,
+                "blockFragment": false,
+                "autoPreviewRoute": false,
+                "autoDisplayEnemyInfo": false,
+                "isUnharmfulAndAlwaysCountAsKilled": false,
+                "hiddenGroup": null,
+                "randomSpawnGroupKey": null,
+                "randomSpawnGroupPackKey": null,
+                "randomType": "ALWAYS",
+                "refreshType": "ALWAYS",
+                "weight": 0,
+                "dontBlockWave": false,
+                "forceBlockWaveInBranch": false
+              },
+              "native_wave": 0,
+              "native_fragment": 0,
+              "native_action_index": 0,
+              "action_start_source": "timeline.action.origins.action_start",
+              "profile": "zero_lifetime_headless_UI_v1",
+              "command": {
+                "command": "HEADER",
+                "native_parameters": "is_skippable=true, is_autoable=false",
+                "text": "\u4e3b\u7ebf00-10\u5173\u5361\u5185\u5267\u60c5"
+              },
+              "UI_text_is_metadata": true,
+              "source": 1,
+              "target": 1
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 11,
+            "type": "m14.ui.command_observed",
+            "payload": {
+              "native_action": {
+                "actionType": "STORY",
+                "managedByScheduler": true,
+                "key": "obt/tutorial/level/main_00-10",
+                "count": 1,
+                "preDelay": 0.0,
+                "interval": 1.0,
+                "routeIndex": 0,
+                "blockFragment": false,
+                "autoPreviewRoute": false,
+                "autoDisplayEnemyInfo": false,
+                "isUnharmfulAndAlwaysCountAsKilled": false,
+                "hiddenGroup": null,
+                "randomSpawnGroupKey": null,
+                "randomSpawnGroupPackKey": null,
+                "randomType": "ALWAYS",
+                "refreshType": "ALWAYS",
+                "weight": 0,
+                "dontBlockWave": false,
+                "forceBlockWaveInBranch": false
+              },
+              "native_wave": 0,
+              "native_fragment": 0,
+              "native_action_index": 0,
+              "action_start_source": "timeline.action.origins.action_start",
+              "profile": "zero_lifetime_headless_UI_v1",
+              "command": {
+                "command": "PopupDialog",
+                "native_parameters": "dialogHead=\"$avatar_amiya\"",
+                "text": "\u654c\u65b9\u5355\u4f4d\u201c\u62fe\u8352\u8005\u201d\u7684\u653b\u51fb\u529b\u5f88\u5f3a......\u6211\u4eec\u9700\u8981\u5c0f\u5fc3\u5e94\u5bf9\u3002"
+              },
+              "UI_text_is_metadata": true,
+              "source": 1,
+              "target": 1
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 12,
+            "type": "m14.ui.command_observed",
+            "payload": {
+              "native_action": {
+                "actionType": "STORY",
+                "managedByScheduler": true,
+                "key": "obt/tutorial/level/main_00-10",
+                "count": 1,
+                "preDelay": 0.0,
+                "interval": 1.0,
+                "routeIndex": 0,
+                "blockFragment": false,
+                "autoPreviewRoute": false,
+                "autoDisplayEnemyInfo": false,
+                "isUnharmfulAndAlwaysCountAsKilled": false,
+                "hiddenGroup": null,
+                "randomSpawnGroupKey": null,
+                "randomSpawnGroupPackKey": null,
+                "randomType": "ALWAYS",
+                "refreshType": "ALWAYS",
+                "weight": 0,
+                "dontBlockWave": false,
+                "forceBlockWaveInBranch": false
+              },
+              "native_wave": 0,
+              "native_fragment": 0,
+              "native_action_index": 0,
+              "action_start_source": "timeline.action.origins.action_start",
+              "profile": "zero_lifetime_headless_UI_v1",
+              "command": {
+                "command": "PopupDialog",
+                "native_parameters": "dialogHead=\"$avatar_doberm\"",
+                "text": "\u535a\u58eb\uff0c\u5efa\u8bae\u90e8\u7f72\u91cd\u88c5\u5e72\u5458\u9632\u5b88\u3002"
+              },
+              "UI_text_is_metadata": true,
+              "source": 1,
+              "target": 1
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 13,
+            "type": "m14.ui.command_observed",
+            "payload": {
+              "native_action": {
+                "actionType": "STORY",
+                "managedByScheduler": true,
+                "key": "obt/tutorial/level/main_00-10",
+                "count": 1,
+                "preDelay": 0.0,
+                "interval": 1.0,
+                "routeIndex": 0,
+                "blockFragment": false,
+                "autoPreviewRoute": false,
+                "autoDisplayEnemyInfo": false,
+                "isUnharmfulAndAlwaysCountAsKilled": false,
+                "hiddenGroup": null,
+                "randomSpawnGroupKey": null,
+                "randomSpawnGroupPackKey": null,
+                "randomType": "ALWAYS",
+                "refreshType": "ALWAYS",
+                "weight": 0,
+                "dontBlockWave": false,
+                "forceBlockWaveInBranch": false
+              },
+              "native_wave": 0,
+              "native_fragment": 0,
+              "native_action_index": 0,
+              "action_start_source": "timeline.action.origins.action_start",
+              "profile": "zero_lifetime_headless_UI_v1",
+              "command": {
+                "command": "PopupDialog",
+                "native_parameters": "dialogHead=\"$avatar_ace\"",
+                "text": "\u53ea\u6709\u51fb\u6e83\u4ed6\uff0c\u6211\u4eec\u624d\u80fd\u6709\u66f4\u5927\u7684\u53d1\u6325\u7a7a\u95f4\uff01"
+              },
+              "UI_text_is_metadata": true,
+              "source": 1,
+              "target": 1
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 14,
+            "type": "m14.ui.command_observed",
+            "payload": {
+              "native_action": {
+                "actionType": "STORY",
+                "managedByScheduler": true,
+                "key": "obt/tutorial/level/main_00-10",
+                "count": 1,
+                "preDelay": 0.0,
+                "interval": 1.0,
+                "routeIndex": 0,
+                "blockFragment": false,
+                "autoPreviewRoute": false,
+                "autoDisplayEnemyInfo": false,
+                "isUnharmfulAndAlwaysCountAsKilled": false,
+                "hiddenGroup": null,
+                "randomSpawnGroupKey": null,
+                "randomSpawnGroupPackKey": null,
+                "randomType": "ALWAYS",
+                "refreshType": "ALWAYS",
+                "weight": 0,
+                "dontBlockWave": false,
+                "forceBlockWaveInBranch": false
+              },
+              "native_wave": 0,
+              "native_fragment": 0,
+              "native_action_index": 0,
+              "action_start_source": "timeline.action.origins.action_start",
+              "profile": "zero_lifetime_headless_UI_v1",
+              "command": {
+                "command": "Blocker",
+                "native_parameters": "fadetime=0.3, block=true, a=0",
+                "text": ""
+              },
+              "UI_text_is_metadata": true,
+              "source": 1,
+              "target": 1
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 15,
+            "type": "input.lock_changed",
+            "payload": {
+              "source": 1,
+              "target": 1,
+              "key": "obt/tutorial/level/main_00-10",
+              "enabled": false
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 16,
+            "type": "m14.ui.ack_finished",
+            "payload": {
+              "native_action": {
+                "actionType": "STORY",
+                "managedByScheduler": true,
+                "key": "obt/tutorial/level/main_00-10",
+                "count": 1,
+                "preDelay": 0.0,
+                "interval": 1.0,
+                "routeIndex": 0,
+                "blockFragment": false,
+                "autoPreviewRoute": false,
+                "autoDisplayEnemyInfo": false,
+                "isUnharmfulAndAlwaysCountAsKilled": false,
+                "hiddenGroup": null,
+                "randomSpawnGroupKey": null,
+                "randomSpawnGroupPackKey": null,
+                "randomType": "ALWAYS",
+                "refreshType": "ALWAYS",
+                "weight": 0,
+                "dontBlockWave": false,
+                "forceBlockWaveInBranch": false
+              },
+              "native_wave": 0,
+              "native_fragment": 0,
+              "native_action_index": 0,
+              "action_start_source": "timeline.action.origins.action_start",
+              "profile": "zero_lifetime_headless_UI_v1",
+              "completion_lifetime_ticks": 0,
+              "native_UI_callback_verified": false,
+              "source": 1,
+              "target": 1
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 17,
+            "type": "timeline.action",
+            "payload": {
+              "wave": 0,
+              "fragment": 0,
+              "action": 0,
+              "repeat": 0,
+              "action_start": 6,
+              "origins": {
+                "play_start": 0,
+                "wave_start": 0,
+                "fragment_start": 6,
+                "action_start": 6
+              },
+              "kind": "effects"
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 31,
+            "type": "entity.created",
+            "payload": {
+              "source": 3,
+              "target": 3,
+              "definition": "unit/peer_enemy"
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 32,
+            "type": "timeline.action",
+            "payload": {
+              "wave": 0,
+              "fragment": 0,
+              "action": 1,
+              "repeat": 0,
+              "action_start": 6,
+              "origins": {
+                "play_start": 0,
+                "wave_start": 0,
+                "fragment_start": 6,
+                "action_start": 6
+              },
+              "kind": "spawn"
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 48,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "killer",
+                "ability": "ability/peer_kill"
+              },
+              "result": "cast/2/1"
+            },
+            "time": 12,
+            "cause": null
+          },
+          {
+            "id": 61,
+            "type": "entity.died",
+            "payload": {
+              "source": 3,
+              "target": 3
+            },
+            "time": 12,
+            "cause": null
+          },
+          {
+            "id": 62,
+            "type": "timeline.member_released",
+            "payload": {
+              "target": 3,
+              "reason": "dead",
+              "wave": 0,
+              "fragment": 0,
+              "blocks_wave": true,
+              "blocks_fragment": true
+            },
+            "time": 12,
+            "cause": null
+          },
+          {
+            "id": 63,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "amount": 10,
+              "ability": "ability/peer_kill",
+              "resource": "hp"
+            },
+            "time": 12,
+            "cause": null
+          },
+          {
+            "id": 64,
+            "type": "combat.kill",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "ability": "ability/peer_kill",
+              "cast": "cast/2/1",
+              "target_tags": [
+                "enemy",
+                "ground"
+              ]
+            },
+            "time": 12,
+            "cause": null
+          },
+          {
+            "id": 69,
+            "type": "peer.same_fragment_after_member",
+            "payload": {
+              "source": 1,
+              "target": 1
+            },
+            "time": 13,
+            "cause": null
+          },
+          {
+            "id": 70,
+            "type": "timeline.action",
+            "payload": {
+              "wave": 0,
+              "fragment": 1,
+              "action": 0,
+              "repeat": 0,
+              "action_start": 13,
+              "origins": {
+                "play_start": 0,
+                "wave_start": 0,
+                "fragment_start": 13,
+                "action_start": 13
+              },
+              "kind": "effects"
+            },
+            "time": 13,
+            "cause": null
+          },
+          {
+            "id": 71,
+            "type": "timeline.wave_completed",
+            "payload": {
+              "wave": 0,
+              "remaining_managed": 0,
+              "policy": "managed_clear"
+            },
+            "time": 13,
+            "cause": null
+          },
+          {
+            "id": 90,
+            "type": "entity.created",
+            "payload": {
+              "source": 4,
+              "target": 4,
+              "definition": "unit/peer_enemy"
+            },
+            "time": 28,
+            "cause": null
+          },
+          {
+            "id": 91,
+            "type": "timeline.action",
+            "payload": {
+              "wave": 1,
+              "fragment": 0,
+              "action": 0,
+              "repeat": 0,
+              "action_start": 28,
+              "origins": {
+                "play_start": 0,
+                "wave_start": 19,
+                "fragment_start": 25,
+                "action_start": 28
+              },
+              "kind": "spawn"
+            },
+            "time": 28,
+            "cause": null
+          }
+        ]
+      }
+    },
+    {
+      "case": "finite_timeout_late_member",
+      "result": "passed",
+      "actual": {
+        "expected": {
+          "finite_timeout6_then_post9_then_pre9_fragment12_action3": true,
+          "old_member_death20_does_not_reset_new_wake": true,
+          "second39": true
+        },
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "program_fingerprint": "aee88089f4b52a2d7e25d535391e0cb1bd0bf2ee49e42d43d049f3fa1a362bfd",
+        "runtime_fingerprint": "f030568116172ceee58cf2e3fba137cf07d953e0d204a3b810fe78cbf53cbb87",
+        "commands": {
+          "schema": "ark-sim/replay/v2",
+          "program_fingerprint": "aee88089f4b52a2d7e25d535391e0cb1bd0bf2ee49e42d43d049f3fa1a362bfd",
+          "runtime_fingerprint": "f030568116172ceee58cf2e3fba137cf07d953e0d204a3b810fe78cbf53cbb87",
+          "seed": 1401,
+          "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+          "until": 42,
+          "commands": [
+            {
+              "order": 1,
+              "submitted_at": 0,
+              "at": 20,
+              "action": {
+                "action": "skill",
+                "source": "killer",
+                "ability": "ability/peer_kill"
+              }
+            }
+          ]
+        },
+        "fixture_initial_state": {
+          "id": "scenario/m14_peer",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 3,
+            "cols": 4
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/peer_killer",
+              "instanceAlias": "killer",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ],
+          "timeline": {
+            "policy": "managed_clear",
+            "negative_timeout_policy": "wait_for_clear",
+            "waves": [
+              {
+                "pre_delay_seconds": 0,
+                "post_delay_seconds": 0.3,
+                "max_wait_seconds": 0.2,
+                "fragments": [
+                  {
+                    "pre_delay_seconds": 0,
+                    "actions": [
+                      {
+                        "kind": "spawn",
+                        "managed": true,
+                        "blocks_wave": true,
+                        "blocks_fragment": false,
+                        "spawn": {
+                          "definition": "unit/peer_enemy",
+                          "instanceAlias": "first",
+                          "position": {
+                            "row": 1,
+                            "col": 1
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "actions": [
+                      {
+                        "kind": "effects",
+                        "effects": [
+                          {
+                            "op": "emit",
+                            "target": "battle",
+                            "event": "peer.same_fragment_after_member"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "pre_delay_seconds": 0.3,
+                "fragments": [
+                  {
+                    "pre_delay_seconds": 0.4,
+                    "actions": [
+                      {
+                        "kind": "spawn",
+                        "managed": true,
+                        "blocks_wave": true,
+                        "blocks_fragment": false,
+                        "spawn": {
+                          "definition": "unit/peer_enemy",
+                          "instanceAlias": "second",
+                          "position": {
+                            "row": 1,
+                            "col": 1
+                          }
+                        },
+                        "delay_seconds": 0.1
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "kind": "scenario"
+        },
+        "state": {
+          "finished": false,
+          "result": "running",
+          "pending_waves": 0,
+          "kills": 1,
+          "leaks": 0,
+          "damage_dealt": 10,
+          "deployments": {},
+          "command_results": {},
+          "timeline": {
+            "phase": "wave_gate",
+            "wave_index": 1,
+            "fragment_index": 1,
+            "members": {
+              "4": {
+                "wave": 1,
+                "fragment": 0,
+                "blocks_wave": true,
+                "blocks_fragment": false
+              }
+            },
+            "remaining_actions": 0,
+            "wake_token": 8,
+            "wake_at": null,
+            "done": false,
+            "play_start": 0,
+            "wave_start": 15,
+            "fragment_start": 36,
+            "gate_start": 39
+          }
+        },
+        "events": [
+          {
+            "id": 1,
+            "type": "entity.created",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "definition": "unit/peer_killer"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 19,
+            "type": "entity.created",
+            "payload": {
+              "source": 3,
+              "target": 3,
+              "definition": "unit/peer_enemy"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 20,
+            "type": "timeline.action",
+            "payload": {
+              "wave": 0,
+              "fragment": 0,
+              "action": 0,
+              "repeat": 0,
+              "action_start": 0,
+              "origins": {
+                "play_start": 0,
+                "wave_start": 0,
+                "fragment_start": 0,
+                "action_start": 0
+              },
+              "kind": "spawn"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 24,
+            "type": "peer.same_fragment_after_member",
+            "payload": {
+              "source": 1,
+              "target": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 25,
+            "type": "timeline.action",
+            "payload": {
+              "wave": 0,
+              "fragment": 1,
+              "action": 0,
+              "repeat": 0,
+              "action_start": 0,
+              "origins": {
+                "play_start": 0,
+                "wave_start": 0,
+                "fragment_start": 0,
+                "action_start": 0
+              },
+              "kind": "effects"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 28,
+            "type": "timeline.wave_completed",
+            "payload": {
+              "wave": 0,
+              "remaining_managed": 1,
+              "policy": "managed_clear"
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 46,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "killer",
+                "ability": "ability/peer_kill"
+              },
+              "result": "cast/2/1"
+            },
+            "time": 20,
+            "cause": null
+          },
+          {
+            "id": 59,
+            "type": "entity.died",
+            "payload": {
+              "source": 3,
+              "target": 3
+            },
+            "time": 20,
+            "cause": null
+          },
+          {
+            "id": 60,
+            "type": "timeline.member_released",
+            "payload": {
+              "target": 3,
+              "reason": "dead",
+              "wave": 0,
+              "fragment": 0,
+              "blocks_wave": true,
+              "blocks_fragment": false
+            },
+            "time": 20,
+            "cause": null
+          },
+          {
+            "id": 61,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "amount": 10,
+              "ability": "ability/peer_kill",
+              "resource": "hp"
+            },
+            "time": 20,
+            "cause": null
+          },
+          {
+            "id": 62,
+            "type": "combat.kill",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "ability": "ability/peer_kill",
+              "cast": "cast/2/1",
+              "target_tags": [
+                "enemy",
+                "ground"
+              ]
+            },
+            "time": 20,
+            "cause": null
+          },
+          {
+            "id": 80,
+            "type": "entity.created",
+            "payload": {
+              "source": 4,
+              "target": 4,
+              "definition": "unit/peer_enemy"
+            },
+            "time": 39,
+            "cause": null
+          },
+          {
+            "id": 81,
+            "type": "timeline.action",
+            "payload": {
+              "wave": 1,
+              "fragment": 0,
+              "action": 0,
+              "repeat": 0,
+              "action_start": 39,
+              "origins": {
+                "play_start": 0,
+                "wave_start": 15,
+                "fragment_start": 36,
+                "action_start": 39
+              },
+              "kind": "spawn"
+            },
+            "time": 39,
+            "cause": null
+          }
+        ]
+      }
+    },
+    {
+      "case": "zero_count",
+      "result": "passed",
+      "actual": {
+        "expected": {
+          "zero_count_creates_no_actor_no_RNG_no_pending_population_for_first": true
+        },
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "program_fingerprint": "92a3f74285048ea1b9a96a88a69f4f90448360ee706adce4b0fa1f6c87f137da",
+        "runtime_fingerprint": "2f5ce529bf2356555a38af3507fe28f7a325882b1f4b652b71373c28f35a2dca",
+        "commands": {
+          "schema": "ark-sim/replay/v2",
+          "program_fingerprint": "92a3f74285048ea1b9a96a88a69f4f90448360ee706adce4b0fa1f6c87f137da",
+          "runtime_fingerprint": "2f5ce529bf2356555a38af3507fe28f7a325882b1f4b652b71373c28f35a2dca",
+          "seed": 1401,
+          "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+          "until": 21,
+          "commands": []
+        },
+        "fixture_initial_state": {
+          "id": "scenario/m14_peer",
+          "ruleset": "ruleset/ark_standard",
+          "map": {
+            "rows": 3,
+            "cols": 4
+          },
+          "initialEntities": [
+            {
+              "definition": "unit/peer_killer",
+              "instanceAlias": "killer",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ],
+          "timeline": {
+            "policy": "managed_clear",
+            "negative_timeout_policy": "wait_for_clear",
+            "waves": [
+              {
+                "pre_delay_seconds": 0.1,
+                "post_delay_seconds": 0.2,
+                "max_wait_seconds": -1,
+                "fragments": [
+                  {
+                    "pre_delay_seconds": 0.1,
+                    "actions": [
+                      {
+                        "kind": "spawn",
+                        "managed": true,
+                        "blocks_wave": true,
+                        "blocks_fragment": false,
+                        "spawn": {
+                          "definition": "unit/peer_enemy",
+                          "instanceAlias": "first",
+                          "position": {
+                            "row": 1,
+                            "col": 1
+                          },
+                          "placement": {
+                            "rule": "rule/m7_spawn_rectangle",
+                            "stream": "spawn",
+                            "sample_axes": [
+                              "col",
+                              "row"
+                            ],
+                            "sample_zero_range": true,
+                            "offset": {
+                              "row": 0,
+                              "col": 0
+                            },
+                            "random_range": {
+                              "row": 0.2,
+                              "col": 0.2
+                            }
+                          }
+                        },
+                        "count": 0
+                      }
+                    ]
+                  },
+                  {
+                    "actions": [
+                      {
+                        "kind": "effects",
+                        "effects": [
+                          {
+                            "op": "emit",
+                            "target": "battle",
+                            "event": "peer.same_fragment_after_member"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "pre_delay_seconds": 0.1,
+                "fragments": [
+                  {
+                    "pre_delay_seconds": 0.1,
+                    "actions": [
+                      {
+                        "kind": "spawn",
+                        "managed": true,
+                        "blocks_wave": true,
+                        "blocks_fragment": false,
+                        "spawn": {
+                          "definition": "unit/peer_enemy",
+                          "instanceAlias": "second",
+                          "position": {
+                            "row": 1,
+                            "col": 1
+                          }
+                        },
+                        "delay_seconds": 0.1
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "kind": "scenario"
+        },
+        "state": {
+          "finished": false,
+          "result": "running",
+          "pending_waves": 1,
+          "kills": 0,
+          "leaks": 0,
+          "damage_dealt": 0,
+          "deployments": {},
+          "command_results": {},
+          "timeline": {
+            "phase": "fragment_wait",
+            "wave_index": 1,
+            "fragment_index": 0,
+            "members": {},
+            "remaining_actions": 1,
+            "wake_token": 7,
+            "wake_at": null,
+            "done": false,
+            "play_start": 0,
+            "wave_start": 12,
+            "fragment_start": 18,
+            "gate_start": 6
+          }
+        },
+        "events": [
+          {
+            "id": 1,
+            "type": "entity.created",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "definition": "unit/peer_killer"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 8,
+            "type": "peer.same_fragment_after_member",
+            "payload": {
+              "source": 1,
+              "target": 1
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 9,
+            "type": "timeline.action",
+            "payload": {
+              "wave": 0,
+              "fragment": 1,
+              "action": 0,
+              "repeat": 0,
+              "action_start": 6,
+              "origins": {
+                "play_start": 0,
+                "wave_start": 0,
+                "fragment_start": 6,
+                "action_start": 6
+              },
+              "kind": "effects"
+            },
+            "time": 6,
+            "cause": null
+          },
+          {
+            "id": 10,
+            "type": "timeline.wave_completed",
+            "payload": {
+              "wave": 0,
+              "remaining_managed": 0,
+              "policy": "managed_clear"
+            },
+            "time": 6,
+            "cause": null
+          }
+        ]
+      }
+    },
+    {
+      "case": "source_negative_cases",
+      "result": "passed",
+      "actual": {
+        "source_mutant_rejections": [
+          "flag",
+          "unknown_flag",
+          "max_wait",
+          "delay",
+          "route",
+          "motion"
+        ],
+        "meaning": "Independent provenance audit, not author builder or core test logic"
+      }
+    }
+  ],
+  "tests": [
+    {
+      "path": "tools/experiments/m14_peer/verify.py",
+      "source_sha256": "024c1e3fbbf93916da4b687d40a332e4b31d28ec353833c7d166d87f73f60ddb",
+      "result": "passed"
+    }
+  ],
+  "scope": "Independent raw35/17/5 and synthetic public-kill Timeline boundaries; not a whole-stage or native UI receipt",
+  "formal_approval": false,
+  "review_receipt": false
+}

@@ -1,0 +1,85 @@
+{
+  "verification_sha": "ec34b1dd5af2e82e1e18d695b3f2e05249248af0cff996551de0c502b5c2cadd",
+  "source_sha": "004eb515760db4887edb83554eb2964a238403e94277acb04f96cd318c9ba107",
+  "cases": [
+    {
+      "case": "five_actual_source_story_chain_restore_replay_and_repeat_observe",
+      "passed": true
+    },
+    {
+      "case": "forged_event_id",
+      "passed": true,
+      "expected": "Reject invalid state before resuming",
+      "actual": "rejected",
+      "reason": "Ack ledger differs from actual observed control/step/event"
+    },
+    {
+      "case": "duplicate_ledger_entry",
+      "passed": true,
+      "expected": "Reject invalid state before resuming",
+      "actual": "rejected",
+      "reason": "Ack ledger does not cover actual waiting events"
+    },
+    {
+      "case": "rewind_cursor",
+      "passed": true,
+      "expected": "Reject invalid state before resuming",
+      "actual": "rejected",
+      "reason": "Saved driver must consume the complete idle event boundary"
+    },
+    {
+      "case": "missing_consumed_ledger",
+      "passed": true,
+      "expected": "Reject invalid state before resuming",
+      "actual": "rejected",
+      "reason": "Ack ledger does not cover actual waiting events"
+    },
+    {
+      "case": "float_clock",
+      "passed": true,
+      "expected": "Reject invalid state before resuming",
+      "actual": "rejected",
+      "reason": "driver time must be a strict integer"
+    },
+    {
+      "case": "bool_clock",
+      "passed": true,
+      "expected": "Reject invalid state before resuming",
+      "actual": "rejected",
+      "reason": "driver time must be a strict integer"
+    },
+    {
+      "case": "bool_submission_clock",
+      "passed": true,
+      "expected": "Reject invalid state before resuming",
+      "actual": "rejected",
+      "reason": "submitted_at must be a strict integer"
+    },
+    {
+      "case": "forward_cursor_skips_unsubmitted_real_wait",
+      "passed": true,
+      "actual": "rejected",
+      "reason": "Ack ledger does not cover actual waiting events"
+    }
+  ],
+  "artifacts": {
+    "validation\\campaign\\chapter06_review\\ack_driver_v2_recheck_bound\\actual_chain_capture.json": "431807310160562e762f871119bb77be707adc1593d23aa11bcd69ede88e6dcf",
+    "validation\\campaign\\chapter06_review\\ack_driver_v2_recheck_bound\\bool_clock.json": "efe798816b7bade3e72f4f5edb1f0d61fe184e2e694464921c164ef3259777df",
+    "validation\\campaign\\chapter06_review\\ack_driver_v2_recheck_bound\\bool_submission_clock.json": "71754627bbc47e18aa223fcec092943acde1a261623e1d0e4ae98214e0d0cb85",
+    "validation\\campaign\\chapter06_review\\ack_driver_v2_recheck_bound\\consumed_public_ack_v2.py": "004eb515760db4887edb83554eb2964a238403e94277acb04f96cd318c9ba107",
+    "validation\\campaign\\chapter06_review\\ack_driver_v2_recheck_bound\\duplicate_ledger_entry.json": "d07743760862d34de2b520090449b2ae66531d94d90cd676f0367f94f9be38da",
+    "validation\\campaign\\chapter06_review\\ack_driver_v2_recheck_bound\\float_clock.json": "34bb901e0cce3a66ab1fcb0ab735fb65956bf20f2ad33405c5fafd819f3c50bb",
+    "validation\\campaign\\chapter06_review\\ack_driver_v2_recheck_bound\\forged_event_id.json": "abac856e1262805e4bdfb7e42805ce51e018e21081e33edd3e670619bf1db0de",
+    "validation\\campaign\\chapter06_review\\ack_driver_v2_recheck_bound\\forward_skip.json": "d9fc054942c6d99e7543a21b650f5b7056f38be8905f692bb45cf882d67755a8",
+    "validation\\campaign\\chapter06_review\\ack_driver_v2_recheck_bound\\input.json": "d274e44418ba4de2161e247c996cb83f5baa81bacf5ef4ebb693cd65de663225",
+    "validation\\campaign\\chapter06_review\\ack_driver_v2_recheck_bound\\missing_consumed_ledger.json": "baddf2d9dced352e7436d10931ded249886720acb7842f6c9b44223a19440da0",
+    "validation\\campaign\\chapter06_review\\ack_driver_v2_recheck_bound\\ordered.bundle.json": "7c96174471bc9c92436cea77e45b76dbb1b72ec92476aab698b38d3a04c172f0",
+    "validation\\campaign\\chapter06_review\\ack_driver_v2_recheck_bound\\restore_state_initial.json": "07f2473060145d3f43d1c05a57c2fc3fda17be0bff2b8b61b1b7e2b983c06258",
+    "validation\\campaign\\chapter06_review\\ack_driver_v2_recheck_bound\\rewind_cursor.json": "655b4c6daccfc85cc0863650a92e3441b36dcb7070f41aa990cf8f5f3318004f",
+    "validation\\campaign\\chapter06_review\\ack_driver_v2_recheck_bound\\verification.json": "ec34b1dd5af2e82e1e18d695b3f2e05249248af0cff996551de0c502b5c2cadd"
+  },
+  "original_failure_sha": "1d57a939b8aaf95df9b1c9366bb4977e7e19978363e9c0abe27ce4541a985dd4",
+  "original_failure_freeze_sha": "e45973244c5bb82749ee6d7ab92f650bc51027c4c768dc09d8fd7e305a56b94c",
+  "scope": "Independent source five-story7dialogue external-control chain and driver restoration validation, noNPC/enemy/specialspawn/fullstage execution. Failurestates from corrupted/tampered checkpoint host input, unchanged source/kernel.",
+  "fixture_adjustments": "Original five-story seven-dialogue expectations unchanged. emit target/source metadata explicitly expected afterv1fixture mismatch. Forward corrupted state loaded from preserved originalcounter (v2checkpoint now rejects unobserved construction), with only policy identity switched tov2 toverify realledger omission ratherthanoldpolicy rejection."
+}

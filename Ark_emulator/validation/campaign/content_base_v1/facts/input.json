@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 2,
+  "definitions": [
+    {
+      "id": "unit/tilefacts/source",
+      "kind": "entity",
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 100,
+            "atk": 10
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "side": 1,
+          "unit_type": 2,
+          "category": 1,
+          "motion": 1
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    },
+    {
+      "id": "unit/tilefacts/npc",
+      "kind": "entity",
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 100,
+            "atk": 10
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "side": 0,
+          "unit_type": 1,
+          "category": 1,
+          "motion": 1
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    },
+    {
+      "id": "unit/tilefacts/opponent_char",
+      "kind": "entity",
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 100,
+            "atk": 10
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "side": 1,
+          "unit_type": 1,
+          "category": 1,
+          "motion": 1
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    },
+    {
+      "id": "unit/tilefacts/token",
+      "kind": "entity",
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 100,
+            "atk": 10
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "side": 0,
+          "unit_type": 4,
+          "category": 1,
+          "motion": 1
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    },
+    {
+      "id": "unit/tilefacts/mixed_char",
+      "kind": "entity",
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 100,
+            "atk": 10
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "selection_state": {
+          "side": 0,
+          "unit_type": 5,
+          "category": 1,
+          "motion": 1
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/tilefacts",
+    "ruleset": "ruleset/ark_standard",
+    "map": {
+      "rows": 1,
+      "cols": 5
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/tilefacts/source",
+        "instanceAlias": "source",
+        "position": {
+          "row": 0,
+          "col": 0
+        }
+      },
+      {
+        "definition": "unit/tilefacts/npc",
+        "instanceAlias": "npc",
+        "position": {
+          "row": 0,
+          "col": 1
+        }
+      },
+      {
+        "definition": "unit/tilefacts/opponent_char",
+        "instanceAlias": "opponent_char",
+        "position": {
+          "row": 0,
+          "col": 2
+        }
+      },
+      {
+        "definition": "unit/tilefacts/token",
+        "instanceAlias": "token",
+        "position": {
+          "row": 0,
+          "col": 3
+        }
+      },
+      {
+        "definition": "unit/tilefacts/mixed_char",
+        "instanceAlias": "mixed_char",
+        "position": {
+          "row": 0,
+          "col": 4
+        }
+      }
+    ],
+    "objectives": {}
+  }
+}

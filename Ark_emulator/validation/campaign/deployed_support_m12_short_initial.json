@@ -1,0 +1,1225 @@
+{
+  "schema": "ark-sim/campaign-mechanism-test-evidence/v1",
+  "passed": false,
+  "implementation_sha256": "bd60c068f0af7694e8e62c16868f4d310b6bb92681f8ebbf5d97814fba28ac11",
+  "runtime_root": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m12_projection_candidate",
+  "input_package": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\mainline_models\\level_main_00-10.m12_projection.json",
+  "input_package_sha256": "0fbba3f0548d2efaef97d7c1be98a620e65b6408755bfddbd49a132ef72fddf4",
+  "identity_stable": true,
+  "source_at_start": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\mainline_models\\level_main_00-10.m12_projection.json": "0fbba3f0548d2efaef97d7c1be98a620e65b6408755bfddbd49a132ef72fddf4",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\deployed_support\\tests\\test_canonical_support.py": "a5ec41e624d2f120c7884291c065151003b1d04f4944311cd0bfb3e8a2be5553",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\witness_deployed_support.py": "d1e7786b7a8a0f7b5d4a541b6c4383f0fd8f0e32a30a53b17817273b01122802",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\witness_deployed_six.py": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\operators.normalized.json": "1611fac32beb58d7aeb9e28ffb6cd4ebcfc3a5e6f955157a5dc3fab7ebb6824b",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\skills.myrtle.json": "4fd7436441b771920c7fe42c608e09034c131f66b618703b734370a499825c76",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\skills.plosis.json": "ffef14ccab9f75b487d7ddeb2653449e43933e69d2b217d53b034428c4631ca1",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\skills.demkni.json": "224928b097743ca33b81ad0ac59e52286906bee01c7177debea375cc71f8eb65",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\talents.support.json": "46e28d0783d6bdeaa3b528a08ea1e7888b51785314ca4fa0a8ccfcc788db36d0",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\talents.attack.json": "bb0e679cdd1e266ee7248f728029a7ce67cb2cf5151ba378205dcff3a7186204"
+  },
+  "source_at_completion": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\mainline_models\\level_main_00-10.m12_projection.json": "0fbba3f0548d2efaef97d7c1be98a620e65b6408755bfddbd49a132ef72fddf4",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\deployed_support\\tests\\test_canonical_support.py": "a5ec41e624d2f120c7884291c065151003b1d04f4944311cd0bfb3e8a2be5553",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\witness_deployed_support.py": "d1e7786b7a8a0f7b5d4a541b6c4383f0fd8f0e32a30a53b17817273b01122802",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\witness_deployed_six.py": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\operators.normalized.json": "1611fac32beb58d7aeb9e28ffb6cd4ebcfc3a5e6f955157a5dc3fab7ebb6824b",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\skills.myrtle.json": "4fd7436441b771920c7fe42c608e09034c131f66b618703b734370a499825c76",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\skills.plosis.json": "ffef14ccab9f75b487d7ddeb2653449e43933e69d2b217d53b034428c4631ca1",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\skills.demkni.json": "224928b097743ca33b81ad0ac59e52286906bee01c7177debea375cc71f8eb65",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\talents.support.json": "46e28d0783d6bdeaa3b528a08ea1e7888b51785314ca4fa0a8ccfcc788db36d0",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\talents.attack.json": "bb0e679cdd1e266ee7248f728029a7ce67cb2cf5151ba378205dcff3a7186204"
+  },
+  "selected_cases": [
+    "myrtle_vanguard_regen_and_source_exit",
+    "plosis_time_event_highest_and_source_exit",
+    "saria_arts_only_and_source_exit",
+    "saria_recipient_emission_freeze_same_frame_finish",
+    "canonical_regeneration_does_not_return_saria_sp"
+  ],
+  "cases": [
+    {
+      "case": "saria_arts_only_and_source_exit",
+      "result": "passed",
+      "actual": {
+        "expected": {
+          "arts155_physical50_true100": true,
+          "source_exit_arts100": true
+        },
+        "program_fingerprint": "b78ba9288cec4abc8e54dcc7129de5b9b0485ca4ca337daa318c519fca7806e3",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "tick": 12,
+        "events": [
+          {
+            "id": 16,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 2952
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 33,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 80
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 138,
+            "type": "buff.applied",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/support_saria_stacks",
+              "instance": "buff/2/1",
+              "stacks": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 213,
+            "type": "buff.applied",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/support_saria_heal_sp",
+              "instance": "buff/2/2",
+              "stacks": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 223,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 328,
+            "type": "ability.started",
+            "payload": {
+              "source": 2,
+              "ability": "ability/demkni_s3",
+              "cast": "cast/2/1",
+              "targets": []
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 329,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": -80,
+              "value": 0,
+              "ability": "ability/demkni_s3",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 0,
+            "cause": 328
+          },
+          {
+            "id": 405,
+            "type": "buff.applied",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/demkni_emitter",
+              "instance": "buff/2/3",
+              "stacks": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 441,
+            "type": "buff.applied",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "buff": "buff/demkni_member",
+              "instance": "buff/3/1",
+              "stacks": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 442,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "demkni",
+                "ability": "ability/demkni_s3"
+              },
+              "result": "cast/2/1"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 467,
+            "type": "ability.started",
+            "payload": {
+              "source": 4,
+              "ability": "ability/support_probe_arts",
+              "cast": "cast/4/1",
+              "targets": [
+                3
+              ]
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 468,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "probe",
+                "ability": "ability/support_probe_arts"
+              },
+              "result": "cast/4/1"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 487,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "resource": "hp",
+              "delta": -155.0,
+              "value": 999845.0
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 489,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "amount": 155.0,
+              "ability": "ability/support_probe_arts",
+              "resource": "hp"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 490,
+            "type": "ability.finished",
+            "payload": {
+              "source": 4,
+              "ability": "ability/support_probe_arts",
+              "cast": "cast/4/1"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 516,
+            "type": "ability.started",
+            "payload": {
+              "source": 4,
+              "ability": "ability/support_probe_physical",
+              "cast": "cast/4/2",
+              "targets": [
+                3
+              ]
+            },
+            "time": 3,
+            "cause": null
+          },
+          {
+            "id": 517,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "probe",
+                "ability": "ability/support_probe_physical"
+              },
+              "result": "cast/4/2"
+            },
+            "time": 3,
+            "cause": null
+          },
+          {
+            "id": 535,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "resource": "hp",
+              "delta": -50.0,
+              "value": 999795.0
+            },
+            "time": 3,
+            "cause": null
+          },
+          {
+            "id": 537,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "amount": 50.0,
+              "ability": "ability/support_probe_physical",
+              "resource": "hp"
+            },
+            "time": 3,
+            "cause": null
+          },
+          {
+            "id": 538,
+            "type": "ability.finished",
+            "payload": {
+              "source": 4,
+              "ability": "ability/support_probe_physical",
+              "cast": "cast/4/2"
+            },
+            "time": 3,
+            "cause": null
+          },
+          {
+            "id": 564,
+            "type": "ability.started",
+            "payload": {
+              "source": 4,
+              "ability": "ability/support_probe_true",
+              "cast": "cast/4/3",
+              "targets": [
+                3
+              ]
+            },
+            "time": 5,
+            "cause": null
+          },
+          {
+            "id": 565,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "probe",
+                "ability": "ability/support_probe_true"
+              },
+              "result": "cast/4/3"
+            },
+            "time": 5,
+            "cause": null
+          },
+          {
+            "id": 583,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 999695.0
+            },
+            "time": 5,
+            "cause": null
+          },
+          {
+            "id": 585,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "amount": 100.0,
+              "ability": "ability/support_probe_true",
+              "resource": "hp"
+            },
+            "time": 5,
+            "cause": null
+          },
+          {
+            "id": 586,
+            "type": "ability.finished",
+            "payload": {
+              "source": 4,
+              "ability": "ability/support_probe_true",
+              "cast": "cast/4/3"
+            },
+            "time": 5,
+            "cause": null
+          },
+          {
+            "id": 601,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 1,
+              "resource": "dp",
+              "delta": 0.0,
+              "value": 50.0
+            },
+            "time": 7,
+            "cause": null
+          },
+          {
+            "id": 617,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "buff": "buff/demkni_member",
+              "instance": "buff/3/1"
+            },
+            "time": 7,
+            "cause": null
+          },
+          {
+            "id": 674,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/demkni_emitter",
+              "instance": "buff/2/3"
+            },
+            "time": 7,
+            "cause": null
+          },
+          {
+            "id": 692,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "withdraw",
+                "source": "demkni"
+              },
+              "result": 2
+            },
+            "time": 7,
+            "cause": null
+          },
+          {
+            "id": 750,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/support_saria_stacks",
+              "instance": "buff/2/1"
+            },
+            "time": 7,
+            "cause": null
+          },
+          {
+            "id": 807,
+            "type": "buff.removed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/support_saria_heal_sp",
+              "instance": "buff/2/2"
+            },
+            "time": 7,
+            "cause": null
+          },
+          {
+            "id": 823,
+            "type": "ability.started",
+            "payload": {
+              "source": 4,
+              "ability": "ability/support_probe_arts",
+              "cast": "cast/4/4",
+              "targets": [
+                3
+              ]
+            },
+            "time": 9,
+            "cause": null
+          },
+          {
+            "id": 824,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "probe",
+                "ability": "ability/support_probe_arts"
+              },
+              "result": "cast/4/4"
+            },
+            "time": 9,
+            "cause": null
+          },
+          {
+            "id": 838,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 999595.0
+            },
+            "time": 9,
+            "cause": null
+          },
+          {
+            "id": 840,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 4,
+              "target": 3,
+              "amount": 100.0,
+              "ability": "ability/support_probe_arts",
+              "resource": "hp"
+            },
+            "time": 9,
+            "cause": null
+          },
+          {
+            "id": 841,
+            "type": "ability.finished",
+            "payload": {
+              "source": 4,
+              "ability": "ability/support_probe_arts",
+              "cast": "cast/4/4"
+            },
+            "time": 9,
+            "cause": null
+          }
+        ],
+        "random_samples": [],
+        "commands": {
+          "schema": "ark-sim/replay/v2",
+          "program_fingerprint": "b78ba9288cec4abc8e54dcc7129de5b9b0485ca4ca337daa318c519fca7806e3",
+          "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+          "seed": 11,
+          "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+          "until": 12,
+          "commands": [
+            {
+              "order": 1,
+              "submitted_at": 0,
+              "at": 0,
+              "action": {
+                "action": "skill",
+                "source": "demkni",
+                "ability": "ability/demkni_s3"
+              }
+            },
+            {
+              "order": 2,
+              "submitted_at": 0,
+              "at": 1,
+              "action": {
+                "action": "skill",
+                "source": "probe",
+                "ability": "ability/support_probe_arts"
+              }
+            },
+            {
+              "order": 3,
+              "submitted_at": 0,
+              "at": 3,
+              "action": {
+                "action": "skill",
+                "source": "probe",
+                "ability": "ability/support_probe_physical"
+              }
+            },
+            {
+              "order": 4,
+              "submitted_at": 0,
+              "at": 5,
+              "action": {
+                "action": "skill",
+                "source": "probe",
+                "ability": "ability/support_probe_true"
+              }
+            },
+            {
+              "order": 5,
+              "submitted_at": 0,
+              "at": 7,
+              "action": {
+                "action": "withdraw",
+                "source": "demkni"
+              }
+            },
+            {
+              "order": 6,
+              "submitted_at": 0,
+              "at": 9,
+              "action": {
+                "action": "skill",
+                "source": "probe",
+                "ability": "ability/support_probe_arts"
+              }
+            }
+          ]
+        },
+        "fixture_initial_state": {
+          "id": "scenario/canonical_deployed_six",
+          "ruleset": "ruleset/ark_standard",
+          "roster": [
+            "unit/char_151_myrtle",
+            "unit/char_222_bpipe",
+            "unit/char_010_chen",
+            "unit/char_107_liskam",
+            "unit/char_202_demkni",
+            "unit/char_128_plosis",
+            "unit/char_103_angel",
+            "unit/char_180_amgoat",
+            "unit/char_003_kalts",
+            "unit/char_358_lisa",
+            "unit/char_400_weedy",
+            "unit/char_179_cgbird"
+          ],
+          "map": {
+            "rows": 9,
+            "cols": 12
+          },
+          "waves": [],
+          "rules": {
+            "movement.speed": "rule/campaign_draft_move_speed",
+            "movement.path": "rule/m7_diagonal_path"
+          },
+          "resources": {
+            "dp": {
+              "initial": 50,
+              "capacity": 99,
+              "recovery_rate": 1.0,
+              "recovery": {
+                "mode": "periodic",
+                "interval_seconds": 1.0
+              }
+            },
+            "life": {
+              "initial": 10,
+              "capacity": 10
+            }
+          },
+          "parameters": {
+            "deploy_capacity": 8
+          },
+          "objectives": {},
+          "metadata": {
+            "runnable": true,
+            "native_level_id": "level_main_00-10",
+            "pending_conversion": [
+              "fixed_roster_talents_and_native_attack_clocks_not_fully_converted",
+              "selected_skill_models_partial_not_native_complete",
+              "native_control_actions_require_explicit_model",
+              "native_enemy_animation_scaling_and_client_hit_timing_pending"
+            ],
+            "model_validated": false,
+            "formal_mainline_approved": false,
+            "model_status": "partial_integration",
+            "native_ui_policy": {
+              "id": "headless_ack_zero_game_time_v1",
+              "dialogue_acknowledged_at_same_logical_tick": true,
+              "blocker_input_lock_observable": true,
+              "native_ui_wall_time_simulated": false
+            },
+            "m7_profiles": true
+          },
+          "scheduledEffects": [],
+          "seed": 953816614,
+          "initialEntities": [
+            {
+              "definition": "unit/char_202_demkni",
+              "instanceAlias": "demkni",
+              "position": {
+                "row": 4,
+                "col": 4
+              },
+              "facing": "right",
+              "deployed": false,
+              "components": {
+                "resources": {
+                  "sp": {
+                    "initial": 80
+                  }
+                }
+              }
+            },
+            {
+              "definition": "unit/deployed_witness_enemy",
+              "instanceAlias": "enemy0",
+              "position": {
+                "row": 4,
+                "col": 5
+              }
+            },
+            {
+              "definition": "unit/support_endpoint_probe",
+              "instanceAlias": "probe",
+              "position": {
+                "row": 0,
+                "col": 0
+              }
+            }
+          ],
+          "kind": "scenario"
+        },
+        "entity_identities": [
+          {
+            "id": 1,
+            "definition": "system/battle"
+          },
+          {
+            "id": 2,
+            "definition": "unit/char_202_demkni"
+          },
+          {
+            "id": 3,
+            "definition": "unit/deployed_witness_enemy"
+          },
+          {
+            "id": 4,
+            "definition": "unit/support_endpoint_probe"
+          }
+        ],
+        "actor_runtime": [
+          {
+            "id": 2,
+            "definition": "unit/char_202_demkni",
+            "resources": {
+              "hp": 2952,
+              "sp": 0
+            },
+            "buff_instances": [],
+            "attribute_base": {
+              "max_hp": 2952,
+              "atk": 513,
+              "def": 631,
+              "mres": 10.0,
+              "attack_interval": 1.2,
+              "move_speed": 1.0,
+              "block_count": 3,
+              "deploy_cost": 22,
+              "redeploy_time": 70,
+              "mass_level": 0,
+              "sp_recovery_rate": 1.0,
+              "attack_speed_ratio": 1.0,
+              "block_cost": 1
+            },
+            "attribute_modifiers": []
+          }
+        ]
+      }
+    },
+    {
+      "case": "saria_recipient_emission_freeze_same_frame_finish",
+      "result": "passed",
+      "actual": {
+        "expected": {
+          "accepted_heal16_before_manual_finish16": true,
+          "emission_frozen_SP0_after_finish": true
+        },
+        "program_fingerprint": "a27705f268bf2d866d65eb02897a6175a6b659c32a7f164f4f67268b4abe3dbc",
+        "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "tick": 19,
+        "events": [
+          {
+            "id": 16,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 2952
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 33,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 80
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 138,
+            "type": "buff.applied",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/support_saria_stacks",
+              "instance": "buff/2/1",
+              "stacks": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 213,
+            "type": "buff.applied",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/support_saria_heal_sp",
+              "instance": "buff/2/2",
+              "stacks": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 218,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 100
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 222,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 324,
+            "type": "ability.started",
+            "payload": {
+              "source": 2,
+              "ability": "ability/demkni_s3",
+              "cast": "cast/2/1",
+              "targets": [
+                3
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 325,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": -80,
+              "value": 0,
+              "ability": "ability/demkni_s3",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 0,
+            "cause": 324
+          },
+          {
+            "id": 401,
+            "type": "buff.applied",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "buff": "buff/demkni_emitter",
+              "instance": "buff/2/3",
+              "stacks": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 404,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "demkni",
+                "ability": "ability/demkni_s3"
+              },
+              "result": "cast/2/1"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 411,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/support_hold",
+              "cast": "cast/3/1",
+              "targets": [
+                3
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 412,
+            "type": "command.accepted",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "held",
+                "ability": "ability/support_hold"
+              },
+              "result": "cast/3/1"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 539,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "resource": "hp",
+              "delta": 179.54999999999995,
+              "value": 279.54999999999995
+            },
+            "time": 16,
+            "cause": null
+          },
+          {
+            "id": 540,
+            "type": "healing.accepted",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "amount": 179.54999999999995
+            },
+            "time": 16,
+            "cause": null
+          },
+          {
+            "id": 541,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/support_hold",
+              "cast": "cast/3/1"
+            },
+            "time": 16,
+            "cause": null
+          }
+        ],
+        "random_samples": [],
+        "commands": {
+          "schema": "ark-sim/replay/v2",
+          "program_fingerprint": "a27705f268bf2d866d65eb02897a6175a6b659c32a7f164f4f67268b4abe3dbc",
+          "runtime_fingerprint": "49d6c204fd7ca8f64b4345bd3a7daaa2492f76da9b70e3e499dee5ae62d89775",
+          "seed": 11,
+          "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+          "until": 19,
+          "commands": [
+            {
+              "order": 1,
+              "submitted_at": 0,
+              "at": 0,
+              "action": {
+                "action": "skill",
+                "source": "demkni",
+                "ability": "ability/demkni_s3"
+              }
+            },
+            {
+              "order": 2,
+              "submitted_at": 0,
+              "at": 0,
+              "action": {
+                "action": "skill",
+                "source": "held",
+                "ability": "ability/support_hold"
+              }
+            }
+          ]
+        },
+        "fixture_initial_state": {
+          "id": "scenario/canonical_deployed_six",
+          "ruleset": "ruleset/ark_standard",
+          "roster": [
+            "unit/char_151_myrtle",
+            "unit/char_222_bpipe",
+            "unit/char_010_chen",
+            "unit/char_107_liskam",
+            "unit/char_202_demkni",
+            "unit/char_128_plosis",
+            "unit/char_103_angel",
+            "unit/char_180_amgoat",
+            "unit/char_003_kalts",
+            "unit/char_358_lisa",
+            "unit/char_400_weedy",
+            "unit/char_179_cgbird"
+          ],
+          "map": {
+            "rows": 9,
+            "cols": 12
+          },
+          "waves": [],
+          "rules": {
+            "movement.speed": "rule/campaign_draft_move_speed",
+            "movement.path": "rule/m7_diagonal_path"
+          },
+          "resources": {
+            "dp": {
+              "initial": 50,
+              "capacity": 99,
+              "recovery_rate": 1.0,
+              "recovery": {
+                "mode": "periodic",
+                "interval_seconds": 1.0
+              }
+            },
+            "life": {
+              "initial": 10,
+              "capacity": 10
+            }
+          },
+          "parameters": {
+            "deploy_capacity": 8
+          },
+          "objectives": {},
+          "metadata": {
+            "runnable": true,
+            "native_level_id": "level_main_00-10",
+            "pending_conversion": [
+              "fixed_roster_talents_and_native_attack_clocks_not_fully_converted",
+              "selected_skill_models_partial_not_native_complete",
+              "native_control_actions_require_explicit_model",
+              "native_enemy_animation_scaling_and_client_hit_timing_pending"
+            ],
+            "model_validated": false,
+            "formal_mainline_approved": false,
+            "model_status": "partial_integration",
+            "native_ui_policy": {
+              "id": "headless_ack_zero_game_time_v1",
+              "dialogue_acknowledged_at_same_logical_tick": true,
+              "blocker_input_lock_observable": true,
+              "native_ui_wall_time_simulated": false
+            },
+            "m7_profiles": true
+          },
+          "scheduledEffects": [],
+          "seed": 953816614,
+          "initialEntities": [
+            {
+              "definition": "unit/char_202_demkni",
+              "instanceAlias": "demkni",
+              "position": {
+                "row": 4,
+                "col": 4
+              },
+              "facing": "right",
+              "deployed": false,
+              "components": {
+                "resources": {
+                  "sp": {
+                    "initial": 80
+                  }
+                }
+              }
+            },
+            {
+              "definition": "unit/support_hold",
+              "instanceAlias": "held",
+              "position": {
+                "row": 4,
+                "col": 5
+              }
+            }
+          ],
+          "kind": "scenario"
+        },
+        "entity_identities": [
+          {
+            "id": 1,
+            "definition": "system/battle"
+          },
+          {
+            "id": 2,
+            "definition": "unit/char_202_demkni"
+          },
+          {
+            "id": 3,
+            "definition": "unit/support_hold"
+          }
+        ],
+        "actor_runtime": [
+          {
+            "id": 2,
+            "definition": "unit/char_202_demkni",
+            "resources": {
+              "hp": 2952,
+              "sp": 0
+            },
+            "buff_instances": [
+              {
+                "definition": "buff/support_saria_stacks",
+                "source": 2,
+                "target": 2,
+                "id": "buff/2/1",
+                "stacks": 1,
+                "started_at": 0,
+                "expires_at": null,
+                "interval_units": 0,
+                "generation": 1,
+                "tasks": {},
+                "blackboard": {}
+              },
+              {
+                "definition": "buff/support_saria_heal_sp",
+                "source": 2,
+                "target": 2,
+                "id": "buff/2/2",
+                "stacks": 1,
+                "started_at": 0,
+                "expires_at": null,
+                "interval_units": 0,
+                "generation": 1,
+                "tasks": {},
+                "blackboard": {}
+              },
+              {
+                "definition": "buff/demkni_emitter",
+                "source": 2,
+                "target": 2,
+                "id": "buff/2/3",
+                "stacks": 1,
+                "started_at": 0,
+                "expires_at": 900,
+                "interval_units": 0,
+                "generation": 1,
+                "tasks": {
+                  "expire": 46
+                },
+                "blackboard": {},
+                "aura_members": {}
+              }
+            ],
+            "attribute_base": {
+              "max_hp": 2952,
+              "atk": 513,
+              "def": 631,
+              "mres": 10.0,
+              "attack_interval": 1.2,
+              "move_speed": 1.0,
+              "block_count": 3,
+              "deploy_cost": 22,
+              "redeploy_time": 70,
+              "mass_level": 0,
+              "sp_recovery_rate": 1.0,
+              "attack_speed_ratio": 1.0,
+              "block_cost": 1
+            },
+            "attribute_modifiers": [
+              {
+                "attribute": "atk",
+                "layer": "direct_ratio",
+                "parameters": {
+                  "time_curve": {
+                    "max_steps": 5.0,
+                    "step_seconds": 20.0,
+                    "type": "staircase"
+                  }
+                },
+                "value": 0.05,
+                "buff_instance": "buff/2/1",
+                "stacks": 1,
+                "source": 2
+              },
+              {
+                "attribute": "def",
+                "layer": "direct_ratio",
+                "parameters": {
+                  "time_curve": {
+                    "max_steps": 5.0,
+                    "step_seconds": 20.0,
+                    "type": "staircase"
+                  }
+                },
+                "value": 0.04,
+                "buff_instance": "buff/2/1",
+                "stacks": 1,
+                "source": 2
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "pytest_output": "FF..F                                                                    [100%]\n================================== FAILURES ===================================\n_______ test_canonical_extension[myrtle_vanguard_regen_and_source_exit] _______\n..\\..\\Ark_emulator\\tools\\experiments\\deployed_support\\tests\\test_canonical_support.py:7: in test_canonical_extension\n    run_case(case)\n..\\..\\Ark_emulator\\tools\\witness_deployed_support.py:145: in run_case\n    record={'case':name,'result':'passed','actual':CASES[name]()}\n                                                   ^^^^^^^^^^^^^\n..\\..\\Ark_emulator\\tools\\witness_deployed_support.py:44: in case_myrtle_vanguard_regen_and_source_exit\n    pulses=events(sim,'regeneration.accepted');assert [(e['time'],e['payload']['amount']) for e in pulses]==[(30,25),(30,25)]\n                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE   AssertionError\n_____ test_canonical_extension[plosis_time_event_highest_and_source_exit] _____\n..\\..\\Ark_emulator\\tools\\experiments\\deployed_support\\tests\\test_canonical_support.py:7: in test_canonical_extension\n    run_case(case)\n..\\..\\Ark_emulator\\tools\\witness_deployed_support.py:145: in run_case\n    record={'case':name,'result':'passed','actual':CASES[name]()}\n                                                   ^^^^^^^^^^^^^\n..\\..\\Ark_emulator\\tools\\witness_deployed_support.py:56: in case_plosis_time_event_highest_and_source_exit\n    eq(sim.ctx.resources.current('plosis','sp'),1.3);eq(sim.ctx.resources.current('myrtle','sp'),1.3)\n                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n..\\..\\Ark_emulator\\tools\\witness_deployed_support.py:25: in eq\n    def eq(actual,expected):return six.eq(actual,expected)\n                                   ^^^^^^^^^^^^^^^^^^^^^^^\n..\\..\\Ark_emulator\\tools\\witness_deployed_six.py:22: in eq\n    def eq(value, expected): assert abs(value-expected) < 1e-7, (value,expected)\n                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^\nE   AssertionError: (7.3, 1.3)\n__ test_canonical_extension[canonical_regeneration_does_not_return_saria_sp] __\n..\\..\\Ark_emulator\\tools\\experiments\\deployed_support\\tests\\test_canonical_support.py:7: in test_canonical_extension\n    run_case(case)\n..\\..\\Ark_emulator\\tools\\witness_deployed_support.py:145: in run_case\n    record={'case':name,'result':'passed','actual':CASES[name]()}\n                                                   ^^^^^^^^^^^^^\n..\\..\\Ark_emulator\\tools\\witness_deployed_support.py:134: in case_canonical_regeneration_does_not_return_saria_sp\n    eq(sim.ctx.resources.current('myrtle','sp'),1)\n..\\..\\Ark_emulator\\tools\\witness_deployed_support.py:25: in eq\n    def eq(actual,expected):return six.eq(actual,expected)\n                                   ^^^^^^^^^^^^^^^^^^^^^^^\n..\\..\\Ark_emulator\\tools\\witness_deployed_six.py:22: in eq\n    def eq(value, expected): assert abs(value-expected) < 1e-7, (value,expected)\n                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^\nE   AssertionError: (7.0, 1)\n=========================== short test summary info ===========================\nFAILED ..\\..\\Ark_emulator\\tools\\experiments\\deployed_support\\tests\\test_canonical_support.py::test_canonical_extension[myrtle_vanguard_regen_and_source_exit]\nFAILED ..\\..\\Ark_emulator\\tools\\experiments\\deployed_support\\tests\\test_canonical_support.py::test_canonical_extension[plosis_time_event_highest_and_source_exit]\nFAILED ..\\..\\Ark_emulator\\tools\\experiments\\deployed_support\\tests\\test_canonical_support.py::test_canonical_extension[canonical_regeneration_does_not_return_saria_sp]\n3 failed, 2 passed in 9.59s\n",
+  "pytest_exit_code": 1,
+  "tests": [
+    {
+      "path": "tools/experiments/deployed_support/tests/test_canonical_support.py",
+      "source_sha256": "a5ec41e624d2f120c7884291c065151003b1d04f4944311cd0bfb3e8a2be5553",
+      "result": "failed"
+    },
+    {
+      "path": "tools/witness_deployed_support.py",
+      "source_sha256": "d1e7786b7a8a0f7b5d4a541b6c4383f0fd8f0e32a30a53b17817273b01122802",
+      "result": "failed"
+    },
+    {
+      "path": "tools/witness_deployed_six.py",
+      "source_sha256": "8e18f48689a6b163a733f563c85cfeff44af9ab437a3c34145ee9363bb91ad5d",
+      "result": "failed"
+    }
+  ],
+  "scope": "A/D/F canonical extensions only",
+  "formal_approval": false,
+  "review_receipt": false,
+  "client_pending_preserved": true
+}

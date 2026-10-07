@@ -1,0 +1,113 @@
+[
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/mortar_delay",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/player",
+        "kind": "entity",
+        "tags": [
+          "player",
+          "ground"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 5000,
+              "atk": 1,
+              "def": 31,
+              "mres": 17,
+              "taunt_level": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 5000,
+              "capacity": 5000,
+              "role": "health"
+            }
+          },
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "unit_type": 1
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/retire_mortar"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/mortar_delay",
+      "ruleset": "ruleset/ark_standard",
+      "objectives": {},
+      "map": {
+        "rows": 3,
+        "cols": 6
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/ch7/ranged/soticn/304d5222d69cf371",
+          "instanceAlias": "mortar",
+          "position": {
+            "row": 1,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/player",
+          "instanceAlias": "target",
+          "position": {
+            "row": 1,
+            "col": 4
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    },
+    "abilities": [
+      {
+        "id": "ability/peer/retire_mortar",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 2,
+              "parameters": {
+                "reason": "withdraw"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ]
+  }
+]

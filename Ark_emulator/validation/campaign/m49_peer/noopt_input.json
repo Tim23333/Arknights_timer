@@ -1,0 +1,190 @@
+{
+  "manifest": {
+    "requires": [
+      "preset/ark_standard"
+    ]
+  },
+  "entities": [
+    {
+      "id": "unit/secret",
+      "kind": "entity",
+      "tags": [
+        "enemy"
+      ],
+      "rules": {},
+      "components": {
+        "spatial": {},
+        "selection_state": {
+          "side": 1
+        },
+        "attributes": {
+          "base": {
+            "max_hp": 1200,
+            "atk": 1,
+            "def": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 1200,
+            "capacity": 1200,
+            "role": "health"
+          },
+          "gate": {
+            "initial": 0,
+            "capacity": 1
+          }
+        },
+        "buffs": {
+          "initial": []
+        },
+        "abilities": [
+          "ability/pulse",
+          "ability/hold",
+          "ability/release"
+        ]
+      }
+    },
+    {
+      "id": "unit/observer",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "spatial": {},
+        "selection_state": {
+          "side": 0
+        },
+        "attributes": {
+          "base": {
+            "max_hp": 1000,
+            "atk": 120,
+            "def": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 1000,
+            "capacity": 1000,
+            "role": "health"
+          }
+        },
+        "abilities": [
+          "ability/hit"
+        ]
+      }
+    }
+  ],
+  "rules": [],
+  "buffs": [],
+  "selectors": [
+    {
+      "id": "selector/hit",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "enemy"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/pulse",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "emit",
+            "target": "source",
+            "event": "peer.pulse"
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/hold",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "modify_resource",
+            "target": "source",
+            "resource": "gate",
+            "value": 1
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/release",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "modify_resource",
+            "target": "source",
+            "resource": "gate",
+            "value": 0
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/hit",
+      "kind": "ability",
+      "selector": "selector/hit",
+      "activation": {
+        "mode": "manual",
+        "parameters": {
+          "requires_targets": true
+        },
+        "on_start": [
+          {
+            "op": "damage",
+            "damage_type": "true"
+          }
+        ]
+      },
+      "timeline": []
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/independent/visibility",
+    "ruleset": "ruleset/ark_standard",
+    "objectives": {},
+    "map": {
+      "rows": 4,
+      "cols": 5
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/secret",
+        "instanceAlias": "secret",
+        "position": {
+          "row": 1,
+          "col": 1
+        }
+      },
+      {
+        "definition": "unit/observer",
+        "instanceAlias": "observer",
+        "position": {
+          "row": 3,
+          "col": 3
+        }
+      }
+    ]
+  }
+}

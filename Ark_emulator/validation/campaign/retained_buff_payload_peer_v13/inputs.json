@@ -1,0 +1,2828 @@
+[
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/retained_buff_payload",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 80,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [
+            "ability/peer/shot",
+            "ability/peer/forged",
+            "ability/peer/initial_cold"
+          ],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/target",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 0,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/controller",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 0,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [
+            "ability/peer/retire_source",
+            "ability/peer/kill_target"
+          ],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/shot",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "damage",
+              "target": 3,
+              "damage_type": "physical",
+              "scale": 1,
+              "projectile_definition": "projectile/peer/retained",
+              "on_success": [
+                {
+                  "op": "buff_application",
+                  "application_rule": "rule/peer/cold",
+                  "allowed": [
+                    "buff/peer/launched"
+                  ],
+                  "target": 3
+                }
+              ]
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/retire_source",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 2,
+              "parameters": {
+                "reason": "withdrawn"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill_target",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 3,
+              "parameters": {
+                "reason": "dead"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/forged",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "buff_application",
+              "application_rule": "rule/peer/unlaunched",
+              "allowed": [
+                "buff/peer/unlaunched"
+              ],
+              "target": 3
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/initial_cold",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 3,
+              "buff": "buff/peer/launched"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/launched",
+        "kind": "buff",
+        "duration_seconds": 1,
+        "selection_flags": {
+          "abnormal_flags": [
+            23
+          ]
+        },
+        "on_remove": [
+          {
+            "op": "buff_application",
+            "application_rule": "rule/peer/unlaunched",
+            "allowed": [
+              "buff/peer/unlaunched"
+            ],
+            "target": 3
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/unlaunched",
+        "kind": "buff",
+        "duration_seconds": 1,
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 99
+          }
+        ]
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/cold",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'accepted':True,'operations':[{'kind':'remove','buff':'buff/peer/launched','instance':'buff/3/1','generation':1},{'kind':'apply','buff':'buff/peer/launched','duration_seconds':1}]}"
+        }
+      },
+      {
+        "id": "rule/peer/unlaunched",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'accepted': True, 'operations': [{'kind': 'apply', 'buff': 'buff/peer/unlaunched', 'duration_seconds': 1}]}"
+        }
+      },
+      {
+        "id": "rule/peer/motion",
+        "kind": "rule",
+        "contract": "projectile.trajectory",
+        "implementation": {
+          "type": "provider",
+          "provider": "model.projectile.trajectory"
+        }
+      },
+      {
+        "id": "rule/peer/contact",
+        "kind": "rule",
+        "contract": "projectile.collision",
+        "implementation": {
+          "type": "provider",
+          "provider": "model.projectile.collision"
+        }
+      }
+    ],
+    "definitions": [
+      {
+        "id": "projectile/peer/retained",
+        "kind": "projectile",
+        "motion": {
+          "rule": "rule/peer/motion",
+          "parameters": {
+            "mode": "homing",
+            "speed": 10
+          }
+        },
+        "collision": {
+          "rule": "rule/peer/contact",
+          "parameters": {
+            "radius": 0
+          }
+        },
+        "lifetime_seconds": 2,
+        "max_hits": 1,
+        "can_hit_same_target": false,
+        "stop_after_max": true,
+        "stop_after_first": true,
+        "attach_at_launch": false,
+        "lifecycle": {
+          "source_invalid": "retain",
+          "source_hidden": "retain",
+          "target_invalid": "retain_position",
+          "target_hidden": "retain_position",
+          "finish_on_reach": true,
+          "hit_on_reach": false,
+          "force_reach_on_expire": false,
+          "hit_on_expire": false
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/retained_payload",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 2,
+        "cols": 4
+      },
+      "objectives": {},
+      "resources": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/target",
+          "instanceAlias": "target",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/peer/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 1,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/retained_buff_payload",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 80,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [
+            "ability/peer/shot",
+            "ability/peer/forged"
+          ],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/target",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 0,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/controller",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 0,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [
+            "ability/peer/retire_source",
+            "ability/peer/kill_target"
+          ],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/shot",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "damage",
+              "target": 3,
+              "damage_type": "physical",
+              "scale": 1,
+              "projectile_definition": "projectile/peer/retained",
+              "on_success": [
+                {
+                  "op": "buff_application",
+                  "application_rule": "rule/peer/cold",
+                  "allowed": [
+                    "buff/peer/launched"
+                  ],
+                  "target": 3
+                }
+              ]
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/retire_source",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 2,
+              "parameters": {
+                "reason": "withdrawn"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill_target",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 3,
+              "parameters": {
+                "reason": "dead"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/forged",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "buff_application",
+              "application_rule": "rule/peer/unlaunched",
+              "allowed": [
+                "buff/peer/unlaunched"
+              ],
+              "target": 3
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/launched",
+        "kind": "buff",
+        "duration_seconds": 1,
+        "selection_flags": {
+          "abnormal_flags": [
+            23
+          ]
+        }
+      },
+      {
+        "id": "buff/peer/unlaunched",
+        "kind": "buff",
+        "duration_seconds": 1,
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 99
+          }
+        ]
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/cold",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'accepted':True,'operations':[{'kind':'apply','buff':'buff/peer/launched','duration_seconds':True}]}"
+        }
+      },
+      {
+        "id": "rule/peer/unlaunched",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'accepted': True, 'operations': [{'kind': 'apply', 'buff': 'buff/peer/unlaunched', 'duration_seconds': 1}]}"
+        }
+      },
+      {
+        "id": "rule/peer/motion",
+        "kind": "rule",
+        "contract": "projectile.trajectory",
+        "implementation": {
+          "type": "provider",
+          "provider": "model.projectile.trajectory"
+        }
+      },
+      {
+        "id": "rule/peer/contact",
+        "kind": "rule",
+        "contract": "projectile.collision",
+        "implementation": {
+          "type": "provider",
+          "provider": "model.projectile.collision"
+        }
+      }
+    ],
+    "definitions": [
+      {
+        "id": "projectile/peer/retained",
+        "kind": "projectile",
+        "motion": {
+          "rule": "rule/peer/motion",
+          "parameters": {
+            "mode": "homing",
+            "speed": 10
+          }
+        },
+        "collision": {
+          "rule": "rule/peer/contact",
+          "parameters": {
+            "radius": 0
+          }
+        },
+        "lifetime_seconds": 2,
+        "max_hits": 1,
+        "can_hit_same_target": false,
+        "stop_after_max": true,
+        "stop_after_first": true,
+        "attach_at_launch": false,
+        "lifecycle": {
+          "source_invalid": "retain",
+          "source_hidden": "retain",
+          "target_invalid": "retain_position",
+          "target_hidden": "retain_position",
+          "finish_on_reach": true,
+          "hit_on_reach": false,
+          "force_reach_on_expire": false,
+          "hit_on_expire": false
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/retained_payload",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 2,
+        "cols": 4
+      },
+      "objectives": {},
+      "resources": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/target",
+          "instanceAlias": "target",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/peer/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 1,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/retained_buff_payload",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 80,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [
+            "ability/peer/shot",
+            "ability/peer/forged"
+          ],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/target",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 0,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/controller",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 0,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [
+            "ability/peer/retire_source",
+            "ability/peer/kill_target"
+          ],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/shot",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "damage",
+              "target": 3,
+              "damage_type": "physical",
+              "scale": 1,
+              "projectile_definition": "projectile/peer/retained",
+              "on_success": [
+                {
+                  "op": "buff_application",
+                  "application_rule": "rule/peer/cold",
+                  "allowed": [
+                    "buff/peer/launched"
+                  ],
+                  "target": 3
+                }
+              ]
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/retire_source",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 2,
+              "parameters": {
+                "reason": "withdrawn"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill_target",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 3,
+              "parameters": {
+                "reason": "dead"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/forged",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "buff_application",
+              "application_rule": "rule/peer/unlaunched",
+              "allowed": [
+                "buff/peer/unlaunched"
+              ],
+              "target": 3
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/launched",
+        "kind": "buff",
+        "duration_seconds": 1,
+        "selection_flags": {
+          "abnormal_flags": [
+            23
+          ]
+        }
+      },
+      {
+        "id": "buff/peer/unlaunched",
+        "kind": "buff",
+        "duration_seconds": 1,
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 99
+          }
+        ]
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/cold",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.copy_cast_probe"
+        }
+      },
+      {
+        "id": "rule/peer/unlaunched",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'accepted': True, 'operations': [{'kind': 'apply', 'buff': 'buff/peer/unlaunched', 'duration_seconds': 1}]}"
+        }
+      },
+      {
+        "id": "rule/peer/motion",
+        "kind": "rule",
+        "contract": "projectile.trajectory",
+        "implementation": {
+          "type": "provider",
+          "provider": "model.projectile.trajectory"
+        }
+      },
+      {
+        "id": "rule/peer/contact",
+        "kind": "rule",
+        "contract": "projectile.collision",
+        "implementation": {
+          "type": "provider",
+          "provider": "model.projectile.collision"
+        }
+      }
+    ],
+    "definitions": [
+      {
+        "id": "projectile/peer/retained",
+        "kind": "projectile",
+        "motion": {
+          "rule": "rule/peer/motion",
+          "parameters": {
+            "mode": "homing",
+            "speed": 10
+          }
+        },
+        "collision": {
+          "rule": "rule/peer/contact",
+          "parameters": {
+            "radius": 0
+          }
+        },
+        "lifetime_seconds": 2,
+        "max_hits": 1,
+        "can_hit_same_target": false,
+        "stop_after_max": true,
+        "stop_after_first": true,
+        "attach_at_launch": false,
+        "lifecycle": {
+          "source_invalid": "retain",
+          "source_hidden": "retain",
+          "target_invalid": "retain_position",
+          "target_hidden": "retain_position",
+          "finish_on_reach": true,
+          "hit_on_reach": false,
+          "force_reach_on_expire": false,
+          "hit_on_expire": false
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/retained_payload",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 2,
+        "cols": 4
+      },
+      "objectives": {},
+      "resources": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/target",
+          "instanceAlias": "target",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/peer/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 1,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/retained_buff_payload",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 80,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [
+            "ability/peer/shot",
+            "ability/peer/forged"
+          ],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/target",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 0,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/controller",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 0,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [
+            "ability/peer/retire_source",
+            "ability/peer/kill_target"
+          ],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/shot",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "damage",
+              "target": 3,
+              "damage_type": "physical",
+              "scale": 1,
+              "projectile_definition": "projectile/peer/retained",
+              "on_success": [
+                {
+                  "op": "buff_application",
+                  "application_rule": "rule/peer/cold",
+                  "allowed": [
+                    "buff/peer/launched",
+                    "buff/peer/unlaunched"
+                  ],
+                  "target": 3
+                }
+              ]
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/retire_source",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 2,
+              "parameters": {
+                "reason": "withdrawn"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill_target",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 3,
+              "parameters": {
+                "reason": "dead"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/forged",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "buff_application",
+              "application_rule": "rule/peer/unlaunched",
+              "allowed": [
+                "buff/peer/unlaunched"
+              ],
+              "target": 3
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/launched",
+        "kind": "buff",
+        "duration_seconds": 1,
+        "selection_flags": {
+          "abnormal_flags": [
+            23
+          ]
+        },
+        "effects": [
+          {
+            "op": "retire",
+            "target": 2,
+            "parameters": {
+              "reason": "withdrawn"
+            }
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/unlaunched",
+        "kind": "buff",
+        "duration_seconds": 1,
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 99
+          }
+        ]
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/cold",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'accepted':True,'operations':[{'kind':'apply','buff':'buff/peer/launched','duration_seconds':1},{'kind':'apply','buff':'buff/peer/unlaunched','duration_seconds':1}]}"
+        }
+      },
+      {
+        "id": "rule/peer/unlaunched",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'accepted': True, 'operations': [{'kind': 'apply', 'buff': 'buff/peer/unlaunched', 'duration_seconds': 1}]}"
+        }
+      },
+      {
+        "id": "rule/peer/motion",
+        "kind": "rule",
+        "contract": "projectile.trajectory",
+        "implementation": {
+          "type": "provider",
+          "provider": "model.projectile.trajectory"
+        }
+      },
+      {
+        "id": "rule/peer/contact",
+        "kind": "rule",
+        "contract": "projectile.collision",
+        "implementation": {
+          "type": "provider",
+          "provider": "model.projectile.collision"
+        }
+      }
+    ],
+    "definitions": [
+      {
+        "id": "projectile/peer/retained",
+        "kind": "projectile",
+        "motion": {
+          "rule": "rule/peer/motion",
+          "parameters": {
+            "mode": "homing",
+            "speed": 10
+          }
+        },
+        "collision": {
+          "rule": "rule/peer/contact",
+          "parameters": {
+            "radius": 0
+          }
+        },
+        "lifetime_seconds": 2,
+        "max_hits": 1,
+        "can_hit_same_target": false,
+        "stop_after_max": true,
+        "stop_after_first": true,
+        "attach_at_launch": false,
+        "lifecycle": {
+          "source_invalid": "retain",
+          "source_hidden": "retain",
+          "target_invalid": "retain_position",
+          "target_hidden": "retain_position",
+          "finish_on_reach": true,
+          "hit_on_reach": false,
+          "force_reach_on_expire": false,
+          "hit_on_expire": false
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/retained_payload",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 2,
+        "cols": 4
+      },
+      "objectives": {},
+      "resources": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/target",
+          "instanceAlias": "target",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/peer/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 1,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/retained_buff_payload",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 80,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [
+            "ability/peer/shot",
+            "ability/peer/forged"
+          ],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/target",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 0,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/controller",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 0,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [
+            "ability/peer/retire_source",
+            "ability/peer/kill_target"
+          ],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/shot",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "damage",
+              "target": 3,
+              "damage_type": "physical",
+              "scale": 1,
+              "projectile_definition": "projectile/peer/retained",
+              "on_success": [
+                {
+                  "op": "buff_application",
+                  "application_rule": "rule/peer/cold",
+                  "allowed": [
+                    "buff/peer/launched"
+                  ],
+                  "target": 3
+                }
+              ]
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/retire_source",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "modify_resource",
+              "target": 2,
+              "resource": "hp",
+              "value": 0
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill_target",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 3,
+              "parameters": {
+                "reason": "dead"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/forged",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "buff_application",
+              "application_rule": "rule/peer/unlaunched",
+              "allowed": [
+                "buff/peer/unlaunched"
+              ],
+              "target": 3
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/launched",
+        "kind": "buff",
+        "duration_seconds": 1,
+        "selection_flags": {
+          "abnormal_flags": [
+            23
+          ]
+        }
+      },
+      {
+        "id": "buff/peer/unlaunched",
+        "kind": "buff",
+        "duration_seconds": 1,
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 99
+          }
+        ]
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/cold",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'accepted': True, 'operations': [{'kind': 'apply', 'buff': 'buff/peer/launched', 'duration_seconds': 1}]}"
+        }
+      },
+      {
+        "id": "rule/peer/unlaunched",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'accepted': True, 'operations': [{'kind': 'apply', 'buff': 'buff/peer/unlaunched', 'duration_seconds': 1}]}"
+        }
+      },
+      {
+        "id": "rule/peer/motion",
+        "kind": "rule",
+        "contract": "projectile.trajectory",
+        "implementation": {
+          "type": "provider",
+          "provider": "model.projectile.trajectory"
+        }
+      },
+      {
+        "id": "rule/peer/contact",
+        "kind": "rule",
+        "contract": "projectile.collision",
+        "implementation": {
+          "type": "provider",
+          "provider": "model.projectile.collision"
+        }
+      }
+    ],
+    "definitions": [
+      {
+        "id": "projectile/peer/retained",
+        "kind": "projectile",
+        "motion": {
+          "rule": "rule/peer/motion",
+          "parameters": {
+            "mode": "homing",
+            "speed": 10
+          }
+        },
+        "collision": {
+          "rule": "rule/peer/contact",
+          "parameters": {
+            "radius": 0
+          }
+        },
+        "lifetime_seconds": 2,
+        "max_hits": 1,
+        "can_hit_same_target": false,
+        "stop_after_max": true,
+        "stop_after_first": true,
+        "attach_at_launch": false,
+        "lifecycle": {
+          "source_invalid": "retain",
+          "source_hidden": "retain",
+          "target_invalid": "retain_position",
+          "target_hidden": "retain_position",
+          "finish_on_reach": true,
+          "hit_on_reach": false,
+          "force_reach_on_expire": false,
+          "hit_on_expire": false
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/retained_payload",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 2,
+        "cols": 4
+      },
+      "objectives": {},
+      "resources": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/target",
+          "instanceAlias": "target",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/peer/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 1,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/retained_buff_payload",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 80,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [
+            "ability/peer/shot",
+            "ability/peer/forged"
+          ],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/target",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 0,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/controller",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 0,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [
+            "ability/peer/retire_source",
+            "ability/peer/kill_target"
+          ],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/shot",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "damage",
+              "target": 3,
+              "damage_type": "physical",
+              "scale": 1,
+              "projectile_definition": "projectile/peer/retained",
+              "on_success": [
+                {
+                  "op": "buff_application",
+                  "application_rule": "rule/peer/cold",
+                  "allowed": [
+                    "buff/peer/launched"
+                  ],
+                  "target": 3
+                }
+              ]
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/retire_source",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 2,
+              "parameters": {
+                "reason": "withdrawn"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill_target",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 3,
+              "parameters": {
+                "reason": "dead"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/forged",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "buff_application",
+              "application_rule": "rule/peer/unlaunched",
+              "allowed": [
+                "buff/peer/unlaunched"
+              ],
+              "target": 3
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/launched",
+        "kind": "buff",
+        "duration_seconds": 1,
+        "selection_flags": {
+          "abnormal_flags": [
+            23
+          ]
+        }
+      },
+      {
+        "id": "buff/peer/unlaunched",
+        "kind": "buff",
+        "duration_seconds": 1,
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 99
+          }
+        ]
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/cold",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'accepted': True, 'operations': [{'kind': 'apply', 'buff': 'buff/peer/launched', 'duration_seconds': 1}]}"
+        }
+      },
+      {
+        "id": "rule/peer/unlaunched",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'accepted': True, 'operations': [{'kind': 'apply', 'buff': 'buff/peer/unlaunched', 'duration_seconds': 1}]}"
+        }
+      },
+      {
+        "id": "rule/peer/motion",
+        "kind": "rule",
+        "contract": "projectile.trajectory",
+        "implementation": {
+          "type": "provider",
+          "provider": "model.projectile.trajectory"
+        }
+      },
+      {
+        "id": "rule/peer/contact",
+        "kind": "rule",
+        "contract": "projectile.collision",
+        "implementation": {
+          "type": "provider",
+          "provider": "model.projectile.collision"
+        }
+      }
+    ],
+    "definitions": [
+      {
+        "id": "projectile/peer/retained",
+        "kind": "projectile",
+        "motion": {
+          "rule": "rule/peer/motion",
+          "parameters": {
+            "mode": "homing",
+            "speed": 10
+          }
+        },
+        "collision": {
+          "rule": "rule/peer/contact",
+          "parameters": {
+            "radius": 0
+          }
+        },
+        "lifetime_seconds": 2,
+        "max_hits": 1,
+        "can_hit_same_target": false,
+        "stop_after_max": true,
+        "stop_after_first": true,
+        "attach_at_launch": false,
+        "lifecycle": {
+          "source_invalid": "retain",
+          "source_hidden": "retain",
+          "target_invalid": "retain_position",
+          "target_hidden": "retain_position",
+          "finish_on_reach": true,
+          "hit_on_reach": false,
+          "force_reach_on_expire": false,
+          "hit_on_expire": false
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/retained_payload",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 2,
+        "cols": 4
+      },
+      "objectives": {},
+      "resources": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/target",
+          "instanceAlias": "target",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/peer/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 1,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/retained_buff_payload",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 80,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [
+            "ability/peer/shot",
+            "ability/peer/forged"
+          ],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/target",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 0,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/controller",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 0,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [
+            "ability/peer/retire_source",
+            "ability/peer/kill_target"
+          ],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/shot",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "damage",
+              "target": 3,
+              "damage_type": "physical",
+              "scale": 1,
+              "projectile_definition": "projectile/peer/retained",
+              "on_success": [
+                {
+                  "op": "buff_application",
+                  "application_rule": "rule/peer/cold",
+                  "allowed": [
+                    "buff/peer/launched"
+                  ],
+                  "target": 3
+                }
+              ]
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/retire_source",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 2,
+              "parameters": {
+                "reason": "withdrawn"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill_target",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 3,
+              "parameters": {
+                "reason": "dead"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/forged",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "buff_application",
+              "application_rule": "rule/peer/unlaunched",
+              "allowed": [
+                "buff/peer/unlaunched"
+              ],
+              "target": 3
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/launched",
+        "kind": "buff",
+        "duration_seconds": 1,
+        "selection_flags": {
+          "abnormal_flags": [
+            23
+          ]
+        }
+      },
+      {
+        "id": "buff/peer/unlaunched",
+        "kind": "buff",
+        "duration_seconds": 1,
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 99
+          }
+        ]
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/cold",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'accepted': True, 'operations': [{'kind': 'apply', 'buff': 'buff/peer/launched', 'duration_seconds': 1}]}"
+        }
+      },
+      {
+        "id": "rule/peer/unlaunched",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'accepted': True, 'operations': [{'kind': 'apply', 'buff': 'buff/peer/unlaunched', 'duration_seconds': 1}]}"
+        }
+      },
+      {
+        "id": "rule/peer/motion",
+        "kind": "rule",
+        "contract": "projectile.trajectory",
+        "implementation": {
+          "type": "provider",
+          "provider": "model.projectile.trajectory"
+        }
+      },
+      {
+        "id": "rule/peer/contact",
+        "kind": "rule",
+        "contract": "projectile.collision",
+        "implementation": {
+          "type": "provider",
+          "provider": "model.projectile.collision"
+        }
+      }
+    ],
+    "definitions": [
+      {
+        "id": "projectile/peer/retained",
+        "kind": "projectile",
+        "motion": {
+          "rule": "rule/peer/motion",
+          "parameters": {
+            "mode": "homing",
+            "speed": 10
+          }
+        },
+        "collision": {
+          "rule": "rule/peer/contact",
+          "parameters": {
+            "radius": 0
+          }
+        },
+        "lifetime_seconds": 2,
+        "max_hits": 1,
+        "can_hit_same_target": false,
+        "stop_after_max": true,
+        "stop_after_first": true,
+        "attach_at_launch": false,
+        "lifecycle": {
+          "source_invalid": "retain",
+          "source_hidden": "retain",
+          "target_invalid": "retain_position",
+          "target_hidden": "retain_position",
+          "finish_on_reach": true,
+          "hit_on_reach": false,
+          "force_reach_on_expire": false,
+          "hit_on_expire": false
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/retained_payload",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 2,
+        "cols": 4
+      },
+      "objectives": {},
+      "resources": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/target",
+          "instanceAlias": "target",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/peer/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 1,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/retained_buff_payload",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 80,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [
+            "ability/peer/shot",
+            "ability/peer/forged"
+          ],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/target",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 0,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/controller",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 0,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [
+            "ability/peer/retire_source",
+            "ability/peer/kill_target"
+          ],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/shot",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "damage",
+              "target": 3,
+              "damage_type": "physical",
+              "scale": 1,
+              "projectile_definition": "projectile/peer/retained",
+              "on_success": [
+                {
+                  "op": "buff_application",
+                  "application_rule": "rule/peer/cold",
+                  "allowed": [
+                    "buff/peer/launched"
+                  ],
+                  "target": 3
+                }
+              ]
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/retire_source",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 2,
+              "parameters": {
+                "reason": "withdrawn"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill_target",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 3,
+              "parameters": {
+                "reason": "dead"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/forged",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "buff_application",
+              "application_rule": "rule/peer/unlaunched",
+              "allowed": [
+                "buff/peer/unlaunched"
+              ],
+              "target": 3
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/launched",
+        "kind": "buff",
+        "duration_seconds": 1,
+        "selection_flags": {
+          "abnormal_flags": [
+            23
+          ]
+        }
+      },
+      {
+        "id": "buff/peer/unlaunched",
+        "kind": "buff",
+        "duration_seconds": 1,
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 99
+          }
+        ]
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/cold",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'accepted': True, 'operations': [{'kind': 'apply', 'buff': 'buff/peer/launched', 'duration_seconds': 1}]}"
+        }
+      },
+      {
+        "id": "rule/peer/unlaunched",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'accepted': True, 'operations': [{'kind': 'apply', 'buff': 'buff/peer/unlaunched', 'duration_seconds': 1}]}"
+        }
+      },
+      {
+        "id": "rule/peer/motion",
+        "kind": "rule",
+        "contract": "projectile.trajectory",
+        "implementation": {
+          "type": "provider",
+          "provider": "model.projectile.trajectory"
+        }
+      },
+      {
+        "id": "rule/peer/contact",
+        "kind": "rule",
+        "contract": "projectile.collision",
+        "implementation": {
+          "type": "provider",
+          "provider": "model.projectile.collision"
+        }
+      }
+    ],
+    "definitions": [
+      {
+        "id": "projectile/peer/retained",
+        "kind": "projectile",
+        "motion": {
+          "rule": "rule/peer/motion",
+          "parameters": {
+            "mode": "homing",
+            "speed": 10
+          }
+        },
+        "collision": {
+          "rule": "rule/peer/contact",
+          "parameters": {
+            "radius": 0
+          }
+        },
+        "lifetime_seconds": 2,
+        "max_hits": 1,
+        "can_hit_same_target": false,
+        "stop_after_max": true,
+        "stop_after_first": true,
+        "attach_at_launch": false,
+        "lifecycle": {
+          "source_invalid": "retain",
+          "source_hidden": "retain",
+          "target_invalid": "retain_position",
+          "target_hidden": "retain_position",
+          "finish_on_reach": true,
+          "hit_on_reach": false,
+          "force_reach_on_expire": false,
+          "hit_on_expire": false
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/retained_payload",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 2,
+        "cols": 4
+      },
+      "objectives": {},
+      "resources": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/target",
+          "instanceAlias": "target",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/peer/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 1,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/retained_buff_payload",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 80,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [
+            "ability/peer/shot",
+            "ability/peer/forged"
+          ],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/target",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 0,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/controller",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 1000,
+              "atk": 0,
+              "def": 20,
+              "mres": 0
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 1000,
+              "capacity": 1000,
+              "role": "health"
+            }
+          },
+          "abilities": [
+            "ability/peer/retire_source",
+            "ability/peer/kill_target"
+          ],
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/shot",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "damage",
+              "target": 3,
+              "damage_type": "physical",
+              "scale": 1,
+              "projectile_definition": "projectile/peer/retained",
+              "on_success": [
+                {
+                  "op": "buff_application",
+                  "application_rule": "rule/peer/cold",
+                  "allowed": [
+                    "buff/peer/launched"
+                  ],
+                  "target": 3
+                }
+              ]
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/retire_source",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 2,
+              "parameters": {
+                "reason": "withdrawn"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/kill_target",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 3,
+              "parameters": {
+                "reason": "dead"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/forged",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "buff_application",
+              "application_rule": "rule/peer/unlaunched",
+              "allowed": [
+                "buff/peer/unlaunched"
+              ],
+              "target": 3
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/launched",
+        "kind": "buff",
+        "duration_seconds": 1,
+        "selection_flags": {
+          "abnormal_flags": [
+            23
+          ]
+        },
+        "effects": [
+          {
+            "op": "buff_application",
+            "application_rule": "rule/peer/unlaunched",
+            "allowed": [
+              "buff/peer/unlaunched"
+            ],
+            "target": 3
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/unlaunched",
+        "kind": "buff",
+        "duration_seconds": 1,
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 99
+          }
+        ]
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/peer/cold",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'accepted': True, 'operations': [{'kind': 'apply', 'buff': 'buff/peer/launched', 'duration_seconds': 1}]}"
+        }
+      },
+      {
+        "id": "rule/peer/unlaunched",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "expression",
+          "expression": "{'accepted': True, 'operations': [{'kind': 'apply', 'buff': 'buff/peer/unlaunched', 'duration_seconds': 1}]}"
+        }
+      },
+      {
+        "id": "rule/peer/motion",
+        "kind": "rule",
+        "contract": "projectile.trajectory",
+        "implementation": {
+          "type": "provider",
+          "provider": "model.projectile.trajectory"
+        }
+      },
+      {
+        "id": "rule/peer/contact",
+        "kind": "rule",
+        "contract": "projectile.collision",
+        "implementation": {
+          "type": "provider",
+          "provider": "model.projectile.collision"
+        }
+      }
+    ],
+    "definitions": [
+      {
+        "id": "projectile/peer/retained",
+        "kind": "projectile",
+        "motion": {
+          "rule": "rule/peer/motion",
+          "parameters": {
+            "mode": "homing",
+            "speed": 10
+          }
+        },
+        "collision": {
+          "rule": "rule/peer/contact",
+          "parameters": {
+            "radius": 0
+          }
+        },
+        "lifetime_seconds": 2,
+        "max_hits": 1,
+        "can_hit_same_target": false,
+        "stop_after_max": true,
+        "stop_after_first": true,
+        "attach_at_launch": false,
+        "lifecycle": {
+          "source_invalid": "retain",
+          "source_hidden": "retain",
+          "target_invalid": "retain_position",
+          "target_hidden": "retain_position",
+          "finish_on_reach": true,
+          "hit_on_reach": false,
+          "force_reach_on_expire": false,
+          "hit_on_expire": false
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/retained_payload",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 2,
+        "cols": 4
+      },
+      "objectives": {},
+      "resources": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/target",
+          "instanceAlias": "target",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/peer/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 1,
+            "col": 0
+          }
+        }
+      ]
+    }
+  }
+]

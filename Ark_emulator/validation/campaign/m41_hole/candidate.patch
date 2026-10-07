@@ -1,0 +1,531 @@
+--- a/ark_sim/adapters/api.py
++++ b/ark_sim/adapters/api.py
+@@ -48,6 +48,9 @@
+             self.ctx.spatial.grid.tile_reader = self.ctx.terrain.tile
+         self.ctx.movement = MovementSystem(self.ctx)
+         self.ctx.lifecycle = LifecycleSystem(self.ctx)
++        if any(p.get("type")=="contact_lifecycle" for p in self.ctx.spatial.grid.tile_mechanics.values()):
++            from ark_sim.domains.tile_contacts import TileContactSystem
++            self.ctx.tile_contacts=TileContactSystem(self.ctx)
+         if any(d.get("kind") == "projectile" for d in program.definitions.values()):
+             self.ctx.projectiles = ProjectileSystem(self.ctx)
+         if program.scenario.get("timeline") is not None:
+@@ -123,6 +126,8 @@
+             # Registered before initial waves and input tasks: expiry at t is
+             # removed before phase-0 commands can capture an at_cast snapshot.
+             self.session.add_system(self.ctx.buffs.tick, phase=0)
++        if self.ctx.tile_contacts is not None:
++            self.session.add_system(self.ctx.tile_contacts.tick, phase=0)
+         systems = {"commands": lambda s: None, "resources": self.ctx.resources.tick,
+                    "behavior": self.ctx.behavior.tick, "abilities": self.ctx.abilities.tick,
+                    "movement": self._movement_tick, "lifecycle": self.ctx.lifecycle.tick}
+--- a/ark_sim/content/capabilities.py
++++ b/ark_sim/content/capabilities.py
+@@ -316,7 +316,8 @@
+ 
+     resources(scenario.get("resources", {}), f"{scenario['id']}.resources", [])
+     for key,profile in scenario.get('map',{}).get('tile_mechanics',{}).items():
+-        if profile.get('rule'):require('movement.transition',f"{scenario['id']}.map.tile_mechanics.{key}",explicit=profile['rule'])
++        if profile.get('type')=='contact_lifecycle':require('tile.contact',f"{scenario['id']}.map.tile_mechanics.{key}",explicit=profile['rule'])
++        elif profile.get('rule'):require('movement.transition',f"{scenario['id']}.map.tile_mechanics.{key}",explicit=profile['rule'])
+     if scenario.get("timeline") is not None:
+         require("time.quantize", f"{scenario['id']}.timeline")
+         for wi, wave in enumerate(scenario["timeline"]["waves"]):
+--- a/ark_sim/content/schemas.py
++++ b/ark_sim/content/schemas.py
+@@ -10,7 +10,7 @@
+     "control": {"clock_policy", "ack_policy", "steps", "on_start", "on_complete", "on_cancel"},
+     "entity": {"tags", "components", "growth", "talents", "equipment", "progression"},
+     "ability": {"activation", "selector", "timeline", "target_capture", "interrupt_policy", "success_definition", "duration_seconds", "cooldown_seconds", "events", "parameters"},
+-    "buff": {"selection_flags","duration_seconds", "interval_seconds", "stacking", "modifiers", "events", "effects", "parameters", "removal", "duration_rule", "interval_rule", "control", "aura", "on_remove", "movement_damage", "damage_hooks"},
++    "buff": {"contact_flags", "selection_flags","duration_seconds", "interval_seconds", "stacking", "modifiers", "events", "effects", "parameters", "removal", "duration_rule", "interval_rule", "control", "aura", "on_remove", "movement_damage", "damage_hooks"},
+     "selector": {"eligibility", "region", "filters", "ordering", "limit", "limit_attribute", "provider", "parameters", "eligible_rule"},
+     "behavior": {"decision", "provider", "implementation", "states", "initial", "initial_state", "transitions", "parameters"},
+     "policy": {"contract", "provider", "implementation", "parameters"},
+@@ -29,7 +29,7 @@
+     "deployable": {"policy", "cost", "base_cost", "cooldown_seconds", "refund_ratio", "terrain", "capacity", "rules", "parameters", "deployed", "initial_state"},
+     "behavior": {"machine", "state", "rules", "parameters"},
+     "lifecycle": {"policy", "initial_state", "rules", "parameters", "leak_loss", "revive"},
+-    "spatial": {"coordinate_space", "position", "facing", "route", "route_id", "speed", "blocking", "occupancy", "radius", "projectile", "rules", "parameters", "wait_seconds", "movement", "steering", "timing_origins", "terrain", "block_capacity", "block_cost"},
++    "spatial": {"motion_mode", "coordinate_space", "position", "facing", "route", "route_id", "speed", "blocking", "occupancy", "radius", "projectile", "rules", "parameters", "wait_seconds", "movement", "steering", "timing_origins", "terrain", "block_capacity", "block_cost"},
+     "buffs": {"initial", "policy", "rules", "parameters"},
+     "buff_container": {"initial", "policy", "rules", "parameters"},
+     "ownership": {"owner", "on_owner_retire"},
+@@ -38,7 +38,7 @@
+ RESOURCE_FIELDS = {"initial", "capacity", "capacity_attribute", "capacity_change_rule", "recovery_rule", "recovery_rate", "recovery", "rules", "parameters", "bounds_rule", "capacity_rule", "role", "events", "recovery_freeze_abilities", "recovery_freeze_rule"}
+ EFFECT_FIELDS = {"projectile_definition", "center_position", "op", "target", "rules", "read_mode", "damage_type", "scale", "additions", "amount", "delta", "value", "amount_rule", "resource", "buff", "definition", "position", "facing", "tags", "on_success", "on_failure", "effects", "condition", "parameters", "event", "payload", "type", "state", "machine", "distance", "offset", "direction", "kind", "at_seconds", "delay_seconds", "effect", "stacks", "selector", "lifetime_seconds", "remove_all", "metadata", "duration_seconds", "center", "radius", "filters", "owner", "ability", "force", "stream", "probability"}
+ DEFAULT_CAPABILITIES = {
+-    "effects": {"damage", "heal", "regenerate", "modify_resource", "apply_buff", "remove_buff", "spawn", "emit", "move", "state", "schedule", "transition", "area", "trigger_ability", "push", "random", "input_lock", "retire", "apply_terrain_overlay", "remove_terrain_overlay", "activate_predefined"},
++    "effects": {"set_motion_mode", "damage", "heal", "regenerate", "modify_resource", "apply_buff", "remove_buff", "spawn", "emit", "move", "state", "schedule", "transition", "area", "trigger_ability", "push", "random", "input_lock", "retire", "apply_terrain_overlay", "remove_terrain_overlay", "activate_predefined"},
+     "activations": {"manual", "automatic_attack", "on_deploy", "passive"},
+     "read_modes": {"at_hit", "at_cast", "at_launch"},
+     "stacking": {"refresh", "independent", "add", "extend", "max"},
+@@ -119,6 +119,8 @@
+                 raise ValueError("terrain overlay requires actor ownership")
+         except (ValueError, TypeError) as error:
+             raise ContentError(f"{path}: {error}") from error
++    if effect["op"] == "set_motion_mode" and (type(effect.get("value")) is not int or effect["value"] not in (0,1)):
++        raise ContentError(path+": explicit WALK0/FLY1 motion mode required")
+     if effect["op"] == "retire":
+         parameters = effect.get("parameters", {})
+         if not isinstance(parameters, Mapping):
+@@ -295,6 +297,8 @@
+         if "route_id" in components.get("spatial", {}):
+             raise ContentError(f"{identifier}.spatial.route_id: route ID resolution is unsupported; use an inline route")
+         spatial = components.get("spatial", {})
++        if "motion_mode" in spatial and (type(spatial["motion_mode"]) is not int or spatial["motion_mode"] not in (0,1)):
++            raise ContentError(identifier+": explicit spatial motion mode WALK0/FLY1 required")
+         if "capacity" in components.get("deployable", {}):
+             number(components["deployable"]["capacity"], f"{identifier}.deployable.capacity", 0)
+         if "route" in spatial:
+@@ -409,6 +413,10 @@
+                     raise ContentError(f"{location}.samples.stream: explicit stream required")
+                 if type(hook["samples"].get("count", 1)) is not int or not 0 <= hook["samples"].get("count", 1) <= 100:
+                     raise ContentError(f"{location}.samples.count: bounded integer required")
++        if "contact_flags" in definition:
++            flags=definition["contact_flags"]
++            if not isinstance(flags,Mapping) or set(flags)!={"defer_fall"} or type(flags["defer_fall"]) is not bool:
++                raise ContentError(identifier+": contact_flags requires explicit defer_fall boolean")
+         if "movement_damage" in definition:
+             fields(definition["movement_damage"], {"effect"}, f"{identifier}.movement_damage")
+             effect = definition["movement_damage"].get("effect")
+@@ -590,6 +598,8 @@
+             if "position" in entity:
+                 validate_position(entity["position"], f"{path}.position", map_definition)
+             spatial = entity.get("components", {}).get("spatial", {})
++            if "motion_mode" in spatial and (type(spatial["motion_mode"]) is not int or spatial["motion_mode"] not in (0,1)):
++                raise ContentError(path+": explicit spatial motion mode WALK0/FLY1 required")
+             if "route" in spatial:
+                 validate_route(spatial["route"], f"{path}.components.spatial.route", map_definition)
+             alias = entity.get("instanceAlias")
+@@ -642,6 +652,8 @@
+             if "position" in wave:
+                 validate_position(wave["position"], f"{path}.position", map_definition)
+             spatial = wave.get("components", {}).get("spatial", {})
++            if "motion_mode" in spatial and (type(spatial["motion_mode"]) is not int or spatial["motion_mode"] not in (0,1)):
++                raise ContentError(path+": explicit spatial motion mode WALK0/FLY1 required")
+             if "route" in spatial:
+                 validate_route(spatial["route"], f"{path}.components.spatial.route", map_definition)
+             reserve_alias(wave.get("instanceAlias"), f"{path}.instanceAlias")
+--- a/ark_sim/content/spatial_validation.py
++++ b/ark_sim/content/spatial_validation.py
+@@ -154,7 +154,7 @@
+             from ark_sim.domains.spatial import GridTopology
+             topology = GridTopology(map_definition)
+             row, col = topology._cell(actual)
+-            if enum(route.get("motionMode"), MOTION, path+".motionMode") == 0 and not topology.passable(row, col):
++            if enum(route.get("motionMode"), MOTION, path+".motionMode") == 0 and not (topology.appearance_passable(row,col) if kind==6 else topology.passable(row,col)):
+                 fail(location+".effective_position", "ground appearance/offset cannot target an impassable cell")
+     if hidden: fail(path, "route ends disappeared without paired appearance")
+     if map_definition and map_definition.get("tile_mechanics"):
+--- a/ark_sim/domains/context.py
++++ b/ark_sim/domains/context.py
+@@ -61,6 +61,7 @@
+         self._notifying = 0
+         self.last_calculation_event_id = None
+         self.projectiles = None
++        self.tile_contacts = None
+ 
+     def entity(self, ref):
+         return self.session.world.get(ref)
+--- a/ark_sim/domains/effects.py
++++ b/ark_sim/domains/effects.py
+@@ -54,7 +54,7 @@
+             health_delta = operation == "modify_resource" and (
+                 self.ctx.get(target, ("resources", effect.get("resource"), "spec", "role")) == "health" or
+                 effect.get("resource") == self.ctx.program.ruleset.get("parameters", {}).get("health_resource"))
+-            if not (operation == "area" and effect.get("center_position") is not None) and (health_delta or operation in {"damage", "heal", "regenerate", "apply_buff", "area", "push", "move", "displace", "trigger_ability"}) and not getattr(self.ctx, "effect_target_available", lambda ref: True)(target):
++            if not (operation == "area" and effect.get("center_position") is not None) and (health_delta or operation in {"damage", "heal", "regenerate", "apply_buff", "area", "push", "move", "displace", "trigger_ability", "set_motion_mode"}) and not getattr(self.ctx, "effect_target_available", lambda ref: True)(target):
+                 self.ctx.emit("effect.visibility_rejected", {"source": source, "target": target, "operation": operation}, cause)
+                 continue
+             if operation == 'activate_predefined':
+@@ -173,6 +173,8 @@
+                     "key": key, "enabled": options["enabled"]}, cause)
+             elif operation in ("state", "transition"):
+                 self.ctx.behavior.transition(target, effect["state"], cause=cause)
++            elif operation == "set_motion_mode":
++                self.ctx.movement.set_motion_mode(source,target,effect["value"])
+             elif operation in ("move", "displace"):
+                 self.ctx.movement.displace(source, target, effect, ability)
+             elif operation == "push":
+--- a/ark_sim/domains/lifecycle.py
++++ b/ark_sim/domains/lifecycle.py
+@@ -9,7 +9,7 @@
+         self.ctx = context
+ 
+     def create(self, *args, **kwargs):
+-        if self.ctx.terrain is None and kwargs.get('active', True) and kwargs.get('registration_key') is None:
++        if self.ctx.terrain is None and self.ctx.tile_contacts is None and kwargs.get('active', True) and kwargs.get('registration_key') is None:
+             return self._create(*args, **kwargs)
+         with self.ctx.session.atomic():
+             return self._create(*args, **kwargs)
+@@ -64,6 +64,9 @@
+         spatial["facing"] = facing
+         if route is not None:
+             spatial["route"] = thaw(route)
++        if "motion_mode" in spatial:
++            if type(spatial["motion_mode"]) is not int or spatial["motion_mode"] not in (0,1):raise ValueError("explicit spatial motion mode WALK0/FLY1 required")
++            if spatial.get("route"):spatial["route"]["motionMode"]=spatial["motion_mode"]
+         if parameters.get("timing_origins") is not None:
+             origins = parameters["timing_origins"]
+             if not isinstance(origins, Mapping) or any(type(value) is not int or value < 0 for value in origins.values()):
+@@ -125,6 +128,7 @@
+         self.ctx.emit("entity.created", {"source": ref, "target": ref, "definition": definition_id})
+         if deployed:
+             self.ctx.emit("entity.deployed", {"source": ref, "target": ref})
++        if self.ctx.tile_contacts is not None:self.ctx.tile_contacts.inspect(ref,"born")
+         return ref
+ 
+     def activate_predefined(self, key):
+--- a/ark_sim/domains/movement.py
++++ b/ark_sim/domains/movement.py
+@@ -245,9 +245,16 @@
+         self.tracks_distance = any(d.get("kind") == "buff" and d.get("movement_damage")
+                                    for d in context.program.definitions.values())
+ 
+-    def travel(self, target, destination, kind, spatial=None):
++    def travel(self,target,destination,kind,spatial=None,source=None):
++        if self.ctx.tile_contacts is None:return self._travel(target,destination,kind,spatial,source)
++        with self.ctx.session.atomic():return self._travel(target,destination,kind,spatial,source)
++
++    def _travel(self, target, destination, kind, spatial=None,source=None):
+         spatial = spatial or self.ctx.get(target, ("spatial",), {})
+         origin = spatial["position"]
++        contact=self.ctx.tile_contacts
++        hit=contact.segment(target,origin,destination,kind,source) if contact is not None else None
++        if hit is not None:destination=hit["position"]
+         distance = math.hypot(destination["row"]-origin["row"], destination["col"]-origin["col"])
+         spatial["position"] = dict(destination)
+         if self.tracks_distance:
+@@ -256,6 +263,9 @@
+         if self.tracks_distance and distance:
+             self.ctx.emit("movement.traveled", {"source": target, "target": target, "origin": origin,
+                 "destination": destination, "distance": distance, "kind": kind})
++        if contact is not None:
++            if hit is not None:contact.settle(target,hit,kind)
++            else:contact.inspect(target,kind,source)
+         return distance
+ 
+     @staticmethod
+@@ -333,7 +343,7 @@
+             if not isinstance(plan["position"], dict) or set(plan["position"]) != {"row", "col"}:
+                 raise ValueError("transition position must contain exactly row/col")
+             row, col = self.ctx.spatial.grid._cell(plan["position"])
+-            if plan["relocate"] and route_motion_mode(route) == 0 and not self.ctx.spatial.grid.passable(row, col):
++            if plan["relocate"] and route_motion_mode(route) == 0 and not self.ctx.spatial.grid.appearance_passable(row, col):
+                 raise ValueError("appearance destination is impassable")
+             if tile_transition is not None:
+                 intended = prepared["position"] if kind == 6 else spatial["position"]
+@@ -364,6 +374,8 @@
+             self.ctx.spatial.blocking()
+             self.ctx.buffs.reconcile()
+             consumed = {"tile_transition":tile_transition} if tile_transition is not None else {}
++            if self.ctx.tile_contacts is not None and plan["relocate"]:
++                self.ctx.tile_contacts.inspect(ref,"appear")
+             self.ctx.emit("movement.visibility_changed", {"source": ref, "target": ref, "hidden": plan["hidden"],
+                 "origin": origin, "position": dict(spatial["position"]), "relocated": plan["relocate"],
+                 "policy": thaw(policy), "distance_recorded": 0, **consumed})
+@@ -388,6 +400,9 @@
+             if not route_hidden and self.ctx.get(ref, ("runtime", "behavior_decision"), {}).get("move") is False:
+                 continue
+             spatial = self.ctx.get(ref, ("spatial",), {})
++            if self.ctx.tile_contacts is not None:
++                self.ctx.tile_contacts.inspect(ref,"movement_check")
++                if not self.ctx.active(ref):continue
+             if spatial.get("forced_motion"):
+                 continue
+             route = spatial.get("route")
+@@ -404,6 +419,7 @@
+             while cursor < len(checkpoints) and self.checkpoint_type(checkpoints[cursor]) in (1, 2, 3, 4, 5, 6):
+                 if self.checkpoint_type(checkpoints[cursor]) in (5, 6):
+                     self.transition_checkpoint(ref, checkpoints[cursor], route, spatial, state)
++                    if not self.ctx.active(ref):break
+                     spatial = self.ctx.get(ref, ("spatial",), {})
+                     state = spatial["movement"]
+                     cursor = state["checkpoint"]
+@@ -433,6 +449,7 @@
+                 state["path_index"] = 0
+                 spatial.pop("movement_path", None)
+                 cursor += 1
++            if not self.ctx.active(ref):continue
+             if waiting:
+                 if spatial.get("steering"):
+                     spatial["velocity"] = {"row": 0, "col": 0}
+@@ -506,6 +523,19 @@
+             self.travel(ref, destination, "route", spatial)
+         self.ctx.spatial.blocking()
+ 
++    def set_motion_mode(self,source,target,mode):
++        if type(mode) is not int or mode not in (0,1):raise ValueError("motion mode must be WALK0/FLY1")
++        with self.ctx.session.atomic():
++            spatial=self.ctx.get(target,("spatial",),{})
++            spatial["motion_mode"]=mode
++            if spatial.get("route"):
++                spatial["route"]["motionMode"]=mode
++            spatial.pop("movement_path",None);spatial.pop("velocity",None)
++            self.ctx.set(target,("spatial",),spatial)
++            self.ctx.emit("movement.motion_changed",{"source":source,"target":target,"mode":mode})
++            if self.ctx.tile_contacts is not None:self.ctx.tile_contacts.inspect(target,"motion_changed",source)
++            self.ctx.spatial.blocking()
++
+     def displace(self, source, target, effect, ability):
+         with self.ctx.session.atomic():
+             position = self.ctx.get(target, ("spatial", "position"))
+@@ -516,7 +546,7 @@
+                 destination = {"row": position["row"]+offset.get("row", 0), "col": position["col"]+offset.get("col", 0)}
+             # Share the same half-up border profile as route/compiler cells.
+             self.ctx.spatial.grid._cell(destination)
+-            self.travel(target, destination, "direct")
++            self.travel(target, destination, "direct",source=source)
+             self.ctx.set(target, ("runtime", "blocked_by"), None)
+             self.ctx.buffs.reconcile()
+             self.ctx.emit("movement.displaced", {"source": source, "target": target, "position": destination})
+@@ -587,8 +617,9 @@
+             delta = min(delta, motion["remaining_distance"])
+             position = spatial["position"]
+             destination = {axis: position[axis]+motion["direction"][axis]*delta for axis in ("row", "col")}
+-            destination, collided = self.ctx.spatial.grid.clip_segment(position, destination, route_motion_mode(spatial.get("route")))
+-            actual = self.travel(target, destination, "forced", spatial)
++            destination, collided = self.ctx.spatial.grid.clip_segment(position, destination, self.ctx.tile_contacts.mode(target) if self.ctx.tile_contacts is not None else route_motion_mode(spatial.get("route")), forced=True)
++            actual = self.travel(target, destination, "forced", spatial,source=motion["source"])
++            if not self.ctx.active(target):return
+             motion["remaining_distance"] = max(0, motion["remaining_distance"]-actual)
+             motion["remaining_steps"] -= 1
+             spatial = self.ctx.get(target, ("spatial",), {})
+--- a/ark_sim/domains/spatial.py
++++ b/ark_sim/domains/spatial.py
+@@ -101,6 +101,8 @@
+         if not self.inside(row, col):
+             return False
+         tile = self.tile(row, col)
++        contact=self.tile_mechanics.get(tile.get("tileKey"),{})
++        if contact.get("type")=="contact_lifecycle":return contact["normal_path_passable"]
+         if "groundPassable" in tile:
+             return tile["groundPassable"]
+         key = tile.get("tileKey", "tile_floor")
+@@ -110,13 +112,18 @@
+             return True
+         return bool((tile.get("passableMask", 1) or 0) & 1)
+ 
++    def appearance_passable(self,row,col):
++        if not self.inside(row,col):return False
++        profile=self.tile_mechanics.get(self.tile(row,col).get("tileKey"),{})
++        return profile["appearance_contact_passable"] if profile.get("type")=="contact_lifecycle" else self.passable(row,col)
++
+     def _cell(self, position):
+         cell = project_cell(position)
+         if not self.inside(*cell):
+             raise ValueError(f"position outside map: {dict(position)}")
+         return cell
+ 
+-    def clip_segment(self, origin, destination, motion_mode=0):
++    def clip_segment(self, origin, destination, motion_mode=0, forced=False):
+         """Point-body grid collision at exact cell boundaries, no tunneling."""
+         row, col = self._cell(origin)
+         dr, dc = destination["row"]-origin["row"], destination["col"]-origin["col"]
+@@ -127,7 +134,10 @@
+         next_c = ((col + .5*step_c)-origin["col"])/dc if dc else math.inf
+         inc_r, inc_c = abs(1/dr) if dr else math.inf, abs(1/dc) if dc else math.inf
+         def valid(r, c):
+-            return self.inside(r, c) and (motion_mode == 1 or self.passable(r, c))
++            if not self.inside(r,c):return False
++            profile=self.tile_mechanics.get(self.tile(r,c).get("tileKey"),{})
++            contact=forced and profile.get("type")=="contact_lifecycle" and profile["forced_contact_passable"]
++            return motion_mode == 1 or contact or self.passable(r,c)
+         for _ in range(self.rows+self.cols+4):
+             at = min(next_r, next_c)
+             if at > 1:
+@@ -142,6 +152,15 @@
+                 for axis in ("row", "col"):
+                     if point[axis] != origin[axis]:
+                         point[axis] = math.nextafter(point[axis], origin[axis])
++                # Half-up adds .5 before floor: one nextafter may round back
++                # onto the forbidden boundary. Stabilize only this opted-in
++                # contact map, preserving the unconfigured legacy path.
++                if any(p.get("type")=="contact_lifecycle" for p in self.tile_mechanics.values()):
++                    for _back in range(8):
++                        if project_cell(point)==(row,col):break
++                        for axis in ("row","col"):
++                            if point[axis]!=origin[axis]:point[axis]=math.nextafter(point[axis],origin[axis])
++                    if project_cell(point)!=(row,col):raise ValueError("clipped point must remain in preceding cell")
+                 return point, True
+             row, col = rr, cc
+             if cross_r:
+--- a/ark_sim/domains/tile_contacts.py
++++ b/ark_sim/domains/tile_contacts.py
+@@ -0,0 +1,101 @@
++"""Declared point-contact lifecycle policy; tile names never select behavior."""
++import math
++from collections.abc import Mapping
++from ark_sim.contracts import thaw
++from .spatial import project_cell,route_motion_mode
++
++def validate_profile(p):
++    required={'type','rule','parameters','normal_path_passable','forced_contact_passable','appearance_contact_passable','health_policy','death_reason','reevaluate_each_tick'}
++    if not isinstance(p,Mapping) or set(p)!=required:raise ValueError('contact profile requires explicit rule, collision and lifecycle policies')
++    if not isinstance(p['rule'],str) or not p['rule']:raise ValueError('contact rule reference required')
++    if not isinstance(p['parameters'],Mapping):raise ValueError('contact parameters must be data mapping')
++    for k in ('normal_path_passable','forced_contact_passable','appearance_contact_passable','reevaluate_each_tick'):
++        if type(p[k]) is not bool:raise ValueError('contact '+k+' must be boolean')
++    if p['health_policy'] not in ('zero','preserve'):raise ValueError('contact health_policy requires zero/preserve')
++    if p['death_reason']!='dead':raise ValueError('contact lifecycle uses explicit dead reason; exit is not a fall')
++
++class TileContactSystem:
++    def __init__(self,ctx):self.ctx=ctx;self._settling=set()
++    def mode(self,ref):
++        spatial=self.ctx.get(ref,('spatial',),{})
++        value=spatial.get('motion_mode')
++        if value is None:return route_motion_mode(spatial.get('route'))
++        if type(value) is not int or value not in (0,1):raise ValueError('contact motion mode requires WALK0/FLY1')
++        return value
++    def ready(self,ref):
++        now=self.ctx.session.time
++        for instance in self.ctx.get(ref,('buffs','instances'),[]):
++            if instance.get('expires_at') is not None and instance['expires_at']<=now:continue
++            definition=self.ctx.program.definitions[instance['definition']]
++            if definition.get('contact_flags',{}).get('defer_fall'):return False
++        return True
++    def _profile(self,position):
++        grid=self.ctx.spatial.grid;row,col=grid._cell(position);tile=grid.tile(row,col)
++        p=grid.tile_mechanics.get(tile.get('tileKey'),{})
++        return (tile,p,{'row':row,'col':col}) if p.get('type')=='contact_lifecycle' else None
++    def decision(self,ref,position,kind,source=None):
++        if not self.ctx.active(ref) or self.ctx.route_hidden(ref) or 'tile_field_owner' in self.ctx.entity(ref)['tags']:return None
++        row=self._profile(position)
++        if row is None:return None
++        tile,p,cell=row
++        cause={'kind':kind,'source':self.ctx.session.world.resolve(source) if source is not None else None,'environment':True}
++        accepted=self.ctx.calc('tile.contact',{'entity':self.ctx.entity(ref),'tile':tile,'cause':cause,
++            'motion_mode':self.mode(ref),'ready':self.ready(ref),'parameters':thaw(p['parameters'])},source=ref,rule_id=p['rule'])
++        if type(accepted) is not bool:raise ValueError('tile.contact must return strict boolean')
++        return {'position':dict(position),'cell':cell,'tile_key':tile['tileKey'],'profile':thaw(p),'cause':cause} if accepted else None
++    def inspect(self,ref,kind,source=None):
++        if not self.ctx.active(ref) or ref in self._settling:return
++        spatial=self.ctx.get(ref,('spatial',),{})
++        if 'position' not in spatial:return
++        row=self._profile(spatial['position'])
++        if row is None:return
++        _,p,cell=row
++        signature={'cell':cell,'motion_mode':self.mode(ref),'ready':self.ready(ref),'hidden':self.ctx.route_hidden(ref)}
++        if kind in ('tick','movement_check') and not p['reevaluate_each_tick'] and signature==spatial.get('contact_signature'):return
++        with self.ctx.session.atomic():
++            self.ctx.set(ref,('spatial','contact_signature'),signature)
++            hit=self.decision(ref,spatial['position'],kind,source)
++            if hit is not None:self.settle(ref,hit,kind)
++    def segment(self,ref,origin,destination,kind,source=None):
++        # Enumerate all crossed cells rather than only the end cell (no tunneling).
++        if not self.ctx.active(ref):return None
++        dr=destination['row']-origin['row'];dc=destination['col']-origin['col'];times={0.,1.}
++        for axis,delta in [('row',dr),('col',dc)]:
++            if delta:
++                low,high=sorted((origin[axis],destination[axis]))
++                for n in range(math.floor(low+.5),math.floor(high+.5)+1):
++                    t=(n+.5-origin[axis])/delta
++                    if 0<=t<1:times.add(min(1.,t+1e-9/max(abs(dr),abs(dc),1.)))
++        seen=set()
++        for t in sorted(times):
++            point={'row':origin['row']+dr*t,'col':origin['col']+dc*t};cell=project_cell(point)
++            if cell in seen:continue
++            seen.add(cell)
++            if not self.ctx.spatial.grid.inside(*cell):break
++            hit=self.decision(ref,point,kind,source)
++            if hit is not None:return hit
++        return None
++    def settle(self,ref,hit,kind):
++        if ref in self._settling or not self.ctx.active(ref):return
++        with self.ctx.session.atomic():
++            self._settling.add(ref)
++            try:
++                owner=self.ctx.get(ref,('ownership','owner'))
++                self.ctx.set(ref,('runtime','death_cause'),{'type':'environment_contact','tile_key':hit['tile_key'],
++                    'cell':hit['cell'],'source':hit['cause']['source'],'owner':owner,'kind':kind})
++                if hit['profile']['health_policy']=='zero':
++                    health=self.ctx.health_resource(ref)
++                    if health is not None:self.ctx.resources.adjust(ref,health,value=0)
++                self.ctx.emit('tile.contact_death',{'source':hit['cause']['source'],'target':ref,'owner':owner,
++                    'cell':hit['cell'],'tile_key':hit['tile_key'],'cause':kind,'health_policy':hit['profile']['health_policy'],
++                    'combat_damage':False,'caster_kill_credit':False})
++                self.ctx.lifecycle.retire(ref,'dead')
++                spatial=self.ctx.get(ref,('spatial',),{})
++                motion=spatial.pop('forced_motion',None)
++                if motion and motion.get('task') in {t['id'] for t in self.ctx.session.scheduler.pending}:self.ctx.session.cancel(motion['task'])
++                self.ctx.set(ref,('spatial',),spatial)
++            finally:self._settling.remove(ref)
++    def tick(self,session):
++        if self.ctx.state().get('finished'):return
++        for entity in session.world.entities():
++            if entity['id']!=session.world.resolve('system/battle'):self.inspect(entity['id'],'tick')
+--- a/ark_sim/domains/tile_mechanics.py
++++ b/ark_sim/domains/tile_mechanics.py
+@@ -8,6 +8,10 @@
+     if not isinstance(value,Mapping):raise ValueError('map.tile_mechanics requires a mapping of tile keys to profiles')
+     for key,p in value.items():
+         if not isinstance(key,str) or not key:raise ValueError('tile mechanic key must be a nonempty string')
++        if isinstance(p,Mapping) and p.get('type')=='contact_lifecycle':
++            from .tile_contacts import validate_profile
++            validate_profile(p)
++            continue
+         if isinstance(p,Mapping) and p.get('type')=='occupancy_buff_field':
+             if set(p)!={'type','definition','expected_blackboard'}:raise ValueError('tile field profile needs explicit definition and blackboard binding')
+             if not isinstance(p['definition'],str) or not p['definition']:raise ValueError('tile field entity reference required')
+--- a/ark_sim/rules/contracts.json
++++ b/ark_sim/rules/contracts.json
+@@ -3404,6 +3404,58 @@
+       "pureEvaluation": true,
+       "writesStateDirectly": false,
+       "contractVersion": 1
++    },
++    {
++      "id": "tile.contact",
++      "kind": "calculation",
++      "owner": "source",
++      "inputs": [
++        {
++          "name": "entity",
++          "type": "entity_snapshot",
++          "required": true
++        },
++        {
++          "name": "tile",
++          "type": "value_map",
++          "required": true
++        },
++        {
++          "name": "cause",
++          "type": "value_map",
++          "required": true
++        },
++        {
++          "name": "motion_mode",
++          "type": "integer",
++          "required": true
++        },
++        {
++          "name": "ready",
++          "type": "boolean",
++          "required": true
++        },
++        {
++          "name": "parameters",
++          "type": "value_map",
++          "required": true
++        }
++      ],
++      "outputType": "boolean",
++      "implementations": [
++        "expression",
++        "graph",
++        "provider"
++      ],
++      "pureEvaluation": true,
++      "writesStateDirectly": false,
++      "versionsRequired": true,
++      "outputSchema": {
++        "type": "boolean"
++      },
++      "contractVersion": 1,
++      "status": "declared",
++      "description": "Explicit model contact eligibility; true permits configured environmental lifecycle settlement."
+     }
+   ],
+   "types": {

@@ -1,0 +1,114 @@
+{
+  "manifest": {
+    "requires": [
+      "preset/ark_standard"
+    ]
+  },
+  "entities": [
+    {
+      "id": "unit/widget",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "spatial": {},
+        "attributes": {
+          "base": {
+            "max_hp": 90
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 90,
+            "capacity": 90,
+            "role": "health"
+          }
+        },
+        "deployable": {
+          "base_cost": 4,
+          "capacity": 0,
+          "cooldown_seconds": 0,
+          "terrain": "ground",
+          "parameters": {
+            "max_instances": 20
+          },
+          "stock": {
+            "resource": "tickets",
+            "amount": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "unit/host",
+      "kind": "entity",
+      "components": {
+        "spatial": {},
+        "abilities": [
+          "ability/child"
+        ]
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/stock/peer",
+    "ruleset": "ruleset/ark_standard",
+    "objectives": {},
+    "roster": [
+      "unit/widget"
+    ],
+    "map": {
+      "rows": 1,
+      "cols": 8
+    },
+    "resources": {
+      "dp": {
+        "initial": 50,
+        "capacity": 50
+      },
+      "tickets": {
+        "initial": 3,
+        "capacity": 3
+      }
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/host",
+        "instanceAlias": "host",
+        "position": {
+          "row": 0,
+          "col": 7
+        }
+      }
+    ]
+  },
+  "abilities": [
+    {
+      "id": "ability/child",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "costs": [
+          {
+            "owner": "battle",
+            "resource": "dp",
+            "amount": 4
+          }
+        ],
+        "on_start": [
+          {
+            "op": "spawn",
+            "definition": "unit/widget",
+            "owner": "source",
+            "parameters": {
+              "position_from_payload": true,
+              "deployment_payment_amount": 4
+            }
+          }
+        ]
+      },
+      "timeline": []
+    }
+  ]
+}

@@ -1,0 +1,380 @@
+{
+  "schema": "ark-sim/independent-dynamic-terrain-review/v1",
+  "passed": true,
+  "implementation_sha256": "669982006a81507973d8f3c3abb1f694d7ee9831de67ad2de1c0b3ea441df571",
+  "runtime_module": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m16_terrain_candidate\\ark_sim\\__init__.py",
+  "pure_getter_checkpoint_unchanged": true,
+  "time_rule_no_world_cache_stale": true,
+  "actual_walker_at9": {
+    "row": 0.0,
+    "col": 0.30000000000000004
+  },
+  "checkpoint_equal": true,
+  "replay_equal": true,
+  "commands": {
+    "schema": "ark-sim/replay/v2",
+    "program_fingerprint": "37b23ca94c281ea6f96654ee7e205d36740e41116caabd861c32105478254702",
+    "runtime_fingerprint": "2f74753fcfc1868c17569c9477a3084a8252232c5cccf42be4a39479f618fe17",
+    "seed": 1621,
+    "random_algorithm": "python-mt19937/sha256-stream-seed-v1",
+    "until": 9,
+    "commands": []
+  },
+  "fixture": {
+    "schemaVersion": 2,
+    "manifest": {
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/owner",
+        "kind": "entity",
+        "components": {
+          "spatial": {},
+          "terrain_overlays": [
+            {
+              "key": "gate",
+              "priority": 0,
+              "values": {},
+              "rule": "rule/dynamic"
+            }
+          ]
+        }
+      },
+      {
+        "id": "unit/walker",
+        "kind": "entity",
+        "tags": [
+          "enemy",
+          "ground"
+        ],
+        "components": {
+          "spatial": {},
+          "attributes": {
+            "base": {
+              "max_hp": 100,
+              "move_speed": 3
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 100,
+              "capacity": 100,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule/dynamic",
+        "kind": "calculation_rule",
+        "contract": "terrain.tile_options",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.dynamic"
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scenario/independent_dynamic",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 5
+      },
+      "initialEntities": [
+        {
+          "definition": "unit/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        },
+        {
+          "definition": "unit/walker",
+          "instanceAlias": "walker",
+          "position": {
+            "row": 0,
+            "col": 0
+          },
+          "route": {
+            "motionMode": "WALK",
+            "endPosition": {
+              "row": 0,
+              "col": 4
+            }
+          }
+        }
+      ]
+    }
+  },
+  "events": [
+    {
+      "id": 1,
+      "type": "terrain.changed",
+      "payload": {
+        "revision": 1,
+        "reason": {
+          "kind": "apply_or_replace",
+          "owner": 2,
+          "layer": 1,
+          "key": "gate"
+        },
+        "changes": [
+          {
+            "position": {
+              "row": 0,
+              "col": 1
+            },
+            "effective_tile": {
+              "tileKey": "tile_floor",
+              "passableMask": 0,
+              "buildableType": 1,
+              "groundPassable": false,
+              "movementCost": 1
+            },
+            "rule_id": "rule/dynamic",
+            "trace": {
+              "calculation_id": "terrain.tile_options",
+              "rule_id": "rule/dynamic",
+              "contract_version": 1,
+              "rule_fingerprint": "c4807417617a2fa1015f3750753afa41ce0497fc60219c05e88f613009758f92",
+              "runtime_fingerprint": "58e16d235489a964c7307039b2bf9695d6cb6e4529774bdd2bd6865fe4b7fcfd",
+              "inputs": {
+                "base": {
+                  "tileKey": "tile_floor",
+                  "passableMask": 1,
+                  "buildableType": 1
+                },
+                "layers": [
+                  {
+                    "id": 1,
+                    "sequence": 1,
+                    "owner": 2,
+                    "cell": {
+                      "row": 0,
+                      "col": 1
+                    },
+                    "key": "gate",
+                    "priority": 0,
+                    "values": {},
+                    "preserve": [],
+                    "rule": "rule/dynamic"
+                  }
+                ],
+                "position": {
+                  "row": 0,
+                  "col": 1
+                }
+              },
+              "parameters": {},
+              "context": {
+                "time": 0,
+                "seconds": 0.0,
+                "quantum": 0.03333333333333333,
+                "rule_scope": {
+                  "scenario": {}
+                }
+              },
+              "stages": [
+                {
+                  "id": "provider",
+                  "provider": "peer.dynamic",
+                  "raw": {
+                    "tileKey": "tile_floor",
+                    "passableMask": 0,
+                    "buildableType": 1,
+                    "groundPassable": false,
+                    "movementCost": 1
+                  }
+                }
+              ],
+              "raw": {
+                "tileKey": "tile_floor",
+                "passableMask": 0,
+                "buildableType": 1,
+                "groundPassable": false,
+                "movementCost": 1
+              },
+              "value": {
+                "tileKey": "tile_floor",
+                "passableMask": 0,
+                "buildableType": 1,
+                "groundPassable": false,
+                "movementCost": 1
+              },
+              "numeric": {
+                "backend": "float",
+                "rounding": "half_even"
+              },
+              "provider": {
+                "name": "peer.dynamic",
+                "module": "__main__",
+                "qualname": "dynamic_tile",
+                "version": "peer-time-six-open-1",
+                "source_sha256": "71e7209ea762dca7cf510f01ab1d49f21c4fbbec67aa1be83fed6b77078d33b8",
+                "descriptor": {}
+              },
+              "binding": {
+                "owner": "scenario",
+                "origin": "explicit",
+                "overrides": [
+                  {
+                    "scope": "preset",
+                    "rule_id": "rule/ark_terrain_tile_options"
+                  },
+                  {
+                    "scope": "explicit",
+                    "rule_id": "rule/dynamic"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "time": 0,
+      "cause": null
+    },
+    {
+      "id": 32,
+      "type": "terrain.changed",
+      "payload": {
+        "revision": 2,
+        "reason": {
+          "kind": "pure_rule_time_or_dependency_change"
+        },
+        "changes": [
+          {
+            "position": {
+              "row": 0,
+              "col": 1
+            },
+            "effective_tile": {
+              "tileKey": "tile_floor",
+              "passableMask": 1,
+              "buildableType": 1,
+              "groundPassable": true,
+              "movementCost": 1
+            },
+            "rule_id": "rule/dynamic",
+            "trace": {
+              "calculation_id": "terrain.tile_options",
+              "rule_id": "rule/dynamic",
+              "contract_version": 1,
+              "rule_fingerprint": "c4807417617a2fa1015f3750753afa41ce0497fc60219c05e88f613009758f92",
+              "runtime_fingerprint": "58e16d235489a964c7307039b2bf9695d6cb6e4529774bdd2bd6865fe4b7fcfd",
+              "inputs": {
+                "base": {
+                  "tileKey": "tile_floor",
+                  "passableMask": 1,
+                  "buildableType": 1
+                },
+                "layers": [
+                  {
+                    "id": 1,
+                    "sequence": 1,
+                    "owner": 2,
+                    "cell": {
+                      "row": 0,
+                      "col": 1
+                    },
+                    "key": "gate",
+                    "priority": 0,
+                    "values": {},
+                    "preserve": [],
+                    "rule": "rule/dynamic"
+                  }
+                ],
+                "position": {
+                  "row": 0,
+                  "col": 1
+                }
+              },
+              "parameters": {},
+              "context": {
+                "time": 6,
+                "seconds": 0.2,
+                "quantum": 0.03333333333333333,
+                "rule_scope": {
+                  "scenario": {}
+                }
+              },
+              "stages": [
+                {
+                  "id": "provider",
+                  "provider": "peer.dynamic",
+                  "raw": {
+                    "tileKey": "tile_floor",
+                    "passableMask": 1,
+                    "buildableType": 1,
+                    "groundPassable": true,
+                    "movementCost": 1
+                  }
+                }
+              ],
+              "raw": {
+                "tileKey": "tile_floor",
+                "passableMask": 1,
+                "buildableType": 1,
+                "groundPassable": true,
+                "movementCost": 1
+              },
+              "value": {
+                "tileKey": "tile_floor",
+                "passableMask": 1,
+                "buildableType": 1,
+                "groundPassable": true,
+                "movementCost": 1
+              },
+              "numeric": {
+                "backend": "float",
+                "rounding": "half_even"
+              },
+              "provider": {
+                "name": "peer.dynamic",
+                "module": "__main__",
+                "qualname": "dynamic_tile",
+                "version": "peer-time-six-open-1",
+                "source_sha256": "71e7209ea762dca7cf510f01ab1d49f21c4fbbec67aa1be83fed6b77078d33b8",
+                "descriptor": {}
+              },
+              "binding": {
+                "owner": "scenario",
+                "origin": "explicit",
+                "overrides": [
+                  {
+                    "scope": "preset",
+                    "rule_id": "rule/ark_terrain_tile_options"
+                  },
+                  {
+                    "scope": "explicit",
+                    "rule_id": "rule/dynamic"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "time": 6,
+      "cause": null
+    }
+  ],
+  "tests": [
+    {
+      "path": "tools/experiments/m16_m18_peer/dynamic_paths.py",
+      "source_sha256": "9e8dd5b8cfce60940bca4cb4ef3396205c5cd0238b65752b65618685ede65433",
+      "result": "passed"
+    }
+  ],
+  "formal_approval": false
+}

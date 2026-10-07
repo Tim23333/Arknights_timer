@@ -1,0 +1,101 @@
+--- a/ark_sim/domains/effects.py
++++ b/ark_sim/domains/effects.py
+@@ -338,6 +338,7 @@
+ 
+     def _settle(self, source, target, effect, ability, cast, cause):
+         was_alive = self.ctx.alive(target)
++        death_generation = self.ctx.get(target,('runtime','death_generation'),0)
+         mode = effect.get("read_mode", {}).get("source_attributes", "at_hit")
+         snapshot = cast.get("source_snapshot") if mode == "at_cast" else cast.get("launch_snapshot") if mode == "at_launch" else None
+         resource = effect.get("resource") or self.ctx.health_resource(target)
+@@ -434,8 +435,8 @@
+         self.ctx.emit("damage.accepted", {"source": source, "target": target,
+                      "amount": actual, "ability": ability.get("id"), "resource": resource}, cause)
+         if was_alive and not self.ctx.alive(target) and self.ctx.get(target, ("runtime", "state")) == "dead":
+-            self.ctx.emit("combat.kill", {"source": source, "target": target, "ability": ability.get("id"),
+-                "cast": cast.get("id"), "target_tags": list(self.ctx.entity(target)["tags"])}, cause)
++            self.ctx.lifecycle.claim_combat_kill(target, {"source": source, "target": target, "ability": ability.get("id"),
++                "cast": cast.get("id"), "target_tags": list(self.ctx.entity(target)["tags"])}, cause, generation=death_generation+1)
+         for event in settlement.get("events", ()):
+             self.ctx.emit(event["type"], event.get("payload", {}), cause)
+         for extra in extras:
+--- a/ark_sim/domains/lifecycle.py
++++ b/ark_sim/domains/lifecycle.py
+@@ -195,16 +195,19 @@
+             self.ctx.set(ref, ("resources", resource, "current"), plan["value"])
+             self.ctx.emit("entity.revived", {"source": ref, "target": ref})
+ 
+-    def retire(self, ref, reason):
++    def retire(self, ref, reason, *, damage_attribution=None):
+         if self.ctx.terrain is None:
+-            return self._retire(ref, reason)
++            return self._retire(ref, reason, damage_attribution=damage_attribution)
+         with self.ctx.session.atomic():
+-            return self._retire(ref, reason)
+-
+-    def _retire(self, ref, reason):
++            return self._retire(ref, reason, damage_attribution=damage_attribution)
++
++    def _retire(self, ref, reason, *, damage_attribution=None):
+         ref = self.ctx.session.world.resolve(ref)
+         if not self.ctx.alive(ref):
+             return
++        if reason == 'dead':
++            generation=self.ctx.get(ref,('runtime','death_generation'),0)+1
++            self.ctx.set(ref,('runtime','death_generation'),generation)
+         rebirth=getattr(self.ctx,"rebirth",None)
+         if rebirth is not None:rebirth.cancel(ref,reason)
+         self.ctx.set(ref, ("runtime", "alive"), False)
+@@ -224,7 +227,7 @@
+         self.ctx.set(ref, ("runtime", "blocked_by"), None)
+         self.ctx.buffs.reconcile()
+         event = "entity.died" if reason == "dead" else "entity."+reason
+-        self.ctx.emit(event, {"source": ref, "target": ref})
++        self.ctx.emit(event, {"source": ref, "target": ref} if damage_attribution is None else {**damage_attribution, "source": None, "target": ref}, damage_attribution.get("cause") if damage_attribution is not None else None)
+         state = self.ctx.state()
+         if reason == "dead" and "enemy" in self.ctx.entity(ref)["tags"]:
+             state["kills"] += 1
+@@ -244,6 +247,24 @@
+         if timeline is not None:
+             timeline.entity_retired(ref, reason)
+ 
++    def claim_combat_kill(self, ref, payload, cause=None, *, generation=None):
++        """Claim one real death transition before dispatching its reaction event."""
++        with self.ctx.session.atomic():
++            ref=self.ctx.session.world.resolve(ref)
++            current=self.ctx.get(ref,('runtime','death_generation'),0)
++            if generation is not None and (type(generation) is not int or generation<=0):
++                raise ValueError('combat death generation must be positive integer')
++            if self.ctx.alive(ref) or self.ctx.get(ref,('runtime','state'))!='dead' or current<=0 or (generation is not None and generation!=current):return None
++            prior=self.ctx.get(ref,('runtime','combat_death_claim'),{})
++            if prior.get('generation')==current:return None
++            if not isinstance(payload,Mapping):raise ValueError('combat kill attribution payload must be record')
++            value=thaw(payload);source=value.get('source')
++            if value.get('source_policy')=='none' and source is not None:raise ValueError('source-free combat kill cannot claim actor source')
++            value['source']=self.ctx.session.world.resolve(source) if source is not None else None
++            value['target']=ref;value['target_tags']=list(self.ctx.entity(ref)['tags'])
++            self.ctx.set(ref,('runtime','combat_death_claim'),{'generation':current,'at':self.ctx.session.time,'payload':value,'cause':cause})
++            return self.ctx.emit('combat.kill',value,cause)
++
+     def exit(self, ref):
+         params = self.ctx.get(ref, ("lifecycle",), {})
+         loss = self.ctx.calc("lifecycle.leak_loss", {"entity": self.ctx.entity(ref), "exit": {},
+--- a/ark_sim/domains/rebirth.py
++++ b/ark_sim/domains/rebirth.py
+@@ -152,6 +152,7 @@
+   if len(health)!=1:raise ValueError('instant kill requires one declared health resource')
+   if not self.ctx.get(target,('lifecycle','policy')):raise ValueError('instant kill requires declared lifecycle policy')
+   if not self.ctx.alive(target):return
++  death_generation=self.ctx.get(target,('runtime','death_generation'),0)
+   pending=self._state(target).get('phase')=='waiting'
+   if not self.ctx.active(target) and not pending:raise ValueError('instant kill cannot target dormant actor')
+   request={'source':source,'target':target,'cause':options['cause'],'skip_rebirth':options['skip_rebirth']};self._requests.setdefault(target,[]).append(request)
+@@ -163,7 +164,7 @@
+     self.ctx.resources.adjust(target,health[0],value=0,source=source,ability=ability,effect={'op':'instant_kill','parameters':options})
+     if self.ctx.resources.current(target,health[0])!=0:raise ValueError('instant kill bounds prevented zero health')
+    self.ctx.emit('instant_kill.executed',{**request,'alive':self.ctx.alive(target),'ability':(ability or {}).get('id')},cause)
+-   if not self.ctx.alive(target):self.ctx.emit('combat.kill',{'source':source,'target':target,'ability':(ability or {}).get('id'),'cast':(cast or {}).get('id'),'target_tags':list(self.ctx.entity(target)['tags'])},cause)
++   if not self.ctx.alive(target):self.ctx.lifecycle.claim_combat_kill(target,{'source':source,'target':target,'ability':(ability or {}).get('id'),'cast':(cast or {}).get('id'),'target_tags':list(self.ctx.entity(target)['tags'])},cause,generation=death_generation+1)
+   finally:
+    self._requests[target].pop()
+    if not self._requests[target]:del self._requests[target]

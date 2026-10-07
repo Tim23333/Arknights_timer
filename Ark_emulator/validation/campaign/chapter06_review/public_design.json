@@ -1,0 +1,852 @@
+{
+  "status": "Proposed source content/public API design; not compiled full C6 and not a stage pass",
+  "core_api_reviewed": "8fa4e36752e92f7de691f0e617adb0b3fdb0188f1f4e17c519514b7f51a7e525",
+  "training_scenario_invariants": {
+    "parameters.deploy_capacity": 0,
+    "dp.initial": 0,
+    "dp.capacity": 99,
+    "dp.recovery.interval_seconds": 9999,
+    "native_life": 1,
+    "runthrough_life_overlay": 99999,
+    "isTrainingLevel": true,
+    "native_predefined_count": 3,
+    "roster_size": 12,
+    "NPC_skillIndex": -1
+  },
+  "proposed_story_controls": [
+    {
+      "id": "control/proposed/ch6/main_06-15_a",
+      "kind": "control",
+      "clock_policy": "logical",
+      "ack_policy": "external",
+      "steps": [
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "reference.story.row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_06-15_a",
+                "native_row": {
+                  "line": 1,
+                  "command": "HEADER",
+                  "parameters": "is_skippable=false, is_autoable=false",
+                  "text": "主线06-15关卡内剧情a",
+                  "raw_line": "[HEADER(is_skippable=false, is_autoable=false)] 主线06-15关卡内剧情a"
+                },
+                "source_payload_sha": "b35ada0d145625c4215d6c559f38d85811813e339a97dbcd05ac41414869879a"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "reference.story.row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_06-15_a",
+                "native_row": {
+                  "line": 3,
+                  "command": "PopupDialog",
+                  "parameters": "dialogHead=\"$avatar_amiya\"",
+                  "text": "我对法术的维持已经到极限了！",
+                  "raw_line": "[PopupDialog(dialogHead=\"$avatar_amiya\")] 我对法术的维持已经到极限了！"
+                },
+                "source_payload_sha": "b35ada0d145625c4215d6c559f38d85811813e339a97dbcd05ac41414869879a"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "ack",
+          "key": "native_line/3"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "reference.story.row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_06-15_a",
+                "native_row": {
+                  "line": 4,
+                  "command": "PopupDialog",
+                  "parameters": "dialogHead=\"$avatar_amiya\"",
+                  "text": "她的法术......竟然还在继续发挥作用？！",
+                  "raw_line": "[PopupDialog(dialogHead=\"$avatar_amiya\")] 她的法术......竟然还在继续发挥作用？！"
+                },
+                "source_payload_sha": "b35ada0d145625c4215d6c559f38d85811813e339a97dbcd05ac41414869879a"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "ack",
+          "key": "native_line/4"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "reference.story.row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_06-15_a",
+                "native_row": {
+                  "line": 5,
+                  "command": "Blocker",
+                  "parameters": "fadetime=0.3, block=true, a=0",
+                  "text": "",
+                  "raw_line": "[Blocker(fadetime=0.3, block=true, a=0)]"
+                },
+                "source_payload_sha": "b35ada0d145625c4215d6c559f38d85811813e339a97dbcd05ac41414869879a"
+              }
+            }
+          ]
+        }
+      ],
+      "on_start": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_06-15_a",
+            "enabled": true
+          }
+        }
+      ],
+      "on_complete": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_06-15_a",
+            "enabled": false
+          }
+        }
+      ],
+      "on_cancel": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_06-15_a",
+            "enabled": false
+          }
+        }
+      ],
+      "metadata": {
+        "native_story_key": "obt/tutorial/level/main_06-15_a",
+        "native_story_source": {
+          "path": "unpack_work/release_20260831/hot_raw/main_06-15_a.dat",
+          "sha256": "1bf6acb6e258fc6631fdabe6d525bea2639b5b92f941f7fc586fa95136b842d3",
+          "bytes": 320
+        },
+        "policy": "Every header,dialogue and blocker row observed, each dialogue requires exact external public acknowledgement; no native story skip",
+        "native_fade_or_pause_verified": false,
+        "Blocker_fadetime_policy": "Preserve0.3 visual fade metadata; it is not proven0.3 combat delay or global pause"
+      }
+    },
+    {
+      "id": "control/proposed/ch6/main_06-15_b1",
+      "kind": "control",
+      "clock_policy": "logical",
+      "ack_policy": "external",
+      "steps": [
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "reference.story.row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_06-15_b1",
+                "native_row": {
+                  "line": 1,
+                  "command": "HEADER",
+                  "parameters": "is_skippable=false, is_autoable=false",
+                  "text": "主线06-15关卡内剧情a",
+                  "raw_line": "[HEADER(is_skippable=false, is_autoable=false)] 主线06-15关卡内剧情a"
+                },
+                "source_payload_sha": "bed78fb59fb83404d0c297c887c1914195e8759b8ccafe0e86e2463944723865"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "reference.story.row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_06-15_b1",
+                "native_row": {
+                  "line": 3,
+                  "command": "PopupDialog",
+                  "parameters": "dialogHead=\"$avatar_amiya\"",
+                  "text": "就算这样......就算这样！我也不会把手缩回来！",
+                  "raw_line": "[PopupDialog(dialogHead=\"$avatar_amiya\")] 就算这样......就算这样！我也不会把手缩回来！"
+                },
+                "source_payload_sha": "bed78fb59fb83404d0c297c887c1914195e8759b8ccafe0e86e2463944723865"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "ack",
+          "key": "native_line/3"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "reference.story.row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_06-15_b1",
+                "native_row": {
+                  "line": 4,
+                  "command": "Blocker",
+                  "parameters": "fadetime=0.3, block=true, a=0",
+                  "text": "",
+                  "raw_line": "[Blocker(fadetime=0.3, block=true, a=0)]"
+                },
+                "source_payload_sha": "bed78fb59fb83404d0c297c887c1914195e8759b8ccafe0e86e2463944723865"
+              }
+            }
+          ]
+        }
+      ],
+      "on_start": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_06-15_b1",
+            "enabled": true
+          }
+        }
+      ],
+      "on_complete": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_06-15_b1",
+            "enabled": false
+          }
+        }
+      ],
+      "on_cancel": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_06-15_b1",
+            "enabled": false
+          }
+        }
+      ],
+      "metadata": {
+        "native_story_key": "obt/tutorial/level/main_06-15_b1",
+        "native_story_source": {
+          "path": "unpack_work/release_20260831/hot_raw/main_06-15_b1.dat",
+          "sha256": "53a3f1833be0d41305f04f7130c60e071c367ac3ded51e146c11cc05daa40dd7",
+          "bytes": 248
+        },
+        "policy": "Every header,dialogue and blocker row observed, each dialogue requires exact external public acknowledgement; no native story skip",
+        "native_fade_or_pause_verified": false,
+        "Blocker_fadetime_policy": "Preserve0.3 visual fade metadata; it is not proven0.3 combat delay or global pause"
+      }
+    },
+    {
+      "id": "control/proposed/ch6/main_06-15_b2",
+      "kind": "control",
+      "clock_policy": "logical",
+      "ack_policy": "external",
+      "steps": [
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "reference.story.row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_06-15_b2",
+                "native_row": {
+                  "line": 1,
+                  "command": "HEADER",
+                  "parameters": "is_skippable=false, is_autoable=false",
+                  "text": "主线06-15关卡内剧情a",
+                  "raw_line": "[HEADER(is_skippable=false, is_autoable=false)] 主线06-15关卡内剧情a"
+                },
+                "source_payload_sha": "7baf08bf9e242087274b568723233f98c4f9279048157d79d1f800b70b66e96e"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "reference.story.row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_06-15_b2",
+                "native_row": {
+                  "line": 3,
+                  "command": "PopupDialog",
+                  "parameters": "dialogHead=\"$avatar_huang\"",
+                  "text": "不管了，我就算全身上下的血都流干......",
+                  "raw_line": "[PopupDialog(dialogHead=\"$avatar_huang\")] 不管了，我就算全身上下的血都流干......"
+                },
+                "source_payload_sha": "7baf08bf9e242087274b568723233f98c4f9279048157d79d1f800b70b66e96e"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "ack",
+          "key": "native_line/3"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "reference.story.row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_06-15_b2",
+                "native_row": {
+                  "line": 4,
+                  "command": "Blocker",
+                  "parameters": "fadetime=0.3, block=true, a=0",
+                  "text": "",
+                  "raw_line": "[Blocker(fadetime=0.3, block=true, a=0)]"
+                },
+                "source_payload_sha": "7baf08bf9e242087274b568723233f98c4f9279048157d79d1f800b70b66e96e"
+              }
+            }
+          ]
+        }
+      ],
+      "on_start": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_06-15_b2",
+            "enabled": true
+          }
+        }
+      ],
+      "on_complete": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_06-15_b2",
+            "enabled": false
+          }
+        }
+      ],
+      "on_cancel": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_06-15_b2",
+            "enabled": false
+          }
+        }
+      ],
+      "metadata": {
+        "native_story_key": "obt/tutorial/level/main_06-15_b2",
+        "native_story_source": {
+          "path": "unpack_work/release_20260831/hot_raw/main_06-15_b2.dat",
+          "sha256": "2e2c22edf2ea2e55eac1b3e53ace1f9cb7da996b522f351721099ce1dbc7c4fe",
+          "bytes": 240
+        },
+        "policy": "Every header,dialogue and blocker row observed, each dialogue requires exact external public acknowledgement; no native story skip",
+        "native_fade_or_pause_verified": false,
+        "Blocker_fadetime_policy": "Preserve0.3 visual fade metadata; it is not proven0.3 combat delay or global pause"
+      }
+    },
+    {
+      "id": "control/proposed/ch6/main_06-15_b3",
+      "kind": "control",
+      "clock_policy": "logical",
+      "ack_policy": "external",
+      "steps": [
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "reference.story.row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_06-15_b3",
+                "native_row": {
+                  "line": 1,
+                  "command": "HEADER",
+                  "parameters": "is_skippable=false, is_autoable=false",
+                  "text": "主线06-15关卡内剧情a",
+                  "raw_line": "[HEADER(is_skippable=false, is_autoable=false)] 主线06-15关卡内剧情a"
+                },
+                "source_payload_sha": "43121f6f903c3ab2413a04a0baf7155997016c1773c06183ea1d306a071583d2"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "reference.story.row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_06-15_b3",
+                "native_row": {
+                  "line": 3,
+                  "command": "PopupDialog",
+                  "parameters": "dialogHead=\"$avatar_swllow\"",
+                  "text": "也不会让你过去！",
+                  "raw_line": "[PopupDialog(dialogHead=\"$avatar_swllow\")]  也不会让你过去！"
+                },
+                "source_payload_sha": "43121f6f903c3ab2413a04a0baf7155997016c1773c06183ea1d306a071583d2"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "ack",
+          "key": "native_line/3"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "reference.story.row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_06-15_b3",
+                "native_row": {
+                  "line": 4,
+                  "command": "Blocker",
+                  "parameters": "fadetime=0.3, block=true, a=0",
+                  "text": "",
+                  "raw_line": "[Blocker(fadetime=0.3, block=true, a=0)]"
+                },
+                "source_payload_sha": "43121f6f903c3ab2413a04a0baf7155997016c1773c06183ea1d306a071583d2"
+              }
+            }
+          ]
+        }
+      ],
+      "on_start": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_06-15_b3",
+            "enabled": true
+          }
+        }
+      ],
+      "on_complete": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_06-15_b3",
+            "enabled": false
+          }
+        }
+      ],
+      "on_cancel": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_06-15_b3",
+            "enabled": false
+          }
+        }
+      ],
+      "metadata": {
+        "native_story_key": "obt/tutorial/level/main_06-15_b3",
+        "native_story_source": {
+          "path": "unpack_work/release_20260831/hot_raw/main_06-15_b3.dat",
+          "sha256": "f95c7bb706142e454801b736d95f42f55c43ad33507f4cd0c804e1074ae19444",
+          "bytes": 212
+        },
+        "policy": "Every header,dialogue and blocker row observed, each dialogue requires exact external public acknowledgement; no native story skip",
+        "native_fade_or_pause_verified": false,
+        "Blocker_fadetime_policy": "Preserve0.3 visual fade metadata; it is not proven0.3 combat delay or global pause"
+      }
+    },
+    {
+      "id": "control/proposed/ch6/main_06-15_c",
+      "kind": "control",
+      "clock_policy": "logical",
+      "ack_policy": "external",
+      "steps": [
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "reference.story.row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_06-15_c",
+                "native_row": {
+                  "line": 1,
+                  "command": "HEADER",
+                  "parameters": "is_skippable=false, is_autoable=false",
+                  "text": "主线06-15关卡内剧情d",
+                  "raw_line": "[HEADER(is_skippable=false, is_autoable=false)] 主线06-15关卡内剧情d"
+                },
+                "source_payload_sha": "01ecd4dbe5081c0b662987b3ba646e1d853ba7a34c013a2437bdedacb675e8d1"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "reference.story.row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_06-15_c",
+                "native_row": {
+                  "line": 3,
+                  "command": "PopupDialog",
+                  "parameters": "dialogHead=\"$avatar_frstar\"",
+                  "text": "只能......",
+                  "raw_line": "[PopupDialog(dialogHead=\"$avatar_frstar\")] 只能......"
+                },
+                "source_payload_sha": "01ecd4dbe5081c0b662987b3ba646e1d853ba7a34c013a2437bdedacb675e8d1"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "ack",
+          "key": "native_line/3"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "reference.story.row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_06-15_c",
+                "native_row": {
+                  "line": 4,
+                  "command": "PopupDialog",
+                  "parameters": "dialogHead=\"$avatar_frstar\"",
+                  "text": "......走到这里了吗。",
+                  "raw_line": "[PopupDialog(dialogHead=\"$avatar_frstar\")] ......走到这里了吗。"
+                },
+                "source_payload_sha": "01ecd4dbe5081c0b662987b3ba646e1d853ba7a34c013a2437bdedacb675e8d1"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "ack",
+          "key": "native_line/4"
+        },
+        {
+          "kind": "effects",
+          "effects": [
+            {
+              "op": "emit",
+              "target": "battle",
+              "event": "reference.story.row_observed",
+              "payload": {
+                "story_key": "obt/tutorial/level/main_06-15_c",
+                "native_row": {
+                  "line": 5,
+                  "command": "Blocker",
+                  "parameters": "fadetime=0.3, block=true, a=0",
+                  "text": "",
+                  "raw_line": "[Blocker(fadetime=0.3, block=true, a=0)]"
+                },
+                "source_payload_sha": "01ecd4dbe5081c0b662987b3ba646e1d853ba7a34c013a2437bdedacb675e8d1"
+              }
+            }
+          ]
+        }
+      ],
+      "on_start": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_06-15_c",
+            "enabled": true
+          }
+        }
+      ],
+      "on_complete": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_06-15_c",
+            "enabled": false
+          }
+        }
+      ],
+      "on_cancel": [
+        {
+          "op": "input_lock",
+          "target": "battle",
+          "parameters": {
+            "key": "obt/tutorial/level/main_06-15_c",
+            "enabled": false
+          }
+        }
+      ],
+      "metadata": {
+        "native_story_key": "obt/tutorial/level/main_06-15_c",
+        "native_story_source": {
+          "path": "unpack_work/release_20260831/hot_raw/main_06-15_c.dat",
+          "sha256": "e5e8391d5cb3c9831030fe9bd9bb204911773f0d59bfc41efef6600ec98f23b5",
+          "bytes": 268
+        },
+        "policy": "Every header,dialogue and blocker row observed, each dialogue requires exact external public acknowledgement; no native story skip",
+        "native_fade_or_pause_verified": false,
+        "Blocker_fadetime_policy": "Preserve0.3 visual fade metadata; it is not proven0.3 combat delay or global pause"
+      }
+    }
+  ],
+  "NPC_initial_instance_mapping": [
+    {
+      "source_key": "char_002_amiya",
+      "native_alias": null,
+      "native_character_key": "char_002_amiya",
+      "native_bucket": "characterInsts",
+      "native_index": 0,
+      "raw_native": {
+        "position": {
+          "row": 4,
+          "col": 3
+        },
+        "direction": "RIGHT",
+        "hidden": true,
+        "alias": null,
+        "uniEquipIds": null,
+        "showSpIllust": false,
+        "masterInfos": null,
+        "inst": {
+          "characterKey": "char_002_amiya",
+          "level": 25,
+          "phase": "PHASE_2",
+          "favorPoint": 0,
+          "potentialRank": 0
+        },
+        "skillIndex": -1,
+        "mainSkillLvl": 1,
+        "skinId": null,
+        "tmplId": null,
+        "overrideSkillBlackboard": null,
+        "overrideTalents": null
+      },
+      "proposed_registration_key": "char_002_amiya",
+      "source_identity": {
+        "level": null,
+        "bucket": "characterInsts",
+        "index": 0
+      },
+      "mapping_basis": "Exact alias if supplied; otherwise exact native ACTIVATE_PREDEFINED characterKey and cardinality==1; no avatar/UI-name fallback",
+      "runtime_instance_alias": null,
+      "runtime_initial_active": false
+    },
+    {
+      "source_key": "char_017_huang",
+      "native_alias": null,
+      "native_character_key": "char_017_huang",
+      "native_bucket": "characterInsts",
+      "native_index": 2,
+      "raw_native": {
+        "position": {
+          "row": 3,
+          "col": 3
+        },
+        "direction": "RIGHT",
+        "hidden": true,
+        "alias": null,
+        "uniEquipIds": null,
+        "showSpIllust": false,
+        "masterInfos": null,
+        "inst": {
+          "characterKey": "char_017_huang",
+          "level": 25,
+          "phase": "PHASE_2",
+          "favorPoint": 0,
+          "potentialRank": 0
+        },
+        "skillIndex": -1,
+        "mainSkillLvl": 1,
+        "skinId": null,
+        "tmplId": null,
+        "overrideSkillBlackboard": null,
+        "overrideTalents": null
+      },
+      "proposed_registration_key": "char_017_huang",
+      "source_identity": {
+        "level": null,
+        "bucket": "characterInsts",
+        "index": 2
+      },
+      "mapping_basis": "Exact alias if supplied; otherwise exact native ACTIVATE_PREDEFINED characterKey and cardinality==1; no avatar/UI-name fallback",
+      "runtime_instance_alias": null,
+      "runtime_initial_active": false
+    },
+    {
+      "source_key": "char_367_swllow",
+      "native_alias": null,
+      "native_character_key": "char_367_swllow",
+      "native_bucket": "characterInsts",
+      "native_index": 1,
+      "raw_native": {
+        "position": {
+          "row": 2,
+          "col": 2
+        },
+        "direction": "RIGHT",
+        "hidden": true,
+        "alias": null,
+        "uniEquipIds": null,
+        "showSpIllust": false,
+        "masterInfos": null,
+        "inst": {
+          "characterKey": "char_367_swllow",
+          "level": 25,
+          "phase": "PHASE_2",
+          "favorPoint": 0,
+          "potentialRank": 0
+        },
+        "skillIndex": -1,
+        "mainSkillLvl": 1,
+        "skinId": null,
+        "tmplId": null,
+        "overrideSkillBlackboard": null,
+        "overrideTalents": null
+      },
+      "proposed_registration_key": "char_367_swllow",
+      "source_identity": {
+        "level": null,
+        "bucket": "characterInsts",
+        "index": 1
+      },
+      "mapping_basis": "Exact alias if supplied; otherwise exact native ACTIVATE_PREDEFINED characterKey and cardinality==1; no avatar/UI-name fallback",
+      "runtime_instance_alias": null,
+      "runtime_initial_active": false
+    }
+  ],
+  "native_activation_conversion": {
+    "timeline_kind": "effects",
+    "effect_template": {
+      "op": "activate_predefined",
+      "target": "battle",
+      "parameters": {
+        "key": "<exact_native_action_key>"
+      }
+    },
+    "preserve": [
+      "native count",
+      "nativepreDelay",
+      "interval",
+      "managed",
+      "blockFragment",
+      "dontBlockWave",
+      "timing_origins",
+      "ACTIVATE_PREDEFINED sourcekey"
+    ],
+    "deployed": false,
+    "eligibility": "Existing initial dormant entity by unique registered sourcekey; activate existing ID through public content timeline, no deploy/payment/DP/stock/history/capacity increment",
+    "source_actor_definitions": "Extract three distinct E2L25/favor0/potential0/skillIndex-1/skin and rawoverride profiles; normal/talents require exact source consumption; never fixed12 substitution or skill[-1]"
+  },
+  "public_protocol": {
+    "construction": [
+      "Compiler.compile(source-composed package)",
+      "Engine.create(program,seed=source_seed,event_journal_path=new_owned_path)",
+      "simulation.advance(1) to dispatch current timeline and collect events"
+    ],
+    "dialogue_command": {
+      "action": "control_ack",
+      "control": "<actual control instance ID from control.awaiting_ack>",
+      "step": "<strict current integer step from same event>"
+    },
+    "scheduler_policy": "At awaiting_ack tickT, submit publicack atT+1; exact submissions and order stored byexport_replay. No advance(0) dispatch assumption; no private ctx.controls.acknowledge or ctx.lifecycle activation call. New profile must explicitly declare one-tick acknowledgement latency as reference policy, replaceable from stronger source timing.",
+    "validation": "Unknown/stale/duplicate ack rejected;input lock allows ack but blocks playeractions; every row/7dialogue acknowledgements and5control completions captured; parentwave retainsmanaged/blockFragment obligations; CP preserves controlphase/cursor/tasks/lockkey and dormant IDs; replay uses only saved publiccommands"
+  },
+  "roster_ledger": {
+    "fixed12_selected_definition_set": "All12 unchanged source roster entries and their sourcepins attached to scenario; selection is not creation or deployment",
+    "normal_6_16": "slots9 allows rotation toward12 distinctaccepted deployment histories, up to9 simultaneous capacity; track attempts/accepted/rejected/death/withdraw per source unit; do not enlarge9",
+    "training_6_17": "With native slots0 there can be0accepted playerdeployment. Report rosterselected12/12, actualfixed12deployment0/12, nativeNPCactivation3/3 separately and mark fixed12deployment objective not satisfied due native training exemption; do not add NPCs tofixed12 denominator or count roster as deployed",
+    "campaign_completion": "Source stage completion and12selected squad identity can coexist; all12deployed perstage cannot be signed in this training profile. Requires explicit objective interpretation atcampaign level, no hidden slot/NPC override."
+  },
+  "known_unimplemented_source_consumers": [
+    {
+      "key": "special_training_spawn",
+      "evidence": "unique enemy_1510_frstar2_s SPAWN isUnharmfulAndAlwaysCountAsKilled=True",
+      "existing_boundary": "build_reference_stage_scenario_v2.compose rejects special flag. 8fa timeline enrolls all managed living actors; lifecycle.exit incrementsleaks and lifecycle.death incrementsenemykills. No nativewavecredit separate from actualdeath currently authored.",
+      "required": "Explicit source-bound accounting policy with independent lifecycle and nativewavecredit ledgers. Preserve HP95000/sourceability/damage/actualentitylife; no instantfakekill or dropactor. Exact unharmful,exitloss,managedwavecredit,combatkillattribution and finalterminalrequirements need declared/tested policy beforecompile.",
+      "state": "pending"
+    },
+    {
+      "key": "story_frstar2_s",
+      "required": "Distinctprefab/variant NeverTrigger ordinary attack, forcedtwo skillclocks/PURE NoSourceDamage2000/immune/lifecycle/sourcequalification; cannotreuse normalfrstar2 byname",
+      "state": "pending"
+    },
+    {
+      "key": "NPC_source_consumers",
+      "required": "Exact Amiya/Swallow/Blaze E2L25 normal/talents; native selectedskill-1 no selectedskill. Storedrawprefabs/Spine are sourceinventory not executable definition proof",
+      "state": "pending"
+    },
+    {
+      "key": "five_story_controls",
+      "required": "Compose explicit controls and managedtimeline, all7dialogues/3activationcommands; replacement timingpolicies and exact CP/publicreplay tests",
+      "state": "proposed_not_integrated"
+    },
+    {
+      "key": "FrostTrap_and_environment",
+      "required": "6-16 two alias frosttrap activations, branch clocks, coldstack/freeze/immunity, fence andteleport exact source operands. Existing cold author model is separate partialmodule, not full6-16 proof",
+      "state": "pending"
+    }
+  ],
+  "source_text_issue": {
+    "evidence": "All five preserved sourcepayloads are valid strictUTF8; existing exportedscript text differs. Decoded text newlywritten independently, originalsource/export untouched.",
+    "impact": "Raw bytes and ASCIIcontrolparse are intact; avoid derivingNPCactivation from UIavatarportrait keys."
+  },
+  "whole_stage_started": false,
+  "existing_core_changed": false,
+  "registry_changed": false
+}

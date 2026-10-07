@@ -1,0 +1,265 @@
+{
+  "manifest": {
+    "requires": [
+      "preset/ark_standard"
+    ]
+  },
+  "entities": [
+    {
+      "id": "unit/boss",
+      "kind": "entity",
+      "tags": [
+        "enemy"
+      ],
+      "components": {
+        "spatial": {},
+        "attributes": {
+          "base": {
+            "max_hp": 100,
+            "atk": 40,
+            "def": 0,
+            "mres": 0,
+            "move_speed": 1,
+            "block_cost": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity_attribute": "max_hp",
+            "role": "health"
+          },
+          "sp": {
+            "initial": 0,
+            "capacity": 10,
+            "recovery_rate": 1
+          }
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle",
+          "leak_loss": 2
+        },
+        "buffs": {
+          "initial": [
+            "buff/old"
+          ]
+        },
+        "rebirth": {
+          "resource": "hp",
+          "max_count": 1,
+          "delay_seconds": 0.2,
+          "restore_ratio": 1,
+          "restore_rule": "rule/restore",
+          "retain_buffs": [],
+          "on_finish": [
+            {
+              "op": "apply_buff",
+              "target": "source",
+              "buff": "buff/up"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "unit/director",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "spatial": {},
+        "attributes": {
+          "base": {
+            "atk": 100,
+            "max_hp": 1000,
+            "def": 0,
+            "mres": 0,
+            "block_count": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 1000,
+            "capacity": 1000,
+            "role": "health"
+          }
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "abilities": [
+          "ability/hit",
+          "ability/kill",
+          "ability/skip",
+          "ability/withdraw"
+        ],
+        "deployable": {
+          "base_cost": 0,
+          "capacity": 1,
+          "cooldown_seconds": 0,
+          "terrain": "ground"
+        }
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/restore",
+      "kind": "rule",
+      "contract": "resource.recovery",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.parameters.capacity * inputs.parameters.ratio"
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/old",
+      "kind": "buff",
+      "modifiers": [
+        {
+          "attribute": "def",
+          "layer": "flat",
+          "value": 20
+        }
+      ]
+    },
+    {
+      "id": "buff/up",
+      "kind": "buff",
+      "modifiers": [
+        {
+          "attribute": "atk",
+          "layer": "direct_ratio",
+          "value": 0.5
+        }
+      ]
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/boss",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "enemy"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/hit",
+      "kind": "ability",
+      "selector": "selector/boss",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "damage",
+            "damage_type": "true"
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/kill",
+      "kind": "ability",
+      "selector": "selector/boss",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "instant_kill",
+            "parameters": {
+              "cause": "script",
+              "skip_rebirth": false
+            }
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/skip",
+      "kind": "ability",
+      "selector": "selector/boss",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "instant_kill",
+            "parameters": {
+              "cause": "script",
+              "skip_rebirth": true
+            }
+          }
+        ]
+      },
+      "timeline": []
+    },
+    {
+      "id": "ability/withdraw",
+      "kind": "ability",
+      "selector": "selector/boss",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "retire",
+            "parameters": {
+              "reason": "withdrawn"
+            }
+          }
+        ]
+      },
+      "timeline": []
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/rebirth",
+    "ruleset": "ruleset/ark_standard",
+    "objectives": {},
+    "map": {
+      "rows": 3,
+      "cols": 5
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/boss",
+        "instanceAlias": "boss",
+        "position": {
+          "row": 1,
+          "col": 1
+        },
+        "route": {
+          "motionMode": 0,
+          "startPosition": {
+            "row": 1,
+            "col": 1
+          },
+          "endPosition": {
+            "row": 1,
+            "col": 4
+          },
+          "checkpoints": []
+        }
+      },
+      {
+        "definition": "unit/director",
+        "instanceAlias": "director",
+        "position": {
+          "row": 1,
+          "col": 1
+        }
+      }
+    ]
+  }
+}

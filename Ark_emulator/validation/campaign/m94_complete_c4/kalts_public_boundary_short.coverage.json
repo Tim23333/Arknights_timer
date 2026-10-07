@@ -1,0 +1,1138 @@
+{
+  "core": "cb321a851dc1ccb373477c73a522fc4ca8c35ce8b1c38d18bbee7e1e028358d7",
+  "source_module_sha": "2b3804fcd456e456b137b8145afe655d031db4dbf331a6115af3fded168f51e6",
+  "short_receipt_sha": "ecfec34fa1dd23daff27e37dd1392ae8ac0b1081b37c6cd05be95ba500800a76",
+  "complete_journal": {
+    "path": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\validation\\campaign\\m94_complete_c4\\kalts_public_boundary_short.events.jsonl",
+    "sha256": "87fd046e69ae6b970a09b29e7a9e410366f663d89f1491875efb9857130b91da",
+    "bytes": 198353110,
+    "count": 91675
+  },
+  "ticks": 1751,
+  "events": 91675,
+  "accepted_commands": [
+    {
+      "id": 2882,
+      "type": "command.accepted",
+      "payload": {
+        "action": {
+          "action": "deploy",
+          "entity": "unit/char_003_kalts",
+          "row": 4,
+          "col": 4,
+          "facing": "right",
+          "alias": "kalts_boundary"
+        },
+        "result": 3
+      },
+      "time": 300,
+      "cause": null
+    },
+    {
+      "id": 15121,
+      "type": "command.accepted",
+      "payload": {
+        "action": {
+          "action": "skill",
+          "source": "kalts_boundary",
+          "ability": "ability/kalts_summon",
+          "payload": {
+            "position": {
+              "row": 6,
+              "col": 6
+            },
+            "facing": "right"
+          }
+        },
+        "result": "cast/3/1"
+      },
+      "time": 600,
+      "cause": null
+    },
+    {
+      "id": 42742,
+      "type": "command.accepted",
+      "payload": {
+        "action": {
+          "action": "skill",
+          "source": "kalts_boundary",
+          "ability": "ability/kalts_host_s3"
+        },
+        "result": "cast/3/2"
+      },
+      "time": 1051,
+      "cause": null
+    },
+    {
+      "id": 87390,
+      "type": "command.accepted",
+      "payload": {
+        "action": {
+          "action": "withdraw",
+          "source": "kalts_boundary"
+        },
+        "result": 3
+      },
+      "time": 1700,
+      "cause": null
+    }
+  ],
+  "rejected_commands": [],
+  "created_owned_mon": [
+    {
+      "id": 15118,
+      "type": "entity.created",
+      "payload": {
+        "source": 4,
+        "target": 4,
+        "definition": "unit/kalts_mon3tr_model"
+      },
+      "time": 600,
+      "cause": null
+    }
+  ],
+  "host_actor": 3,
+  "mon_actor": 4,
+  "real_summon_DP_payment": [
+    {
+      "id": 14888,
+      "type": "resource.changed",
+      "payload": {
+        "source": 3,
+        "target": 1,
+        "resource": "dp",
+        "delta": -10.0,
+        "value": 0,
+        "ability": "ability/kalts_summon",
+        "cast": "cast/3/1",
+        "reason": "ability_cost"
+      },
+      "time": 600,
+      "cause": 14887
+    }
+  ],
+  "actual_SPrecovery_before_command": [
+    {
+      "id": 41725,
+      "type": "calculation",
+      "payload": {
+        "calculation_id": "resource.recovery",
+        "rule_id": "rule/support_time_sp",
+        "source": 3,
+        "target": null,
+        "value": 14.0,
+        "trace": {
+          "calculation_id": "resource.recovery",
+          "rule_id": "rule/support_time_sp",
+          "contract_version": 1,
+          "rule_fingerprint": "90a1876fd09be4696ec82378ada281241370bb4b992e043f8116912018753bbc",
+          "runtime_fingerprint": "f2acf55cb27ed60693bde0e09e88345df7641af8c4aff910f97fa10f735f92ea",
+          "inputs": {
+            "current": 13.0,
+            "delta_seconds": 1,
+            "attributes": {
+              "max_hp": 1996,
+              "atk": 468,
+              "def": 245,
+              "mres": 0.0,
+              "attack_interval": 2.85,
+              "move_speed": 1.0,
+              "block_count": 1,
+              "deploy_cost": 20,
+              "redeploy_time": 70,
+              "mass_level": 0,
+              "sp_recovery_rate": 1.0,
+              "attack_speed_ratio": 1.0,
+              "block_cost": 1
+            },
+            "parameters": {
+              "freeze_cast_modes": [
+                "manual"
+              ],
+              "freeze_while_cast": true,
+              "pause_at_full": true,
+              "rate": 1
+            }
+          },
+          "parameters": {},
+          "context": {
+            "time": 1020,
+            "seconds": 34.0,
+            "quantum": 0.03333333333333333,
+            "resource": "sp",
+            "rule_scope": {
+              "scenario": {
+                "movement.speed": "rule/campaign_draft_move_speed",
+                "movement.path": "rule/m7_diagonal_path"
+              },
+              "source": {
+                "attributes.effective": "rule/support_temporal",
+                "targeting.score": "rule/m7_kalts_noequip_own_or_self"
+              },
+              "target": {},
+              "owner": {
+                "attributes.effective": "rule/support_temporal",
+                "targeting.score": "rule/m7_kalts_noequip_own_or_self"
+              },
+              "component": {},
+              "attribute_or_resource": {},
+              "ability": {},
+              "effect": {}
+            },
+            "source_id": 3,
+            "target_id": null,
+            "owner_id": 3
+          },
+          "stages": [
+            {
+              "id": "expression",
+              "expression": "inputs.current + inputs.attributes.sp_recovery_rate * inputs.delta_seconds",
+              "raw": 14.0
+            }
+          ],
+          "raw": 14.0,
+          "value": 14.0,
+          "numeric": {
+            "backend": "float",
+            "rounding": "half_even"
+          },
+          "binding": {
+            "owner": "owner",
+            "origin": "explicit",
+            "overrides": [
+              {
+                "scope": "preset",
+                "rule_id": "rule/ark_resource_recovery"
+              },
+              {
+                "scope": "explicit",
+                "rule_id": "rule/support_time_sp"
+              }
+            ]
+          }
+        }
+      },
+      "time": 1020,
+      "cause": null
+    },
+    {
+      "id": 42525,
+      "type": "calculation",
+      "payload": {
+        "calculation_id": "resource.recovery",
+        "rule_id": "rule/support_time_sp",
+        "source": 3,
+        "target": null,
+        "value": 15.0,
+        "trace": {
+          "calculation_id": "resource.recovery",
+          "rule_id": "rule/support_time_sp",
+          "contract_version": 1,
+          "rule_fingerprint": "90a1876fd09be4696ec82378ada281241370bb4b992e043f8116912018753bbc",
+          "runtime_fingerprint": "f2acf55cb27ed60693bde0e09e88345df7641af8c4aff910f97fa10f735f92ea",
+          "inputs": {
+            "current": 14.0,
+            "delta_seconds": 1,
+            "attributes": {
+              "max_hp": 1996,
+              "atk": 468,
+              "def": 245,
+              "mres": 0.0,
+              "attack_interval": 2.85,
+              "move_speed": 1.0,
+              "block_count": 1,
+              "deploy_cost": 20,
+              "redeploy_time": 70,
+              "mass_level": 0,
+              "sp_recovery_rate": 1.0,
+              "attack_speed_ratio": 1.0,
+              "block_cost": 1
+            },
+            "parameters": {
+              "freeze_cast_modes": [
+                "manual"
+              ],
+              "freeze_while_cast": true,
+              "pause_at_full": true,
+              "rate": 1
+            }
+          },
+          "parameters": {},
+          "context": {
+            "time": 1050,
+            "seconds": 35.0,
+            "quantum": 0.03333333333333333,
+            "resource": "sp",
+            "rule_scope": {
+              "scenario": {
+                "movement.speed": "rule/campaign_draft_move_speed",
+                "movement.path": "rule/m7_diagonal_path"
+              },
+              "source": {
+                "attributes.effective": "rule/support_temporal",
+                "targeting.score": "rule/m7_kalts_noequip_own_or_self"
+              },
+              "target": {},
+              "owner": {
+                "attributes.effective": "rule/support_temporal",
+                "targeting.score": "rule/m7_kalts_noequip_own_or_self"
+              },
+              "component": {},
+              "attribute_or_resource": {},
+              "ability": {},
+              "effect": {}
+            },
+            "source_id": 3,
+            "target_id": null,
+            "owner_id": 3
+          },
+          "stages": [
+            {
+              "id": "expression",
+              "expression": "inputs.current + inputs.attributes.sp_recovery_rate * inputs.delta_seconds",
+              "raw": 15.0
+            }
+          ],
+          "raw": 15.0,
+          "value": 15.0,
+          "numeric": {
+            "backend": "float",
+            "rounding": "half_even"
+          },
+          "binding": {
+            "owner": "owner",
+            "origin": "explicit",
+            "overrides": [
+              {
+                "scope": "preset",
+                "rule_id": "rule/ark_resource_recovery"
+              },
+              {
+                "scope": "explicit",
+                "rule_id": "rule/support_time_sp"
+              }
+            ]
+          }
+        }
+      },
+      "time": 1050,
+      "cause": null
+    }
+  ],
+  "actual_skill_started": [
+    {
+      "id": 14887,
+      "type": "ability.started",
+      "payload": {
+        "source": 3,
+        "ability": "ability/kalts_summon",
+        "cast": "cast/3/1",
+        "targets": [
+          3
+        ]
+      },
+      "time": 600,
+      "cause": null
+    },
+    {
+      "id": 42613,
+      "type": "ability.started",
+      "payload": {
+        "source": 3,
+        "ability": "ability/kalts_host_s3",
+        "cast": "cast/3/2",
+        "targets": [
+          4
+        ]
+      },
+      "time": 1051,
+      "cause": null
+    },
+    {
+      "id": 42638,
+      "type": "ability.started",
+      "payload": {
+        "source": 4,
+        "ability": "ability/kalts_token_s3_model",
+        "cast": "cast/4/4",
+        "targets": [
+          4
+        ]
+      },
+      "time": 1051,
+      "cause": 42613
+    }
+  ],
+  "actual_mon_damage_packets": [
+    {
+      "id": 32425,
+      "type": "damage.accepted",
+      "payload": {
+        "source": 4,
+        "target": 5,
+        "amount": 1345,
+        "ability": "ability/mon3tr_normal_probe",
+        "resource": "hp"
+      },
+      "time": 859,
+      "cause": null
+    },
+    {
+      "id": 36507,
+      "type": "damage.accepted",
+      "payload": {
+        "source": 4,
+        "target": 5,
+        "amount": 1345,
+        "ability": "ability/mon3tr_normal_probe",
+        "resource": "hp"
+      },
+      "time": 919,
+      "cause": null
+    },
+    {
+      "id": 40623,
+      "type": "damage.accepted",
+      "payload": {
+        "source": 4,
+        "target": 5,
+        "amount": 310,
+        "ability": "ability/mon3tr_normal_probe",
+        "resource": "hp"
+      },
+      "time": 979,
+      "cause": null
+    },
+    {
+      "id": 57106,
+      "type": "damage.accepted",
+      "payload": {
+        "source": 4,
+        "target": 6,
+        "amount": 3000,
+        "ability": "ability/mon3tr_true_probe",
+        "resource": "hp"
+      },
+      "time": 1328,
+      "cause": null
+    },
+    {
+      "id": 86947,
+      "type": "damage.accepted",
+      "payload": {
+        "source": 4,
+        "target": 7,
+        "amount": 1215.0,
+        "ability": "ability/mon3tr_normal_probe",
+        "resource": "hp"
+      },
+      "time": 1696,
+      "cause": null
+    }
+  ],
+  "actual_true_damage_packets": [
+    {
+      "id": 57106,
+      "type": "damage.accepted",
+      "payload": {
+        "source": 4,
+        "target": 6,
+        "amount": 3000,
+        "ability": "ability/mon3tr_true_probe",
+        "resource": "hp"
+      },
+      "time": 1328,
+      "cause": null
+    }
+  ],
+  "checkpoint_resume_equal": true,
+  "start_public_replay_equal": true,
+  "same_reference_modules_and_actual_HP_SP_DP_roster_slots_seed": true,
+  "independent_operation_input_only": true,
+  "V6_full_input_and_rejection_preserved": true,
+  "whole_stage_executed": false,
+  "client_verified": false,
+  "actual_true_damage_calculations": [
+    {
+      "id": 57088,
+      "type": "calculation",
+      "payload": {
+        "calculation_id": "damage.pipeline",
+        "rule_id": "rule/ark_damage_pipeline",
+        "source": 4,
+        "target": 6,
+        "value": {
+          "accepted": true,
+          "amount": 3227.5516666666667,
+          "allocations": [],
+          "events": []
+        },
+        "trace": {
+          "calculation_id": "damage.pipeline",
+          "rule_id": "rule/ark_damage_pipeline",
+          "contract_version": 1,
+          "rule_fingerprint": "2a865548763267fa75f90e2c986562f5c7532135705700e3912f4b8016e092fa",
+          "runtime_fingerprint": "f2acf55cb27ed60693bde0e09e88345df7641af8c4aff910f97fa10f735f92ea",
+          "inputs": {
+            "source": {
+              "id": 4,
+              "definition_id": "unit/kalts_mon3tr_model",
+              "tags": [
+                "mon3tr",
+                "player"
+              ],
+              "components": {
+                "abilities": [
+                  "ability/kalts_token_s3_model",
+                  "ability/mon3tr_true_probe",
+                  "ability/mon3tr_normal_probe"
+                ],
+                "attributes": {
+                  "base": {
+                    "atk": 1345,
+                    "attack_interval": 2.0,
+                    "attack_speed_ratio": 1,
+                    "block_cost": 1,
+                    "block_count": 3,
+                    "def": 389,
+                    "max_hp": 5177,
+                    "move_speed": 1,
+                    "mres": 0
+                  },
+                  "modifiers": [
+                    {
+                      "attribute": "def",
+                      "layer": "final_ratio",
+                      "value": -1,
+                      "buff_instance": "buff/4/1",
+                      "stacks": 1,
+                      "source": 4
+                    },
+                    {
+                      "attribute": "atk",
+                      "layer": "direct_ratio",
+                      "parameters": {
+                        "time_curve": {
+                          "type": "linear_remaining"
+                        }
+                      },
+                      "value": 2.6,
+                      "buff_instance": "buff/4/3",
+                      "stacks": 1,
+                      "source": 4
+                    },
+                    {
+                      "attribute": "def",
+                      "layer": "direct_ratio",
+                      "value": 2.0,
+                      "buff_instance": "buff/4/3",
+                      "stacks": 1,
+                      "source": 4
+                    }
+                  ]
+                },
+                "buffs": {
+                  "initial": [
+                    "buff/mon3tr_def_zero",
+                    "buff/support_mon3tr_death"
+                  ],
+                  "instances": [
+                    {
+                      "definition": "buff/mon3tr_def_zero",
+                      "source": 4,
+                      "target": 4,
+                      "id": "buff/4/1",
+                      "stacks": 1,
+                      "started_at": 600,
+                      "expires_at": null,
+                      "interval_units": 0,
+                      "generation": 1,
+                      "tasks": {},
+                      "blackboard": {}
+                    },
+                    {
+                      "definition": "buff/support_mon3tr_death",
+                      "source": 4,
+                      "target": 4,
+                      "id": "buff/4/2",
+                      "stacks": 1,
+                      "started_at": 600,
+                      "expires_at": null,
+                      "interval_units": 0,
+                      "generation": 1,
+                      "tasks": {},
+                      "blackboard": {}
+                    },
+                    {
+                      "definition": "buff/mon3tr_s3",
+                      "source": 4,
+                      "target": 4,
+                      "id": "buff/4/3",
+                      "stacks": 1,
+                      "started_at": 1051,
+                      "expires_at": 1651,
+                      "interval_units": 0,
+                      "generation": 1,
+                      "tasks": {
+                        "expire": 814
+                      },
+                      "blackboard": {}
+                    }
+                  ],
+                  "next_instance_id": 4
+                },
+                "deployable": {
+                  "base_cost": 10,
+                  "cooldown_seconds": 25,
+                  "terrain": "ground",
+                  "paid_cost": 10,
+                  "parameters": {
+                    "history_key": "unit/kalts_mon3tr_model|owner:3"
+                  }
+                },
+                "lifecycle": {
+                  "policy": "policy/ark_lifecycle"
+                },
+                "resources": {
+                  "hp": {
+                    "current": 2997.0,
+                    "spec": {
+                      "capacity": 5177,
+                      "capacity_attribute": "max_hp",
+                      "initial": 5177,
+                      "role": "health"
+                    },
+                    "observed_capacity": 5177,
+                    "capacity_signature": "e33a4e397511c41f50780bd49e3586950ccbe6b60f749400ff91f28dffbf12db"
+                  },
+                  "mode": {
+                    "current": 1,
+                    "spec": {
+                      "capacity": 1,
+                      "initial": 0
+                    },
+                    "observed_capacity": 1,
+                    "capacity_signature": "12b566bc56a90ecb1b4db12817bec97d5dcbf54aff068f9444e685098bf89a9c"
+                  },
+                  "no_kill": {
+                    "current": 1,
+                    "spec": {
+                      "capacity": 1,
+                      "initial": 0
+                    },
+                    "observed_capacity": 1,
+                    "capacity_signature": "12b566bc56a90ecb1b4db12817bec97d5dcbf54aff068f9444e685098bf89a9c"
+                  }
+                },
+                "spatial": {
+                  "blocking": true,
+                  "position": {
+                    "row": 6,
+                    "col": 6
+                  },
+                  "facing": "right"
+                },
+                "selection_state": {
+                  "side": 0,
+                  "motion": 1,
+                  "category": 1,
+                  "profession": 128,
+                  "unit_type": 1,
+                  "target_free": false,
+                  "ally_target_free": false,
+                  "heal_free": false,
+                  "camouflage": false,
+                  "can_select_camouflage": false,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": []
+                },
+                "ownership": {
+                  "owner": 3,
+                  "on_owner_retire": "remove"
+                },
+                "runtime": {
+                  "alive": true,
+                  "state": "alive",
+                  "deployed": true,
+                  "initializing": false,
+                  "casts": {
+                    "cast/4/4": {
+                      "id": "cast/4/4",
+                      "source": 4,
+                      "ability": "ability/kalts_token_s3_model",
+                      "targets": [
+                        4
+                      ],
+                      "activation_mode": "manual",
+                      "started_at": 1051,
+                      "finish_at": 1651,
+                      "tasks": [
+                        810
+                      ],
+                      "blocks_attacks": false,
+                      "automatic": true,
+                      "parameters": {
+                        "auto_only": true,
+                        "blocks_attacks": false
+                      },
+                      "generation": 4,
+                      "payments": []
+                    },
+                    "cast/4/5": {
+                      "id": "cast/4/5",
+                      "source": 4,
+                      "ability": "ability/mon3tr_true_probe",
+                      "targets": [
+                        6
+                      ],
+                      "activation_mode": "automatic_attack",
+                      "started_at": 1308,
+                      "finish_at": 1328,
+                      "tasks": [
+                        1075,
+                        1076
+                      ],
+                      "blocks_attacks": false,
+                      "automatic": true,
+                      "parameters": {
+                        "blocks_attacks": false,
+                        "auto_only": true
+                      },
+                      "generation": 5,
+                      "payments": []
+                    }
+                  },
+                  "cooldowns": {
+                    "ability/mon3tr_normal_probe": 979,
+                    "ability/kalts_token_s3_model": 1651,
+                    "ability/mon3tr_true_probe": 1328
+                  },
+                  "next_attack": 1368,
+                  "blocked_by": null,
+                  "rule_bindings": {},
+                  "deployment_recorded": true,
+                  "next_cast_id": 6,
+                  "attack_recovery_claims": [
+                    "cast/4/3"
+                  ]
+                }
+              },
+              "version": 46
+            },
+            "target": {
+              "id": 6,
+              "definition_id": "unit/ch4/enemy_1000_gopro_3/f0a2cfe83bd49c0f",
+              "tags": [
+                "enemy",
+                "ground"
+              ],
+              "components": {
+                "attributes": {
+                  "base": {
+                    "max_hp": 3000,
+                    "atk": 370,
+                    "def": 0,
+                    "mres": 20.0,
+                    "move_speed": 1.9,
+                    "attack_interval": 1.4,
+                    "attack_speed_ratio": 1.0,
+                    "mass_level": 0,
+                    "block_cost": 1
+                  },
+                  "modifiers": []
+                },
+                "resources": {
+                  "hp": {
+                    "current": 3000,
+                    "spec": {
+                      "initial": 3000,
+                      "capacity": 3000,
+                      "role": "health"
+                    },
+                    "observed_capacity": 3000,
+                    "capacity_signature": "d06f9830a4ffe20587af13e6a30de64f14d83b2954af960ec5f5421154178f67"
+                  }
+                },
+                "spatial": {
+                  "motion_mode": 0,
+                  "steering": {
+                    "rule": "rule/ch4/unit_steering",
+                    "parameters": {
+                      "response_factor": 8.0,
+                      "max_acceleration": 10.0,
+                      "arrival_radius": 0.05
+                    }
+                  },
+                  "position": {
+                    "row": 5,
+                    "col": 6
+                  },
+                  "facing": "left",
+                  "route": {
+                    "motionMode": 0,
+                    "startPosition": {
+                      "row": 0,
+                      "col": 8
+                    },
+                    "endPosition": {
+                      "row": 6,
+                      "col": 10
+                    },
+                    "spawnRandomRange": {
+                      "x": 0.3,
+                      "y": 0.3
+                    },
+                    "spawnOffset": {
+                      "x": 0.0,
+                      "y": 0.0
+                    },
+                    "checkpoints": [
+                      {
+                        "type": 0,
+                        "time": 0.0,
+                        "position": {
+                          "row": 3,
+                          "col": 8
+                        },
+                        "reachOffset": {
+                          "x": 0.0,
+                          "y": 0.0
+                        },
+                        "randomizeReachOffset": false,
+                        "reachDistance": 0.0
+                      },
+                      {
+                        "type": 0,
+                        "time": 0.0,
+                        "position": {
+                          "row": 3,
+                          "col": 6
+                        },
+                        "reachOffset": {
+                          "x": 0.0,
+                          "y": 0.0
+                        },
+                        "randomizeReachOffset": false,
+                        "reachDistance": 0.0
+                      },
+                      {
+                        "type": 0,
+                        "time": 0.0,
+                        "position": {
+                          "row": 6,
+                          "col": 6
+                        },
+                        "reachOffset": {
+                          "x": 0.0,
+                          "y": 0.0
+                        },
+                        "randomizeReachOffset": false,
+                        "reachDistance": 0.0
+                      }
+                    ],
+                    "allowDiagonalMove": true,
+                    "visitEveryTileCenter": false,
+                    "visitEveryNodeCenter": false,
+                    "visitEveryCheckPoint": false
+                  },
+                  "timing_origins": {
+                    "play_start": 0,
+                    "wave_start": 0,
+                    "fragment_start": 90,
+                    "action_start": 1080
+                  },
+                  "movement": {
+                    "checkpoint": 2,
+                    "path_index": 2
+                  },
+                  "velocity": {
+                    "row": 0,
+                    "col": 0
+                  },
+                  "distance_travelled": 7.17008512531792,
+                  "movement_path": [
+                    {
+                      "row": 4,
+                      "col": 6
+                    },
+                    {
+                      "row": 5,
+                      "col": 6
+                    },
+                    {
+                      "row": 6,
+                      "col": 6
+                    }
+                  ]
+                },
+                "selection_state": {
+                  "side": 1,
+                  "motion": 1,
+                  "category": 1,
+                  "unit_type": 2
+                },
+                "lifecycle": {
+                  "policy": "policy/ark_lifecycle",
+                  "leak_loss": 1
+                },
+                "abilities": [
+                  "ability/unit/ch4/enemy_1000_gopro_3/f0a2cfe83bd49c0f"
+                ],
+                "behavior": {
+                  "machine": "behavior/unit/ch4/enemy_1000_gopro_3/f0a2cfe83bd49c0f",
+                  "state": "active"
+                },
+                "runtime": {
+                  "alive": true,
+                  "state": "alive",
+                  "deployed": false,
+                  "initializing": false,
+                  "casts": {},
+                  "cooldowns": {
+                    "ability/unit/ch4/enemy_1000_gopro_3/f0a2cfe83bd49c0f": 1326
+                  },
+                  "next_attack": 1350,
+                  "blocked_by": 4,
+                  "rule_bindings": {},
+                  "behavior_decision": {
+                    "move": false,
+                    "attack": true
+                  },
+                  "next_cast_id": 2,
+                  "attack_recovery_claims": [
+                    "cast/6/1"
+                  ]
+                },
+                "buffs": {
+                  "instances": [],
+                  "next_instance_id": 1
+                }
+              },
+              "version": 244
+            },
+            "effect": {
+              "damage_type": "true",
+              "op": "damage",
+              "read_mode": {
+                "source_attributes": "at_hit"
+              },
+              "scale": 1,
+              "additions": 0,
+              "attack": 3227.5516666666667,
+              "defense": 0,
+              "resistance": 20.0
+            },
+            "samples": [],
+            "states": {}
+          },
+          "parameters": {},
+          "context": {
+            "time": 1328,
+            "seconds": 44.266666666666666,
+            "quantum": 0.03333333333333333,
+            "rule_scope": {
+              "scenario": {
+                "movement.speed": "rule/campaign_draft_move_speed",
+                "movement.path": "rule/m7_diagonal_path"
+              },
+              "source": {
+                "attributes.effective": "rule/kalts_time_layers"
+              },
+              "target": {},
+              "owner": {},
+              "component": {},
+              "attribute_or_resource": {},
+              "ability": {},
+              "effect": {}
+            },
+            "source_id": 4,
+            "target_id": 6,
+            "owner_id": null
+          },
+          "stages": [
+            {
+              "id": "power",
+              "raw": 3227.5516666666667,
+              "value": 3227.5516666666667,
+              "trace": {
+                "calculation_id": "damage.base",
+                "rule_id": "rule/ark_basic_power",
+                "contract_version": 1,
+                "rule_fingerprint": "9cb22f56b214c98411345a66dd99ceafed2edb929dee8727c365cc95bf0d54b9",
+                "runtime_fingerprint": "f2acf55cb27ed60693bde0e09e88345df7641af8c4aff910f97fa10f735f92ea",
+                "inputs": {
+                  "attack": 3227.5516666666667,
+                  "scale": 1,
+                  "additions": 0
+                },
+                "parameters": {},
+                "context": {
+                  "time": 1328,
+                  "seconds": 44.266666666666666,
+                  "quantum": 0.03333333333333333,
+                  "rule_scope": {
+                    "scenario": {
+                      "movement.speed": "rule/campaign_draft_move_speed",
+                      "movement.path": "rule/m7_diagonal_path"
+                    },
+                    "source": {
+                      "attributes.effective": "rule/kalts_time_layers"
+                    },
+                    "target": {},
+                    "owner": {},
+                    "component": {},
+                    "attribute_or_resource": {},
+                    "ability": {},
+                    "effect": {}
+                  },
+                  "source_id": 4,
+                  "target_id": 6,
+                  "owner_id": null
+                },
+                "stages": [
+                  {
+                    "id": "expression",
+                    "expression": "inputs.attack * inputs.scale + inputs.additions",
+                    "raw": 3227.5516666666667
+                  }
+                ],
+                "raw": 3227.5516666666667,
+                "value": 3227.5516666666667,
+                "numeric": {
+                  "backend": "float",
+                  "rounding": "half_even"
+                },
+                "binding": {
+                  "owner": "source",
+                  "origin": "preset",
+                  "overrides": [
+                    {
+                      "scope": "preset",
+                      "rule_id": "rule/ark_basic_power"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "mitigation",
+              "raw": 3227.5516666666667,
+              "value": 3227.5516666666667,
+              "trace": {
+                "calculation_id": "damage.mitigation",
+                "rule_id": "rule/ark_standard_mitigation",
+                "contract_version": 1,
+                "rule_fingerprint": "0b854b929522e48e8f3f75c097aea98181cc60146e67e6cdaef4069575fd8818",
+                "runtime_fingerprint": "f2acf55cb27ed60693bde0e09e88345df7641af8c4aff910f97fa10f735f92ea",
+                "inputs": {
+                  "power": 3227.5516666666667,
+                  "defense": 0,
+                  "resistance": 20.0,
+                  "damage_type": "true"
+                },
+                "parameters": {
+                  "minimum_ratio": 0.05
+                },
+                "context": {
+                  "time": 1328,
+                  "seconds": 44.266666666666666,
+                  "quantum": 0.03333333333333333,
+                  "rule_scope": {
+                    "scenario": {
+                      "movement.speed": "rule/campaign_draft_move_speed",
+                      "movement.path": "rule/m7_diagonal_path"
+                    },
+                    "source": {
+                      "attributes.effective": "rule/kalts_time_layers"
+                    },
+                    "target": {},
+                    "owner": {},
+                    "component": {},
+                    "attribute_or_resource": {},
+                    "ability": {},
+                    "effect": {}
+                  },
+                  "source_id": 4,
+                  "target_id": 6,
+                  "owner_id": null
+                },
+                "stages": [
+                  {
+                    "id": "expression",
+                    "expression": "inputs.power if inputs.damage_type == \"true\" else max(inputs.power * (1 - min(max(inputs.resistance, 0), 100) / 100), inputs.power * params.minimum_ratio) if inputs.damage_type == \"arts\" else max(inputs.power - inputs.defense, inputs.power * params.minimum_ratio)",
+                    "raw": 3227.5516666666667
+                  }
+                ],
+                "raw": 3227.5516666666667,
+                "value": 3227.5516666666667,
+                "numeric": {
+                  "backend": "float",
+                  "rounding": "half_even"
+                },
+                "binding": {
+                  "owner": "target",
+                  "origin": "preset",
+                  "overrides": [
+                    {
+                      "scope": "preset",
+                      "rule_id": "rule/ark_standard_mitigation"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "settle",
+              "raw": {
+                "accepted": true,
+                "amount": 3227.5516666666667,
+                "allocations": [],
+                "events": []
+              },
+              "value": {
+                "accepted": true,
+                "amount": 3227.5516666666667,
+                "allocations": [],
+                "events": []
+              },
+              "trace": {
+                "expression": "{\"accepted\": True, \"amount\": nodes.mitigation, \"allocations\": [], \"events\": []}"
+              }
+            }
+          ],
+          "raw": {
+            "accepted": true,
+            "amount": 3227.5516666666667,
+            "allocations": [],
+            "events": []
+          },
+          "value": {
+            "accepted": true,
+            "amount": 3227.5516666666667,
+            "allocations": [],
+            "events": []
+          },
+          "numeric": {
+            "backend": "float",
+            "rounding": "half_even"
+          },
+          "binding": {
+            "owner": "scenario",
+            "origin": "preset",
+            "overrides": [
+              {
+                "scope": "preset",
+                "rule_id": "rule/ark_damage_pipeline"
+              }
+            ]
+          }
+        }
+      },
+      "time": 1328,
+      "cause": null
+    }
+  ],
+  "prior_extraction_failure": "Preserved first parser assertion used nonexistent damage.accepted.damage_type; no simulation/core failure or input change."
+}

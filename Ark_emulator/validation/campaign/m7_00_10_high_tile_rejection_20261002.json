@@ -1,0 +1,50 @@
+{
+  "schema": "ark-sim/partial-stage-model-validation/v1",
+  "passed": false,
+  "formal_stage_accepted": false,
+  "complete_operator_count": 0,
+  "client_validated": false,
+  "package_sha256": "2ffa6450f778db3043b81e72f2d79e3a7ead49cf031065ad3e83b4db86e8b833",
+  "commands_sha256": "435cba33f878f1520398a0f264135a2ef65e640b6b7fc131ae7fa3f04a8996fa",
+  "ticks": 600,
+  "package_snapshot": "validation\\campaign\\m7_00_10_leakfix_prefix_20261002.package.json",
+  "commands_snapshot": "validation\\campaign\\m7_00_10_leakfix_prefix_20261002.commands.json",
+  "model_seed": 953816614,
+  "program_fingerprint": "f2dc19808c9e9a27401188789edc70e3293a25185585e7c152a711ef083d4549",
+  "runtime_fingerprint": "7fd59e90e60d2e780b2eff32c7b076b52eae8c1adc4e9caa51c1ceff7e54ed35",
+  "state": {
+    "finished": false,
+    "result": "running",
+    "pending_waves": 30,
+    "kills": 0,
+    "leaks": 1,
+    "damage_dealt": 0,
+    "deployments": {
+      "unit/char_151_myrtle": {
+        "count": 1,
+        "ready_at": 0
+      }
+    },
+    "command_results": {},
+    "input_locks": []
+  },
+  "leak_events": [
+    {
+      "event": {
+        "id": 48811,
+        "type": "entity.exited",
+        "payload": {
+          "source": 3,
+          "target": 3
+        },
+        "time": 539,
+        "cause": null
+      },
+      "definition": "unit/enemy_1000_gopro"
+    }
+  ],
+  "failure": {
+    "type": "AssertionError",
+    "message": "unexpected rejected command: [{'id': 292, 'type': 'command.accepted', 'payload': {'action': {'action': 'deploy', 'entity': 'unit/char_151_myrtle', 'position': {'row': 4, 'col': 8}, 'facing': 'left', 'alias': 'myrtle'}, 'result': 2}, 'time': 0, 'cause': None}, {'id': 18992, 'type': 'command.accepted', 'payload': {'action': {'action': 'skill', 'source': 'myrtle', 'ability': 'ability/campaign_myrtle_s2'}, 'result': 'cast/2/1'}, 'time': 270, 'cause': None}, {'id': 27047, 'type': 'command.rejected', 'payload': {'action': {'action': 'deploy', 'entity': 'unit/char_222_bpipe', 'position': {'row': 4, 'col': 9}, 'facing': 'left', 'alias': 'bagpipe'}, 'reason': 'not_buildable'}, 'time': 360, 'cause': None}]"
+  }
+}

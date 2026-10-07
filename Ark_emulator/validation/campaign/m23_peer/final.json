@@ -1,0 +1,1348 @@
+{
+  "schema_version": 1,
+  "scope": "independent mechanism peer only; not native correctness, promotion, receipt or stage",
+  "passed": true,
+  "pytest_exit_code": 0,
+  "runtime_root": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m23_roster_candidate",
+  "actual_module": "D:\\Arknights\\Arknights_timer\\unpack_work\\campaign_m23_roster_candidate\\ark_sim\\__init__.py",
+  "core_start": "0258f171d31daffb7b917e2ebad2603505e5fa762e99ef4a71b3b30342d62381",
+  "core_end": "0258f171d31daffb7b917e2ebad2603505e5fa762e99ef4a71b3b30342d62381",
+  "source_helper_start": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\validation\\campaign\\advanced_selector_source_audit.json": "ce0728c65297d26f64a86c724486178b9908f8fa23420575a37e0653edd0961a",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m26_peer\\verify.py": "1c52d04f8b0ac677d2a3ba9f67974395dc91c2a5408e66edfa566240262391e9",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m26_peer\\test_peer.py": "8f819f90c38b6a6097124c2131a9d48da63d4e8e68c9b02859711159ca9a1c3b",
+    "D:\\Arknights\\Arknights_timer\\data\\battle\\enm_pfb_3.ab_unpacked\\CAB-ef3a5632a5f1224887cc6e898efc163c": "bfcd6a439190289f55569490c8cd9774125ff582f0d0e7dcc960f9a6ba09abcb",
+    "D:\\Arknights\\Arknights_timer\\data\\battle\\enm_pfb_17.ab_unpacked\\CAB-a4a7bee43932d4710a58df03a50dfa6f": "4855f032d0fdbb17d841ce56a4322aa06f69a420131decfa799b88afe5a7af50"
+  },
+  "source_helper_end": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\validation\\campaign\\advanced_selector_source_audit.json": "ce0728c65297d26f64a86c724486178b9908f8fa23420575a37e0653edd0961a",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m26_peer\\verify.py": "1c52d04f8b0ac677d2a3ba9f67974395dc91c2a5408e66edfa566240262391e9",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\experiments\\m26_peer\\test_peer.py": "8f819f90c38b6a6097124c2131a9d48da63d4e8e68c9b02859711159ca9a1c3b",
+    "D:\\Arknights\\Arknights_timer\\data\\battle\\enm_pfb_3.ab_unpacked\\CAB-ef3a5632a5f1224887cc6e898efc163c": "bfcd6a439190289f55569490c8cd9774125ff582f0d0e7dcc960f9a6ba09abcb",
+    "D:\\Arknights\\Arknights_timer\\data\\battle\\enm_pfb_17.ab_unpacked\\CAB-a4a7bee43932d4710a58df03a50dfa6f": "4855f032d0fdbb17d841ce56a4322aa06f69a420131decfa799b88afe5a7af50"
+  },
+  "actual_source_typetrees_checked": 5,
+  "fixtures": [
+    {
+      "sha256": "e0a300688ce9b8a7930f0efa030200326d19a4dedf9c2edc6355b209d5e0593b",
+      "bytes": 3855,
+      "seed": 2603,
+      "document": {
+        "abilities": [
+          {
+            "activation": {
+              "mode": "automatic_attack"
+            },
+            "duration_seconds": 0.1,
+            "id": "ability/fire",
+            "kind": "ability",
+            "selector": "selector/target",
+            "timeline": [
+              {
+                "at_seconds": 0,
+                "effect": {
+                  "damage_type": "true",
+                  "op": "damage"
+                }
+              }
+            ]
+          },
+          {
+            "activation": {
+              "mode": "manual",
+              "on_start": [
+                {
+                  "buff": "buff/hide",
+                  "op": "apply_buff",
+                  "target": "source"
+                }
+              ]
+            },
+            "id": "ability/hide",
+            "kind": "ability",
+            "timeline": []
+          },
+          {
+            "activation": {
+              "mode": "manual",
+              "on_start": [
+                {
+                  "op": "move",
+                  "position": {
+                    "col": 5,
+                    "row": 0
+                  },
+                  "target": "source"
+                }
+              ]
+            },
+            "id": "ability/escape",
+            "kind": "ability",
+            "timeline": []
+          }
+        ],
+        "behaviors": [
+          {
+            "decision": {
+              "default_mode": 0,
+              "profiles": [
+                {
+                  "cast_groups": [
+                    {
+                      "abilities": [
+                        "ability/fire"
+                      ],
+                      "key": "normal"
+                    }
+                  ],
+                  "mode": 0,
+                  "parameters": {
+                    "stop_cast_groups": [
+                      "normal"
+                    ],
+                    "stop_on_target": true,
+                    "target_key": "normal"
+                  },
+                  "selectors": [
+                    {
+                      "key": "normal",
+                      "selector": "selector/target"
+                    }
+                  ]
+                }
+              ],
+              "rule": "rule/ark_behavior_decision"
+            },
+            "id": "behavior/decision",
+            "initial": "active",
+            "kind": "behavior",
+            "states": {
+              "active": {}
+            },
+            "transitions": []
+          }
+        ],
+        "buffs": [
+          {
+            "duration_seconds": 0.1,
+            "id": "buff/hide",
+            "kind": "buff"
+          }
+        ],
+        "entities": [
+          {
+            "components": {
+              "abilities": [],
+              "attributes": {
+                "base": {
+                  "atk": 12,
+                  "attack_interval": 1,
+                  "attack_speed_ratio": 1,
+                  "def": 0,
+                  "max_hp": 100,
+                  "move_speed": 3,
+                  "mres": 0
+                }
+              },
+              "deployable": {
+                "base_cost": 2,
+                "capacity": 1,
+                "cooldown_seconds": 0,
+                "terrain": "ground"
+              },
+              "resources": {
+                "hp": {
+                  "capacity": 100,
+                  "initial": 100,
+                  "role": "health"
+                }
+              },
+              "spatial": {}
+            },
+            "id": "unit/source",
+            "kind": "entity",
+            "tags": []
+          },
+          {
+            "components": {
+              "abilities": [
+                "ability/hide",
+                "ability/escape"
+              ],
+              "attributes": {
+                "base": {
+                  "atk": 12,
+                  "attack_interval": 1,
+                  "attack_speed_ratio": 1,
+                  "def": 0,
+                  "max_hp": 100,
+                  "move_speed": 3,
+                  "mres": 0
+                }
+              },
+              "deployable": {
+                "base_cost": 2,
+                "capacity": 1,
+                "cooldown_seconds": 0,
+                "terrain": "ground"
+              },
+              "resources": {
+                "hp": {
+                  "capacity": 100,
+                  "initial": 100,
+                  "role": "health"
+                }
+              },
+              "spatial": {}
+            },
+            "id": "unit/target",
+            "kind": "entity",
+            "tags": [
+              "target"
+            ]
+          }
+        ],
+        "manifest": {
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "rules": [
+          {
+            "contract": "targeting.eligibility",
+            "id": "rule/qualify",
+            "implementation": {
+              "provider": "model.targeting.eligibility",
+              "type": "provider"
+            },
+            "kind": "rule"
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scenario/peer",
+          "initialEntities": [
+            {
+              "definition": "unit/source",
+              "instanceAlias": "source",
+              "position": {
+                "col": 0,
+                "row": 0
+              },
+              "route": {
+                "checkpoints": [],
+                "endPosition": {
+                  "col": 5,
+                  "row": 0
+                },
+                "motionMode": 0,
+                "startPosition": {
+                  "col": 0,
+                  "row": 0
+                }
+              }
+            },
+            {
+              "active": false,
+              "definition": "unit/target",
+              "instanceAlias": "target",
+              "position": {
+                "col": 1,
+                "row": 0
+              },
+              "registration_key": "peer-npc"
+            }
+          ],
+          "map": {
+            "cols": 6,
+            "rows": 2
+          },
+          "objectives": {},
+          "resources": {
+            "dp": {
+              "capacity": 10,
+              "initial": 10
+            }
+          },
+          "roster": [],
+          "ruleset": "ruleset/ark_standard"
+        },
+        "schemaVersion": 2,
+        "selectors": [
+          {
+            "eligibility": {
+              "parameters": {
+                "defaults": {
+                  "abnormal_combos": [],
+                  "abnormal_flags": [],
+                  "ally_target_free": false,
+                  "camouflage": false,
+                  "can_select_camouflage": false,
+                  "category": 1,
+                  "heal_free": false,
+                  "motion": 1,
+                  "profession": 0,
+                  "side": 0,
+                  "target_free": false,
+                  "target_free_combos": [],
+                  "target_free_flags": [],
+                  "unit_type": 1
+                },
+                "neutral_policy": "reject",
+                "side_policy": "relative_ally_enemy",
+                "source_configuration": {
+                  "_abilityInputTargetAsSortSource": 0,
+                  "_abnormalCombo": 2,
+                  "_abnormalFlag": 44,
+                  "_checkUnitType": 0,
+                  "_excludeAbnormalFlag": 46,
+                  "_excludeOwner": 0,
+                  "_excludeSomeAbnormalFlags": 0,
+                  "_forceIgnoreCamouflage": 0,
+                  "_ignoreAllyTargetFree": 0,
+                  "_ignoreHealFree": 0,
+                  "_ignoreHitRange": 0,
+                  "_ignoreMotionMode": 0,
+                  "_ignoreTargetFree": 0,
+                  "_limitTargetNum": 1,
+                  "_maxNum": 1,
+                  "_maxTargetKey": "max_target",
+                  "_needProfessionMask": 0,
+                  "_onlyIgnoreSomeOfTargetFreeCase": 0,
+                  "_postFilter": 4,
+                  "_professionMask": 0,
+                  "_sortByTauntAtLast": 0,
+                  "_targetCategory": 1,
+                  "_targetMotion": 1,
+                  "_targetSide": 2,
+                  "_unitTypeMask": 0,
+                  "m_Enabled": 1,
+                  "m_GameObject": {
+                    "m_FileID": 0,
+                    "m_PathID": -2943398340085380678
+                  },
+                  "m_Name": "",
+                  "m_Script": {
+                    "m_FileID": 1,
+                    "m_PathID": 7080728813803358465
+                  }
+                }
+              },
+              "rule": "rule/qualify"
+            },
+            "filters": [
+              {
+                "tag": "target"
+              },
+              {
+                "state": "alive"
+              }
+            ],
+            "id": "selector/target",
+            "kind": "selector",
+            "limit": 1,
+            "ordering": "random",
+            "parameters": {
+              "random_stream": "imp"
+            },
+            "region": {
+              "radius": 1,
+              "type": "radius"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "sha256": "8ddac5804f2a9f3b507ac0212bc27d9d66a5e0aa49bc04220465153efd5d2747",
+      "bytes": 3868,
+      "seed": 2603,
+      "document": {
+        "abilities": [
+          {
+            "activation": {
+              "mode": "automatic_attack"
+            },
+            "duration_seconds": 0.1,
+            "id": "ability/fire",
+            "kind": "ability",
+            "selector": "selector/target",
+            "timeline": [
+              {
+                "at_seconds": 0,
+                "effect": {
+                  "damage_type": "true",
+                  "op": "damage"
+                }
+              }
+            ]
+          },
+          {
+            "activation": {
+              "mode": "manual",
+              "on_start": [
+                {
+                  "buff": "buff/hide",
+                  "op": "apply_buff",
+                  "target": "source"
+                }
+              ]
+            },
+            "id": "ability/hide",
+            "kind": "ability",
+            "timeline": []
+          },
+          {
+            "activation": {
+              "mode": "manual",
+              "on_start": [
+                {
+                  "op": "move",
+                  "position": {
+                    "col": 5,
+                    "row": 0
+                  },
+                  "target": "source"
+                }
+              ]
+            },
+            "id": "ability/escape",
+            "kind": "ability",
+            "timeline": []
+          }
+        ],
+        "behaviors": [
+          {
+            "decision": {
+              "default_mode": 0,
+              "profiles": [
+                {
+                  "cast_groups": [
+                    {
+                      "abilities": [
+                        "ability/fire"
+                      ],
+                      "key": "normal"
+                    }
+                  ],
+                  "mode": 0,
+                  "parameters": {
+                    "stop_cast_groups": [
+                      "normal"
+                    ],
+                    "stop_on_target": true,
+                    "target_key": "normal"
+                  },
+                  "selectors": [
+                    {
+                      "key": "normal",
+                      "selector": "selector/target"
+                    }
+                  ]
+                }
+              ],
+              "rule": "rule/ark_behavior_decision"
+            },
+            "id": "behavior/decision",
+            "initial": "active",
+            "kind": "behavior",
+            "states": {
+              "active": {}
+            },
+            "transitions": []
+          }
+        ],
+        "buffs": [
+          {
+            "duration_seconds": 0.1,
+            "id": "buff/hide",
+            "kind": "buff"
+          }
+        ],
+        "entities": [
+          {
+            "components": {
+              "abilities": [],
+              "attributes": {
+                "base": {
+                  "atk": 12,
+                  "attack_interval": 1,
+                  "attack_speed_ratio": 1,
+                  "def": 0,
+                  "max_hp": 100,
+                  "move_speed": 3,
+                  "mres": 0
+                }
+              },
+              "deployable": {
+                "base_cost": 2,
+                "capacity": 1,
+                "cooldown_seconds": 0,
+                "terrain": "ground"
+              },
+              "resources": {
+                "hp": {
+                  "capacity": 100,
+                  "initial": 100,
+                  "role": "health"
+                }
+              },
+              "spatial": {}
+            },
+            "id": "unit/source",
+            "kind": "entity",
+            "tags": []
+          },
+          {
+            "components": {
+              "abilities": [
+                "ability/hide",
+                "ability/escape"
+              ],
+              "attributes": {
+                "base": {
+                  "atk": 12,
+                  "attack_interval": 1,
+                  "attack_speed_ratio": 1,
+                  "def": 0,
+                  "max_hp": 100,
+                  "move_speed": 3,
+                  "mres": 0
+                }
+              },
+              "deployable": {
+                "base_cost": 2,
+                "capacity": 1,
+                "cooldown_seconds": 0,
+                "terrain": "ground"
+              },
+              "resources": {
+                "hp": {
+                  "capacity": 100,
+                  "initial": 100,
+                  "role": "health"
+                }
+              },
+              "spatial": {}
+            },
+            "id": "unit/target",
+            "kind": "entity",
+            "tags": [
+              "target"
+            ]
+          }
+        ],
+        "manifest": {
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "rules": [
+          {
+            "contract": "targeting.eligibility",
+            "id": "rule/qualify",
+            "implementation": {
+              "provider": "model.targeting.eligibility",
+              "type": "provider"
+            },
+            "kind": "rule"
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scenario/peer",
+          "initialEntities": [
+            {
+              "definition": "unit/source",
+              "instanceAlias": "source",
+              "position": {
+                "col": 0,
+                "row": 0
+              },
+              "route": {
+                "checkpoints": [],
+                "endPosition": {
+                  "col": 5,
+                  "row": 0
+                },
+                "motionMode": 0,
+                "startPosition": {
+                  "col": 0,
+                  "row": 0
+                }
+              }
+            },
+            {
+              "active": false,
+              "definition": "unit/target",
+              "instanceAlias": "target",
+              "position": {
+                "col": 1,
+                "row": 0
+              },
+              "registration_key": "peer-npc"
+            }
+          ],
+          "map": {
+            "cols": 6,
+            "rows": 2
+          },
+          "objectives": {},
+          "resources": {
+            "dp": {
+              "capacity": 10,
+              "initial": 10
+            }
+          },
+          "roster": [
+            "unit/source"
+          ],
+          "ruleset": "ruleset/ark_standard"
+        },
+        "schemaVersion": 2,
+        "selectors": [
+          {
+            "eligibility": {
+              "parameters": {
+                "defaults": {
+                  "abnormal_combos": [],
+                  "abnormal_flags": [],
+                  "ally_target_free": false,
+                  "camouflage": false,
+                  "can_select_camouflage": false,
+                  "category": 1,
+                  "heal_free": false,
+                  "motion": 1,
+                  "profession": 0,
+                  "side": 0,
+                  "target_free": false,
+                  "target_free_combos": [],
+                  "target_free_flags": [],
+                  "unit_type": 1
+                },
+                "neutral_policy": "reject",
+                "side_policy": "relative_ally_enemy",
+                "source_configuration": {
+                  "_abilityInputTargetAsSortSource": 0,
+                  "_abnormalCombo": 2,
+                  "_abnormalFlag": 44,
+                  "_checkUnitType": 0,
+                  "_excludeAbnormalFlag": 46,
+                  "_excludeOwner": 0,
+                  "_excludeSomeAbnormalFlags": 0,
+                  "_forceIgnoreCamouflage": 0,
+                  "_ignoreAllyTargetFree": 0,
+                  "_ignoreHealFree": 0,
+                  "_ignoreHitRange": 0,
+                  "_ignoreMotionMode": 0,
+                  "_ignoreTargetFree": 0,
+                  "_limitTargetNum": 1,
+                  "_maxNum": 1,
+                  "_maxTargetKey": "max_target",
+                  "_needProfessionMask": 0,
+                  "_onlyIgnoreSomeOfTargetFreeCase": 0,
+                  "_postFilter": 4,
+                  "_professionMask": 0,
+                  "_sortByTauntAtLast": 0,
+                  "_targetCategory": 1,
+                  "_targetMotion": 1,
+                  "_targetSide": 2,
+                  "_unitTypeMask": 0,
+                  "m_Enabled": 1,
+                  "m_GameObject": {
+                    "m_FileID": 0,
+                    "m_PathID": -2943398340085380678
+                  },
+                  "m_Name": "",
+                  "m_Script": {
+                    "m_FileID": 1,
+                    "m_PathID": 7080728813803358465
+                  }
+                }
+              },
+              "rule": "rule/qualify"
+            },
+            "filters": [
+              {
+                "tag": "target"
+              },
+              {
+                "state": "alive"
+              }
+            ],
+            "id": "selector/target",
+            "kind": "selector",
+            "limit": 1,
+            "ordering": "random",
+            "parameters": {
+              "random_stream": "imp"
+            },
+            "region": {
+              "radius": 1,
+              "type": "radius"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "sha256": "b09d104e8b9162100fff8432dfcbdafa73485b397def7f0c456daa347f20957f",
+      "bytes": 3709,
+      "seed": 2603,
+      "document": {
+        "abilities": [
+          {
+            "activation": {
+              "mode": "automatic_attack"
+            },
+            "duration_seconds": 0.1,
+            "id": "ability/fire",
+            "kind": "ability",
+            "selector": "selector/target",
+            "timeline": [
+              {
+                "at_seconds": 0,
+                "effect": {
+                  "damage_type": "true",
+                  "op": "damage"
+                }
+              }
+            ]
+          },
+          {
+            "activation": {
+              "mode": "manual",
+              "on_start": [
+                {
+                  "buff": "buff/hide",
+                  "op": "apply_buff",
+                  "target": "source"
+                }
+              ]
+            },
+            "id": "ability/hide",
+            "kind": "ability",
+            "timeline": []
+          },
+          {
+            "activation": {
+              "mode": "manual",
+              "on_start": [
+                {
+                  "op": "move",
+                  "position": {
+                    "col": 5,
+                    "row": 0
+                  },
+                  "target": "source"
+                }
+              ]
+            },
+            "id": "ability/escape",
+            "kind": "ability",
+            "timeline": []
+          }
+        ],
+        "behaviors": [
+          {
+            "decision": {
+              "default_mode": 0,
+              "profiles": [
+                {
+                  "cast_groups": [
+                    {
+                      "abilities": [
+                        "ability/fire"
+                      ],
+                      "key": "normal"
+                    }
+                  ],
+                  "mode": 0,
+                  "parameters": {
+                    "stop_cast_groups": [
+                      "normal"
+                    ],
+                    "stop_on_target": true,
+                    "target_key": "normal"
+                  },
+                  "selectors": [
+                    {
+                      "key": "normal",
+                      "selector": "selector/target"
+                    }
+                  ]
+                }
+              ],
+              "rule": "rule/ark_behavior_decision"
+            },
+            "id": "behavior/decision",
+            "initial": "active",
+            "kind": "behavior",
+            "states": {
+              "active": {}
+            },
+            "transitions": []
+          }
+        ],
+        "buffs": [
+          {
+            "duration_seconds": 0.1,
+            "id": "buff/hide",
+            "kind": "buff"
+          }
+        ],
+        "entities": [
+          {
+            "components": {
+              "abilities": [
+                "ability/fire"
+              ],
+              "attributes": {
+                "base": {
+                  "atk": 12,
+                  "attack_interval": 1,
+                  "attack_speed_ratio": 1,
+                  "def": 0,
+                  "max_hp": 100,
+                  "move_speed": 3,
+                  "mres": 0
+                }
+              },
+              "behavior": {
+                "machine": "behavior/decision"
+              },
+              "deployable": {
+                "base_cost": 2,
+                "capacity": 1,
+                "cooldown_seconds": 0,
+                "terrain": "ground"
+              },
+              "resources": {
+                "hp": {
+                  "capacity": 100,
+                  "initial": 100,
+                  "role": "health"
+                }
+              },
+              "spatial": {}
+            },
+            "id": "unit/source",
+            "kind": "entity",
+            "tags": []
+          },
+          {
+            "components": {
+              "abilities": [
+                "ability/hide",
+                "ability/escape"
+              ],
+              "attributes": {
+                "base": {
+                  "atk": 12,
+                  "attack_interval": 1,
+                  "attack_speed_ratio": 1,
+                  "def": 0,
+                  "max_hp": 100,
+                  "move_speed": 3,
+                  "mres": 0
+                }
+              },
+              "deployable": {
+                "base_cost": 2,
+                "capacity": 1,
+                "cooldown_seconds": 0,
+                "terrain": "ground"
+              },
+              "resources": {
+                "hp": {
+                  "capacity": 100,
+                  "initial": 100,
+                  "role": "health"
+                }
+              },
+              "spatial": {}
+            },
+            "id": "unit/target",
+            "kind": "entity",
+            "tags": [
+              "target"
+            ]
+          }
+        ],
+        "manifest": {
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "rules": [
+          {
+            "contract": "targeting.eligibility",
+            "id": "rule/qualify",
+            "implementation": {
+              "provider": "model.targeting.eligibility",
+              "type": "provider"
+            },
+            "kind": "rule"
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scenario/peer",
+          "initialEntities": [
+            {
+              "active": false,
+              "definition": "unit/target",
+              "instanceAlias": "target",
+              "position": {
+                "col": 1,
+                "row": 0
+              },
+              "registration_key": "peer-npc"
+            }
+          ],
+          "map": {
+            "cols": 6,
+            "rows": 2
+          },
+          "objectives": {},
+          "resources": {
+            "dp": {
+              "capacity": 10,
+              "initial": 10
+            }
+          },
+          "ruleset": "ruleset/ark_standard"
+        },
+        "schemaVersion": 2,
+        "selectors": [
+          {
+            "eligibility": {
+              "parameters": {
+                "defaults": {
+                  "abnormal_combos": [],
+                  "abnormal_flags": [],
+                  "ally_target_free": false,
+                  "camouflage": false,
+                  "can_select_camouflage": false,
+                  "category": 1,
+                  "heal_free": false,
+                  "motion": 1,
+                  "profession": 0,
+                  "side": 0,
+                  "target_free": false,
+                  "target_free_combos": [],
+                  "target_free_flags": [],
+                  "unit_type": 1
+                },
+                "neutral_policy": "reject",
+                "side_policy": "relative_ally_enemy",
+                "source_configuration": {
+                  "_abilityInputTargetAsSortSource": 0,
+                  "_abnormalCombo": 2,
+                  "_abnormalFlag": 44,
+                  "_checkUnitType": 0,
+                  "_excludeAbnormalFlag": 46,
+                  "_excludeOwner": 0,
+                  "_excludeSomeAbnormalFlags": 0,
+                  "_forceIgnoreCamouflage": 0,
+                  "_ignoreAllyTargetFree": 0,
+                  "_ignoreHealFree": 0,
+                  "_ignoreHitRange": 0,
+                  "_ignoreMotionMode": 0,
+                  "_ignoreTargetFree": 0,
+                  "_limitTargetNum": 1,
+                  "_maxNum": 1,
+                  "_maxTargetKey": "max_target",
+                  "_needProfessionMask": 0,
+                  "_onlyIgnoreSomeOfTargetFreeCase": 0,
+                  "_postFilter": 4,
+                  "_professionMask": 0,
+                  "_sortByTauntAtLast": 0,
+                  "_targetCategory": 1,
+                  "_targetMotion": 1,
+                  "_targetSide": 2,
+                  "_unitTypeMask": 0,
+                  "m_Enabled": 1,
+                  "m_GameObject": {
+                    "m_FileID": 0,
+                    "m_PathID": -2943398340085380678
+                  },
+                  "m_Name": "",
+                  "m_Script": {
+                    "m_FileID": 1,
+                    "m_PathID": 7080728813803358465
+                  }
+                }
+              },
+              "rule": "rule/qualify"
+            },
+            "filters": [
+              {
+                "tag": "target"
+              },
+              {
+                "state": "alive"
+              }
+            ],
+            "id": "selector/target",
+            "kind": "selector",
+            "limit": 1,
+            "ordering": "random",
+            "parameters": {
+              "random_stream": "imp"
+            },
+            "region": {
+              "radius": 1,
+              "type": "radius"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "sha256": "8a88c803fbc2af3bceba86e5091013c9475324129fff6f900a393b028c516a61",
+      "bytes": 3972,
+      "seed": 2603,
+      "document": {
+        "abilities": [
+          {
+            "activation": {
+              "mode": "automatic_attack"
+            },
+            "duration_seconds": 0.1,
+            "id": "ability/fire",
+            "kind": "ability",
+            "selector": "selector/target",
+            "timeline": [
+              {
+                "at_seconds": 0,
+                "effect": {
+                  "damage_type": "true",
+                  "op": "damage"
+                }
+              }
+            ]
+          },
+          {
+            "activation": {
+              "mode": "manual",
+              "on_start": [
+                {
+                  "buff": "buff/hide",
+                  "op": "apply_buff",
+                  "target": "source"
+                }
+              ]
+            },
+            "id": "ability/hide",
+            "kind": "ability",
+            "timeline": []
+          },
+          {
+            "activation": {
+              "mode": "manual",
+              "on_start": [
+                {
+                  "op": "move",
+                  "position": {
+                    "col": 5,
+                    "row": 0
+                  },
+                  "target": "source"
+                }
+              ]
+            },
+            "id": "ability/escape",
+            "kind": "ability",
+            "timeline": []
+          },
+          {
+            "activation": {
+              "mode": "manual",
+              "on_start": [
+                {
+                  "definition": "unit/target",
+                  "op": "spawn",
+                  "owner": "source",
+                  "parameters": {
+                    "max_owned": 1,
+                    "position_from_payload": true
+                  }
+                }
+              ]
+            },
+            "id": "ability/summon",
+            "kind": "ability",
+            "timeline": []
+          }
+        ],
+        "behaviors": [
+          {
+            "decision": {
+              "default_mode": 0,
+              "profiles": [
+                {
+                  "cast_groups": [
+                    {
+                      "abilities": [
+                        "ability/fire"
+                      ],
+                      "key": "normal"
+                    }
+                  ],
+                  "mode": 0,
+                  "parameters": {
+                    "stop_cast_groups": [
+                      "normal"
+                    ],
+                    "stop_on_target": true,
+                    "target_key": "normal"
+                  },
+                  "selectors": [
+                    {
+                      "key": "normal",
+                      "selector": "selector/target"
+                    }
+                  ]
+                }
+              ],
+              "rule": "rule/ark_behavior_decision"
+            },
+            "id": "behavior/decision",
+            "initial": "active",
+            "kind": "behavior",
+            "states": {
+              "active": {}
+            },
+            "transitions": []
+          }
+        ],
+        "buffs": [
+          {
+            "duration_seconds": 0.1,
+            "id": "buff/hide",
+            "kind": "buff"
+          }
+        ],
+        "entities": [
+          {
+            "components": {
+              "abilities": [
+                "ability/summon"
+              ],
+              "attributes": {
+                "base": {
+                  "atk": 12,
+                  "attack_interval": 1,
+                  "attack_speed_ratio": 1,
+                  "def": 0,
+                  "max_hp": 100,
+                  "move_speed": 3,
+                  "mres": 0
+                }
+              },
+              "deployable": {
+                "base_cost": 2,
+                "capacity": 1,
+                "cooldown_seconds": 0,
+                "terrain": "ground"
+              },
+              "resources": {
+                "hp": {
+                  "capacity": 100,
+                  "initial": 100,
+                  "role": "health"
+                }
+              },
+              "spatial": {}
+            },
+            "id": "unit/source",
+            "kind": "entity",
+            "tags": []
+          },
+          {
+            "components": {
+              "abilities": [
+                "ability/hide",
+                "ability/escape"
+              ],
+              "attributes": {
+                "base": {
+                  "atk": 12,
+                  "attack_interval": 1,
+                  "attack_speed_ratio": 1,
+                  "def": 0,
+                  "max_hp": 100,
+                  "move_speed": 3,
+                  "mres": 0
+                }
+              },
+              "deployable": {
+                "base_cost": 2,
+                "capacity": 1,
+                "cooldown_seconds": 0,
+                "terrain": "ground"
+              },
+              "resources": {
+                "hp": {
+                  "capacity": 100,
+                  "initial": 100,
+                  "role": "health"
+                }
+              },
+              "spatial": {}
+            },
+            "id": "unit/target",
+            "kind": "entity",
+            "tags": [
+              "target"
+            ]
+          }
+        ],
+        "manifest": {
+          "requires": [
+            "preset/ark_standard"
+          ]
+        },
+        "rules": [
+          {
+            "contract": "targeting.eligibility",
+            "id": "rule/qualify",
+            "implementation": {
+              "provider": "model.targeting.eligibility",
+              "type": "provider"
+            },
+            "kind": "rule"
+          }
+        ],
+        "scenarioDraft": {
+          "id": "scenario/peer",
+          "initialEntities": [
+            {
+              "definition": "unit/source",
+              "instanceAlias": "source",
+              "position": {
+                "col": 0,
+                "row": 0
+              },
+              "route": {
+                "checkpoints": [],
+                "endPosition": {
+                  "col": 5,
+                  "row": 0
+                },
+                "motionMode": 0,
+                "startPosition": {
+                  "col": 0,
+                  "row": 0
+                }
+              }
+            }
+          ],
+          "map": {
+            "cols": 6,
+            "rows": 2
+          },
+          "objectives": {},
+          "resources": {
+            "dp": {
+              "capacity": 10,
+              "initial": 10
+            }
+          },
+          "roster": [
+            "unit/source"
+          ],
+          "ruleset": "ruleset/ark_standard"
+        },
+        "schemaVersion": 2,
+        "selectors": [
+          {
+            "eligibility": {
+              "parameters": {
+                "defaults": {
+                  "abnormal_combos": [],
+                  "abnormal_flags": [],
+                  "ally_target_free": false,
+                  "camouflage": false,
+                  "can_select_camouflage": false,
+                  "category": 1,
+                  "heal_free": false,
+                  "motion": 1,
+                  "profession": 0,
+                  "side": 0,
+                  "target_free": false,
+                  "target_free_combos": [],
+                  "target_free_flags": [],
+                  "unit_type": 1
+                },
+                "neutral_policy": "reject",
+                "side_policy": "relative_ally_enemy",
+                "source_configuration": {
+                  "_abilityInputTargetAsSortSource": 0,
+                  "_abnormalCombo": 2,
+                  "_abnormalFlag": 44,
+                  "_checkUnitType": 0,
+                  "_excludeAbnormalFlag": 46,
+                  "_excludeOwner": 0,
+                  "_excludeSomeAbnormalFlags": 0,
+                  "_forceIgnoreCamouflage": 0,
+                  "_ignoreAllyTargetFree": 0,
+                  "_ignoreHealFree": 0,
+                  "_ignoreHitRange": 0,
+                  "_ignoreMotionMode": 0,
+                  "_ignoreTargetFree": 0,
+                  "_limitTargetNum": 1,
+                  "_maxNum": 1,
+                  "_maxTargetKey": "max_target",
+                  "_needProfessionMask": 0,
+                  "_onlyIgnoreSomeOfTargetFreeCase": 0,
+                  "_postFilter": 4,
+                  "_professionMask": 0,
+                  "_sortByTauntAtLast": 0,
+                  "_targetCategory": 1,
+                  "_targetMotion": 1,
+                  "_targetSide": 2,
+                  "_unitTypeMask": 0,
+                  "m_Enabled": 1,
+                  "m_GameObject": {
+                    "m_FileID": 0,
+                    "m_PathID": -2943398340085380678
+                  },
+                  "m_Name": "",
+                  "m_Script": {
+                    "m_FileID": 1,
+                    "m_PathID": 7080728813803358465
+                  }
+                }
+              },
+              "rule": "rule/qualify"
+            },
+            "filters": [
+              {
+                "tag": "target"
+              },
+              {
+                "state": "alive"
+              }
+            ],
+            "id": "selector/target",
+            "kind": "selector",
+            "limit": 1,
+            "ordering": "random",
+            "parameters": {
+              "random_stream": "imp"
+            },
+            "region": {
+              "radius": 1,
+              "type": "radius"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "native_body_client_pending": true,
+  "fixture_failures_preserved_description": [
+    "open roster positive originally removed every reachable target reference and compiler correctly pruned it; corrected to declared dormant initial target",
+    "owned spawn initially put parameter fields at effect root; schema rejected; then skill payload position initially outside payload; corrected public command shape"
+  ],
+  "formal_approval": false
+}

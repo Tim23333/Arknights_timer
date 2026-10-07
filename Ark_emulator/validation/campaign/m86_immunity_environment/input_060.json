@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 2,
+  "entities": [
+    {
+      "id": "unit/test",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "atk": 100,
+            "max_hp": 100,
+            "attack_interval": 1,
+            "attack_speed_ratio": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100,
+            "role": "health"
+          },
+          "energy": {
+            "initial": 20,
+            "capacity": 40
+          },
+          "ammo": {
+            "initial": 2,
+            "capacity": 2
+          }
+        },
+        "abilities": [
+          "ability/basic",
+          "ability/charged"
+        ],
+        "buffs": {
+          "initial": []
+        }
+      }
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/basic",
+      "kind": "ability",
+      "activation": {
+        "mode": "automatic_attack"
+      },
+      "selector": "selector/target",
+      "timeline": [
+        {
+          "at_seconds": 0.2,
+          "repeat": {
+            "count": 3,
+            "interval_seconds": 0.2
+          },
+          "effect": {
+            "op": "damage",
+            "target": "selected"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/charged",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "costs": [
+          {
+            "resource": "ammo",
+            "amount": 3
+          }
+        ],
+        "parameters": {
+          "auto_when_ready": true,
+          "replace_attack": true
+        }
+      },
+      "selector": "selector/target",
+      "timeline": [
+        {
+          "at_seconds": 0.2,
+          "repeat": {
+            "count": 3,
+            "interval_seconds": 0.2
+          },
+          "effect": {
+            "op": "damage",
+            "target": "selected"
+          }
+        }
+      ]
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/test",
+      "kind": "buff",
+      "duration_seconds": 0.5,
+      "stacking": {
+        "mode": "refresh"
+      },
+      "modifiers": [
+        {
+          "attribute": "atk",
+          "layer": "direct_ratio",
+          "value": 0.5
+        }
+      ]
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/target",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/test_stack",
+      "kind": "calculation_rule",
+      "contract": "buff.stack_amount",
+      "implementation": {
+        "type": "expression",
+        "expression": "min(max(inputs.current_stacks, inputs.incoming.count) if inputs.stack_parameters.mode == 'max' else inputs.current_stacks + inputs.incoming.count if inputs.stack_parameters.mode == 'add' else inputs.current_stacks if inputs.stack_parameters.mode == 'extend' and inputs.current_stacks > 0 else inputs.incoming.count, inputs.stack_parameters.max_stacks)"
+      }
+    },
+    {
+      "id": "rule/test_effective",
+      "kind": "calculation_rule",
+      "contract": "attributes.effective",
+      "implementation": {
+        "type": "graph",
+        "nodes": [
+          {
+            "id": "base",
+            "expression": "inputs.base"
+          }
+        ],
+        "output": "nodes.base"
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scenario/test",
+    "ruleset": "ruleset/ark_standard",
+    "rules": {
+      "buff.stack_amount": "rule/test_stack",
+      "attributes.effective": "rule/test_effective"
+    },
+    "dependencies": [
+      "buff/test"
+    ],
+    "initialEntities": [
+      {
+        "definition": "unit/test"
+      }
+    ]
+  }
+}

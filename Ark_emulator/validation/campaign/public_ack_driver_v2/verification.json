@@ -1,0 +1,49 @@
+{
+  "passed": true,
+  "core": "8fa4e36752e92f7de691f0e617adb0b3fdb0188f1f4e17c519514b7f51a7e525",
+  "disk_sha": "ee108dbfda13da8671f05f7404ca437c07df9f5e32a20514b977949de770df89",
+  "event_count": 25,
+  "actual_ack_commands": [
+    {
+      "event": 8,
+      "control": "control/1",
+      "step": 0,
+      "submitted_at": 1,
+      "at": 2
+    },
+    {
+      "event": 11,
+      "control": "control/1",
+      "step": 1,
+      "submitted_at": 3,
+      "at": 4
+    }
+  ],
+  "accepted_ticks": [
+    2,
+    4
+  ],
+  "next_fragment_tick": 4,
+  "checkpoint_equal": true,
+  "head_replay_equal": true,
+  "negative_cases": [
+    {
+      "case": "cursor_bool",
+      "rejected": true
+    },
+    {
+      "case": "wrong_program",
+      "rejected": true
+    },
+    {
+      "case": "wrong_clock",
+      "rejected": true
+    },
+    {
+      "case": "missing_ack",
+      "rejected": true
+    }
+  ],
+  "helper_sha": "44ce75325f0b94700085dce099b91763f0332a8016a4a2dcdc4b50032fefb558",
+  "scope": "Explicit one-tick external response model and public command replay, not native wall-clock pause or chapter6 whole-stage evidence"
+}

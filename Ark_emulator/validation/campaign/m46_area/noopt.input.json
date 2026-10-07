@@ -1,0 +1,167 @@
+{
+  "manifest": {
+    "requires": [
+      "preset/ark_standard"
+    ]
+  },
+  "entities": [
+    {
+      "id": "unit/caster",
+      "kind": "entity",
+      "tags": [
+        "caster"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 100,
+            "atk": 10,
+            "def": 0,
+            "mres": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "abilities": [
+          "ability/packet"
+        ]
+      }
+    },
+    {
+      "id": "unit/victim",
+      "kind": "entity",
+      "tags": [
+        "victim"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 100,
+            "atk": 10,
+            "def": 0,
+            "mres": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100,
+            "role": "health"
+          }
+        },
+        "spatial": {},
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        }
+      }
+    }
+  ],
+  "rules": [],
+  "selectors": [
+    {
+      "id": "selector/main",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "victim"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/packet",
+      "kind": "ability",
+      "selector": "selector/main",
+      "activation": {
+        "mode": "manual"
+      },
+      "timeline": [
+        {
+          "at_seconds": 0,
+          "effect": {
+            "op": "area",
+            "center": "target",
+            "filters": [
+              {
+                "tag": "victim"
+              }
+            ],
+            "effects": [
+              {
+                "op": "damage",
+                "damage_type": "true",
+                "amount": 10
+              }
+            ],
+            "radius": 1.5
+          }
+        }
+      ]
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/area",
+    "ruleset": "ruleset/ark_standard",
+    "objectives": {},
+    "map": {
+      "rows": 8,
+      "cols": 8
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/caster",
+        "instanceAlias": "src",
+        "position": {
+          "row": 0,
+          "col": 0
+        }
+      },
+      {
+        "definition": "unit/victim",
+        "instanceAlias": "main",
+        "position": {
+          "row": 3,
+          "col": 3
+        }
+      },
+      {
+        "definition": "unit/victim",
+        "instanceAlias": "inside",
+        "position": {
+          "row": 4.49,
+          "col": 4.49
+        }
+      },
+      {
+        "definition": "unit/victim",
+        "instanceAlias": "outside",
+        "position": {
+          "row": 4.5,
+          "col": 4.5
+        }
+      },
+      {
+        "definition": "unit/victim",
+        "instanceAlias": "edge",
+        "position": {
+          "row": 2.5,
+          "col": 2.5
+        }
+      }
+    ]
+  }
+}

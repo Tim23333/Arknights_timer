@@ -1,0 +1,126 @@
+--- a/tools/ak_live_rng/rng_engines.py
++++ b/tools/ak_live_rng/rng_engines.py
+@@ -1,29 +1,12 @@
+-"""明日方舟战斗 RNG 引擎纯 Python 复刻 (不依赖 pymem, 可离线单测)
++"""离线 RNG 状态推进工具；不凭类声明声称客户端算法已经核实。
+ 
+-逆向依据 (Ark_data/dump.cs + 现网实测):
+-
+-  Torappu.LegacyRandom : System.Random   (dump.cs:1256570)
+-      Knuth 减法门 (与 .NET System.Random 同型), 56 个 int32 种子
+-      字段: inext@0x20, inextp@0x24, SeedArray@0x28
+-      mscorlib System.Random 基类同名字段: _inext@0x10, _inextp@0x14, _seedArray@0x18
+-      ★ 现网实测游标间距 31 (mscorlib 为 21): (inext,inextp)=(31,0)/(0,31)。
+-        追踪/推演均从观测快照克隆出发, 双游标同步自增, 与间距常量无关,
+-        故同一复刻代码兼容两者; 仅 tracker 游标合法性校验区分间距。
+-
+-  现网指针链 (新版, dump.cs 旧版无包装层):
+-      BattleController.static_fields +0x30/+0x38
+-        -> Torappu.Battle.BattleRandomWrapper (+0x10) -> LegacyRandom
+-
+-  Rei.Random.MersenneTwister : RandomBase (dump.cs:1256334)
+-      标准 MT19937, 字段: mt@0x10, mti@0x18, mag01@0x20
+-
+-  TrueSync.TSRandom              (dump.cs:1228942)
+-      标准 MT19937, 字段: mag01@0x10, mt@0x18, mti@0x20
+-
+-  BattleController               (dump.cs:317283)
+-      private static Random s_randomImp;     // 静态块 +0x30  (关键随机: 暴击/闪避等)
+-      private static Random s_randomTrivial; // 静态块 +0x38  (表现随机: 特效等)
+-      由 RandomFactory.Create(seed, RANDOM_ALGORITHM=DEFAULT) 创建
++本地 dump.cs 声明 LegacyRandom 的双游标/56元素数组，及 BattleController
++的 IBattleRandom imp/trivial 字段与 BattleRandomWrapper.m_random。
++方法正文为空，不能证明种子构造、DEFAULT工厂分支、转换或每个调用来源。
++DotNetRandom(seed) 是显式 .NET兼容初始化（游标21），不是已恢复的现场
++LegacyRandom游标31种子构造。31来自项目历史观测说明；用捕获数组和完整
++双游标可跳过初始化，但仍需版本锁与独立原始快照/轨迹核实游戏准确性。
++MT实现亦为离线数学模型，不同部署的实际引擎须逐次识别。
+ """
+ 
+ MBIG = 2147483647
+@@ -95,8 +78,8 @@
+         work = self.clone()
+         return [work.next_int() for _ in range(count)]
+ 
+-    def matches(self, seeds, inext):
+-        return self.inext == inext and self.seeds == list(seeds)
++    def matches(self, seeds, inext, inextp):
++        return self.inext == inext and self.inextp == inextp and self.seeds == list(seeds)
+ 
+ 
+ class MT19937:
+@@ -155,9 +138,12 @@
+ def recover_advanced(engine, observed_state, max_steps=8192):
+     """从 engine (克隆的上次观测状态) 向前推演, 直到与本次观测完全一致。
+ 
+-    observed_state: Knuth -> (seeds, inext) ; MT -> (mt, mti)
++    observed_state: Knuth -> (seeds, inext, inextp) ; MT -> (mt, mti)
+     返回 (消耗次数, [原始输出...]) ; 推演 max_steps 步仍不匹配 (换种子/GC) 返回 None。
+     """
++    expected_fields = 3 if isinstance(engine, DotNetRandom) else 2
++    if not isinstance(observed_state, (list, tuple)) or len(observed_state) != expected_fields:
++        raise ValueError("Observed endpoint must include complete RNG state/cursors")
+     work = engine.clone()
+     values = []
+     step_fn = work.next_int if isinstance(work, DotNetRandom) else work.next_uint32
+--- a/tools/ak_live_rng/tracker.py
++++ b/tools/ak_live_rng/tracker.py
+@@ -133,7 +133,7 @@
+     @staticmethod
+     def _observed_key(state):
+         if isinstance(state, DotNetRandom):
+-            return state.seeds, state.inext
++            return state.seeds, state.inext, state.inextp
+         return state.mt, state.mti
+ 
+     @staticmethod
+--- a/tools/ak_live_rng/memscan.py
++++ b/tools/ak_live_rng/memscan.py
+@@ -427,8 +427,8 @@
+ #     Random(mscorlib) -> _seedArray@0x18, _inext@0x10           (Knuth)
+ #     CompatilizedRandom -> original@0x20 -> MersenneTwister(mt@0x10, mti@0x18)
+ #
+-# 已联网证实战斗 RNG 即 System.Random (mono mscorlib, Knuth 减法门),
+-# 判定方式为 NextDouble() < 阈值 (prts.wiki 代理学 + 贴吧逆向帖)。
++# 历史项目观测说明支持 Knuth 状态路径；这不是每个部署/调用的算法证明。
++# 当前dump包含IBattleRandom与包装层，正文/种子构造/具体操作转换仍待核实。
+ 
+ KLASS_NAME = 0x10
+ KLASS_NAMESPAZE = 0x18
+@@ -442,7 +442,7 @@
+     "Random": ("knuth", 0x10, 0x18),
+ }
+ # 透明包装 klass 名 -> 内部 Random 对象字段偏移 (新版战斗随机外层,
+-# dump.cs 旧版无此类: s_randomImp 声明为 Random, 现网实际指向包装)
++# 当前本地dump已声明IBattleRandom及BattleRandomWrapper.m_random)
+ WRAPPER_LAYOUTS = {
+     "BattleRandomWrapper": 0x10,
+ }
+--- a/tools/ak_live_rng/README.md
++++ b/tools/ak_live_rng/README.md
+@@ -9,5 +9,9 @@
+ - `memscan.py` / `tracker.py` / `rng_engines.py` — 定位/轮询/引擎复刻。
+ - `test_ak_live_rng.py` — 离线自测（53 项，无需模拟器）。
+ 
+-结论：战斗 RNG = mscorlib `System.Random`（Knuth 减法门），种子随代理
+-保存；TCP 通道端口 **27272**。
++来源边界：本地 dump 声明 `IBattleRandom`、`BattleRandomWrapper.m_random`、
++`LegacyRandom` 双游标与数组；方法正文未恢复。历史项目说明报告过 Knuth
++游标间距31，而 `.NET` 兼容初始化为21；本工具从捕获的完整状态推进，
++不能把兼容构造函数当作已证明的游戏种子初始化。每个部署的实际类/版本、
++imp/trivial调用来源、原始状态与独立输出仍需核实；UI摘要不是完整状态快照。
++TCP 通道端口 **27272**；本次修复与离线测试没有访问设备。
+--- a/tools/ak_live_rng/test_ak_live_rng.py
++++ b/tools/ak_live_rng/test_ak_live_rng.py
+@@ -132,9 +132,9 @@
+         ref.next_int()
+     snap = ref.clone()                      # 时刻 A 的内存快照
+     expected = [ref.next_int() for _ in range(37)]   # 游戏消耗 37 发
+-    rec = recover_advanced(snap, (ref.seeds, ref.inext))
++    rec = recover_advanced(snap, (ref.seeds, ref.inext, ref.inextp))
+     check("恢复 37 发", rec is not None and rec[0] == 37 and rec[1] == expected)
+-    check("换种子返回 None", recover_advanced(DotNetRandom(1), (ref.seeds, ref.inext), max_steps=200) is None)
++    check("换种子返回 None", recover_advanced(DotNetRandom(1), (ref.seeds, ref.inext, ref.inextp), max_steps=200) is None)
+     check("peek 不改动状态", snap.peek(5) == expected[:5] and snap.inext == ref.inext - 37 % 55 or True)
+ 
+     m = MT19937(seed=999)

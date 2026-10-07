@@ -1,0 +1,260 @@
+{
+  "manifest": {
+    "requires": [
+      "preset/ark_standard"
+    ]
+  },
+  "entities": [
+    {
+      "id": "unit/m86/target",
+      "kind": "entity",
+      "tags": [
+        "enemy"
+      ],
+      "components": {
+        "spatial": {},
+        "selection_state": {
+          "side": 1
+        },
+        "attributes": {
+          "base": {
+            "max_hp": 200,
+            "atk": 20,
+            "def": 0,
+            "mres": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 200,
+            "capacity": 200,
+            "role": "health"
+          },
+          "sp": {
+            "initial": 0,
+            "capacity": 20,
+            "recovery_rule": "rule/m86/sp",
+            "recovery": {
+              "mode": "event",
+              "event": "damage.accepted",
+              "owner_role": "target",
+              "amount": 1
+            }
+          }
+        },
+        "lifecycle": {
+          "policy": "policy/ark_lifecycle"
+        },
+        "buffs": {
+          "initial": [
+            "buff/m86/hook"
+          ]
+        },
+        "abilities": [
+          "ability/m86/silence"
+        ]
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/m86/hook",
+      "kind": "buff",
+      "active_rule": "rule/m86/active",
+      "modifiers": [
+        {
+          "attribute": "atk",
+          "layer": "flat",
+          "value": 7
+        }
+      ],
+      "selection_flags": {
+        "abnormal_flags": [
+          9
+        ],
+        "abnormal_immunes": [
+          0
+        ]
+      },
+      "damage_hooks": [
+        {
+          "phase": "after",
+          "rule": "rule/m86/after"
+        }
+      ]
+    },
+    {
+      "id": "buff/m86/silent",
+      "kind": "buff",
+      "duration_seconds": 0.1,
+      "selection_flags": {
+        "abnormal_flags": [
+          12
+        ]
+      }
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/m86/silence",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "apply_buff",
+            "target": "source",
+            "buff": "buff/m86/silent"
+          }
+        ]
+      },
+      "timeline": []
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/m86/sp",
+      "kind": "rule",
+      "contract": "resource.recovery",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.current + inputs.parameters.amount"
+      }
+    },
+    {
+      "id": "rule/m86/active",
+      "kind": "rule",
+      "contract": "buff.applicability",
+      "implementation": {
+        "type": "expression",
+        "expression": "12 not in inputs.status.abnormal_flags"
+      }
+    },
+    {
+      "id": "rule/m86/base",
+      "kind": "rule",
+      "contract": "damage.pipeline",
+      "implementation": {
+        "type": "graph",
+        "nodes": [
+          {
+            "id": "result",
+            "expression": "{'accepted':True,'amount':inputs.effect.fixed_amount,'allocations':[],'events':[]}"
+          }
+        ],
+        "output": "nodes.result"
+      }
+    },
+    {
+      "id": "rule/m86/after",
+      "kind": "rule",
+      "contract": "damage.pipeline",
+      "implementation": {
+        "type": "graph",
+        "nodes": [
+          {
+            "id": "result",
+            "expression": "{'accepted':inputs.source == {} and context.source == {},'amount':inputs.effect.settlement.amount*2,'allocations':[],'events':[]}"
+          }
+        ],
+        "output": "nodes.result"
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/m86/no_source_hook",
+    "ruleset": "ruleset/ark_standard",
+    "objectives": {},
+    "map": {
+      "rows": 1,
+      "cols": 2
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/m86/target",
+        "instanceAlias": "target",
+        "position": {
+          "row": 0,
+          "col": 0
+        }
+      }
+    ],
+    "scheduledEffects": [
+      {
+        "at": 0,
+        "effect": {
+          "op": "no_source_damage",
+          "fixed_amount": 10,
+          "damage_type": "true",
+          "attack_type": "NONE",
+          "origin": {
+            "kind": "synthetic_cross_probe",
+            "cell": {
+              "row": 0,
+              "col": 0
+            }
+          },
+          "ignore_for_sp": false,
+          "damage_without_modify": false,
+          "node_is_env_damage": false,
+          "env_blackboard_injected": true,
+          "environmental": true,
+          "target": 2,
+          "rules": {
+            "damage.pipeline": "rule/m86/base"
+          }
+        }
+      },
+      {
+        "at": 2,
+        "effect": {
+          "op": "no_source_damage",
+          "fixed_amount": 10,
+          "damage_type": "true",
+          "attack_type": "NONE",
+          "origin": {
+            "kind": "synthetic_cross_probe",
+            "cell": {
+              "row": 0,
+              "col": 0
+            }
+          },
+          "ignore_for_sp": false,
+          "damage_without_modify": false,
+          "node_is_env_damage": false,
+          "env_blackboard_injected": true,
+          "environmental": true,
+          "target": 2,
+          "rules": {
+            "damage.pipeline": "rule/m86/base"
+          }
+        }
+      },
+      {
+        "at": 4,
+        "effect": {
+          "op": "no_source_damage",
+          "fixed_amount": 10,
+          "damage_type": "true",
+          "attack_type": "NONE",
+          "origin": {
+            "kind": "synthetic_cross_probe",
+            "cell": {
+              "row": 0,
+              "col": 0
+            }
+          },
+          "ignore_for_sp": false,
+          "damage_without_modify": false,
+          "node_is_env_damage": false,
+          "env_blackboard_injected": true,
+          "environmental": true,
+          "target": 2,
+          "rules": {
+            "damage.pipeline": "rule/m86/base"
+          }
+        }
+      }
+    ]
+  }
+}

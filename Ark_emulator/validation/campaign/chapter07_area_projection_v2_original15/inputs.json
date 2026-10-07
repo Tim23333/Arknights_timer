@@ -1,0 +1,5695 @@
+[
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/projectedbox",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/box",
+        "kind": "rule",
+        "contract": "area.members",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.box"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/camo",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "selection_flags": {
+          "abnormal_flags": [
+            17
+          ]
+        }
+      },
+      {
+        "id": "buff/peer/free",
+        "kind": "buff",
+        "selection_flags": {
+          "target_free": true
+        }
+      },
+      {
+        "id": "buff/peer/see",
+        "kind": "buff",
+        "selection_flags": {
+          "can_select_camouflage": true
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/area",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 3,
+            "effect": {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/peer/box",
+              "selection_projection": {
+                "defaults": {
+                  "can_select_camouflage": false,
+                  "camouflage": false,
+                  "target_free": false,
+                  "ally_target_free": false,
+                  "heal_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "filters": [
+                {
+                  "tag": "target"
+                }
+              ],
+              "effects": [
+                {
+                  "op": "modify_resource",
+                  "resource": "hp",
+                  "delta": -11
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/camo",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 3,
+              "buff": "buff/peer/camo"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fly",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "set_motion_mode",
+              "target": 3,
+              "value": 1
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/area",
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/corner",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/outside",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/air",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 2,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/free",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "target_free": true
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/friend",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/projection",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 7,
+        "cols": 7
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 3,
+            "col": 3
+          }
+        },
+        {
+          "definition": "unit/peer/corner",
+          "instanceAlias": "corner",
+          "position": {
+            "row": 4.5,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/outside",
+          "instanceAlias": "outside",
+          "position": {
+            "row": 4.50001,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/air",
+          "instanceAlias": "air",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/free",
+          "instanceAlias": "free",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/friend",
+          "instanceAlias": "friend",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/projectedbox",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/box",
+        "kind": "rule",
+        "contract": "area.members",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.box"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/camo",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "selection_flags": {
+          "abnormal_flags": [
+            17
+          ]
+        }
+      },
+      {
+        "id": "buff/peer/free",
+        "kind": "buff",
+        "selection_flags": {
+          "target_free": true
+        }
+      },
+      {
+        "id": "buff/peer/see",
+        "kind": "buff",
+        "selection_flags": {
+          "can_select_camouflage": true
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/area",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 3,
+            "effect": {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/peer/box",
+              "selection_projection": {
+                "defaults": {
+                  "can_select_camouflage": false,
+                  "camouflage": false,
+                  "target_free": false,
+                  "ally_target_free": false,
+                  "heal_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "filters": [
+                {
+                  "tag": "target"
+                }
+              ],
+              "effects": [
+                {
+                  "op": "modify_resource",
+                  "resource": "hp",
+                  "delta": -11
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/camo",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 3,
+              "buff": "buff/peer/camo"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fly",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "set_motion_mode",
+              "target": 3,
+              "value": 1
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/area",
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/corner",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/outside",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/air",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 2,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/free",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "target_free": true
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/friend",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/projection",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 7,
+        "cols": 7
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 3,
+            "col": 3
+          }
+        },
+        {
+          "definition": "unit/peer/corner",
+          "instanceAlias": "corner",
+          "position": {
+            "row": 4.5,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/outside",
+          "instanceAlias": "outside",
+          "position": {
+            "row": 4.50001,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/air",
+          "instanceAlias": "air",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/free",
+          "instanceAlias": "free",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/friend",
+          "instanceAlias": "friend",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/projectedbox",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/box",
+        "kind": "rule",
+        "contract": "area.members",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.box"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/camo",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "selection_flags": {
+          "abnormal_flags": [
+            17
+          ]
+        }
+      },
+      {
+        "id": "buff/peer/free",
+        "kind": "buff",
+        "selection_flags": {
+          "target_free": true
+        }
+      },
+      {
+        "id": "buff/peer/see",
+        "kind": "buff",
+        "selection_flags": {
+          "can_select_camouflage": true
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/area",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 3,
+            "effect": {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/peer/box",
+              "selection_projection": {
+                "defaults": {
+                  "can_select_camouflage": false,
+                  "camouflage": false,
+                  "target_free": false,
+                  "ally_target_free": false,
+                  "heal_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "filters": [
+                {
+                  "tag": "target"
+                }
+              ],
+              "effects": [
+                {
+                  "op": "modify_resource",
+                  "resource": "hp",
+                  "delta": -11
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/camo",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 3,
+              "buff": "buff/peer/camo"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fly",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "set_motion_mode",
+              "target": 3,
+              "value": 1
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/area",
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/corner",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/outside",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/air",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 2,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/free",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "target_free": true
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/friend",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/projection",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 7,
+        "cols": 7
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 3,
+            "col": 3
+          }
+        },
+        {
+          "definition": "unit/peer/corner",
+          "instanceAlias": "corner",
+          "position": {
+            "row": 4.5,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/outside",
+          "instanceAlias": "outside",
+          "position": {
+            "row": 4.50001,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/air",
+          "instanceAlias": "air",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/free",
+          "instanceAlias": "free",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/friend",
+          "instanceAlias": "friend",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/projectedbox",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/box",
+        "kind": "rule",
+        "contract": "area.members",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.box"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/camo",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "selection_flags": {
+          "abnormal_flags": [
+            17
+          ]
+        }
+      },
+      {
+        "id": "buff/peer/free",
+        "kind": "buff",
+        "selection_flags": {
+          "target_free": true
+        }
+      },
+      {
+        "id": "buff/peer/see",
+        "kind": "buff",
+        "selection_flags": {
+          "can_select_camouflage": true
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/area",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 3,
+            "effect": {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/peer/box",
+              "selection_projection": {
+                "defaults": {
+                  "can_select_camouflage": false,
+                  "camouflage": false,
+                  "target_free": false,
+                  "ally_target_free": false,
+                  "heal_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "filters": [
+                {
+                  "tag": "target"
+                }
+              ],
+              "effects": [
+                {
+                  "op": "modify_resource",
+                  "resource": "hp",
+                  "delta": -11
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/camo",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 3,
+              "buff": "buff/peer/camo"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fly",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "set_motion_mode",
+              "target": 3,
+              "value": 1
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/area",
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/corner",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/outside",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/air",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 2,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/free",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "target_free": true
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/friend",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/projection",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 7,
+        "cols": 7
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 3,
+            "col": 3
+          }
+        },
+        {
+          "definition": "unit/peer/corner",
+          "instanceAlias": "corner",
+          "position": {
+            "row": 4.5,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/outside",
+          "instanceAlias": "outside",
+          "position": {
+            "row": 4.50001,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/air",
+          "instanceAlias": "air",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/free",
+          "instanceAlias": "free",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/friend",
+          "instanceAlias": "friend",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/projectedbox",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/box",
+        "kind": "rule",
+        "contract": "area.members",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.box"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/camo",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "selection_flags": {
+          "abnormal_flags": [
+            17
+          ]
+        }
+      },
+      {
+        "id": "buff/peer/free",
+        "kind": "buff",
+        "selection_flags": {
+          "target_free": true
+        }
+      },
+      {
+        "id": "buff/peer/see",
+        "kind": "buff",
+        "selection_flags": {
+          "can_select_camouflage": true
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/area",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 3,
+            "effect": {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/peer/box",
+              "selection_projection": {
+                "defaults": {
+                  "can_select_camouflage": false,
+                  "camouflage": false,
+                  "target_free": false,
+                  "ally_target_free": false,
+                  "heal_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": true
+                }
+              },
+              "filters": [
+                {
+                  "tag": "target"
+                }
+              ],
+              "effects": [
+                {
+                  "op": "modify_resource",
+                  "resource": "hp",
+                  "delta": -11
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/camo",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 3,
+              "buff": "buff/peer/camo"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fly",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "set_motion_mode",
+              "target": 3,
+              "value": 1
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/area",
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/corner",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/outside",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/air",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 2,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/free",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "target_free": true
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/friend",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/projection",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 7,
+        "cols": 7
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 3,
+            "col": 3
+          }
+        },
+        {
+          "definition": "unit/peer/corner",
+          "instanceAlias": "corner",
+          "position": {
+            "row": 4.5,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/outside",
+          "instanceAlias": "outside",
+          "position": {
+            "row": 4.50001,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/air",
+          "instanceAlias": "air",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/free",
+          "instanceAlias": "free",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/friend",
+          "instanceAlias": "friend",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/projectedbox",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/box",
+        "kind": "rule",
+        "contract": "area.members",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.box"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/camo",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "selection_flags": {
+          "abnormal_flags": [
+            17
+          ]
+        }
+      },
+      {
+        "id": "buff/peer/free",
+        "kind": "buff",
+        "selection_flags": {
+          "target_free": true
+        }
+      },
+      {
+        "id": "buff/peer/see",
+        "kind": "buff",
+        "selection_flags": {
+          "can_select_camouflage": true
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/area",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 3,
+            "effect": {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/peer/box",
+              "selection_projection": {
+                "defaults": {
+                  "can_select_camouflage": false,
+                  "camouflage": false,
+                  "target_free": false,
+                  "ally_target_free": false,
+                  "heal_free": false,
+                  "motion": 1.0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "filters": [
+                {
+                  "tag": "target"
+                }
+              ],
+              "effects": [
+                {
+                  "op": "modify_resource",
+                  "resource": "hp",
+                  "delta": -11
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/camo",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 3,
+              "buff": "buff/peer/camo"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fly",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "set_motion_mode",
+              "target": 3,
+              "value": 1
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/area",
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/corner",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/outside",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/air",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 2,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/free",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "target_free": true
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/friend",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/projection",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 7,
+        "cols": 7
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 3,
+            "col": 3
+          }
+        },
+        {
+          "definition": "unit/peer/corner",
+          "instanceAlias": "corner",
+          "position": {
+            "row": 4.5,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/outside",
+          "instanceAlias": "outside",
+          "position": {
+            "row": 4.50001,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/air",
+          "instanceAlias": "air",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/free",
+          "instanceAlias": "free",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/friend",
+          "instanceAlias": "friend",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/projectedbox",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/box",
+        "kind": "rule",
+        "contract": "area.members",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.box"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/camo",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "selection_flags": {
+          "abnormal_flags": [
+            17
+          ]
+        }
+      },
+      {
+        "id": "buff/peer/free",
+        "kind": "buff",
+        "selection_flags": {
+          "target_free": true
+        }
+      },
+      {
+        "id": "buff/peer/see",
+        "kind": "buff",
+        "selection_flags": {
+          "can_select_camouflage": true
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/area",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 3,
+            "effect": {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/peer/box",
+              "selection_projection": {
+                "defaults": {
+                  "can_select_camouflage": false,
+                  "camouflage": false,
+                  "target_free": false,
+                  "ally_target_free": false,
+                  "heal_free": false,
+                  "motion": 0,
+                  "category": true,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "filters": [
+                {
+                  "tag": "target"
+                }
+              ],
+              "effects": [
+                {
+                  "op": "modify_resource",
+                  "resource": "hp",
+                  "delta": -11
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/camo",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 3,
+              "buff": "buff/peer/camo"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fly",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "set_motion_mode",
+              "target": 3,
+              "value": 1
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/area",
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/corner",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/outside",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/air",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 2,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/free",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "target_free": true
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/friend",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/projection",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 7,
+        "cols": 7
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 3,
+            "col": 3
+          }
+        },
+        {
+          "definition": "unit/peer/corner",
+          "instanceAlias": "corner",
+          "position": {
+            "row": 4.5,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/outside",
+          "instanceAlias": "outside",
+          "position": {
+            "row": 4.50001,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/air",
+          "instanceAlias": "air",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/free",
+          "instanceAlias": "free",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/friend",
+          "instanceAlias": "friend",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/projectedbox",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/box",
+        "kind": "rule",
+        "contract": "area.members",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.box"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/camo",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "selection_flags": {
+          "abnormal_flags": [
+            17
+          ]
+        }
+      },
+      {
+        "id": "buff/peer/free",
+        "kind": "buff",
+        "selection_flags": {
+          "target_free": true
+        }
+      },
+      {
+        "id": "buff/peer/see",
+        "kind": "buff",
+        "selection_flags": {
+          "can_select_camouflage": true
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/area",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 3,
+            "effect": {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/peer/box",
+              "selection_projection": {
+                "defaults": {
+                  "can_select_camouflage": false,
+                  "camouflage": false,
+                  "target_free": 1,
+                  "ally_target_free": false,
+                  "heal_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "filters": [
+                {
+                  "tag": "target"
+                }
+              ],
+              "effects": [
+                {
+                  "op": "modify_resource",
+                  "resource": "hp",
+                  "delta": -11
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/camo",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 3,
+              "buff": "buff/peer/camo"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fly",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "set_motion_mode",
+              "target": 3,
+              "value": 1
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/area",
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/corner",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/outside",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/air",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 2,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/free",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "target_free": true
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/friend",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/projection",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 7,
+        "cols": 7
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 3,
+            "col": 3
+          }
+        },
+        {
+          "definition": "unit/peer/corner",
+          "instanceAlias": "corner",
+          "position": {
+            "row": 4.5,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/outside",
+          "instanceAlias": "outside",
+          "position": {
+            "row": 4.50001,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/air",
+          "instanceAlias": "air",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/free",
+          "instanceAlias": "free",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/friend",
+          "instanceAlias": "friend",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/projectedbox",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/box",
+        "kind": "rule",
+        "contract": "area.members",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.box"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/camo",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "selection_flags": {
+          "abnormal_flags": [
+            17
+          ]
+        }
+      },
+      {
+        "id": "buff/peer/free",
+        "kind": "buff",
+        "selection_flags": {
+          "target_free": true
+        }
+      },
+      {
+        "id": "buff/peer/see",
+        "kind": "buff",
+        "selection_flags": {
+          "can_select_camouflage": true
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/area",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 3,
+            "effect": {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/peer/box",
+              "selection_projection": {
+                "defaults": {
+                  "can_select_camouflage": false,
+                  "camouflage": "false",
+                  "target_free": false,
+                  "ally_target_free": false,
+                  "heal_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "filters": [
+                {
+                  "tag": "target"
+                }
+              ],
+              "effects": [
+                {
+                  "op": "modify_resource",
+                  "resource": "hp",
+                  "delta": -11
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/camo",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 3,
+              "buff": "buff/peer/camo"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fly",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "set_motion_mode",
+              "target": 3,
+              "value": 1
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/area",
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/corner",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/outside",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/air",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 2,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/free",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "target_free": true
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/friend",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/projection",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 7,
+        "cols": 7
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 3,
+            "col": 3
+          }
+        },
+        {
+          "definition": "unit/peer/corner",
+          "instanceAlias": "corner",
+          "position": {
+            "row": 4.5,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/outside",
+          "instanceAlias": "outside",
+          "position": {
+            "row": 4.50001,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/air",
+          "instanceAlias": "air",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/free",
+          "instanceAlias": "free",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/friend",
+          "instanceAlias": "friend",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/projectedbox",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/box",
+        "kind": "rule",
+        "contract": "area.members",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.box"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/camo",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "selection_flags": {
+          "abnormal_flags": [
+            17
+          ]
+        }
+      },
+      {
+        "id": "buff/peer/free",
+        "kind": "buff",
+        "selection_flags": {
+          "target_free": true
+        }
+      },
+      {
+        "id": "buff/peer/see",
+        "kind": "buff",
+        "selection_flags": {
+          "can_select_camouflage": true
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/area",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 3,
+            "effect": {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/peer/box",
+              "selection_projection": {
+                "defaults": {
+                  "can_select_camouflage": false,
+                  "camouflage": false,
+                  "target_free": false,
+                  "ally_target_free": false,
+                  "heal_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [
+                    true
+                  ],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "filters": [
+                {
+                  "tag": "target"
+                }
+              ],
+              "effects": [
+                {
+                  "op": "modify_resource",
+                  "resource": "hp",
+                  "delta": -11
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/camo",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 3,
+              "buff": "buff/peer/camo"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fly",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "set_motion_mode",
+              "target": 3,
+              "value": 1
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/area",
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/corner",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/outside",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/air",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 2,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/free",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "target_free": true
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/friend",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/projection",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 7,
+        "cols": 7
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 3,
+            "col": 3
+          }
+        },
+        {
+          "definition": "unit/peer/corner",
+          "instanceAlias": "corner",
+          "position": {
+            "row": 4.5,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/outside",
+          "instanceAlias": "outside",
+          "position": {
+            "row": 4.50001,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/air",
+          "instanceAlias": "air",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/free",
+          "instanceAlias": "free",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/friend",
+          "instanceAlias": "friend",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/projectedbox",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/box",
+        "kind": "rule",
+        "contract": "area.members",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.oldshape"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/camo",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "selection_flags": {
+          "abnormal_flags": [
+            17
+          ]
+        }
+      },
+      {
+        "id": "buff/peer/free",
+        "kind": "buff",
+        "selection_flags": {
+          "target_free": true
+        }
+      },
+      {
+        "id": "buff/peer/see",
+        "kind": "buff",
+        "selection_flags": {
+          "can_select_camouflage": true
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/area",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 3,
+            "effect": {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/peer/box",
+              "filters": [
+                {
+                  "tag": "target"
+                }
+              ],
+              "effects": [
+                {
+                  "op": "modify_resource",
+                  "resource": "hp",
+                  "delta": -11
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/camo",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 3,
+              "buff": "buff/peer/camo"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fly",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "set_motion_mode",
+              "target": 3,
+              "value": 1
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/area",
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/corner",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/outside",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/air",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 2,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/free",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "target_free": true
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/friend",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/projection",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 7,
+        "cols": 7
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 3,
+            "col": 3
+          }
+        },
+        {
+          "definition": "unit/peer/corner",
+          "instanceAlias": "corner",
+          "position": {
+            "row": 4.5,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/outside",
+          "instanceAlias": "outside",
+          "position": {
+            "row": 4.50001,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/air",
+          "instanceAlias": "air",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/free",
+          "instanceAlias": "free",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/friend",
+          "instanceAlias": "friend",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/projectedbox",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/box",
+        "kind": "rule",
+        "contract": "area.members",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.box"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/camo",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "selection_flags": {
+          "abnormal_flags": [
+            17
+          ]
+        }
+      },
+      {
+        "id": "buff/peer/free",
+        "kind": "buff",
+        "selection_flags": {
+          "target_free": true
+        }
+      },
+      {
+        "id": "buff/peer/see",
+        "kind": "buff",
+        "selection_flags": {
+          "can_select_camouflage": true
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/area",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 3,
+            "effect": {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/peer/box",
+              "selection_projection": {
+                "defaults": {
+                  "can_select_camouflage": false,
+                  "camouflage": false,
+                  "target_free": false,
+                  "ally_target_free": false,
+                  "heal_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "filters": [
+                {
+                  "tag": "target"
+                }
+              ],
+              "effects": [
+                {
+                  "op": "modify_resource",
+                  "resource": "hp",
+                  "delta": -11
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/camo",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 3,
+              "buff": "buff/peer/camo"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fly",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "set_motion_mode",
+              "target": 3,
+              "value": 1
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/area",
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/corner",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/outside",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/air",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 2,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/free",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "target_free": true
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/friend",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/projection",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 7,
+        "cols": 7
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 3,
+            "col": 3
+          }
+        },
+        {
+          "definition": "unit/peer/corner",
+          "instanceAlias": "corner",
+          "position": {
+            "row": 4.5,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/outside",
+          "instanceAlias": "outside",
+          "position": {
+            "row": 4.50001,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/air",
+          "instanceAlias": "air",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/free",
+          "instanceAlias": "free",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/friend",
+          "instanceAlias": "friend",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/projectedbox",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/box",
+        "kind": "rule",
+        "contract": "area.members",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.box"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/camo",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "selection_flags": {
+          "abnormal_flags": [
+            17
+          ]
+        }
+      },
+      {
+        "id": "buff/peer/free",
+        "kind": "buff",
+        "selection_flags": {
+          "target_free": true
+        }
+      },
+      {
+        "id": "buff/peer/see",
+        "kind": "buff",
+        "selection_flags": {
+          "can_select_camouflage": true
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/area",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 3,
+            "effect": {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/peer/box",
+              "selection_projection": {
+                "defaults": {
+                  "can_select_camouflage": false,
+                  "camouflage": false,
+                  "target_free": false,
+                  "ally_target_free": false,
+                  "heal_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "filters": [
+                {
+                  "tag": "target"
+                }
+              ],
+              "effects": [
+                {
+                  "op": "apply_buff",
+                  "buff": "buff/peer/camo"
+                },
+                {
+                  "op": "area",
+                  "target": "source",
+                  "center": "source",
+                  "membership_rule": "rule/peer/box",
+                  "selection_projection": {
+                    "defaults": {
+                      "can_select_camouflage": false,
+                      "camouflage": false,
+                      "target_free": false,
+                      "ally_target_free": false,
+                      "heal_free": false,
+                      "motion": 0,
+                      "category": 0,
+                      "profession": 0,
+                      "unit_type": 0,
+                      "abnormal_flags": [],
+                      "abnormal_combos": [],
+                      "target_free_flags": [],
+                      "target_free_combos": [],
+                      "abnormal_immunes": [],
+                      "side": 0
+                    }
+                  },
+                  "filters": [
+                    {
+                      "tag": "target"
+                    }
+                  ],
+                  "effects": [
+                    {
+                      "op": "modify_resource",
+                      "resource": "hp",
+                      "delta": -11
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/camo",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 3,
+              "buff": "buff/peer/camo"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fly",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "set_motion_mode",
+              "target": 3,
+              "value": 1
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/area",
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/corner",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/outside",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/air",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 2,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/free",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "target_free": true
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/friend",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/projection",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 7,
+        "cols": 7
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 3,
+            "col": 3
+          }
+        },
+        {
+          "definition": "unit/peer/corner",
+          "instanceAlias": "corner",
+          "position": {
+            "row": 4.5,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/outside",
+          "instanceAlias": "outside",
+          "position": {
+            "row": 4.50001,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/air",
+          "instanceAlias": "air",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/free",
+          "instanceAlias": "free",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/friend",
+          "instanceAlias": "friend",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/projectedbox",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/box",
+        "kind": "rule",
+        "contract": "area.members",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.box"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/camo",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "selection_flags": {
+          "abnormal_flags": [
+            17
+          ]
+        }
+      },
+      {
+        "id": "buff/peer/free",
+        "kind": "buff",
+        "selection_flags": {
+          "target_free": true
+        }
+      },
+      {
+        "id": "buff/peer/see",
+        "kind": "buff",
+        "selection_flags": {
+          "can_select_camouflage": true
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/area",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 3,
+            "effect": {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/peer/box",
+              "selection_projection": {
+                "defaults": {
+                  "can_select_camouflage": false,
+                  "camouflage": false,
+                  "target_free": false,
+                  "ally_target_free": false,
+                  "heal_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "filters": [
+                {
+                  "tag": "target"
+                }
+              ],
+              "effects": [
+                {
+                  "op": "modify_resource",
+                  "resource": "hp",
+                  "delta": -11
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/camo",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 3,
+              "buff": "buff/peer/camo"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fly",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "set_motion_mode",
+              "target": 3,
+              "value": 1
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/see",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/see"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/area",
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/corner",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/outside",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/air",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 2,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/free",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "target_free": true
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/friend",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/camo",
+            "ability/peer/fly",
+            "ability/peer/see"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/projection",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 7,
+        "cols": 7
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 3,
+            "col": 3
+          }
+        },
+        {
+          "definition": "unit/peer/corner",
+          "instanceAlias": "corner",
+          "position": {
+            "row": 4.5,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/outside",
+          "instanceAlias": "outside",
+          "position": {
+            "row": 4.50001,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/air",
+          "instanceAlias": "air",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/free",
+          "instanceAlias": "free",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/friend",
+          "instanceAlias": "friend",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/projectedbox",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/box",
+        "kind": "rule",
+        "contract": "area.members",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer.box"
+        }
+      },
+      {
+        "id": "rule/peer/fault",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "bad",
+              "expression": "1/0"
+            }
+          ],
+          "output": "nodes.bad"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/camo",
+        "kind": "buff",
+        "duration_seconds": 0.06666666666666667,
+        "selection_flags": {
+          "abnormal_flags": [
+            17
+          ]
+        }
+      },
+      {
+        "id": "buff/peer/free",
+        "kind": "buff",
+        "selection_flags": {
+          "target_free": true
+        }
+      },
+      {
+        "id": "buff/peer/see",
+        "kind": "buff",
+        "selection_flags": {
+          "can_select_camouflage": true
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/area",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual"
+        },
+        "timeline": [
+          {
+            "at": 3,
+            "effect": {
+              "op": "area",
+              "target": "source",
+              "center": "source",
+              "membership_rule": "rule/peer/box",
+              "selection_projection": {
+                "defaults": {
+                  "can_select_camouflage": false,
+                  "camouflage": false,
+                  "target_free": false,
+                  "ally_target_free": false,
+                  "heal_free": false,
+                  "motion": 0,
+                  "category": 0,
+                  "profession": 0,
+                  "unit_type": 0,
+                  "abnormal_flags": [],
+                  "abnormal_combos": [],
+                  "target_free_flags": [],
+                  "target_free_combos": [],
+                  "abnormal_immunes": [],
+                  "side": 0
+                }
+              },
+              "filters": [
+                {
+                  "tag": "target"
+                }
+              ],
+              "effects": [
+                {
+                  "op": "modify_resource",
+                  "resource": "hp",
+                  "delta": -11
+                },
+                {
+                  "op": "damage",
+                  "damage_type": "true",
+                  "rules": {
+                    "damage.pipeline": "rule/peer/fault"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "ability/peer/camo",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 3,
+              "buff": "buff/peer/camo"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/fly",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "set_motion_mode",
+              "target": 3,
+              "value": 1
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/source",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {},
+          "abilities": [
+            "ability/peer/area",
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ],
+          "attributes": {
+            "base": {
+              "max_hp": 101,
+              "atk": 13,
+              "def": 31,
+              "mres": 17
+            }
+          }
+        }
+      },
+      {
+        "id": "unit/peer/corner",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101,
+              "atk": 0,
+              "def": 31,
+              "mres": 17
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/outside",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/air",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 2,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/free",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "motion": 1,
+            "category": 1,
+            "target_free": true
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/friend",
+        "kind": "entity",
+        "tags": [
+          "target"
+        ],
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "attributes": {
+            "base": {
+              "max_hp": 101
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 101,
+              "capacity": 101,
+              "role": "health"
+            }
+          },
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/director",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/camo",
+            "ability/peer/fly"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/projection",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 7,
+        "cols": 7
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/source",
+          "instanceAlias": "source",
+          "position": {
+            "row": 3,
+            "col": 3
+          }
+        },
+        {
+          "definition": "unit/peer/corner",
+          "instanceAlias": "corner",
+          "position": {
+            "row": 4.5,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/outside",
+          "instanceAlias": "outside",
+          "position": {
+            "row": 4.50001,
+            "col": 4.5
+          }
+        },
+        {
+          "definition": "unit/peer/air",
+          "instanceAlias": "air",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/free",
+          "instanceAlias": "free",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/friend",
+          "instanceAlias": "friend",
+          "position": {
+            "row": 3,
+            "col": 3.5
+          }
+        },
+        {
+          "definition": "unit/peer/director",
+          "instanceAlias": "director",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  }
+]

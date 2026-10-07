@@ -1,0 +1,30 @@
+{
+  "schema": "ark-sim/elemental-generic-design/v1",
+  "parent_core": "82db6a9db5ddd3a4c3c58f05b04e773419312ae77d5fc086fbb98a7a984bf8ae",
+  "core": "838ce3cc2cb019f91f594b7a40ac999a1300b8088f4603418a3029b253186cb2",
+  "component": "Finite content-defined elements, explicit four rules per element plus eligibility rule; capacities/resistance/recovery/durations remain content values.",
+  "contracts": [
+    "elemental.capacity",
+    "elemental.loss",
+    "elemental.recovery",
+    "elemental.break_duration",
+    "elemental.eligibility",
+    "elemental.packet"
+  ],
+  "operations": [
+    "elemental_damage (one raw amount or pure packet rule)",
+    "elemental_attack (atomic actor health effect, then independently calculated elemental effect)"
+  ],
+  "timing": "Recovery samples current phase0 effective attributes for elapsed prior logical interval. Break expiry is a real finite task; owned generation, task identity/sequence, due, phase and target lifecycle stamp all match.",
+  "provenance": "First crossing packet captures original source ID, runtime death/lifecycle generations, state and immutable launch-time entity snapshot; later source retirement does not change the cause.",
+  "callbacks": "Target owns declared finite on_break/on_end effects. Re-read target lifecycle and break generation between callbacks; a new break aborts old on_end remainder. This is not permission for a dead actor to cast.",
+  "failure": "Callback calculation/effect failures propagate. Their atomic domain writes/events/RNG/scheduled work roll back. Session retains its standard dispatched-task consumption and failure record; this candidate does not change kernel failure recovery.",
+  "numeric_policy": "No game-specific capacities, percentages, damage amounts or element IDs in domain. Nonnegative loss and positive capacity/duration are protocol bounds; resistance and rates are merely finite and formulas/clamps are replaceable.",
+  "not_implemented": [
+    "NoSource NORMAL ARTS/physical expansion (Root separate candidate)",
+    "ELEMENT health damage pipeline",
+    "Native Duspfr deathlike continuation",
+    "Pillar terrain/collapse mechanics"
+  ],
+  "source_plan_freeze": "packages/campaign/chapter09_source_prepare/source.freeze.v2.json"
+}

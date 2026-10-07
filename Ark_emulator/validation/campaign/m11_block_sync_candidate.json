@@ -1,0 +1,138 @@
+{
+  "schema": "ark-sim/m11-block-sync-candidate-validation/v1",
+  "base_implementation": "c0b92545a714e763f3e43d4e13d25f0be99ecda912cb8479536982ac38f8216e",
+  "candidate_implementation": "5b78616b961dbb4d0eda9276be68b8e2b37202b0267878255007921ad7e8712f",
+  "source_files": {
+    "domains/buffs.py": {
+      "base_sha256": "ac39adacbfdbbfade34cf501a95bae42f4d2cc7e13f6eb0088a66eb22afd0203",
+      "candidate_sha256": "9940289c1cb6d3655403a1ea6c9120240f23087a8e736d5dd6fa3b31a69bcb52"
+    },
+    "domains/movement.py": {
+      "base_sha256": "0a378c02ded1359d20e316c42bc51762ea125a3b8205bdac57a7cdaa80f59c82",
+      "candidate_sha256": "d72abc7132cc4caeb4499a66192324c240612ae586f7113496057d3fbd983eaa"
+    }
+  },
+  "artifact_sha256": {
+    "docs/campaign/candidates/M11_BLOCK_SYNC.patch": "56cb286a74583fed221aac31f66242cebd3cab43a903aa650c6376b8c45674a6",
+    "tools/experiments/m11/base.c0.report.json": "be398218dd58eeab0ec1e00e4681c9e88eb62d7e25dac371496b42becec71465",
+    "tools/experiments/m11/build_block_sync.py": "3ca2238eb3d33f85549e6ca7219ea6069ddecd2060e18a1beb35fe4c68cce82d",
+    "tools/experiments/m11/candidate.report.json": "5e862031038d3210f8766575971f5aaafa6047a6830c15e814ed49fef6b7e70f",
+    "tools/experiments/m11/capacity.fixture.json": "dc00bfc64b2c2629031c1eb19840f8a6b057b98493c8090dae152556e3b56812",
+    "tools/experiments/m11/regression.log": "ab6720b6277e7c9db96c7c3e809f55071183f29579ba7d1d74989b4262d74c79",
+    "tools/experiments/m11/targeted.log": "cad7561dde819b79da3c4cf2ee0970a2b3438c51c4fe5121eaf406f4b17e7c51",
+    "tools/experiments/m11/test_block_sync.py": "bf7351055919a19ddc317760af8ec8639a4e6d7dac3f3ce11508f8f9ca72ebfb",
+    "tools/experiments/m11/verify_block_sync.py": "503ec9c1a1a0423c9234d67efea6e71c8bfa3bea2656d0f3ef90f1b58c667f7b",
+    "packages/campaign/mainline_models/level_main_00-10.m11_block_sync.json": "af46aea8d1ffde0261ca777268ee69a3e8aa1adfecadb8e79adcc2246c5771c0",
+    "docs/campaign/candidates/M11_BLOCK_SYNC.md": "d2de99cb57b50c090473c4b9700c0a813c4767a3ccda86aa0f0f979e280218bb"
+  },
+  "targeted": "10 passed in 9.18s",
+  "compatibility": "142 passed in 10.28s",
+  "base_counterexamples": {
+    "actual_import": "D:/Arknights/Arknights_timer/unpack_work/campaign_m10_final_candidate/ark_sim/__init__.py",
+    "implementation_digest": "c0b92545a714e763f3e43d4e13d25f0be99ecda912cb8479536982ac38f8216e",
+    "cases": {
+      "0": {
+        "command_tick": 0,
+        "command_accepted": true,
+        "enemy_cast_ticks": [],
+        "enemy_damage": [],
+        "program_fingerprint": "db5e8acf9d67f8e4dcd1fc0c639b9717d1827ab15d6ce1956b4e2d53c18fc950",
+        "runtime_fingerprint": "438f91513b2b8e622c78fbddcac414b19c01271e84df8074b247b69b24e76c34"
+      },
+      "1": {
+        "command_tick": 1,
+        "command_accepted": true,
+        "enemy_cast_ticks": [
+          1
+        ],
+        "enemy_damage": [
+          {
+            "time": 19,
+            "amount": 9.5
+          }
+        ],
+        "program_fingerprint": "db5e8acf9d67f8e4dcd1fc0c639b9717d1827ab15d6ce1956b4e2d53c18fc950",
+        "runtime_fingerprint": "438f91513b2b8e622c78fbddcac414b19c01271e84df8074b247b69b24e76c34"
+      },
+      "2": {
+        "command_tick": 2,
+        "command_accepted": true,
+        "enemy_cast_ticks": [
+          1
+        ],
+        "enemy_damage": [
+          {
+            "time": 19,
+            "amount": 9.5
+          }
+        ],
+        "program_fingerprint": "db5e8acf9d67f8e4dcd1fc0c639b9717d1827ab15d6ce1956b4e2d53c18fc950",
+        "runtime_fingerprint": "438f91513b2b8e622c78fbddcac414b19c01271e84df8074b247b69b24e76c34"
+      },
+      "capacity_reduction": {
+        "expected_capacity": 1,
+        "actual_blocked_members": 2,
+        "relations": [
+          2,
+          2,
+          null
+        ],
+        "fixture_sha256": "dc00bfc64b2c2629031c1eb19840f8a6b057b98493c8090dae152556e3b56812"
+      }
+    },
+    "scope": "short model counterexamples; no full-stage execution",
+    "formal_approval": false
+  },
+  "candidate_counterexamples": {
+    "actual_import": "D:/Arknights/Arknights_timer/unpack_work/campaign_m11_block_sync_candidate/ark_sim/__init__.py",
+    "implementation_digest": "5b78616b961dbb4d0eda9276be68b8e2b37202b0267878255007921ad7e8712f",
+    "cases": {
+      "0": {
+        "command_tick": 0,
+        "command_accepted": true,
+        "enemy_cast_ticks": [],
+        "enemy_damage": [],
+        "program_fingerprint": "db5e8acf9d67f8e4dcd1fc0c639b9717d1827ab15d6ce1956b4e2d53c18fc950",
+        "runtime_fingerprint": "647e19571d402f843a87c3505d63d1ef2ce4d5c32d96b1c8b0036332d1694ca4"
+      },
+      "1": {
+        "command_tick": 1,
+        "command_accepted": true,
+        "enemy_cast_ticks": [],
+        "enemy_damage": [],
+        "program_fingerprint": "db5e8acf9d67f8e4dcd1fc0c639b9717d1827ab15d6ce1956b4e2d53c18fc950",
+        "runtime_fingerprint": "647e19571d402f843a87c3505d63d1ef2ce4d5c32d96b1c8b0036332d1694ca4"
+      },
+      "2": {
+        "command_tick": 2,
+        "command_accepted": true,
+        "enemy_cast_ticks": [
+          1
+        ],
+        "enemy_damage": [
+          {
+            "time": 19,
+            "amount": 9.5
+          }
+        ],
+        "program_fingerprint": "db5e8acf9d67f8e4dcd1fc0c639b9717d1827ab15d6ce1956b4e2d53c18fc950",
+        "runtime_fingerprint": "647e19571d402f843a87c3505d63d1ef2ce4d5c32d96b1c8b0036332d1694ca4"
+      },
+      "capacity_reduction": {
+        "expected_capacity": 1,
+        "actual_blocked_members": 1,
+        "relations": [
+          2,
+          null,
+          null
+        ],
+        "fixture_sha256": "dc00bfc64b2c2629031c1eb19840f8a6b057b98493c8090dae152556e3b56812"
+      }
+    },
+    "scope": "short model counterexamples; no full-stage execution",
+    "formal_approval": false
+  },
+  "primary_or_old_candidates_modified": false,
+  "full_stage_executed": false,
+  "formal_approval": false
+}

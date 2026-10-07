@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "requires": [
+      "preset/ark_standard"
+    ]
+  },
+  "entities": [
+    {
+      "id": "unit/enemy",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "atk": 20,
+            "def": 0,
+            "mres": 0,
+            "max_hp": 100,
+            "move_speed": 3,
+            "attack_interval": 1,
+            "attack_speed_ratio": 1,
+            "block_cost": 1
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100
+          }
+        },
+        "spatial": {},
+        "abilities": [
+          "ability/normal"
+        ],
+        "behavior": {
+          "machine": "behavior/decision"
+        }
+      }
+    },
+    {
+      "id": "unit/target",
+      "kind": "entity",
+      "tags": [
+        "player",
+        "ground"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "atk": 0,
+            "def": 0,
+            "mres": 0,
+            "max_hp": 100
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100
+          }
+        },
+        "spatial": {},
+        "abilities": [
+          "ability/escape"
+        ]
+      }
+    }
+  ],
+  "abilities": [
+    {
+      "id": "ability/normal",
+      "kind": "ability",
+      "activation": {
+        "mode": "automatic_attack"
+      },
+      "selector": "selector/enemies",
+      "duration_seconds": 0.3,
+      "timeline": [
+        {
+          "at_seconds": 0.2,
+          "effect": {
+            "op": "damage",
+            "damage_type": "physical",
+            "scale": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "ability/escape",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "move",
+            "target": "source",
+            "position": {
+              "row": 0,
+              "col": 5
+            }
+          }
+        ]
+      },
+      "timeline": []
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/enemies",
+      "kind": "selector",
+      "region": {
+        "type": "radius",
+        "radius": 1
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "behaviors": [
+    {
+      "id": "behavior/decision",
+      "kind": "behavior",
+      "initial": "active",
+      "states": {
+        "active": {}
+      },
+      "transitions": []
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scenario/decision",
+    "ruleset": "ruleset/ark_standard",
+    "map": {
+      "rows": 1,
+      "cols": 6
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/enemy",
+        "instanceAlias": "enemy",
+        "position": {
+          "row": 0,
+          "col": 0
+        },
+        "route": {
+          "motionMode": 0,
+          "startPosition": {
+            "row": 0,
+            "col": 0
+          },
+          "endPosition": {
+            "row": 0,
+            "col": 5
+          },
+          "checkpoints": []
+        }
+      },
+      {
+        "definition": "unit/target",
+        "instanceAlias": "target",
+        "position": {
+          "row": 0,
+          "col": 1
+        }
+      }
+    ],
+    "waves": [],
+    "objectives": {}
+  }
+}

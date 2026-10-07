@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 2,
+  "entities": [
+    {
+      "id": "unit/custom_deploy",
+      "kind": "entity",
+      "tags": [
+        "player",
+        "ground"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "atk": 10
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 100,
+            "capacity": 100,
+            "role": "health"
+          }
+        },
+        "deployable": {
+          "cost": 100,
+          "policy": "policy/ark_ground_deploy"
+        },
+        "spatial": {
+          "coordinate_space": "scenario_map"
+        }
+      },
+      "rules": {
+        "deploy.cost": "rule/free_deployment"
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/free_deployment",
+      "kind": "calculation_rule",
+      "contract": "deploy.cost",
+      "implementation": {
+        "type": "expression",
+        "expression": "0"
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scenario/deploy",
+    "ruleset": "ruleset/ark_standard",
+    "roster": [
+      "unit/custom_deploy"
+    ],
+    "map": {
+      "rows": 3,
+      "cols": 3
+    },
+    "resources": {
+      "dp": {
+        "initial": 10,
+        "capacity": 100
+      }
+    }
+  }
+}

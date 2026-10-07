@@ -1,0 +1,1168 @@
+{
+  "schema": "ark-sim/campaign-mechanism-test-evidence/v1",
+  "passed": true,
+  "implementation_sha256": "f8b99ec021be6023d5202307574030e074acdbb1ca583ae6ad7775ef7876d263",
+  "tests": [
+    {
+      "path": "tests_v2/test_canonical_roster_trio.py",
+      "source_sha256": "3544a03881a29b9ef0d2fca050d5b066098fbbc6ecd54f3daac6f6c21b1509a2",
+      "result": "passed"
+    },
+    {
+      "path": "tools/witness_canonical_roster_trio.py",
+      "source_sha256": "7254262e5974de306c9fc58b0708dfd81c546e485d8fbe57913c2f9913a8de7a",
+      "result": "passed"
+    }
+  ],
+  "helper_source_sha256": "7254262e5974de306c9fc58b0708dfd81c546e485d8fbe57913c2f9913a8de7a",
+  "input_package": "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\mainline_models\\level_main_00-10.m8_roster.json",
+  "input_package_sha256": "7604b67eb0d226f96e15bf567799dd8daf97857718b62a075ba5615c5c13b49a",
+  "source_hashes": {
+    "packages/campaign/operators.normalized.json": "1611fac32beb58d7aeb9e28ffb6cd4ebcfc3a5e6f955157a5dc3fab7ebb6824b",
+    "packages/campaign/skills.chen.json": "04df7b6f7f40f43687c03b0186e02f4e0407ee566231f43b2455d2741719dde6",
+    "packages/campaign/skills.liskam.json": "15324d6b526a3c4f3d449aed211cc41f06fc4357ad44ac92c043ef86a76305a2",
+    "packages/campaign/skills.lisa.json": "4d835814caed7aed144fdd1b5f045539c524758ca38b720aba7fe5f8b6dc31be",
+    "packages/campaign/talents.attack.json": "bb0e679cdd1e266ee7248f728029a7ce67cb2cf5151ba378205dcff3a7186204",
+    "packages/campaign/talents.support.json": "46e28d0783d6bdeaa3b528a08ea1e7888b51785314ca4fa0a8ccfcc788db36d0"
+  },
+  "fixed_configs": {
+    "char_010_chen": {
+      "elite_phase": 2,
+      "equipment_id": null,
+      "equipment_level": 0,
+      "level": 70,
+      "mastery": 3,
+      "potential": 1,
+      "potential_rank": 0,
+      "skill_id": "skchr_chen_1",
+      "skill_level_index": 9,
+      "skill_rank": 7,
+      "trust_percent": 100
+    },
+    "char_107_liskam": {
+      "elite_phase": 2,
+      "equipment_id": null,
+      "equipment_level": 0,
+      "level": 70,
+      "mastery": 3,
+      "potential": 1,
+      "potential_rank": 0,
+      "skill_id": "skchr_liskam_1",
+      "skill_level_index": 9,
+      "skill_rank": 7,
+      "trust_percent": 100
+    },
+    "char_358_lisa": {
+      "elite_phase": 2,
+      "equipment_id": null,
+      "equipment_level": 0,
+      "level": 70,
+      "mastery": 3,
+      "potential": 1,
+      "potential_rank": 0,
+      "skill_id": "skchr_lisa_3",
+      "skill_level_index": 9,
+      "skill_rank": 7,
+      "trust_percent": 100
+    }
+  },
+  "pytest_exit_code": 0,
+  "pytest_output": ".....                                                                    [100%]\n5 passed in 4.90s\n",
+  "selected_cases": [
+    "lisk_two_source_gains",
+    "lisk_shield_physical",
+    "lisk_shield_arts",
+    "lisk_shield_true",
+    "lisk_blocked_neighbor_profile"
+  ],
+  "cases": [
+    {
+      "case": "lisk_two_source_gains",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "238f0053b90065a11cc1ffcf7fa090b0ff81a7c800420a54025818b5fa51185b",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 4,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 16,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3124
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 33,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 50,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 309,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 354,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_two_hits",
+              "cast": "cast/3/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 379,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 3024.0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 381,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "amount": 100.0,
+              "ability": "ability/witness_two_hits",
+              "resource": "hp"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 411,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1,
+              "value": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 429,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 2.0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 454,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 2924.0
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 456,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "amount": 100.0,
+              "ability": "ability/witness_two_hits",
+              "resource": "hp"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 457,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_two_hits",
+              "cast": "cast/3/1"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 487,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 3.0
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 505,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 4.0
+            },
+            "time": 1,
+            "cause": null
+          }
+        ],
+        "random_samples": [],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 10,
+            "life": 10
+          },
+          "unit/char_107_liskam": {
+            "hp": 2924.0,
+            "shield_charge": 0,
+            "sp": 4.0
+          },
+          "unit/witness_enemy": {
+            "hp": 1000000
+          }
+        }
+      }
+    },
+    {
+      "case": "lisk_shield_physical",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "4a057a6c07f50100d94bd8fe39da9a4fe726c1f471d88f8b225b801be353f195",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 4,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 16,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3124
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 33,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 50,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 18
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 309,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 319,
+            "type": "command.rejected",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "lisk",
+                "ability": "ability/liskam_s1"
+              },
+              "reason": "Automatic-only ability cannot be activated by a player command"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 400,
+            "type": "ability.started",
+            "payload": {
+              "source": 2,
+              "ability": "ability/liskam_s1",
+              "cast": "cast/2/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 401,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": -18,
+              "value": 0,
+              "ability": "ability/liskam_s1",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 0,
+            "cause": 400
+          },
+          {
+            "id": 521,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 1,
+              "value": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 549,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_physical",
+              "cast": "cast/3/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 573,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": -1
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 575,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "amount": 0,
+              "ability": "ability/witness_hit_physical",
+              "resource": "hp"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 576,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_physical",
+              "cast": "cast/3/1"
+            },
+            "time": 1,
+            "cause": null
+          }
+        ],
+        "random_samples": [],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 10,
+            "life": 10
+          },
+          "unit/char_107_liskam": {
+            "hp": 3124,
+            "shield_charge": 0,
+            "sp": 0
+          },
+          "unit/witness_enemy": {
+            "hp": 1000000
+          }
+        }
+      }
+    },
+    {
+      "case": "lisk_shield_arts",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "4a057a6c07f50100d94bd8fe39da9a4fe726c1f471d88f8b225b801be353f195",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 4,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 16,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3124
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 33,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 50,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 18
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 309,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 319,
+            "type": "command.rejected",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "lisk",
+                "ability": "ability/liskam_s1"
+              },
+              "reason": "Automatic-only ability cannot be activated by a player command"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 400,
+            "type": "ability.started",
+            "payload": {
+              "source": 2,
+              "ability": "ability/liskam_s1",
+              "cast": "cast/2/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 401,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": -18,
+              "value": 0,
+              "ability": "ability/liskam_s1",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 0,
+            "cause": 400
+          },
+          {
+            "id": 521,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 1,
+              "value": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 549,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_arts",
+              "cast": "cast/3/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 573,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": -1
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 575,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "amount": 0,
+              "ability": "ability/witness_hit_arts",
+              "resource": "hp"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 576,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_arts",
+              "cast": "cast/3/1"
+            },
+            "time": 1,
+            "cause": null
+          }
+        ],
+        "random_samples": [],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 10,
+            "life": 10
+          },
+          "unit/char_107_liskam": {
+            "hp": 3124,
+            "shield_charge": 0,
+            "sp": 0
+          },
+          "unit/witness_enemy": {
+            "hp": 1000000
+          }
+        }
+      }
+    },
+    {
+      "case": "lisk_shield_true",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "4a057a6c07f50100d94bd8fe39da9a4fe726c1f471d88f8b225b801be353f195",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 4,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 16,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3124
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 33,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 50,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 18
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 309,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 319,
+            "type": "command.rejected",
+            "payload": {
+              "action": {
+                "action": "skill",
+                "source": "lisk",
+                "ability": "ability/liskam_s1"
+              },
+              "reason": "Automatic-only ability cannot be activated by a player command"
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 400,
+            "type": "ability.started",
+            "payload": {
+              "source": 2,
+              "ability": "ability/liskam_s1",
+              "cast": "cast/2/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 401,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": -18,
+              "value": 0,
+              "ability": "ability/liskam_s1",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 0,
+            "cause": 400
+          },
+          {
+            "id": 521,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 1,
+              "value": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 549,
+            "type": "ability.started",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 573,
+            "type": "resource.changed",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": -1
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 575,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 3,
+              "target": 2,
+              "amount": 0,
+              "ability": "ability/witness_hit_true",
+              "resource": "hp"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 576,
+            "type": "ability.finished",
+            "payload": {
+              "source": 3,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/3/1"
+            },
+            "time": 1,
+            "cause": null
+          }
+        ],
+        "random_samples": [],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 10,
+            "life": 10
+          },
+          "unit/char_107_liskam": {
+            "hp": 3124,
+            "shield_charge": 0,
+            "sp": 0
+          },
+          "unit/witness_enemy": {
+            "hp": 1000000
+          }
+        }
+      }
+    },
+    {
+      "case": "lisk_blocked_neighbor_profile",
+      "result": "passed",
+      "actual": {
+        "program_fingerprint": "2fd554bf613bc518890fecfe51e881649aa5a80ffaec6153949bc7552ee8e4fd",
+        "runtime_fingerprint": "4925b0756f52ede31168c81965aefcfa3a538db13625d7f44c672b2b58b66262",
+        "tick": 5,
+        "checkpoint_equal": true,
+        "replay_equal": true,
+        "events": [
+          {
+            "id": 16,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "hp",
+              "delta": 0,
+              "value": 3124
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 33,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 50,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 2,
+              "resource": "sp",
+              "delta": 0,
+              "value": 18
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 317,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1413
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 334,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 3,
+              "resource": "sp",
+              "delta": 0,
+              "value": 0
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 611,
+            "type": "resource.changed",
+            "payload": {
+              "source": null,
+              "target": 4,
+              "resource": "hp",
+              "delta": 0,
+              "value": 1000000
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 727,
+            "type": "ability.started",
+            "payload": {
+              "source": 2,
+              "ability": "ability/liskam_s1",
+              "cast": "cast/2/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 728,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "sp",
+              "delta": -18,
+              "value": 0,
+              "ability": "ability/liskam_s1",
+              "cast": "cast/2/1",
+              "reason": "ability_cost"
+            },
+            "time": 0,
+            "cause": 727
+          },
+          {
+            "id": 853,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": 1,
+              "value": 1
+            },
+            "time": 0,
+            "cause": null
+          },
+          {
+            "id": 891,
+            "type": "ability.started",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/4/1",
+              "targets": [
+                2
+              ]
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 936,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 2,
+              "resource": "shield_charge",
+              "delta": -1
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 938,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 4,
+              "target": 2,
+              "amount": 0,
+              "ability": "ability/witness_hit_true",
+              "resource": "hp"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 939,
+            "type": "ability.finished",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/4/1"
+            },
+            "time": 1,
+            "cause": null
+          },
+          {
+            "id": 971,
+            "type": "ability.started",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/4/2",
+              "targets": [
+                2
+              ]
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 1015,
+            "type": "resource.changed",
+            "payload": {
+              "source": 4,
+              "target": 2,
+              "resource": "hp",
+              "delta": -100.0,
+              "value": 3024.0
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 1017,
+            "type": "damage.accepted",
+            "payload": {
+              "source": 4,
+              "target": 2,
+              "amount": 100.0,
+              "ability": "ability/witness_hit_true",
+              "resource": "hp"
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 1018,
+            "type": "ability.finished",
+            "payload": {
+              "source": 4,
+              "ability": "ability/witness_hit_true",
+              "cast": "cast/4/2"
+            },
+            "time": 2,
+            "cause": null
+          },
+          {
+            "id": 1038,
+            "type": "resource.changed",
+            "payload": {
+              "source": 2,
+              "target": 3,
+              "resource": "sp",
+              "delta": 1.0,
+              "value": 1.0
+            },
+            "time": 2,
+            "cause": null
+          }
+        ],
+        "random_samples": [
+          {
+            "sequence": 1,
+            "stream": "imp",
+            "index": 1,
+            "value": 0.5838338137853468,
+            "time": 2
+          }
+        ],
+        "actor_resources": {
+          "system/battle": {
+            "dp": 10,
+            "life": 10
+          },
+          "unit/char_107_liskam": {
+            "hp": 3024.0,
+            "shield_charge": 0,
+            "sp": 0
+          },
+          "unit/char_358_lisa": {
+            "hp": 1413,
+            "sp": 1.0
+          },
+          "unit/witness_enemy": {
+            "hp": 1000000
+          }
+        }
+      }
+    }
+  ],
+  "shield_source_witness": {
+    "path": "D:\\Arknights\\Arknights_timer\\data\\anon_textassets\\buff_template_data.dat",
+    "file_sha256": "0c438b57b176e0fa430b5b982a58c7b524f4121aa8dbab33d3e647aa0fc1ee59",
+    "template": "damage_block_once",
+    "bson_offset": 148552,
+    "bson_document_sha256": "40026ba797109a7ef485e4077fef29a60dfe443dc9cad7f1155945482aea4e7b",
+    "bson_document_base64": "LQIAAAJ0ZW1wbGF0ZUtleQASAAAAZGFtYWdlX2Jsb2NrX29uY2UAAmVmZmVjdEtleQABAAAAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQAA2V2ZW50VG9BY3Rpb25zAMgBAAAET05fVEFLRV9EQU1BR0UAswEAAAMwADoBAAACJHR5cGUAOQAAAFRvcmFwcHUuQmF0dGxlLkFjdGlvbi5Ob2RlcytCbG9ja0RhbWFnZSwgQXNzZW1ibHktQ1NoYXJwAAhfZmlsdGVyRGFtYWdlVHlwZQAAAl9kYW1hZ2VNYXNrAAUAAABOT05FAAhfdXNlRHluYW1pY1ZhcgAACF9hbGxvd05lZ2F0aXZlRHluYW1pY1ZhcgAACF91c2VGaXhlZFZhbHVlAAAIX3Nob3dEYW1hZ2VOdW1iZXIAAApfc3BlY2lmeUJsb2NrRWZmZWN0AAhfdXNlU291cmNlAAACX3NvdXJjZVR5cGUABwAAAFNPVVJDRQAIX2ZpbHRlckFwcGx5V2F5AAACX2FwcGx5V2F5RmlsdGVyAAUAAABOT05FAAhfc2hvd1NoaWVsZFVJAAAAAzEAbgAAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0ZpbmlzaEJ1ZmYsIEFzc2VtYmx5LUNTaGFycAAIX2RlY0NudElmU3RhY2sAAAhfdXBkYXRlT3ZlcnJpZGVNYXAAAQAAAAA=",
+    "parsed": {
+      "templateKey": "damage_block_once",
+      "effectKey": "",
+      "onEventPriority": "DEFAULT",
+      "eventToActions": {
+        "ON_TAKE_DAMAGE": [
+          {
+            "$type": "Torappu.Battle.Action.Nodes+BlockDamage, Assembly-CSharp",
+            "_filterDamageType": false,
+            "_damageMask": "NONE",
+            "_useDynamicVar": false,
+            "_allowNegativeDynamicVar": false,
+            "_useFixedValue": false,
+            "_showDamageNumber": false,
+            "_specifyBlockEffect": null,
+            "_useSource": false,
+            "_sourceType": "SOURCE",
+            "_filterApplyWay": false,
+            "_applyWayFilter": "NONE",
+            "_showShieldUI": false
+          },
+          {
+            "$type": "Torappu.Battle.Action.Nodes+FinishBuff, Assembly-CSharp",
+            "_decCntIfStack": false,
+            "_updateOverrideMap": true
+          }
+        ]
+      }
+    },
+    "native_packet_SP_order_method_body_verified": false,
+    "SP_profile": "source defense spType increment1 plus independent talent self1; accepted-packet model; blocked-hit native order client_pending"
+  },
+  "scope": "three canonical mechanisms only; no full stage or roster acceptance",
+  "formal_approval": false,
+  "review_receipt": false,
+  "client_pending_preserved": true
+}

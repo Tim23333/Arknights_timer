@@ -1,0 +1,226 @@
+{
+  "manifest": {
+    "requires": [
+      "preset/ark_standard"
+    ]
+  },
+  "entities": [
+    {
+      "id": "unit/static_field",
+      "kind": "entity",
+      "tags": [
+        "tile_field_owner"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 1,
+            "move_speed": 3
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 1,
+            "capacity": 1
+          }
+        },
+        "spatial": {},
+        "buffs": {
+          "initial": [
+            "buff/parent"
+          ]
+        }
+      }
+    },
+    {
+      "id": "unit/target",
+      "kind": "entity",
+      "tags": [
+        "player"
+      ],
+      "components": {
+        "attributes": {
+          "base": {
+            "max_hp": 1000,
+            "rate": 0,
+            "def": 0,
+            "mres": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "initial": 400,
+            "capacity": 1000,
+            "role": "health",
+            "recovery_rule": "rule/hp",
+            "recovery": {
+              "mode": "continuous"
+            }
+          }
+        },
+        "spatial": {}
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "id": "buff/parent",
+      "kind": "buff",
+      "aura": {
+        "selector": "selector/cell",
+        "buff": "buff/child"
+      }
+    },
+    {
+      "id": "buff/child",
+      "kind": "buff",
+      "stacking": {
+        "mode": "independent"
+      },
+      "modifiers": [
+        {
+          "attribute": "rate",
+          "layer": "flat",
+          "value": 0.03
+        }
+      ]
+    }
+  ],
+  "selectors": [
+    {
+      "id": "selector/cell",
+      "kind": "selector",
+      "region": {
+        "type": "grid_offsets",
+        "offsets": [
+          [
+            0,
+            0
+          ]
+        ],
+        "rotate_with_facing": false
+      },
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ]
+    },
+    {
+      "id": "selector/player",
+      "kind": "selector",
+      "region": {
+        "type": "all"
+      },
+      "filters": [
+        {
+          "tag": "player"
+        }
+      ],
+      "limit": 1
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/hp",
+      "kind": "rule",
+      "contract": "resource.recovery",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.current+inputs.delta_seconds*inputs.attributes.max_hp*inputs.attributes.rate"
+      }
+    }
+  ],
+  "scenarioDraft": {
+    "id": "scene/static_route_counterexample",
+    "ruleset": "ruleset/ark_standard",
+    "objectives": {},
+    "map": {
+      "rows": 1,
+      "cols": 3,
+      "tiles": [
+        {
+          "tileKey": "tile_floor",
+          "buildableType": 1,
+          "passableMask": 1
+        },
+        {
+          "tileKey": "independent_field",
+          "buildableType": 1,
+          "passableMask": 1,
+          "blackboard": [
+            {
+              "key": "rate",
+              "value": 0.03
+            }
+          ]
+        },
+        {
+          "tileKey": "tile_floor",
+          "buildableType": 1,
+          "passableMask": 1
+        }
+      ],
+      "tile_mechanics": {
+        "independent_field": {
+          "type": "occupancy_buff_field",
+          "definition": "unit/static_field",
+          "expected_blackboard": {
+            "rate": 0.03
+          }
+        }
+      }
+    },
+    "initialEntities": [
+      {
+        "definition": "unit/target",
+        "instanceAlias": "target",
+        "position": {
+          "row": 0,
+          "col": 1
+        }
+      },
+      {
+        "definition": "unit/static_field",
+        "instanceAlias": "field_clone",
+        "position": {
+          "row": 0,
+          "col": 0
+        },
+        "components": {
+          "abilities": [
+            "ability/illegal_field_attack"
+          ],
+          "attributes": {
+            "base": {
+              "atk": 50
+            }
+          }
+        }
+      }
+    ]
+  },
+  "abilities": [
+    {
+      "id": "ability/illegal_field_attack",
+      "kind": "ability",
+      "activation": {
+        "mode": "manual"
+      },
+      "selector": "selector/player",
+      "timeline": [
+        {
+          "at_seconds": 0,
+          "effect": {
+            "op": "damage",
+            "damage_type": "true",
+            "scale": 1
+          }
+        }
+      ]
+    }
+  ]
+}

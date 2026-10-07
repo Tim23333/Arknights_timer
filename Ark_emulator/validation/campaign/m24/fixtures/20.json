@@ -1,0 +1,229 @@
+{
+  "abilities": [
+    {
+      "activation": {
+        "mode": "automatic_attack"
+      },
+      "duration_seconds": 0.3,
+      "id": "ability/normal",
+      "kind": "ability",
+      "selector": "selector/enemies",
+      "timeline": [
+        {
+          "at_seconds": 0.2,
+          "effect": {
+            "damage_type": "physical",
+            "op": "damage",
+            "scale": 1
+          }
+        }
+      ]
+    },
+    {
+      "activation": {
+        "mode": "manual",
+        "on_start": [
+          {
+            "op": "move",
+            "position": {
+              "col": 5,
+              "row": 0
+            },
+            "target": "source"
+          }
+        ]
+      },
+      "id": "ability/escape",
+      "kind": "ability",
+      "timeline": []
+    }
+  ],
+  "behaviors": [
+    {
+      "decision": {
+        "default_mode": 0,
+        "profiles": [
+          {
+            "cast_groups": [
+              {
+                "abilities": [
+                  "ability/normal"
+                ],
+                "key": "normal"
+              }
+            ],
+            "mode": 0,
+            "parameters": {
+              "stop_cast_groups": [
+                "normal"
+              ],
+              "stop_on_target": true,
+              "target_key": "normal"
+            },
+            "selectors": [
+              {
+                "key": "normal",
+                "selector": "selector/enemies"
+              }
+            ]
+          }
+        ],
+        "rule": "rule/ark_behavior_decision"
+      },
+      "id": "behavior/decision",
+      "initial": "active",
+      "kind": "behavior",
+      "states": {
+        "active": {}
+      },
+      "transitions": []
+    }
+  ],
+  "buffs": [
+    {
+      "control": {
+        "abilities": false,
+        "attack": false,
+        "move": false
+      },
+      "duration_seconds": 0.1,
+      "id": "buff/stop",
+      "kind": "buff"
+    }
+  ],
+  "entities": [
+    {
+      "components": {
+        "abilities": [
+          "ability/normal"
+        ],
+        "attributes": {
+          "base": {
+            "atk": 20,
+            "attack_interval": 1,
+            "attack_speed_ratio": 1,
+            "block_cost": 1,
+            "def": 0,
+            "max_hp": 100,
+            "move_speed": 3,
+            "mres": 0
+          }
+        },
+        "behavior": {
+          "machine": "behavior/decision"
+        },
+        "buffs": {
+          "initial": [
+            "buff/stop"
+          ]
+        },
+        "resources": {
+          "hp": {
+            "capacity": 100,
+            "initial": 100
+          }
+        },
+        "spatial": {}
+      },
+      "id": "unit/enemy",
+      "kind": "entity",
+      "tags": [
+        "enemy",
+        "ground"
+      ]
+    },
+    {
+      "components": {
+        "abilities": [
+          "ability/escape"
+        ],
+        "attributes": {
+          "base": {
+            "atk": 0,
+            "def": 0,
+            "max_hp": 100,
+            "mres": 0
+          }
+        },
+        "resources": {
+          "hp": {
+            "capacity": 100,
+            "initial": 100
+          }
+        },
+        "spatial": {}
+      },
+      "id": "unit/target",
+      "kind": "entity",
+      "tags": [
+        "player",
+        "ground"
+      ]
+    }
+  ],
+  "manifest": {
+    "requires": [
+      "preset/ark_standard"
+    ]
+  },
+  "scenarioDraft": {
+    "id": "scenario/decision",
+    "initialEntities": [
+      {
+        "definition": "unit/enemy",
+        "instanceAlias": "enemy",
+        "position": {
+          "col": 0,
+          "row": 0
+        },
+        "route": {
+          "checkpoints": [],
+          "endPosition": {
+            "col": 5,
+            "row": 0
+          },
+          "motionMode": 0,
+          "startPosition": {
+            "col": 0,
+            "row": 0
+          }
+        }
+      },
+      {
+        "definition": "unit/target",
+        "instanceAlias": "target",
+        "position": {
+          "col": 1,
+          "row": 0
+        }
+      }
+    ],
+    "map": {
+      "cols": 6,
+      "rows": 1
+    },
+    "objectives": {},
+    "ruleset": "ruleset/ark_standard",
+    "waves": []
+  },
+  "schemaVersion": 2,
+  "selectors": [
+    {
+      "filters": [
+        {
+          "tag": "player"
+        },
+        {
+          "state": "alive"
+        }
+      ],
+      "id": "selector/enemies",
+      "kind": "selector",
+      "limit": 1,
+      "region": {
+        "radius": 1,
+        "type": "radius"
+      }
+    }
+  ]
+}

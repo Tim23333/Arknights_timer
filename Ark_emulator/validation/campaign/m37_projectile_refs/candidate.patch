@@ -1,0 +1,12 @@
+diff --git "a/..\\unpack_work\\campaign_m30_projectile_quota_candidate\\ark_sim\\domains\\projectiles.py" "b/..\\unpack_work\\campaign_m37_projectile_refs_candidate\\ark_sim\\domains\\projectiles.py"
+index ccfcdb3..73a42c3 100644
+--- "a/..\\unpack_work\\campaign_m30_projectile_quota_candidate\\ark_sim\\domains\\projectiles.py"
++++ "b/..\\unpack_work\\campaign_m37_projectile_refs_candidate\\ark_sim\\domains\\projectiles.py"
+@@ -47,6 +47,7 @@ class ProjectileSystem:
+   return (d['stop_after_first'] and count>=1) or (d['max_hits'] is not None and count>=d['max_hits'])
+  def _hit(self,x,d,target=None,finish_reason='max_hit'):
+   target=x['trace_target'] if target is None else target
++  target=self.ctx.session.world.resolve(target)
+   latest=self._get(x['id'])
+   if not latest or latest['state']!='active':return False
+   reservations=self._inflight_hits.get(x['id'],[])

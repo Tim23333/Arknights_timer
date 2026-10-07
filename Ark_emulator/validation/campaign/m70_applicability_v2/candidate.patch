@@ -1,0 +1,372 @@
+--- a/ark_sim/content/capabilities.py
++++ b/ark_sim/content/capabilities.py
+@@ -12,6 +12,13 @@
+             rule=rules.get(spec["rule"])
+             if rule is None or rule.get("contract")!="blocking.obstacle":raise ContentError(ident+": obstacle rule must implement blocking.obstacle")
+             requirements.append({"calculation":"blocking.obstacle","rule":spec["rule"],"required_by":ident+".route_obstacle"})
++    for ident,definition in definitions.items():
++        if definition.get("kind")=="buff":
++            for key in ("active_rule","control_rule"):
++                if key in definition:
++                    rule=rules.get(definition[key])
++                    if rule is None or rule.get("contract")!="buff.applicability":raise ContentError(ident+": applicability rule must implement buff.applicability")
++                    requirements.append({"calculation":"buff.applicability","rule":definition[key],"required_by":ident+"."+key})
+     entity_binding_ids = {id(definition["rules"]) for definition in definitions.values()
+                           if definition.get("kind") == "entity" and "rules" in definition}
+ 
+--- a/ark_sim/content/compiler.py
++++ b/ark_sim/content/compiler.py
+@@ -385,7 +385,7 @@
+                             reference = spec.get("rule")
+                             if reference in definitions and definitions[reference].get("contract") != "attributes.growth":
+                                 raise CompileError(f"{path}.growth.{attribute}: rule {reference} is not an attributes.growth rule")
+-                    expected_contracts = {"recovery_freeze_rule": "resource.recovery_freeze", "recovery_rule": "resource.recovery", "amount_rule": "resource.recovery", "capacity_rule": "resource.capacity", "bounds_rule": "resource.bounds", "interval_rule": "buff.interval" if root_kind == "buff" else "time.interval", "duration_rule": "buff.duration" if root_kind == "buff" else "ability.duration"}
++                    expected_contracts = {"active_rule": "buff.applicability", "control_rule": "buff.applicability", "recovery_freeze_rule": "resource.recovery_freeze", "recovery_rule": "resource.recovery", "amount_rule": "resource.recovery", "capacity_rule": "resource.capacity", "bounds_rule": "resource.bounds", "interval_rule": "buff.interval" if root_kind == "buff" else "time.interval", "duration_rule": "buff.duration" if root_kind == "buff" else "ability.duration"}
+                     if key in expected_contracts and isinstance(child, str) and child in definitions:
+                         if definitions[child].get("contract") != expected_contracts[key]:
+                             raise CompileError(f"{path}.{key}: rule {child} belongs to {definitions[child].get('contract')}, expected {expected_contracts[key]}")
+--- a/ark_sim/content/schemas.py
++++ b/ark_sim/content/schemas.py
+@@ -10,7 +10,7 @@
+     "control": {"clock_policy", "ack_policy", "steps", "on_start", "on_complete", "on_cancel"},
+     "entity": {"tags", "components", "growth", "talents", "equipment", "progression"},
+     "ability": {"activation", "selector", "timeline", "target_capture", "interrupt_policy", "success_definition", "duration_seconds", "cooldown_seconds", "events", "parameters"},
+-    "buff": {"toggle", "contact_flags", "selection_flags","duration_seconds", "interval_seconds", "stacking", "modifiers", "events", "effects", "parameters", "removal", "duration_rule", "interval_rule", "control", "aura", "on_remove", "movement_damage", "damage_hooks"},
++    "buff": {"active_rule", "control_rule", "toggle", "contact_flags", "selection_flags","duration_seconds", "interval_seconds", "stacking", "modifiers", "events", "effects", "parameters", "removal", "duration_rule", "interval_rule", "control", "aura", "on_remove", "movement_damage", "damage_hooks"},
+     "selector": {"eligibility", "region", "filters", "ordering", "limit", "limit_attribute", "provider", "parameters", "eligible_rule"},
+     "behavior": {"decision", "provider", "implementation", "states", "initial", "initial_state", "transitions", "parameters"},
+     "policy": {"contract", "provider", "implementation", "parameters"},
+--- /dev/null
++++ b/ark_sim/domains/applicability.py
+@@ -0,0 +1,55 @@
++"""Opt-in pure qualification of persisted Buff contributions."""
++from ark_sim.contracts import Intent,thaw
++from .selection import DEFAULT_STATE,project_state
++
++class ApplicabilitySystem:
++ def __init__(self,context,buffs):
++  self.ctx,self.buffs=context,buffs;self.enabled=any(d.get('kind')=='buff' and (d.get('active_rule') or d.get('control_rule')) for d in context.program.definitions.values());self._busy=False;self._requested=False
++ def active(self,instance):return instance.get('applicability',{}).get('active',True)
++ def control(self,instance):return self.active(instance) and instance.get('applicability',{}).get('control',True)
++ def _decision(self,owner,instance,key,status):
++  definition=self.ctx.program.definitions[instance['definition']];rule=definition.get(key)
++  if not rule:return True
++  result=self.ctx.calc('buff.applicability',{'owner':self.ctx.entity(owner),'source':self.ctx.entity(instance['source']),'instance':instance,'status':status,'parameters':thaw(definition.get('parameters',{}))},owner=owner,source=instance['source'],target=owner,rule_id=rule,extra={'contribution':'active' if key=='active_rule' else 'control'})
++  if type(result) is not bool:raise ValueError('buff applicability must return strict bool')
++  return result
++ def reconcile(self):
++  if not self.enabled:return
++  if self._busy:self._requested=True;return
++  self._busy=True
++  try:
++   with self.ctx.session.atomic():
++    budget=self.ctx.session.reaction_budget
++    while True:
++     self._requested=False;changed=False;affected=[];restart=False
++     for entity in self.ctx.session.world.entities():
++      owner=entity['id'];instances=self.buffs._instances(owner);status=project_state(self.ctx,owner,DEFAULT_STATE);replacement=[];updates=False;interrupt=False
++      for captured in instances:
++       definition=self.ctx.program.definitions[captured['definition']];current=thaw(captured)
++       if definition.get('active_rule') or definition.get('control_rule'):
++        active=self._decision(owner,current,'active_rule',status);control=active and self._decision(owner,current,'control_rule',status)
++        state={'active':active,'control':control}
++        if active!=self.active(current) and definition.get('movement_damage'):
++         total=self.ctx.get(owner,('spatial','distance_travelled'),0)
++         if total!=current.get('blackboard',{}).get('distance_cursor',total):
++          # Settle old active tail or discard inactive travel BEFORE transition.
++          # Callback may retire/remove; restart from actual World, never reinsert.
++          self.buffs._flush_movement_damage(owner,current);restart=True;changed=True;break
++        if state!=current.get('applicability'):
++         if current.get('applicability') is not None and not self.control(current) and active and control and definition.get('control',{}).get('interrupt'):interrupt=True
++         current['applicability']=state;updates=True
++       replacement.append(current)
++      if restart:break
++      if updates:
++       affected.append((owner,self.ctx.resources.capacity_snapshot(owner)))
++       self.ctx.set(owner,('buffs','instances'),replacement);self.ctx.set(owner,('attributes','modifiers'),self.buffs._modifiers(owner,replacement));changed=True
++       if interrupt:self.ctx.abilities.interrupt(owner,'buff_control_reactivated')
++     for owner,before in affected:self.ctx.resources.sync_capacities(owner,before,'buff_applicability')
++     if affected:
++      self.ctx.spatial.blocking()
++      # Actual aura/toggle passes may request further state stabilization.
++      if not self.buffs._reconciling:self.buffs.reconcile()
++     if not changed and not self._requested:break
++     budget-=1
++     if budget<=0:raise ValueError('buff applicability exceeds stabilization budget')
++  finally:self._busy=False;self._requested=False
+--- a/ark_sim/domains/buffs.py
++++ b/ark_sim/domains/buffs.py
+@@ -6,6 +6,8 @@
+ class BuffSystem:
+     def __init__(self, context):
+         self.ctx = context
++        from .applicability import ApplicabilitySystem
++        self.applicability=ApplicabilitySystem(context,self)
+         from .toggles import ToggleSystem
+         self.toggles = ToggleSystem(context, self)
+         self._reconciling = False
+@@ -44,6 +46,7 @@
+         for instance in self._instances(target):
+             if instance.get("expires_at") is not None and now >= instance["expires_at"]:
+                 continue
++            if not self.applicability.control(instance):continue
+             controls = self.ctx.program.definitions[instance["definition"]].get("control", {})
+             for key in result:
+                 result[key] = result[key] and controls.get(key, True)
+@@ -61,6 +64,7 @@
+         modifiers = [item for item in self.ctx.get(target, ("attributes", "modifiers"), [])
+                      if "buff_instance" not in item]
+         for instance in instances:
++            if not self.applicability.active(instance):continue
+             definition = self.ctx.program.definitions[instance["definition"]]
+             for modifier in definition.get("modifiers", ()):
+                 modifiers.append({**thaw(modifier), "buff_instance": instance["id"],
+@@ -171,14 +175,18 @@
+             if existing is None:
+                 intents.append(Intent("set", target, ("buffs", "next_instance_id"), next_instance + 1))
+             self.ctx.session.commit(intents + scheduled)
++            self.applicability.reconcile()
+             self.ctx.resources.sync_capacities(target, capacities_before, "buff_applied")
+             self._sync_blocking([definition])
+-            if definition.get("control", {}).get("interrupt"):
++            current=next((x for x in self._instances(target) if x["id"]==uid),None)
++            if definition.get("control", {}).get("interrupt") and current is not None and self.applicability.control(current):
+                 self.ctx.abilities.interrupt(target, "control_buff")
+             self.ctx.emit("buff.applied", {"source": source, "target": target, "buff": buff_id,
+                                           "instance": uid, "stacks": int(amount)})
+-            if interval_units == 0:
++            if interval_units == 0 and current is not None and self.applicability.active(current):
+                 for effect in definition.get("effects", ()):
++                    current=next((x for x in self._instances(target) if x["id"]==uid),None)
++                    if self.applicability.enabled and (current is None or not self.applicability.active(current)):break
+                     self.ctx.effects.execute(source, [target], thaw(effect))
+             # Normal owned-child installation is already part of this pass.
+             # Its real effects can separately request another reconciliation.
+@@ -276,7 +284,7 @@
+                     self.remove(center, parent["id"], _from_aura=True)
+                     self._clear_orphan_children(parent["id"])
+                     continue
+-                available = self.ctx.aura_available(center) and self.ctx.aura_available(parent["source"])
++                available = self.applicability.active(parent) and self.ctx.aura_available(center) and self.ctx.aura_available(parent["source"])
+                 desired = set(self.ctx.spatial.select(center, aura["selector"])) if available else set()
+                 desired = {ref for ref in desired if getattr(self.ctx, 'active', self.ctx.alive)(ref)}
+                 members = dict(parent.get("aura_members", {}))
+@@ -332,6 +340,7 @@
+                     self.ctx.set(center, ("buffs", "instances"), parents)
+ 
+     def reconcile(self, session=None):
++        self.applicability.reconcile()
+         self.toggles.reconcile()
+         if not self.has_auras:return
+         if self._reconciling:
+@@ -380,6 +389,12 @@
+         if not spec:
+             return
+         total = self.ctx.get(target, ("spatial", "distance_travelled"), 0)
++        if not self.applicability.active(instance):
++            values=self._instances(target)
++            for item in values:
++                if item["id"]==instance["id"]:item["blackboard"]["distance_cursor"]=total
++            self.ctx.set(target,("buffs","instances"),values)
++            return
+         cursor = instance["blackboard"].get("distance_cursor", total)
+         delta = total-cursor
+         if delta < -1e-12:
+@@ -418,10 +433,13 @@
+         if not getattr(self.ctx, 'active', self.ctx.alive)(instance["target"]) and definition.get("removal", {}).get("on_target_death", "remove") == "remove":
+             self.remove(instance["target"], instance["id"])
+             return
++        active=self.applicability.active(instance)
+         cause = self.ctx.emit("buff.periodic", {"source": instance["source"], "target": instance["target"],
+-                              "buff": instance["definition"], "instance": instance["id"]})
++                              "buff": instance["definition"], "instance": instance["id"]}) if active else None
+         self._flush_movement_damage(instance["target"], instance)
+         for effect in definition.get("effects", ()):
++            current=self._active(payload)
++            if self.applicability.enabled and (current is None or not self.applicability.active(current)):break
+             self.ctx.effects.execute(instance["source"], [instance["target"]], thaw(effect), cause=cause)
+         instance = self._active(payload)
+         if not instance:
+@@ -454,6 +472,7 @@
+                 if not source_alive and removal.get("on_source_death", "retain") == "remove":
+                     self.remove(target, instance["id"])
+                     continue
++                if not self.applicability.active(instance):continue
+                 for subscription in definition.get("events", ()):
+                     if subscription["event"] != event:
+                         continue
+@@ -464,6 +483,8 @@
+                             subscription.get("parameters", {}), context):
+                         continue
+                     for effect in subscription.get("effects", ()):
++                        current=next((x for x in self._instances(target) if x["id"]==instance["id"]),None)
++                        if self.applicability.enabled and (current is None or not self.applicability.active(current)):break
+                         recipient = payload.get("source") if subscription.get("target") == "event_source" else payload.get("target") if subscription.get("target") == "event_target" else target
+                         if recipient is None:
+                             continue
+--- a/ark_sim/domains/context.py
++++ b/ark_sim/domains/context.py
+@@ -87,6 +87,10 @@
+         return thaw(value)
+ 
+     def set(self, ref, path, value):
++        if path and path[0]=="selection_state" and self.buffs is not None and self.buffs.applicability.enabled:
++            with self.session.atomic():
++                result=self.session.commit([Intent("set",self.session.world.resolve(ref),tuple(path),value)])
++                self.buffs.reconcile();return result
+         return self.session.commit([Intent("set", self.session.world.resolve(ref), tuple(path), value)])
+ 
+     def route_hidden(self, ref):
+@@ -166,12 +170,13 @@
+         return thaw(output)
+ 
+     def emit(self, event, payload, cause=None):
+-        if (self.resources is not None and self.resources.has_custom_freeze_rules) or (self.buffs is not None and self.buffs.toggles.enabled):
++        if (self.resources is not None and self.resources.has_custom_freeze_rules) or (self.buffs is not None and (self.buffs.toggles.enabled or self.buffs.applicability.enabled)):
+             with self.session.atomic():
+                 return self._emit_domain(event, payload, cause)
+         return self._emit_domain(event, payload, cause)
+ 
+     def _emit_domain(self, event, payload, cause=None):
++        if self.buffs is not None:self.buffs.applicability.reconcile()
+         event_id = self.session.emit(event, payload, cause=cause)
+         if self.buffs is not None:self.buffs.toggles.pulse(event, payload)
+         if self.buffs is not None:
+--- a/ark_sim/domains/effects.py
++++ b/ark_sim/domains/effects.py
+@@ -451,6 +451,7 @@
+         for instance in self.ctx.get(holder, ("buffs", "instances"), []):
+             if instance["definition"] in locked or (instance["expires_at"] is not None and self.ctx.session.time >= instance["expires_at"]):
+                 continue
++            if getattr(getattr(self.ctx,'buffs',None),'applicability',None) is not None and not self.ctx.buffs.applicability.active(instance):continue
+             definition = self.ctx.program.definitions[instance["definition"]]
+             for hook in definition.get("damage_hooks", []):
+                 if hook["phase"] == phase:
+--- a/ark_sim/domains/resources.py
++++ b/ark_sim/domains/resources.py
+@@ -183,6 +183,11 @@
+         return [intent], actual
+ 
+     def adjust(self, ref, resource, delta=None, *, value=None, source=None, ability=None, effect=None):
++        if getattr(getattr(getattr(self.ctx,'buffs',None),'applicability',None),'enabled',False):
++            with self.ctx.session.atomic():return self._adjust_applicability(ref,resource,delta,value=value,source=source,ability=ability,effect=effect)
++        return self._adjust_applicability(ref,resource,delta,value=value,source=source,ability=ability,effect=effect)
++
++    def _adjust_applicability(self, ref, resource, delta=None, *, value=None, source=None, ability=None, effect=None):
+         ref = self.ctx.session.world.resolve(ref)
+         source = self.ctx.session.world.resolve(source) if source is not None else None
+         intents, actual = self.change_plan(ref, resource, delta, value=value, source=source, ability=ability, effect=effect)
+--- a/ark_sim/domains/selection.py
++++ b/ark_sim/domains/selection.py
+@@ -7,8 +7,9 @@
+ SETS = {"abnormal_flags": 46, "abnormal_combos": 2, "target_free_flags": 46, "target_free_combos": 2}
+ MANDATORY_FIELDS = BOOLS | set(MASKS) | set(SETS) | {"side"}
+ SETS["abnormal_immunes"] = 46
+-FIELDS = MANDATORY_FIELDS | {"abnormal_immunes"}
+-DEFAULT_STATE = {**{x:False for x in BOOLS}, **{x:0 for x in MASKS}, **{x:[] for x in SETS}, "side":0}
++SETS["abnormal_combo_immunes"] = 2
++FIELDS = MANDATORY_FIELDS | {"abnormal_immunes","abnormal_combo_immunes"}
++DEFAULT_STATE = {**{x:False for x in BOOLS}, **{x:0 for x in MASKS}, **{x:[] for x in SETS if x!="abnormal_combo_immunes"}, "side":0}
+ SWITCHES = ("_ignoreTargetFree", "_onlyIgnoreSomeOfTargetFreeCase", "_excludeSomeAbnormalFlags", "_needProfessionMask", "_ignoreAllyTargetFree", "_ignoreHealFree", "_ignoreMotionMode", "_forceIgnoreCamouflage", "_checkUnitType")
+ 
+ def validate_state(state, path="selection_state", contribution=False, complete=False):
+@@ -52,23 +53,30 @@
+ def project_state(ctx, ref, defaults):
+     validate_state(defaults, "projection.defaults", complete=True)
+     result=thaw(defaults)
++    combo_declared = "abnormal_combo_immunes" in defaults
++    result.setdefault("abnormal_combo_immunes", [])
+     immunity_declared = "abnormal_immunes" in defaults
+     result.setdefault("abnormal_immunes", [])
+     base=ctx.entity(ref)["components"].get("selection_state",{})
+     validate_state(base)
+     immunity_declared = immunity_declared or "abnormal_immunes" in base
++    combo_declared = combo_declared or "abnormal_combo_immunes" in base
+     result.update(thaw(base))
+     for key in SETS: result[key]=set(result[key])
+     now=ctx.session.time
+     for instance in ctx.get(ref,("buffs","instances"),[]):
+         if instance.get("expires_at") is not None and now >= instance["expires_at"]: continue
++        if not instance.get("applicability",{}).get("active",True):continue
+         flags=ctx.program.definitions[instance["definition"]].get("selection_flags",{})
++        combo_declared = combo_declared or "abnormal_combo_immunes" in flags
+         immunity_declared = immunity_declared or "abnormal_immunes" in flags
+         for key,value in flags.items():
+             if key in SETS: result[key].update(value)
+             elif value: result[key]=True
+     for key in SETS: result[key]=sorted(result[key])
+     result["abnormal_flags"] = sorted(set(result["abnormal_flags"]) - set(result["abnormal_immunes"]))
++    result["abnormal_combos"] = sorted(set(result["abnormal_combos"])-set(result["abnormal_combo_immunes"]))
++    if not combo_declared:result.pop("abnormal_combo_immunes",None)
+     # Only explicit native named status indices become corresponding flags.
+     flags=result["abnormal_flags"]
+     for name,index in (("target_free",2),("ally_target_free",15),("heal_free",7),("camouflage",17)):
+--- a/ark_sim/domains/toggles.py
++++ b/ark_sim/domains/toggles.py
+@@ -78,7 +78,7 @@
+                             spec=self.ctx.program.definitions[instance['definition']].get('toggle')
+                             if not spec:continue
+                             state=instance.get('toggle_state',{'enabled':spec['initial_enabled'],'held':False,'restore_at':None,'last_pulse':None})
+-                            active=self.ctx.active(owner) and self.ctx.active(instance['source']) and (instance['expires_at'] is None or self.ctx.session.time<instance['expires_at'])
++                            active=self.buffs.applicability.active(instance) and self.ctx.active(owner) and self.ctx.active(instance['source']) and (instance['expires_at'] is None or self.ctx.session.time<instance['expires_at'])
+                             blocker=self.ctx.spatial.blocked_by(owner) if self.ctx.spatial is not None else None
+                             blocker_active=blocker is not None and self.ctx.active(blocker)
+                             held=self.ctx.calc('passive.toggle',{'owner':self.ctx.entity(owner),'source':self.ctx.entity(instance['source']),'blocked_by':blocker,'blocker_active':blocker_active,'clock':{'time':self.ctx.session.time,'quantum':self.ctx.session.quantum},'state':state,'parameters':thaw(spec.get('parameters',{}))},source=instance['source'],target=owner,owner=owner,rule_id=spec['rule']) if active else True
+--- a/ark_sim/rules/contracts.json
++++ b/ark_sim/rules/contracts.json
+@@ -3189,7 +3189,7 @@
+         "graph",
+         "provider"
+       ],
+-      "description": "Explicit final Boolean override; metadata authority may解除 legacy/ability freeze. No implicit/default binding.",
++      "description": "Explicit final Boolean override; metadata authority may\u89e3\u9664 legacy/ability freeze. No implicit/default binding.",
+       "pureEvaluation": true,
+       "writesStateDirectly": false,
+       "versionsRequired": true,
+@@ -3683,6 +3683,46 @@
+       "contractVersion": 1,
+       "status": "declared",
+       "description": "Opt-in placement connectivity over explicitly protected original ground routes and effective grid snapshots."
++    },
++    {
++      "id": "buff.applicability",
++      "kind": "calculation",
++      "owner": "owner",
++      "inputs": [
++        {
++          "name": "owner",
++          "type": "entity_snapshot",
++          "required": true
++        },
++        {
++          "name": "source",
++          "type": "entity_snapshot",
++          "required": true
++        },
++        {
++          "name": "instance",
++          "type": "record",
++          "required": true
++        },
++        {
++          "name": "status",
++          "type": "record",
++          "required": true
++        },
++        {
++          "name": "parameters",
++          "type": "record",
++          "required": true
++        }
++      ],
++      "outputType": "boolean",
++      "implementations": [
++        "expression",
++        "graph",
++        "provider"
++      ],
++      "pureEvaluation": true,
++      "writesStateDirectly": false
+     }
+   ],
+   "types": {

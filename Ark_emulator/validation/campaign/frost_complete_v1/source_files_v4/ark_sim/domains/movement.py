@@ -1,0 +1,724 @@
+"""Spatial plans and movement rates are separate, replaceable decisions."""
+import math
+from collections.abc import Mapping
+from ark_sim.contracts import thaw
+from .spatial import GridTopology, route_motion_mode, project_cell, UnreachablePathError
+
+
+class SpatialSystem:
+    def __init__(self, context):
+        self.ctx = context
+        self._base_map_definition = thaw(context.program.scenario.get("map", {"rows": 1, "cols": 1}))
+        self.grid = GridTopology(self._base_map_definition)
+        self._blocking_reconciling = False
+
+    @property
+    def map_definition(self):
+        terrain = getattr(self.ctx, "terrain", None)
+        return terrain.map() if terrain is not None else self._base_map_definition
+
+    def blocked_by(self, ref):
+        return self.ctx.get(ref, ("runtime", "blocked_by"))
+
+    def selection_state(self, ref, defaults=None):
+        from .selection import project_state
+        return project_state(self.ctx, ref, defaults or {})
+
+    def available(self, source, candidate, selector=None, ability=None, effect=None, observable=False):
+        binding = self.ctx.definition(candidate).get('rules', {}).get('targeting.availability')
+        if binding is None:return True
+        from .selection import DEFAULT_STATE
+        selector = selector or {}
+        source_view = self.ctx.entity(source) if source is not None else {}
+        source_state = self.selection_state(source, DEFAULT_STATE) if source is not None else {**thaw(DEFAULT_STATE), 'side': 2}
+        inputs = {'source':source_view, 'candidate':self.ctx.entity(candidate),
+            'selector':thaw(selector), 'ability':thaw(ability or {}), 'effect':thaw(effect or {}),
+            'selection_states':{'source':source_state, 'candidate':self.selection_state(candidate,DEFAULT_STATE)}}
+        if observable:
+            result = self.ctx.calc('targeting.availability', inputs,source=source,target=candidate,owner=candidate,ability=ability,effect=effect,rule_id=binding)
+        else:
+            result = thaw(self.ctx.rules.evaluate('targeting.availability',inputs,rule_id=binding,context={'time':self.ctx.session.time,'quantum':self.ctx.session.quantum,'source':source_view,'target':self.ctx.entity(candidate),'owner':self.ctx.entity(candidate),'rule_scope':{'source':self.ctx.definition_bindings(source),'target':self.ctx.definition_bindings(candidate),'ability':(ability or {}).get('rules',{}),'effect':(effect or {}).get('rules',{})}}).value)
+        if type(result) is not bool:raise ValueError('targeting.availability must return strict bool')
+        return result
+
+    def qualifies(self, source, candidate, selector, ability=None, effect=None, observable=False):
+        """Readonly per-candidate eligibility. No ordering, sampling or traces."""
+        if not self.available(source,candidate,selector,ability,effect,observable):return False
+        if selector.get("exclude_abnormal_flags"):
+            from .selection import DEFAULT_STATE
+            if set(selector["exclude_abnormal_flags"]) & set(self.selection_state(candidate, DEFAULT_STATE)["abnormal_flags"]): return False
+        spec = selector.get("eligibility")
+        if spec is None:
+            return True
+        if not self.ctx.active(source) or not self.ctx.active(candidate) or self.ctx.route_hidden(source) or self.ctx.route_hidden(candidate):
+            return False
+        params = thaw(spec["parameters"])
+        inputs = {"source": self.ctx.entity(source), "candidate": self.ctx.entity(candidate),
+                  "selector": {**thaw(selector), "healing": bool((ability or {}).get("parameters", {}).get("healing"))}, "parameters": params,
+                  "selection_states": {"source": self.selection_state(source, params["defaults"]),
+                                       "candidate": self.selection_state(candidate, params["defaults"])}}
+        decision = self.ctx.rules.evaluate("targeting.eligibility", inputs, rule_id=spec["rule"]).value
+        if not isinstance(decision, Mapping) or set(decision) != {"accepted", "reason"} or type(decision["accepted"]) is not bool or not isinstance(decision["reason"], str):
+            raise ValueError("targeting.eligibility must return strict accepted/reason decision")
+        return decision["accepted"]
+
+    def _candidate_input(self, source, selector_id, primary=None):
+        definition = self.ctx.program.definitions[selector_id]
+        entity = self.ctx.entity(source)
+        candidates = [thaw(e) for e in self.ctx.session.world.entities() if e["id"] != self.ctx.session.world.resolve("system/battle")
+                      and 'tile_field_owner' not in e['tags']
+                      and e['components'].get('tile_occupancy',{}).get('targetable',True)
+                      and self.ctx.get(e["id"], ('runtime', 'active'), True) and not self.ctx.route_hidden(e["id"])]
+        if definition.get("parameters", {}).get("exclude_source"):
+            candidates = [e for e in candidates if e["id"] != entity["id"]]
+        if definition.get("parameters", {}).get("exclude_primary"):
+            candidates = [e for e in candidates if e["id"] != primary]
+        for restriction in definition.get("filters", ()):
+            if "field" in restriction:
+                spec = restriction["field"]
+                missing = object()
+                def matches(candidate):
+                    value = self.ctx.program.definitions[candidate["definition_id"]] if spec.get("scope", "runtime") == "definition" else candidate
+                    for key in spec["path"]:
+                        if isinstance(value, Mapping) and isinstance(key,str):
+                            value = value.get(key, missing)
+                        elif isinstance(value,(list,tuple)) and type(key) is int and 0 <= key < len(value):
+                            value = value[key]
+                        else:
+                            value = missing
+                        if value is missing:
+                            break
+                    if value is missing:
+                        if "default" not in spec:
+                            return False
+                        value = spec["default"]
+                    if "bits_any" in spec:
+                        return type(value) is int and value >= 0 and bool(value & spec["bits_any"])
+                    expected = spec["equals"]
+                    # bool is a distinct value, not integer category1/0.
+                    if isinstance(value,bool) != isinstance(expected,bool):
+                        return False
+                    return value == expected
+                candidates = [candidate for candidate in candidates if matches(candidate)]
+            if "tag" in restriction:
+                candidates = [e for e in candidates if restriction["tag"] in e["tags"]]
+            if restriction.get("state") == "alive":
+                candidates = [e for e in candidates if getattr(self.ctx, 'active', self.ctx.alive)(e["id"])]
+            if restriction.get("owner") == "source":
+                candidates = [e for e in candidates if e["components"].get("ownership", {}).get("owner") == entity["id"]]
+        if definition.get("region", {}).get("blocked_only"):
+            candidates = [e for e in candidates if e["id"] == self.blocked_by(source)]
+        return definition, entity, candidates
+
+    def eligible(self, source, selector_id, ability=None, effect=None, primary=None):
+        if (ability or {}).get('parameters', {}).get('healing') or (effect or {}).get('op') in {'heal', 'regenerate'}:
+            raise ValueError('healing eligibility requires its explicit pure availability contract')
+        definition, entity, candidates = self._candidate_input(source, selector_id, primary)
+        if definition.get('limit_attribute') and not definition.get('eligible_rule'):
+            raise ValueError('dynamic limit eligibility requires an explicit pure eligibility rule')
+        if definition.get('limit')==0:return []
+        result = self.ctx.rules.evaluate('selector.eligibility', {
+            'source': entity, 'candidates': candidates, 'region': thaw(definition.get('region', {})),
+            'selector_parameters': thaw(definition.get('parameters', {})),
+            'selector':thaw(definition),
+            'selector_provider': definition.get('provider', 'ark.selector.grid')},
+            scope={'scenario':thaw(self.ctx.program.scenario.get('rules',{})), 'source':thaw(self.ctx.definition(source).get('rules',{}))},
+            rule_id=definition.get('eligible_rule'), context={'time':self.ctx.session.time, 'quantum':self.ctx.session.quantum,'source':entity,'owner':entity})
+        ids=thaw(result.value);allowed={x['id'] for x in candidates}
+        if not isinstance(ids,list) or any(type(ref) is not int or ref not in allowed for ref in ids):
+            raise ValueError('pure selector returned undeclared candidate identity')
+        return [ref for ref in ids if self.qualifies(source, ref, definition, ability, effect)]
+
+    def select(self, source, selector_id, ability=None, effect=None, primary=None):
+        definition, entity, candidates = self._candidate_input(source, selector_id, primary)
+        provider = definition.get("provider", "ark.selector.grid")
+        ids = self.ctx.provider(provider, {"source": entity, "candidates": candidates,
+                "region": thaw(definition.get("region", {}))}, definition.get("parameters", {}))
+        allowed = {e["id"] for e in candidates}
+        if not isinstance(ids, (list, tuple)) or any(x not in allowed for x in ids):
+            raise ValueError("selector returned an undeclared candidate")
+        healing = bool((ability or {}).get("parameters", {}).get("healing"))
+        rows = []
+        position = entity.get("components", {}).get("spatial", {}).get("position")
+        if position is None and definition.get("region", {}).get("type") != "all":
+            raise ValueError("spatial selector requires an explicit source position")
+        for ref in ids:
+            if not self.qualifies(source, ref, definition, ability, effect, observable=True):
+                continue
+            candidate = self.ctx.entity(ref)
+            target_pos = candidate.get("components", {}).get("spatial", {}).get("position")
+            distance = math.hypot(position["row"]-target_pos["row"], position["col"]-target_pos["col"]) if position is not None and target_pos is not None else 0
+            ratio = 1.0
+            if healing:
+                resource = self.ctx.health_resource(ref)
+                spec = self.ctx.resources._spec(ref, resource)
+                if not spec.get("parameters", {}).get("healing_allowed", True) and not (
+                        (ability or {}).get("parameters", {}).get("ignore_heal_immunity") or
+                        (effect or {}).get("parameters", {}).get("ignore_heal_immunity")):
+                    continue
+                current, capacity = self.ctx.resources.current(ref, resource), self.ctx.resources.capacity(ref, resource)
+                if current >= capacity:
+                    continue
+                ratio = current / capacity
+            score = self.ctx.calc("targeting.score", {"candidate": candidate, "source": entity,
+                    "distance": distance,
+                    "tags": [{"tag": tag} for tag in candidate["tags"]], "states": {}},
+                    source=source, target=ref, ability=ability, effect=effect,
+                    extra={"healing": healing, "health_ratio": ratio})
+            rows.append((score, ref))
+        limit = definition.get("limit")
+        if definition.get("limit_attribute"):
+            limit = self.ctx.attributes.value(source, definition["limit_attribute"], ability=ability, effect=effect)
+            if type(limit) not in (int, float) or int(limit) != limit or limit < 0:
+                raise ValueError("selector limit attribute must yield a nonnegative integer")
+            limit = int(limit)
+        snapshots = [self.ctx.entity(ref) for _, ref in rows]
+        samples = []
+        if definition.get("ordering") == "random" and snapshots:
+            stream = definition.get("parameters", {}).get("random_stream")
+            if not stream:
+                raise ValueError("random target ordering requires an explicit random_stream")
+            # One draw per selected slot, without replacement. Pure selection
+            # owns the index formula; empty sets consume no draws.
+            for _ in range(min(len(snapshots), limit if limit is not None else len(snapshots))):
+                samples.append({"value": self.ctx.session.random.sample(stream)})
+        return self.ctx.calc("targeting.selection", {"candidates": snapshots,
+              "scores": {str(ref): score for score, ref in rows}, "samples": samples, "limits": {"count": limit}},
+              source=source, ability=ability, effect=effect, extra={"ordering": definition.get("ordering")})
+
+    def blocking(self):
+        if self._blocking_reconciling:
+            self._blocking_requested = True
+            return
+        self._blocking_reconciling = True
+        try:
+            with self.ctx.session.atomic():
+                budget = self.ctx.session.reaction_budget
+                while True:
+                    self._blocking_requested = False
+                    self._blocking()
+                    before = tuple(self.ctx.session.world.entities())
+                    self.ctx.buffs.toggles.reconcile()
+                    if before != tuple(self.ctx.session.world.entities()):self._blocking_requested = True
+                    if not self._blocking_requested:break
+                    budget -= 1
+                    if budget <= 0:raise ValueError('blocking callbacks exceed stabilization budget')
+        finally:
+            self._blocking_reconciling = False
+            self._blocking_requested = False
+
+    def _emit_blocking(self, payload):
+        # Immutable snapshots detect synchronous actor/control/path callbacks;
+        # pure queries and unchanged events do not request another pass.
+        before = tuple(self.ctx.session.world.entities())
+        self.ctx.emit('blocking.changed', payload)
+        if before != tuple(self.ctx.session.world.entities()):self._blocking_requested = True
+
+    def _obstacle_facts(self, mover_id, obstacle_id):
+        if not self.ctx.active(mover_id) or self.ctx.route_hidden(mover_id) or not self.ctx.active(obstacle_id) or self.ctx.route_hidden(obstacle_id):return None
+        mover=thaw(self.ctx.entity(mover_id));obstacle=thaw(self.ctx.entity(obstacle_id))
+        spatial=mover['components'].get('spatial',{});other=obstacle['components'].get('spatial',{}).get('position');spec=obstacle['components'].get('route_obstacle')
+        if not spatial.get('route') or route_motion_mode(spatial['route']) != 0 or spatial.get('forced_motion') or not spec or other is None:return None
+        position=spatial.get('position')
+        if position is None:return None
+        cursor=spatial.get('movement',{}).get('path_index',0)
+        if type(cursor) is not int or cursor<0:raise ValueError('route obstacle path index invalid')
+        remaining=list(spatial.get('movement_path',()))[cursor:];cell=project_cell(other)
+        if not any(project_cell(point)==cell for point in remaining) and project_cell(position)!=cell:return None
+        distance=math.hypot(other['row']-position['row'],other['col']-position['col'])
+        if distance>spec['contact_radius']:return None
+        return mover,obstacle,remaining,distance,spec
+
+    def _blocking(self):
+        entities = [thaw(e) for e in self.ctx.session.world.entities() if getattr(self.ctx, 'active', self.ctx.alive)(e["id"])]
+        movers = [e for e in entities if e["components"].get("spatial", {}).get("route")]
+        if not movers:
+            return
+        blockers = []
+        for entity in entities:
+            if self.ctx.route_hidden(entity["id"]):
+                continue
+            if not self.ctx.buffs.controls(entity["id"])["block"]:
+                continue
+            spatial = entity["components"].get("spatial", {})
+            if "position" not in spatial or not entity["components"].get("deployable"):
+                continue
+            value = self.ctx.calc("blocking.capacity", {"attributes": self.ctx.attributes.values(entity["id"]),
+                  "states": {}, "capacity_parameters": {"capacity": self.ctx.role_value(entity["id"], "block_capacity")}}, source=entity["id"])
+            if value > 0:
+                blockers.append((entity["id"], value))
+        obstacles=[e for e in entities if e["components"].get("route_obstacle") and e["components"].get("spatial",{}).get("position") is not None and not self.ctx.route_hidden(e["id"])]
+        used = {ref: 0 for ref, _ in blockers}
+        for entity in movers:
+            ref = entity["id"]
+            if not self.ctx.active(ref):continue
+            entity=thaw(self.ctx.entity(ref))
+            spatial = entity["components"].get("spatial", {})
+            if not spatial.get("route"):
+                continue
+            previous = self.blocked_by(ref)
+            current = previous
+            if self.ctx.route_hidden(ref):
+                if current is not None:
+                    self.ctx.set(ref, ("runtime", "blocked_by"), None)
+                    self._emit_blocking( {"source": None, "target": ref, "reason": "route_hidden"})
+                continue
+            if spatial.get("forced_motion"):
+                if current is not None:
+                    self.ctx.set(ref, ("runtime", "blocked_by"), None)
+                continue
+            if route_motion_mode(spatial["route"]) == 1:
+                if current is not None:
+                    self.ctx.set(ref, ("runtime", "blocked_by"), None)
+                    self._emit_blocking( {"source": None, "target": ref, "reason": "flying"})
+                continue
+            volume = self.ctx.calc("blocking.occupancy", {"attributes": self.ctx.attributes.values(ref),
+                "states": {}, "occupancy_parameters": {"number": self.ctx.role_value(ref, "block_occupancy")}}, target=ref)
+            position = spatial["position"]
+            # Re-evaluate the old relation with the same eligibility, path and
+            # remaining-capacity contracts as new membership. Stable prior
+            # preference remains, but cannot bypass a reduced capacity.
+            ordered = sorted(blockers, key=lambda item: item[0] != previous)
+            current = None
+            for blocker, capacity in ordered:
+                if not self.ctx.active(blocker) or self.ctx.route_hidden(blocker) or not self.ctx.buffs.controls(blocker)['block']:continue
+                captured = next(e for e in entities if e['id']==blocker)
+                if captured != thaw(self.ctx.entity(blocker)):
+                    capacity = self.ctx.calc('blocking.capacity', {'attributes':self.ctx.attributes.values(blocker),'states':{},'capacity_parameters':{'capacity':self.ctx.role_value(blocker,'block_capacity')}},source=blocker)
+                other = self.ctx.get(blocker, ("spatial", "position"))
+                blocker_before=self.ctx.entity(blocker)
+                mover_before=self.ctx.entity(ref)
+                plan = self.ctx.calc("blocking.eligibility", {"blocker": blocker_before,
+                    "target": entity, "positions": [{"blocker": other}, {"target": position}],
+                    "paths": {"remaining": list(spatial.get("movement_path", ()))}, "states": {}}, source=blocker, target=ref)
+                if not self.ctx.active(ref) or not self.ctx.active(blocker) or mover_before != self.ctx.entity(ref) or blocker_before != self.ctx.entity(blocker):
+                    self._blocking_requested=True
+                    continue
+                path = spatial.get("movement_path", ())
+                blocker_cell = project_cell(other)
+                on_path = any(project_cell(p) == blocker_cell for p in path) or project_cell(position) == blocker_cell
+                if plan["accepted"] and on_path and used[blocker]+volume <= capacity:
+                    current = blocker
+                    used[blocker] += volume
+                    break
+            if current is None:
+                for captured_obstacle in sorted(obstacles,key=lambda e:(e["id"]!=previous,e["id"])):
+                    facts=self._obstacle_facts(ref,captured_obstacle['id'])
+                    if facts is None:continue
+                    live_mover,obstacle,remaining,distance,spec=facts
+                    accepted=self.ctx.calc("blocking.obstacle",{"source":live_mover,"obstacle":obstacle,"path":remaining,
+                        "distance":distance,"parameters":thaw(spec["parameters"])},source=ref,target=obstacle["id"],owner=obstacle["id"],rule_id=spec["rule"])
+                    if type(accepted) is not bool:raise ValueError("blocking.obstacle must return strict boolean")
+                    after=self._obstacle_facts(ref,obstacle['id'])
+                    if after != facts:
+                        self._blocking_requested=True
+                        continue
+                    if accepted and after is not None:
+                        current=obstacle["id"];break
+            obstacle_relation=current is not None and any(o['id']==current for o in obstacles)
+            if obstacle_relation and self._obstacle_facts(ref,current) is None:current=None
+            if not self.ctx.active(ref):continue
+            if current != self.blocked_by(ref):
+                self.ctx.set(ref, ("runtime", "blocked_by"), current)
+                self._emit_blocking( {"source": current, "target": ref})
+                # Domain event callbacks may legally retire/move a participant.
+                # Do not leave its relation for the next maintenance tick.
+                if obstacle_relation and current is not None and self.blocked_by(ref)==current and self._obstacle_facts(ref,current) is None:
+                    self.ctx.set(ref, ('runtime','blocked_by'), None)
+                    self._emit_blocking({'source':None,'target':ref,'reason':'obstacle_callback_invalidated'})
+
+
+class MovementSystem:
+    def __init__(self, context):
+        self.ctx = context
+        self.tracks_distance = any(d.get("kind") == "buff" and d.get("movement_damage")
+                                   for d in context.program.definitions.values())
+
+    def travel(self,target,destination,kind,spatial=None,source=None):
+        if self.ctx.tile_contacts is None:return self._travel(target,destination,kind,spatial,source)
+        with self.ctx.session.atomic():return self._travel(target,destination,kind,spatial,source)
+
+    def _travel(self, target, destination, kind, spatial=None,source=None):
+        spatial = spatial or self.ctx.get(target, ("spatial",), {})
+        origin = spatial["position"]
+        contact=self.ctx.tile_contacts
+        hit=contact.segment(target,origin,destination,kind,source) if contact is not None else None
+        if hit is not None:destination=hit["position"]
+        distance = math.hypot(destination["row"]-origin["row"], destination["col"]-origin["col"])
+        spatial["position"] = dict(destination)
+        if self.tracks_distance:
+            spatial["distance_travelled"] = spatial.get("distance_travelled", 0)+distance
+        self.ctx.set(target, ("spatial",), spatial)
+        if self.tracks_distance and distance:
+            self.ctx.emit("movement.traveled", {"source": target, "target": target, "origin": origin,
+                "destination": destination, "distance": distance, "kind": kind})
+        if contact is not None:
+            if hit is not None:contact.settle(target,hit,kind)
+            else:contact.inspect(target,kind,source)
+        return distance
+
+    @staticmethod
+    def checkpoint_type(cp):
+        value = cp.get("type") or 0
+        return value.get("value", 0) if isinstance(value, dict) else value
+
+    def checkpoint_position(self, ref, checkpoint, route, spatial):
+        point = checkpoint["position"]
+        offset = checkpoint.get("reachOffset", {"x": 0, "y": 0})
+        if not any(offset.values()):
+            return dict(point)
+        policy = route.get("reach_offset_policy")
+        if not policy:
+            raise ValueError("nonzero checkpoint offset requires explicit policy")
+        with self.ctx.session.atomic():
+            actual = self.ctx.calc("movement.checkpoint_position", {"position": point, "offset": offset,
+                "parameters": policy["parameters"]}, source=ref, rule_id=policy["rule"])
+            if not isinstance(actual, dict) or set(actual) != {"row", "col"}:
+                raise ValueError("checkpoint position rule must return exactly row/col")
+            row, col = self.ctx.spatial.grid._cell(actual)
+            if route_motion_mode(route) == 0 and not self.ctx.spatial.grid.passable(row, col):
+                raise ValueError("checkpoint offset destination is impassable")
+            return actual
+
+    def transition_checkpoint(self, ref, checkpoint, route, spatial, state):
+        with self.ctx.session.atomic():
+            kind = self.checkpoint_type(checkpoint)
+            policy = route.get("transition_policy")
+            if not policy:
+                raise ValueError("transition checkpoint requires explicit policy")
+            was_hidden = bool(spatial.get("route_hidden", False))
+            if was_hidden != (kind == 6):
+                raise ValueError("runtime transition pair is invalid")
+            prepared = thaw(checkpoint)
+            if kind == 6:
+                prepared["position"] = self.checkpoint_position(ref, checkpoint, route, spatial)
+            inputs = {"kind": kind, "position": spatial["position"], "checkpoint": prepared, "parameters": policy["parameters"]}
+            transition_rule = policy["rule"]
+            tile_transition = None
+            if self.ctx.spatial.grid.tile_mechanics:
+                from .tile_mechanics import descriptor, validate_pair, paired_rule
+                origin_tile = descriptor(self.ctx.spatial.grid, spatial["position"])
+                if kind == 5:
+                    exit_index = next((i for i in range(state["checkpoint"]+1,len(route.get("checkpoints") or []))
+                                      if self.checkpoint_type(route["checkpoints"][i]) == 6),None)
+                    if exit_index is None:raise ValueError("portal disappearance has no appearance checkpoint")
+                    exit_point = self.checkpoint_position(ref,route["checkpoints"][exit_index],route,spatial)
+                    exit_tile = descriptor(self.ctx.spatial.grid,exit_point)
+                    active = validate_pair(origin_tile["profile"],exit_tile["profile"])
+                    if active:
+                        capture = {"entry": origin_tile, "entry_checkpoint": state["checkpoint"],
+                                   "captured_at": self.ctx.session.time, "exit_checkpoint": exit_index,
+                                   "expected_exit": exit_tile}
+                        spatial["portal_capture"] = capture
+                else:
+                    exit_tile = descriptor(self.ctx.spatial.grid,prepared["position"])
+                    capture = spatial.get("portal_capture")
+                    active = validate_pair(capture["entry"]["profile"] if capture else origin_tile["profile"],exit_tile["profile"])
+                    if active and (capture is None or capture["exit_checkpoint"] != state["checkpoint"] or
+                                   capture["expected_exit"]["cell"] != exit_tile["cell"]):
+                        raise ValueError("portal appearance does not match captured entry/exit checkpoint")
+                    if active and (origin_tile["cell"] != capture["entry"]["cell"] or
+                                   not origin_tile["profile"] or origin_tile["profile"]["role"] != "entry"):
+                        raise ValueError("portal appearance origin conflicts with captured entry cell/profile")
+                if active:
+                    transition_rule = paired_rule(capture["entry"]["profile"],exit_tile["profile"],policy["rule"])
+                    tile_transition = {"origin": origin_tile,"destination": exit_tile,"capture": thaw(capture)}
+                    inputs["tile_transition"] = tile_transition
+            plan = self.ctx.calc("movement.transition", inputs, source=ref, rule_id=transition_rule)
+            if not isinstance(plan, dict) or set(plan) != {"hidden", "relocate", "position"} or type(plan["hidden"]) is not bool or type(plan["relocate"]) is not bool:
+                raise ValueError("transition rule must return hidden/relocate booleans and position")
+            if plan["hidden"] != (kind == 5) or plan["relocate"] != (kind == 6):
+                raise ValueError("transition rule conflicts with disappear/appear meaning")
+            if not isinstance(plan["position"], dict) or set(plan["position"]) != {"row", "col"}:
+                raise ValueError("transition position must contain exactly row/col")
+            row, col = self.ctx.spatial.grid._cell(plan["position"])
+            if plan["relocate"] and route_motion_mode(route) == 0 and not self.ctx.spatial.grid.appearance_passable(row, col):
+                raise ValueError("appearance destination is impassable")
+            if tile_transition is not None:
+                intended = prepared["position"] if kind == 6 else spatial["position"]
+                if plan["position"] != dict(intended):
+                    raise ValueError("portal rule position conflicts with authored checkpoint")
+            origin = dict(spatial["position"])
+            if kind == 5:
+                self.ctx.abilities.interrupt(ref, "route_disappeared")
+            motion = spatial.pop("forced_motion", None)
+            if motion:
+                pending = {t["id"] for t in self.ctx.session.scheduler.pending}
+                if motion["task"] in pending: self.ctx.session.cancel(motion["task"])
+            spatial["route_hidden"] = plan["hidden"]
+            spatial["velocity"] = {"row": 0, "col": 0}
+            spatial.pop("movement_path", None)
+            state.pop("wait_until", None)
+            state["checkpoint"] += 1
+            state["path_index"] = 0
+            if plan["relocate"]:
+                # Relocation is not traveled distance. Preserve the existing
+                # ledger/cursors so pending periodic packets cannot count teleport.
+                spatial["position"] = dict(plan["position"])
+                spatial.pop("portal_capture",None)
+            self.ctx.set(ref, ("spatial",), spatial)
+            if self.ctx.spatial.blocked_by(ref) is not None:
+                self.ctx.set(ref, ("runtime", "blocked_by"), None)
+                self._emit_blocking( {"source": None, "target": ref, "reason": "route_transition"})
+            self.ctx.spatial.blocking()
+            self.ctx.buffs.reconcile()
+            consumed = {"tile_transition":tile_transition} if tile_transition is not None else {}
+            if self.ctx.tile_contacts is not None and plan["relocate"]:
+                self.ctx.tile_contacts.inspect(ref,"appear")
+            self.ctx.emit("movement.visibility_changed", {"source": ref, "target": ref, "hidden": plan["hidden"],
+                "origin": origin, "position": dict(spatial["position"]), "relocated": plan["relocate"],
+                "policy": thaw(policy), "distance_recorded": 0, **consumed})
+
+    def tick(self, session):
+        if self.ctx.state().get("finished"):
+            return
+        for entity in session.world.entities():
+            ref = entity["id"]
+            if not getattr(self.ctx, 'active', self.ctx.alive)(ref):
+                continue
+            route_hidden = self.ctx.route_hidden(ref)
+            configured_steering = entity["components"].get("spatial", {}).get("steering")
+            if configured_steering:
+                stationary = (not self.ctx.buffs.controls(ref)["move"] or
+                              self.ctx.get(ref, ("runtime", "behavior_decision"), {}).get("move") is False or
+                              (route_motion_mode(entity["components"]["spatial"].get("route")) == 0 and self.ctx.spatial.blocked_by(ref)))
+                if stationary and self.ctx.get(ref, ("spatial", "velocity"), {"row": 0, "col": 0}) != {"row": 0, "col": 0}:
+                    self.ctx.set(ref, ("spatial", "velocity"), {"row": 0, "col": 0})
+            if not route_hidden and not self.ctx.buffs.controls(ref)["move"]:
+                continue
+            if not route_hidden and self.ctx.get(ref, ("runtime", "behavior_decision"), {}).get("move") is False:
+                continue
+            spatial = self.ctx.get(ref, ("spatial",), {})
+            if self.ctx.tile_contacts is not None:
+                self.ctx.tile_contacts.inspect(ref,"movement_check")
+                if not self.ctx.active(ref):continue
+            if spatial.get("forced_motion"):
+                continue
+            route = spatial.get("route")
+            if not route:
+                continue
+            next_cp = spatial.get("movement", {}).get("checkpoint", 0)
+            instant_transition = next_cp < len(route.get("checkpoints") or []) and self.checkpoint_type(route["checkpoints"][next_cp]) in (5, 6)
+            if not route_hidden and not instant_transition and route_motion_mode(route) == 0 and self.ctx.spatial.blocked_by(ref):
+                continue
+            state = spatial.setdefault("movement", {"checkpoint": 0, "path_index": 0})
+            checkpoints = route.get("checkpoints") or []
+            cursor = state["checkpoint"]
+            waiting = False
+            while cursor < len(checkpoints) and self.checkpoint_type(checkpoints[cursor]) in (1, 2, 3, 4, 5, 6):
+                if self.checkpoint_type(checkpoints[cursor]) in (5, 6):
+                    self.transition_checkpoint(ref, checkpoints[cursor], route, spatial, state)
+                    if not self.ctx.active(ref):break
+                    spatial = self.ctx.get(ref, ("spatial",), {})
+                    state = spatial["movement"]
+                    cursor = state["checkpoint"]
+                    continue
+                if "wait_until" not in state:
+                    kind = self.checkpoint_type(checkpoints[cursor])
+                    if kind == 1:
+                        origin = session.time
+                    elif kind == 2:
+                        origin = 0
+                    else:
+                        key = "fragment_start" if kind == 3 else "wave_start"
+                        origins = spatial.get("timing_origins", {})
+                        if key not in origins or type(origins[key]) is not int or origins[key] < 0:
+                            raise ValueError(f"deadline checkpoint requires captured {key} origin")
+                        origin = origins[key]
+                    state["wait_until"] = self.ctx.calc("movement.wait_deadline", {
+                        "now": session.time, "origin": origin, "offset_seconds": checkpoints[cursor].get("time") or 0,
+                        "quantum": session.quantum, "parameters": checkpoints[cursor].get("parameters", {})},
+                        source=ref, component=spatial.get("rules", {}), rule_id=checkpoints[cursor].get("deadline_rule"))
+                    self.ctx.emit("movement.wait", {"source": ref, "until": state["wait_until"], "origin": origin, "type": kind})
+                if session.time < state["wait_until"]:
+                    waiting = True
+                    break
+                state.pop("wait_until")
+                state["checkpoint"] += 1
+                state["path_index"] = 0
+                spatial.pop("movement_path", None)
+                cursor += 1
+            if not self.ctx.active(ref):continue
+            if waiting:
+                if spatial.get("steering"):
+                    spatial["velocity"] = {"row": 0, "col": 0}
+                self.ctx.set(ref, ("spatial",), spatial)
+                continue
+            if self.ctx.route_hidden(ref):
+                raise ValueError("hidden route reached non-WAIT/non-APPEAR action")
+            if not self.ctx.buffs.controls(ref)["move"] or self.ctx.get(ref, ("runtime", "behavior_decision"), {}).get("move") is False:
+                continue
+            if route_motion_mode(route) == 0 and self.ctx.spatial.blocked_by(ref):
+                continue
+            point = self.checkpoint_position(ref, checkpoints[cursor], route, spatial) if cursor < len(checkpoints) else route["endPosition"]
+            if not spatial.get("movement_path"):
+                terrain = getattr(self.ctx, "terrain", None)
+                revision = terrain._state()["revision"] if terrain is not None else None
+                if terrain is not None and spatial.get("terrain_wait_revision") == revision:
+                    continue
+                try:
+                    spatial["movement_path"] = self.ctx.calc("movement.path", {"map": self.ctx.spatial.map_definition,
+                        "origin": spatial["position"], "destination": point, "checkpoints": checkpoints}, source=ref,
+                        component=spatial.get("rules", {}))
+                except Exception as error:
+                    cause = error
+                    while cause is not None and not isinstance(cause, UnreachablePathError):
+                        cause = cause.__cause__
+                    if terrain is None or cause is None:
+                        raise
+                    spatial["terrain_wait_revision"] = revision
+                    spatial["velocity"] = {"row": 0, "col": 0}
+                    self.ctx.set(ref, ("spatial",), spatial)
+                    self.ctx.emit("movement.terrain_blocked", {"source": ref, "revision": revision, "position": spatial["position"]})
+                    continue
+                spatial.pop("terrain_wait_revision", None)
+                state["path_index"] = 0
+            path = spatial["movement_path"]
+            if state["path_index"] >= len(path):
+                if cursor >= len(checkpoints):
+                    self.ctx.lifecycle.exit(ref)
+                    continue
+                state["checkpoint"] += 1
+                state["path_index"] = 0
+                spatial.pop("movement_path")
+                self.ctx.set(ref, ("spatial",), spatial)
+                continue
+            target = path[state["path_index"]]
+            origin = spatial["position"]
+            dx, dy = target["col"]-origin["col"], target["row"]-origin["row"]
+            distance = math.hypot(dx, dy)
+            speed = self.ctx.calc("movement.speed", {"attributes": {}, "terrain": {},
+                    "movement_parameters": {"base_speed": self.ctx.role_value(ref, "movement_speed")}}, source=ref,
+                    component=spatial.get("rules", {}))
+            step = self.ctx.calc("movement.distance", {"speed": speed, "delta_seconds": session.quantum,
+                    "modifiers": []}, source=ref, component=spatial.get("rules", {}))
+            if spatial.get("steering"):
+                steering = spatial["steering"]
+                plan = self.ctx.calc("movement.steering", {"origin": origin, "destination": target,
+                    "velocity": spatial.get("velocity", {"row": 0, "col": 0}), "speed": speed,
+                    "delta_seconds": session.quantum, "parameters": steering.get("parameters", {})},
+                    source=ref, rule_id=steering.get("rule"))
+                destination, collided = self.ctx.spatial.grid.clip_segment(origin, plan["position"], route_motion_mode(route))
+                spatial["velocity"] = {"row": 0, "col": 0} if collided else dict(plan["velocity"])
+                if destination == dict(target):
+                    state["path_index"] += 1
+            elif distance <= step:
+                destination = dict(target)
+                state["path_index"] += 1
+            elif distance:
+                destination = {"row": origin["row"]+dy/distance*step, "col": origin["col"]+dx/distance*step}
+            else:
+                destination = dict(origin)
+            self.travel(ref, destination, "route", spatial)
+        self.ctx.spatial.blocking()
+
+    def set_motion_mode(self,source,target,mode):
+        if type(mode) is not int or mode not in (0,1):raise ValueError("motion mode must be WALK0/FLY1")
+        with self.ctx.session.atomic():
+            spatial=self.ctx.get(target,("spatial",),{})
+            spatial["motion_mode"]=mode
+            if spatial.get("route"):
+                spatial["route"]["motionMode"]=mode
+            spatial.pop("movement_path",None);spatial.pop("velocity",None)
+            self.ctx.set(target,("spatial",),spatial)
+            self.ctx.emit("movement.motion_changed",{"source":source,"target":target,"mode":mode})
+            if self.ctx.tile_contacts is not None:self.ctx.tile_contacts.inspect(target,"motion_changed",source)
+            self.ctx.spatial.blocking()
+
+    def displace(self, source, target, effect, ability):
+        with self.ctx.session.atomic():
+            position = self.ctx.get(target, ("spatial", "position"))
+            if "position" in effect:
+                destination = effect["position"]
+            else:
+                offset = effect.get("offset", {"row": 0, "col": effect.get("distance", 0)})
+                destination = {"row": position["row"]+offset.get("row", 0), "col": position["col"]+offset.get("col", 0)}
+            # Share the same half-up border profile as route/compiler cells.
+            self.ctx.spatial.grid._cell(destination)
+            self.travel(target, destination, "direct",source=source)
+            self.ctx.set(target, ("runtime", "blocked_by"), None)
+            self.ctx.buffs.reconcile()
+            self.ctx.emit("movement.displaced", {"source": source, "target": target, "position": destination})
+
+    def push(self, source, target, effect, ability):
+        with self.ctx.session.atomic():
+            if not getattr(self.ctx, 'active', self.ctx.alive)(target):
+                return
+            options = effect.get("parameters", {})
+            mass = self.ctx.attributes.value(target, options.get("mass_attribute", "mass_level"))
+            bonus = self.ctx.attributes.value(source, options["force_bonus_attribute"]) if options.get("force_bonus_attribute") else 0
+            plan = self.ctx.calc("movement.displacement", {"force": effect["force"], "mass": mass,
+                "distance": effect.get("distance", 0), "displacement_parameters": {**options, "source_force_bonus": bonus}},
+                source=source, target=target, ability=ability, effect=effect)
+            distance, duration = plan["distance"], plan["duration"]
+            if any(type(x) not in (int, float) or not math.isfinite(x) or x < 0 for x in (distance, duration)):
+                raise ValueError("displacement plan requires finite nonnegative distance and duration")
+            if not distance:
+                self.ctx.emit("movement.push_rejected", {"source": source, "target": target, "reason": "zero_distance"})
+                return
+            direction = effect.get("direction", "source_facing")
+            if direction == "source_facing":
+                vector = {"right": {"row": 0, "col": 1}, "left": {"row": 0, "col": -1},
+                          "up": {"row": -1, "col": 0}, "down": {"row": 1, "col": 0}}[self.ctx.get(source, ("spatial", "facing"), "right")]
+            elif direction in {"away_from_source", "toward_source"}:
+                a, b = self.ctx.get(source, ("spatial", "position")), self.ctx.get(target, ("spatial", "position"))
+                length = math.hypot(b["row"]-a["row"], b["col"]-a["col"])
+                if not length:
+                    raise ValueError("radial displacement requires distinct positions")
+                sign = -1 if direction == "toward_source" else 1
+                vector = {"row": sign*(b["row"]-a["row"])/length, "col": sign*(b["col"]-a["col"])/length}
+            else:
+                raise ValueError("unknown displacement direction")
+            spatial = self.ctx.get(target, ("spatial",), {})
+            old = spatial.get("forced_motion")
+            if old and old["task"] in {t["id"] for t in self.ctx.session.scheduler.pending}:
+                self.ctx.session.cancel(old["task"])
+            units = max(1, self.ctx.quantize(duration))
+            generation = spatial.get("next_motion_id", 1)
+            spatial["next_motion_id"] = generation+1
+            task = self.ctx.session.schedule("domain.movement.forced_step", {"target": target, "generation": generation},
+                self.ctx.session.time+1, phase=self.ctx.effect_phase)
+            spatial["forced_motion"] = {"generation": generation, "source": source, "direction": vector,
+                "remaining_distance": distance, "duration": duration, "steps": units, "remaining_steps": units,
+                "speed": plan.get("speed", distance/(units*self.ctx.session.quantum)),
+                "effect": thaw(effect), "ability": thaw(ability), "task": task}
+            self.ctx.set(target, ("spatial",), spatial)
+            self.ctx.set(target, ("runtime", "blocked_by"), None)
+            self.ctx.emit("movement.push_started", {"source": source, "target": target, "plan": plan, "direction": vector})
+
+    def forced_step(self, session, payload):
+        with session.atomic():
+            target = payload["target"]
+            spatial = self.ctx.get(target, ("spatial",), {})
+            motion = spatial.get("forced_motion")
+            if not motion or motion["generation"] != payload["generation"]:
+                return
+            if not getattr(self.ctx, 'active', self.ctx.alive)(target):
+                spatial.pop("forced_motion")
+                self.ctx.set(target, ("spatial",), spatial)
+                return
+            delta = self.ctx.calc("movement.distance", {"speed": motion["speed"], "delta_seconds": session.quantum,
+                "modifiers": [{"kind": "forced", "remaining_distance": motion["remaining_distance"],
+                    "remaining_steps": motion["remaining_steps"], "steps": motion["steps"], "duration": motion["duration"]}]},
+                source=target, target=target, ability=motion["ability"], effect=motion["effect"])
+            if type(delta) not in (int, float) or not math.isfinite(delta) or delta < 0:
+                raise ValueError("forced displacement step must be finite and nonnegative")
+            delta = min(delta, motion["remaining_distance"])
+            position = spatial["position"]
+            destination = {axis: position[axis]+motion["direction"][axis]*delta for axis in ("row", "col")}
+            destination, collided = self.ctx.spatial.grid.clip_segment(position, destination, self.ctx.tile_contacts.mode(target) if self.ctx.tile_contacts is not None else route_motion_mode(spatial.get("route")), forced=True)
+            actual = self.travel(target, destination, "forced", spatial,source=motion["source"])
+            if not self.ctx.active(target):return
+            motion["remaining_distance"] = max(0, motion["remaining_distance"]-actual)
+            motion["remaining_steps"] -= 1
+            spatial = self.ctx.get(target, ("spatial",), {})
+            if collided or not motion["remaining_steps"] or motion["remaining_distance"] <= 1e-12:
+                spatial.pop("forced_motion", None)
+                spatial.pop("movement_path", None)
+                spatial.setdefault("movement", {})["path_index"] = 0
+                self.ctx.emit("movement.push_finished", {"source": motion["source"], "target": target, "collided": collided})
+            else:
+                motion["task"] = session.schedule("domain.movement.forced_step", payload, session.time+1, phase=self.ctx.effect_phase)
+                spatial["forced_motion"] = motion
+            self.ctx.set(target, ("spatial",), spatial)
+            self.ctx.buffs.reconcile()

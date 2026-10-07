@@ -1,0 +1,48 @@
+{
+  "schema": "ark-sim/performance-probe/v1",
+  "date": "2026-10-02",
+  "level_id": "level_main_00-01",
+  "gameVerified": false,
+  "modelComplete": false,
+  "description": "700-tick bounded probe after cached read-only World views, trusted frozen containers and immutable EventLog records; no claim of full-level verification.",
+  "program_fingerprint": "09d99f24a418b0e21d90eb685c47719921666ffbea421f2e87577a2e433b74a4",
+  "runtime_fingerprint": "de9614392bc34120108fc4c86df20be2c8244445948f0898a8c8c76430ca00ec",
+  "seed": 17,
+  "ticks": 700,
+  "elapsed_seconds": 19.742,
+  "final_rss_mb": 484.2,
+  "event_count": 36196,
+  "dp": 17.0,
+  "state": {
+    "finished": false,
+    "result": "running",
+    "pending_waves": 8,
+    "kills": 1,
+    "leaks": 0,
+    "damage_dealt": 550,
+    "deployments": {
+      "unit/char_502_nblade": {"count": 1, "ready_at": 0},
+      "unit/char_124_kroos": {"count": 1, "ready_at": 0}
+    },
+    "command_results": {}
+  },
+  "progress": [
+    {"tick": 100, "elapsed_seconds": 0.443, "rss_mb": 27.4, "events": 247, "dp": 6},
+    {"tick": 200, "elapsed_seconds": 1.684, "rss_mb": 55.9, "events": 2555, "dp": 0},
+    {"tick": 300, "elapsed_seconds": 4.600, "rss_mb": 131.5, "events": 8579, "dp": 4},
+    {"tick": 400, "elapsed_seconds": 7.663, "rss_mb": 206.6, "events": 14572, "dp": 7},
+    {"tick": 500, "elapsed_seconds": 11.533, "rss_mb": 290.3, "events": 21174, "dp": 10},
+    {"tick": 600, "elapsed_seconds": 15.151, "rss_mb": 383.5, "events": 28403, "dp": 14},
+    {"tick": 700, "elapsed_seconds": 19.742, "rss_mb": 484.2, "events": 36196, "dp": 17}
+  ],
+  "commands": [
+    {"time": 0, "type": "command.accepted", "entity": "unit/char_502_nblade", "position": {"row": 3, "col": 3}, "facing": "right", "alias": "night", "result": 2},
+    {"time": 180, "type": "command.accepted", "entity": "unit/char_124_kroos", "position": {"row": 1, "col": 3}, "facing": "down", "alias": "kroos", "result": 4}
+  ],
+  "comparisons": {
+    "earlier_compact_probe_700_tick_seconds": 46.100,
+    "earlier_compact_probe_700_tick_rss_mb": 391.5,
+    "speedup_vs_earlier_compact": 2.335,
+    "notes": "FrozenMapping records add small-container overhead while removing repeated full-history clones during reads; high-frequency attribute calculations remain the majority of log volume pending the separate domain memo optimization. Runtime fingerprints differ between probes."
+  }
+}

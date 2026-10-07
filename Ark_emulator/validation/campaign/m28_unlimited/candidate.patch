@@ -1,0 +1,39 @@
+diff --git "a/..\\unpack_work\\campaign_m26_decision_eligibility_candidate\\ark_sim\\content\\schemas.py" "b/..\\unpack_work\\campaign_m28_unlimited_projectile_candidate\\ark_sim\\content\\schemas.py"
+index 9c58c95..498873b 100644
+--- "a/..\\unpack_work\\campaign_m26_decision_eligibility_candidate\\ark_sim\\content\\schemas.py"
++++ "b/..\\unpack_work\\campaign_m28_unlimited_projectile_candidate\\ark_sim\\content\\schemas.py"
+@@ -212,7 +212,7 @@ def validate_definition(definition, capabilities=None):
+             if not isinstance(definition[name].get("rule"), str) or not definition[name]["rule"]: raise ContentError(f"{identifier}.{name}.rule: exact rule required")
+         if "allow_other_targets" in definition["collision"] and type(definition["collision"]["allow_other_targets"]) is not bool: raise ContentError(identifier+".collision.allow_other_targets: boolean required")
+         number(definition.get("lifetime_seconds"), identifier+".lifetime_seconds", 0)
+-        if type(definition.get("max_hits")) is not int or definition["max_hits"] < 0: raise ContentError(identifier+".max_hits: nonnegative integer required")
++        if "max_hits" not in definition or (definition["max_hits"] is not None and (type(definition["max_hits"]) is not int or definition["max_hits"] < 0)): raise ContentError(identifier+".max_hits: explicit nonnegative integer or null (unlimited) required")
+         for name in ("can_hit_same_target", "stop_after_max", "stop_after_first", "attach_at_launch"):
+             if type(definition.get(name)) is not bool: raise ContentError(identifier+"."+name+": explicit boolean required")
+         policy=definition.get("lifecycle", {})
+diff --git "a/..\\unpack_work\\campaign_m26_decision_eligibility_candidate\\ark_sim\\domains\\projectiles.py" "b/..\\unpack_work\\campaign_m28_unlimited_projectile_candidate\\ark_sim\\domains\\projectiles.py"
+index f3ec9bc..49208ea 100644
+--- "a/..\\unpack_work\\campaign_m26_decision_eligibility_candidate\\ark_sim\\domains\\projectiles.py"
++++ "b/..\\unpack_work\\campaign_m28_unlimited_projectile_candidate\\ark_sim\\domains\\projectiles.py"
+@@ -43,7 +43,7 @@ class ProjectileSystem:
+  def _target_available(self,x):return self.ctx.alive(x['trace_target']) and self.ctx.selectable(x['trace_target']) and self.ctx.effect_target_available(x['trace_target'])
+  def _hit(self,x,d,target=None):
+   target=x["trace_target"] if target is None else target
+-  if x['hit_count']>=d['max_hits'] or (not d['can_hit_same_target'] and target in x['hit_targets']):return False
++  if (d['max_hits'] is not None and x['hit_count']>=d['max_hits']) or (not d['can_hit_same_target'] and target in x['hit_targets']):return False
+   if (not self.ctx.alive(target) or not self.ctx.selectable(target) or not self.ctx.effect_target_available(target)) and x['effect']['op']!='area':return False
+   effect=thaw(x['effect'])
+   if effect['op']=='area':effect['center_position']={k:x['position'][k] for k in ('row','col')}
+@@ -85,9 +85,10 @@ class ProjectileSystem:
+    if not isinstance(result,dict) or type(result.get('stop')) is not bool or type(result.get('terrain_hit')) is not bool or not isinstance(result.get('hits'),list):raise ValueError('invalid projectile collision plan')
+    hits=[self.ctx.session.world.resolve(ref) for ref in result['hits']]
+    if not collision.get('allow_other_targets',False) and any(ref!=x['trace_target'] for ref in hits):raise ValueError('collision profile hit outside captured trace target')
+-   for hit in hits:self._hit(x,d,hit)
++   for hit in hits:
++    if self._hit(x,d,hit) and d['stop_after_first']:break
+    if result['stop']:self._finish(x,'terrain_collision' if result['terrain_hit'] else 'collision_stop');return
+-   if x['hit_count'] and (d['stop_after_first'] or (d['stop_after_max'] and x['hit_count']>=d['max_hits'])):self._finish(x,'max_hit');return
++   if x['hit_count'] and (d['stop_after_first'] or (d['stop_after_max'] and d['max_hits'] is not None and x['hit_count']>=d['max_hits'])):self._finish(x,'max_hit');return
+    if plan['reached']:
+     self.ctx.emit('projectile.reached',{'projectile':x['id'],'position':x['position']})
+     if d['lifecycle']['hit_on_reach']:self._hit(x,d)

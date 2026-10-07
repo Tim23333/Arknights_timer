@@ -1,0 +1,132 @@
+--- a/ark_sim/content/compiler.py
++++ b/ark_sim/content/compiler.py
+@@ -32,16 +32,18 @@
+ 
+ def _provider_names(definition):
+     result = set()
+-    def walk(value):
++    def walk(value, location=()):
+         if isinstance(value, Mapping):
+             if isinstance(value.get("provider"), str):
+                 result.add(value["provider"])
+             for key, child in value.items():
++                if key=='blackboard' and location[-3:]==('map','tiles','[]'):
++                    continue
+                 if key not in {"metadata", "parameters", "payload", "inputs", "expected_blackboard"}:
+-                    walk(child)
++                    walk(child,location+(key,))
+         elif isinstance(value, (tuple, list)):
+             for child in value:
+-                walk(child)
++                walk(child,location+('[]',))
+     walk(definition)
+     parameters = definition.get("parameters", {})
+     for name in ("aggregator", "aggregators"):
+@@ -357,10 +359,12 @@
+                     "ruleset": {"ruleset"}, "recovery_rule": {"rule", "calculation_rule"},
+                     "interval_rule": {"rule", "calculation_rule"}, "duration_rule": {"rule", "calculation_rule"},
+                     "rule": {"rule", "calculation_rule"}, "amount_rule": {"rule", "calculation_rule"}}
+-        def walk(value, path, root_kind=None):
++        def walk(value, path, root_kind=None, location=()):
+             if isinstance(value, Mapping):
+                 for key, child in value.items():
+-                    if key in {"metadata", "parameters", "payload", "inputs"}:
++                    if key=='blackboard' and location[-3:]==('map','tiles','[]'):
++                        continue
++                    if key in {"metadata", "parameters", "payload", "inputs", "expected_blackboard"}:
+                         continue
+                     if key in expected and isinstance(child, str) and child in definitions:
+                         wanted = {"control"} if key == "definition" and value.get("kind") == "control" and "op" not in value else expected[key]
+@@ -383,10 +387,10 @@
+                     if key in expected_contracts and isinstance(child, str) and child in definitions:
+                         if definitions[child].get("contract") != expected_contracts[key]:
+                             raise CompileError(f"{path}.{key}: rule {child} belongs to {definitions[child].get('contract')}, expected {expected_contracts[key]}")
+-                    walk(child, f"{path}.{key}", root_kind)
++                    walk(child, f"{path}.{key}", root_kind,location+(key,))
+             elif isinstance(value, (list, tuple)):
+                 for child in value:
+-                    walk(child, path, root_kind)
++                    walk(child, path, root_kind,location+('[]',))
+         for identifier, definition in definitions.items():
+             walk(definition, identifier, definition.get("kind"))
+             if definition.get("kind") == "buff" and definition.get("aura"):
+--- a/ark_sim/content/dependencies.py
++++ b/ark_sim/content/dependencies.py
+@@ -36,6 +36,8 @@
+                         raise ContentError(f"{location}.metadata.calculation_dependencies: missing default rule binding for {calculation}")
+                     result.add(binding)
+             for name, child in item.items():
++                if name=='blackboard' and key=='tiles' and '.map.tiles[' in location:
++                    continue
+                 if key == "timeline" and name == "policy":
+                     # Timeline's validated scheduling policy is an enum, unlike
+                     # entity/lifecycle/buff policy definition references.
+--- a/ark_sim/domains/tile_fields.py
++++ b/ark_sim/domains/tile_fields.py
+@@ -1,5 +1,6 @@
+ """Generic authored tile fields represented by explicit Buff owner entities."""
+ from collections.abc import Mapping
++import struct
+ from ark_sim.contracts import thaw
+ 
+ 
+@@ -18,9 +19,19 @@
+     return result
+ 
+ 
++def same_data(left,right):
++    if isinstance(left,Mapping) and isinstance(right,Mapping):
++        return set(left)==set(right) and all(same_data(left[k],right[k]) for k in left)
++    if isinstance(left,(list,tuple)) and isinstance(right,(list,tuple)):
++        return len(left)==len(right) and all(same_data(a,b) for a,b in zip(left,right))
++    if type(left) is not type(right):return False
++    if type(left) is float:return struct.pack('>d',left)==struct.pack('>d',right)
++    return left==right
++
++
+ def validate_data(tile,profile):
+     actual=board(tile);expected=profile['expected_blackboard']
+-    if set(actual)!=set(expected) or any(type(actual[k]) is not type(expected[k]) or actual[k]!=expected[k] for k in actual):
++    if not same_data(actual,expected):
+         raise ValueError('tile field blackboard is not fully bound by its explicit profile')
+     if tile.get('effects'):raise ValueError('tile field graphic/effect data requires an explicit effect adapter')
+ 
+@@ -40,27 +51,32 @@
+         initial=components.get('buffs',components.get('buff_container',{})).get('initial',[])
+         if not initial or not any(definitions[bid].get('aura') for bid in initial):
+             raise ValueError('tile field owner needs an explicit parent aura Buff')
+-    def visit(value):
++    def visit(value,location=()):
+         if isinstance(value,Mapping):
+             reference=value.get('definition')
+-            if isinstance(reference,str) and reference in definitions and 'tile_field_owner' in definitions[reference].get('tags',[]):
++            if isinstance(reference,str) and reference in definitions and definitions[reference].get('kind')=='entity':
+                 from ..content.overlays import merge
+                 definition=definitions[reference]
+                 components=merge(thaw(definition.get('components',{})),thaw(value.get('components',{})))
+                 if value.get('route') is not None:
+                     components.setdefault('spatial',{})['route']=thaw(value['route'])
+-                if value.get('parameters',{}).get('owner') is not None:
++                if 'tile_field_owner' in definition.get('tags',[]) and value.get('parameters',{}).get('owner') is not None:
+                     raise ValueError('static tile field instance owner parameter is forbidden')
+                 validate_effective_owner(definitions,definition,components,value.get('tags',definition.get('tags',[])))
+             for key,child in value.items():
+-                if key not in ('metadata','parameters','payload','inputs','expected_blackboard'):visit(child)
++                if key=='blackboard' and location[-3:]==('map','tiles','[]'):
++                    continue
++                if key not in ('metadata','parameters','payload','inputs','expected_blackboard'):visit(child,location+(key,))
+         elif isinstance(value,(list,tuple)):
+-            for child in value:visit(child)
++            for child in value:visit(child,location+('[]',))
+     visit(scene)
+ 
+ 
+ def validate_effective_owner(definitions,definition,components,tags):
+-    if 'tile_field_owner' not in definition.get('tags',[]):return
++    if 'tile_field_owner' not in definition.get('tags',[]):
++        if 'tile_field_owner' in tags:
++            raise ValueError('ordinary actor cannot acquire the reserved tile field role')
++        return
+     if 'tile_field_owner' not in tags or set(tags)&{'enemy','player','campaign_roster'}:
+         raise ValueError('static tile field runtime role cannot be overridden')
+     if set(components.get('spatial',{}))-{'coordinate_space','position','facing','parameters'}:

@@ -1,0 +1,81 @@
+{
+  "schema": "ark-sim/experimental-encoder-correctness-review/v1",
+  "status": "passed_bounded_correctness_fallback",
+  "helper_source_locks": {
+    "tools/campaign_canonical_encoder.py": "d75673bd06528a1361f12ad04c9ad0736fd721ee0d240d0773ad72a000573de4",
+    "tools/campaign_streaming_evidence_v2.py": "e85c7683229baeb840321dacf5834ebdc5528f0dc1743f8f409028255094659e",
+    "tools/campaign_streaming_evidence.py": "11451f80155440fdf5cf43601b3d4e2a9a614277e3d42bf250db12419683069d",
+    "tools/run_campaign_streaming_runthrough_v10.py": "5a7fedf1d3d2317167cc5d3e04d08053ac3f1408b7bc84e3842739c16358940a",
+    "tools/experiments/canonical_encoder_peer/test_fallback.py": "dac987a4f34ee031902c42fbfe3b821bbff9778a5ea1b3b45b03b961be17cc5a",
+    "tools\\experiments\\canonical_encoder_peer\\verify_fallback.py": "88d41dc682855d7c95e555e8d71f0183fabec2bf53a6f46251629530765c2c91"
+  },
+  "actual_core": "a829685336bc55af4d5b3098f6eca9887ce870906ab20429ec43de789630fbc9",
+  "cases": [
+    {
+      "case": "tools/experiments/canonical_encoder_peer/test_fallback.py::test_full_bytes_unicode_numeric_types_and_negative_zero",
+      "outcome": "passed",
+      "seconds": 0.001079200068488717
+    },
+    {
+      "case": "tools/experiments/canonical_encoder_peer/test_fallback.py::test_both_preserved_malformed_wrapper_failures_now_observe_mutable_data",
+      "outcome": "passed",
+      "seconds": 0.00019519997294992208
+    },
+    {
+      "case": "tools/experiments/canonical_encoder_peer/test_fallback.py::test_record_owned_snapshot_stable_during_generator_yields_with_retained_proxy",
+      "outcome": "passed",
+      "seconds": 0.0001607000594958663
+    },
+    {
+      "case": "tools/experiments/canonical_encoder_peer/test_fallback.py::test_invalid_data_is_not_silently_given_successful_bytes[value0]",
+      "outcome": "passed",
+      "seconds": 0.0001262999139726162
+    },
+    {
+      "case": "tools/experiments/canonical_encoder_peer/test_fallback.py::test_invalid_data_is_not_silently_given_successful_bytes[nan]",
+      "outcome": "passed",
+      "seconds": 0.0001140000531449914
+    },
+    {
+      "case": "tools/experiments/canonical_encoder_peer/test_fallback.py::test_invalid_data_is_not_silently_given_successful_bytes[inf]",
+      "outcome": "passed",
+      "seconds": 0.00010629999451339245
+    },
+    {
+      "case": "tools/experiments/canonical_encoder_peer/test_fallback.py::test_invalid_data_is_not_silently_given_successful_bytes[\\ud800]",
+      "outcome": "passed",
+      "seconds": 0.00010750000365078449
+    },
+    {
+      "case": "tools/experiments/canonical_encoder_peer/test_fallback.py::test_cycle_records_refuses_and_small_cache_never_changes_full_bytes",
+      "outcome": "passed",
+      "seconds": 0.0008259000023826957
+    },
+    {
+      "case": "tools/experiments/canonical_encoder_peer/test_fallback.py::test_actual_engine_journal_export_and_readonly_observations",
+      "outcome": "passed",
+      "seconds": 0.07625779998488724
+    }
+  ],
+  "scope": "Original generic streaming chunks; one-record detached owned snapshot for records; no trust of public malformed wrapper identity across calls/yields.",
+  "old_failures": [
+    {
+      "path": "validation\\campaign\\canonical_encoder_peer\\malformed_frozen_original_failure.json",
+      "sha256": "606ec0cd1fd892672c93f82b4b7622935b750a6ca5cd081e25ae7839526b4d60"
+    },
+    {
+      "path": "validation\\campaign\\canonical_encoder_peer\\mutable_backing_deep_revision_failure.json",
+      "sha256": "bb12a74b5162b8725780b0cfaf6e070bbac3210d291f646a43a84f47ac76d856"
+    }
+  ],
+  "limitations": [
+    "No current speedup claim. Earlier identity-cache timing is historical and not transferred.",
+    "Generic chunks retain old streaming mutation/exception semantics rather than promising a detached whole journal.",
+    "Only records take an owned snapshot per event; this avoids whole-history duplication but retains per-record peak cost.",
+    "v10 remains experimental/not promoted; existing live v9 inputs/helpers not modified."
+  ],
+  "actual_engine_journal_used": true,
+  "formal_approved": false,
+  "whole_stage_executed": false,
+  "client_verified": false
+}

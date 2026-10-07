@@ -1,0 +1,9 @@
+import sys,json,hashlib,time
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2];CAND=ROOT.parent/'unpack_work/campaign_selection_context_clock_v2_candidate';sys.path.insert(0,str(CAND));sys.path.insert(1,str(ROOT));import pytest
+from ark_sim.adapters.api import implementation_digest
+
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def main():
+ files=list((CAND/'ark_sim').rglob('*.py'))+list((CAND/'ark_sim').rglob('*.json'))+list(Path(__file__).parent.glob('*.py'))+list((ROOT/'packages/campaign/chapter08_consumers/bsnake').glob('*.json'))+[ROOT/'tools/campaign_ordered_checkpoint.py'];before={str(p):sha(p) for p in files};start=time.monotonic();code=pytest.main([str(Path(__file__).with_name('test_firecommon_guarded_v3.py')),str(Path(__file__).with_name('test_firecommon_edges_guarded_v3.py')),'-q','--tb=short']);after={str(p):sha(p) for p in files};assert before==after;out=ROOT/'validation/campaign/chapter08_bsnake_firecommon_guarded_v3/verification.json';out.parent.mkdir(parents=True,exist_ok=True);assert not out.exists();obj={'passed':code==0,'actual_exit':code,'core':implementation_digest(),'source_before':before,'source_after':after,'elapsed':time.monotonic()-start,'scope':'Only BsnakeScreenAttack single-volley fire-common. Native50000/770/800/50 and4immunities+SleepCombo, circle.25/speed2.5/life60/limitedHit1/retainSource/Camo0/Free0/side2/ground+fly3 preserved. 3row prototypes selected by real1RNGsample each with explicitlydeclared startup/geometry policy. Actual3×462/current870×.6=522/invalidnear skipquota/far hit/sourceRetire retained/CP7+boostCP6/head exact. No completeBoss/reborn/final0/hint nativepixel, no wholeStage or sourceclientaccuracy claim.','whole_stage_executed':False,'client_verified':False};out.write_text(json.dumps(obj,indent=2)+'\n',encoding='utf8');print(json.dumps({'sha':sha(out),'actual_exit':code}));raise SystemExit(code)
+if __name__=='__main__':main()

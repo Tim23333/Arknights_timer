@@ -1,0 +1,11 @@
+"""Source-scoped first ordinary consumer with actual eight author cases and full guards."""
+import hashlib,json,sys,time
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2];RUNTIME=ROOT.parent/'unpack_work/campaign_chapter06_complete_base_v5_candidate';OUT=ROOT/'validation/campaign/chapter07_ordinary_guarded_final_v5';sys.path.insert(0,str(RUNTIME));sys.path.insert(1,str(ROOT))
+import pytest,ark_sim
+from ark_sim.adapters.api import implementation_digest
+CORE='a7059989b9db7f4bc0de954b32cb5c5ba10e6b92ce040c57ea0a193549b9709a'
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def main():
+ assert implementation_digest()==CORE;files=list((RUNTIME/'ark_sim').rglob('*.py'))+list((RUNTIME/'ark_sim').rglob('*.json'))+list((ROOT/'tools/chapter07_ordinary').glob('*.py'))+list((ROOT/'packages/campaign/chapter07_ordinary').glob('*.json'))+[ROOT/'tools/campaign_ordered_checkpoint.py',ROOT/'packages/campaign/chapter07_sources/native.reference.json',ROOT/'packages/campaign/chapter04_boss/m70/immunity.reference_model.json'];before={str(p):sha(p) for p in files};started=time.monotonic();code=pytest.main([str(ROOT/'tools/chapter07_ordinary/test_sotihd_guarded_final_v5.py'),str(ROOT/'tools/chapter07_ordinary/test_sotihd_public_guarded_v5.py'),'-q']);after={str(p):sha(p) for p in files};assert before==after and implementation_digest()==CORE;out=OUT/'verification.json';OUT.mkdir(parents=True,exist_ok=True);assert not out.exists();r={'passed':code==0,'actual_exit':code,'core':CORE,'runtime_module':ark_sim.__file__,'module':'packages/campaign/chapter07_ordinary/sotihd.module.v4.reference.json','module_sha':sha(ROOT/'packages/campaign/chapter07_ordinary/sotihd.module.v4.reference.json'),'source_before':before,'source_after':after,'elapsed':time.monotonic()-started,'author_cases':8,'scope':'First ordinary source exactstat/blockedidentity/frame18/42gap/true250packet/DEP7/currentDEF/publicapply_buff ASPD/CPhead/noSP/sourceSILENCED12 and explicit unresolved midcast TargetFree/animation clamp policy','new_core_capability':False,'primary_modified':False,'C7_stage_started':False,'client_verified':False};out.write_text(json.dumps(r,indent=2)+'\n',encoding='utf8',newline='');print(json.dumps({'passed':code==0,'sha':sha(out),'elapsed':r['elapsed']}));raise SystemExit(code)
+if __name__=='__main__':main()

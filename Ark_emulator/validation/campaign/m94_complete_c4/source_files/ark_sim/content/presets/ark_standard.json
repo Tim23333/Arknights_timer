@@ -1,0 +1,740 @@
+{
+  "schemaVersion": 2,
+  "manifest": {
+    "id": "package/ark_standard",
+    "version": "1.0.0"
+  },
+  "presets": [
+    {
+      "id": "preset/ark_standard",
+      "kind": "preset",
+      "version": "1.0.0",
+      "ruleset": "ruleset/ark_standard"
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule/ark_time_quantize",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "time.quantize",
+      "implementation": {
+        "type": "expression",
+        "expression": "ceil(round(inputs.seconds / inputs.quantum, params.ratio_digits))"
+      },
+      "parameters": {
+        "ratio_digits": 12
+      }
+    },
+    {
+      "id": "rule/ark_attack_interval",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "time.interval",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.base_interval / max(inputs.speed, params.minimum_speed)"
+      },
+      "parameters": {
+        "minimum_speed": 0.01
+      }
+    },
+    {
+      "id": "rule/ark_attribute_layers",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "attributes.effective",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.attributes.layers"
+      },
+      "parameters": {
+        "operations": {
+          "flat": "add",
+          "direct_ratio": "ratio_sum",
+          "final_ratio": "ratio_product",
+          "final_add": "add",
+          "final_mul": "factor_product"
+        },
+        "aggregator": {
+          "provider": "ark.attributes.aggregate"
+        }
+      },
+      "metadata": {
+        "calculation_dependencies": [
+          "attributes.modifier_layer"
+        ]
+      }
+    },
+    {
+      "id": "rule/ark_modifier_layer",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "attributes.modifier_layer",
+      "implementation": {
+        "type": "expression",
+        "expression": "(inputs.value + inputs.layer_parameters.additive) * (1 + inputs.layer_parameters.ratio) * inputs.layer_parameters.factor"
+      },
+      "parameters": {}
+    },
+    {
+      "id": "rule/ark_growth",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "attributes.growth",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.base + max(inputs.level - 1, 0) * params.per_level"
+      },
+      "parameters": {
+        "per_level": 0
+      }
+    },
+    {
+      "id": "rule/ark_basic_power",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "damage.base",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.attack * inputs.scale + inputs.additions"
+      },
+      "parameters": {}
+    },
+    {
+      "id": "rule/ark_standard_mitigation",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "damage.mitigation",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.power if inputs.damage_type == \"true\" else max(inputs.power * (1 - min(max(inputs.resistance, 0), 100) / 100), inputs.power * params.minimum_ratio) if inputs.damage_type == \"arts\" else max(inputs.power - inputs.defense, inputs.power * params.minimum_ratio)"
+      },
+      "parameters": {
+        "minimum_ratio": 0.05
+      }
+    },
+    {
+      "id": "rule/ark_healing_power",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "healing.base",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.attack * inputs.scale + inputs.additions"
+      },
+      "parameters": {}
+    },
+    {
+      "id": "rule/ark_resource_capacity",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "resource.capacity",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.capacity_parameters.capacity"
+      },
+      "parameters": {}
+    },
+    {
+      "id": "rule/ark_resource_recovery",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "resource.recovery",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.current + inputs.parameters.rate * inputs.delta_seconds"
+      },
+      "parameters": {}
+    },
+    {
+      "id": "rule/ark_resource_cost",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "resource.cost",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.cost_parameters.amount"
+      },
+      "parameters": {}
+    },
+    {
+      "id": "rule/ark_resource_bounds",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "resource.bounds",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.resource.bounds"
+      }
+    },
+    {
+      "id": "rule/ark_deploy_cost",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "deploy.cost",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.base_cost * min(2, 1 + params.repeat_ratio * inputs.deployment_history.count)"
+      },
+      "parameters": {
+        "repeat_ratio": 0.5
+      }
+    },
+    {
+      "id": "rule/ark_deploy_refund",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "deploy.refund",
+      "implementation": {
+        "type": "expression",
+        "expression": "min(inputs.paid_cost * inputs.refund_parameters.ratio, inputs.refund_parameters.raw_cost * inputs.refund_parameters.raw_cap_ratio) if \"raw_cap_ratio\" in inputs.refund_parameters else inputs.paid_cost * inputs.refund_parameters.ratio"
+      },
+      "parameters": {}
+    },
+    {
+      "id": "rule/ark_deploy_cooldown",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "deploy.cooldown",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.cooldown_parameters.seconds"
+      },
+      "parameters": {}
+    },
+    {
+      "id": "rule/ark_deploy_capacity",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "deploy.capacity",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.capacity_parameters.capacity"
+      },
+      "parameters": {}
+    },
+    {
+      "id": "rule/ark_deploy_eligibility",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "deploy.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.deploy.ground"
+      }
+    },
+    {
+      "id": "rule/ark_ability_windup",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "ability.windup",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.timing_parameters.seconds"
+      },
+      "parameters": {}
+    },
+    {
+      "id": "rule/ark_ability_recovery",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "ability.recovery",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.recovery_parameters.seconds"
+      },
+      "parameters": {}
+    },
+    {
+      "id": "rule/ark_ability_duration",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "ability.duration",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.duration_parameters.seconds"
+      },
+      "parameters": {}
+    },
+    {
+      "id": "rule/ark_ability_repeat",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "ability.repeat",
+      "implementation": {
+        "type": "expression",
+        "expression": "{\"count\": inputs.repeat_parameters.count, \"interval\": inputs.repeat_parameters.interval_seconds}"
+      },
+      "parameters": {}
+    },
+    {
+      "id": "rule/ark_buff_duration",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "buff.duration",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.buff_parameters.duration_seconds"
+      },
+      "parameters": {}
+    },
+    {
+      "id": "rule/ark_buff_interval",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "buff.interval",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.buff_parameters.interval_seconds"
+      },
+      "parameters": {}
+    },
+    {
+      "id": "rule/ark_buff_stack_amount",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "buff.stack_amount",
+      "implementation": {
+        "type": "expression",
+        "expression": "min(inputs.current_stacks + inputs.incoming.count if inputs.stack_parameters.mode == \"add\" else max(inputs.current_stacks, inputs.incoming.count) if inputs.stack_parameters.mode == \"max\" else inputs.current_stacks if inputs.stack_parameters.mode == \"extend\" and inputs.current_stacks > 0 else inputs.incoming.count, inputs.stack_parameters.max_stacks)"
+      },
+      "parameters": {}
+    },
+    {
+      "id": "rule/ark_movement_speed",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "movement.speed",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.movement_parameters.base_speed * params.multiplier"
+      },
+      "parameters": {
+        "multiplier": 1
+      }
+    },
+    {
+      "id": "rule/ark_movement_distance",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "movement.distance",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.speed * inputs.delta_seconds"
+      },
+      "parameters": {}
+    },
+    {
+      "id": "rule/ark_projectile_speed",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "projectile.speed",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.parameters.speed"
+      },
+      "parameters": {}
+    },
+    {
+      "id": "rule/ark_projectile_flight",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "projectile.flight_time",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.distance / inputs.speed"
+      },
+      "parameters": {}
+    },
+    {
+      "id": "rule/ark_leak_loss",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "lifecycle.leak_loss",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.leak_parameters.loss"
+      },
+      "parameters": {}
+    },
+    {
+      "id": "rule/ark_battle_result",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "lifecycle.result",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.lifecycle.result"
+      }
+    },
+    {
+      "id": "rule/ark_lifecycle_death",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "lifecycle.death",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.lifecycle.standard"
+      },
+      "parameters": {
+        "resource": "hp",
+        "threshold": 0
+      }
+    },
+    {
+      "id": "rule/ark_targeting_score",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "targeting.score",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.targeting.score"
+      }
+    },
+    {
+      "id": "rule/ark_block_capacity",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "blocking.capacity",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.capacity_parameters.capacity"
+      }
+    },
+    {
+      "id": "rule/ark_block_occupancy",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "blocking.occupancy",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.occupancy_parameters.number"
+      }
+    },
+    {
+      "id": "rule/ark_damage_pipeline",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "damage.pipeline",
+      "implementation": {
+        "type": "graph",
+        "nodes": [
+          {
+            "id": "power",
+            "calculation": "damage.base",
+            "inputs": {
+              "attack": "inputs.effect.attack",
+              "scale": "inputs.effect.scale",
+              "additions": "inputs.effect.additions"
+            }
+          },
+          {
+            "id": "mitigation",
+            "calculation": "damage.mitigation",
+            "inputs": {
+              "power": "nodes.power",
+              "defense": "inputs.effect.defense",
+              "resistance": "inputs.effect.resistance",
+              "damage_type": "inputs.effect.damage_type"
+            }
+          },
+          {
+            "id": "settle",
+            "expression": "{\"accepted\": True, \"amount\": nodes.mitigation, \"allocations\": [], \"events\": []}"
+          }
+        ],
+        "output": "nodes.settle"
+      },
+      "metadata": {
+        "input_bindings": {
+          "attack": {
+            "entity": "source",
+            "attribute_role": "attack"
+          },
+          "defense": {
+            "entity": "target",
+            "attribute_role": "defense"
+          },
+          "resistance": {
+            "entity": "target",
+            "attribute_role": "resistance"
+          }
+        }
+      }
+    },
+    {
+      "id": "rule/ark_movement_path",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "movement.path",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.spatial.route"
+      }
+    },
+    {
+      "id": "rule/ark_block_eligibility",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "blocking.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.spatial.blocking"
+      }
+    },
+    {
+      "id": "rule/ark_targeting_selection",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "targeting.selection",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.targeting.selection"
+      }
+    },
+    {
+      "id": "rule/ark_random_check",
+      "kind": "calculation_rule",
+      "version": "1.0.0",
+      "contract": "random.check",
+      "implementation": {
+        "type": "expression",
+        "expression": "inputs.sample < inputs.probability"
+      }
+    },
+    {
+      "id": "rule/ark_capacity_change",
+      "kind": "calculation_rule",
+      "contract": "resource.capacity_change",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.resource.capacity_change"
+      }
+    },
+    {
+      "id": "rule/ark_wait_deadline",
+      "kind": "calculation_rule",
+      "contract": "movement.wait_deadline",
+      "implementation": {
+        "type": "graph",
+        "nodes": [
+          {
+            "id": "offset",
+            "calculation": "time.quantize",
+            "inputs": {
+              "seconds": "inputs.offset_seconds",
+              "quantum": "inputs.quantum",
+              "rounding": "{'mode':'ceil'}"
+            }
+          }
+        ],
+        "output": "inputs.origin + nodes.offset"
+      }
+    },
+    {
+      "id": "rule/m9_living_transition",
+      "kind": "calculation_rule",
+      "contract": "movement.transition",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.movement.living_transition"
+      },
+      "metadata": {
+        "scope": "explicit_model_profile",
+        "client_verified": false
+      }
+    },
+    {
+      "id": "rule/m9_checkpoint_cartesian",
+      "kind": "calculation_rule",
+      "contract": "movement.checkpoint_position",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.movement.checkpoint_cartesian"
+      },
+      "metadata": {
+        "scope": "explicit_model_profile",
+        "client_verified": false
+      }
+    },
+    {
+      "id": "rule/ark_terrain_tile_options",
+      "kind": "calculation_rule",
+      "contract": "terrain.tile_options",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.terrain.tile_options"
+      },
+      "parameters": {
+        "normal_cost": 1,
+        "obstacle_like_cost": 3
+      }
+    },
+    {
+      "id": "rule/ark_selector_pure_eligibility",
+      "kind": "calculation_rule",
+      "contract": "selector.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.selector.pure_eligibility"
+      },
+      "parameters": {
+        "provider": "ark.selector.grid"
+      }
+    },
+    {
+      "id": "rule/ark_behavior_decision",
+      "kind": "calculation_rule",
+      "contract": "behavior.decision",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.behavior.decision"
+      }
+    }
+  ],
+  "rulesets": [
+    {
+      "id": "ruleset/ark_standard",
+      "kind": "ruleset",
+      "version": "1.0.0",
+      "quantum": 0.03333333333333333,
+      "numeric_profile": {
+        "backend": "float",
+        "rounding": "half_even"
+      },
+      "system_order": [
+        "commands",
+        "resources",
+        "behavior",
+        "abilities",
+        "movement",
+        "lifecycle"
+      ],
+      "attribute_layers": [
+        "flat",
+        "direct_ratio",
+        "final_ratio"
+      ],
+      "bindings": {
+        "time.quantize": "rule/ark_time_quantize",
+        "time.interval": "rule/ark_attack_interval",
+        "attributes.effective": "rule/ark_attribute_layers",
+        "attributes.modifier_layer": "rule/ark_modifier_layer",
+        "attributes.growth": "rule/ark_growth",
+        "damage.base": "rule/ark_basic_power",
+        "damage.mitigation": "rule/ark_standard_mitigation",
+        "healing.base": "rule/ark_healing_power",
+        "resource.capacity": "rule/ark_resource_capacity",
+        "resource.recovery": "rule/ark_resource_recovery",
+        "resource.cost": "rule/ark_resource_cost",
+        "resource.bounds": "rule/ark_resource_bounds",
+        "deploy.cost": "rule/ark_deploy_cost",
+        "deploy.refund": "rule/ark_deploy_refund",
+        "deploy.cooldown": "rule/ark_deploy_cooldown",
+        "deploy.capacity": "rule/ark_deploy_capacity",
+        "deploy.eligibility": "rule/ark_deploy_eligibility",
+        "ability.windup": "rule/ark_ability_windup",
+        "ability.recovery": "rule/ark_ability_recovery",
+        "ability.duration": "rule/ark_ability_duration",
+        "ability.repeat": "rule/ark_ability_repeat",
+        "buff.duration": "rule/ark_buff_duration",
+        "buff.interval": "rule/ark_buff_interval",
+        "buff.stack_amount": "rule/ark_buff_stack_amount",
+        "movement.speed": "rule/ark_movement_speed",
+        "movement.distance": "rule/ark_movement_distance",
+        "projectile.speed": "rule/ark_projectile_speed",
+        "projectile.flight_time": "rule/ark_projectile_flight",
+        "lifecycle.leak_loss": "rule/ark_leak_loss",
+        "lifecycle.result": "rule/ark_battle_result",
+        "lifecycle.death": "rule/ark_lifecycle_death",
+        "targeting.score": "rule/ark_targeting_score",
+        "blocking.capacity": "rule/ark_block_capacity",
+        "blocking.occupancy": "rule/ark_block_occupancy",
+        "damage.pipeline": "rule/ark_damage_pipeline",
+        "movement.path": "rule/ark_movement_path",
+        "blocking.eligibility": "rule/ark_block_eligibility",
+        "targeting.selection": "rule/ark_targeting_selection",
+        "random.check": "rule/ark_random_check",
+        "resource.capacity_change": "rule/ark_capacity_change",
+        "movement.wait_deadline": "rule/ark_wait_deadline",
+        "terrain.tile_options": "rule/ark_terrain_tile_options",
+        "selector.eligibility": "rule/ark_selector_pure_eligibility"
+      },
+      "parameters": {
+        "health_resource": "hp",
+        "deployment_resource": "dp",
+        "attribute_roles": {
+          "attack": "atk",
+          "defense": "def",
+          "resistance": "mres",
+          "attack_interval": "attack_interval",
+          "speed_ratio": "attack_speed_ratio",
+          "movement_speed": "move_speed",
+          "block_capacity": "block_count",
+          "block_occupancy": "block_cost",
+          "deploy_cost": "deploy_cost",
+          "redeploy_time": "redeploy_time"
+        },
+        "attribute_defaults": {
+          "mres": 0,
+          "attack_speed_ratio": 1,
+          "move_speed": 0,
+          "block_count": 0,
+          "block_cost": 1,
+          "deploy_cost": 0,
+          "redeploy_time": 0
+        },
+        "layer_operations": {
+          "flat": "add",
+          "direct_ratio": "ratio_sum",
+          "final_ratio": "ratio_product",
+          "final_add": "add",
+          "final_mul": "factor_product"
+        }
+      }
+    }
+  ],
+  "policies": [
+    {
+      "id": "policy/ark_ground_deploy",
+      "kind": "policy",
+      "version": "1.0.0",
+      "contract": "deploy.eligibility",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.deploy.ground"
+      }
+    },
+    {
+      "id": "policy/ark_lifecycle",
+      "kind": "policy",
+      "version": "1.0.0",
+      "implementation": {
+        "type": "provider",
+        "provider": "ark.lifecycle.standard"
+      },
+      "contract": "lifecycle.death",
+      "parameters": {
+        "resource": "hp",
+        "threshold": 0
+      }
+    }
+  ],
+  "behaviors": [
+    {
+      "id": "behavior/player_combat",
+      "kind": "behavior",
+      "version": "1.0.0",
+      "provider": "ark.behavior.player_combat",
+      "initial_state": "alive"
+    },
+    {
+      "id": "behavior/ground_melee",
+      "kind": "behavior",
+      "version": "1.0.0",
+      "provider": "ark.behavior.ground_melee",
+      "initial_state": "alive"
+    }
+  ]
+}

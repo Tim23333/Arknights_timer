@@ -1,0 +1,3212 @@
+[
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/permanent",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/plan",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer/permanent_plan"
+        }
+      },
+      {
+        "id": "rule/peer/finite_duration",
+        "kind": "rule",
+        "contract": "buff.duration",
+        "implementation": {
+          "type": "expression",
+          "expression": "1"
+        }
+      },
+      {
+        "id": "rule/peer/zero_duration",
+        "kind": "rule",
+        "contract": "buff.duration",
+        "implementation": {
+          "type": "expression",
+          "expression": "0"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/permanent",
+        "kind": "buff",
+        "interval_seconds": 0.1,
+        "effects": [
+          {
+            "op": "modify_resource",
+            "resource": "meter",
+            "delta": 1
+          }
+        ]
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/apply",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "buff_application",
+              "application_rule": "rule/peer/plan",
+              "allowed": [
+                "buff/peer/permanent"
+              ]
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 37
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            },
+            "meter": {
+              "initial": 0,
+              "capacity": 100
+            }
+          },
+          "abilities": [
+            "ability/peer/apply"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/permanent",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 1
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/permanent",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/plan",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer/permanent_plan"
+        }
+      },
+      {
+        "id": "rule/peer/finite_duration",
+        "kind": "rule",
+        "contract": "buff.duration",
+        "implementation": {
+          "type": "expression",
+          "expression": "1"
+        }
+      },
+      {
+        "id": "rule/peer/zero_duration",
+        "kind": "rule",
+        "contract": "buff.duration",
+        "implementation": {
+          "type": "expression",
+          "expression": "0"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/permanent",
+        "kind": "buff",
+        "interval_seconds": 0.1,
+        "effects": [
+          {
+            "op": "modify_resource",
+            "resource": "meter",
+            "delta": 1
+          }
+        ]
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/apply",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "buff_application",
+              "application_rule": "rule/peer/plan",
+              "allowed": [
+                "buff/peer/permanent"
+              ]
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 37
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            },
+            "meter": {
+              "initial": 0,
+              "capacity": 100
+            }
+          },
+          "abilities": [
+            "ability/peer/apply"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/permanent",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 1
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ],
+      "rules": {
+        "buff.duration": "rule/peer/zero_duration"
+      }
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/permanent",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/plan",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer/permanent_plan"
+        }
+      },
+      {
+        "id": "rule/peer/finite_duration",
+        "kind": "rule",
+        "contract": "buff.duration",
+        "implementation": {
+          "type": "expression",
+          "expression": "1"
+        }
+      },
+      {
+        "id": "rule/peer/zero_duration",
+        "kind": "rule",
+        "contract": "buff.duration",
+        "implementation": {
+          "type": "expression",
+          "expression": "0"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/permanent",
+        "kind": "buff",
+        "interval_seconds": 0.1,
+        "effects": [
+          {
+            "op": "modify_resource",
+            "resource": "meter",
+            "delta": 1
+          }
+        ]
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/apply",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "buff_application",
+              "application_rule": "rule/peer/plan",
+              "allowed": [
+                "buff/peer/permanent"
+              ]
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 37
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            },
+            "meter": {
+              "initial": 0,
+              "capacity": 100
+            }
+          },
+          "abilities": [
+            "ability/peer/apply"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/permanent",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 1
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ],
+      "rules": {
+        "buff.duration": "rule/peer/finite_duration"
+      }
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/permanent",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/plan",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer/permanent_plan"
+        }
+      },
+      {
+        "id": "rule/peer/finite_duration",
+        "kind": "rule",
+        "contract": "buff.duration",
+        "implementation": {
+          "type": "expression",
+          "expression": "1"
+        }
+      },
+      {
+        "id": "rule/peer/zero_duration",
+        "kind": "rule",
+        "contract": "buff.duration",
+        "implementation": {
+          "type": "expression",
+          "expression": "0"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/permanent",
+        "kind": "buff",
+        "interval_seconds": 0.1,
+        "effects": [
+          {
+            "op": "modify_resource",
+            "resource": "meter",
+            "delta": 1
+          }
+        ],
+        "rules": {
+          "buff.duration": "rule/peer/finite_duration"
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/apply",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "buff_application",
+              "application_rule": "rule/peer/plan",
+              "allowed": [
+                "buff/peer/permanent"
+              ]
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 37
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            },
+            "meter": {
+              "initial": 0,
+              "capacity": 100
+            }
+          },
+          "abilities": [
+            "ability/peer/apply"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/permanent",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 1
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/permanent",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/plan",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer/permanent_plan"
+        }
+      },
+      {
+        "id": "rule/peer/finite_duration",
+        "kind": "rule",
+        "contract": "buff.duration",
+        "implementation": {
+          "type": "expression",
+          "expression": "1"
+        }
+      },
+      {
+        "id": "rule/peer/zero_duration",
+        "kind": "rule",
+        "contract": "buff.duration",
+        "implementation": {
+          "type": "expression",
+          "expression": "0"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/permanent",
+        "kind": "buff",
+        "interval_seconds": 0.1,
+        "effects": [
+          {
+            "op": "modify_resource",
+            "resource": "meter",
+            "delta": 1
+          }
+        ]
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/apply",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "buff_application",
+              "application_rule": "rule/peer/plan",
+              "allowed": [
+                "buff/peer/permanent"
+              ]
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 37
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            },
+            "meter": {
+              "initial": 0,
+              "capacity": 100
+            }
+          },
+          "abilities": [
+            "ability/peer/apply"
+          ],
+          "spatial": {}
+        },
+        "rules": {
+          "buff.duration": "rule/peer/finite_duration"
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/permanent",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 1
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/permanent",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/plan",
+        "kind": "rule",
+        "contract": "buff.application",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer/two_stage"
+        }
+      },
+      {
+        "id": "rule/peer/finite_duration",
+        "kind": "rule",
+        "contract": "buff.duration",
+        "implementation": {
+          "type": "expression",
+          "expression": "1"
+        }
+      },
+      {
+        "id": "rule/peer/zero_duration",
+        "kind": "rule",
+        "contract": "buff.duration",
+        "implementation": {
+          "type": "expression",
+          "expression": "0"
+        }
+      },
+      {
+        "id": "rule/peer/dynamic_duration",
+        "kind": "rule",
+        "contract": "buff.duration",
+        "implementation": {
+          "type": "expression",
+          "expression": "1 if inputs.attributes.atk >= 40 else 0"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/permanent",
+        "kind": "buff",
+        "interval_seconds": 0.1,
+        "effects": [
+          {
+            "op": "modify_resource",
+            "resource": "meter",
+            "delta": 1
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/boost",
+        "kind": "buff",
+        "modifiers": [
+          {
+            "attribute": "atk",
+            "layer": "flat",
+            "value": 10
+          }
+        ]
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/apply",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "buff_application",
+              "application_rule": "rule/peer/plan",
+              "allowed": [
+                "buff/peer/permanent",
+                "buff/peer/boost"
+              ]
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 123,
+              "atk": 37
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 123,
+              "capacity": 123,
+              "role": "health"
+            },
+            "meter": {
+              "initial": 0,
+              "capacity": 100
+            }
+          },
+          "abilities": [
+            "ability/peer/apply"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/permanent",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 1
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        }
+      ],
+      "rules": {
+        "buff.duration": "rule/peer/dynamic_duration"
+      }
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/actorfree",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/half",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "{'accepted':True,'amount':inputs.effect.fixed_amount / 2,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      },
+      {
+        "id": "rule/peer/reject",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "{'accepted':False,'amount':0,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      },
+      {
+        "id": "rule/peer/sp",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.current+1"
+        }
+      },
+      {
+        "id": "rule/peer/floor",
+        "kind": "rule",
+        "contract": "resource.bounds",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer/floor"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/blood",
+        "kind": "buff",
+        "interval_seconds": 0.1,
+        "effects": [
+          {
+            "op": "no_source_damage",
+            "damage_type": "true",
+            "attack_type": "BUFF",
+            "fixed_amount": 30,
+            "damage_without_modify": true,
+            "ignore_for_sp": true,
+            "node_is_env_damage": false,
+            "env_blackboard_injected": false,
+            "environmental": false,
+            "origin": {
+              "independent": "new_timer_fixture"
+            },
+            "rules": {
+              "damage.pipeline": "rule/peer/half"
+            }
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/no_damage",
+        "kind": "buff",
+        "damage_hooks": [
+          {
+            "phase": "after",
+            "rule": "rule/peer/reject"
+          }
+        ]
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/blood"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/refresh",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/blood"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 71,
+              "atk": 999,
+              "def": 999,
+              "mres": 100
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 71,
+              "capacity": 71,
+              "role": "health"
+            },
+            "sp": {
+              "initial": 0,
+              "capacity": 10,
+              "recovery_rule": "rule/peer/sp",
+              "recovery": {
+                "mode": "event",
+                "event": "damage.accepted",
+                "owner_role": "target",
+                "amount": 1
+              }
+            }
+          },
+          "buffs": {
+            "initial": [
+              "buff/peer/blood"
+            ]
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/controller",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/remove",
+            "ability/peer/refresh"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/actorfree",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/actorfree",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/half",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "{'accepted':True,'amount':inputs.effect.fixed_amount / 2,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      },
+      {
+        "id": "rule/peer/reject",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "{'accepted':False,'amount':0,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      },
+      {
+        "id": "rule/peer/sp",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.current+1"
+        }
+      },
+      {
+        "id": "rule/peer/floor",
+        "kind": "rule",
+        "contract": "resource.bounds",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer/floor"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/blood",
+        "kind": "buff",
+        "interval_seconds": 0.1,
+        "effects": [
+          {
+            "op": "no_source_damage",
+            "damage_type": "true",
+            "attack_type": "BUFF",
+            "fixed_amount": 30,
+            "damage_without_modify": false,
+            "ignore_for_sp": true,
+            "node_is_env_damage": false,
+            "env_blackboard_injected": false,
+            "environmental": false,
+            "origin": {
+              "independent": "new_timer_fixture"
+            },
+            "rules": {
+              "damage.pipeline": "rule/peer/half"
+            }
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/no_damage",
+        "kind": "buff",
+        "damage_hooks": [
+          {
+            "phase": "after",
+            "rule": "rule/peer/reject"
+          }
+        ]
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/blood"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/refresh",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/blood"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 71,
+              "atk": 999,
+              "def": 999,
+              "mres": 100
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 71,
+              "capacity": 71,
+              "role": "health"
+            },
+            "sp": {
+              "initial": 0,
+              "capacity": 10,
+              "recovery_rule": "rule/peer/sp",
+              "recovery": {
+                "mode": "event",
+                "event": "damage.accepted",
+                "owner_role": "target",
+                "amount": 1
+              }
+            }
+          },
+          "buffs": {
+            "initial": [
+              "buff/peer/blood"
+            ]
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/controller",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/remove",
+            "ability/peer/refresh"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/actorfree",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/actorfree",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/half",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "{'accepted':True,'amount':inputs.effect.fixed_amount / 2,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      },
+      {
+        "id": "rule/peer/reject",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "{'accepted':False,'amount':0,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      },
+      {
+        "id": "rule/peer/sp",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.current+1"
+        }
+      },
+      {
+        "id": "rule/peer/floor",
+        "kind": "rule",
+        "contract": "resource.bounds",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer/floor"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/blood",
+        "kind": "buff",
+        "interval_seconds": 0.1,
+        "effects": [
+          {
+            "op": "no_source_damage",
+            "damage_type": "true",
+            "attack_type": "BUFF",
+            "fixed_amount": 30,
+            "damage_without_modify": true,
+            "ignore_for_sp": true,
+            "node_is_env_damage": false,
+            "env_blackboard_injected": false,
+            "environmental": false,
+            "origin": {
+              "independent": "new_timer_fixture"
+            },
+            "rules": {
+              "damage.pipeline": "rule/peer/half"
+            }
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/no_damage",
+        "kind": "buff",
+        "damage_hooks": [
+          {
+            "phase": "after",
+            "rule": "rule/peer/reject"
+          }
+        ]
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/blood"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/refresh",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/blood"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 71,
+              "atk": 999,
+              "def": 999,
+              "mres": 100
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 71,
+              "capacity": 71,
+              "role": "health"
+            },
+            "sp": {
+              "initial": 0,
+              "capacity": 10,
+              "recovery_rule": "rule/peer/sp",
+              "recovery": {
+                "mode": "event",
+                "event": "damage.accepted",
+                "owner_role": "target",
+                "amount": 1
+              }
+            }
+          },
+          "buffs": {
+            "initial": [
+              "buff/peer/blood",
+              "buff/peer/no_damage"
+            ]
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/controller",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/remove",
+            "ability/peer/refresh"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/actorfree",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/actorfree",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/half",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "{'accepted':True,'amount':inputs.effect.fixed_amount / 2,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      },
+      {
+        "id": "rule/peer/reject",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "{'accepted':False,'amount':0,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      },
+      {
+        "id": "rule/peer/sp",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.current+1"
+        }
+      },
+      {
+        "id": "rule/peer/floor",
+        "kind": "rule",
+        "contract": "resource.bounds",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer/floor"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/blood",
+        "kind": "buff",
+        "interval_seconds": 0.1,
+        "effects": [
+          {
+            "op": "no_source_damage",
+            "damage_type": "true",
+            "attack_type": "BUFF",
+            "fixed_amount": 30,
+            "damage_without_modify": false,
+            "ignore_for_sp": true,
+            "node_is_env_damage": false,
+            "env_blackboard_injected": false,
+            "environmental": false,
+            "origin": {
+              "independent": "new_timer_fixture"
+            },
+            "rules": {
+              "damage.pipeline": "rule/peer/half"
+            }
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/no_damage",
+        "kind": "buff",
+        "damage_hooks": [
+          {
+            "phase": "after",
+            "rule": "rule/peer/reject"
+          }
+        ]
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/blood"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/refresh",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/blood"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 71,
+              "atk": 999,
+              "def": 999,
+              "mres": 100
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 71,
+              "capacity": 71,
+              "role": "health"
+            },
+            "sp": {
+              "initial": 0,
+              "capacity": 10,
+              "recovery_rule": "rule/peer/sp",
+              "recovery": {
+                "mode": "event",
+                "event": "damage.accepted",
+                "owner_role": "target",
+                "amount": 1
+              }
+            }
+          },
+          "buffs": {
+            "initial": [
+              "buff/peer/blood",
+              "buff/peer/no_damage"
+            ]
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/controller",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/remove",
+            "ability/peer/refresh"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/actorfree",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/actorfree",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/half",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "{'accepted':True,'amount':inputs.effect.fixed_amount / 2,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      },
+      {
+        "id": "rule/peer/reject",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "{'accepted':False,'amount':0,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      },
+      {
+        "id": "rule/peer/sp",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.current+1"
+        }
+      },
+      {
+        "id": "rule/peer/floor",
+        "kind": "rule",
+        "contract": "resource.bounds",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer/floor"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/blood",
+        "kind": "buff",
+        "interval_seconds": 0.1,
+        "effects": [
+          {
+            "op": "no_source_damage",
+            "damage_type": "true",
+            "attack_type": "BUFF",
+            "fixed_amount": 30,
+            "damage_without_modify": true,
+            "ignore_for_sp": true,
+            "node_is_env_damage": false,
+            "env_blackboard_injected": false,
+            "environmental": false,
+            "origin": {
+              "independent": "new_timer_fixture"
+            },
+            "rules": {
+              "damage.pipeline": "rule/peer/half"
+            }
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/no_damage",
+        "kind": "buff",
+        "damage_hooks": [
+          {
+            "phase": "after",
+            "rule": "rule/peer/reject"
+          }
+        ]
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/blood"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/refresh",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/blood"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 71,
+              "atk": 999,
+              "def": 999,
+              "mres": 100
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 71,
+              "capacity": 71,
+              "role": "health",
+              "bounds_rule": "rule/peer/floor"
+            },
+            "sp": {
+              "initial": 0,
+              "capacity": 10,
+              "recovery_rule": "rule/peer/sp",
+              "recovery": {
+                "mode": "event",
+                "event": "damage.accepted",
+                "owner_role": "target",
+                "amount": 1
+              }
+            }
+          },
+          "buffs": {
+            "initial": [
+              "buff/peer/blood"
+            ]
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/controller",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/remove",
+            "ability/peer/refresh"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/actorfree",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/actorfree",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/half",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "{'accepted':True,'amount':inputs.effect.fixed_amount / 2,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      },
+      {
+        "id": "rule/peer/reject",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "{'accepted':False,'amount':0,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      },
+      {
+        "id": "rule/peer/sp",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.current+1"
+        }
+      },
+      {
+        "id": "rule/peer/floor",
+        "kind": "rule",
+        "contract": "resource.bounds",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer/floor"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/blood",
+        "kind": "buff",
+        "interval_seconds": 0.1,
+        "effects": [
+          {
+            "op": "no_source_damage",
+            "damage_type": "true",
+            "attack_type": "BUFF",
+            "fixed_amount": 30,
+            "damage_without_modify": false,
+            "ignore_for_sp": true,
+            "node_is_env_damage": false,
+            "env_blackboard_injected": false,
+            "environmental": false,
+            "origin": {
+              "independent": "new_timer_fixture"
+            },
+            "rules": {
+              "damage.pipeline": "rule/peer/half"
+            }
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/no_damage",
+        "kind": "buff",
+        "damage_hooks": [
+          {
+            "phase": "after",
+            "rule": "rule/peer/reject"
+          }
+        ]
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/blood"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/refresh",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/blood"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 71,
+              "atk": 999,
+              "def": 999,
+              "mres": 100
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 71,
+              "capacity": 71,
+              "role": "health"
+            },
+            "sp": {
+              "initial": 0,
+              "capacity": 10,
+              "recovery_rule": "rule/peer/sp",
+              "recovery": {
+                "mode": "event",
+                "event": "damage.accepted",
+                "owner_role": "target",
+                "amount": 1
+              }
+            }
+          },
+          "buffs": {
+            "initial": [
+              "buff/peer/blood"
+            ]
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          },
+          "abilities": [
+            "ability/peer/refresh"
+          ]
+        }
+      },
+      {
+        "id": "unit/peer/controller",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/remove",
+            "ability/peer/refresh"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/actorfree",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/actorfree",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/half",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "{'accepted':True,'amount':inputs.effect.fixed_amount / 2,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      },
+      {
+        "id": "rule/peer/reject",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "{'accepted':False,'amount':0,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      },
+      {
+        "id": "rule/peer/sp",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.current+1"
+        }
+      },
+      {
+        "id": "rule/peer/floor",
+        "kind": "rule",
+        "contract": "resource.bounds",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer/floor"
+        }
+      },
+      {
+        "id": "rule/peer/explode",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "1/0"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/blood",
+        "kind": "buff",
+        "interval_seconds": 0.1,
+        "effects": [
+          {
+            "op": "no_source_damage",
+            "damage_type": "true",
+            "attack_type": "BUFF",
+            "fixed_amount": 30,
+            "damage_without_modify": true,
+            "ignore_for_sp": true,
+            "node_is_env_damage": false,
+            "env_blackboard_injected": false,
+            "environmental": false,
+            "origin": {
+              "independent": "new_timer_fixture"
+            },
+            "rules": {
+              "damage.pipeline": "rule/peer/half"
+            }
+          },
+          {
+            "op": "no_source_damage",
+            "damage_type": "true",
+            "attack_type": "BUFF",
+            "fixed_amount": 30,
+            "damage_without_modify": false,
+            "ignore_for_sp": true,
+            "node_is_env_damage": false,
+            "env_blackboard_injected": false,
+            "environmental": false,
+            "origin": {
+              "independent": "new_timer_fixture"
+            },
+            "rules": {
+              "damage.pipeline": "rule/peer/explode"
+            }
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/no_damage",
+        "kind": "buff",
+        "damage_hooks": [
+          {
+            "phase": "after",
+            "rule": "rule/peer/reject"
+          }
+        ]
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/blood"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/refresh",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/blood"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 71,
+              "atk": 999,
+              "def": 999,
+              "mres": 100
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 71,
+              "capacity": 71,
+              "role": "health"
+            },
+            "sp": {
+              "initial": 0,
+              "capacity": 10,
+              "recovery_rule": "rule/peer/sp",
+              "recovery": {
+                "mode": "event",
+                "event": "damage.accepted",
+                "owner_role": "target",
+                "amount": 1
+              }
+            }
+          },
+          "buffs": {
+            "initial": [
+              "buff/peer/blood"
+            ]
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/controller",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/remove",
+            "ability/peer/refresh"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/actorfree",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/fact0",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "unit_type": 2,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/fact1",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "unit_type": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/fact2",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "unit_type": 5,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/fact3",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "unit_type": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/fact4",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "unit_type": 4,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/facts",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 5
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/fact0",
+          "instanceAlias": "actor0",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/fact1",
+          "instanceAlias": "actor1",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        },
+        {
+          "definition": "unit/peer/fact2",
+          "instanceAlias": "actor2",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/peer/fact3",
+          "instanceAlias": "actor3",
+          "position": {
+            "row": 0,
+            "col": 3
+          }
+        },
+        {
+          "definition": "unit/peer/fact4",
+          "instanceAlias": "actor4",
+          "position": {
+            "row": 0,
+            "col": 4
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "entities": [
+      {
+        "id": "unit/peer/fact0",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "unit_type": 2,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/fact1",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "unit_type": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/fact2",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "unit_type": 5,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/fact3",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 1,
+            "unit_type": 1,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      },
+      {
+        "id": "unit/peer/fact4",
+        "kind": "entity",
+        "components": {
+          "selection_state": {
+            "side": 0,
+            "unit_type": 4,
+            "motion": 1,
+            "category": 1
+          },
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/facts",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 5
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/fact0",
+          "instanceAlias": "actor0",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/fact1",
+          "instanceAlias": "actor1",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        },
+        {
+          "definition": "unit/peer/fact2",
+          "instanceAlias": "actor2",
+          "position": {
+            "row": 0,
+            "col": 2
+          }
+        },
+        {
+          "definition": "unit/peer/fact3",
+          "instanceAlias": "actor3",
+          "position": {
+            "row": 0,
+            "col": 3
+          }
+        },
+        {
+          "definition": "unit/peer/fact4",
+          "instanceAlias": "actor4",
+          "position": {
+            "row": 0,
+            "col": 4
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/actorfree",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/half",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "{'accepted':True,'amount':inputs.effect.fixed_amount / 2,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      },
+      {
+        "id": "rule/peer/reject",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "{'accepted':False,'amount':0,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      },
+      {
+        "id": "rule/peer/sp",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.current+1"
+        }
+      },
+      {
+        "id": "rule/peer/floor",
+        "kind": "rule",
+        "contract": "resource.bounds",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer/floor"
+        }
+      },
+      {
+        "id": "rule/peer/actor_explode",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "1/0"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/blood",
+        "kind": "buff",
+        "interval_seconds": 0.1,
+        "effects": [
+          {
+            "op": "modify_resource",
+            "resource": "meter",
+            "delta": 1
+          },
+          {
+            "op": "damage",
+            "damage_type": "true",
+            "scale": 1,
+            "rules": {
+              "damage.pipeline": "rule/peer/actor_explode"
+            }
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/no_damage",
+        "kind": "buff",
+        "damage_hooks": [
+          {
+            "phase": "after",
+            "rule": "rule/peer/reject"
+          }
+        ]
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/blood"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/refresh",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/blood"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 71,
+              "atk": 999,
+              "def": 999,
+              "mres": 100
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 71,
+              "capacity": 71,
+              "role": "health"
+            },
+            "sp": {
+              "initial": 0,
+              "capacity": 10,
+              "recovery_rule": "rule/peer/sp",
+              "recovery": {
+                "mode": "event",
+                "event": "damage.accepted",
+                "owner_role": "target",
+                "amount": 1
+              }
+            },
+            "meter": {
+              "initial": 0,
+              "capacity": 10
+            }
+          },
+          "buffs": {
+            "initial": [
+              "buff/peer/blood"
+            ]
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/controller",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/remove",
+            "ability/peer/refresh"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/actorfree",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/actorfree",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/half",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "{'accepted':True,'amount':inputs.effect.fixed_amount / 2,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      },
+      {
+        "id": "rule/peer/reject",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "{'accepted':False,'amount':0,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      },
+      {
+        "id": "rule/peer/sp",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.current+1"
+        }
+      },
+      {
+        "id": "rule/peer/floor",
+        "kind": "rule",
+        "contract": "resource.bounds",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer/floor"
+        }
+      },
+      {
+        "id": "rule/peer/late_bound",
+        "kind": "rule",
+        "contract": "resource.bounds",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer/late_bound"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/blood",
+        "kind": "buff",
+        "interval_seconds": 0.1,
+        "effects": [
+          {
+            "op": "no_source_damage",
+            "damage_type": "true",
+            "attack_type": "BUFF",
+            "fixed_amount": 30,
+            "damage_without_modify": true,
+            "ignore_for_sp": true,
+            "node_is_env_damage": false,
+            "env_blackboard_injected": false,
+            "environmental": false,
+            "origin": {
+              "independent": "new_timer_fixture"
+            },
+            "rules": {
+              "damage.pipeline": "rule/peer/half"
+            }
+          },
+          {
+            "op": "no_source_damage",
+            "damage_type": "true",
+            "attack_type": "BUFF",
+            "fixed_amount": 30,
+            "damage_without_modify": true,
+            "ignore_for_sp": true,
+            "node_is_env_damage": false,
+            "env_blackboard_injected": false,
+            "environmental": false,
+            "origin": {
+              "independent": "new_timer_fixture"
+            },
+            "rules": {
+              "damage.pipeline": "rule/peer/half"
+            }
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/no_damage",
+        "kind": "buff",
+        "damage_hooks": [
+          {
+            "phase": "after",
+            "rule": "rule/peer/reject"
+          }
+        ]
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/blood"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/refresh",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/blood"
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 71,
+              "atk": 999,
+              "def": 999,
+              "mres": 100
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 71,
+              "capacity": 71,
+              "role": "health",
+              "bounds_rule": "rule/peer/late_bound"
+            },
+            "sp": {
+              "initial": 0,
+              "capacity": 10,
+              "recovery_rule": "rule/peer/sp",
+              "recovery": {
+                "mode": "event",
+                "event": "damage.accepted",
+                "owner_role": "target",
+                "amount": 1
+              }
+            }
+          },
+          "buffs": {
+            "initial": [
+              "buff/peer/blood"
+            ]
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/controller",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/remove",
+            "ability/peer/refresh"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/actorfree",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "manifest": {
+      "id": "package/peer/actorfree",
+      "requires": [
+        "preset/ark_standard"
+      ]
+    },
+    "rules": [
+      {
+        "id": "rule/peer/half",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "{'accepted':True,'amount':inputs.effect.fixed_amount / 2,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      },
+      {
+        "id": "rule/peer/reject",
+        "kind": "rule",
+        "contract": "damage.pipeline",
+        "implementation": {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "result",
+              "expression": "{'accepted':False,'amount':0,'allocations':[],'events':[]}"
+            }
+          ],
+          "output": "nodes.result"
+        }
+      },
+      {
+        "id": "rule/peer/sp",
+        "kind": "rule",
+        "contract": "resource.recovery",
+        "implementation": {
+          "type": "expression",
+          "expression": "inputs.current+1"
+        }
+      },
+      {
+        "id": "rule/peer/floor",
+        "kind": "rule",
+        "contract": "resource.bounds",
+        "implementation": {
+          "type": "provider",
+          "provider": "peer/floor"
+        }
+      }
+    ],
+    "buffs": [
+      {
+        "id": "buff/peer/blood",
+        "kind": "buff",
+        "interval_seconds": 0.1,
+        "effects": [
+          {
+            "op": "no_source_damage",
+            "damage_type": "true",
+            "attack_type": "BUFF",
+            "fixed_amount": 30,
+            "damage_without_modify": false,
+            "ignore_for_sp": true,
+            "node_is_env_damage": false,
+            "env_blackboard_injected": false,
+            "environmental": false,
+            "origin": {
+              "independent": "new_timer_fixture"
+            },
+            "rules": {
+              "damage.pipeline": "rule/peer/half"
+            }
+          }
+        ]
+      },
+      {
+        "id": "buff/peer/no_damage",
+        "kind": "buff",
+        "damage_hooks": [
+          {
+            "phase": "after",
+            "rule": "rule/peer/reject"
+          }
+        ]
+      }
+    ],
+    "abilities": [
+      {
+        "id": "ability/peer/remove",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "remove_buff",
+              "target": 2,
+              "buff": "buff/peer/blood"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/refresh",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "apply_buff",
+              "target": 2,
+              "buff": "buff/peer/blood"
+            }
+          ]
+        },
+        "timeline": []
+      },
+      {
+        "id": "ability/peer/retire",
+        "kind": "ability",
+        "activation": {
+          "mode": "manual",
+          "on_start": [
+            {
+              "op": "retire",
+              "target": 2,
+              "parameters": {
+                "reason": "withdrawn"
+              }
+            }
+          ]
+        },
+        "timeline": []
+      }
+    ],
+    "entities": [
+      {
+        "id": "unit/peer/owner",
+        "kind": "entity",
+        "tags": [
+          "enemy"
+        ],
+        "components": {
+          "attributes": {
+            "base": {
+              "max_hp": 71,
+              "atk": 999,
+              "def": 999,
+              "mres": 100
+            }
+          },
+          "resources": {
+            "hp": {
+              "initial": 71,
+              "capacity": 71,
+              "role": "health"
+            },
+            "sp": {
+              "initial": 0,
+              "capacity": 10,
+              "recovery_rule": "rule/peer/sp",
+              "recovery": {
+                "mode": "event",
+                "event": "damage.accepted",
+                "owner_role": "target",
+                "amount": 1
+              }
+            }
+          },
+          "buffs": {
+            "initial": [
+              "buff/peer/blood"
+            ]
+          },
+          "spatial": {},
+          "lifecycle": {
+            "policy": "policy/ark_lifecycle"
+          }
+        }
+      },
+      {
+        "id": "unit/peer/controller",
+        "kind": "entity",
+        "components": {
+          "abilities": [
+            "ability/peer/remove",
+            "ability/peer/refresh",
+            "ability/peer/retire"
+          ],
+          "spatial": {}
+        }
+      }
+    ],
+    "scenarioDraft": {
+      "id": "scene/peer/actorfree",
+      "ruleset": "ruleset/ark_standard",
+      "map": {
+        "rows": 1,
+        "cols": 2
+      },
+      "objectives": {},
+      "initialEntities": [
+        {
+          "definition": "unit/peer/owner",
+          "instanceAlias": "owner",
+          "position": {
+            "row": 0,
+            "col": 0
+          }
+        },
+        {
+          "definition": "unit/peer/controller",
+          "instanceAlias": "controller",
+          "position": {
+            "row": 0,
+            "col": 1
+          }
+        }
+      ]
+    }
+  }
+]

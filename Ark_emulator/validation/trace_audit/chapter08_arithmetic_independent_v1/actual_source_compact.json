@@ -1,0 +1,189 @@
+{
+  "trace": {
+    "calculation_id": "field.trigger",
+    "rule_id": "rule/ch8/volcano_clock",
+    "contract_version": 1,
+    "rule_fingerprint": "ffaedd74ad0b7942794c28714fdbb1e09a77bc1d67752028a47dd1c3745c8527",
+    "runtime_fingerprint": "171908bd01dbc4868298b97a3bed8fa01efff527e4d85f3d9c9087501728732a",
+    "inputs": {
+      "field": {
+        "uid": "field/1",
+        "cell": {
+          "row": 3,
+          "col": 1
+        },
+        "tile_key": "tile_volcano",
+        "profile": {
+          "type": "periodic_effect_field",
+          "expected_blackboard": {
+            "damage": 1000.0,
+            "cd_min": 8.0,
+            "cd_max": 12.0
+          },
+          "origin": {
+            "native_prefab": "tile_volcano",
+            "native_component": "-4218245673668302011",
+            "source_sha256": "c813f7c2308c2308baaa19a88a3e18305db7a18d1404f6a7f1351b018296d976"
+          },
+          "trigger": {
+            "rule": "rule/ch8/volcano_clock",
+            "stream": "field/volcano",
+            "sample_count": 1,
+            "parameters": {},
+            "initial": {
+              "mode": "sampled"
+            }
+          },
+          "membership": {
+            "rule": "rule/ch8/volcano_members",
+            "parameters": {}
+          },
+          "effects": [
+            {
+              "op": "no_source_damage",
+              "fixed_amount": 1000,
+              "damage_type": "true",
+              "attack_type": "NONE",
+              "damage_without_modify": false,
+              "ignore_for_sp": false,
+              "node_is_env_damage": false,
+              "env_blackboard_injected": true,
+              "environmental": true,
+              "origin": {
+                "native_node": "Torappu.Battle.Action.Nodes+NoSourceDamage"
+              },
+              "rules": {
+                "damage.pipeline": "rule/ch8/volcano_fixed_damage"
+              }
+            }
+          ]
+        },
+        "blackboard": {
+          "damage": 1000.0,
+          "cd_min": 8.0,
+          "cd_max": 12.0
+        },
+        "sequence": 0,
+        "generation": 1,
+        "active": true,
+        "due": null,
+        "task": null,
+        "task_seq": null,
+        "packet_chain": null
+      },
+      "blackboard": {
+        "damage": 1000.0,
+        "cd_min": 8.0,
+        "cd_max": 12.0
+      },
+      "samples": [
+        {
+          "value": 0.30132798868867816
+        }
+      ],
+      "phase": "initial",
+      "parameters": {}
+    },
+    "parameters": {
+      "minimum_key": "cd_min",
+      "maximum_key": "cd_max"
+    },
+    "context": {
+      "time": 0,
+      "seconds": 0.0,
+      "quantum": 0.03333333333333333,
+      "field_origin": {
+        "native_prefab": "tile_volcano",
+        "native_component": "-4218245673668302011",
+        "source_sha256": "c813f7c2308c2308baaa19a88a3e18305db7a18d1404f6a7f1351b018296d976"
+      },
+      "rule_scope": {
+        "scenario": {
+          "movement.speed": "rule/campaign_draft_move_speed",
+          "movement.path": "rule/m7_diagonal_path"
+        },
+        "source": {},
+        "target": {},
+        "owner": {},
+        "component": {},
+        "attribute_or_resource": {},
+        "ability": {},
+        "effect": {}
+      },
+      "source_id": null,
+      "target_id": null,
+      "owner_id": null
+    },
+    "stages": [
+      {
+        "id": "provider",
+        "provider": "model.field.uniform_trigger",
+        "raw": {
+          "enabled": true,
+          "next_delay_seconds": 9.205311954754713
+        }
+      }
+    ],
+    "raw": {
+      "enabled": true,
+      "next_delay_seconds": 9.205311954754713
+    },
+    "value": {
+      "enabled": true,
+      "next_delay_seconds": 9.205311954754713
+    },
+    "numeric": {
+      "backend": "float",
+      "rounding": "half_even"
+    },
+    "provider": {
+      "name": "model.field.uniform_trigger",
+      "module": "ark_sim.domains.periodic_fields",
+      "qualname": "uniform_trigger",
+      "version": "ark-preset/1",
+      "source_sha256": "c6ee3ae350a43577a7a41ad43871c316cba7896190c89a5df99c8453ded759d4",
+      "descriptor": {}
+    },
+    "binding": {
+      "owner": "scenario",
+      "origin": "explicit",
+      "overrides": [
+        {
+          "scope": "explicit",
+          "rule_id": "rule/ch8/volcano_clock"
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "rule/ch8/volcano_clock": {
+      "id": "rule/ch8/volcano_clock",
+      "kind": "rule",
+      "contract": "field.trigger",
+      "parameters": {
+        "minimum_key": "cd_min",
+        "maximum_key": "cd_max"
+      },
+      "implementation": {
+        "type": "provider",
+        "provider": "model.field.uniform_trigger"
+      }
+    }
+  },
+  "rule_fingerprints": {
+    "rule/ch8/volcano_clock": "ffaedd74ad0b7942794c28714fdbb1e09a77bc1d67752028a47dd1c3745c8527"
+  },
+  "provider_identities": {
+    "model.field.uniform_trigger": {
+      "name": "model.field.uniform_trigger",
+      "module": "ark_sim.domains.periodic_fields",
+      "qualname": "uniform_trigger",
+      "version": "ark-preset/1",
+      "source_sha256": "c6ee3ae350a43577a7a41ad43871c316cba7896190c89a5df99c8453ded759d4",
+      "descriptor": {}
+    }
+  },
+  "runtime": "171908bd01dbc4868298b97a3bed8fa01efff527e4d85f3d9c9087501728732a",
+  "source_prefix_original_receipt": "9bb998a715d9dd00ae064a6b0ce6b228b6319d0d519c4d3cda70ac0279722a71",
+  "scope": "One actualsource covered uniformclock trace extracted beforecleanup. Identity/params bound to freshCompiler82db; later tests no largejournal dependency."
+}
