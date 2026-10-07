@@ -1,0 +1,157 @@
+{
+  "schema": "ark-sim/chapter0-native-selection-declarations/v1",
+  "dump_sha256": "18c43dde9466317c45a786a0e4fa35cd8894d128592adda4394704bf99ea477b",
+  "select_source": {
+    "2": "INPUT_TARGET"
+  },
+  "select_timing": {
+    "0": "AT_BEGINING",
+    "1": "BEFORE_SPELL_START",
+    "2": "RESELECT_IF_TARGET_DEAD",
+    "3": "BEFORE_FIRST_SPELL_START"
+  },
+  "finish_reason": {
+    "0": "NORMAL_EXIT",
+    "1": "INTERRUPTED",
+    "2": "OWNER_DEAD",
+    "3": "TARGET_DEAD",
+    "4": "PALSY"
+  },
+  "evidence": [
+    {
+      "line": 368013,
+      "text": "public enum AbilityStandard.SelectTargetSource // TypeDefIndex: 9767"
+    },
+    {
+      "line": 368014,
+      "text": "{"
+    },
+    {
+      "line": 368015,
+      "text": "\t// Fields"
+    },
+    {
+      "line": 368016,
+      "text": "\tpublic int value__; // 0x0"
+    },
+    {
+      "line": 368017,
+      "text": "\tpublic const AbilityStandard.SelectTargetSource NONE = 0;"
+    },
+    {
+      "line": 368018,
+      "text": "\tpublic const AbilityStandard.SelectTargetSource FROM_OWNER = 1;"
+    },
+    {
+      "line": 368019,
+      "text": "\tpublic const AbilityStandard.SelectTargetSource INPUT_TARGET = 2;"
+    },
+    {
+      "line": 368020,
+      "text": "\tpublic const AbilityStandard.SelectTargetSource INPUT_POINT = 3;"
+    },
+    {
+      "line": 368021,
+      "text": "\tpublic const AbilityStandard.SelectTargetSource INPUT_GRID_POS = 4;"
+    },
+    {
+      "line": 368022,
+      "text": "}"
+    },
+    {
+      "line": 368023,
+      "text": ""
+    },
+    {
+      "line": 368024,
+      "text": "// Namespace: "
+    },
+    {
+      "line": 368025,
+      "text": "public enum AbilityStandard.SelectTargetTiming // TypeDefIndex: 9768"
+    },
+    {
+      "line": 368026,
+      "text": "{"
+    },
+    {
+      "line": 368027,
+      "text": "\t// Fields"
+    },
+    {
+      "line": 368028,
+      "text": "\tpublic int value__; // 0x0"
+    },
+    {
+      "line": 368029,
+      "text": "\tpublic const AbilityStandard.SelectTargetTiming AT_BEGINING = 0;"
+    },
+    {
+      "line": 368030,
+      "text": "\tpublic const AbilityStandard.SelectTargetTiming BEFORE_SPELL_START = 1;"
+    },
+    {
+      "line": 368031,
+      "text": "\tpublic const AbilityStandard.SelectTargetTiming RESELECT_IF_TARGET_DEAD = 2;"
+    },
+    {
+      "line": 368032,
+      "text": "\tpublic const AbilityStandard.SelectTargetTiming BEFORE_FIRST_SPELL_START = 3;"
+    },
+    {
+      "line": 368033,
+      "text": "}"
+    },
+    {
+      "line": 367458,
+      "text": "public enum Ability.FinishReason // TypeDefIndex: 9762"
+    },
+    {
+      "line": 367459,
+      "text": "{"
+    },
+    {
+      "line": 367460,
+      "text": "\t// Fields"
+    },
+    {
+      "line": 367461,
+      "text": "\tpublic int value__; // 0x0"
+    },
+    {
+      "line": 367462,
+      "text": "\tpublic const Ability.FinishReason NORMAL_EXIT = 0;"
+    },
+    {
+      "line": 367463,
+      "text": "\tpublic const Ability.FinishReason INTERRUPTED = 1;"
+    },
+    {
+      "line": 367464,
+      "text": "\tpublic const Ability.FinishReason OWNER_DEAD = 2;"
+    },
+    {
+      "line": 367465,
+      "text": "\tpublic const Ability.FinishReason TARGET_DEAD = 3;"
+    },
+    {
+      "line": 367466,
+      "text": "\tpublic const Ability.FinishReason PALSY = 4;"
+    },
+    {
+      "line": 367467,
+      "text": "}"
+    },
+    {
+      "line": 367468,
+      "text": ""
+    },
+    {
+      "line": 367469,
+      "text": "// Namespace: Torappu.Battle"
+    }
+  ],
+  "interpretation": "Seven MeleeAttack timing0 supports begin capture rather than RESELECT_IF_TARGET_DEAD2. FinishReason enum proves available distinction only; callback body/cancel ordering not recovered. Public actual death tests use explicit reference policy.",
+  "method_bodies_recovered": false,
+  "whole_stage": false
+}
