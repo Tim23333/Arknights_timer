@@ -1,0 +1,16 @@
+"""Static verification of tightened trusted-local admission conditions."""
+import ast,json,hashlib
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2];OUT=ROOT/'validation/campaign/chapter10_stage_assembly_peer_v2';sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+def main():
+    checker=ROOT/'tools/chapter10_whole_admission_v1/check.py';pending=ROOT/'validation/campaign/chapter10_stage_assembly_v2/whole.admission.pending94d2.v2.json';source_receipt=OUT/'source.review.v1.json';parent_full=ROOT/'validation/campaign/chapter10_joint_v1/full.108.v1.json'
+    files=[checker,pending,source_receipt,parent_full,Path(__file__)];before={str(p):sha(p) for p in files};text=checker.read_text(encoding='utf8');ast.parse(text)
+    required=["SOURCE_REVIEW_SHA = '3e8c1ed0c650718c99b7b861ac79a9cbb3704bb64c5059addad45ad378600fca'","sha(parent_path) == PARENT_FULL_SHA","len(expected_cases) == 1219","{c['case'] for c in d['cases']} == expected_cases","len(d['cases']) == 1219","bool(modules)","Path(modules.get('ark_sim', '')).resolve() == runtime / 'ark_sim/__init__.py'","Path(p).relative_to(runtime).as_posix() in inventory","d['source_before'].get(reviewed_package)","pins['source']['sha256'] == SOURCE_REVIEW_SHA","exact_overlay","'admitted': all(v['passed'] for v in checks.values())"]
+    assert all(s in text for s in required)
+    assert sha(source_receipt)=='3e8c1ed0c650718c99b7b861ac79a9cbb3704bb64c5059addad45ad378600fca' and sha(parent_full)=='13dbdfbb16f875851dc3ceded43b1fd05d1898db62fa4fb4b34a77bf5a61b74c'
+    parent=json.loads(parent_full.read_bytes());ids=[c['case'] for c in parent['cases']];assert len(ids)==len(set(ids))==1219
+    d=json.loads(pending.read_bytes());assert d['admitted'] is False and d['whole_run_started'] is False and d['whole_stage_passed'] is False and d['checks']['baseline']['passed'] is True and d['checks']['full']['passed'] is False and d['checks']['prefix']['passed'] is False
+    after={str(p):sha(p) for p in files};assert before==after
+    report={'schema':'ark-sim/tightened-admission-static-review/v2','tool_ready_to_freeze':True,'source_before':before,'source_after':after,'source_equal':True,'fixed_expected_unique_nodeids':1219,'static_findings_resolved':['source-review pinned SHA plus reviewedV3 package SHA association','actual module map nonempty and exact ark_sim root plus frozen inventory membership','case length1219 plus exact expected set of1219 distinct IDs implies no duplicate rows','finite entire canonicalJSON equality after one metadata removal retains1vs1.0/bool type distinctions','trusted local producer evidence boundary explicitly stated'],'actual_pending_observed':d['checks'],'admission_execution_approved':False,'whole_stage_approved':False,'core_approved':False,'simulation_started':False,'scope':'Static tool condition review only. Root may freeze this exact checker SHA. No whole launch until all completed trusted execution gates pass; this receipt never upgrades a runtime result.'}
+    path=OUT/'admission.static.review.v2.json';assert not path.exists();path.write_text(json.dumps(report,indent=2)+'\n',encoding='utf8');print(json.dumps({'tool_ready_to_freeze':True,'checker_SHA':sha(checker),'report_SHA':sha(path),'current_admitted':False}))
+if __name__=='__main__':main()
