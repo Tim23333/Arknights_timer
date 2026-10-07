@@ -1,0 +1,11 @@
+# Independent chapter0 numeric and source input review
+
+This reviewer consumes the frozen module bytes and exact native source, without importing the author's fixture, oracle or assertions. Each original consumer retains all owned abilities and native metadata. Own receivers use HP 11731, DEF 83, MRES 17/61, SP 7; additional scenes use multiple blocked enemies, unblocked distance, public withdrawal and public deployment of another target.
+
+The native numerical oracle is derived independently from raw ATK, scale, baseAttackTime, exact authored OnAttack frame and full animation frame. HP and SP are checked on actual actors. Every scene writes a real disk checkpoint, loads it, and compares forward, checkpoint and head replay across snapshot, full events, event count, continuation state and complete checkpoint.
+
+`actual.v1.json` retains ten passing cases (all eight native consumers, multiple block and far target) and eight failures. Seven attackSpeed=1.25 probes assumed animation hit/full time also scaled with attackSpeed; the actual standard rules instead preserve declared animation seconds while scaling only the attack interval. Source method bodies linking native attackSpeed to animation clocks are unavailable, so this remains an explicit source gap, not a native claim. The eighth failed scene omitted the new target from its public deployment roster.
+
+`actual.v2.json` checks seven speed probes against the explicitly declared standard reference clock and reruns the corrected public withdrawal/deployment scene. It does not erase or convert v1 failures into source acceptance. `review_inputs.py` independently checks the fixed table's last two normal stages, complete typed native documents, actions, predefines and DB references; all eight native mode/root/node and projected attribute fields; exact hit/full animation fields; actual source SHA locks.
+
+Blocker selection tie timing, category/unit type constants and stun immunity enum projection are reference policies. Native broader immunity, animation scaling, whole-stage completion and client behavior remain outside this bounded approval. Runtime is actual primary08; no kernel or author source is modified. All raw runs use fixed E-drive leases and automatic cleanup, with compact completion receipts retained.
