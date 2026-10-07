@@ -1,14 +1,14 @@
 """Actual source bloodline behavior and owned descendant boundary evidence."""
 import sys,os,json,copy,hashlib,traceback
 from pathlib import Path
-ROOT=Path(__file__).resolve().parents[2];CAND=(ROOT/'../unpack_work/campaign_c10_bloodline_v1_candidate').resolve()
+ROOT=Path(__file__).resolve().parents[2];CAND=(ROOT/'../unpack_work/campaign_c10_joint_v1_candidate').resolve()
 sys.path.insert(0,str(CAND));sys.path.insert(1,str(ROOT))
 from ark_sim import Compiler,Engine
 from ark_sim.contracts import thaw
 from ark_sim.adapters.api import implementation_digest
 from ark_sim.tools.replay import replay
 from tools.chapter10_bloodline_v1.build import build_all,providers,entity_id,KEYS,MARK,BLOCK,DEATH
-OUT=ROOT/'validation/campaign/chapter10_bloodline_v1';LOG=Path(os.environ['ARKSIM_RUN_DIR']);FACTS={};ARTIFACTS=[]
+OUT=ROOT/'validation/campaign/chapter10_remaining_v2';LOG=Path(os.environ['ARKSIM_RUN_DIR']);FACTS={};ARTIFACTS=[]
 sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
 def cp(s):return json.loads(json.dumps(s.checkpoint()))
 def player():return {'id':'unit/blood/test/player','kind':'entity','tags':['player'],'components':{'attributes':{'base':{'max_hp':7000,'atk':10000,'def':0,'mres':0,'block_count':1,'attack_speed_ratio':1}},'resources':{'hp':{'role':'health','capacity':7000,'initial':7000}},'spatial':{},'selection_state':{'side':0,'motion':1,'category':1,'unit_type':1},'deployable':{'base_cost':0,'terrain':'ground','capacity':1,'cooldown_seconds':0},'abilities':['ability/blood/test/kill']}}
@@ -108,5 +108,5 @@ def main():
     for fn in [death_and_wait_CPP,bloodsucker_marker_DR_types,blocked_stacks_cap_release,melee_source_frames,nonzero_route_cursor,restore_and_callback_tamper,spawn_late_fault_rollback]:
         try:fn();results.append({'case':fn.__name__,'passed':True})
         except Exception as error:results.append({'case':fn.__name__,'passed':False,'error':str(error),'traceback':traceback.format_exc()})
-    after={str(p):sha(p) for p in files};code=0 if all(r['passed'] for r in results) and guards==after else 1;report={'core_before':before,'core_after':implementation_digest(),'actual_exit':code,'results':results,'facts':FACTS,'artifacts':ARTIFACTS,'source_before':guards,'source_after':after,'source_equal':guards==after};path=OUT/'author.final.resume.v8.json';assert not path.exists();path.write_text(json.dumps(report,indent=2)+'\n',encoding='utf8');print(json.dumps({'actual_exit':code,'results':results}));return code
+    after={str(p):sha(p) for p in files};code=0 if all(r['passed'] for r in results) and guards==after else 1;report={'core_before':before,'core_after':implementation_digest(),'actual_exit':code,'results':results,'facts':FACTS,'artifacts':ARTIFACTS,'source_before':guards,'source_after':after,'source_equal':guards==after};path=OUT/'author.bloodline.joint.v1.json';assert not path.exists();path.write_text(json.dumps(report,indent=2)+'\n',encoding='utf8');print(json.dumps({'actual_exit':code,'results':results}));return code
 if __name__=='__main__':raise SystemExit(main())

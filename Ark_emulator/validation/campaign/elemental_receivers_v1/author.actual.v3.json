@@ -1,0 +1,575 @@
+{
+  "schema": "ark-sim/elemental-receivers-author/v1",
+  "source_before": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\common_elemental_receivers\\source.bson.v2.json": "540861ff8b357fa18b2d00e10484031adf8b2b172d0b96bc4e0007d3ba9ec533",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_emulator\\data_buff_table.json": "f90590c1ed8406049124d9afadd43aaa043881a0ec838f9a5e474b9b7688faf6",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receivers_v1\\verify_fixed_v3.py": "ceec8bfc834ce4dedde2fc5d1b15036b90d1b732797f505f735706ddc842f445",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receivers_v1\\build.py": "e7543ac0eaf8afd59f960d89c34b330ba669182a856fb8ef62fa4a2edf9b6202",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\roster\\fixed12.m26.reference_module.json": "fd48b0cc67a6b96457b6d7df69397493b3914d65676c554a92b90193374c2c04"
+  },
+  "whole_stage": false,
+  "client_verified": false,
+  "results": [
+    {
+      "case": "actual_fixed_operator113_no_recovery_CPP",
+      "passed": true
+    },
+    {
+      "case": "fire_reduce_RES_before_source_free1200_CPP",
+      "passed": true
+    },
+    {
+      "case": "dark15sec_SP_block_drain_and_DOT_lock_reset_CPP",
+      "passed": false,
+      "error": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receivers_v1\\verify_fixed_v3.py\", line 142, in main\n    fn()\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receivers_v1\\verify_fixed_v3.py\", line 127, in dark\n    assert probe.ctx.resources.current('operator', 'sp') == 18\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n"
+    }
+  ],
+  "facts": {
+    "basic": {
+      "state": {
+        "remaining": {
+          "FIRE": 1000,
+          "DARK": 887.0
+        },
+        "break": null,
+        "generation": 0,
+        "last_time": 69
+      },
+      "HP": 1565,
+      "cps": [
+        {
+          "tick": 4,
+          "sha256": "19614c4bd68e8400020bb8543716b7d8e0efb92660a8e47f0af250c85350270a"
+        },
+        {
+          "tick": 6,
+          "sha256": "aa52f1459d963a481135c451fc2b133b860651a83015b9572ffa604750e0ffd0"
+        }
+      ]
+    },
+    "fire": {
+      "original_HP": 3124,
+      "original_res": 10.0,
+      "reduced_res": -10.0,
+      "HP": 1924.0,
+      "expected_loss": 1200.0,
+      "events": [
+        {
+          "id": 881,
+          "type": "damage.accepted",
+          "payload": {
+            "source": null,
+            "source_policy": "none",
+            "origin": {
+              "source": "native-elemental-break-reference",
+              "elemental_break": {
+                "owner": 2,
+                "generation": 1,
+                "provenance": {
+                  "element": "FIRE",
+                  "source": 3,
+                  "source_stamp": {
+                    "id": 3,
+                    "definition": "unit/receiver/probe_source",
+                    "alive": true,
+                    "state": "alive",
+                    "death_generation": 0,
+                    "lifecycle_generation": 0
+                  },
+                  "source_snapshot": {
+                    "id": 3,
+                    "definition_id": "unit/receiver/probe_source",
+                    "tags": [
+                      "enemy"
+                    ],
+                    "components": {
+                      "attributes": {
+                        "base": {
+                          "max_hp": 10000,
+                          "atk": 0,
+                          "def": 0,
+                          "mres": 0
+                        },
+                        "modifiers": []
+                      },
+                      "resources": {
+                        "hp": {
+                          "current": 10000,
+                          "spec": {
+                            "role": "health",
+                            "initial": 10000,
+                            "capacity": 10000
+                          },
+                          "observed_capacity": 10000,
+                          "capacity_signature": "0d5a26d5f1078ec79c06aee6f748de27a52d1942fc4a4e99abda4b397870412c"
+                        }
+                      },
+                      "selection_state": {
+                        "side": 1,
+                        "category": 1,
+                        "motion": 1
+                      },
+                      "spatial": {
+                        "position": {
+                          "row": 2,
+                          "col": 6
+                        },
+                        "facing": "right"
+                      },
+                      "abilities": [
+                        "ability/receiver/probe/0"
+                      ],
+                      "lifecycle": {
+                        "policy": "policy/ark_lifecycle"
+                      },
+                      "runtime": {
+                        "alive": true,
+                        "state": "alive",
+                        "deployed": false,
+                        "initializing": false,
+                        "casts": {
+                          "cast/3/1": {
+                            "id": "cast/3/1",
+                            "source": 3,
+                            "ability": "ability/receiver/probe/0",
+                            "targets": [
+                              2
+                            ],
+                            "activation_mode": "manual",
+                            "started_at": 5,
+                            "finish_at": 5,
+                            "tasks": [
+                              10,
+                              11
+                            ],
+                            "blocks_attacks": true,
+                            "automatic": false,
+                            "parameters": {},
+                            "generation": 1,
+                            "payments": []
+                          }
+                        },
+                        "cooldowns": {
+                          "ability/receiver/probe/0": 5
+                        },
+                        "next_attack": 0,
+                        "blocked_by": null,
+                        "rule_bindings": {},
+                        "next_cast_id": 2
+                      },
+                      "buffs": {
+                        "instances": [],
+                        "next_instance_id": 1
+                      }
+                    },
+                    "version": 7,
+                    "sampled_at": 5
+                  },
+                  "request": {
+                    "op": "elemental_damage",
+                    "element": "FIRE",
+                    "amount": 1000,
+                    "raw_amount": 1000
+                  }
+                }
+              }
+            },
+            "node_is_env_damage": false,
+            "env_blackboard_injected": false,
+            "environmental": false,
+            "ignore_for_sp": false,
+            "attack_type": "NORMAL",
+            "damage_without_modify": false,
+            "target": 2,
+            "amount": 1200.0,
+            "pipeline_amount": 1200.0,
+            "settlement_amount": 1200.0,
+            "actual_health_loss": 1200.0,
+            "total_health_loss": 1200.0,
+            "resource": "hp",
+            "ability": null,
+            "allocations": [
+              {
+                "target": 2,
+                "resource": "hp",
+                "requested_delta": -1200.0,
+                "actual_delta": -1200.0,
+                "health_loss": 1200.0,
+                "is_health": true
+              }
+            ]
+          },
+          "time": 5,
+          "cause": 758
+        }
+      ],
+      "cps": [
+        {
+          "tick": 4,
+          "sha256": "cc9414ea924d2f71e18b806efb137f68aef93eae9a3460aebafef232efddbb88"
+        },
+        {
+          "tick": 6,
+          "sha256": "cb5615b7bc1be9f0a3d1aedf14833c99a6ae5f857184454623b23cbbf1fb0a9e"
+        },
+        {
+          "tick": 304,
+          "sha256": "02214c5fe08d2cbd29273bfc4e6a180b1a6ca74c7cbe748c7a15e94a51b199f4"
+        },
+        {
+          "tick": 305,
+          "sha256": "f6cbd8fd0c9c3d4b7f041a6ed4111d727cbeaa27417dbe5139ebd012f4f6753e"
+        }
+      ]
+    },
+    "dark_probe": {
+      "HP": 2944.0,
+      "initial_HP": 3124,
+      "res": 10.0,
+      "initial_SP": 0,
+      "SP40": 16.0,
+      "flags": [
+        1,
+        24
+      ],
+      "state": {
+        "remaining": {
+          "FIRE": 1000,
+          "DARK": 0
+        },
+        "break": {
+          "generation": 1,
+          "target_stamp": {
+            "id": 2,
+            "definition": "unit/char_107_liskam",
+            "alive": true,
+            "state": "alive",
+            "death_generation": 0,
+            "lifecycle_generation": 0
+          },
+          "element": "DARK",
+          "due": 455,
+          "phase": 7,
+          "seq": 27,
+          "provenance": {
+            "element": "DARK",
+            "source": 3,
+            "source_stamp": {
+              "id": 3,
+              "definition": "unit/receiver/probe_source",
+              "alive": true,
+              "state": "alive",
+              "death_generation": 0,
+              "lifecycle_generation": 0
+            },
+            "source_snapshot": {
+              "id": 3,
+              "definition_id": "unit/receiver/probe_source",
+              "tags": [
+                "enemy"
+              ],
+              "components": {
+                "attributes": {
+                  "base": {
+                    "max_hp": 10000,
+                    "atk": 0,
+                    "def": 0,
+                    "mres": 0
+                  },
+                  "modifiers": []
+                },
+                "resources": {
+                  "hp": {
+                    "current": 10000,
+                    "spec": {
+                      "role": "health",
+                      "initial": 10000,
+                      "capacity": 10000
+                    },
+                    "observed_capacity": 10000,
+                    "capacity_signature": "0d5a26d5f1078ec79c06aee6f748de27a52d1942fc4a4e99abda4b397870412c"
+                  }
+                },
+                "selection_state": {
+                  "side": 1,
+                  "category": 1,
+                  "motion": 1
+                },
+                "spatial": {
+                  "position": {
+                    "row": 2,
+                    "col": 6
+                  },
+                  "facing": "right"
+                },
+                "abilities": [
+                  "ability/receiver/probe/0",
+                  "ability/receiver/probe/1"
+                ],
+                "lifecycle": {
+                  "policy": "policy/ark_lifecycle"
+                },
+                "runtime": {
+                  "alive": true,
+                  "state": "alive",
+                  "deployed": false,
+                  "initializing": false,
+                  "casts": {
+                    "cast/3/1": {
+                      "id": "cast/3/1",
+                      "source": 3,
+                      "ability": "ability/receiver/probe/0",
+                      "targets": [
+                        2
+                      ],
+                      "activation_mode": "manual",
+                      "started_at": 5,
+                      "finish_at": 5,
+                      "tasks": [
+                        16,
+                        17
+                      ],
+                      "blocks_attacks": true,
+                      "automatic": false,
+                      "parameters": {},
+                      "generation": 1,
+                      "payments": []
+                    }
+                  },
+                  "cooldowns": {
+                    "ability/receiver/probe/0": 5
+                  },
+                  "next_attack": 0,
+                  "blocked_by": null,
+                  "rule_bindings": {},
+                  "next_cast_id": 2
+                },
+                "buffs": {
+                  "instances": [],
+                  "next_instance_id": 1
+                }
+              },
+              "version": 7,
+              "sampled_at": 5
+            },
+            "request": {
+              "op": "elemental_damage",
+              "element": "DARK",
+              "amount": 1000,
+              "raw_amount": 1000
+            }
+          },
+          "task": 19
+        },
+        "generation": 1,
+        "last_time": 39
+      },
+      "events": [
+        {
+          "id": 898,
+          "type": "damage.accepted",
+          "payload": {
+            "source": null,
+            "source_policy": "none",
+            "origin": {
+              "source": "native-elemental-break-reference",
+              "elemental_break": {
+                "owner": 2,
+                "generation": 1,
+                "provenance": {
+                  "element": "DARK",
+                  "source": 3,
+                  "source_stamp": {
+                    "id": 3,
+                    "definition": "unit/receiver/probe_source",
+                    "alive": true,
+                    "state": "alive",
+                    "death_generation": 0,
+                    "lifecycle_generation": 0
+                  },
+                  "source_snapshot": {
+                    "id": 3,
+                    "definition_id": "unit/receiver/probe_source",
+                    "tags": [
+                      "enemy"
+                    ],
+                    "components": {
+                      "attributes": {
+                        "base": {
+                          "max_hp": 10000,
+                          "atk": 0,
+                          "def": 0,
+                          "mres": 0
+                        },
+                        "modifiers": []
+                      },
+                      "resources": {
+                        "hp": {
+                          "current": 10000,
+                          "spec": {
+                            "role": "health",
+                            "initial": 10000,
+                            "capacity": 10000
+                          },
+                          "observed_capacity": 10000,
+                          "capacity_signature": "0d5a26d5f1078ec79c06aee6f748de27a52d1942fc4a4e99abda4b397870412c"
+                        }
+                      },
+                      "selection_state": {
+                        "side": 1,
+                        "category": 1,
+                        "motion": 1
+                      },
+                      "spatial": {
+                        "position": {
+                          "row": 2,
+                          "col": 6
+                        },
+                        "facing": "right"
+                      },
+                      "abilities": [
+                        "ability/receiver/probe/0",
+                        "ability/receiver/probe/1"
+                      ],
+                      "lifecycle": {
+                        "policy": "policy/ark_lifecycle"
+                      },
+                      "runtime": {
+                        "alive": true,
+                        "state": "alive",
+                        "deployed": false,
+                        "initializing": false,
+                        "casts": {
+                          "cast/3/1": {
+                            "id": "cast/3/1",
+                            "source": 3,
+                            "ability": "ability/receiver/probe/0",
+                            "targets": [
+                              2
+                            ],
+                            "activation_mode": "manual",
+                            "started_at": 5,
+                            "finish_at": 5,
+                            "tasks": [
+                              16,
+                              17
+                            ],
+                            "blocks_attacks": true,
+                            "automatic": false,
+                            "parameters": {},
+                            "generation": 1,
+                            "payments": []
+                          }
+                        },
+                        "cooldowns": {
+                          "ability/receiver/probe/0": 5
+                        },
+                        "next_attack": 0,
+                        "blocked_by": null,
+                        "rule_bindings": {},
+                        "next_cast_id": 2
+                      },
+                      "buffs": {
+                        "instances": [],
+                        "next_instance_id": 1
+                      }
+                    },
+                    "version": 7,
+                    "sampled_at": 5
+                  },
+                  "request": {
+                    "op": "elemental_damage",
+                    "element": "DARK",
+                    "amount": 1000,
+                    "raw_amount": 1000
+                  }
+                }
+              }
+            },
+            "node_is_env_damage": false,
+            "env_blackboard_injected": false,
+            "environmental": false,
+            "ignore_for_sp": true,
+            "attack_type": "BUFF",
+            "damage_without_modify": false,
+            "target": 2,
+            "amount": 90.0,
+            "pipeline_amount": 90.0,
+            "settlement_amount": 90.0,
+            "actual_health_loss": 90.0,
+            "total_health_loss": 90.0,
+            "resource": "hp",
+            "ability": null,
+            "allocations": [
+              {
+                "target": 2,
+                "resource": "hp",
+                "requested_delta": -90.0,
+                "actual_delta": -90.0,
+                "health_loss": 90.0,
+                "is_health": true
+              }
+            ]
+          },
+          "time": 5,
+          "cause": 775
+        },
+        {
+          "id": 1001,
+          "type": "damage.accepted",
+          "payload": {
+            "source": null,
+            "source_policy": "none",
+            "origin": {
+              "declared": {
+                "source": "native-elemental-break-reference"
+              },
+              "buff_timer": {
+                "definition": "buff/campaign/elemental_receivers/dark",
+                "instance": "buff/2/3",
+                "generation": 1,
+                "owner": 2
+              }
+            },
+            "node_is_env_damage": false,
+            "env_blackboard_injected": false,
+            "environmental": false,
+            "ignore_for_sp": true,
+            "attack_type": "BUFF",
+            "damage_without_modify": false,
+            "target": 2,
+            "amount": 90.0,
+            "pipeline_amount": 90.0,
+            "settlement_amount": 90.0,
+            "actual_health_loss": 90.0,
+            "total_health_loss": 90.0,
+            "resource": "hp",
+            "ability": null,
+            "allocations": [
+              {
+                "target": 2,
+                "resource": "hp",
+                "requested_delta": -90.0,
+                "actual_delta": -90.0,
+                "health_loss": 90.0,
+                "is_health": true
+              }
+            ]
+          },
+          "time": 35,
+          "cause": 981
+        }
+      ]
+    }
+  },
+  "comparison_exclusions": [],
+  "source_after": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\common_elemental_receivers\\source.bson.v2.json": "540861ff8b357fa18b2d00e10484031adf8b2b172d0b96bc4e0007d3ba9ec533",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_emulator\\data_buff_table.json": "f90590c1ed8406049124d9afadd43aaa043881a0ec838f9a5e474b9b7688faf6",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receivers_v1\\verify_fixed_v3.py": "ceec8bfc834ce4dedde2fc5d1b15036b90d1b732797f505f735706ddc842f445",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receivers_v1\\build.py": "e7543ac0eaf8afd59f960d89c34b330ba669182a856fb8ef62fa4a2edf9b6202",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\roster\\fixed12.m26.reference_module.json": "fd48b0cc67a6b96457b6d7df69397493b3914d65676c554a92b90193374c2c04"
+  },
+  "source_guard_equal": true,
+  "actual_exit": 1
+}

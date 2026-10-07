@@ -1,0 +1,753 @@
+{
+  "schema": "ark-sim/elemental-receiver-independent-peer/v1",
+  "mechanism_cases_passed": true,
+  "implementation": "cd873dbff6ef66d9a17605ab6b02b6cc5a427090156577bd87dedd5bab428e18",
+  "primary_unchanged": true,
+  "source_hashes": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\common_elemental_receivers\\source.bson.v2.json": "540861ff8b357fa18b2d00e10484031adf8b2b172d0b96bc4e0007d3ba9ec533",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_emulator\\data_buff_table.json": "f90590c1ed8406049124d9afadd43aaa043881a0ec838f9a5e474b9b7688faf6",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\roster\\fixed12.m26.reference_module.json": "fd48b0cc67a6b96457b6d7df69397493b3914d65676c554a92b90193374c2c04",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receivers_v1\\build.py": "e7543ac0eaf8afd59f960d89c34b330ba669182a856fb8ef62fa4a2edf9b6202"
+  },
+  "source_unchanged": true,
+  "cases": [
+    {
+      "case": "public_fixed_roster_113",
+      "passed": true,
+      "details": null
+    },
+    {
+      "case": "FIRE1200_RES_before_NoSource",
+      "passed": true,
+      "details": null
+    },
+    {
+      "case": "DARK15pulses_SP_stop_skill24_lock_reset",
+      "passed": true,
+      "details": null
+    },
+    {
+      "case": "normal_attack_continues",
+      "passed": true,
+      "details": null
+    },
+    {
+      "case": "native21_vs5_immunes_neutral",
+      "passed": true,
+      "details": null
+    },
+    {
+      "case": "FIRE_NightS3_layer_composition",
+      "passed": true,
+      "details": null
+    },
+    {
+      "case": "death_withdraw_cancel",
+      "passed": true,
+      "details": null
+    },
+    {
+      "case": "checkpoint_single_field_tamper_boundary",
+      "passed": true,
+      "details": {
+        "in_memory_accepted": [
+          "remaining",
+          "due",
+          "generation",
+          "task",
+          "seq",
+          "provenance"
+        ]
+      }
+    }
+  ],
+  "facts": {
+    "113": {
+      "HP": 1565,
+      "EP": {
+        "remaining": {
+          "FIRE": 1000,
+          "DARK": 887.0
+        },
+        "break": null,
+        "generation": 0,
+        "last_time": 40
+      }
+    },
+    "fire": {
+      "mres_before": 10.0,
+      "mres_after": -10.0,
+      "HP_before": 3124,
+      "HP_after": 1924.0,
+      "SP_after": 2.0,
+      "damage": [
+        {
+          "id": 1095,
+          "type": "damage.accepted",
+          "payload": {
+            "source": null,
+            "source_policy": "none",
+            "origin": {
+              "source": "native-elemental-break-reference",
+              "elemental_break": {
+                "owner": 2,
+                "generation": 1,
+                "provenance": {
+                  "element": "FIRE",
+                  "source": 3,
+                  "source_stamp": {
+                    "id": 3,
+                    "definition": "unit/peer/element_source",
+                    "alive": true,
+                    "state": "alive",
+                    "death_generation": 0,
+                    "lifecycle_generation": 0
+                  },
+                  "source_snapshot": {
+                    "id": 3,
+                    "definition_id": "unit/peer/element_source",
+                    "tags": [
+                      "enemy",
+                      "ground"
+                    ],
+                    "components": {
+                      "attributes": {
+                        "base": {
+                          "max_hp": 100000,
+                          "atk": 0,
+                          "def": 0,
+                          "mres": 0
+                        },
+                        "modifiers": []
+                      },
+                      "resources": {
+                        "hp": {
+                          "current": 100000,
+                          "spec": {
+                            "initial": 100000,
+                            "capacity": 100000,
+                            "role": "health"
+                          },
+                          "observed_capacity": 100000,
+                          "capacity_signature": "5fdc58af09e64960d9b1cd61636925efb96a3da4e36cf1bd1e4ea8c56db8e923"
+                        }
+                      },
+                      "selection_state": {
+                        "side": 1,
+                        "category": 1,
+                        "motion": 1
+                      },
+                      "spatial": {
+                        "position": {
+                          "row": 3,
+                          "col": 4
+                        },
+                        "facing": "right"
+                      },
+                      "abilities": [
+                        "ability/peer/element/0"
+                      ],
+                      "lifecycle": {
+                        "policy": "policy/ark_lifecycle"
+                      },
+                      "runtime": {
+                        "alive": true,
+                        "state": "alive",
+                        "deployed": false,
+                        "initializing": false,
+                        "casts": {
+                          "cast/3/1": {
+                            "id": "cast/3/1",
+                            "source": 3,
+                            "ability": "ability/peer/element/0",
+                            "targets": [
+                              3
+                            ],
+                            "activation_mode": "manual",
+                            "started_at": 9,
+                            "finish_at": 9,
+                            "tasks": [
+                              10
+                            ],
+                            "blocks_attacks": true,
+                            "automatic": false,
+                            "parameters": {},
+                            "generation": 1,
+                            "payments": []
+                          }
+                        },
+                        "cooldowns": {
+                          "ability/peer/element/0": 9
+                        },
+                        "next_attack": 0,
+                        "blocked_by": null,
+                        "rule_bindings": {},
+                        "next_cast_id": 2
+                      },
+                      "buffs": {
+                        "instances": [],
+                        "next_instance_id": 1
+                      }
+                    },
+                    "version": 7,
+                    "sampled_at": 9
+                  },
+                  "request": {
+                    "op": "elemental_damage",
+                    "target": 2,
+                    "element": "FIRE",
+                    "amount": 1000,
+                    "raw_amount": 1000
+                  }
+                }
+              }
+            },
+            "ignore_for_sp": false,
+            "env_blackboard_injected": false,
+            "node_is_env_damage": false,
+            "environmental": false,
+            "attack_type": "NORMAL",
+            "damage_without_modify": false,
+            "target": 2,
+            "amount": 1200.0,
+            "pipeline_amount": 1200.0,
+            "settlement_amount": 1200.0,
+            "actual_health_loss": 1200.0,
+            "total_health_loss": 1200.0,
+            "resource": "hp",
+            "ability": null,
+            "allocations": [
+              {
+                "target": 2,
+                "resource": "hp",
+                "requested_delta": -1200.0,
+                "actual_delta": -1200.0,
+                "health_loss": 1200.0,
+                "is_health": true
+              }
+            ]
+          },
+          "time": 9,
+          "cause": 972
+        }
+      ]
+    },
+    "dark": {
+      "HP": 1774.0,
+      "SP": 2.0,
+      "damage_ticks": [
+        9,
+        39,
+        69,
+        99,
+        129,
+        159,
+        189,
+        219,
+        249,
+        279,
+        309,
+        339,
+        369,
+        399,
+        429
+      ],
+      "state": {
+        "remaining": {
+          "FIRE": 1000,
+          "DARK": 1000
+        },
+        "break": null,
+        "generation": 1,
+        "last_time": 462
+      },
+      "all_source_none": true
+    },
+    "normal_attack": {
+      "attack_ticks": [
+        1,
+        37,
+        73
+      ]
+    },
+    "flags": [
+      {
+        "flag": 21,
+        "immune": false,
+        "remaining": 1000
+      },
+      {
+        "flag": 5,
+        "immune": false,
+        "remaining": 1000
+      },
+      {
+        "flag": 21,
+        "immune": true,
+        "remaining": 887
+      }
+    ],
+    "night_layers": {
+      "base": 10.0,
+      "before_fire": 62.5,
+      "after_fire": 12.5,
+      "expected_ADDITION_then_MULTIPLIER": 12.5,
+      "raw_fire_formulaItem": "ADDITION",
+      "raw_roster_S3_layer": "direct_ratio",
+      "raw_roster_S3_value": 1.5,
+      "formula_reference": "https://prts.wiki/w/游戏数据基础",
+      "HP": 2074.0,
+      "SP": 2.0
+    },
+    "lifecycle": [
+      {
+        "kind": "dead",
+        "state": {
+          "remaining": {
+            "FIRE": 1000,
+            "DARK": 0
+          },
+          "break": null,
+          "generation": 2,
+          "last_time": 20
+        },
+        "pulses": 1
+      },
+      {
+        "kind": "withdraw",
+        "state": {
+          "remaining": {
+            "FIRE": 1000,
+            "DARK": 0
+          },
+          "break": null,
+          "generation": 2,
+          "last_time": 20
+        },
+        "pulses": 1
+      }
+    ],
+    "single_field_in_memory_restore": [
+      {
+        "field": "remaining",
+        "rejected": false
+      },
+      {
+        "field": "due",
+        "rejected": false
+      },
+      {
+        "field": "generation",
+        "rejected": false
+      },
+      {
+        "field": "task",
+        "rejected": false
+      },
+      {
+        "field": "seq",
+        "rejected": false
+      },
+      {
+        "field": "provenance",
+        "rejected": false
+      }
+    ],
+    "disk_byte_tamper_rejected": true
+  },
+  "actual_CP_head_proofs": [
+    {
+      "label": "113",
+      "cut": 10,
+      "end": 41,
+      "checkpoint_sha256": "8c7c273d1f4f9c6cb35e0e96ca75f21960f0d57372af4d2e4f96124cda01efc2",
+      "event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\elemental_receiver_peer_20261007_b\\1_113.active.jsonl.checkpoint-8b61be26d8854119aaee9702644595ef",
+        "sha256": "84aeb798d27f0f6f2bdc0dbcc7cd710180c341dc8083b696fd710b45ccdd3a77",
+        "bytes": 2238554,
+        "count": 1285
+      },
+      "observations": [
+        {
+          "snapshot": "4bf89d2489980e97456908329b72ac5f80b2244b3282b309512deb3aeef9b995",
+          "events": "6e4d5575ff0c67dc92cf165379363f7bd45102117bed93bd42408cf3f51e76d4",
+          "event_count": 4416,
+          "continuation_state": "e3a3fa41b74f858d4009537e279e980e4a2da77f3942e52a4f515411adf3bd41"
+        },
+        {
+          "snapshot": "4bf89d2489980e97456908329b72ac5f80b2244b3282b309512deb3aeef9b995",
+          "events": "6e4d5575ff0c67dc92cf165379363f7bd45102117bed93bd42408cf3f51e76d4",
+          "event_count": 4416,
+          "continuation_state": "e3a3fa41b74f858d4009537e279e980e4a2da77f3942e52a4f515411adf3bd41"
+        },
+        {
+          "snapshot": "4bf89d2489980e97456908329b72ac5f80b2244b3282b309512deb3aeef9b995",
+          "events": "6e4d5575ff0c67dc92cf165379363f7bd45102117bed93bd42408cf3f51e76d4",
+          "event_count": 4416,
+          "continuation_state": "e3a3fa41b74f858d4009537e279e980e4a2da77f3942e52a4f515411adf3bd41"
+        }
+      ],
+      "disk_CP_equal": true,
+      "head_equal": true
+    },
+    {
+      "label": "fire",
+      "cut": 10,
+      "end": 311,
+      "checkpoint_sha256": "1f1f283184d998953b5493237fcd143e00ed40a425fd147a91e5d2db44fced6c",
+      "event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\elemental_receiver_peer_20261007_b\\3_fire_proof.active.jsonl.checkpoint-4b3e4dcd8ba441758a28fe785c2eae43",
+        "sha256": "db8117d3083c3047fa2c1b73d51cfa71359ff0321083b925bcbeb01f34839a25",
+        "bytes": 1224029,
+        "count": 1151
+      },
+      "observations": [
+        {
+          "snapshot": "3a9838a5440f4338e41bfe7239615c0b07bf2b044bb1fdd46939d1dc1d68ee3e",
+          "events": "dc9543d454ce918c1e6dfeb07554ead4613931a47a6a3f6a11f4d073572ab821",
+          "event_count": 1622,
+          "continuation_state": "0125c04dd5f2b9548b7ee287d46e052d2697f4d2409a015da473a0e3c27799b6"
+        },
+        {
+          "snapshot": "3a9838a5440f4338e41bfe7239615c0b07bf2b044bb1fdd46939d1dc1d68ee3e",
+          "events": "dc9543d454ce918c1e6dfeb07554ead4613931a47a6a3f6a11f4d073572ab821",
+          "event_count": 1622,
+          "continuation_state": "0125c04dd5f2b9548b7ee287d46e052d2697f4d2409a015da473a0e3c27799b6"
+        },
+        {
+          "snapshot": "3a9838a5440f4338e41bfe7239615c0b07bf2b044bb1fdd46939d1dc1d68ee3e",
+          "events": "dc9543d454ce918c1e6dfeb07554ead4613931a47a6a3f6a11f4d073572ab821",
+          "event_count": 1622,
+          "continuation_state": "0125c04dd5f2b9548b7ee287d46e052d2697f4d2409a015da473a0e3c27799b6"
+        }
+      ],
+      "disk_CP_equal": true,
+      "head_equal": true
+    },
+    {
+      "label": "dark",
+      "cut": 40,
+      "end": 463,
+      "checkpoint_sha256": "76c6dadada7042f05069e36d8bff587c03f415c8c711a4a3b0912031da1c5c96",
+      "event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\elemental_receiver_peer_20261007_b\\4_dark.active.jsonl.checkpoint-90df6e3f41224660875c0bbe8b2268df",
+        "sha256": "802aae21b03767e824283cfcf37909aeb920784a4a7850f409f32fd856937eda",
+        "bytes": 1525573,
+        "count": 1257
+      },
+      "observations": [
+        {
+          "snapshot": "699bfa0f70ab4a19f03a97070b2753c485a397618094d0d2bdbcd2e7a486e810",
+          "events": "05c2f81f5d6698fd5f37caf68c0a5cff49e2bf9a20360be8adb5293d8ee14a85",
+          "event_count": 2603,
+          "continuation_state": "906ecee341358d6e2ed8fcade69756b6249b112b3590e3f348ffe6fb22cd6473"
+        },
+        {
+          "snapshot": "699bfa0f70ab4a19f03a97070b2753c485a397618094d0d2bdbcd2e7a486e810",
+          "events": "05c2f81f5d6698fd5f37caf68c0a5cff49e2bf9a20360be8adb5293d8ee14a85",
+          "event_count": 2603,
+          "continuation_state": "906ecee341358d6e2ed8fcade69756b6249b112b3590e3f348ffe6fb22cd6473"
+        },
+        {
+          "snapshot": "699bfa0f70ab4a19f03a97070b2753c485a397618094d0d2bdbcd2e7a486e810",
+          "events": "05c2f81f5d6698fd5f37caf68c0a5cff49e2bf9a20360be8adb5293d8ee14a85",
+          "event_count": 2603,
+          "continuation_state": "906ecee341358d6e2ed8fcade69756b6249b112b3590e3f348ffe6fb22cd6473"
+        }
+      ],
+      "disk_CP_equal": true,
+      "head_equal": true
+    },
+    {
+      "label": "normal",
+      "cut": 10,
+      "end": 100,
+      "checkpoint_sha256": "da6ccea8deb1c3cf63adbcb9cb9a27fafa79ac4d57e5548def18b189114a5327",
+      "event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\elemental_receiver_peer_20261007_b\\5_normal.active.jsonl.checkpoint-c120fc93218f4feaa33d03f68e0df40c",
+        "sha256": "1f319f59fbb3919cfeef465f18bd09fb50235e53a3240f610061787352caf190",
+        "bytes": 1276440,
+        "count": 1190
+      },
+      "observations": [
+        {
+          "snapshot": "e3edbb6e7ab531de72a31bb9ce310e825061c72b1f8248a2686307d4655727db",
+          "events": "88d8eaadaf0c44a23862287278374098fb09440d76bd76553892b58c31c61005",
+          "event_count": 1551,
+          "continuation_state": "0b4ef710b6491ee38991b4a8576bed0e25212a60f3dc5895b2792155e410b51a"
+        },
+        {
+          "snapshot": "e3edbb6e7ab531de72a31bb9ce310e825061c72b1f8248a2686307d4655727db",
+          "events": "88d8eaadaf0c44a23862287278374098fb09440d76bd76553892b58c31c61005",
+          "event_count": 1551,
+          "continuation_state": "0b4ef710b6491ee38991b4a8576bed0e25212a60f3dc5895b2792155e410b51a"
+        },
+        {
+          "snapshot": "e3edbb6e7ab531de72a31bb9ce310e825061c72b1f8248a2686307d4655727db",
+          "events": "88d8eaadaf0c44a23862287278374098fb09440d76bd76553892b58c31c61005",
+          "event_count": 1551,
+          "continuation_state": "0b4ef710b6491ee38991b4a8576bed0e25212a60f3dc5895b2792155e410b51a"
+        }
+      ],
+      "disk_CP_equal": true,
+      "head_equal": true
+    },
+    {
+      "label": "flag",
+      "cut": 10,
+      "end": 15,
+      "checkpoint_sha256": "f7f0dbb25f6213d1a0bfcfa197a4adf117414216953e29f3b416b81bdbc4db18",
+      "event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\elemental_receiver_peer_20261007_b\\6_flag.active.jsonl.checkpoint-3a41c1e0119a4402ae84ad19fe1899c8",
+        "sha256": "d7d9bf8393f519d1034cb05e81af0c78b55b4ca7c6cf135228570cd500b64c75",
+        "bytes": 951488,
+        "count": 889
+      },
+      "observations": [
+        {
+          "snapshot": "54e8bd8f96d6a2a4b032f652f71462786bc913eacd93f2d919092c389301d686",
+          "events": "193074738d5ce942820caf96ce583d8440ca222140ff58cfd5ae38067a72d641",
+          "event_count": 1174,
+          "continuation_state": "041b99d038c1b63cac3658069e35ee880560119f42a911e06c9556832071164c"
+        },
+        {
+          "snapshot": "54e8bd8f96d6a2a4b032f652f71462786bc913eacd93f2d919092c389301d686",
+          "events": "193074738d5ce942820caf96ce583d8440ca222140ff58cfd5ae38067a72d641",
+          "event_count": 1174,
+          "continuation_state": "041b99d038c1b63cac3658069e35ee880560119f42a911e06c9556832071164c"
+        },
+        {
+          "snapshot": "54e8bd8f96d6a2a4b032f652f71462786bc913eacd93f2d919092c389301d686",
+          "events": "193074738d5ce942820caf96ce583d8440ca222140ff58cfd5ae38067a72d641",
+          "event_count": 1174,
+          "continuation_state": "041b99d038c1b63cac3658069e35ee880560119f42a911e06c9556832071164c"
+        }
+      ],
+      "disk_CP_equal": true,
+      "head_equal": true
+    },
+    {
+      "label": "flag",
+      "cut": 10,
+      "end": 15,
+      "checkpoint_sha256": "64ac3f66629ea831220bf10a1c61df9a3158477ad72f6f6e4fff39f031ff00bb",
+      "event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\elemental_receiver_peer_20261007_b\\7_flag.active.jsonl.checkpoint-12a7031668114aa19f4ebc8c422ad9d7",
+        "sha256": "a4baff794ae7062dffe1cc8289434a745d8f6479586865b8bbbced1621917143",
+        "bytes": 951439,
+        "count": 889
+      },
+      "observations": [
+        {
+          "snapshot": "7a04fd22819fec377d958f71105afcfbcaa0dee72b7cf20314d4f8bbe7a129b3",
+          "events": "abc40f03c10d91ba096e84533e69b2d236b3b6d8f21748576a536eec8d17bed6",
+          "event_count": 1174,
+          "continuation_state": "1a4f38669db8025209befbf52ac1be13aaf19367fd9b1aef6c3e19a652162c6a"
+        },
+        {
+          "snapshot": "7a04fd22819fec377d958f71105afcfbcaa0dee72b7cf20314d4f8bbe7a129b3",
+          "events": "abc40f03c10d91ba096e84533e69b2d236b3b6d8f21748576a536eec8d17bed6",
+          "event_count": 1174,
+          "continuation_state": "1a4f38669db8025209befbf52ac1be13aaf19367fd9b1aef6c3e19a652162c6a"
+        },
+        {
+          "snapshot": "7a04fd22819fec377d958f71105afcfbcaa0dee72b7cf20314d4f8bbe7a129b3",
+          "events": "abc40f03c10d91ba096e84533e69b2d236b3b6d8f21748576a536eec8d17bed6",
+          "event_count": 1174,
+          "continuation_state": "1a4f38669db8025209befbf52ac1be13aaf19367fd9b1aef6c3e19a652162c6a"
+        }
+      ],
+      "disk_CP_equal": true,
+      "head_equal": true
+    },
+    {
+      "label": "flag",
+      "cut": 10,
+      "end": 15,
+      "checkpoint_sha256": "ee2264a67567973ea23eafdfbb6089aea0a9389e8304aa95fa1c4a33934a90f8",
+      "event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\elemental_receiver_peer_20261007_b\\8_flag.active.jsonl.checkpoint-69d34bd79d9e41a1b82498944d4e1dbe",
+        "sha256": "47a01800d6bdf5091038849167e2424db9a78174b861bf865b297058a36166b1",
+        "bytes": 991520,
+        "count": 954
+      },
+      "observations": [
+        {
+          "snapshot": "ea8982521d60d596fdb0733aed52b3aee65c93a75d41f7f9a2747f3a294b868e",
+          "events": "c93e2f9d04b0b1168d85c7974a72ae2fe37ef267836f372b33d31f15d5ace900",
+          "event_count": 1239,
+          "continuation_state": "a0240a75b89c6c35e5f449cad8ef0338510027a41381388db8786fd5de08a847"
+        },
+        {
+          "snapshot": "ea8982521d60d596fdb0733aed52b3aee65c93a75d41f7f9a2747f3a294b868e",
+          "events": "c93e2f9d04b0b1168d85c7974a72ae2fe37ef267836f372b33d31f15d5ace900",
+          "event_count": 1239,
+          "continuation_state": "a0240a75b89c6c35e5f449cad8ef0338510027a41381388db8786fd5de08a847"
+        },
+        {
+          "snapshot": "ea8982521d60d596fdb0733aed52b3aee65c93a75d41f7f9a2747f3a294b868e",
+          "events": "c93e2f9d04b0b1168d85c7974a72ae2fe37ef267836f372b33d31f15d5ace900",
+          "event_count": 1239,
+          "continuation_state": "a0240a75b89c6c35e5f449cad8ef0338510027a41381388db8786fd5de08a847"
+        }
+      ],
+      "disk_CP_equal": true,
+      "head_equal": true
+    },
+    {
+      "label": "neutral",
+      "cut": 10,
+      "end": 15,
+      "checkpoint_sha256": "4ee102c21377da191bb0f3412654f7b168bd46b74532edc0a24453814af3f4e0",
+      "event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\elemental_receiver_peer_20261007_b\\9_neutral.active.jsonl.checkpoint-15ba08b679564d949a2c9d72971d5393",
+        "sha256": "9f31a56a8ea3b7dfe6fff9ed9b6e0752b841f48435d1489914a113dd469b118c",
+        "bytes": 944119,
+        "count": 889
+      },
+      "observations": [
+        {
+          "snapshot": "da055a6854084a566fa803d43641a9a79cabacf49ef6096118161a47e2396b55",
+          "events": "c4f694bf5c5cdb90119ce34699f786eb585cb2a89aba335dd62a3f954d78475e",
+          "event_count": 1174,
+          "continuation_state": "2f87ebb0c34f42b451e5aa7d68bf005253b54a83530b19c553ddabadde95b467"
+        },
+        {
+          "snapshot": "da055a6854084a566fa803d43641a9a79cabacf49ef6096118161a47e2396b55",
+          "events": "c4f694bf5c5cdb90119ce34699f786eb585cb2a89aba335dd62a3f954d78475e",
+          "event_count": 1174,
+          "continuation_state": "2f87ebb0c34f42b451e5aa7d68bf005253b54a83530b19c553ddabadde95b467"
+        },
+        {
+          "snapshot": "da055a6854084a566fa803d43641a9a79cabacf49ef6096118161a47e2396b55",
+          "events": "c4f694bf5c5cdb90119ce34699f786eb585cb2a89aba335dd62a3f954d78475e",
+          "event_count": 1174,
+          "continuation_state": "2f87ebb0c34f42b451e5aa7d68bf005253b54a83530b19c553ddabadde95b467"
+        }
+      ],
+      "disk_CP_equal": true,
+      "head_equal": true
+    },
+    {
+      "label": "night",
+      "cut": 10,
+      "end": 15,
+      "checkpoint_sha256": "4d3f03c09f45a9020c0481c7d95a264831f87acb7a4ef4d9af24ed844a3df3cf",
+      "event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\elemental_receiver_peer_20261007_b\\11_night_proof.active.jsonl.checkpoint-e3552127df6542c2824650003af47a33",
+        "sha256": "4b33698458fd850b398f7ac2722f2884a569ee162222662d1d75f52b48f1d3df",
+        "bytes": 1483053,
+        "count": 1370
+      },
+      "observations": [
+        {
+          "snapshot": "d43c411e79676379c5445551675463aefcc0e3b3e5e3999f5981c68fa75ba84f",
+          "events": "4f690a63ffadbc65a54711e0ec731268969270a609a66486879d87c56935aeba",
+          "event_count": 1375,
+          "continuation_state": "c374c1876bb62cc296e491779082959cd551f8dd2b8662adec201e376ba8fc04"
+        },
+        {
+          "snapshot": "d43c411e79676379c5445551675463aefcc0e3b3e5e3999f5981c68fa75ba84f",
+          "events": "4f690a63ffadbc65a54711e0ec731268969270a609a66486879d87c56935aeba",
+          "event_count": 1375,
+          "continuation_state": "c374c1876bb62cc296e491779082959cd551f8dd2b8662adec201e376ba8fc04"
+        },
+        {
+          "snapshot": "d43c411e79676379c5445551675463aefcc0e3b3e5e3999f5981c68fa75ba84f",
+          "events": "4f690a63ffadbc65a54711e0ec731268969270a609a66486879d87c56935aeba",
+          "event_count": 1375,
+          "continuation_state": "c374c1876bb62cc296e491779082959cd551f8dd2b8662adec201e376ba8fc04"
+        }
+      ],
+      "disk_CP_equal": true,
+      "head_equal": true
+    },
+    {
+      "label": "dead",
+      "cut": 19,
+      "end": 80,
+      "checkpoint_sha256": "43c8db29d2abdcfc2fc72365ff809bc2eba314a99170c7d7364ef8bb8a70bbb8",
+      "event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\elemental_receiver_peer_20261007_b\\12_dead.active.jsonl.checkpoint-2010a49616f741d995be4eb60feed4cd",
+        "sha256": "11f30d6964029057b95e8fa5adcdaf931555e9864a964c2e7b608e809ccfc8c0",
+        "bytes": 1229219,
+        "count": 1128
+      },
+      "observations": [
+        {
+          "snapshot": "6208a6f06f5718daeceb97e74f188d91f7c597dfda8703f48f19909df7658f6b",
+          "events": "ae8347f812b86a14708508a628a975222d761209ca0c52d066bd02fa6b963625",
+          "event_count": 1434,
+          "continuation_state": "78eac438770e1f3e5ed5cc233053ceb8fa8742602cadfc4cb8c62bb8d416d5f6"
+        },
+        {
+          "snapshot": "6208a6f06f5718daeceb97e74f188d91f7c597dfda8703f48f19909df7658f6b",
+          "events": "ae8347f812b86a14708508a628a975222d761209ca0c52d066bd02fa6b963625",
+          "event_count": 1434,
+          "continuation_state": "78eac438770e1f3e5ed5cc233053ceb8fa8742602cadfc4cb8c62bb8d416d5f6"
+        },
+        {
+          "snapshot": "6208a6f06f5718daeceb97e74f188d91f7c597dfda8703f48f19909df7658f6b",
+          "events": "ae8347f812b86a14708508a628a975222d761209ca0c52d066bd02fa6b963625",
+          "event_count": 1434,
+          "continuation_state": "78eac438770e1f3e5ed5cc233053ceb8fa8742602cadfc4cb8c62bb8d416d5f6"
+        }
+      ],
+      "disk_CP_equal": true,
+      "head_equal": true
+    },
+    {
+      "label": "withdraw",
+      "cut": 19,
+      "end": 80,
+      "checkpoint_sha256": "41aa6f8e5dc57500dec27afd37dfbc64e6131289e0a21661e83f80033eb67dc1",
+      "event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\elemental_receiver_peer_20261007_b\\13_withdraw.active.jsonl.checkpoint-1bd7baa5ba4b40b88644db6d60e05993",
+        "sha256": "11f30d6964029057b95e8fa5adcdaf931555e9864a964c2e7b608e809ccfc8c0",
+        "bytes": 1229219,
+        "count": 1128
+      },
+      "observations": [
+        {
+          "snapshot": "355718bce88280af55d625eeb809720a6b28a164aac778b750489d2378e1b931",
+          "events": "b885c5ac8e4b6793edb3617eb625ef68145b91efdbca949c1f7043e61c5a074e",
+          "event_count": 1417,
+          "continuation_state": "8a55c5a453e6a86ad94ab1b1b64756da5c9e520a7f40d37a224e83f74257d819"
+        },
+        {
+          "snapshot": "355718bce88280af55d625eeb809720a6b28a164aac778b750489d2378e1b931",
+          "events": "b885c5ac8e4b6793edb3617eb625ef68145b91efdbca949c1f7043e61c5a074e",
+          "event_count": 1417,
+          "continuation_state": "8a55c5a453e6a86ad94ab1b1b64756da5c9e520a7f40d37a224e83f74257d819"
+        },
+        {
+          "snapshot": "355718bce88280af55d625eeb809720a6b28a164aac778b750489d2378e1b931",
+          "events": "b885c5ac8e4b6793edb3617eb625ef68145b91efdbca949c1f7043e61c5a074e",
+          "event_count": 1417,
+          "continuation_state": "8a55c5a453e6a86ad94ab1b1b64756da5c9e520a7f40d37a224e83f74257d819"
+        }
+      ],
+      "disk_CP_equal": true,
+      "head_equal": true
+    }
+  ],
+  "peer_source_sha256": "78079a22e483b5afb3483aab101d2dadcaa93ed1c013815016757363612fde2a",
+  "review_scope": "fixed roster FIRE/DARK content mount only; no whole stage or client method body claim",
+  "remaining_review": [
+    "redeployment reset",
+    "prior SP freeze and already active original skill",
+    "all15 roster/summon mount scope"
+  ],
+  "pinned_reference_access": "oldid430495 unavailable via web tool; original raw BSON independently inspected; live PRTS formula cited separately"
+}

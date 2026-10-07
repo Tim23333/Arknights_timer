@@ -1,0 +1,456 @@
+{
+  "schema": "ark-sim/elemental-receiver-independent-peer/v1",
+  "mechanism_cases_passed": false,
+  "implementation": "cd873dbff6ef66d9a17605ab6b02b6cc5a427090156577bd87dedd5bab428e18",
+  "primary_unchanged": true,
+  "source_hashes": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\common_elemental_receivers\\source.bson.v2.json": "540861ff8b357fa18b2d00e10484031adf8b2b172d0b96bc4e0007d3ba9ec533",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_emulator\\data_buff_table.json": "f90590c1ed8406049124d9afadd43aaa043881a0ec838f9a5e474b9b7688faf6",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\roster\\fixed12.m26.reference_module.json": "fd48b0cc67a6b96457b6d7df69397493b3914d65676c554a92b90193374c2c04",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receivers_v1\\build.py": "e7543ac0eaf8afd59f960d89c34b330ba669182a856fb8ef62fa4a2edf9b6202"
+  },
+  "source_unchanged": true,
+  "cases": [
+    {
+      "case": "public_fixed_roster_113",
+      "passed": true,
+      "details": null
+    },
+    {
+      "case": "FIRE1200_RES_before_NoSource",
+      "passed": false,
+      "error": "'damage_flags'",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receiver_peer_v1\\verify.py\", line 151, in main\n    try:detail=fn();ROWS.append({'case':name,'passed':True,'details':detail})\n               ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receiver_peer_v1\\verify.py\", line 63, in fire\n    assert damage[0]['payload']['damage_flags']['ignore_for_sp'] is False\n           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^\nKeyError: 'damage_flags'\n"
+    },
+    {
+      "case": "DARK15pulses_SP_stop_skill24_lock_reset",
+      "passed": false,
+      "error": "",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receiver_peer_v1\\verify.py\", line 151, in main\n    try:detail=fn();ROWS.append({'case':name,'passed':True,'details':detail})\n               ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receiver_peer_v1\\verify.py\", line 77, in dark\n    s=cpp(s,40,463,'dark');damage=[e for e in events(s,'damage.accepted') if e['payload'].get('source_policy')=='none']\n      ^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receiver_peer_v1\\verify.py\", line 50, in cpp\n    assert all(all(o[k]==obs[0][k] for k in keys) for o in obs[1:])\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n"
+    },
+    {
+      "case": "normal_attack_continues",
+      "passed": false,
+      "error": "",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receiver_peer_v1\\verify.py\", line 151, in main\n    try:detail=fn();ROWS.append({'case':name,'passed':True,'details':detail})\n               ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receiver_peer_v1\\verify.py\", line 88, in normal_attack\n    assert attacks and all(e['payload']['ability']=='ability/char_107_liskam/normal_attack' for e in attacks)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n"
+    },
+    {
+      "case": "native21_vs5_immunes_neutral",
+      "passed": true,
+      "details": null
+    },
+    {
+      "case": "FIRE_NightS3_layer_composition",
+      "passed": false,
+      "error": "",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receiver_peer_v1\\verify.py\", line 151, in main\n    try:detail=fn();ROWS.append({'case':name,'passed':True,'details':detail})\n               ^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receiver_peer_v1\\verify.py\", line 117, in night_layers\n    cpp(s,10,15,'night')\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receiver_peer_v1\\verify.py\", line 50, in cpp\n    assert all(all(o[k]==obs[0][k] for k in keys) for o in obs[1:])\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n"
+    },
+    {
+      "case": "death_withdraw_cancel",
+      "passed": true,
+      "details": null
+    },
+    {
+      "case": "checkpoint_single_field_tamper_boundary",
+      "passed": true,
+      "details": {
+        "in_memory_accepted": [
+          "remaining",
+          "due",
+          "generation",
+          "task",
+          "seq",
+          "provenance"
+        ]
+      }
+    }
+  ],
+  "facts": {
+    "113": {
+      "HP": 1565,
+      "EP": {
+        "remaining": {
+          "FIRE": 1000,
+          "DARK": 887.0
+        },
+        "break": null,
+        "generation": 0,
+        "last_time": 40
+      }
+    },
+    "flags": [
+      {
+        "flag": 21,
+        "immune": false,
+        "remaining": 1000
+      },
+      {
+        "flag": 5,
+        "immune": false,
+        "remaining": 1000
+      },
+      {
+        "flag": 21,
+        "immune": true,
+        "remaining": 887
+      }
+    ],
+    "night_layers": {
+      "base": 10.0,
+      "before_fire": 62.5,
+      "after_fire": 12.5,
+      "expected_ADDITION_then_MULTIPLIER": 12.5,
+      "raw_fire_formulaItem": "ADDITION",
+      "raw_roster_S3_layer": "direct_ratio",
+      "raw_roster_S3_value": 1.5,
+      "formula_reference": "https://prts.wiki/w/游戏数据基础",
+      "HP": 2074.0,
+      "SP": 2.0
+    },
+    "lifecycle": [
+      {
+        "kind": "dead",
+        "state": {
+          "remaining": {
+            "FIRE": 1000,
+            "DARK": 0
+          },
+          "break": null,
+          "generation": 2,
+          "last_time": 20
+        },
+        "pulses": 1
+      },
+      {
+        "kind": "withdraw",
+        "state": {
+          "remaining": {
+            "FIRE": 1000,
+            "DARK": 0
+          },
+          "break": null,
+          "generation": 2,
+          "last_time": 20
+        },
+        "pulses": 1
+      }
+    ],
+    "single_field_in_memory_restore": [
+      {
+        "field": "remaining",
+        "rejected": false
+      },
+      {
+        "field": "due",
+        "rejected": false
+      },
+      {
+        "field": "generation",
+        "rejected": false
+      },
+      {
+        "field": "task",
+        "rejected": false
+      },
+      {
+        "field": "seq",
+        "rejected": false
+      },
+      {
+        "field": "provenance",
+        "rejected": false
+      }
+    ],
+    "disk_byte_tamper_rejected": true
+  },
+  "actual_CP_head_proofs": [
+    {
+      "label": "113",
+      "cut": 10,
+      "end": 41,
+      "checkpoint_sha256": "fd35b252b8d4875c88b62677eae72ed2226fbcca6f20adf70429ca8fd5541a15",
+      "event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\elemental_receiver_peer_20261007_a\\1_113.active.jsonl.checkpoint-591b0a53edbb49ff95c00c3df2bfca4e",
+        "sha256": "117c779896497fd7f4dc896767dabbb89904221aa5ada95c540f447bd95866ee",
+        "bytes": 2238527,
+        "count": 1285
+      },
+      "observations": [
+        {
+          "snapshot": "6ea8843254fb7179b9d01f888b3455aac5e1333eb27a0fd413e802ba320ae46c",
+          "events": "9915d55c9b956aafa981a0cd0aa440c9066e1cb445764d94c86c6adc388cb3f8",
+          "event_count": 4416,
+          "continuation_state": "5f121bd8e00d0f1ae787ecc09c7343c3423e89771ce096aab77286cd20ade48b"
+        },
+        {
+          "snapshot": "6ea8843254fb7179b9d01f888b3455aac5e1333eb27a0fd413e802ba320ae46c",
+          "events": "9915d55c9b956aafa981a0cd0aa440c9066e1cb445764d94c86c6adc388cb3f8",
+          "event_count": 4416,
+          "continuation_state": "5f121bd8e00d0f1ae787ecc09c7343c3423e89771ce096aab77286cd20ade48b"
+        },
+        {
+          "snapshot": "6ea8843254fb7179b9d01f888b3455aac5e1333eb27a0fd413e802ba320ae46c",
+          "events": "9915d55c9b956aafa981a0cd0aa440c9066e1cb445764d94c86c6adc388cb3f8",
+          "event_count": 4416,
+          "continuation_state": "5f121bd8e00d0f1ae787ecc09c7343c3423e89771ce096aab77286cd20ade48b"
+        }
+      ],
+      "disk_CP_equal": true,
+      "head_equal": true
+    },
+    {
+      "label": "normal",
+      "cut": 10,
+      "end": 100,
+      "checkpoint_sha256": "a9a191a0fef05b4e7c61d61a072c904b680271e26a20331dc45b1628668f8ed8",
+      "event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\elemental_receiver_peer_20261007_a\\4_normal.active.jsonl.checkpoint-bbbb1f2b7e6d453aa512efd7911b7f73",
+        "sha256": "eadb4443c7ede3f2e838675387a2e89fc6e22b9ed73e48d75865b2d096af33f1",
+        "bytes": 1177553,
+        "count": 1119
+      },
+      "observations": [
+        {
+          "snapshot": "227746f075416904822d80072fd86a0a799a06c92073eadfc0b76ed8fec6565f",
+          "events": "0f0d6e01770576e9157106069f87237966a6e3d94955109d2eada23d6ef04ddf",
+          "event_count": 1338,
+          "continuation_state": "bc1df8b94ca2b04e24eae5a26ab177732d24d19dfe7e8cf59f86e5e58af14f88"
+        },
+        {
+          "snapshot": "227746f075416904822d80072fd86a0a799a06c92073eadfc0b76ed8fec6565f",
+          "events": "0f0d6e01770576e9157106069f87237966a6e3d94955109d2eada23d6ef04ddf",
+          "event_count": 1338,
+          "continuation_state": "bc1df8b94ca2b04e24eae5a26ab177732d24d19dfe7e8cf59f86e5e58af14f88"
+        },
+        {
+          "snapshot": "227746f075416904822d80072fd86a0a799a06c92073eadfc0b76ed8fec6565f",
+          "events": "0f0d6e01770576e9157106069f87237966a6e3d94955109d2eada23d6ef04ddf",
+          "event_count": 1338,
+          "continuation_state": "bc1df8b94ca2b04e24eae5a26ab177732d24d19dfe7e8cf59f86e5e58af14f88"
+        }
+      ],
+      "disk_CP_equal": true,
+      "head_equal": true
+    },
+    {
+      "label": "flag",
+      "cut": 10,
+      "end": 15,
+      "checkpoint_sha256": "77aa53541f74f079ec04aa8c9ffcb005ff46c9f9fadb95ab3b0c46baccd97507",
+      "event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\elemental_receiver_peer_20261007_a\\5_flag.active.jsonl.checkpoint-b5c37db79ceb47f4ab15cb997f82247d",
+        "sha256": "597df84a261246b4fa5d6a47d24a2cabf9d5c8f876963dc906062eee37ce8e5f",
+        "bytes": 951479,
+        "count": 889
+      },
+      "observations": [
+        {
+          "snapshot": "7aea240c903c05efd2d12734d68902db4c9c226d43b77ec1387099ee84bbb5f9",
+          "events": "8ca065b807ddf222fa95b803dd49a7aadbe13ae361d4f5a653b65205b73a631f",
+          "event_count": 1174,
+          "continuation_state": "a387ff5ab584053a81ea1d979f38cda3808e30c0077f3f60357f03432b27fe58"
+        },
+        {
+          "snapshot": "7aea240c903c05efd2d12734d68902db4c9c226d43b77ec1387099ee84bbb5f9",
+          "events": "8ca065b807ddf222fa95b803dd49a7aadbe13ae361d4f5a653b65205b73a631f",
+          "event_count": 1174,
+          "continuation_state": "a387ff5ab584053a81ea1d979f38cda3808e30c0077f3f60357f03432b27fe58"
+        },
+        {
+          "snapshot": "7aea240c903c05efd2d12734d68902db4c9c226d43b77ec1387099ee84bbb5f9",
+          "events": "8ca065b807ddf222fa95b803dd49a7aadbe13ae361d4f5a653b65205b73a631f",
+          "event_count": 1174,
+          "continuation_state": "a387ff5ab584053a81ea1d979f38cda3808e30c0077f3f60357f03432b27fe58"
+        }
+      ],
+      "disk_CP_equal": true,
+      "head_equal": true
+    },
+    {
+      "label": "flag",
+      "cut": 10,
+      "end": 15,
+      "checkpoint_sha256": "8710a2fbccc0d0f98c2ff991aae23c73c149d90b231d781bfd5f74b546475e3d",
+      "event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\elemental_receiver_peer_20261007_a\\6_flag.active.jsonl.checkpoint-69735a1da15c4cc6963b06cd2c29cb31",
+        "sha256": "c5e7bd654c98f0757ca3990cf00a4f83a04edad33567105ec63c1c155b5953a6",
+        "bytes": 951430,
+        "count": 889
+      },
+      "observations": [
+        {
+          "snapshot": "88c73e96346b6b092bd379686f6f24821e8a5ee6ad6a32288f3e307d4cdf2827",
+          "events": "ea5bd5f9ddabc7168dc5cea57dde9b3cb60813f926b91ceb78a63cee810af4ef",
+          "event_count": 1174,
+          "continuation_state": "3acb5eaa0fc70520e82139b2b00d403ce00733e8396dabd2e1b229d846ca3b2a"
+        },
+        {
+          "snapshot": "88c73e96346b6b092bd379686f6f24821e8a5ee6ad6a32288f3e307d4cdf2827",
+          "events": "ea5bd5f9ddabc7168dc5cea57dde9b3cb60813f926b91ceb78a63cee810af4ef",
+          "event_count": 1174,
+          "continuation_state": "3acb5eaa0fc70520e82139b2b00d403ce00733e8396dabd2e1b229d846ca3b2a"
+        },
+        {
+          "snapshot": "88c73e96346b6b092bd379686f6f24821e8a5ee6ad6a32288f3e307d4cdf2827",
+          "events": "ea5bd5f9ddabc7168dc5cea57dde9b3cb60813f926b91ceb78a63cee810af4ef",
+          "event_count": 1174,
+          "continuation_state": "3acb5eaa0fc70520e82139b2b00d403ce00733e8396dabd2e1b229d846ca3b2a"
+        }
+      ],
+      "disk_CP_equal": true,
+      "head_equal": true
+    },
+    {
+      "label": "flag",
+      "cut": 10,
+      "end": 15,
+      "checkpoint_sha256": "8d69114dd4b3dae88e1d485cc1429b7086f3bd8d136ec412ba218397317e3260",
+      "event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\elemental_receiver_peer_20261007_a\\7_flag.active.jsonl.checkpoint-d94c625d67c34d04b18dc8f268b983f7",
+        "sha256": "642430b38d7efe76e4bb96429e9cbb06ce521939f0f03be286d706eb10d77a1d",
+        "bytes": 991493,
+        "count": 954
+      },
+      "observations": [
+        {
+          "snapshot": "35090b31499c5f80123320eb7fa8a99f48cab61012efcf830f9289420211c86c",
+          "events": "95677f8848566416da91a1dedd721fc6c0ce5f2147bf83eae3ed2a9b43881851",
+          "event_count": 1239,
+          "continuation_state": "cc940ccf16e0667505047e184d8443783710a46013e8f5331b9c51174f15a235"
+        },
+        {
+          "snapshot": "35090b31499c5f80123320eb7fa8a99f48cab61012efcf830f9289420211c86c",
+          "events": "95677f8848566416da91a1dedd721fc6c0ce5f2147bf83eae3ed2a9b43881851",
+          "event_count": 1239,
+          "continuation_state": "cc940ccf16e0667505047e184d8443783710a46013e8f5331b9c51174f15a235"
+        },
+        {
+          "snapshot": "35090b31499c5f80123320eb7fa8a99f48cab61012efcf830f9289420211c86c",
+          "events": "95677f8848566416da91a1dedd721fc6c0ce5f2147bf83eae3ed2a9b43881851",
+          "event_count": 1239,
+          "continuation_state": "cc940ccf16e0667505047e184d8443783710a46013e8f5331b9c51174f15a235"
+        }
+      ],
+      "disk_CP_equal": true,
+      "head_equal": true
+    },
+    {
+      "label": "neutral",
+      "cut": 10,
+      "end": 15,
+      "checkpoint_sha256": "1262e4cd99bdbed96aad19ee01a773d8cf3c515a9be475f45027b9f6d21ed52a",
+      "event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\elemental_receiver_peer_20261007_a\\8_neutral.active.jsonl.checkpoint-f0bd18558ffb4826bbe12d81c4d1556c",
+        "sha256": "da101d289655d7545e160acca0aced65e420d51124281aa055abe2cdde2c2395",
+        "bytes": 944110,
+        "count": 889
+      },
+      "observations": [
+        {
+          "snapshot": "112d79f7c24d4b32c760fa242eda76743b688463338203aa05ec49a9e2f0936b",
+          "events": "4e9fcf6efc84417b3934d0459f02c56009ecfdaba982fdea3526ac9c468a6579",
+          "event_count": 1174,
+          "continuation_state": "ec1b9e1e95e97b90eb55f8ad2b4e275f3015bc50efcea23fc4a283b32fc0dd38"
+        },
+        {
+          "snapshot": "112d79f7c24d4b32c760fa242eda76743b688463338203aa05ec49a9e2f0936b",
+          "events": "4e9fcf6efc84417b3934d0459f02c56009ecfdaba982fdea3526ac9c468a6579",
+          "event_count": 1174,
+          "continuation_state": "ec1b9e1e95e97b90eb55f8ad2b4e275f3015bc50efcea23fc4a283b32fc0dd38"
+        },
+        {
+          "snapshot": "112d79f7c24d4b32c760fa242eda76743b688463338203aa05ec49a9e2f0936b",
+          "events": "4e9fcf6efc84417b3934d0459f02c56009ecfdaba982fdea3526ac9c468a6579",
+          "event_count": 1174,
+          "continuation_state": "ec1b9e1e95e97b90eb55f8ad2b4e275f3015bc50efcea23fc4a283b32fc0dd38"
+        }
+      ],
+      "disk_CP_equal": true,
+      "head_equal": true
+    },
+    {
+      "label": "dead",
+      "cut": 19,
+      "end": 80,
+      "checkpoint_sha256": "724f30ba2b2557ad19f67a814cc5cb1535dca796a1313af2434e95ba8cea637f",
+      "event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\elemental_receiver_peer_20261007_a\\10_dead.active.jsonl.checkpoint-e20727ef5c9a4baaa2ac1f739d83c5dd",
+        "sha256": "32f11bfc439981a3a5befae164f9a7a962ea169eeb0f4178e8f93f0fc330802f",
+        "bytes": 1229165,
+        "count": 1128
+      },
+      "observations": [
+        {
+          "snapshot": "039da3f998b1d83dd94501ed1e132dc9d947b64d95e2efc7179d758a5d462a1f",
+          "events": "0f4591757a58c17cb1590da84d3a4c8f9e0ed8942f70d664c219fd34e10ef52d",
+          "event_count": 1434,
+          "continuation_state": "0861af2f3fd8ae9e259543343b89bdee0cd2482827a9c81eb1780e6cc2ee0711"
+        },
+        {
+          "snapshot": "039da3f998b1d83dd94501ed1e132dc9d947b64d95e2efc7179d758a5d462a1f",
+          "events": "0f4591757a58c17cb1590da84d3a4c8f9e0ed8942f70d664c219fd34e10ef52d",
+          "event_count": 1434,
+          "continuation_state": "0861af2f3fd8ae9e259543343b89bdee0cd2482827a9c81eb1780e6cc2ee0711"
+        },
+        {
+          "snapshot": "039da3f998b1d83dd94501ed1e132dc9d947b64d95e2efc7179d758a5d462a1f",
+          "events": "0f4591757a58c17cb1590da84d3a4c8f9e0ed8942f70d664c219fd34e10ef52d",
+          "event_count": 1434,
+          "continuation_state": "0861af2f3fd8ae9e259543343b89bdee0cd2482827a9c81eb1780e6cc2ee0711"
+        }
+      ],
+      "disk_CP_equal": true,
+      "head_equal": true
+    },
+    {
+      "label": "withdraw",
+      "cut": 19,
+      "end": 80,
+      "checkpoint_sha256": "4c7f0ea9ef6947a92f4b4a1fbfc88c069d4706ba2733acc3b938fc0fc8e68ff4",
+      "event_reference": {
+        "schema": "ark-sim/event-journal-reference/v1",
+        "path": "E:\\ArkSimLogs\\runs\\elemental_receiver_peer_20261007_a\\11_withdraw.active.jsonl.checkpoint-c926743340d14b3cbc2b4ebd77563a34",
+        "sha256": "32f11bfc439981a3a5befae164f9a7a962ea169eeb0f4178e8f93f0fc330802f",
+        "bytes": 1229165,
+        "count": 1128
+      },
+      "observations": [
+        {
+          "snapshot": "3c4b5942cb951b644a4e9af949694dd0ebd423ebbdeb18cc248d6f05329169d0",
+          "events": "ecda41e859796259137eae24385688deef9b9b95d738b2ed032eca55ab8744da",
+          "event_count": 1417,
+          "continuation_state": "2ded6fdc5af7b7c0bbdbce2552ca39c3f919b564a1b50c25a0243202ac12da59"
+        },
+        {
+          "snapshot": "3c4b5942cb951b644a4e9af949694dd0ebd423ebbdeb18cc248d6f05329169d0",
+          "events": "ecda41e859796259137eae24385688deef9b9b95d738b2ed032eca55ab8744da",
+          "event_count": 1417,
+          "continuation_state": "2ded6fdc5af7b7c0bbdbce2552ca39c3f919b564a1b50c25a0243202ac12da59"
+        },
+        {
+          "snapshot": "3c4b5942cb951b644a4e9af949694dd0ebd423ebbdeb18cc248d6f05329169d0",
+          "events": "ecda41e859796259137eae24385688deef9b9b95d738b2ed032eca55ab8744da",
+          "event_count": 1417,
+          "continuation_state": "2ded6fdc5af7b7c0bbdbce2552ca39c3f919b564a1b50c25a0243202ac12da59"
+        }
+      ],
+      "disk_CP_equal": true,
+      "head_equal": true
+    }
+  ],
+  "peer_source_sha256": "2b9f996e59a8ff0ce9eb57708de76634db40b4e5c523c9b05715843163dc808b",
+  "review_scope": "fixed roster FIRE/DARK content mount only; no whole stage or client method body claim",
+  "remaining_review": [
+    "redeployment reset",
+    "prior SP freeze and already active original skill",
+    "all15 roster/summon mount scope"
+  ],
+  "pinned_reference_access": "oldid430495 unavailable via web tool; original raw BSON independently inspected; live PRTS formula cited separately"
+}

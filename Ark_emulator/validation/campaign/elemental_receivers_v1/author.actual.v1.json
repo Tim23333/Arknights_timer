@@ -1,0 +1,87 @@
+{
+  "schema": "ark-sim/elemental-receivers-author/v1",
+  "source_before": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\common_elemental_receivers\\source.bson.v2.json": "540861ff8b357fa18b2d00e10484031adf8b2b172d0b96bc4e0007d3ba9ec533",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_emulator\\data_buff_table.json": "f90590c1ed8406049124d9afadd43aaa043881a0ec838f9a5e474b9b7688faf6",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receivers_v1\\verify.py": "3b66929a150ae1f9763d32fbe94fb078fe8936d30eb83dc1e9e48d436f067867",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receivers_v1\\build.py": "e7543ac0eaf8afd59f960d89c34b330ba669182a856fb8ef62fa4a2edf9b6202",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\roster\\fixed12.m26.reference_module.json": "fd48b0cc67a6b96457b6d7df69397493b3914d65676c554a92b90193374c2c04"
+  },
+  "whole_stage": false,
+  "client_verified": false,
+  "results": [
+    {
+      "case": "actual_fixed_operator113_no_recovery_CPP",
+      "passed": true
+    },
+    {
+      "case": "fire_reduce_RES_before_source_free1200_CPP",
+      "passed": true
+    },
+    {
+      "case": "dark15sec_SP_block_drain_and_DOT_lock_reset_CPP",
+      "passed": false,
+      "error": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receivers_v1\\verify.py\", line 132, in main\n    fn()\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receivers_v1\\verify.py\", line 107, in dark\n    package = fixture('unit/char_107_liskam', [(5, 'DARK', 1000), (8, 'FIRE', 1000)])\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receivers_v1\\verify.py\", line 36, in fixture\n    definitions[-2]['components']['abilities'].append(aid)\n    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^\nKeyError: 'components'\n"
+    }
+  ],
+  "facts": {
+    "basic": {
+      "state": {
+        "remaining": {
+          "FIRE": 1000,
+          "DARK": 887.0
+        },
+        "break": null,
+        "generation": 0,
+        "last_time": 69
+      },
+      "HP": 1565,
+      "cps": [
+        {
+          "tick": 4,
+          "sha256": "d05cf9c4098017c813e734ff78f446f17776acd25523f43fdb37558e05404d8b"
+        },
+        {
+          "tick": 6,
+          "sha256": "9fc4292b40bb133f52368f309bf489c9d31d8fa3e956b8a393ea742ad4aec558"
+        }
+      ]
+    },
+    "fire": {
+      "original_HP": 3124,
+      "original_res": 10.0,
+      "reduced_res": -10.0,
+      "HP": 1924.0,
+      "expected_loss": 1200.0,
+      "events": [],
+      "cps": [
+        {
+          "tick": 4,
+          "sha256": "22e4015718e3125e6f2ebe72a0b19d292e4a5f3ba758991305651037d09ec2d9"
+        },
+        {
+          "tick": 6,
+          "sha256": "fc7f863ba7980a5a1a111509f6640bb5e53df1d6a7d4308409f1106d62d889de"
+        },
+        {
+          "tick": 304,
+          "sha256": "bb61a6c39c0aca0423261203f0ef69d935d27272eb5c53d0b732fa767fb4bacc"
+        },
+        {
+          "tick": 305,
+          "sha256": "a3479128818894360271505a3f0bd90e22d99e380f82f58635636a1f8f7ba48d"
+        }
+      ]
+    }
+  },
+  "comparison_exclusions": [],
+  "source_after": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\common_elemental_receivers\\source.bson.v2.json": "540861ff8b357fa18b2d00e10484031adf8b2b172d0b96bc4e0007d3ba9ec533",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\ark_emulator\\data_buff_table.json": "f90590c1ed8406049124d9afadd43aaa043881a0ec838f9a5e474b9b7688faf6",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receivers_v1\\verify.py": "3b66929a150ae1f9763d32fbe94fb078fe8936d30eb83dc1e9e48d436f067867",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\campaign_elemental_receivers_v1\\build.py": "e7543ac0eaf8afd59f960d89c34b330ba669182a856fb8ef62fa4a2edf9b6202",
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\packages\\campaign\\roster\\fixed12.m26.reference_module.json": "fd48b0cc67a6b96457b6d7df69397493b3914d65676c554a92b90193374c2c04"
+  },
+  "source_guard_equal": true,
+  "actual_exit": 1
+}
