@@ -1,0 +1,27 @@
+{
+  "schema": "ark-sim/native-resource-channel-requirements/v1",
+  "source_enemy": "enemy_1223_dmech@0/a026be64f199eda6",
+  "required_minimal_generic_capability": "Cast-owned finite attachment may apply declared typed resource packet, without health damage substitution.",
+  "counter": "validation/campaign/chapter10_stage17_ordinary_v1/dmech.channel.counter.v1.json",
+  "counter_sha256": "7619db189b15a2be2760f45a47d7901033fcc24109bd70ff0e878e7091209282",
+  "packet": {"operation": "modify_resource", "resource": "sp", "delta": 1, "interval_seconds": 1},
+  "duration_seconds": 20,
+  "motion": "Source immediate held target, no world actor-id special case.",
+  "required_permissions": [
+    "Actual possessed waiting ability and canonical cast/generation/source/target ownership",
+    "Actual scheduled task time/phase/sequence and restore provenance",
+    "No borrowed copied cast data or retired ordinary actor permission",
+    "Unchanged ordinary damage-only attachment semantics unless opt-in"
+  ],
+  "lifecycle": [
+    "Target retained for this channel, no implicit retarget to another cannon",
+    "Finite20s source channel; source silence interrupt; target/source invalidation cancellation",
+    "Source owner effect Buff cleared on finish, original interrupt Buff retained according to native clock",
+    "Actual interruption or silenced finish executes source-owned selector SP -15 once, no Manfred endpoint reuse"
+  ],
+  "native_selector": "Both side mask3, both motion3, category2, gunctrl tag, global range, max1; all raw fields retained in counter.",
+  "native_clocks": {"initial_cooldown": 0, "cooldown": 5, "SP_cost": 5, "initial_SP": 0, "SP_capacity": 5, "SP_recovery_per_second": 1, "maxTriggerTime": 1, "preDelay_float32": 0.6669999957084656, "postDelay_float32": 0.6669999957084656},
+  "validation_required": ["CPP and full public head while held", "one source cast only", "silence/stun/target-retire/source-retire", "SP and normal melee priority", "late fault exact rollback", "illegal copied callback and restore tamper"],
+  "runtime_implemented": false,
+  "not_model_or_whole_stage_approval": true
+}
