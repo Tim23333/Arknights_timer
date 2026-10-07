@@ -1,0 +1,33 @@
+{
+  "schema": "ark-sim/chapter0-plan-static-peer/v1",
+  "static_plan_intent_approved": false,
+  "results": [
+    {
+      "stage": "level_main_00-10",
+      "passed": false,
+      "facts": {},
+      "error": "'base_cost'",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter0_stage_input_peer_v1\\review_plan.py\", line 22, in main\n    entity=defs[c['entity']];assert c['entity'] in s['roster'] and c['alias'] not in aliases;legal(c,entity);cell=(c['row'],c['col']);assert cell not in cells;aliases[c['alias']]=entity;live[c['alias']]=entity;cells[cell]=c['alias'];capacity=entity['components']['deployable'].get('capacity',1);slot+=capacity;spend(c['at'],entity['components']['deployable']['base_cost']);slotrows.append({'tick':c['at'],'action':'deploy','alias':c['alias'],'slots':slot});maximum=max(maximum,slot);assert slot<=8\n                                                                                                                                                                                                                                                                                                                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nKeyError: 'base_cost'\n"
+    },
+    {
+      "stage": "level_main_00-11",
+      "passed": false,
+      "facts": {},
+      "error": "'base_cost'",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter0_stage_input_peer_v1\\review_plan.py\", line 22, in main\n    entity=defs[c['entity']];assert c['entity'] in s['roster'] and c['alias'] not in aliases;legal(c,entity);cell=(c['row'],c['col']);assert cell not in cells;aliases[c['alias']]=entity;live[c['alias']]=entity;cells[cell]=c['alias'];capacity=entity['components']['deployable'].get('capacity',1);slot+=capacity;spend(c['at'],entity['components']['deployable']['base_cost']);slotrows.append({'tick':c['at'],'action':'deploy','alias':c['alias'],'slots':slot});maximum=max(maximum,slot);assert slot<=8\n                                                                                                                                                                                                                                                                                                                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nKeyError: 'base_cost'\n"
+    }
+  ],
+  "source_guards": {
+    "D:\\Arknights\\Arknights_timer\\Ark_emulator\\tools\\chapter0_stage_input_peer_v1\\review_plan.py": "aa226790c7cbdc364a12a2efc893d06c321296cc3972be92f0f42244dbb46371"
+  },
+  "actual_commands_accepted": false,
+  "whole_approved": false,
+  "simulation_executed": false,
+  "boundaries": [
+    "DP calculation is before-tick native periodic lower bound, ignores all skill gains and refunds; actual death/story inputlock/terminal/resource freeze still can reject.",
+    "Event SP and selector-qualified host SP depend on actual attacks/received damage/summon; clock retries do not certify readiness.",
+    "Myrtle early91 attempt diagnostic may reject; 24-cost initial10 periodic retry452 is planned conservative first window after deploy31, not injected SP.",
+    "SourceDead/terminal/manual-mode/automatic-only/target/cast rejection must be fully logged; repeated attempts are not guaranteed success.",
+    "PublicAckDriver is dynamic actual-observation+one tick reference, not native UI dwell or combat-pause proof."
+  ]
+}

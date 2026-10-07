@@ -1,0 +1,870 @@
+{
+  "schema": "ark-sim/source-dmech-closure/v1",
+  "source_sha256": "6ae0b642a56ee316aa22062634b81366b207f484ec3775bc5957362c077a09d5",
+  "bson_sha256": "a67fcf425fcf0c9040b02ce5d652aa7e18b25ec8e0ea622a8d66bca0d9dabe2f",
+  "variant": "enemy_1223_dmech@0/a026be64f199eda6",
+  "attributes": {
+    "maxHp": 6000,
+    "atk": 300,
+    "def": 250,
+    "magicResistance": 20.0,
+    "moveSpeed": 1.0,
+    "attackSpeed": 100.0,
+    "baseAttackTime": 2.0,
+    "massLevel": 1
+  },
+  "spData": {
+    "spType": "INCREASE_WITH_TIME",
+    "maxSp": 5,
+    "initSp": 0,
+    "increment": 1.0
+  },
+  "skill": {
+    "prefabKey": "charge_gunctrl",
+    "priority": 0,
+    "cooldown": 5.0,
+    "initCooldown": 0.0,
+    "spCost": 5,
+    "blackboard": [
+      {
+        "key": "interval",
+        "value": 1.0,
+        "valueStr": null
+      },
+      {
+        "key": "hit_duration",
+        "value": 20.0,
+        "valueStr": null
+      },
+      {
+        "key": "sp",
+        "value": 1.0,
+        "valueStr": null
+      },
+      {
+        "key": "enemy_dmech_charge[sp_reduce].sp",
+        "value": -15.0,
+        "valueStr": null
+      }
+    ]
+  },
+  "talentBlackboard": [
+    {
+      "key": "deathrattle.enemy_key",
+      "value": 0.0,
+      "valueStr": "enemy_1220_dzoms"
+    },
+    {
+      "key": "deathrattle.delay",
+      "value": 1.0,
+      "valueStr": null
+    }
+  ],
+  "components": {
+    "-8409812972520350434": {
+      "script_path_id": -5087399121287503180,
+      "gameobject_path_id": -9041447492334265058,
+      "gameobject_name": "charge_gunctrl",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -9041447492334265058
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": -5087399121287503180
+        },
+        "m_Name": "",
+        "_familyMask": 3,
+        "_trigger": {
+          "m_FileID": 0,
+          "m_PathID": -5444373800544903906
+        },
+        "_checkParentActive": 0,
+        "_maxTriggerTime": 1,
+        "_resetMainAbilityCdWhenCastEnd": 0,
+        "_resetCdWaitFirstPeriod": 1,
+        "_overwriteInitCooldown": -1,
+        "_ignoreSilence": 0,
+        "_immuneStunWhenAffecting": 0,
+        "_addEnemyIdToSignalId": 0,
+        "_castLikeAttack": 0
+      },
+      "script_key": "CAB-658d74aab777086fc32b93f385be999a:-5087399121287503180",
+      "native_class": "EnemySkill"
+    },
+    "-4552442707113091810": {
+      "script_path_id": -7755558598337543512,
+      "gameobject_path_id": -9041447492334265058,
+      "gameobject_name": "charge_gunctrl",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -9041447492334265058
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": -7755558598337543512
+        },
+        "m_Name": "",
+        "_startEvent": 4,
+        "_endEvent": 6,
+        "_buffs": [
+          {
+            "attributes": {
+              "abnormalFlags": [],
+              "abnormalImmunes": [],
+              "abnormalAntis": [],
+              "abnormalCombos": [],
+              "abnormalComboImmunes": [],
+              "attributeModifiers": []
+            },
+            "buffKey": "enemy_dmech_charge[effect]",
+            "loadFromDB": 0,
+            "isDurableBuff": 0,
+            "isDamageMissable": 0,
+            "isSilenceable": 0,
+            "isStunnable": 0,
+            "isFreezable": 0,
+            "isLevitatable": 0,
+            "isGroundBoundable": 0,
+            "statusResistable": 2,
+            "templateKey": "empty",
+            "disableOverride": 0,
+            "overrideKey": "",
+            "overrideType": 0,
+            "maxStackCnt": 1,
+            "refreshRemainingTimeWhenStackMax": 0,
+            "clearAllStackCntWhenTimeUp": 0,
+            "maxValidStackCnt": -1,
+            "independentCharacterSource": 0,
+            "overrideEffectKey": "enemy_dmech_skill_01",
+            "overrideOnEventPriority": 0,
+            "onEventPriority": 0,
+            "audioSignal": "",
+            "lifeTimeType": 2,
+            "takeSnapshotWhenExtend": 0,
+            "durationKey": "",
+            "lifeTime": 0.0,
+            "triggerLifeType": 0,
+            "triggerCnt": 0,
+            "triggerInterval": -1.0,
+            "waitFirstTriggerInterval": 1,
+            "firstTriggerInterval": -1.0,
+            "priority": -1,
+            "priorityBBKeys": [],
+            "stripBlackboardParamsWithBuffKey": 0,
+            "blackboard": [],
+            "enableInitDirectionFromSource": 0
+          }
+        ],
+        "_forceFinishBuffOnCastEnd": 0
+      },
+      "script_key": "CAB-658d74aab777086fc32b93f385be999a:-7755558598337543512",
+      "native_class": "BuffToOwnerDuringAbility"
+    },
+    "1162715738999741726": {
+      "script_path_id": 680305599797508032,
+      "gameobject_path_id": -9041447492334265058,
+      "gameobject_name": "charge_gunctrl",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -9041447492334265058
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 680305599797508032
+        },
+        "m_Name": "",
+        "_default": {
+          "beginAnim": "Skill_Start",
+          "loopAnim": "Skill_Loop",
+          "endAnim": "Skill_End"
+        },
+        "_overrideDownAnimation": 0,
+        "_down": {
+          "beginAnim": "",
+          "loopAnim": "",
+          "endAnim": ""
+        },
+        "_overrideUpAnimation": 0,
+        "_up": {
+          "beginAnim": "",
+          "loopAnim": "",
+          "endAnim": ""
+        },
+        "_faceToFront": 0,
+        "_faceToDefault": 0,
+        "_waitForAttachFinishEvent": 1,
+        "_earlyFinishEndIdleAnimation": 0,
+        "_fireAttackFinishEvent": 0,
+        "_delayToFireAttackSkillEvent": 0,
+        "_delaySecond": 0.0,
+        "_fireAnimEndEvent": 0,
+        "_dontPlayBeginAnimFromInterrupted": 0,
+        "_onlyPlayBeginAnimWhenFirstAttack": 0,
+        "_delayToAnimateEndAnimation": 0,
+        "_delayToAnimateEndAnimationTime": 0.0,
+        "_playIdleAnimInTheEnd": 0
+      },
+      "script_key": "CAB-658d74aab777086fc32b93f385be999a:680305599797508032",
+      "native_class": "ThreePartChannelingAnimation"
+    },
+    "1406058274538577182": {
+      "script_path_id": 4156651312234227407,
+      "gameobject_path_id": -9041447492334265058,
+      "gameobject_name": "charge_gunctrl",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -9041447492334265058
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 4156651312234227407
+        },
+        "m_Name": "",
+        "_selector": {
+          "m_FileID": 0,
+          "m_PathID": 5967408785358970142
+        },
+        "_metadata": {
+          "namedAsAlias": "",
+          "blackboardPrefix": ""
+        },
+        "_interruptAbilityOnDetach": 0,
+        "_attachPassiveBuffsOnDummy": 1,
+        "_ignoreIfOwnerDead": 0,
+        "_forceAsDmgOrHealAbility": 0,
+        "_waitForAttackEvent": 0,
+        "_interuptIfTargetDead": 0,
+        "_resetCdStrategy": 1,
+        "_selectTargetSource": 1,
+        "_selectTargetTiming": 0,
+        "_timeMode": 0,
+        "_alwaysIncludeTarget": 0,
+        "_allowNoTarget": 0,
+        "_animKey": "",
+        "_endAnimKey": "",
+        "_downAnimKey": "",
+        "_downEndAnimKey": "",
+        "_upAnimKey": "",
+        "_upEndAnimKey": "",
+        "_cooldown": 0.0,
+        "_cooldownKey": "duration",
+        "_preDelay": 0.6669999957084656,
+        "_escapeTime": 0.0,
+        "_faceToTarget": 0,
+        "_faceToDefault": 0,
+        "_faceToFront": 0,
+        "_faceToFirstCastTarget": 0,
+        "_checkFaceToFirstCastTargetDownAttack": 0,
+        "_forceFaceToDirection": 0,
+        "_activeBuffs": [
+          {
+            "attributes": {
+              "abnormalFlags": [],
+              "abnormalImmunes": [],
+              "abnormalAntis": [],
+              "abnormalCombos": [],
+              "abnormalComboImmunes": [],
+              "attributeModifiers": []
+            },
+            "buffKey": "dmech_charge",
+            "loadFromDB": 0,
+            "isDurableBuff": 0,
+            "isDamageMissable": 0,
+            "isSilenceable": 0,
+            "isStunnable": 0,
+            "isFreezable": 0,
+            "isLevitatable": 0,
+            "isGroundBoundable": 0,
+            "statusResistable": 2,
+            "templateKey": "modify_sp[start]",
+            "disableOverride": 0,
+            "overrideKey": "",
+            "overrideType": 0,
+            "maxStackCnt": 1,
+            "refreshRemainingTimeWhenStackMax": 0,
+            "clearAllStackCntWhenTimeUp": 0,
+            "maxValidStackCnt": -1,
+            "independentCharacterSource": 0,
+            "overrideEffectKey": "",
+            "overrideOnEventPriority": 0,
+            "onEventPriority": 0,
+            "audioSignal": "",
+            "lifeTimeType": 0,
+            "takeSnapshotWhenExtend": 0,
+            "durationKey": "stun",
+            "lifeTime": 0.0,
+            "triggerLifeType": 0,
+            "triggerCnt": 0,
+            "triggerInterval": -1.0,
+            "waitFirstTriggerInterval": 1,
+            "firstTriggerInterval": -1.0,
+            "priority": -1,
+            "priorityBBKeys": [],
+            "stripBlackboardParamsWithBuffKey": 0,
+            "blackboard": [],
+            "enableInitDirectionFromSource": 0
+          }
+        ],
+        "_maxAnimScale": 1.0,
+        "_onlyPlayEndAnimWhenIsLastAbility": 0,
+        "_ignorePalsyInterrupt": 0,
+        "_affectedBySlowDown": 0,
+        "_atkScale": 0.0,
+        "_atkScaleKey": "atk_scale",
+        "_attackType": 4,
+        "_elementDamageType": 0,
+        "_epDamageRatio": 0.0,
+        "_useDynamicAttackType": 0,
+        "_deliveryParaWhenReplaceActionNode": 0,
+        "_projectileKey": "projectile_enemy_dmech_charge",
+        "_mountPointType": 2,
+        "_useMountGroup": 0,
+        "_mountGroup": {
+          "loopType": 0,
+          "mountPoints": []
+        },
+        "_damageType": 2,
+        "_waitForProjectileInvalid": 1,
+        "_notClearProjectileWhenCastEnd": 0,
+        "_fireAttackFinishWhenProjectileInvalid": 1,
+        "_minPostDelayWhenProjectileInvalid": 0.6669999957084656,
+        "_waitForAnimEndWhenProjectileInvalid": 1,
+        "_projectileDestination": 0,
+        "_extraDamageType": 0,
+        "_emitToInputPosWhenTargetIsInvalid": 0,
+        "_emitToInputRootTileWhenTargetIsInvalid": 0,
+        "_useCachedAtkOnly": 0,
+        "_transferSource": 0,
+        "_extraProjectileKeys": [],
+        "_fireCreateProjectileEvent": 0
+      },
+      "script_key": "CAB-658d74aab777086fc32b93f385be999a:4156651312234227407",
+      "native_class": "RangedAttack"
+    },
+    "2665887617825955102": {
+      "script_path_id": -7755558598337543512,
+      "gameobject_path_id": -9041447492334265058,
+      "gameobject_name": "charge_gunctrl",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -9041447492334265058
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": -7755558598337543512
+        },
+        "m_Name": "",
+        "_startEvent": 4,
+        "_endEvent": 3,
+        "_buffs": [
+          {
+            "attributes": {
+              "abnormalFlags": [],
+              "abnormalImmunes": [],
+              "abnormalAntis": [],
+              "abnormalCombos": [],
+              "abnormalComboImmunes": [],
+              "attributeModifiers": []
+            },
+            "buffKey": "enemy_dmech_charge[interrupt]",
+            "loadFromDB": 0,
+            "isDurableBuff": 0,
+            "isDamageMissable": 0,
+            "isSilenceable": 0,
+            "isStunnable": 0,
+            "isFreezable": 0,
+            "isLevitatable": 0,
+            "isGroundBoundable": 0,
+            "statusResistable": 2,
+            "templateKey": "enemy_dmech_charge[interrupt]",
+            "disableOverride": 0,
+            "overrideKey": "",
+            "overrideType": 0,
+            "maxStackCnt": 1,
+            "refreshRemainingTimeWhenStackMax": 0,
+            "clearAllStackCntWhenTimeUp": 0,
+            "maxValidStackCnt": -1,
+            "independentCharacterSource": 0,
+            "overrideEffectKey": "",
+            "overrideOnEventPriority": 0,
+            "onEventPriority": 0,
+            "audioSignal": "",
+            "lifeTimeType": 1,
+            "takeSnapshotWhenExtend": 0,
+            "durationKey": "hit_duration",
+            "lifeTime": 0.0,
+            "triggerLifeType": 0,
+            "triggerCnt": 0,
+            "triggerInterval": -1.0,
+            "waitFirstTriggerInterval": 1,
+            "firstTriggerInterval": -1.0,
+            "priority": -1,
+            "priorityBBKeys": [],
+            "stripBlackboardParamsWithBuffKey": 0,
+            "blackboard": [],
+            "enableInitDirectionFromSource": 0
+          }
+        ],
+        "_forceFinishBuffOnCastEnd": 0
+      },
+      "script_key": "CAB-658d74aab777086fc32b93f385be999a:-7755558598337543512",
+      "native_class": "BuffToOwnerDuringAbility"
+    },
+    "5967408785358970142": {
+      "script_path_id": 6959540303033999559,
+      "gameobject_path_id": -356464623570985698,
+      "gameobject_name": "trigger",
+      "raw": {
+        "m_GameObject": {
+          "m_FileID": 0,
+          "m_PathID": -356464623570985698
+        },
+        "m_Enabled": 1,
+        "m_Script": {
+          "m_FileID": 1,
+          "m_PathID": 6959540303033999559
+        },
+        "m_Name": "",
+        "_targetSide": 3,
+        "_targetMotion": 3,
+        "_targetCategory": 2,
+        "_postFilter": 0,
+        "_ignoreTargetFree": 1,
+        "_onlyIgnoreSomeOfTargetFreeCase": 0,
+        "_abnormalFlag": 25,
+        "_abnormalCombo": 2,
+        "_ignoreAllyTargetFree": 0,
+        "_ignoreHealFree": 0,
+        "_ignoreMotionMode": 0,
+        "_forceIgnoreCamouflage": 0,
+        "_needProfessionMask": 0,
+        "_professionMask": 0,
+        "_excludeSomeAbnormalFlags": 0,
+        "_excludeAbnormalFlag": 46,
+        "_limitTargetNum": 1,
+        "_maxTargetKey": "max_target",
+        "_maxNum": 1,
+        "_excludeOwner": 0,
+        "_sortByTauntAtLast": 0,
+        "_ignoreHitRange": 0,
+        "_checkUnitType": 0,
+        "_unitTypeMask": 0,
+        "_abilityInputTargetAsSortSource": 0,
+        "_tagExcluded": 0,
+        "_filterTag": "gunctrl",
+        "_filterTagList": [],
+        "_buffKeyExcluded": 0,
+        "_buffKey": "",
+        "_buffs": [],
+        "_checkOrInsteadOfAnd": 0,
+        "_filterBuffSource": 0,
+        "_filterTokenHost": 0
+      },
+      "script_key": "CAB-658d74aab777086fc32b93f385be999a:6959540303033999559",
+      "native_class": "AdvancedSelectorWithTagAndBuffKey"
+    }
+  },
+  "projectile": {
+    "source": {
+      "path": "data/battle/prefabs/[uc]projectiles.ab_unpacked/CAB-34af01ecb5d2ad63aca01b6e0d71279d",
+      "sha256": "1a359a23771c0a32bff3269a244b145ee5a5d67bcbd55f6ee3dc973f7bd3337c",
+      "bytes": 4860839
+    },
+    "root_gameobject_path_id": 1284829228858886856,
+    "hierarchy": [
+      {
+        "path_id": 1284829228858886856,
+        "name": "projectile_enemy_dmech_charge",
+        "parent_path_id": null
+      }
+    ],
+    "components": {
+      "-2681490905170621752": {
+        "script_path_id": -1571035685851700140,
+        "gameobject_path_id": 1284829228858886856,
+        "gameobject_name": "projectile_enemy_dmech_charge",
+        "raw": {
+          "m_GameObject": {
+            "m_FileID": 0,
+            "m_PathID": 1284829228858886856
+          },
+          "m_Enabled": 1,
+          "m_Script": {
+            "m_FileID": 1,
+            "m_PathID": -1571035685851700140
+          },
+          "m_Name": "",
+          "_randomDelayToBorn": 0.0,
+          "_bodyTransform": {
+            "m_FileID": 0,
+            "m_PathID": -8809045109839344952
+          },
+          "_keepAlreadyHitTime": 1.0,
+          "_mainEffect": "",
+          "_clearMainEffectWhenReached": 0,
+          "_actionController": {
+            "_detachBuffsWhenTargetLeave": 0,
+            "_detachAllBuffsWhenStopped": 1,
+            "_onlyAddBuffsToTraceTarget": 0,
+            "_onlyAddBuffsToTargetOnce": 0,
+            "_dontAddBuffs": 0,
+            "_excludeAttachments": 0,
+            "_useSelfBlackboard": 0,
+            "_extraBuffsInTheEnd": [],
+            "_useExtraBuffsWhenStopHit": 0,
+            "_addExtraBuffsWhenReached": 0,
+            "_detachAllExtraBuffsWhenStopped": 0
+          },
+          "_fixDealHitTargetLeft": 0,
+          "_stopGraphicProjectileWhenClearMainEffect": 0,
+          "_overrideAudioSignal": "",
+          "_fireProjectileReachedEvent": 0,
+          "_eliminatableStatus": 0,
+          "_movementAdjustableStatus": 0,
+          "_managedBySource": 0,
+          "_projectileType": 0,
+          "_containsChildrenBehaviours": 0,
+          "_canHitSameTargetMultipleTimes": 0,
+          "_lifeTimeType": 2,
+          "_lifeTime": 0.0,
+          "_getLifeTimeFromBB": 0,
+          "_linkDuration": 20.0,
+          "_isSilenceable": 1,
+          "_keepHitTarget": 1,
+          "_splitDamage": 1,
+          "_dontHitInvincibleTarget": 0,
+          "_maxHitTimes": -1,
+          "_keepWhenRallyPointLikeSwitch": 0
+        },
+        "script_key": "CAB-658d74aab777086fc32b93f385be999a:-1571035685851700140",
+        "native_class": "LassoProjectile"
+      },
+      "-1128717988083643704": {
+        "script_path_id": 740622368551806873,
+        "gameobject_path_id": 1284829228858886856,
+        "gameobject_name": "projectile_enemy_dmech_charge",
+        "raw": {
+          "m_GameObject": {
+            "m_FileID": 0,
+            "m_PathID": 1284829228858886856
+          },
+          "m_Enabled": 1,
+          "m_Script": {
+            "m_FileID": 1,
+            "m_PathID": 740622368551806873
+          },
+          "m_Name": "",
+          "_rotateToTarget": 1,
+          "_forceReachedWhenTimeup": 1,
+          "_useSourceDirection": 0,
+          "_useTargetDirection": 0,
+          "_useStartToTarget": 0,
+          "_awayFromSourceAsDirection": 0,
+          "_flyToTargetLocationOnly": 0,
+          "_useSourceDirectionRandomArcAngleStart": 0,
+          "_useSourceToTargetRandomArcAngleStart": 0,
+          "_useSourceDirectionArcAngleWithRatio": 0,
+          "_useSourceToTargetArcAngleWithRatio": 0,
+          "_sourceDirectionArcAngleRatio": 0.0,
+          "_flyToPredefinedLocation": 0,
+          "_predefinedLocation": 0,
+          "_freezeRotationZ": 0,
+          "_freezeRotationXY": 0,
+          "_exactMatchCameraForward": 0,
+          "_resetToTargetPosWhenReached": 0,
+          "_resetToTracetargetMapPosV3": 0,
+          "_handleWithIBuildableTarget": 0,
+          "_forceResetToTargetPosWhenReached": 0,
+          "_fixOnProjectileReached": 0,
+          "_onlyReachedInTime": 0.0,
+          "_keepUpdate": 0,
+          "_attachToMountPoint": 0,
+          "_ignoreMountPointHeight": 0,
+          "_mountPointType": 1,
+          "_checkReached": 1,
+          "_delayAfterReached": 0,
+          "_updateDelayTimeOnlyOnce": 0,
+          "_delayTime": 0.0,
+          "_extraDelayTime": 0.0,
+          "_delayToStart": 0.0,
+          "_immediatelyReach": 1,
+          "_stopIfTargetDead": 0,
+          "_stopIfTargetDisappeared": 0,
+          "_followTarget": 0
+        },
+        "script_key": "CAB-658d74aab777086fc32b93f385be999a:740622368551806873",
+        "native_class": "AttachToTarget"
+      }
+    },
+    "external_references": [],
+    "geometry_sources": [
+      {
+        "path_id": -8809045109839344952,
+        "gameobject_path_id": 1284829228858886856,
+        "gameobject_name": "projectile_enemy_dmech_charge",
+        "unity_type": "Transform",
+        "raw": {
+          "m_GameObject": {
+            "m_FileID": 0,
+            "m_PathID": 1284829228858886856
+          },
+          "m_LocalRotation": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0,
+            "w": 1.0
+          },
+          "m_LocalPosition": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "m_LocalScale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+          },
+          "m_Children": [],
+          "m_Father": {
+            "m_FileID": 0,
+            "m_PathID": 0
+          }
+        }
+      }
+    ]
+  },
+  "templates": {
+    "modify_sp[start]": {
+      "parsed": {
+        "templateKey": "modify_sp[start]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_BUFF_START": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+ModifySp, Assembly-CSharp",
+              "_targetType": "TARGET",
+              "_modifyByRatio": false,
+              "_modifyRatio": 0.0,
+              "_modifyByRatioBasedOnCurSP": false,
+              "_modifyBySpCost": false,
+              "_dontCheckSpType": false,
+              "_spMask": "ALL",
+              "_forceFlag": false,
+              "_dontShowSpUI": false,
+              "_modifyValue": 0,
+              "_spString": "sp",
+              "_isMinis": false,
+              "_customModifierKey": ""
+            }
+          ]
+        }
+      },
+      "payload_offset": 306926,
+      "document_base64": "vQEAAAJ0ZW1wbGF0ZUtleQARAAAAbW9kaWZ5X3NwW3N0YXJ0XQACZWZmZWN0S2V5AAEAAAAAAm9uRXZlbnRQcmlvcml0eQAIAAAAREVGQVVMVAADZXZlbnRUb0FjdGlvbnMAWQEAAARPTl9CVUZGX1NUQVJUAEUBAAADMAA9AQAAAiR0eXBlADYAAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrTW9kaWZ5U3AsIEFzc2VtYmx5LUNTaGFycAACX3RhcmdldFR5cGUABwAAAFRBUkdFVAAIX21vZGlmeUJ5UmF0aW8AAAFfbW9kaWZ5UmF0aW8AAAAAAAAAAAAIX21vZGlmeUJ5UmF0aW9CYXNlZE9uQ3VyU1AAAAhfbW9kaWZ5QnlTcENvc3QAAAhfZG9udENoZWNrU3BUeXBlAAACX3NwTWFzawAEAAAAQUxMAAhfZm9yY2VGbGFnAAAIX2RvbnRTaG93U3BVSQAAEF9tb2RpZnlWYWx1ZQAAAAAAAl9zcFN0cmluZwADAAAAc3AACF9pc01pbmlzAAACX2N1c3RvbU1vZGlmaWVyS2V5AAEAAAAAAAAAAA==",
+      "document_sha256": "defc5260d4cf08eedebe5762a0b5cf4b10d3e43e5ab5d77e817a72522edd636c"
+    },
+    "enemy_dmech_charge[interrupt]": {
+      "parsed": {
+        "templateKey": "enemy_dmech_charge[interrupt]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_ABILITY_INTERRUPTED": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateBuffUseAbilitySelector, Assembly-CSharp",
+              "_sourceType": "SOURCE",
+              "_targetType": "TARGET",
+              "_useAbilityFromTarget": false,
+              "_abilityFromTargetType": "SOURCE",
+              "_abilityName": "charge_gunctrl",
+              "_excludeTarget": false,
+              "_excludeTargetType": "SOURCE",
+              "_buff": {
+                "attributes": {
+                  "abnormalFlags": null,
+                  "abnormalImmunes": null,
+                  "abnormalAntis": null,
+                  "abnormalCombos": null,
+                  "abnormalComboImmunes": null,
+                  "attributeModifiers": null
+                },
+                "buffKey": "enemy_dmech_charge[sp_reduce]",
+                "loadFromDB": false,
+                "isDurableBuff": false,
+                "isDamageMissable": false,
+                "isSilenceable": false,
+                "isStunnable": false,
+                "isFreezable": false,
+                "isLevitatable": false,
+                "isGroundBoundable": false,
+                "statusResistable": "AUTOMATIC",
+                "templateKey": "modify_sp[start]",
+                "disableOverride": false,
+                "overrideKey": null,
+                "overrideType": "DEFAULT",
+                "maxStackCnt": 1,
+                "refreshRemainingTimeWhenStackMax": false,
+                "clearAllStackCntWhenTimeUp": false,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": false,
+                "overrideEffectKey": null,
+                "overrideOnEventPriority": false,
+                "onEventPriority": "DEFAULT",
+                "audioSignal": null,
+                "lifeTimeType": "IMMEDIATELY",
+                "takeSnapshotWhenExtend": false,
+                "durationKey": null,
+                "lifeTime": 0.0,
+                "triggerLifeType": "IMMEDIATELY",
+                "triggerCnt": 0,
+                "triggerInterval": -1.0,
+                "waitFirstTriggerInterval": true,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": true,
+                "blackboard": [],
+                "enableInitDirectionFromSource": false
+              },
+              "_isDerivedBuff": false,
+              "_finishDerivedBuffIfParentFinish": false,
+              "_actionFailedIfNoTarget": false,
+              "_overrideBuffSourceType": false,
+              "_buffSourceType": "SOURCE",
+              "_assignTargetCntToBB": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuff, Assembly-CSharp",
+              "_decCntIfStack": false,
+              "_updateOverrideMap": true
+            }
+          ],
+          "ON_ABILITY_FINISH": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuffsById, Assembly-CSharp",
+              "_buffKey": "enemy_dmech_charge[effect]",
+              "_loadFromBlackboard": false,
+              "_decCntIfStack": false,
+              "_updateOverrideMap": true,
+              "_targetType": "SOURCE",
+              "_checkBuffSource": false,
+              "_sourceType": "BUFF_SOURCE",
+              "_alsoClearNullSource": false,
+              "_finishHostBuff": false,
+              "_decCntKey": null,
+              "_decCnt": 1
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+AlwaysNext, Assembly-CSharp"
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CheckAbnormalFlag, Assembly-CSharp",
+              "_abnormalFlag": "SILENCED",
+              "_targetType": "SOURCE",
+              "_isUnset": false,
+              "_abnormalFlagKey": ""
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateBuffUseAbilitySelector, Assembly-CSharp",
+              "_sourceType": "SOURCE",
+              "_targetType": "TARGET",
+              "_useAbilityFromTarget": false,
+              "_abilityFromTargetType": "SOURCE",
+              "_abilityName": "charge_gunctrl",
+              "_excludeTarget": false,
+              "_excludeTargetType": "SOURCE",
+              "_buff": {
+                "attributes": {
+                  "abnormalFlags": null,
+                  "abnormalImmunes": null,
+                  "abnormalAntis": null,
+                  "abnormalCombos": null,
+                  "abnormalComboImmunes": null,
+                  "attributeModifiers": null
+                },
+                "buffKey": "enemy_dmech_charge[sp_reduce]",
+                "loadFromDB": false,
+                "isDurableBuff": false,
+                "isDamageMissable": false,
+                "isSilenceable": false,
+                "isStunnable": false,
+                "isFreezable": false,
+                "isLevitatable": false,
+                "isGroundBoundable": false,
+                "statusResistable": "AUTOMATIC",
+                "templateKey": "modify_sp[start]",
+                "disableOverride": false,
+                "overrideKey": null,
+                "overrideType": "DEFAULT",
+                "maxStackCnt": 1,
+                "refreshRemainingTimeWhenStackMax": false,
+                "clearAllStackCntWhenTimeUp": false,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": false,
+                "overrideEffectKey": null,
+                "overrideOnEventPriority": false,
+                "onEventPriority": "DEFAULT",
+                "audioSignal": null,
+                "lifeTimeType": "IMMEDIATELY",
+                "takeSnapshotWhenExtend": false,
+                "durationKey": null,
+                "lifeTime": 0.0,
+                "triggerLifeType": "IMMEDIATELY",
+                "triggerCnt": 0,
+                "triggerInterval": -1.0,
+                "waitFirstTriggerInterval": true,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": true,
+                "blackboard": [],
+                "enableInitDirectionFromSource": false
+              },
+              "_isDerivedBuff": false,
+              "_finishDerivedBuffIfParentFinish": false,
+              "_actionFailedIfNoTarget": false,
+              "_overrideBuffSourceType": false,
+              "_buffSourceType": "SOURCE",
+              "_assignTargetCntToBB": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuff, Assembly-CSharp",
+              "_decCntIfStack": false,
+              "_updateOverrideMap": true
+            }
+          ]
+        }
+      },
+      "payload_offset": 1601756,
+      "document_base64": "1Q4AAAJ0ZW1wbGF0ZUtleQAeAAAAZW5lbXlfZG1lY2hfY2hhcmdlW2ludGVycnVwdF0AAmVmZmVjdEtleQABAAAAAAJvbkV2ZW50UHJpb3JpdHkACAAAAERFRkFVTFQAA2V2ZW50VG9BY3Rpb25zAGQOAAAET05fQUJJTElUWV9JTlRFUlJVUFRFRAABBgAAAzAAiAUAAAIkdHlwZQBKAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NyZWF0ZUJ1ZmZVc2VBYmlsaXR5U2VsZWN0b3IsIEFzc2VtYmx5LUNTaGFycAACX3NvdXJjZVR5cGUABwAAAFNPVVJDRQACX3RhcmdldFR5cGUABwAAAFRBUkdFVAAIX3VzZUFiaWxpdHlGcm9tVGFyZ2V0AAACX2FiaWxpdHlGcm9tVGFyZ2V0VHlwZQAHAAAAU09VUkNFAAJfYWJpbGl0eU5hbWUADwAAAGNoYXJnZV9ndW5jdHJsAAhfZXhjbHVkZVRhcmdldAAAAl9leGNsdWRlVGFyZ2V0VHlwZQAHAAAAU09VUkNFAANfYnVmZgDQAwAAA2F0dHJpYnV0ZXMAbgAAAAphYm5vcm1hbEZsYWdzAAphYm5vcm1hbEltbXVuZXMACmFibm9ybWFsQW50aXMACmFibm9ybWFsQ29tYm9zAAphYm5vcm1hbENvbWJvSW1tdW5lcwAKYXR0cmlidXRlTW9kaWZpZXJzAAACYnVmZktleQAeAAAAZW5lbXlfZG1lY2hfY2hhcmdlW3NwX3JlZHVjZV0ACGxvYWRGcm9tREIAAAhpc0R1cmFibGVCdWZmAAAIaXNEYW1hZ2VNaXNzYWJsZQAACGlzU2lsZW5jZWFibGUAAAhpc1N0dW5uYWJsZQAACGlzRnJlZXphYmxlAAAIaXNMZXZpdGF0YWJsZQAACGlzR3JvdW5kQm91bmRhYmxlAAACc3RhdHVzUmVzaXN0YWJsZQAKAAAAQVVUT01BVElDAAJ0ZW1wbGF0ZUtleQARAAAAbW9kaWZ5X3NwW3N0YXJ0XQAIZGlzYWJsZU92ZXJyaWRlAAAKb3ZlcnJpZGVLZXkAAm92ZXJyaWRlVHlwZQAIAAAAREVGQVVMVAAQbWF4U3RhY2tDbnQAAQAAAAhyZWZyZXNoUmVtYWluaW5nVGltZVdoZW5TdGFja01heAAACGNsZWFyQWxsU3RhY2tDbnRXaGVuVGltZVVwAAAQbWF4VmFsaWRTdGFja0NudAD/////CGluZGVwZW5kZW50Q2hhcmFjdGVyU291cmNlAAAKb3ZlcnJpZGVFZmZlY3RLZXkACG92ZXJyaWRlT25FdmVudFByaW9yaXR5AAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAAphdWRpb1NpZ25hbAACbGlmZVRpbWVUeXBlAAwAAABJTU1FRElBVEVMWQAIdGFrZVNuYXBzaG90V2hlbkV4dGVuZAAACmR1cmF0aW9uS2V5AAFsaWZlVGltZQAAAAAAAAAAAAJ0cmlnZ2VyTGlmZVR5cGUADAAAAElNTUVESUFURUxZABB0cmlnZ2VyQ250AAAAAAABdHJpZ2dlckludGVydmFsAAAAAAAAAPC/CHdhaXRGaXJzdFRyaWdnZXJJbnRlcnZhbAABAWZpcnN0VHJpZ2dlckludGVydmFsAAAAAAAAAPC/EHByaW9yaXR5AP////8EcHJpb3JpdHlCQktleXMABQAAAAAIc3RyaXBCbGFja2JvYXJkUGFyYW1zV2l0aEJ1ZmZLZXkAAQRibGFja2JvYXJkAAUAAAAACGVuYWJsZUluaXREaXJlY3Rpb25Gcm9tU291cmNlAAAACF9pc0Rlcml2ZWRCdWZmAAAIX2ZpbmlzaERlcml2ZWRCdWZmSWZQYXJlbnRGaW5pc2gAAAhfYWN0aW9uRmFpbGVkSWZOb1RhcmdldAAACF9vdmVycmlkZUJ1ZmZTb3VyY2VUeXBlAAACX2J1ZmZTb3VyY2VUeXBlAAcAAABTT1VSQ0UACF9hc3NpZ25UYXJnZXRDbnRUb0JCAAAAAzEAbgAAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0ZpbmlzaEJ1ZmYsIEFzc2VtYmx5LUNTaGFycAAIX2RlY0NudElmU3RhY2sAAAhfdXBkYXRlT3ZlcnJpZGVNYXAAAQAABE9OX0FCSUxJVFlfRklOSVNIADMIAAADMAA8AQAAAiR0eXBlAD0AAABUb3JhcHB1LkJhdHRsZS5BY3Rpb24uTm9kZXMrRmluaXNoQnVmZnNCeUlkLCBBc3NlbWJseS1DU2hhcnAAAl9idWZmS2V5ABsAAABlbmVteV9kbWVjaF9jaGFyZ2VbZWZmZWN0XQAIX2xvYWRGcm9tQmxhY2tib2FyZAAACF9kZWNDbnRJZlN0YWNrAAAIX3VwZGF0ZU92ZXJyaWRlTWFwAAECX3RhcmdldFR5cGUABwAAAFNPVVJDRQAIX2NoZWNrQnVmZlNvdXJjZQAAAl9zb3VyY2VUeXBlAAwAAABCVUZGX1NPVVJDRQAIX2Fsc29DbGVhck51bGxTb3VyY2UAAAhfZmluaXNoSG9zdEJ1ZmYAAApfZGVjQ250S2V5ABBfZGVjQ250AAEAAAAAAzEASAAAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0Fsd2F5c05leHQsIEFzc2VtYmx5LUNTaGFycAAAAzIApQAAAAIkdHlwZQA/AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NoZWNrQWJub3JtYWxGbGFnLCBBc3NlbWJseS1DU2hhcnAAAl9hYm5vcm1hbEZsYWcACQAAAFNJTEVOQ0VEAAJfdGFyZ2V0VHlwZQAHAAAAU09VUkNFAAhfaXNVbnNldAAAAl9hYm5vcm1hbEZsYWdLZXkAAQAAAAAAAzMAiAUAAAIkdHlwZQBKAAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0NyZWF0ZUJ1ZmZVc2VBYmlsaXR5U2VsZWN0b3IsIEFzc2VtYmx5LUNTaGFycAACX3NvdXJjZVR5cGUABwAAAFNPVVJDRQACX3RhcmdldFR5cGUABwAAAFRBUkdFVAAIX3VzZUFiaWxpdHlGcm9tVGFyZ2V0AAACX2FiaWxpdHlGcm9tVGFyZ2V0VHlwZQAHAAAAU09VUkNFAAJfYWJpbGl0eU5hbWUADwAAAGNoYXJnZV9ndW5jdHJsAAhfZXhjbHVkZVRhcmdldAAAAl9leGNsdWRlVGFyZ2V0VHlwZQAHAAAAU09VUkNFAANfYnVmZgDQAwAAA2F0dHJpYnV0ZXMAbgAAAAphYm5vcm1hbEZsYWdzAAphYm5vcm1hbEltbXVuZXMACmFibm9ybWFsQW50aXMACmFibm9ybWFsQ29tYm9zAAphYm5vcm1hbENvbWJvSW1tdW5lcwAKYXR0cmlidXRlTW9kaWZpZXJzAAACYnVmZktleQAeAAAAZW5lbXlfZG1lY2hfY2hhcmdlW3NwX3JlZHVjZV0ACGxvYWRGcm9tREIAAAhpc0R1cmFibGVCdWZmAAAIaXNEYW1hZ2VNaXNzYWJsZQAACGlzU2lsZW5jZWFibGUAAAhpc1N0dW5uYWJsZQAACGlzRnJlZXphYmxlAAAIaXNMZXZpdGF0YWJsZQAACGlzR3JvdW5kQm91bmRhYmxlAAACc3RhdHVzUmVzaXN0YWJsZQAKAAAAQVVUT01BVElDAAJ0ZW1wbGF0ZUtleQARAAAAbW9kaWZ5X3NwW3N0YXJ0XQAIZGlzYWJsZU92ZXJyaWRlAAAKb3ZlcnJpZGVLZXkAAm92ZXJyaWRlVHlwZQAIAAAAREVGQVVMVAAQbWF4U3RhY2tDbnQAAQAAAAhyZWZyZXNoUmVtYWluaW5nVGltZVdoZW5TdGFja01heAAACGNsZWFyQWxsU3RhY2tDbnRXaGVuVGltZVVwAAAQbWF4VmFsaWRTdGFja0NudAD/////CGluZGVwZW5kZW50Q2hhcmFjdGVyU291cmNlAAAKb3ZlcnJpZGVFZmZlY3RLZXkACG92ZXJyaWRlT25FdmVudFByaW9yaXR5AAACb25FdmVudFByaW9yaXR5AAgAAABERUZBVUxUAAphdWRpb1NpZ25hbAACbGlmZVRpbWVUeXBlAAwAAABJTU1FRElBVEVMWQAIdGFrZVNuYXBzaG90V2hlbkV4dGVuZAAACmR1cmF0aW9uS2V5AAFsaWZlVGltZQAAAAAAAAAAAAJ0cmlnZ2VyTGlmZVR5cGUADAAAAElNTUVESUFURUxZABB0cmlnZ2VyQ250AAAAAAABdHJpZ2dlckludGVydmFsAAAAAAAAAPC/CHdhaXRGaXJzdFRyaWdnZXJJbnRlcnZhbAABAWZpcnN0VHJpZ2dlckludGVydmFsAAAAAAAAAPC/EHByaW9yaXR5AP////8EcHJpb3JpdHlCQktleXMABQAAAAAIc3RyaXBCbGFja2JvYXJkUGFyYW1zV2l0aEJ1ZmZLZXkAAQRibGFja2JvYXJkAAUAAAAACGVuYWJsZUluaXREaXJlY3Rpb25Gcm9tU291cmNlAAAACF9pc0Rlcml2ZWRCdWZmAAAIX2ZpbmlzaERlcml2ZWRCdWZmSWZQYXJlbnRGaW5pc2gAAAhfYWN0aW9uRmFpbGVkSWZOb1RhcmdldAAACF9vdmVycmlkZUJ1ZmZTb3VyY2VUeXBlAAACX2J1ZmZTb3VyY2VUeXBlAAcAAABTT1VSQ0UACF9hc3NpZ25UYXJnZXRDbnRUb0JCAAAAAzQAbgAAAAIkdHlwZQA4AAAAVG9yYXBwdS5CYXR0bGUuQWN0aW9uLk5vZGVzK0ZpbmlzaEJ1ZmYsIEFzc2VtYmx5LUNTaGFycAAIX2RlY0NudElmU3RhY2sAAAhfdXBkYXRlT3ZlcnJpZGVNYXAAAQAAAAA=",
+      "document_sha256": "965eb42f68f3693fda4061f2193e9d790cddb7b753e390f234615bafffb549d6"
+    }
+  },
+  "typed_phase": {
+    "source": "../Ark_data/dump.cs AbilityStandard.Event",
+    "ON_SPELL_ON": 4,
+    "ON_CAST_END": 3,
+    "ON_ATTACK_FINISH": 6,
+    "SOURCE": 1,
+    "INPUT_TARGET": 2
+  },
+  "unverified": [
+    "Native ON_ABILITY_FINISH versus AbilityStandard phase dispatch method body; do not equate them without reference policy.",
+    "Source interrupt Buff lifeTime TIME/hit_duration20 versus exact early spell termination cleanup call order.",
+    "Raw float32 pre/post .6669999957 each rounds21 at30Hz; does not silently normalize to20.",
+    "No .9 source field, no Manfred CALL dependency."
+  ],
+  "actual_simulation_passed": false
+}

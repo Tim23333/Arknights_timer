@@ -1,0 +1,13 @@
+import copy,hashlib,json,sys
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT))
+from tools.chapter10_stage_source_peer_v1.source_preflight import exact
+sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
+out=ROOT/'validation/campaign/chapter0_stage_input_peer_v1';prior=out/'plan.review.v2.json';assert sha(prior)=='c40a18e0599be79dd2acf8c1f5a658a1a50e16e2b4d85dd0cf4f54b288db669a';review=json.loads(prior.read_bytes());assert review['static_plan_intent_approved'];assert all(sha(p)==h for p,h in review['source_guards'].items())
+author=ROOT/'validation/campaign/chapter0_stage_assembly_v1/freeze.functional.v2.json';assert sha(author)=='d3b1de82acbfc13ad39d48c8bca6e714c1283eb61180c277c6065572d95656f5'
+rows=[]
+for stage,pin in zip(['level_main_00-10','level_main_00-11'],['81ead561195b4ea0645eafacd78239f99ae7b50a1b39ace39719ed118e389311','34e09d34889bda17d0817fb1a6eea3cf3c42855fc1febe9c014391cdb2847620']):
+ folder=ROOT/'packages/campaign/chapter0_stage_models';parent=folder/f'{stage}.public.plan.v4.json';current=folder/f'{stage}.public.plan.v5.json';assert sha(current)==pin;p=json.loads(parent.read_bytes());c=json.loads(current.read_bytes());keys=set(p)^set(c);changes={k:{'before':p.get(k),'after':c.get(k)} for k in set(p)&set(c) if p[k]!=c[k]};exact(p['commands'],c['commands']);rows.append({'stage':stage,'parent_sha':sha(parent),'current_sha':sha(current),'metadata_changes':changes,'added_removed_keys':sorted(keys),'commands_strict_typed_equal':True,'deploys':sum(x['action']=='deploy' for x in c['commands']),'skill_commands':sum(x['action']=='skill' for x in c['commands'])});assert changes['manual_selected_skill_attempts']=={'before':52,'after':50}
+ assert keys=={'parent_plan_v4_sha256','metadata_count_correction_only'} and c['parent_plan_v4_sha256']==sha(parent) and c['metadata_count_correction_only'] is True
+ assert set(changes)=={'manual_selected_skill_attempts','schema'} and changes['schema']=={'before':'ark-sim/chapter0-public-finite-plan/v4','after':'ark-sim/chapter0-public-finite-plan/v5'},changes
+result={'schema':'ark-sim/chapter0-plan-v5-static-peer/v1','static_plan_intent_approved':True,'prior_current_static_v4_sha':sha(prior),'author_freeze_sha':sha(author),'rows':rows,'actual_command_acceptance_approved':False,'whole_or_native_UI_timing_approved':False,'scope':'V5 metadata correction and identical commands preserve prior independent source/terrain/slot/native-DP lower bound/SP intent review. Does not relabel old actual prefix identity.','reviewer_sha':sha(__file__)};dest=out/'plan.review.v5.json';assert not dest.exists();dest.write_text(json.dumps(result,indent=2)+'\n',encoding='utf8');print(json.dumps({'sha':sha(dest),'rows':rows}))

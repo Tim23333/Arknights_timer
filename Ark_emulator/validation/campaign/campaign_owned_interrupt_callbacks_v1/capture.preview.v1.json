@@ -1,0 +1,676 @@
+{
+  "enabled": true,
+  "definition": {
+    "id": "buff/ch10/dmech/interrupt",
+    "kind": "buff",
+    "duration_seconds": 20.0,
+    "metadata": {
+      "native": "enemy_dmech_charge[interrupt]",
+      "BSON": {
+        "templateKey": "enemy_dmech_charge[interrupt]",
+        "effectKey": "",
+        "onEventPriority": "DEFAULT",
+        "eventToActions": {
+          "ON_ABILITY_INTERRUPTED": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateBuffUseAbilitySelector, Assembly-CSharp",
+              "_sourceType": "SOURCE",
+              "_targetType": "TARGET",
+              "_useAbilityFromTarget": false,
+              "_abilityFromTargetType": "SOURCE",
+              "_abilityName": "charge_gunctrl",
+              "_excludeTarget": false,
+              "_excludeTargetType": "SOURCE",
+              "_buff": {
+                "attributes": {
+                  "abnormalFlags": null,
+                  "abnormalImmunes": null,
+                  "abnormalAntis": null,
+                  "abnormalCombos": null,
+                  "abnormalComboImmunes": null,
+                  "attributeModifiers": null
+                },
+                "buffKey": "enemy_dmech_charge[sp_reduce]",
+                "loadFromDB": false,
+                "isDurableBuff": false,
+                "isDamageMissable": false,
+                "isSilenceable": false,
+                "isStunnable": false,
+                "isFreezable": false,
+                "isLevitatable": false,
+                "isGroundBoundable": false,
+                "statusResistable": "AUTOMATIC",
+                "templateKey": "modify_sp[start]",
+                "disableOverride": false,
+                "overrideKey": null,
+                "overrideType": "DEFAULT",
+                "maxStackCnt": 1,
+                "refreshRemainingTimeWhenStackMax": false,
+                "clearAllStackCntWhenTimeUp": false,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": false,
+                "overrideEffectKey": null,
+                "overrideOnEventPriority": false,
+                "onEventPriority": "DEFAULT",
+                "audioSignal": null,
+                "lifeTimeType": "IMMEDIATELY",
+                "takeSnapshotWhenExtend": false,
+                "durationKey": null,
+                "lifeTime": 0.0,
+                "triggerLifeType": "IMMEDIATELY",
+                "triggerCnt": 0,
+                "triggerInterval": -1.0,
+                "waitFirstTriggerInterval": true,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": true,
+                "blackboard": [],
+                "enableInitDirectionFromSource": false
+              },
+              "_isDerivedBuff": false,
+              "_finishDerivedBuffIfParentFinish": false,
+              "_actionFailedIfNoTarget": false,
+              "_overrideBuffSourceType": false,
+              "_buffSourceType": "SOURCE",
+              "_assignTargetCntToBB": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuff, Assembly-CSharp",
+              "_decCntIfStack": false,
+              "_updateOverrideMap": true
+            }
+          ],
+          "ON_ABILITY_FINISH": [
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuffsById, Assembly-CSharp",
+              "_buffKey": "enemy_dmech_charge[effect]",
+              "_loadFromBlackboard": false,
+              "_decCntIfStack": false,
+              "_updateOverrideMap": true,
+              "_targetType": "SOURCE",
+              "_checkBuffSource": false,
+              "_sourceType": "BUFF_SOURCE",
+              "_alsoClearNullSource": false,
+              "_finishHostBuff": false,
+              "_decCntKey": null,
+              "_decCnt": 1
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+AlwaysNext, Assembly-CSharp"
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CheckAbnormalFlag, Assembly-CSharp",
+              "_abnormalFlag": "SILENCED",
+              "_targetType": "SOURCE",
+              "_isUnset": false,
+              "_abnormalFlagKey": ""
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+CreateBuffUseAbilitySelector, Assembly-CSharp",
+              "_sourceType": "SOURCE",
+              "_targetType": "TARGET",
+              "_useAbilityFromTarget": false,
+              "_abilityFromTargetType": "SOURCE",
+              "_abilityName": "charge_gunctrl",
+              "_excludeTarget": false,
+              "_excludeTargetType": "SOURCE",
+              "_buff": {
+                "attributes": {
+                  "abnormalFlags": null,
+                  "abnormalImmunes": null,
+                  "abnormalAntis": null,
+                  "abnormalCombos": null,
+                  "abnormalComboImmunes": null,
+                  "attributeModifiers": null
+                },
+                "buffKey": "enemy_dmech_charge[sp_reduce]",
+                "loadFromDB": false,
+                "isDurableBuff": false,
+                "isDamageMissable": false,
+                "isSilenceable": false,
+                "isStunnable": false,
+                "isFreezable": false,
+                "isLevitatable": false,
+                "isGroundBoundable": false,
+                "statusResistable": "AUTOMATIC",
+                "templateKey": "modify_sp[start]",
+                "disableOverride": false,
+                "overrideKey": null,
+                "overrideType": "DEFAULT",
+                "maxStackCnt": 1,
+                "refreshRemainingTimeWhenStackMax": false,
+                "clearAllStackCntWhenTimeUp": false,
+                "maxValidStackCnt": -1,
+                "independentCharacterSource": false,
+                "overrideEffectKey": null,
+                "overrideOnEventPriority": false,
+                "onEventPriority": "DEFAULT",
+                "audioSignal": null,
+                "lifeTimeType": "IMMEDIATELY",
+                "takeSnapshotWhenExtend": false,
+                "durationKey": null,
+                "lifeTime": 0.0,
+                "triggerLifeType": "IMMEDIATELY",
+                "triggerCnt": 0,
+                "triggerInterval": -1.0,
+                "waitFirstTriggerInterval": true,
+                "firstTriggerInterval": -1.0,
+                "priority": -1,
+                "priorityBBKeys": [],
+                "stripBlackboardParamsWithBuffKey": true,
+                "blackboard": [],
+                "enableInitDirectionFromSource": false
+              },
+              "_isDerivedBuff": false,
+              "_finishDerivedBuffIfParentFinish": false,
+              "_actionFailedIfNoTarget": false,
+              "_overrideBuffSourceType": false,
+              "_buffSourceType": "SOURCE",
+              "_assignTargetCntToBB": false
+            },
+            {
+              "$type": "Torappu.Battle.Action.Nodes+FinishBuff, Assembly-CSharp",
+              "_decCntIfStack": false,
+              "_updateOverrideMap": true
+            }
+          ]
+        }
+      }
+    },
+    "events": [
+      {
+        "event": "ability.interrupted",
+        "condition": "inputs.payload.source == context.owner.id and inputs.payload.ability == 'ability/ch10/dmech/charge'",
+        "effects": [
+          {
+            "op": "modify_resource",
+            "resource": "sp",
+            "selector": "selector/ch10/dmech/cannon",
+            "delta": -15.0
+          },
+          {
+            "op": "remove_buff",
+            "target": "source",
+            "buff": "buff/ch10/dmech/effect"
+          },
+          {
+            "op": "remove_buff",
+            "target": "source",
+            "buff": "buff/ch10/dmech/interrupt"
+          }
+        ],
+        "owned_callback": {
+          "mode": "synchronous_interrupt",
+          "ability": "ability/ch10/dmech/charge",
+          "allow_owner_inactive": true
+        }
+      },
+      {
+        "event": "ability.channel_last.ended",
+        "condition": "inputs.payload.source == context.owner.id and inputs.payload.ability == 'ability/ch10/dmech/charge'",
+        "effects": [
+          {
+            "op": "modify_resource",
+            "resource": "sp",
+            "selector": "selector/ch10/dmech/cannon",
+            "amount_rule": "rule/ch10/dmech/finish_sp"
+          },
+          {
+            "op": "remove_buff",
+            "target": "source",
+            "buff": "buff/ch10/dmech/effect"
+          },
+          {
+            "op": "remove_buff",
+            "target": "source",
+            "buff": "buff/ch10/dmech/interrupt"
+          }
+        ]
+      }
+    ]
+  },
+  "instances": [
+    {
+      "definition": "buff/ch10/bloodline/death_rattle",
+      "source": 2,
+      "target": 2,
+      "id": "buff/2/1",
+      "stacks": 1,
+      "started_at": 0,
+      "expires_at": null,
+      "interval_units": 0,
+      "generation": 1,
+      "tasks": {},
+      "blackboard": {}
+    },
+    {
+      "definition": "buff/ch10/dmech/interrupt",
+      "source": 2,
+      "target": 2,
+      "id": "buff/2/2",
+      "stacks": 1,
+      "started_at": 171,
+      "expires_at": 771,
+      "interval_units": 0,
+      "generation": 1,
+      "tasks": {
+        "expire": 710
+      },
+      "blackboard": {}
+    },
+    {
+      "definition": "buff/ch10/dmech/effect",
+      "source": 2,
+      "target": 2,
+      "id": "buff/2/3",
+      "stacks": 1,
+      "started_at": 171,
+      "expires_at": null,
+      "interval_units": 0,
+      "generation": 1,
+      "tasks": {},
+      "blackboard": {}
+    }
+  ],
+  "captures": [
+    {
+      "source": 2,
+      "stamp": {
+        "id": 2,
+        "definition": "unit/ch10/dmech/body",
+        "life": 0,
+        "death": 0
+      },
+      "cast": {
+        "id": "cast/2/1",
+        "source": 2,
+        "ability": "ability/ch10/dmech/charge",
+        "targets": [
+          3
+        ],
+        "activation_mode": "manual",
+        "source_snapshot": {
+          "id": 2,
+          "definition_id": "unit/ch10/dmech/body",
+          "tags": [
+            "enemy",
+            "enemy_1223_dmech",
+            "sarkaz"
+          ],
+          "components": {
+            "attributes": {
+              "base": {
+                "max_hp": 6000,
+                "atk": 300,
+                "def": 250,
+                "mres": 20.0,
+                "move_speed": 1.0,
+                "attack_interval": 2.0,
+                "attack_speed_ratio": 1.0,
+                "mass_level": 1,
+                "block_cost": 1
+              },
+              "modifiers": []
+            },
+            "resources": {
+              "hp": {
+                "current": 6000,
+                "spec": {
+                  "role": "health",
+                  "initial": 6000,
+                  "capacity": 6000
+                },
+                "observed_capacity": 6000,
+                "capacity_signature": "09e1a203e3be076d6c8d7fa1229ccf8d84baed026a148794c65ba142edff7f91"
+              },
+              "sp": {
+                "current": 5,
+                "spec": {
+                  "initial": 0,
+                  "capacity": 5,
+                  "recovery_rate": 1.0
+                },
+                "observed_capacity": 5,
+                "capacity_signature": "b34f14d1b441cd4bb481ab5915dea7fd4e40ac689ac0005f75abd9f2e91c099c"
+              },
+              "native_skill_uses": {
+                "current": 1,
+                "spec": {
+                  "initial": 1,
+                  "capacity": 1
+                },
+                "observed_capacity": 1,
+                "capacity_signature": "e23036948fd2b0fc6a2d676b235c9b15ec078c560a082bc465b1fef0a0095dd4"
+              }
+            },
+            "selection_state": {
+              "side": 1,
+              "category": 1,
+              "motion": 1,
+              "unit_type": 2
+            },
+            "spatial": {
+              "motion_mode": 0,
+              "route_motion_mode": 0,
+              "position": {
+                "row": 2,
+                "col": 1
+              },
+              "facing": "right"
+            },
+            "abilities": [
+              "ability/ch10/dmech/combat",
+              "ability/ch10/dmech/charge"
+            ],
+            "lifecycle": {
+              "policy": "policy/ark_lifecycle",
+              "leak_loss": 1,
+              "death_spawns": {
+                "actions": [
+                  {
+                    "key": "bloodsucker",
+                    "definition": "unit/ch10/bloodline/enemy_1220_dzoms",
+                    "count": 1,
+                    "delay_seconds": 1.0,
+                    "inherit_route": true,
+                    "managed": "inherit_source",
+                    "rule": "rule/ch10/bloodline/death",
+                    "parameters": {
+                      "buff": "buff/ch10/bloodline/death_rattle"
+                    },
+                    "placement": {
+                      "rule": "rule/ch10/bloodline/placement",
+                      "stream": "ch10/bloodline/descendants",
+                      "sample_axes": [
+                        "row",
+                        "col"
+                      ],
+                      "offset": {
+                        "row": 0,
+                        "col": 0
+                      },
+                      "random_range": {
+                        "row": 0.10000000149011612,
+                        "col": 0.10000000149011612
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "buffs": {
+              "initial": [
+                "buff/ch10/bloodline/death_rattle"
+              ],
+              "instances": [
+                {
+                  "definition": "buff/ch10/bloodline/death_rattle",
+                  "source": 2,
+                  "target": 2,
+                  "id": "buff/2/1",
+                  "stacks": 1,
+                  "started_at": 0,
+                  "expires_at": null,
+                  "interval_units": 0,
+                  "generation": 1,
+                  "tasks": {},
+                  "blackboard": {}
+                }
+              ],
+              "next_instance_id": 2
+            },
+            "runtime": {
+              "alive": true,
+              "state": "alive",
+              "deployed": false,
+              "initializing": false,
+              "casts": {},
+              "cooldowns": {},
+              "next_attack": 0,
+              "blocked_by": null,
+              "rule_bindings": {}
+            }
+          },
+          "version": 165,
+          "sampled_at": 150
+        },
+        "started_at": 150,
+        "finish_at": 171,
+        "target_snapshots": {
+          "3": {
+            "id": 3,
+            "definition_id": "unit/ch10/gunctrl/body",
+            "tags": [
+              "gunctrl",
+              "mechanism"
+            ],
+            "components": {
+              "attributes": {
+                "base": {
+                  "max_hp": 10000,
+                  "atk": 3000,
+                  "def": 0,
+                  "mres": 0,
+                  "block_count": 0
+                },
+                "modifiers": []
+              },
+              "resources": {
+                "hp": {
+                  "current": 10000,
+                  "spec": {
+                    "role": "health",
+                    "initial": 10000,
+                    "capacity": 10000
+                  },
+                  "observed_capacity": 10000,
+                  "capacity_signature": "f0c8fb3e06143f8327faff14079c0e085aa89719c8268a0e46739dd442432b33"
+                },
+                "sp": {
+                  "current": 31.0,
+                  "spec": {
+                    "initial": 31,
+                    "capacity": 120,
+                    "recovery_rate": 0
+                  },
+                  "observed_capacity": 120,
+                  "capacity_signature": "d78e8bb9c29a23833378f0a656269d1da67ba9e98f05fe039d3d0d003ee63639"
+                }
+              },
+              "selection_state": {
+                "side": 1,
+                "motion": 1,
+                "category": 2,
+                "unit_type": 4
+              },
+              "spatial": {
+                "motion_mode": 0,
+                "position": {
+                  "row": 2,
+                  "col": 3
+                },
+                "facing": "right"
+              },
+              "buffs": {
+                "initial": [
+                  "buff/ch10/gunctrl/unique",
+                  "buff/ch10/gunctrl/camera",
+                  "buff/ch10/gunctrl/native_flags"
+                ],
+                "instances": [
+                  {
+                    "definition": "buff/ch10/gunctrl/unique",
+                    "source": 3,
+                    "target": 3,
+                    "id": "buff/3/1",
+                    "stacks": 1,
+                    "started_at": 0,
+                    "expires_at": null,
+                    "interval_units": 0,
+                    "generation": 1,
+                    "tasks": {},
+                    "blackboard": {},
+                    "aura_members": {
+                      "4": "buff/4/1"
+                    }
+                  },
+                  {
+                    "definition": "buff/ch10/gunctrl/camera",
+                    "source": 3,
+                    "target": 3,
+                    "id": "buff/3/2",
+                    "stacks": 1,
+                    "started_at": 0,
+                    "expires_at": null,
+                    "interval_units": 0,
+                    "generation": 1,
+                    "tasks": {},
+                    "blackboard": {}
+                  },
+                  {
+                    "definition": "buff/ch10/gunctrl/native_flags",
+                    "source": 3,
+                    "target": 3,
+                    "id": "buff/3/3",
+                    "stacks": 1,
+                    "started_at": 0,
+                    "expires_at": null,
+                    "interval_units": 0,
+                    "generation": 1,
+                    "tasks": {},
+                    "blackboard": {}
+                  },
+                  {
+                    "definition": "buff/ch10/gunctrl/effect_camera",
+                    "source": 3,
+                    "target": 3,
+                    "id": "buff/3/4",
+                    "stacks": 1,
+                    "started_at": 0,
+                    "expires_at": null,
+                    "interval_units": 0,
+                    "generation": 1,
+                    "tasks": {},
+                    "blackboard": {}
+                  }
+                ],
+                "next_instance_id": 5
+              },
+              "abilities": [
+                "ability/ch10/gunctrl/shot"
+              ],
+              "lifecycle": {
+                "policy": "policy/ark_lifecycle"
+              },
+              "runtime": {
+                "alive": true,
+                "state": "alive",
+                "deployed": false,
+                "initializing": false,
+                "casts": {},
+                "cooldowns": {},
+                "next_attack": 0,
+                "blocked_by": null,
+                "rule_bindings": {}
+              }
+            },
+            "version": 172,
+            "sampled_at": 150
+          }
+        },
+        "tasks": [
+          619,
+          620,
+          621,
+          622
+        ],
+        "blocks_attacks": true,
+        "automatic": true,
+        "parameters": {
+          "auto_only": true,
+          "auto_when_ready": true
+        },
+        "generation": 1,
+        "pending_channels": 1,
+        "channel_recovery_units": 150,
+        "payments": [
+          {
+            "holder": 2,
+            "resource": "sp",
+            "amount": 5,
+            "allocated": 0
+          },
+          {
+            "holder": 2,
+            "resource": "native_skill_uses",
+            "amount": 1,
+            "allocated": 0
+          }
+        ],
+        "started_event": 7264,
+        "finish_requested": true,
+        "owned_buffs": [
+          {
+            "target": 3,
+            "instance": "buff/3/5"
+          },
+          {
+            "target": 3,
+            "instance": "buff/3/6"
+          }
+        ]
+      },
+      "buff": {
+        "definition": "buff/ch10/dmech/interrupt",
+        "source": 2,
+        "target": 2,
+        "id": "buff/2/2",
+        "stacks": 1,
+        "started_at": 171,
+        "expires_at": 771,
+        "interval_units": 0,
+        "generation": 1,
+        "tasks": {
+          "expire": 710
+        },
+        "blackboard": {}
+      },
+      "subscription_index": 0,
+      "subscription": {
+        "event": "ability.interrupted",
+        "condition": "inputs.payload.source == context.owner.id and inputs.payload.ability == 'ability/ch10/dmech/charge'",
+        "effects": [
+          {
+            "op": "modify_resource",
+            "resource": "sp",
+            "selector": "selector/ch10/dmech/cannon",
+            "delta": -15.0
+          },
+          {
+            "op": "remove_buff",
+            "target": "source",
+            "buff": "buff/ch10/dmech/effect"
+          },
+          {
+            "op": "remove_buff",
+            "target": "source",
+            "buff": "buff/ch10/dmech/interrupt"
+          }
+        ],
+        "owned_callback": {
+          "mode": "synchronous_interrupt",
+          "ability": "ability/ch10/dmech/charge",
+          "allow_owner_inactive": true
+        }
+      },
+      "captured_at": 214,
+      "payload": {
+        "source": 2,
+        "ability": "ability/ch10/dmech/charge",
+        "cast": "cast/2/1",
+        "reason": "dead"
+      }
+    }
+  ]
+}
