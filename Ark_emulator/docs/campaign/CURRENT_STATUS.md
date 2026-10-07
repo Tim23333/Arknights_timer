@@ -10,6 +10,8 @@
 完整磁盘CP/head、实际Root模块来源及库存前后通过，raw清理0。
 推广记录位于 `validation/campaign/chapter10_primary08_v1`；没有接入未完成工匠回调或后继phase。
 活跃10-16继续用94d2冻结目录，7-18继续原82db；08推广不迁移这些运行证据。
+新的默认基线launcher `tools/run_primary_v2_baseline.py` 已实际在Root08完成，
+0-1／完整cache+commands CP/head／850/60、自身实际源码身份通过，退出清理0。
 
 2026-10-07 94d2已按已完成准入53e57与功能冻结ac5bfd精确推广：13差量／3新增，
 全部98源码SHA与候选相同；旧cd873的全部95源码已备份到chapter10_primary94_v1/parent_source。
