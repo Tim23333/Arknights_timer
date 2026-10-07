@@ -1,0 +1,9 @@
+# Indexed death event lookup successor
+
+The frozen parent is phase-v2 core `da218736ae42600b5d80653b411508b13438e9002b18af3f04233285ac3cb226`. Only `DeathSpawnSystem.event` changes: validate a strict positive integer ID, read the actual contiguous record at `id-1`, and check exact record ID and nonempty string type. Full original payload, context, values and cause are preserved.
+
+`build.py` checks the complete parent inventory before copying it into an isolated candidate. `source_delta.v1` preserves the exact changed source bytes. `verify.py` uses its own fixture and assertions, consuming the real bloodline source builder and providers. It proves actual disk record equality, no journal iteration on the runtime death issue/dispatch path, strict invalid IDs and malformed records, native death/birth/route/WAIT/named RNG with a same-wave keeper, three complete disk checkpoint/head continuations, and actual child-birth fault rollback across world, jobs, events, RNG and cache.
+
+`actual.v1.json` retains two harness failures: public `Simulation.advance()` intentionally returns a full snapshot and thus iterates records; the definition lookup also used the wrong component path. `actual.v2.json` corrects only those harness uses and passes all nine cases. Public snapshots and full continuation observations run after removing the no-iteration probe. No event filtering or counts-only substitution is used.
+
+Run with a fresh E-drive lease through `tools/run_with_log_cleanup.py`, then run `freeze.py` to preserve the compact report, cleanup receipt and byte snapshot. The functional freeze is a bounded successor proof; independent review and full regression remain separate. The primary kernel and both live whole-stage runs were untouched, with no restart, process intervention or promotion.
