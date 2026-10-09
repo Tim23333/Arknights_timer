@@ -435,6 +435,15 @@ KLASS_NAMESPAZE = 0x18
 KLASS_STATIC_FIELDS = 0xB8
 BC_STATIC_IMP = 0x30
 BC_STATIC_TRIVIAL = 0x38
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from tools.game_data import runtime_offsets
+_runtime_layout = runtime_offsets('rng')
+for _name in ('KLASS_NAME', 'KLASS_NAMESPAZE', 'KLASS_STATIC_FIELDS',
+              'BC_STATIC_IMP', 'BC_STATIC_TRIVIAL'):
+    if _name in _runtime_layout:
+        globals()[_name] = int(str(_runtime_layout[_name]), 0)
 
 # Random 对象 klass 名 -> (kind, 游标偏移, 状态数组字段偏移)
 RANDOM_OBJ_LAYOUTS = {

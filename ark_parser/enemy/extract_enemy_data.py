@@ -27,16 +27,20 @@ Usage:
 import collections
 import json
 import os
+import argparse
+from pathlib import Path
 import struct
 import sys
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, str(Path(SCRIPT_DIR).parents[1]))
+from tools.game_data import table_path, legacy_table
 TABLES_DIR = os.path.join(SCRIPT_DIR, "..", "..", "data", "tables")
 OUT_DIR = os.path.join(SCRIPT_DIR, "data")
 
-ENEMY_DB = os.path.join(TABLES_DIR, "enemy_databasea5b667.bin")
-ENEMY_HB = os.path.join(TABLES_DIR, "enemy_handbook_table493349.bin")
-STAGE_TB = os.path.join(TABLES_DIR, "stage_table9f5b77.bin")
+ENEMY_DB = None
+ENEMY_HB = None
+STAGE_TB = None
 
 MAX_DEPTH = 10
 
@@ -770,7 +774,20 @@ def stats_of(db):
     }
 
 
-def main():
+def main(argv=None):
+    global OUT_DIR, ENEMY_DB, ENEMY_HB, STAGE_TB
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--tables-dir', type=Path)
+    parser.add_argument('--out-dir', type=Path, default=Path(OUT_DIR))
+    args = parser.parse_args(argv)
+    OUT_DIR = str(args.out_dir)
+    def resolve(prefix):
+        path = legacy_table(prefix, args.tables_dir) if args.tables_dir else table_path(prefix)
+        if path is None:
+            raise FileNotFoundError(f'Missing table {prefix}')
+        return str(path)
+    ENEMY_DB, ENEMY_HB, STAGE_TB = map(
+        resolve, ('enemy_database', 'enemy_handbook_table', 'stage_table'))
     os.makedirs(OUT_DIR, exist_ok=True)
     print('== enemy_database ==')
     fb = FB(ENEMY_DB)

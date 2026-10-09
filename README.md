@@ -116,6 +116,11 @@ MuMu 模拟器 (Android arm64)
 
 ## 项目结构
 
+当前版本数据统一保存在 `game_data/`，更新入口为根目录的
+`更新游戏数据.bat`。数据目录支持 EXE 旁外置加载及手工 overrides，
+具体流程见 [游戏数据维护说明](docs/game_data.md)，本次适配证据见
+[2026-10-09 更新报告](docs/GAME_DATA_UPDATE_20261009.md)。
+
 ```
 ├── Ark_emulator/           # 明日方舟战斗模拟器（见 Ark_emulator/README.md）
 ├── backend/                # 游戏数据显示工具主程序（PySide6 桌面端）

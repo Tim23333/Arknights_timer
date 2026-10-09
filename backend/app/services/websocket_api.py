@@ -381,6 +381,7 @@ class WebSocketApi:
         """开始新的战斗会话，使客户端可用 sessionId 区分换局。"""
         with self._lock:
             self._session_id = f"session-{uuid.uuid4().hex}"
+            self._last_detail_revision = None
             self._resyncs += 1
             for client in self._clients:
                 client.last_sent.clear()

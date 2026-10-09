@@ -13,6 +13,9 @@ import re
 import struct
 import glob
 import json
+from tools.game_data import (
+    table_path, legacy_table, catalog_path, load_catalog, fingerprint,
+)
 
 ID_RE = re.compile(rb'enemy_[0-9a-zA-Z_]+')
 CJK_RE = re.compile(r'[一-鿿]')
@@ -96,13 +99,10 @@ def parse_handbook(path):
 
 def find_handbook_bin(tables_dir=None):
     if tables_dir is None:
-        here = os.path.dirname(os.path.abspath(__file__))
-        tables_dir = os.path.join(here, '..', '..', 'data', 'tables')
-    for pat in ('enemy_handbook_table*.bin',):
-        files = glob.glob(os.path.join(tables_dir, pat))
-        if files:
-            return max(files, key=lambda path: (os.path.getmtime(path), path))
-    return None
+        path = table_path('enemy_handbook_table')
+    else:
+        path = legacy_table('enemy_handbook_table', tables_dir)
+    return str(path) if path else None
 
 
 _db_cache = None
@@ -127,15 +127,15 @@ def _load_names_json(path):
 def load_enemy_db(tables_dir=None):
     """加载敌人数据库 (带缓存); 失败返回 {}"""
     global _db_cache, _db_cache_key
+    use_bundle = tables_dir is None
     if tables_dir is None:
         here = os.path.dirname(os.path.abspath(__file__))
         tables_dir = os.path.join(here, '..', '..', 'data', 'tables')
     tables_dir = os.path.abspath(tables_dir)
-    path = find_handbook_bin(tables_dir)
-    json_path = _find_names_json(tables_dir)
-    cache_key = tuple(
-        (candidate, os.path.getmtime(candidate), os.path.getsize(candidate))
-        for candidate in (path, json_path) if candidate and os.path.isfile(candidate))
+    path = find_handbook_bin(None if use_bundle else tables_dir)
+    json_path = catalog_path('enemy_names') if use_bundle else None
+    json_path = json_path or _find_names_json(tables_dir)
+    cache_key = fingerprint(path, json_path)
     if _db_cache is not None and _db_cache_key == cache_key:
         return _db_cache
     db = {}
@@ -143,7 +143,8 @@ def load_enemy_db(tables_dir=None):
         if path:
             db.update(parse_handbook(path))
         if json_path:
-            db.update(_load_names_json(json_path))
+            rows = load_catalog('enemy_names') if use_bundle else None
+            db.update(rows if rows is not None else _load_names_json(json_path))
     except Exception:
         pass
     _db_cache = db
@@ -157,6 +158,9 @@ _frames_cache_key = None
 
 def find_effect_frames_json(tables_dir=None):
     if tables_dir is None:
+        path = catalog_path('effect_frames')
+        if path is not None:
+            return str(path)
         here = os.path.dirname(os.path.abspath(__file__))
         tables_dir = os.path.join(here, '..', '..', 'data', 'tables')
     path = os.path.join(tables_dir, 'effect_frames.json')
@@ -174,7 +178,7 @@ def load_effect_frames(tables_dir=None):
     cache_key = None
     if path:
         try:
-            cache_key = (path, os.path.getmtime(path), os.path.getsize(path))
+            cache_key = fingerprint(path)
         except OSError:
             cache_key = None
     if _frames_cache is not None and _frames_cache_key == cache_key:
@@ -182,6 +186,10 @@ def load_effect_frames(tables_dir=None):
     data = {}
     if path:
         try:
+            if tables_dir is None and catalog_path('effect_frames') is not None:
+                data = load_catalog('effect_frames') or {}
+                _frames_cache, _frames_cache_key = data, cache_key
+                return data
             with open(path, 'r', encoding='utf-8') as stream:
                 payload = json.load(stream)
             if isinstance(payload, dict):

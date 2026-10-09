@@ -95,6 +95,11 @@ UNITY_CACHED_PTR = 0x10
 LOGGER_CONTROLLER = 0x18
 LOGGER_LOGS = 0x20
 LOGGER_SQUAD = 0x28
+from tools.game_data import runtime_offsets
+_runtime_layout = runtime_offsets('deploy')
+for _name in ('LOGGER_CONTROLLER', 'LOGGER_LOGS', 'LOGGER_SQUAD'):
+    if _name in _runtime_layout:
+        globals()[_name] = int(str(_runtime_layout[_name]), 0)
 
 # BattleInOut.input (inline InParams @ +0x10) / BattleStageInfo 布局。
 # 与操作日志相互独立，因此刚进关卡、日志列表仍为空时也能读取。

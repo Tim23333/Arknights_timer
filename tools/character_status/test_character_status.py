@@ -255,6 +255,30 @@ class CharacterReaderTests(unittest.TestCase):
                          {manager, blocked_list})
         self.assertEqual((info.blocked_count, info.blocked_total_volume), (1, 2))
 
+    def test_block_manager_indirection_is_read_each_frame(self):
+        reader = self._action_reader()
+        info = CharacterInfo(0x1000, block_manager_ptr=0x2000)
+        outer = bytearray(gs.BlockManagerFields.READ_SIZE)
+        struct.pack_into('<Q', outer, gs.BlockManagerFields.BLOCKED_ENEMY_MANAGER, 0x3000)
+        inner = bytearray(0x20)
+        struct.pack_into('<i', inner, gs.BlockedEnemyManagerFields.TOTAL_VOLUME, 2)
+        struct.pack_into('<Q', inner, gs.BlockedEnemyManagerFields.BLOCKED_ENEMIES, 0x4000)
+        head = bytearray(0x20)
+        struct.pack_into('<i', head, gs.ListInternal.SIZE, 1)
+        memory = {0x2000: bytes(outer), 0x3000: bytes(inner), 0x4000: bytes(head)}
+        requests = []
+        def batch(rows):
+            requests.extend(ptr for ptr, _ in rows)
+            return [memory.get(ptr) for ptr, _ in rows]
+        reader._batch = batch
+        reader._refresh_positions_and_blocking({info.addr: info})
+        self.assertEqual((info.blocked_count, info.blocked_total_volume), (1, 2))
+        # Disappearance of the outer container must clear the old inner pointer.
+        memory[0x2000] = None
+        reader._refresh_positions_and_blocking({info.addr: info})
+        self.assertEqual((info.blocked_count, info.blocked_total_volume), (0, 0))
+        self.assertEqual(requests.count(0x2000), 2)
+
     def test_stable_buff_chain_uses_one_batch_without_skipping_layers(self):
         reader = self._action_reader()
         addr, container, double, buff_list = 0x1000, 0x2000, 0x3000, 0x4000

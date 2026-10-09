@@ -33,6 +33,9 @@ import pickle
 import sys
 import threading
 import time
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from tools.game_data import fingerprint
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -238,6 +241,8 @@ class RngService:
             with open(CACHE_FILE, "rb") as f:
                 data = pickle.load(f)
             engines = data.get("engines") if isinstance(data, dict) else None
+            if not isinstance(data, dict) or data.get('game_data') != fingerprint():
+                return []
         except Exception:
             return []
         if not engines:
@@ -256,6 +261,7 @@ class RngService:
         try:
             with open(CACHE_FILE, "wb") as f:
                 pickle.dump({"time": time.time(),
+                             "game_data": fingerprint(),
                              "package": self.package,
                              "engines": engines}, f)
         except Exception:

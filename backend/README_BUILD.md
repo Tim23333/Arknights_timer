@@ -40,12 +40,16 @@ numpy 可以显著加速内存扫描过程。
 发布前只需修改 `backend/app/version.py` 中这一行：
 
 ```python
-VERSION = "3.4.4_pre"
+VERSION = "3.6.1"
 ```
 
 打包脚本会自动把版本写入默认 EXE 文件名、Windows 文件属性、主页面顶部标题和
-测试版诊断日志顶部。当前默认输出为 `ArknightsTimeline_v3.4.4_pre.exe` 与
-`ArknightsTimeline_v3.4.4_pre_Test.exe`；`--name` 仍可覆盖输出文件名。
+测试版诊断日志顶部。当前默认输出为 `ArknightsTimeline_v3.6.1.exe` 与
+`ArknightsTimeline_v3.6.1_Test.exe`；`--name` 仍可覆盖输出文件名。
+
+默认一次生成正式版和带独立诊断日志窗口的测试版。主程序可使用普通 Windows
+权限运行 ADB/memsrv 监控。宿主进程寻址工具会按需申请管理员权限；若使用
+宿主地址读取模式，可右键以管理员身份运行主程序。
 
 ### 方法一：使用打包脚本（推荐）
 

@@ -92,6 +92,7 @@ class CharacterInfo:
     buff_container_ptr: int = 0
     root_tile_ptr: int = 0
     blocked_manager_ptr: int = 0
+    block_manager_ptr: int = 0
     skill_ptr: int = 0
     skill_data_ptr: int = 0
     data_ptr: int = 0
@@ -335,8 +336,11 @@ class CharacterReader:
             'override_combat_addr': _u64(block, gs.UnitFields.OVERRIDE_COMBAT),
         }
         info.root_tile_ptr = _u64(block, gs.CharacterFields.ROOT_TILE)
-        info.blocked_manager_ptr = _u64(
-            block, gs.CharacterFields.BLOCKED_ENEMY_MANAGER)
+        if gs.CharacterFields.BLOCK_MANAGER:
+            info.block_manager_ptr = _u64(block, gs.CharacterFields.BLOCK_MANAGER)
+        else:
+            info.blocked_manager_ptr = _u64(
+                block, gs.CharacterFields.BLOCKED_ENEMY_MANAGER)
         info.skill_ptr = _u64(block, gs.CharacterFields.SKILL)
         info.skill_data_ptr = _u64(block, gs.CharacterFields.SKILL_DATA)
         info.data_ptr = _u64(block, gs.CharacterFields.DATA)
@@ -614,6 +618,15 @@ class CharacterReader:
                         else type(value)(value))
 
     def _refresh_positions_and_blocking(self, infos: dict[int, CharacterInfo]) -> None:
+        # New clients move the old blocked-enemy container below BlockManager.
+        # Read this additional layer every frame; never reuse a previous pointer.
+        block_targets = [info for info in infos.values()
+                         if self.mc.is_ptr(info.block_manager_ptr)]
+        for info, data in zip(block_targets, self._batch([
+                (item.block_manager_ptr, gs.BlockManagerFields.READ_SIZE)
+                for item in block_targets])):
+            info.blocked_manager_ptr = _u64(
+                data, gs.BlockManagerFields.BLOCKED_ENEMY_MANAGER) if data else 0
         changed = [info for info in infos.values()
                    if self._positions.get(info.addr, (0, 0, 0))[0] != info.root_tile_ptr
                    and self.mc.is_ptr(info.root_tile_ptr)]

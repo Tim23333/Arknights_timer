@@ -121,8 +121,8 @@ function normalizeRawRoutes(routes = []) {
 }
 
 function normalizeEnemy(enemy, index) {
-  const start = Number(enemy.startFrame);
-  const end = Number(enemy.endFrame);
+  const start = finiteFrame(enemy.startFrame);
+  const end = finiteFrame(enemy.endFrame);
   return {
     ...enemy,
     id: String(enemy.id === undefined || enemy.id === null || enemy.id === ""
@@ -134,8 +134,8 @@ function normalizeEnemy(enemy, index) {
     wave: Number.isFinite(Number(enemy.wave)) ? Number(enemy.wave) : -1,
     fragment: Number.isFinite(Number(enemy.fragment)) ? Number(enemy.fragment) : -1,
     routeIndex: Number.isFinite(Number(enemy.routeIndex)) ? Number(enemy.routeIndex) : -1,
-    startFrame: Number.isFinite(start) && start >= 0 ? Math.round(start) : null,
-    endFrame: Number.isFinite(end) && end >= 0 ? Math.round(end) : null,
+    startFrame: start,
+    endFrame: end,
     endReason: enemy.endReason || "",
     note: enemy.note || "",
   };
@@ -335,6 +335,8 @@ export function actionsFromGroups(groups) {
 // ===== 路线行走模拟 / 坐标解析 / 播放状态推导 =====
 
 export function finiteFrame(value) {
+  if (value === null || value === undefined || typeof value === "boolean"
+      || (typeof value === "string" && value.trim() === "")) return null;
   const number = Number(value);
   return Number.isFinite(number) && number >= 0 ? Math.round(number) : null;
 }

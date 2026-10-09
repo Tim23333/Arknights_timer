@@ -19,18 +19,22 @@ Outputs (relative to this file):
 import json
 import os
 import sys
+import argparse
+from pathlib import Path
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 TABLES_DIR = os.path.join(SCRIPT_DIR, "..", "..", "data", "tables")
 OUT_DIR = os.path.join(SCRIPT_DIR, "data")
 sys.path.insert(0, os.path.join(SCRIPT_DIR, "..", "enemy"))
+sys.path.insert(0, str(Path(SCRIPT_DIR).parents[1]))
+from tools.game_data import table_path, legacy_table
 
 from extract_enemy_data import FB, i2f, parse_blackboard  # noqa: E402
 
-CHARACTER_TB = os.path.join(TABLES_DIR, "character_table9fc534.bin")
-SKILL_TB = os.path.join(TABLES_DIR, "skill_tableafb859.bin")
-BATTLE_EQUIP_TB = os.path.join(TABLES_DIR, "battle_equip_table91e6b6.bin")
-UNIEQUIP_TB = os.path.join(TABLES_DIR, "uniequip_table8b1bb5.bin")
+CHARACTER_TB = None
+SKILL_TB = None
+BATTLE_EQUIP_TB = None
+UNIEQUIP_TB = None
 
 PROFESSION_NAMES = {
     0: "NONE", 1: "WARRIOR", 2: "SNIPER", 4: "TANK", 8: "MEDIC",
@@ -519,7 +523,20 @@ def parse_battle_equip(fb):
     return out
 
 
-def main():
+def main(argv=None):
+    global OUT_DIR, CHARACTER_TB, SKILL_TB, BATTLE_EQUIP_TB, UNIEQUIP_TB
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--tables-dir', type=Path)
+    parser.add_argument('--out-dir', type=Path, default=Path(OUT_DIR))
+    args = parser.parse_args(argv)
+    OUT_DIR = str(args.out_dir)
+    def resolve(prefix):
+        path = legacy_table(prefix, args.tables_dir) if args.tables_dir else table_path(prefix)
+        if path is None:
+            raise FileNotFoundError(f'Missing table {prefix}')
+        return str(path)
+    CHARACTER_TB, SKILL_TB, BATTLE_EQUIP_TB, UNIEQUIP_TB = map(
+        resolve, ('character_table', 'skill_table', 'battle_equip_table', 'uniequip_table'))
     os.makedirs(OUT_DIR, exist_ok=True)
 
     print('== character_table ==', flush=True)

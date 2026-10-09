@@ -363,7 +363,24 @@ class EnemyDetailModelTests(unittest.TestCase):
         self.assertEqual({idx for idx, _, _ in gs.ATTRIBUTE_DEFS},
                          set(range(0, 9)) | set(range(13, 38)))
 
-    def test_september_layout_offsets_are_loaded(self):
+    def test_active_version_profile_offsets_are_loaded(self):
+        from tools.game_data import load_offsets
+        profile = load_offsets('android_arm64')
+        if profile is not None:
+            for class_name, fields in profile['classes'].items():
+                target = getattr(gs, class_name, None)
+                if not isinstance(target, type):
+                    continue
+                for name, value in fields.items():
+                    if not hasattr(target, name):
+                        continue
+                    expected = int(value, 0) if isinstance(value, str) else value
+                    if name == 'READ_SIZE':
+                        self.assertGreaterEqual(getattr(target, name), expected)
+                    else:
+                        self.assertEqual(getattr(target, name), expected, f'{class_name}.{name}')
+            return
+        # Keep the historical baseline check for checkouts without game_data.
         self.assertEqual(gs.EntityFields.M_ATTRIBUTES, 0xB0)
         self.assertEqual(gs.EntityFields.ID, 0x148)
         self.assertEqual(gs.EnemyFields.ROUTE_SPAWN_POS, 0x4B8)

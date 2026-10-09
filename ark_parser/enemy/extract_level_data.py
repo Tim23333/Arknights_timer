@@ -600,6 +600,11 @@ def parse_level_file(path, keep_raw=False, timeout=15.0, budget=200000):
         return None, 0, False
     t0 = time.monotonic()
     tried = [128] if len(data) > 128 else [0]
+    # exportRaw includes [name length][name][aligned payload length][128B sign].
+    if len(data) >= 4:
+        name_len = struct.unpack_from('<I', data)[0]
+        if 0 < name_len <= 256 and data[4:4 + name_len].startswith(b'level_'):
+            tried.insert(0, ((4 + name_len + 3) & ~3) + 132)
     if 0 not in tried:
         tried.append(0)
     for off in tried:
@@ -655,6 +660,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--src", default=DEFAULT_SRC)
     ap.add_argument("--out", default=DEFAULT_OUT)
+    ap.add_argument('--index-out', help='Index output path; defaults inside --out')
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--level", default=None, help="parse only one level id")
     ap.add_argument("--raw", action="store_true",
@@ -708,7 +714,7 @@ def main():
             print(f"[{i}/{len(files)}] ok={ok} fail={fail} "
                   f"tooComplex={too_complex}")
 
-    idx_path = os.path.join(SCRIPT_DIR, "data", "level_data_index.json")
+    idx_path = args.index_out or os.path.join(args.out, 'index.json')
     with open(idx_path, "w", encoding="utf-8") as f:
         json.dump(index, f, ensure_ascii=False, separators=(",", ":"))
     print(f"done: {ok} parsed, {fail} failed ({too_complex} too complex) -> {args.out}")

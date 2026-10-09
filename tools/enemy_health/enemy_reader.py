@@ -18,6 +18,7 @@ import os
 import sys
 import time
 import pickle
+from tools.game_data import fingerprint
 import struct
 import tempfile
 import threading
@@ -2404,7 +2405,8 @@ class EnemyReader:
         if not force and os.path.isfile(self.cache_file):
             try:
                 c = pickle.load(open(self.cache_file, 'rb'))
-                if c.get('ver') in (3, 4) and c.get('pid') == self.mc.pid:
+                if (c.get('ver') in (3, 4) and c.get('pid') == self.mc.pid
+                        and c.get('game_data') == fingerprint()):
                     self.enemy_addrs = c['enemies']
                     self.items_addr = c['items']
                     self.list_addr = c['list']
@@ -2429,7 +2431,8 @@ class EnemyReader:
 
         # 主路径不依赖场上已有 Enemy：开局即可从关卡 LevelData 取得完整顺序。
         if self.with_bc and self._bootstrap_via_battle_controller():
-            pickle.dump({'ver': 4, 'pid': self.mc.pid, 'enemies': self.enemy_addrs,
+            pickle.dump({'ver': 4, 'pid': self.mc.pid, 'game_data': fingerprint(),
+                         'enemies': self.enemy_addrs,
                          'items': self.items_addr, 'list': self.list_addr,
                          'sched': self.sched_addr, 'bc': self.bc_addr,
                          'unit_manager': self.unit_manager_addr,
@@ -2485,7 +2488,8 @@ class EnemyReader:
             if snap is not None:
                 snap.discard()
 
-        pickle.dump({'ver': 4, 'pid': self.mc.pid, 'enemies': self.enemy_addrs,
+        pickle.dump({'ver': 4, 'pid': self.mc.pid, 'game_data': fingerprint(),
+                     'enemies': self.enemy_addrs,
                      'items': self.items_addr, 'list': self.list_addr,
                      'sched': self.sched_addr, 'bc': self.bc_addr,
                      'unit_manager': self.unit_manager_addr,

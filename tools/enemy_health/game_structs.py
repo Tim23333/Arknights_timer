@@ -27,6 +27,10 @@
 import json
 import os
 import struct
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from tools.game_data import load_offsets, offset_path, fingerprint
 
 # ============================================================
 # IL2CPP 基础布局 (64 位)
@@ -230,6 +234,7 @@ class CharacterFields:
     ROOT_TILE = 0x3A8             # Tile*
     BLOCKED_ENEMY_MANAGER = 0x3B0 # Character.BlockedEnemyManager*
     BLOCK_RADIUS_MANAGER = 0x3B8  # Character.BlockRadiusManager*
+    BLOCK_MANAGER = 0            # Newer clients add a BlockManager indirection.
     SKILL = 0x3D8                 # BasicSkill*
     SKILL_DATA = 0x3E0            # SkillData*
     MAX_ES_RATIO = 0x440          # FP
@@ -248,6 +253,12 @@ class CharacterFields:
 class BlockedEnemyManagerFields:
     TOTAL_VOLUME = 0x10           # int32
     BLOCKED_ENEMIES = 0x18        # List<Enemy>*
+
+
+class BlockManagerFields:
+    BLOCK_RADIUS_MANAGER = 0x10
+    BLOCKED_ENEMY_MANAGER = 0x18
+    READ_SIZE = 0x30
 
 
 class TileFields:
@@ -1224,14 +1235,20 @@ def apply_generated_offsets(path=None):
     已声明的字段，避免损坏文件或新字段名称误改任意模块状态。
     """
     global GENERATED_OFFSET_INFO
+    bundle_payload = load_offsets('android_arm64') if path is None else None
     if path is None:
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             'generated_offsets.json')
-    if not os.path.isfile(path):
+    if bundle_payload is None and not os.path.isfile(path):
         return False
     try:
-        with open(path, 'r', encoding='utf-8') as stream:
-            payload = json.load(stream)
+        if bundle_payload is not None:
+            payload = bundle_payload
+        else:
+            with open(path, 'r', encoding='utf-8') as stream:
+                payload = json.load(stream)
+        if payload.get('platform') not in (None, 'android_arm64'):
+            raise ValueError('Android reader cannot apply PC offsets')
         classes = payload.get('classes', {})
         for class_name, values in classes.items():
             target = globals().get(class_name)
@@ -1256,11 +1273,22 @@ def apply_generated_offsets(path=None):
             count = values.get('E_NUM')
             if isinstance(count, int) and 0 < count <= 256 and hasattr(target, 'E_NUM'):
                 target.E_NUM = count
+            for name, value in values.items():
+                if (isinstance(name, str) and name.isidentifier()
+                        and isinstance(value, int) and -1 <= value <= 0x10000):
+                    setattr(target, name, value)
         GENERATED_OFFSET_INFO = {
             'source': payload.get('source', ''),
             'source_sha256': payload.get('source_sha256', ''),
             'generated_at': payload.get('generated_at', ''),
+            'platform': payload.get('platform', 'legacy_unspecified'),
+            'validation': payload.get('validation', {}),
+            'data_fingerprint': fingerprint(offset_path('android_arm64')),
         }
+        from tools.game_data import manifest, bundle_root
+        if bundle_payload is not None:
+            GENERATED_OFFSET_INFO.update(data_version=manifest().get('data_version'),
+                                         data_directory=str(bundle_root()))
         return True
     except (OSError, ValueError, TypeError, json.JSONDecodeError):
         return False

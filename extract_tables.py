@@ -11,6 +11,7 @@ import os
 import re
 import shutil
 import struct
+import argparse
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent
@@ -76,7 +77,49 @@ def scan_cab_file(filepath: Path) -> str | None:
         return None
 
 
-def main():
+def extract_tables(sources, output: Path, *, stable_names=True):
+    """Merge sources in supplied priority order, keyed by logical table prefix."""
+    found = {}
+    for source in sources:
+        source = Path(source)
+        candidates = sorted(source.rglob('*')) if source.is_dir() else [source]
+        for path in candidates:
+            if not path.is_file() or path.stat().st_size < 4:
+                continue
+            if not (path.name.startswith('CAB-') or path.suffix in ('.dat', '.bin')):
+                continue
+            table_id = scan_cab_file(path)
+            if table_id:
+                prefix = TABLE_FULL_PATTERN.fullmatch(table_id).group(1)
+                found[prefix] = (table_id, path)
+    if not found:
+        raise ValueError('No valid exportRaw tables found; existing output was preserved')
+    output.mkdir(parents=True, exist_ok=True)
+    provenance = {}
+    for prefix, (table_id, source) in sorted(found.items()):
+        name = prefix if stable_names else table_id
+        destination = output / f'{name}.bin'
+        shutil.copy2(source, destination)
+        # Only remove superseded versions of this logical table after a valid copy.
+        for previous in output.glob(f'{prefix}*.bin'):
+            if previous != destination and re.fullmatch(
+                    re.escape(prefix) + r'(?:[a-fA-F0-9]+)?\.bin', previous.name):
+                previous.unlink()
+        provenance[prefix] = {'table_id': table_id, 'source': str(source),
+                              'file': destination.name}
+    return provenance
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--source', type=Path, action='append',
+                        help='Ordered exportRaw directories; later sources override earlier ones')
+    parser.add_argument('--out', type=Path, default=TABLES_DIR)
+    args = parser.parse_args(argv)
+    if args.source:
+        rows = extract_tables(args.source, args.out)
+        print(f'Extracted {len(rows)} logical tables -> {args.out}')
+        return rows
     if not ANON_DIR.exists():
         print(f"Error: {ANON_DIR} not found")
         print("Please extract AB files using AssetStudio-Arknights first")
@@ -84,36 +127,11 @@ def main():
 
     TABLES_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Clear old tables
-    for old in TABLES_DIR.glob("*.bin"):
-        old.unlink()
-
     print(f"Scanning {ANON_DIR} for data tables...\n")
 
-    found = {}
-    min_size = 4 * 1024  # 4KB（热更小表如 hotupdate_meta 只有几 KB）
-
-    # 按目录名排序扫描，后扫到的覆盖先扫到的：
-    # 命名约定 base_* < zz_hot_*，保证热更表覆盖基础包同名表。
-    for bin_dir in sorted(ANON_DIR.glob("*.bin_unpacked")):
-        for cab_file in bin_dir.glob("CAB-*"):
-            if not cab_file.is_file():
-                continue
-            if cab_file.stat().st_size < min_size:
-                continue
-
-            table_id = scan_cab_file(cab_file)
-            if table_id:
-                found[table_id] = cab_file
-
-    # Copy found tables
-    for table_id, src in sorted(found.items()):
-        dst = TABLES_DIR / f"{table_id}.bin"
-        shutil.copy2(src, dst)
-        size_mb = src.stat().st_size / (1024 * 1024)
-        print(f"  {table_id} ({size_mb:.1f} MB)")
-
-    print(f"\nDone: Extracted {len(found)} tables to {TABLES_DIR}")
+    found = extract_tables(sorted(ANON_DIR.glob('*.bin_unpacked')), args.out)
+    print(f"\nDone: Extracted {len(found)} tables to {args.out}")
+    return found
 
 
 if __name__ == "__main__":

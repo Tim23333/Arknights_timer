@@ -69,6 +69,19 @@ def _add_data_arg(src: Path, dst: str) -> str:
     return f"{src}{sep}{dst}"
 
 
+def _runtime_bundle_manifest(bundle_dir: Path, backend_dir: Path) -> Path:
+    """The embedded subset excludes reference dumps; its manifest must match it."""
+    payload = json.loads((bundle_dir / 'manifest.json').read_text(encoding='utf-8'))
+    runtime_folders = {'tables', 'catalogs', 'offsets', 'overrides'}
+    payload['files'] = {name: info for name, info in payload.get('files', {}).items()
+                        if name.split('/')[0] in runtime_folders}
+    payload['distribution'] = 'embedded_runtime_subset'
+    path = backend_dir / 'build' / 'game_data_manifest' / 'manifest.json'
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    return path
+
+
 def _pyinstaller_env() -> dict:
     """返回隔离外部 ICU 污染的 PyInstaller 子进程环境。
 
@@ -262,6 +275,15 @@ def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args,
         cmd.extend(["--add-data", _add_data_arg(data_dir, "backend/data")])
     if static_dir.is_dir():
         cmd.extend(["--add-data", _add_data_arg(static_dir, "backend/app/static")])
+    # Runtime subset of the replaceable bundle. Large reference dumps stay in Git.
+    bundle_dir = repo_root / 'game_data'
+    if (bundle_dir / 'manifest.json').is_file():
+        runtime_manifest = _runtime_bundle_manifest(bundle_dir, backend_dir)
+        cmd.extend(['--add-data', _add_data_arg(runtime_manifest, 'game_data')])
+        for name in ('tables', 'catalogs', 'offsets', 'overrides'):
+            folder = bundle_dir / name
+            if folder.is_dir():
+                cmd.extend(['--add-data', _add_data_arg(folder, f'game_data/{name}')])
     beginner_guide = repo_root / "docs" / "新手使用教程.md"
     if beginner_guide.is_file():
         cmd.extend(["--add-data", _add_data_arg(beginner_guide, "docs")])

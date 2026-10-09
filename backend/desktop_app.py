@@ -890,6 +890,10 @@ class EnemyScanWorker(QThread):
         except Exception as e:
             if not self.isInterruptionRequested():
                 self._finish(False, f"出错: {e}")
+        finally:
+            # The reader outlives this QThread, which the owner deletes on finished.
+            self.reader.log = _tlog
+            self.reader.progress = None
 
 
 class EnemyPollWorker(QThread):
@@ -1196,6 +1200,8 @@ class EnemyPollWorker(QThread):
             "character", list(snap.get('characters', ())), character_request)
         if not enemies and not characters:
             with self._external_detail_lock:
+                if self._external_enemy_details or self._external_character_details:
+                    self._external_detail_revision += 1
                 self._external_enemy_details = {}
                 self._external_character_details = {}
                 self._external_detail_due = time.monotonic() + 1.0 / rate_hz
@@ -1507,6 +1513,7 @@ class DeployScanWorker(QThread):
         self._mc: MemCore | None = None
         self._reader: DeployTrackerReader | None = None
         self._transferred = False
+        self.initial_state: dict = {}
 
     def request_stop(self) -> None:
         """Stop the scan and close both channels to wake blocking socket reads."""
@@ -1549,6 +1556,8 @@ class DeployScanWorker(QThread):
                 mc.close()
                 return
             if reader.locate():
+                # Keep every memory read in the worker, including the first snapshot.
+                self.initial_state = reader.get_state()
                 if self.isInterruptionRequested():
                     reader.close()
                     mc.close()
@@ -1564,6 +1573,9 @@ class DeployScanWorker(QThread):
             if not self.isInterruptionRequested():
                 self._finish(None, f'出错: {e}')
         finally:
+            if self._reader is not None:
+                self._reader.set_status_callback(_tlog)
+                self._reader.set_stage_callback(None)
             if not self._transferred:
                 with self._io_lock:
                     reader, mc = self._reader, self._mc
@@ -3495,7 +3507,8 @@ class CoachWindow(QMainWindow):
                 getattr(worker, 'addressing_gen', self._guest_addressing_gen),
                 result[0], result[1], result[2])
         elif kind == 'deploy':
-            self._on_deploy_scan_done(result[0], result[1])
+            self._on_deploy_scan_done(
+                result[0], result[1], getattr(worker, 'initial_state', {}))
         elif kind == 'enemy':
             self._on_enemy_scan_done(result[0], result[1])
         elif kind == 'rng':
@@ -4948,7 +4961,8 @@ class CoachWindow(QMainWindow):
                 self._deploy_events, self._deploy_stage_info,
                 self._deploy_squad, self._deploy_journal)
 
-    def _on_deploy_scan_done(self, reader, msg: str) -> None:
+    def _on_deploy_scan_done(self, reader, msg: str,
+                             initial_state: dict | None = None) -> None:
 #        _ga_log(f"[deploy] 扫描完成: reader={'有' if reader else 'None'} msg={msg!r}")
         self.btn_deploy_scan.setEnabled(True)
         if reader is None:
@@ -4960,7 +4974,7 @@ class CoachWindow(QMainWindow):
             return
         self._deploy_reader = reader
         try:
-            st = reader.get_state()   # 一次性取 编队/代理序列/关卡信息 (顺带补齐干员名)
+            st = initial_state or {}
 #            _ga_log(f"[deploy] get_state 完成: journal={len(st.get('journalEvents') or [])} "
 #                    f"stage={st.get('stageId')!r}")
             self._deploy_squad = st.get('squad') or []
@@ -6219,11 +6233,8 @@ def main() -> None:
     if sys.platform == "win32":
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("ArknightsTimeline")
 
-    if sys.platform == "win32" and not _is_admin():
-        script = os.path.abspath(sys.argv[0])
-        params = " ".join([f'"{arg}"' for arg in sys.argv[1:]])
-        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, f'"{script}" {params}', None, 1)
-        sys.exit()
+    # ADB/memsrv reads need emulator root, not Windows elevation. The separate
+    # host-process timer tool requests its own administrator permission on launch.
 
     app = QApplication.instance() or QApplication(sys.argv)
 

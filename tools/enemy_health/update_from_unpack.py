@@ -83,6 +83,20 @@ FIELD_MAP = {
         'IS_SUMMON': 'isSummon', 'HIDDEN_GROUP_KEY': 'hiddenGroupKey',
         'ACTION_DATA': 'actionData',
     }),
+    'BlockManagerFields': ('Torappu.Battle', 'BlockManager', {
+        'BLOCK_RADIUS_MANAGER': 'm_blockRadiusMgr', 'BLOCKED_ENEMY_MANAGER': 'm_blockedEnemyMgr',
+    }),
+    'BlockedEnemyManagerFields': ('Torappu.Battle', 'BlockedEnemyManager', {
+        'TOTAL_VOLUME': 'm_totalVolume', 'BLOCKED_ENEMIES': 'm_blockedEnemies',
+    }),
+    'AbilityFields': ('Torappu.Battle', 'Ability', {
+        'OWNER': 'm_owner', 'IS_CASTING': 'm_isCasting',
+        'CAST_START_FRAME': 'm_castStartFrameCnt', 'COOLDOWN_TIMER': 'm_cooldownTimer',
+        'PASSIVE_BUFF_UIDS': 'm_passiveBuffUids', 'UNIQUE_ID': '<abilityUniqueId>k__BackingField',
+        'BLACKBOARD': '<blackboard>k__BackingField', 'IS_ATTACHED': '<isAttached>k__BackingField',
+        'DAMAGE_MISS_FLAG': '<damageMissFlag>k__BackingField',
+        'FINISH_REASON': '<abilityFinishReason>k__BackingField',
+    }),
     'AttributesFields': ('Torappu.Battle', 'Attributes', {
         'M_ABNORMAL_FLAGS_COUNTER': 'm_abnormalFlagsCounter',
         'M_ABNORMAL_IMMUNE_COUNTER': 'm_abnormalImmuneCounter',
@@ -176,8 +190,7 @@ FIELD_MAP = {
     }),
     'CharacterFields': ('Torappu.Battle', 'Character', {
         'CREATED_TIME': 'm_createdTime', 'DEAD_TIME': 'm_deadTime',
-        'ROOT_TILE': 'm_rootTile', 'BLOCKED_ENEMY_MANAGER': 'm_blockedEnemyMgr',
-        'BLOCK_RADIUS_MANAGER': 'm_blockRadiusMgr', 'SKILL': 'm_skill',
+        'ROOT_TILE': 'm_rootTile', 'BLOCK_MANAGER': 'm_blockManager', 'SKILL': 'm_skill',
         'SKILL_DATA': 'm_skillData', 'MAX_ES_RATIO': 'm_maxEsRatio',
         'RUNTIME_ANIMATOR': 'm_currentSkin', 'CURRENT_SKIN': 'm_currentSkin',
         'DECK_BUFF_DATA': 'm_deckBuffDatas',
@@ -377,6 +390,9 @@ def build_offsets(dump_path: Path):
     if 'M_CACHED_DATA' in output.get('AttributesFields', {}):
         last = int(output['AttributesFields']['M_CACHED_DATA'], 0)
         output['AttributesFields']['READ_SIZE'] = f'0x{(last + 8 + 7) & ~7:X}'
+    if 'FINISH_REASON' in output.get('AbilityFields', {}):
+        last = int(output['AbilityFields']['FINISH_REASON'], 0)
+        output['AbilityFields']['READ_SIZE'] = f'0x{(last + 8 + 7) & ~7:X}'
     if 'HAS_SHIELD' in output.get('BuffFields', {}):
         last = int(output['BuffFields']['HAS_SHIELD'], 0)
         output['BuffFields']['READ_SIZE'] = f'0x{(last + 4 + 7) & ~7:X}'
@@ -425,7 +441,9 @@ def build_offsets(dump_path: Path):
                         'ATTACK_WRAPPER', 'COMBAT_WRAPPER', 'M_CURSOR',
                         'M_CACHED_ROUTE', 'M_CACHED_CURSOR_INDEX',
                         'M_TRACE_TARGET_CURSOR', 'ROUTE_END_POS', 'READ_SIZE'),
-        'CharacterFields': ('CARD_UID', 'DATA', 'READ_SIZE'),
+        'CharacterFields': ('CARD_UID', 'DATA', 'READ_SIZE', 'BLOCK_MANAGER'),
+        'BlockManagerFields': ('BLOCKED_ENEMY_MANAGER',),
+        'BlockedEnemyManagerFields': ('TOTAL_VOLUME', 'BLOCKED_ENEMIES'),
         'AttributesFields': ('M_ABNORMAL_COMBO_MGR', 'M_RAW_DATA',
                              'M_CACHED_DATA', 'READ_SIZE'),
         'BuffDataFields': ('LIFE_TIME', 'TRIGGER_LIFE_TYPE', 'TRIGGER_COUNT',

@@ -24,11 +24,31 @@ import glob
 import json
 import os
 import struct
+import math
+import importlib
+import threading
 import sys
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(SCRIPT_DIR)
-sys.path.insert(0, os.path.join(ROOT, "unpack_work", "spine_asset_lib"))
+_SPINE_READER_LOCK = threading.Lock()
+
+
+def read_spine38(raw):
+    """Use Spine's big-endian scalar encoding (Spine-Asset 1.1.1 defaults to LE)."""
+    module = importlib.import_module('spine_asset.v38.SkeletonBinary')
+    with _SPINE_READER_LOCK:
+        original = module.SkeletonBinaryReader
+        class BigEndianReader(original):
+            def read_float32(self): return struct.unpack('>f', self._stream.read(4))[0]
+            def read_int16(self): return struct.unpack('>h', self._stream.read(2))[0]
+            def read_int32(self): return struct.unpack('>i', self._stream.read(4))[0]
+            def read_uint32(self): return struct.unpack('>I', self._stream.read(4))[0]
+        module.SkeletonBinaryReader = BigEndianReader
+        try:
+            return module.SkeletonBinary().read_skeleton_data(raw)
+        finally:
+            module.SkeletonBinaryReader = original
 
 
 def _unitypy():
@@ -67,18 +87,21 @@ def _read_textasset_bytes(obj):
 
 def parse_skel_events(raw):
     """Spine 3.8 二进制 → {动画名: {d: 时长秒, ev: [{n, t, f}]}}，只保留带事件的动画。"""
-    from spine_asset.v38.SkeletonBinary import SkeletonBinary
     try:
-        data = SkeletonBinary().read_skeleton_data(raw)
+        data = read_spine38(raw)
     except Exception:
         return None
     anims = {}
     for a in data.animations:
+        if not math.isfinite(a.duration) or not 0 <= a.duration <= 86400:
+            raise ValueError('Invalid Spine animation duration')
         events = []
         for t in a.timelines:
             if type(t).__name__ != "EventTimeline":
                 continue
             for i, fr in enumerate(t.frames):
+                if not math.isfinite(fr) or not 0 <= fr <= a.duration + 0.001:
+                    raise ValueError('Invalid Spine event time')
                 ev = t.events[i]
                 name = ev.data.name if hasattr(ev, "data") else "?"
                 events.append({"n": name, "t": round(fr, 4),
@@ -383,17 +406,31 @@ def load_enemy_database(path):
 
 # ---------------------------------------------------------------- 主流程
 
-def main():
+def main(argv=None):
+    global ENM_PFB_DIR, ENM_ART_DIR, CHARPACK_DIR, CHARARTS_DIR, PROJECTILES_DIR
+    global ENEMY_DB_JSON, CHARACTERS_JSON, SKILLS_JSON
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=DEFAULT_OUT)
-    args = ap.parse_args()
+    ap.add_argument('--assets-root', help='Merged cache containing battle/chararts/charpack/refs/arts')
+    ap.add_argument('--catalogs-dir', help='Current parsed enemy/character/skill JSON directory')
+    args = ap.parse_args(argv)
+    if args.assets_root:
+        ENM_PFB_DIR = os.path.join(args.assets_root, 'battle')
+        ENM_ART_DIR = os.path.join(args.assets_root, 'refs', 'arts')
+        CHARPACK_DIR = os.path.join(args.assets_root, 'charpack')
+        CHARARTS_DIR = os.path.join(args.assets_root, 'chararts')
+        PROJECTILES_DIR = os.path.join(ENM_PFB_DIR, 'prefabs', '[uc]projectiles.ab_unpacked')
+    if args.catalogs_dir:
+        ENEMY_DB_JSON = os.path.join(args.catalogs_dir, 'enemy_database.json')
+        CHARACTERS_JSON = os.path.join(args.catalogs_dir, 'characters.json')
+        SKILLS_JSON = os.path.join(args.catalogs_dir, 'skills.json')
 
     print("[1/6] 弹道移动参数 ...")
     proj_moves = scan_projectile_moves()
     print(f"  弹道 {len(proj_moves)} 个")
 
     print("[2/6] 敌人 spine 动画事件 (enm_art) ...")
-    enm_packs = sorted(glob.glob(os.path.join(ENM_ART_DIR, "enm_art_*.ab_unpacked")))
+    enm_packs = sorted(glob.glob(os.path.join(ENM_ART_DIR, "*.ab_unpacked")))
     enemy_anims = scan_skels(enm_packs)
     print(f"  敌人 skel {len(enemy_anims)} 个")
 

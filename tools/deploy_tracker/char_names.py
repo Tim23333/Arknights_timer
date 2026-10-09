@@ -16,6 +16,7 @@ import json
 import os
 import re
 import struct
+from tools.game_data import load_catalog, legacy_table, table_path, bundle_root
 
 _CHAR_ID_RE = re.compile(r"^char_\d+_\w+$")
 _CACHE_NAME = "char_names.json"
@@ -102,13 +103,17 @@ def build_char_names(bin_path):
 
 
 def _find_bin(project_root):
-    pats = os.path.join(project_root, "data", "tables", "character_table*.bin")
-    files = glob.glob(pats)
-    return max(files, key=os.path.getmtime) if files else None
+    path = table_path('character_table', os.path.join(project_root, 'data', 'tables'))
+    return str(path) if path else None
 
 
 def load_char_names(project_root):
     """加载 {charId: 中文名}; 优先缓存, 失效则从 bin 重建, 兜底 characters.json。"""
+    if bundle_root() is not None:
+        names = load_catalog('char_names')
+        if names is None:
+            return build_char_names(str(table_path('character_table')))
+        return names
     cache_path = os.path.join(project_root, "ark_parser", _CACHE_NAME)
     bin_path = _find_bin(project_root)
 

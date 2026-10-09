@@ -197,6 +197,12 @@ class DiagnosticLogManager(QObject):
                 sort_keys=True, default=str))
         except Exception as exc:
             rows.append(f"generated_offsets=读取失败: {exc}")
+        try:
+            from tools.game_data import manifest, bundle_root
+            rows.append('game_data_directory=' + str(bundle_root()))
+            rows.append('game_data_version=' + str(manifest().get('data_version', 'legacy')))
+        except Exception as exc:
+            rows.append(f'game_data=读取失败: {exc}')
 
         rows.extend(("", "[runtime_context]", json.dumps(
             context, ensure_ascii=False, indent=2, sort_keys=True, default=str)))
@@ -258,8 +264,13 @@ class DiagnosticLogManager(QObject):
             try:
                 from tools.enemy_health import game_structs
                 offsets = Path(game_structs.__file__).with_name("generated_offsets.json")
+                from tools.game_data import offset_path, bundle_root
+                offsets = offset_path('android_arm64') or offsets
                 if offsets.is_file():
                     archive.write(offsets, "generated_offsets.json")
+                data_root = bundle_root()
+                if data_root:
+                    archive.write(data_root / 'manifest.json', 'game_data_manifest.json')
             except Exception:
                 pass
         self.log("诊断日志包已生成:", output)
