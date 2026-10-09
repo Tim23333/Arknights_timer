@@ -57,6 +57,7 @@ if getattr(sys, "frozen", False):
 else:
     _BACKEND_ROOT = Path(__file__).resolve().parent
     _REPO_ROOT = _BACKEND_ROOT.parent
+    _RUNTIME_ROOT = _REPO_ROOT
 for _p in (str(_BACKEND_ROOT), str(_REPO_ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
@@ -64,9 +65,11 @@ for _p in (str(_BACKEND_ROOT), str(_REPO_ROOT)):
 from app.services.timer_provider import TimerDataProvider
 from app.services.websocket_api import WebSocketApi, entity_public_id
 from app.battle_session_cache import BattleSessionCache
+from app.services.departure_history import DepartureHistory
 from app.diagnostic_log import DiagnosticLogManager, DiagnosticLogWindow
 from app.version import VERSION, VERSION_LABEL
 from app.custom_options import CustomOptions, TOAST_LEVELS
+from app.field_policy import PolicyStore, FIELD_REGISTRY, field_status_text
 from app.toast import (
     DEFAULT_DURATIONS_MS, ToastManager, ToastQueueItem, ToastManagerQt,
 )
@@ -75,7 +78,7 @@ from tools.enemy_health import game_structs as enemy_gs
 from tools.enemy_health.guest_addressing import GuestBattleClock
 from tools.character_status import CharacterReader
 from tools.enemy_health.memcore import (
-    MemCore, find_running_emulator_adbs, query_adb_devices, save_adb_config,
+    MemCore, find_running_emulator_adbs, probe_adb_executable, query_adb_devices, save_adb_config,
 )
 from app.enemy_ui import (
     ENEMY_COLUMN_DEFS, ENEMY_COLUMN_INDEX, EnemyColumnDialog, EnemyDetailDialog,
@@ -116,13 +119,13 @@ _EARLY_TEST_LOG_LOCK = threading.Lock()
 
 
 def _tlog(*a) -> None:
-    """测试版诊断日志入口（线程安全落盘 + 日志窗口；正式版为空操作）。"""
-    if not TEST_BUILD:
-        return
+    """测试版与 WebUI 共享的诊断入口；其他正式版启动仍为空操作。"""
     message = " ".join(str(part) for part in a)
     logger = _DIAGNOSTIC_LOGGER
     if logger is not None:
         logger.log(message)
+        return
+    if not TEST_BUILD:
         return
     with _EARLY_TEST_LOG_LOCK:
         _EARLY_TEST_LOGS.append(message)
@@ -398,29 +401,6 @@ QWidget#EnemyMiniWindow QPushButton {{
 }}
 QWidget#EnemyMiniWindow QScrollBar {{ color:{muted}; }}
 """
-
-
-def probe_adb_executable(path: str) -> tuple[bool, str]:
-    """验证用户选择的是可运行的 adb；参数列表调用可正确处理空格和中文路径。"""
-    path = os.path.normpath(path or '')
-    if not path or not os.path.isfile(path):
-        return False, '所选文件不存在'
-    try:
-        result = subprocess.run(
-            [path, 'version'], capture_output=True, text=True, errors='replace',
-            timeout=8,
-            creationflags=(getattr(subprocess, 'CREATE_NO_WINDOW', 0)
-                           if os.name == 'nt' else 0),
-        )
-    except subprocess.TimeoutExpired:
-        return False, '执行 adb version 超时'
-    except OSError as exc:
-        return False, f'无法运行所选文件：{exc}'
-    output = '\n'.join(
-        part.strip() for part in (result.stdout, result.stderr) if part.strip())
-    if result.returncode != 0:
-        return False, output.splitlines()[0] if output else f'退出码 {result.returncode}'
-    return True, output.splitlines()[0] if output else 'ADB 可执行文件验证通过'
 
 
 class AdbSelectionDialog(QDialog):
@@ -858,7 +838,7 @@ class EnemyScanWorker(QThread):
 
     def run(self) -> None:
         try:
-            if TEST_BUILD:   # 测试版: 日志同时进 GUI 标签和控制台
+            if TEST_BUILD or _DIAGNOSTIC_LOGGER is not None:   # 测试版/WebUI: 日志同时进 GUI 标签和诊断
                 self.reader.log = lambda m: (self.log.emit(str(m)), _tlog(m))
             else:
                 self.reader.log = lambda m: self.log.emit(str(m))
@@ -891,7 +871,7 @@ class EnemyScanWorker(QThread):
             if not self.isInterruptionRequested():
                 self._finish(False, f"出错: {e}")
         finally:
-            # The reader outlives this QThread, which the owner deletes on finished.
+            # The reader outlives this QThread; disconnect callbacks to its signals.
             self.reader.log = _tlog
             self.reader.progress = None
 
@@ -902,7 +882,8 @@ class EnemyPollWorker(QThread):
 
     def __init__(self, reader: EnemyReader, character_reader: CharacterReader | None = None,
                  interval: float = ENEMY_POLL_SEC,
-                 detail_request_provider=None) -> None:
+                 detail_request_provider=None, policy_provider=None,
+                 latest_frame_provider=None) -> None:
         super().__init__()
         self.reader = reader
         self.character_reader = character_reader
@@ -923,6 +904,10 @@ class EnemyPollWorker(QThread):
         self._character_detail_error = ''
         # 外部完整详情由单一共享任务读取，全部客户端复用同一缓存。
         self._detail_request_provider = detail_request_provider
+        self._policy_provider = policy_provider
+        self._latest_frame_provider = latest_frame_provider
+        self._active_policy = None
+        self._capture_signature = None
         self._external_detail_lock = threading.Lock()
         self._external_detail_due = 0.0
         self._external_detail_loading = False
@@ -988,6 +973,10 @@ class EnemyPollWorker(QThread):
                 self._detail_error = ''
 
     def _start_detail_refresh(self, addr: int) -> None:
+        policy = self._active_policy
+        if not self._detail_domain_enabled('enemy_detail', policy):
+            return
+        session = getattr(self.reader, 'bc_addr', 0)
         with self._detail_lock:
             if self._detail_loading or addr != self._detail_addr:
                 return
@@ -998,8 +987,11 @@ class EnemyPollWorker(QThread):
             error = ''
             try:
                 with self._shared_detail_io_lock:
-                    full = self.reader.read_enemy_detail(addr, heavy_only=True)
-                if full is not None:
+                    if not self._detail_result_current(policy, session):
+                        return
+                    full = self.reader.read_enemy_detail(addr, heavy_only=True, policy=policy)
+                if full is not None and self._detail_result_current(policy, session):
+                    self._finish_detail_metadata(full)
                     cache = {
                         'raw_attributes': dict(full.raw_attributes),
                         'buffs': list(full.buffs),
@@ -1007,6 +999,10 @@ class EnemyPollWorker(QThread):
                         'special_shield': full.special_shield,
                         'special_shield_mask': full.special_shield_mask,
                         'special_shield_sources': list(full.special_shield_sources),
+                        'field_states': dict(full.field_states),
+                        'policy_generation': full.policy_generation,
+                        'session': session,
+                        'identity': (full.id_ptr, full.data_ptr),
                     }
                 else:
                     error = '敌人详情对象已失效。'
@@ -1014,11 +1010,13 @@ class EnemyPollWorker(QThread):
                 error = f'详情刷新失败：{exc}'
             finally:
                 with self._detail_lock:
-                    if addr == self._detail_addr:
+                    if (addr == self._detail_addr
+                            and self._detail_result_current(policy, session)):
                         if cache is not None:
                             self._detail_heavy_cache = cache
                             self._detail_error = ''
                         elif error:
+                            self._detail_heavy_cache = None
                             self._detail_error = error
                         self._detail_due = time.monotonic() + ENEMY_DETAIL_FULL_SEC
                     self._detail_loading = False
@@ -1026,12 +1024,38 @@ class EnemyPollWorker(QThread):
         threading.Thread(
             target=load, name='EnemyDetailRefresh', daemon=True).start()
 
+    @staticmethod
+    def _detail_domain_enabled(domain, policy):
+        return policy is None or any(spec.domain == domain and policy.enabled(spec.id)
+                                     for spec in FIELD_REGISTRY.values())
+
+    def _detail_result_current(self, policy, session):
+        """Late async work cannot cross a policy generation or battle identity."""
+        if self.isInterruptionRequested() or session != getattr(self.reader, 'bc_addr', 0):
+            return False
+        current = self._policy_provider() if self._policy_provider is not None else self._active_policy
+        return ((policy is None and current is None)
+                or (policy is not None and current is not None
+                    and policy.generation == current.generation))
+
+    def _finish_detail_metadata(self, detail):
+        # Source/accepted frames are sampled by the isolated reader. The timer
+        # cache at actual completion is a separate observation of freshness.
+        latest = self._latest_frame_provider() if self._latest_frame_provider is not None else None
+        for record in getattr(detail, 'field_states', {}).values():
+            record['latestKnownFrame'] = latest
+            record['acceptedAt'] = time.time()
+
     def _append_detail(self, snap: dict) -> None:
         now = time.monotonic()
         with self._detail_lock:
             addr = self._detail_addr
             due = self._detail_due
         if not addr:
+            return
+        if not self._detail_domain_enabled('enemy_detail', self._active_policy):
+            snap['detail_enemy'] = None
+            snap['detail_error'] = '敌人详情采集已关闭。'
             return
         if not snap.get('ok'):
             return
@@ -1042,6 +1066,8 @@ class EnemyPollWorker(QThread):
                              and getattr(enemy, 'lifecycle', 'active') == 'active'), None)
         live = roster_enemy is not None
         if not live:
+            with self._detail_lock:
+                self._detail_heavy_cache = None
             snap['detail_enemy'] = None
             snap['detail_error'] = '敌人已退场或对象已失效，已停止更新。'
             return
@@ -1051,15 +1077,25 @@ class EnemyPollWorker(QThread):
         with self._detail_lock:
             heavy = dict(self._detail_heavy_cache or {})
             error = self._detail_error
-        roster_enemy.raw_attributes = dict(heavy.get('raw_attributes', {}))
-        roster_enemy.buffs = list(heavy.get('buffs', ()))
-        roster_enemy.global_buffs = list(heavy.get('global_buffs', ()))
+        if (heavy and (heavy.get('session') != getattr(self.reader, 'bc_addr', 0)
+                      or heavy.get('identity') != (roster_enemy.id_ptr, roster_enemy.data_ptr)
+                      or (self._active_policy is not None and heavy.get('policy_generation')
+                          != self._active_policy.generation))):
+            heavy = {}
+        # Details are a separate view; do not mutate a canonical basic entity
+        # after it has passed the complete-frame acceptance guard.
+        import copy
+        detail_enemy = copy.deepcopy(roster_enemy)
+        detail_enemy.raw_attributes = dict(heavy.get('raw_attributes', {}))
+        detail_enemy.buffs = list(heavy.get('buffs', ()))
+        detail_enemy.global_buffs = list(heavy.get('global_buffs', ()))
+        detail_enemy.field_states.update(heavy.get('field_states', {}))
         if 'special_shield' in heavy:
-            roster_enemy.special_shield = heavy['special_shield']
-            roster_enemy.special_shield_mask = heavy.get('special_shield_mask', 0)
-            roster_enemy.special_shield_sources = list(
+            detail_enemy.special_shield = heavy['special_shield']
+            detail_enemy.special_shield_mask = heavy.get('special_shield_mask', 0)
+            detail_enemy.special_shield_sources = list(
                 heavy.get('special_shield_sources', ()))
-        snap['detail_enemy'] = roster_enemy
+        snap['detail_enemy'] = detail_enemy
         if error:
             snap['detail_error'] = error
 
@@ -1073,6 +1109,10 @@ class EnemyPollWorker(QThread):
                 self._character_detail_error = ''
 
     def _start_character_detail_refresh(self, addr: int) -> None:
+        policy = self._active_policy
+        if not self._detail_domain_enabled('character_detail', policy):
+            return
+        session = getattr(self.reader, 'bc_addr', 0)
         with self._character_detail_lock:
             if (self._character_detail_loading
                     or addr != self._character_detail_addr
@@ -1085,18 +1125,25 @@ class EnemyPollWorker(QThread):
             error = ''
             try:
                 with self._shared_detail_io_lock:
-                    detail = self.character_reader.read_character_detail(addr)
+                    if not self._detail_result_current(policy, session):
+                        return
+                    detail = self.character_reader.read_character_detail(addr, policy=policy)
+                if detail is not None:
+                    self._finish_detail_metadata(detail)
+                    detail._detail_session = session
                 if detail is None:
                     error = '干员详情对象已失效。'
             except Exception as exc:
                 error = f'干员详情刷新失败：{exc}'
             finally:
                 with self._character_detail_lock:
-                    if addr == self._character_detail_addr:
+                    if (addr == self._character_detail_addr
+                            and self._detail_result_current(policy, session)):
                         if detail is not None:
                             self._character_detail_cache = detail
                             self._character_detail_error = ''
                         elif error:
+                            self._character_detail_cache = None
                             self._character_detail_error = error
                         self._character_detail_due = (
                             time.monotonic() + CHARACTER_DETAIL_FULL_SEC)
@@ -1111,9 +1158,15 @@ class EnemyPollWorker(QThread):
             due = self._character_detail_due
         if not addr or not snap.get('character_ok'):
             return
+        if not self._detail_domain_enabled('character_detail', self._active_policy):
+            snap['detail_character'] = None
+            snap['character_detail_error'] = '干员详情采集已关闭。'
+            return
         live = next((character for character in snap.get('characters', ())
                      if character.addr == addr), None)
         if live is None:
+            with self._character_detail_lock:
+                self._character_detail_cache = None
             snap['detail_character'] = None
             snap['character_detail_error'] = '干员已离场或对象已失效，已停止更新。'
             return
@@ -1122,21 +1175,36 @@ class EnemyPollWorker(QThread):
         with self._character_detail_lock:
             detail = self._character_detail_cache
             error = self._character_detail_error
+        if detail is not None and (
+                detail.data_ptr != live.data_ptr or detail.cid != live.cid
+                or getattr(detail, '_detail_session', None) != getattr(self.reader, 'bc_addr', 0)
+                or (self._active_policy is not None
+                    and detail.policy_generation != self._active_policy.generation)):
+            detail = None
+        import copy
+        detail_view = copy.deepcopy(live)
         if detail is not None:
-            live = CharacterReader.merge_detail(live, detail)
+            detail_view = CharacterReader.merge_detail(detail_view, detail)
+            detail_view.field_states.update(detail.field_states)
         else:
             snap['character_detail_loading'] = True
-        snap['detail_character'] = live
+        snap['detail_character'] = detail_view
         if error:
             snap['character_detail_error'] = error
 
     def _start_external_detail_refresh(self, enemies, characters, rate_hz: float) -> None:
+        policy = self._active_policy
+        session = getattr(self.reader, 'bc_addr', 0)
         with self._external_detail_lock:
             if self._external_detail_loading:
                 return
             self._external_detail_loading = True
         enemy_addrs = [int(getattr(item, 'addr', 0) or 0) for item in enemies]
         character_addrs = [int(getattr(item, 'addr', 0) or 0) for item in characters]
+        enemy_identities = {item.addr: (getattr(item, 'id_ptr', None), getattr(item, 'data_ptr', None))
+                            for item in enemies}
+        character_identities = {item.addr: (getattr(item, 'cid', None), getattr(item, 'data_ptr', None))
+                                for item in characters}
 
         def load() -> None:
             enemy_details, character_details = {}, {}
@@ -1144,22 +1212,40 @@ class EnemyPollWorker(QThread):
             try:
                 with self._shared_detail_io_lock:
                     for addr in enemy_addrs:
-                        detail = self.reader.read_enemy_detail(addr, heavy_only=True)
+                        if (not self._detail_result_current(policy, session)
+                                or addr not in getattr(self, '_external_enemy_targets', set(enemy_addrs))):
+                            continue
+                        detail = self.reader.read_enemy_detail(addr, heavy_only=True, policy=policy)
                         if detail is not None:
+                            self._finish_detail_metadata(detail)
                             enemy_details[addr] = detail
                     if self.character_reader is not None:
                         for addr in character_addrs:
-                            detail = self.character_reader.read_character_detail(addr)
+                            if (not self._detail_result_current(policy, session)
+                                    or addr not in getattr(self, '_external_character_targets', set(character_addrs))):
+                                continue
+                            detail = self.character_reader.read_character_detail(addr, policy=policy)
                             if detail is not None:
+                                self._finish_detail_metadata(detail)
                                 character_details[addr] = detail
             except Exception as exc:
                 error = f'外部详情采样失败：{exc}'
             finally:
                 with self._external_detail_lock:
-                    if not error:
-                        self._external_enemy_details = enemy_details
-                        self._external_character_details = character_details
+                    if not error and self._detail_result_current(policy, session):
+                        self._external_enemy_details = {
+                            addr: detail for addr, detail in enemy_details.items()
+                            if addr in getattr(self, '_external_enemy_targets', set(enemy_addrs))
+                            and (detail.id_ptr, detail.data_ptr) == enemy_identities[addr]}
+                        self._external_character_details = {
+                            addr: detail for addr, detail in character_details.items()
+                            if addr in getattr(self, '_external_character_targets', set(character_addrs))
+                            and (detail.cid, detail.data_ptr) == character_identities[addr]}
+                        self._external_detail_session = session
                         self._external_detail_revision += 1
+                    elif error:
+                        self._external_enemy_details = {}
+                        self._external_character_details = {}
                     self._external_detail_error = error
                     self._external_detail_due = time.monotonic() + 1.0 / max(rate_hz, 0.2)
                     self._external_detail_loading = False
@@ -1171,12 +1257,18 @@ class EnemyPollWorker(QThread):
         requests = provider() if provider is not None else {}
         enemy_request = requests.get("enemy_detail", {})
         character_request = requests.get("character_detail", {})
+        if not self._detail_domain_enabled('enemy_detail', self._active_policy):
+            enemy_request = {}
+        if not self._detail_domain_enabled('character_detail', self._active_policy):
+            character_request = {}
         rate_hz = max(float(enemy_request.get("rateHz", 0.0) or 0.0),
                       float(character_request.get("rateHz", 0.0) or 0.0))
         if not snap.get('ok'):
             return
         if rate_hz <= 0.0:
             with self._external_detail_lock:
+                self._external_enemy_targets = set()
+                self._external_character_targets = set()
                 if self._external_enemy_details or self._external_character_details:
                     self._external_enemy_details = {}
                     self._external_character_details = {}
@@ -1198,8 +1290,13 @@ class EnemyPollWorker(QThread):
             "enemy", list(snap.get('enemies', ())), enemy_request)
         characters = requested_entities(
             "character", list(snap.get('characters', ())), character_request)
+        enemies = [enemy for enemy in enemies if getattr(enemy, 'addr', 0) > 0
+                   and getattr(enemy, 'lifecycle', 'active') == 'active']
+        characters = [character for character in characters if getattr(character, 'addr', 0) > 0]
         if not enemies and not characters:
             with self._external_detail_lock:
+                self._external_enemy_targets = set()
+                self._external_character_targets = set()
                 if self._external_enemy_details or self._external_character_details:
                     self._external_detail_revision += 1
                 self._external_enemy_details = {}
@@ -1212,24 +1309,60 @@ class EnemyPollWorker(QThread):
             return
         enemy_addrs = {int(getattr(item, 'addr', 0) or 0) for item in enemies}
         character_addrs = {int(getattr(item, 'addr', 0) or 0) for item in characters}
+        enemy_identities = {item.addr: (item.id_ptr, item.data_ptr) for item in enemies}
+        character_identities = {item.addr: (item.cid, item.data_ptr) for item in characters}
         with self._external_detail_lock:
+            self._external_enemy_targets = enemy_addrs
+            self._external_character_targets = character_addrs
+            session = getattr(self.reader, 'bc_addr', 0)
+            if getattr(self, '_external_detail_session', session) != session:
+                self._external_enemy_details.clear()
+                self._external_character_details.clear()
             due = self._external_detail_due
         if time.monotonic() >= due:
             self._start_external_detail_refresh(enemies, characters, rate_hz)
         with self._external_detail_lock:
             snap['external_enemy_details'] = [
                 detail for addr, detail in self._external_enemy_details.items()
-                if addr in enemy_addrs]
+                if addr in enemy_addrs
+                and (detail.id_ptr, detail.data_ptr) == enemy_identities[addr]
+                and (self._active_policy is None
+                    or getattr(detail, 'policy_generation', None) == self._active_policy.generation)]
             snap['external_character_details'] = [
                 detail for addr, detail in self._external_character_details.items()
-                if addr in character_addrs]
+                if addr in character_addrs
+                and (detail.cid, detail.data_ptr) == character_identities[addr]
+                and (self._active_policy is None
+                    or getattr(detail, 'policy_generation', None) == self._active_policy.generation)]
             snap['external_detail_loading'] = self._external_detail_loading
             snap['external_detail_revision'] = self._external_detail_revision
             if self._external_detail_error:
                 snap['external_detail_error'] = self._external_detail_error
 
     def _collect_complete_snapshot(self) -> dict:
+        policy = self._policy_provider() if self._policy_provider is not None else None
         channel = getattr(self.reader, '_chan', None)
+        if policy is not None:
+            # A policy is fixed for the complete enemy+character frame. Invalidate
+            # before executing the old device plan, not after disabled reads occur.
+            if self._capture_signature != policy.collected_ids:
+                if channel is not None and hasattr(channel, 'clear_frame_prefetch'):
+                    channel.clear_frame_prefetch()
+                self._capture_signature = policy.collected_ids
+                with self._detail_lock:
+                    self._detail_heavy_cache = None
+                with self._character_detail_lock:
+                    self._character_detail_cache = None
+                with self._external_detail_lock:
+                    self._external_enemy_details.clear()
+                    self._external_character_details.clear()
+                    self._external_detail_revision += 1
+            self._active_policy = policy
+            self.reader.set_capture_policy(policy)
+            if self.character_reader is not None:
+                self.character_reader.set_capture_policy(policy)
+            self.track_unattributed_damage = policy.enabled('character.unattributed_damage')
+        sampled_at = time.time()
         if channel is not None and hasattr(channel, 'configure_frame_guard'):
             guard_addr = 0
             if getattr(self.reader, '_bc_static_fields', 0):
@@ -1283,28 +1416,48 @@ class EnemyPollWorker(QThread):
                 guard = {
                     'attempts': 1,
                     'start': frame_start,
-                    'end': host_guard.get('frame', frame_start),
+                    'end': host_guard.get('frame'),
                     'complete': (frame_start is not None and frame_start
-                                 == host_guard.get('frame', frame_start)),
+                                 == host_guard.get('frame')),
                 }
                 if isinstance(host_guard.get('time_scale'), (int, float)):
                     snap['time_scale'] = host_guard['time_scale']
                 if isinstance(host_guard.get('play_time'), (int, float)):
                     snap['play_time'] = host_guard['play_time']
+                snap['pause_keys_active'] = host_guard.get('pause_keys_active')
             except Exception as exc:
                 snap['frame_guard_error'] = f'{type(exc).__name__}: {exc}'
-        frame_end = guard.get('end', frame_start)
-        paused = isinstance(snap.get('time_scale'), (int, float)) \
-            and abs(float(snap['time_scale'])) < 1e-7
+                guard = {'attempts': 1, 'start': frame_start,
+                         'end': None, 'complete': False}
+        frame_end = guard.get('end')
+        # m_originTimeScale 是配置倍率，暂停时可能仍为 2.0；只信本帧
+        # EnableStateWithKey 的键集合。读取失败保持未知，不回退到旧猜测。
+        paused = snap.get('pause_keys_active')
+        if not isinstance(paused, bool):
+            paused = None
         snap['frame_start'] = frame_start
         snap['frame_end'] = frame_end
         snap['device_frame_attempts'] = int(guard.get('attempts', 0) or 0)
         snap['frame_consistent'] = bool(
-            guard.get('complete', frame_start is not None
-                      and frame_start == frame_end))
+            guard.get('complete', False) and frame_start is not None
+            and guard.get('start') == frame_start == frame_end)
+        snap['origin_time_scale'] = snap.get('time_scale')
+        snap['time_scale'] = (0.0 if paused is True else
+                              snap['origin_time_scale'] if paused is False else None)
         snap['paused_snapshot'] = paused
         snap['pause_consistent'] = (
-            not paused or bool(snap['frame_consistent']))
+            bool(snap['frame_consistent']) if isinstance(paused, bool) else None)
+        snap['sampled_at'] = sampled_at
+        snap['accepted_at'] = time.time()
+        snap['policy_generation'] = policy.generation if policy is not None else None
+        DepartureHistory.capture_identity(self.reader, snap)
+        snap['_history_epoch'] = getattr(self, '_source_epoch', 0)
+        latest_frame = self._latest_frame_provider() if self._latest_frame_provider is not None else None
+        snap['latest_known_frame'] = latest_frame
+        for entity in list(snap.get('enemies', ())) + list(snap.get('characters', ())):
+            for record in getattr(entity, 'field_states', {}).values():
+                record['latestKnownFrame'] = latest_frame
+                record['acceptedFrame'] = frame_end
         if not self.isInterruptionRequested():
             self._append_detail(snap)
             self._append_character_detail(snap)
@@ -1375,6 +1528,7 @@ class EnemyPollWorker(QThread):
                 snap['full_60hz'] = bool(
                     snap.get('strict_60hz')
                     and self._sample_hz >= 59.0
+                    and snap.get('frame_consistent')
                     and snap.get('pause_consistent', True)
                     and (self.character_reader is None
                          or snap.get('character_ok')))
@@ -1556,7 +1710,7 @@ class DeployScanWorker(QThread):
                 mc.close()
                 return
             if reader.locate():
-                # Keep every memory read in the worker, including the first snapshot.
+                # Initial memory snapshot belongs on the scan worker, not the UI thread.
                 self.initial_state = reader.get_state()
                 if self.isInterruptionRequested():
                     reader.close()
@@ -1595,22 +1749,49 @@ class DeployPollWorker(QThread):
     """后台线程: 准实时轮询操作日志 (BattleLogger.m_logs)"""
     snapshot = Signal(list, dict, bool)   # events, battle_state, chain_ok
 
-    def __init__(self, reader: DeployTrackerReader, interval: float = DEPLOY_POLL_SEC) -> None:
+    def __init__(self, reader: DeployTrackerReader, interval: float = DEPLOY_POLL_SEC,
+                 policy_provider=None, latest_frame_provider=None) -> None:
         super().__init__()
         self.reader = reader
         self.interval = interval
+        self._policy_provider = policy_provider
+        self._latest_frame_provider = latest_frame_provider
+        self._static_generation = None
+        self._static_state = {}
 
     def run(self) -> None:
         while not self.isInterruptionRequested():
+            policy = None
             try:
+                policy = self._policy_provider() if self._policy_provider is not None else None
+                if policy is not None:
+                    self.reader.set_capture_policy(policy)
                 ok = self.reader.is_chain_valid()
+                if ok and policy is not None and policy.generation != self._static_generation:
+                    # 编队/代理日志是静态域，但重开采集仍须读新代际，不能沿用 UI
+                    # 的旧副本。每代际最多一次完整读取，普通轮询只读实时日志。
+                    self._static_state = {'stage': self.reader.get_stage_info(),
+                                          'squad': self.reader.get_squad(),
+                                          'journal': self.reader.get_journal_events()}
+                    self._static_generation = policy.generation
                 events = self.reader.get_events() if ok else []
                 battle = self.reader.get_battle_state() if ok else {}
+                if policy is not None:
+                    battle = {**battle, 'policy_generation': policy.generation,
+                              'sampled_at': time.time(), 'source': 'deploy_log',
+                              'latestKnownFrame': (self._latest_frame_provider()
+                                                   if self._latest_frame_provider is not None else None),
+                              'collection_state': 'current' if ok else 'unavailable',
+                              'journal_mode': bool(self.reader._journal_logs_list_addr),
+                              'static_payload': dict(self._static_state)}
                 self.snapshot.emit(events, battle, ok)
-            except Exception:
+            except Exception as exc:
                 if self.isInterruptionRequested():
                     break
-                self.snapshot.emit([], {}, True)   # 偶发读失败不判死, 下轮重试
+                self.snapshot.emit([], {'collection_state': 'unavailable',
+                                         'reason': str(exc),
+                                         'policy_generation': policy.generation if policy else None}, True)
+                # 偶发读失败不判死，结果明确失效，不把 [] 当作成功读到零条记录。
             self.msleep(int(self.interval * 1000))
 
 
@@ -2180,6 +2361,8 @@ class CoachWindow(QMainWindow):
         self._auto_addressing_enabled = False
         self._stop_event = threading.Event()
         self._closing = False
+        self._source_epoch = 0  # Independent of field policy; each game/device session owns sources.
+        self._rng_source_epoch = 0
         self._ws_toast_state: tuple | None = None
         self.websocketServiceStatus.connect(self._on_websocket_service_status)
         self.rngRuntimeStatus.connect(self._on_rng_runtime_status)
@@ -2188,6 +2371,8 @@ class CoachWindow(QMainWindow):
         self._websocket_api: WebSocketApi | None = None
         # 自动检测关卡变化并自动刷新状态
         self._auto_refresh_enabled = False
+        self._diagnostic_logger = _DIAGNOSTIC_LOGGER
+        self._auto_refresh_status = {'state': 'disabled', 'message': '自动检测已关闭', 'step': None, 'retries': 0}
         self._auto_refresh_wait_gen = 0  # 开关每次变化即作废旧的定时等待链
         self._stage_reset_wait_gen = 0  # 每次归0作废上一局的就绪等待
         self._auto_refresh_step: str | None = None  # None/deploy/enemy/rng
@@ -2199,7 +2384,12 @@ class CoachWindow(QMainWindow):
         self._auto_refresh_timeout.timeout.connect(self._on_auto_refresh_step_timeout)
         self._custom_options = CustomOptions()
         self._custom_options.load()
+        self._field_policy = PolicyStore(self._custom_options)
+        self._provider.set_capture_policy(self._field_policy.snapshot())
+        self._webui = None
+        self._webui_runtime_snapshot = {}
         self._toast = ToastManager(options=self._custom_options.get("toast"))
+        self._departure_history = DepartureHistory(log=_tlog)
         # 配置变更即时生效：toast 开关/时长被 UI 修改后，ToastManager 同步刷新。
         self._custom_options.add_listener(
             lambda: self._toast.update_options(self._custom_options.get("toast")))
@@ -2314,6 +2504,19 @@ class CoachWindow(QMainWindow):
                 _DIAGNOSTIC_LOGGER, self)
 
         self._build_ui()
+        # Migrate existing Qt choices once; persisted field policy wins thereafter.
+        if not (self._custom_options.get('field_policy') or {}).get('fields'):
+            migrated = {'enemy.precise_pos': {'collect': self._enemy_precise_position_enabled}}
+            for domain, columns, visible in (
+                    ('enemy', ENEMY_COLUMN_DEFS, self._enemy_visible_cols),
+                    ('character', CHARACTER_COLUMN_DEFS, self._character_visible_cols)):
+                for col in columns:
+                    field_id = f"{domain}.{col['key']}"
+                    if field_id in FIELD_REGISTRY:
+                        migrated[field_id] = {**migrated.get(field_id, {}), 'display': col['key'] in visible}
+            self._field_policy.commit(migrated)
+        self._field_policy.subscribe(self._on_field_policy_changed)
+        self._on_field_policy_changed(self._field_policy.snapshot())
         app = QApplication.instance()
         if app is not None:
             try:
@@ -3034,203 +3237,8 @@ class CoachWindow(QMainWindow):
                 f"WebSocket 服务未能启动。\n{status.get('error') or '正在启动或端口 8765 被占用。'}")
             return
         addr = f"ws://127.0.0.1:{status['port']}"
-        text = (
-            "Arknights Timer 本机 WebSocket 接口（v1）\n"
-            "================================================\n\n"
-            "一、服务状态与端点\n"
-            "----------------\n"
-            "状态：运行中（仅监听本机 127.0.0.1；不接受远程连接）\n"
-            f"游戏实时数据：{addr}/v1/game\n"
-            f"运维健康状态：{addr}/v1/ops\n"
-            "关闭路径：更多自定义选项 → 取消“启用本地 WebSocket 接口服务”。\n"
-            "关闭后会断开客户端并释放监听端口。\n\n"
-            "二、通用服务端消息信封\n"
-            "----------------------\n"
-            "每条消息均为 JSON，固定包含：\n"
-            "  type          消息名称，例如 battle.updated\n"
-            "  schemaVersion 协议版本，当前固定为 1\n"
-            "  sessionId     当前战斗会话标识；新局会改变\n"
-            "  sequence      单调递增序号，可用于检测漏包\n"
-            "  emittedAt     插件生成消息的 ISO 8601 时间\n"
-            "  data          对应主题的公开数据\n\n"
-            "三、连接与订阅\n"
-            "----------------\n"
-            "连接 /v1/game 后，先发送 subscribe。仅会收到已订阅主题的数据。\n"
-            "rateHz 表示每秒最多发送次数；实际频率可能因数据未变化、\n"
-            "采样质量或慢客户端背压而降低。重复 subscribe 同一主题可更新频率。\n\n"
-            "示例：\n"
-            "{\n"
-            '  "type": "subscribe",\n'
-            '  "requestId": "dashboard-1",\n'
-            '  "topics": {\n'
-            '    "battle": {"rateHz": 20},\n'
-            '    "stage": {"rateHz": 2},\n'
-            '    "enemies": {"rateHz": 10},\n'
-            '    "enemy_pathing": {"rateHz": 30},\n'
-            '    "characters": {"rateHz": 10},\n'
-            '    "enemy_detail": {"scope": "all", "rateHz": 60},\n'
-            '    "character_detail": {"scope": "selected", "ids": ["character-1"], "rateHz": 10},\n'
-            '    "deploy": {"rateHz": 4, "includeHistory": true},\n'
-            '    "rng": {"rateHz": 2},\n'
-            '    "quality": {"rateHz": 2}\n'
-            '  }\n'
-            "}\n\n"
-            "成功后会收到 subscription.updated，其中包含每个主题请求频率与实际生效频率。\n"
-            "取消订阅：{\"type\": \"unsubscribe\", \"topics\": [\"rng\", \"characters\"]}\n"
-            "重新请求部署历史：{\"type\": \"deploy.get_history\"}\n\n"
-            "四、游戏主题、默认值与可调范围\n"
-            "--------------------------------\n"
-            "battle             默认 20Hz，范围 1–60Hz：战斗时间、逻辑帧、倍速、暂停、连接状态\n"
-            "stage              默认 2Hz，范围 0.2–20Hz：关卡、地图与编队；变化合并后发送\n"
-            "enemies            默认 10Hz，范围 1–20Hz：全体敌人基础状态、生命、位置、动作\n"
-            "enemy_pathing      默认 30Hz，范围 1–60Hz：同帧路线、路点、检查点与倒计时\n"
-            "characters         默认 10Hz，范围 1–20Hz：干员/召唤物基础状态、技能和战斗统计\n"
-            "enemy_detail       默认 2Hz，范围 0.2–60Hz：敌人属性、Buff、免疫、技能/行动详情\n"
-            "character_detail   默认 2Hz，范围 0.2–60Hz：干员属性、Buff、天赋、技能详情\n"
-            "deploy             默认 4Hz，范围 1–20Hz：部署、撤退、技能等操作；事件按顺序批量发送\n"
-            "rng                默认 2Hz，范围 1–10Hz：随机流摘要、有限历史与预测\n"
-            "quality            默认 2Hz，范围 0.5–5Hz：采样率、帧一致性、I/O 与发送质量\n\n"
-            "五、完整详情订阅\n"
-            "------------------\n"
-            "scope 仅用于 enemy_detail 与 character_detail；不能用于 enemies、characters\n"
-            "等基础主题。未填写 scope 时，服务按 scope: all 处理。\n\n"
-            "scope: all\n"
-            "  含义：接收当前场上该类单位的全部完整公开详情。\n"
-            "  用法：{\"enemy_detail\": {\"scope\": \"all\", \"rateHz\": 2}}\n"
-            "  ids：不需要；即使提供也不会筛选数据。适合战斗记录、全局可视化与分析。\n\n"
-            "scope: selected\n"
-            "  含义：只接收 ids 中指定单位的完整公开详情。\n"
-            "  用法：{\"character_detail\": {\"scope\": \"selected\",\n"
-            "         \"ids\": [\"character-1\", \"character-2\"], \"rateHz\": 10}}\n"
-            "  ids：必须是字符串数组；敌人 ID 从 enemies.updated.data.items[].id 获取，\n"
-            "  干员/召唤物 ID 从 characters.updated.data.items[].id 获取。\n"
-            "  目标尚未上场、死亡或离场时不会出现在详情 items 中；客户端应继续以\n"
-            "  基础快照判断生命周期，而不是把暂时缺席解释为服务错误。\n\n"
-            "scope 与 rateHz 相互独立：scope 决定“哪些单位”，rateHz 决定“最多多久推一次”。\n"
-            "all 与 selected 都复用共享详情快照；selected 只采样 ids 指定单位，可显著降低内存读取。\n"
-            "完整详情默认 2Hz、最高请求 60Hz；scope: all 的重型全场采样最高 5Hz，\n"
-            "服务可按订阅频率重复发送最新缓存，避免每个客户端重复读取游戏内存。\n"
-            "完整详情由插件共享采样并缓存，所有客户端复用同一份结果；\n"
-            "不会因连接数增加而重复读取游戏内存。60Hz 是最高可请求值，\n"
-            "当读取耗时无法承载时，请依据 quality 数据降低请求频率。\n"
-            "接口绝不公开内存地址、指针、原始内存块、ADB 配置或设备标识；任何公开字符串中\n"
-            "疑似内存地址的 0x 十六进制片段会替换为 [redacted-address]。\n\n"
-            "六、运维接口 /v1/ops\n"
-            "----------------------\n"
-            "连接后立即收到 ops.status，随后默认每 2 秒收到 ops.heartbeat。\n"
-            "可发送 {\"type\":\"subscribe\",\"topics\":{\"ops.heartbeat\":{\"rateHz\":2}}}\n"
-            "以将心跳调整到 0.2–2Hz。data 包含服务版本/运行时长、\n"
-            "timer、enemy、characters、deploy、rng 的模块状态、能力清单，\n"
-            "以及客户端数、丢弃帧数与重同步计数。\n\n"
-            "七、错误与慢客户端\n"
-            "------------------\n"
-            "无效 JSON、未知命令、未知主题、错误频率或无效详情 scope 会返回 error /\n"
-            "subscription.updated 的逐主题错误说明。高频普通帧会合并为最新状态；\n"
-            "请使用 sequence 检测缺口，并在需要时重新订阅以获取最新快照。\n\n"
-            "八、字段级参考\n"
-            "================\n\n"
-            "A. 客户端请求字段\n"
-            "  type: string，命令名。可用 subscribe、unsubscribe、deploy.get_history。\n"
-            "  requestId: string，可选；由客户端用于关联自身请求。\n"
-            "  topics: object，键为主题名，值为 true 或该主题的选项对象。\n"
-            "  rateHz: number，可选；必须落在该主题允许范围内，超范围会被限制。\n"
-            "  scope: string，仅详情主题；缺省为 all。all 接收全体，selected 接收 ids 指定对象。\n"
-            "  ids: string[]，scope=selected 时必填；元素必须来自对应基础快照的 items[].id。\n"
-            "  includeHistory: boolean，deploy 选项；请求当前缓存的完整操作列表。\n\n"
-            "B. subscription.updated.data.topics.<主题名>\n"
-            "  requestedRateHz: number，客户端发来的频率。\n"
-            "  effectiveRateHz: number，服务实际接受的频率。\n"
-            "  error: string，主题或参数错误时出现；该主题不会被订阅。\n\n"
-            "C. battle.updated.data（统一战斗快照）\n"
-            "  battle 始终使用下列固定字段集合。desktop_app 通过\n"
-            "  TimerDataProvider.get_game_data() 取得 game_time/frame_count，并调用\n"
-            "  WebSocketApi.publish_timer() 写入时间与连接字段；敌我完整帧调用\n"
-            "  WebSocketApi.publish_runtime() 时只补充战斗状态字段。两者合并后再发送。\n"
-            "  state: string，idle、initializing、playing、finished、unavailable 或 unknown。\n"
-            "  stateCode: integer|null，底层战斗状态值：0 idle、1 initializing、2 playing、3 finished。\n"
-            "  gameTime: number|null，TimerDataProvider.get_game_data().game_time；仅由\n"
-            "  WebSocketApi.publish_timer() 写入，publish_runtime() 不会覆盖。\n"
-            "  fixedFrame: integer|null，TimerDataProvider.get_game_data().frame_count；仅由\n"
-            "  WebSocketApi.publish_timer() 写入，publish_runtime() 不会覆盖。\n"
-            "  clockSource: string|null，host 为宿主读取，guest 为设备侧读取。\n"
-            "  connected: boolean，时间读取链是否连通。\n"
-            "  configured: boolean，是否已获得可用时间地址。\n"
-            "  sampledAt: string|null，最近时间缓存采样时间。\n"
-            "  message: string，读取状态或失败原因。\n"
-            "  speedLevel: number|null，游戏倍速档位。\n"
-            "  timeScale: number|null，实际时间倍率，0 表示暂停。\n"
-            "  isPaused: boolean|null，当前完整敌我帧是否暂停；尚未取得敌我帧时为 null。\n"
-            "  frameConsistent: boolean|null，完整帧首尾逻辑帧是否一致；尚未取得敌我帧时为 null。\n\n"
-            "E. enemies.updated.data\n"
-            "  items: Enemy[]，当前敌人列表。每个 Enemy 包含：\n"
-            "    id: string，本局稳定业务 ID；用于详情 selected.ids，绝非内存地址。\n"
-            "    name/code: string，敌人显示名与内部敌人代码。\n"
-            "    lifecycle: string，实体生命周期；alive: boolean，是否存活。\n"
-            "    hp/maxHp: number|null，当前与最大生命。\n"
-            "    position: object，m_posInLastFrame 实时坐标快照，含 x/y；action: object，当前公开动作状态。\n"
-            "    shield: number|null，护盾值；abnormalStatus: array，异常状态列表。\n"
-            "    pathing: object，同一敌人当前公开路径快照；字段同下方 enemy_pathing。\n\n"
-            "E2. enemy_pathing.updated.data\n"
-            "  sampleFrame: integer|null，本批路径所属的游戏逻辑帧。\n"
-            "  consistent: boolean，设备侧帧守卫是否确认整批同帧。\n"
-            "  items: PathItem[]，每项只含稳定 id 与 pathing；绝不包含内存地址。\n"
-            "  pathing.available/consistent/pathIdentityStable: boolean，当前记录是否可安全使用。\n"
-            "  pathing.intentEnd/nextWaypoint: {row,col,label,...}|null，意图终点与下一格。\n"
-            "  pathing.route: object|null，含 kind/index/ordinal/label/matchedBy/runtimeModified。\n"
-            "  pathing.nextCheckpoint: object|null，含类型、目标、时间与显示标签。\n"
-            "  pathing.checkpointCountdown: object|null，seconds、frames、exact 与 source。\n"
-            "  available=false 时不得沿用上一帧路线；reason 会说明 pending、departed 或同步失败。\n\n"
-            "F. characters.updated.data\n"
-            "  items: Character[]，当前干员/召唤物列表；globalDamageSummary: object|null，全局伤害摘要。\n"
-            "  Character 字段：\n"
-            "    id: string，本局稳定业务 ID；characterId: string，干员配置 ID。\n"
-            "    name: string；kind: operator 或 token；alive: boolean。\n"
-            "    position: object；hp/maxHp: number|null；sp/maxSp: number|null。\n"
-            "    skill: object，当前技能状态；blockedCount: integer，阻挡数。\n"
-            "    buffCount: integer；damageTotal/healingTotal: number，累计统计。\n\n"
-            "G. enemy_detail.updated.data 与 character_detail.updated.data\n"
-            "  loading: boolean，true 表示共享详情采样正在生成下一份快照。\n"
-            "  items: Detail[]。Detail 保留对应基础对象全部字段，并额外包含：\n"
-            "    attributes: object，当前最终属性；rawAttributes: object，原始属性。\n"
-            "    buffs/globalBuffs: array，实体 Buff 与全局 Buff。\n"
-            "    skills: array，敌人技能详情或干员可用技能详情。\n"
-            "    talents: array，干员天赋；敌人通常为空数组。\n"
-            "    specialShield: number|null，特殊护盾汇总。\n"
-            "  注意：对象内部字段会因游戏单位类型变化；未知/不可读值为 null、空对象或空数组。\n\n"
-            "H. stage.updated.data\n"
-            "  stage: object，当前已识别的关卡信息；常用键为 stageId、levelId、code、name。\n"
-            "  squad: array，当前编队原始公开快照；常用键为 charId、charInstId、charName。\n\n"
-            "I. deploy.updated.data\n"
-            "  events: array，实时操作事件；每项通常含 timestamp、uniqueId、op、charId、\n"
-            "  charName、gridRow、gridCol、direction、frame、frameSource、frameSampleTime、frameTimeDelta。\n"
-            "  journal: array，代理作战的静态完整序列；普通作战通常为空数组。\n\n"
-            "J. rng.updated.data\n"
-            "  status: string|null，RNG 服务当前定位/读取状态；其中疑似内存地址会显示为\n"
-            "  [redacted-address]。selected 与 by_role 内的 status 同样遵循此规则。\n"
-            "  selected: object|null，当前选中随机流的公开摘要；selected_id: number|null，对应引擎 ID。\n"
-            "  by_role: object，imp 与 trivial 分别是战斗随机和表现随机流。每条流仅含 id、role、kind、\n"
-            "  label、status、total、cursor/cursor2、history、predictions、rate、activity、paired、rawOnly。\n"
-            "  接口不会提供 process、via、obj、array、内存地址或原始容器指针。\n\n"
-            "K. quality.updated.data\n"
-            "  sampleHz: number|null，敌我采样频率；loopMs/frameMs/ioMs: number|null，耗时指标。\n"
-            "  frameConsistent/pausedSnapshot: boolean；droppedOutboundFrames/resyncCount: integer。\n\n"
-            "L. ops.status / ops.heartbeat 的 data\n"
-            "  service.state/enabled/appVersion/protocolVersion/uptimeSeconds：服务生命周期与版本。\n"
-            "  capabilities.battle/enemies/characters/deploy/rng：各数据是否已有可发布快照。\n"
-            "  modules.timer/enemy/characters/deploy/rng.state：ready、streaming 或 unavailable。\n"
-            "  metrics.gameClients/opsClients/droppedOutboundFrames/resyncCount：连接与背压指标。\n\n"
-            "M. error.data\n"
-            "  code: string，INVALID_JSON、INVALID_SUBSCRIPTION 或 UNSUPPORTED_COMMAND。\n"
-            "  message: string，面向调用方的具体错误原因。\n\n"
-            "JavaScript 最小示例\n"
-            "-------------------\n"
-            f'const ws = new WebSocket("{addr}/v1/game");\n'
-            "ws.onopen = () => ws.send(JSON.stringify({\n"
-            "  type: 'subscribe',\n"
-            "  topics: { battle: { rateHz: 20 }, enemy_pathing: { rateHz: 30 } }\n"
-            "}));\n"
-            "ws.onmessage = (event) => console.log(JSON.parse(event.data));\n"
-        )
+        from app.services.websocket_docs import api_documentation
+        text = api_documentation(addr)
         dlg = QDialog(self)
         dlg.setWindowTitle("WebSocket 接口说明")
         dlg.resize(860, 720)
@@ -3251,8 +3259,53 @@ class CoachWindow(QMainWindow):
         self._websocket_api = WebSocketApi(
             enabled=enabled, app_version=VERSION,
             status_listener=self.websocketServiceStatus.emit,
+            policy_provider=self._field_policy.snapshot,
         )
         self._websocket_api.start_if_enabled()
+
+    def _on_field_policy_changed(self, policy) -> None:
+        """Synchronize projections; workers apply collection at their next boundary."""
+        history = getattr(self, '_departure_history', None)
+        if history is not None:
+            history.discard_disabled(policy)
+        if self._websocket_api is not None:
+            self._websocket_api.policy_changed()
+        for domain, definitions, attr in (
+                ('enemy', ENEMY_COLUMN_DEFS, '_enemy_visible_cols'),
+                ('character', CHARACTER_COLUMN_DEFS, '_character_visible_cols')):
+            setattr(self, attr, {col['key'] for col in definitions
+                                if col['key'] in ('row', 'detail')
+                                or policy.enabled(f"{domain}.{col['key']}", 'display')})
+        self._apply_enemy_column_visibility()
+        self._apply_character_column_visibility()
+        self.chk_enemy_precise_position.blockSignals(True)
+        self.chk_enemy_precise_position.setChecked(policy.enabled('enemy.precise_pos'))
+        self.chk_enemy_precise_position.blockSignals(False)
+        self._enemy_precise_position_enabled = policy.enabled('enemy.precise_pos')
+        self.chk_unattributed_damage.blockSignals(True)
+        self.chk_unattributed_damage.setChecked(policy.enabled('character.unattributed_damage'))
+        self.chk_unattributed_damage.blockSignals(False)
+        if self._enemy_poll is None:
+            self._enemy_reader.set_capture_policy(policy)
+            self._character_reader.set_capture_policy(policy)
+        self._enemy_cell_state.clear()
+        self._character_cell_state.clear()
+        self._webui_runtime_snapshot = {}
+        self._provider.set_capture_policy(policy)
+        if self._deploy_reader is not None:
+            self._deploy_reader.set_capture_policy(policy)
+        if self._rng_svc is not None:
+            self._rng_svc.set_capture_policy(policy)
+
+    def open_webui(self, port=8768) -> str:
+        """Start the local Web UI lazily, keeping game workers on their owner threads."""
+        import webbrowser
+        from app.services.webui_runtime import WebUiRuntime
+        if self._webui is None:
+            self._webui = WebUiRuntime(self, port=port)
+        url = self._webui.start()
+        webbrowser.open(url)
+        return url
 
     def _load_websocket_api_options(self) -> None:
         enabled = bool((self._custom_options.get("websocket_api") or {}).get("enabled", True))
@@ -3420,6 +3473,7 @@ class CoachWindow(QMainWindow):
 
     def _connect_scan_worker(self, kind: str, worker: QThread) -> None:
         """Consume worker output only after ``run()`` has completely returned."""
+        worker._source_epoch = getattr(self, '_source_epoch', 0)
         worker.finished.connect(
             lambda k=kind, w=worker: self._on_scan_worker_finished(k, w))
 
@@ -3489,6 +3543,21 @@ class CoachWindow(QMainWindow):
             return
         if kind == 'guest':
             self._guest_addressing_active = False
+        if getattr(worker, '_source_epoch', 0) != getattr(self, '_source_epoch', 0):
+            self._discard_scan_result(kind, result)
+            # The stale result cannot run its ordinary adoption callback, but
+            # completing its ownership must still allow a manual fresh scan.
+            for name in {'enemy': ('btn_enemy_scan', 'btn_character_scan'),
+                         'deploy': ('btn_deploy_scan',), 'rng': ('btn_rng_scan',),
+                         'guest': ()}[kind]:
+                control = getattr(self, name, None)
+                if control is not None and not getattr(self, '_closing', False):
+                    control.setEnabled(True)
+            if getattr(self, '_auto_refresh_stopping_step', None) == kind:
+                self._complete_auto_refresh_abort()
+            elif getattr(self, '_auto_refresh_step', None) == kind:
+                self._abort_auto_refresh('旧会话扫描结果已丢弃')
+            return
         if self._closing:
             self._discard_scan_result(kind, result)
             self._schedule_close_retry()
@@ -3505,7 +3574,8 @@ class CoachWindow(QMainWindow):
         if kind == 'guest':
             self._on_guest_addressed(
                 getattr(worker, 'addressing_gen', self._guest_addressing_gen),
-                result[0], result[1], result[2])
+                result[0], result[1], result[2],
+                once=getattr(worker, 'addressing_once', False))
         elif kind == 'deploy':
             self._on_deploy_scan_done(
                 result[0], result[1], getattr(worker, 'initial_state', {}))
@@ -3529,6 +3599,7 @@ class CoachWindow(QMainWindow):
     def _memory_worker(self) -> None:
         while not self._stop_event.is_set():
             try:
+                self._provider.set_capture_policy(self._field_policy.snapshot())
                 self._provider.refresh_sample()
                 # 仅从后台读取纯 Python 状态；Qt worker 由 Signal 调回主线程创建。
                 api = self._websocket_api
@@ -3562,9 +3633,21 @@ class CoachWindow(QMainWindow):
         """
         if getattr(self, '_closing', False):
             return
+        self._source_epoch = getattr(self, '_source_epoch', 0) + 1
+        self._webui_runtime_snapshot = {}
+        history = getattr(self, '_departure_history', None)
+        if history is not None:
+            history.invalidate(self._source_epoch)
         api = getattr(self, '_websocket_api', None)
         if api is not None:
             api.begin_session()
+            api.invalidate_domains(('battle', 'stage', 'enemies', 'characters',
+                'enemy_pathing', 'enemy_detail', 'character_detail', 'deploy', 'rng',
+                'quality'), 'session_changed')
+        for name in ('lbl_enemy_status', 'lbl_character_status', 'lbl_deploy_status', 'lbl_rng_status'):
+            label = getattr(self, name, None)
+            if label is not None:
+                label.setText('关卡已更新：旧来源不可用，请重新扫描')
         if not self._auto_refresh_enabled:
             return
         self._stage_reset_wait_gen += 1
@@ -3593,7 +3676,9 @@ class CoachWindow(QMainWindow):
         """
         if not self._stage_reset_wait_current(gen):
             return
-        game = self._provider.get_game_data()
+        if self._auto_refresh_step is None and self._auto_refresh_stopping_step is None:
+            self._set_auto_refresh_status('waiting_clock', '检测到关卡变化，等待新局时钟连续前进（暂停时继续等待）')
+        game = self._provider.get_clock_sample()
         value = game.get('game_time')
         try:
             game_time = float(value)
@@ -3719,8 +3804,16 @@ class CoachWindow(QMainWindow):
             self._schedule_close_retry()
             return
 
+        history = getattr(self, '_departure_history', None)
+        if history is not None and not history.close(timeout=0):
+            event.ignore()
+            self._schedule_close_retry()
+            return
         if not self._shutdown_finalized:
             self._shutdown_finalized = True
+            if self._webui is not None:
+                self._webui.stop()
+                self._webui = None
             try:
                 self._provider.clear_guest()
             except Exception:
@@ -3784,6 +3877,7 @@ class CoachWindow(QMainWindow):
             QMessageBox.critical(self, "寻址工具", f"无法启动：{e}")
 
     def _on_refresh_game(self) -> None:
+        self._provider.set_capture_policy(self._field_policy.snapshot())
         res = self._provider.refresh_sample()
         api = getattr(self, '_websocket_api', None)
         if api is not None:
@@ -3812,7 +3906,7 @@ class CoachWindow(QMainWindow):
         return any(self._scan_worker_pending(kind)
                    for kind in ('guest', 'enemy', 'rng', 'deploy'))
 
-    def _activate_adb_path(self, path: str, serial: str = '') -> None:
+    def _activate_adb_path(self, path: str, serial: str = '') -> bool:
         """停止旧连接并让敌人、RNG、操作记录统一改用新 ADB。"""
         self._cache_current_deploy(final_reason='adb_switched')
         self._cache_rng_from_service()
@@ -3820,14 +3914,22 @@ class CoachWindow(QMainWindow):
             QMessageBox.information(
                 self, '正在停止监控',
                 '上一轮敌人内存读取尚未完全退出，请稍后再次选择 ADB。')
-            return
+            return False
         rng_stopped = self._on_rng_stop()
         deploy_stopped = self._stop_deploy_poll()
         if not rng_stopped or not deploy_stopped:
             QMessageBox.information(
                 self, '正在停止监控',
                 '上一轮 RNG 或部署读取尚未完全退出，请稍后再次选择 ADB。')
-            return
+            return False
+        self._source_epoch = getattr(self, '_source_epoch', 0) + 1
+        self._webui_runtime_snapshot = {}
+        api = getattr(self, '_websocket_api', None)
+        if api is not None:
+            api.begin_session()
+            api.invalidate_domains(('battle', 'stage', 'enemies', 'characters',
+                'enemy_pathing', 'enemy_detail', 'character_detail', 'deploy', 'rng',
+                'quality'), 'adb_changed')
         if self._deploy_reader is not None:
             self._deploy_reader.close()
             self._deploy_reader = None
@@ -3895,6 +3997,7 @@ class CoachWindow(QMainWindow):
         self.lbl_deploy_status.setText('ADB 已切换，请重新扫描')
         self._sync_battle_cache_controls()
         self._update_adb_button()
+        return True
 
     def _select_adb(self, show_success: bool = True) -> bool:
         if self._adb_scan_is_running():
@@ -3910,8 +4013,9 @@ class CoachWindow(QMainWindow):
         path = dialog.selected_path()
         serial = dialog.selected_serial()
         detail = dialog.probe_detail
+        if not self._activate_adb_path(path, serial):
+            return False
         persisted = save_adb_config(path, serial)
-        self._activate_adb_path(path, serial)
         if show_success:
             suffix = '' if persisted else '\n\n警告：配置文件写入失败，下次启动需要重新选择。'
             QMessageBox.information(
@@ -4167,10 +4271,14 @@ class CoachWindow(QMainWindow):
             detail_request_provider=lambda: (
                 self._websocket_api.detail_requests()
                 if self._websocket_api is not None else {}),
+            policy_provider=self._field_policy.snapshot,
+            latest_frame_provider=self._provider.peek_frame_count,
         )
         self._enemy_poll.set_track_unattributed_damage(
             self.chk_unattributed_damage.isChecked())
-        self._enemy_poll.snapshot.connect(self._on_enemy_snapshot_ready)
+        worker = self._enemy_poll
+        worker._source_epoch = getattr(self, '_source_epoch', 0)
+        worker.snapshot.connect(lambda snapshot, w=worker: self._on_enemy_snapshot_ready(snapshot, w))
         self._enemy_poll.start()
         self.btn_enemy_stop.setEnabled(True)
         self.btn_character_stop.setEnabled(True)
@@ -4178,6 +4286,10 @@ class CoachWindow(QMainWindow):
         self.lbl_character_status.setText('实时监控中 ...')
 
     def _stop_enemy_poll(self, blocking: bool = False) -> bool:
+        api = getattr(self, '_websocket_api', None)
+        if api is not None:
+            api.invalidate_domains(('enemies', 'characters', 'enemy_pathing', 'enemy_detail', 'character_detail', 'quality'), 'source_stopped')
+        self._webui_runtime_snapshot = {}
         worker = self._enemy_poll
         if worker:
             final_snap = worker.take_last_complete_snapshot()
@@ -4216,14 +4328,24 @@ class CoachWindow(QMainWindow):
             self.btn_character_stop.setEnabled(False)
         self.lbl_enemy_status.setText('监控已停止')
 
-    def _on_enemy_snapshot_ready(self, _wake_snapshot: dict) -> None:
+    def _on_enemy_snapshot_ready(self, _wake_snapshot: dict, worker=None) -> None:
         """消费工作线程双缓冲区中的最新完整帧，而不是信号携带的旧帧。"""
         poll = self._enemy_poll
-        if poll is None:
+        if (poll is None or (worker is not None and worker is not poll)
+                or getattr(poll, '_source_epoch', 0) != getattr(self, '_source_epoch', 0)
+                or poll.isInterruptionRequested()):
             return
         snap = poll.take_latest_snapshot()
         if snap is not None:
             self._on_enemy_snapshot(snap)
+
+    def _set_auto_refresh_status(self, state: str, message: str, step=None) -> None:
+        """Qt 所有者维护流程快照，不把逐帧轮询变成重复日志或气泡。"""
+        status = {'state': state, 'message': message, 'step': step,
+                  'retries': self._auto_refresh_retries}
+        if status != self._auto_refresh_status:
+            self._auto_refresh_status = status
+            _tlog('[自动刷新]', message)
 
     def _on_auto_refresh_toggled(self, checked: bool) -> None:
         """开关"启用自动检测关卡变化并自动刷新插件状态"；配置持久化。
@@ -4237,6 +4359,9 @@ class CoachWindow(QMainWindow):
         wait_gen = self._auto_refresh_wait_gen
         self._custom_options.set(
             "auto_detect_stage_change", "enabled", self._auto_refresh_enabled)
+        self._set_auto_refresh_status('waiting_source' if checked else 'disabled',
+                                     '等待游戏时间源就绪' if checked else '自动检测已关闭')
+        self._toast.show('自动检测关卡变化已开启，等待游戏时钟' if checked else '自动检测关卡变化已关闭', semantic='info')
         if checked:
 #            _ga_log("[自动刷新] 开关开启，等待 guest 就绪后触发初始全链扫描")
             QTimer.singleShot(
@@ -4290,6 +4415,8 @@ class CoachWindow(QMainWindow):
         self.chk_auto_refresh.setChecked(enabled)
         self.chk_auto_refresh.blockSignals(False)
         self._auto_refresh_enabled = enabled
+        self._set_auto_refresh_status('waiting_source' if enabled else 'disabled',
+                                     '等待游戏时间源就绪' if enabled else '自动检测已关闭')
         self._auto_refresh_wait_gen += 1
         wait_gen = self._auto_refresh_wait_gen
         # 启动恢复：上次开启过 → 等待 guest 就绪后触发初始全链扫描
@@ -4300,12 +4427,30 @@ class CoachWindow(QMainWindow):
 
     # ---------- 自动寻址（guest 侧） ----------
 
+    def _start_guest_addressing_once(self) -> None:
+        """从 WebUI 单次定位 guest 时钟，不修改持续自动寻址设置。"""
+        if self._guest_addressing_active or self._scan_worker_pending('guest'):
+            raise ValueError("自动寻址正在进行，请等待本次结果")
+        self._guest_addressing_gen += 1
+        self._guest_addressing_active = True
+        worker = GuestAddressWorker(self._adb_serial_or_default())
+        worker.addressing_gen = self._guest_addressing_gen
+        worker.addressing_once = True
+        self._connect_scan_worker('guest', worker)
+        self._guest_worker = worker
+        if self._toast is not None:
+            self._toast.show("正在进行单次自动寻址…", semantic="info")
+        worker.start()
+
     def _on_auto_addressing_toggled(self, checked: bool) -> None:
         """开关「启用自动寻址」；开启后后台定位 guest 时钟并持续读 frame/time。"""
         # 先同步纯 Python 镜像标志（_memory_worker 后台线程只读它，
         # 不跨线程读 Qt 复选框）
         self._auto_addressing_enabled = bool(checked)
         if checked:
+            # 单次寻址进行中也允许用户开启持续模式；设置不能因复用
+            # 同一个定位 worker 的防重复分支而只留在内存中。
+            self._custom_options.set("auto_addressing", "enabled", True)
             # 防重复启动：已有定位线程在跑时直接跳过
             if (self._guest_clock is not None or self._guest_addressing_active
                     or self._scan_worker_pending('guest')):
@@ -4313,7 +4458,6 @@ class CoachWindow(QMainWindow):
             self._guest_addressing_gen += 1
             gen = self._guest_addressing_gen
             self._guest_addressing_active = True
-            self._custom_options.set("auto_addressing", "enabled", True)
             if self._toast is not None:
                 self._toast.show("正在自动寻址…", semantic="info")
             worker = GuestAddressWorker(self._adb_serial_or_default())
@@ -4334,7 +4478,8 @@ class CoachWindow(QMainWindow):
                 self._toast.show("已关闭自动寻址", semantic="info")
 
     def _on_guest_addressed(self, gen: int, ok: bool, err: str,
-                            clock: Optional[GuestBattleClock]) -> None:
+                            clock: Optional[GuestBattleClock],
+                            *, once: bool = False) -> None:
         """主线程：处理 guest 定位结果（由 Signal 从后台线程调度）。"""
 #        _ga_log(f"_on_guest_addressed: gen={gen} 当前gen={self._guest_addressing_gen} "
 #                f"ok={ok} err={err!r} active={self._guest_addressing_active}")
@@ -4363,12 +4508,13 @@ class CoachWindow(QMainWindow):
                     "自动寻址成功，已启用 guest 时钟", semantic="success")
         else:
 #            _ga_log("  失败，回滚开关 + 弹错误 toast")
-            self._auto_addressing_enabled = False
-            self._custom_options.set(
-                "auto_addressing", "enabled", False)
-            self.chk_auto_addressing.blockSignals(True)
-            self.chk_auto_addressing.setChecked(False)
-            self.chk_auto_addressing.blockSignals(False)
+            if not once:
+                self._auto_addressing_enabled = False
+                self._custom_options.set(
+                    "auto_addressing", "enabled", False)
+                self.chk_auto_addressing.blockSignals(True)
+                self.chk_auto_addressing.setChecked(False)
+                self.chk_auto_addressing.blockSignals(False)
             if self._toast is not None:
                 self._toast.show(
                     f"自动寻址失败：{err or '无法连接模拟器'}", semantic="error")
@@ -4464,6 +4610,9 @@ class CoachWindow(QMainWindow):
 #                _ga_log(f"[自动刷新] guest 就绪等待超时（{GUEST_READY_TIMEOUT_MS}ms），中止")
                 if self._auto_refresh_step:
                     self._abort_auto_refresh("guest 时间源未就绪（请先完成寻址）")
+                else:
+                    self._set_auto_refresh_status('failed', '时间源未就绪，请完成寻址后重新开启自动检测')
+                    self._toast.show('自动检测等待超时：请先完成游戏时钟寻址', level='warn', semantic='warn')
                 return
             ready_polls["count"] += 1
             QTimer.singleShot(500, _poll_ready)
@@ -4478,7 +4627,8 @@ class CoachWindow(QMainWindow):
         """等待当前时钟连续两次正向增长，不复用跨局锁存的 moved 标志。"""
         if not self._auto_refresh_wait_current(gen):
             return
-        game = self._provider.get_game_data()
+        game = self._provider.get_clock_sample()
+        self._set_auto_refresh_status('waiting_clock', '等待游戏时钟连续前进（未开局或暂停时不会扫描）')
         try:
             game_time = float(game.get('game_time'))
         except (TypeError, ValueError):
@@ -4517,6 +4667,12 @@ class CoachWindow(QMainWindow):
     def _start_auto_refresh_step(self, step: str) -> None:
         """启动自动刷新单步并开始超时计时。"""
         self._auto_refresh_step = step
+        labels = {'deploy': '1/3 关卡与操作', 'enemy': '2/3 敌人与干员', 'rng': '3/3 随机数'}
+        message = f'正在扫描 {labels[step]}'
+        if self._auto_refresh_retries:
+            message += f'（重试 {self._auto_refresh_retries}/2）'
+        self._set_auto_refresh_status('retrying' if self._auto_refresh_retries else 'scanning', message, step)
+        self._toast.show(message, semantic='info')
         _tlog(f'[自动刷新] start step={step}')
         self._auto_refresh_timeout.start(AUTO_REFRESH_STEP_TIMEOUT_MS)
         if step == "deploy":
@@ -4553,6 +4709,7 @@ class CoachWindow(QMainWindow):
         self._stop_auto_refresh_timeout()
         self._auto_refresh_stopping_step = step
         self._auto_refresh_abort_reason = f'{step} 扫描超时'
+        self._set_auto_refresh_status('stopping', f'{step} 扫描超时，等待工作线程退出', step)
         _tlog(f'[自动刷新] timeout step={step}; 请求停止并等待 finished')
         self._request_scan_worker_stop(step)
         if step == "deploy":
@@ -4583,6 +4740,7 @@ class CoachWindow(QMainWindow):
         self._auto_refresh_abort_reason = ''
         self._auto_refresh_step = None
         self._auto_refresh_retries = 0
+        self._set_auto_refresh_status('failed' if self._auto_refresh_enabled else 'disabled', f'自动刷新中止：{reason}')
         self._toast.show(f"自动刷新中止：{reason}", level="error", semantic="error")
 
     def _on_auto_refresh_step_done(self, step: str, ok: bool) -> None:
@@ -4617,6 +4775,7 @@ class CoachWindow(QMainWindow):
             self._start_auto_refresh_step("rng")
         elif step == "rng":
             self._auto_refresh_step = None
+            self._set_auto_refresh_status('watching', '自动刷新完成，继续监听关卡变化')
             self._toast.show("自动刷新完成", level="info", semantic="success")
 
     def _sync_battle_cache_controls(self) -> None:
@@ -4671,7 +4830,8 @@ class CoachWindow(QMainWindow):
 
     def _on_rng_runtime_status(self, message: str) -> None:
         """主线程槽：显示已移交 RngService 的运行期状态。"""
-        if self._closing or self._rng_svc is None:
+        if (self._closing or self._rng_svc is None
+                or getattr(self, '_rng_source_epoch', 0) != getattr(self, '_source_epoch', 0)):
             return
         text = str(message).strip()
         if text:
@@ -4733,7 +4893,9 @@ class CoachWindow(QMainWindow):
                 _tlog('[RNG]', message),
             ))
         self._rng_svc = svc
+        self._rng_source_epoch = getattr(self, '_source_epoch', 0)
         self._rng_service_stopping = False
+        svc.set_capture_policy(self._field_policy.snapshot())
         svc.start()
         self._rng_timer.start(RNG_UI_MS)
         roles = {t.engine.get('role') for t in svc.trackers()}
@@ -4760,6 +4922,9 @@ class CoachWindow(QMainWindow):
         return True if stopped is None else bool(stopped)
 
     def _on_rng_stop(self) -> bool:
+        api = getattr(self, '_websocket_api', None)
+        if api is not None:
+            api.invalidate_domains(('rng',), 'source_stopped')
         self._request_scan_worker_stop('rng')
         self._rng_timer.stop()
         svc = self._rng_svc
@@ -4807,10 +4972,14 @@ class CoachWindow(QMainWindow):
 
     def _on_rng_tick(self) -> None:
         svc = self._rng_svc
-        if svc is None:
+        if (svc is None or getattr(self, '_rng_source_epoch', 0)
+                != getattr(self, '_source_epoch', 0)):
             return
         try:
+            svc.set_capture_policy(self._field_policy.snapshot())
             snap = svc.snapshot(RNG_HISTORY_LEN, self.rng_pred_spin.value())
+            snap['latestKnownFrame'] = self._provider.peek_frame_count()
+            snap['sampledAt'] = time.time()
         except Exception:
             return
         by_role = snap.get('by_role') or {}
@@ -4935,7 +5104,8 @@ class CoachWindow(QMainWindow):
             self._enemy_reader.mc.adb_path, self._enemy_reader.mc.adb_serial)
         self._deploy_scan.log.connect(
             lambda m: self.lbl_deploy_status.setText(str(m).strip() or self.lbl_deploy_status.text()))
-        self._deploy_scan.stage.connect(self._on_deploy_stage)
+        self._deploy_scan.stage.connect(
+            lambda info, w=self._deploy_scan: self._on_deploy_stage_from_worker(w, info))
         self._connect_scan_worker('deploy', self._deploy_scan)
         self._deploy_scan.start()
 
@@ -4945,6 +5115,13 @@ class CoachWindow(QMainWindow):
         name = info.get('name') or ''
         stage_id = info.get('stageId') or self._deploy_stage
         return ' '.join(x for x in (code, name, f'({stage_id})' if stage_id else '') if x)
+
+    def _on_deploy_stage_from_worker(self, worker, info):
+        """Early stage discovery belongs to its scan's source session as well."""
+        if (getattr(self, '_deploy_scan', None) is worker
+                and getattr(worker, '_source_epoch', 0) == getattr(self, '_source_epoch', 0)
+                and not getattr(self, '_closing', False)):
+            self._on_deploy_stage(info)
 
     def _on_deploy_stage(self, info: dict) -> None:
         """阶段 1 回调：操作记录仍在定位时，先把关卡信息交给界面/后端状态。"""
@@ -4973,6 +5150,8 @@ class CoachWindow(QMainWindow):
             self._on_auto_refresh_step_done("deploy", False)
             return
         self._deploy_reader = reader
+        scan_policy = self._field_policy.snapshot()
+        reader.set_capture_policy(scan_policy)
         try:
             st = initial_state or {}
 #            _ga_log(f"[deploy] get_state 完成: journal={len(st.get('journalEvents') or [])} "
@@ -4985,10 +5164,18 @@ class CoachWindow(QMainWindow):
         except Exception as exc:
 #            _ga_log(f"[deploy] get_state 异常: {exc}")
             pass
-        self._cache_current_deploy(st.get('battle') if 'st' in locals() else None)
+        scan_battle = dict(st.get('battle') or {}) if 'st' in locals() else {}
+        scan_battle.update(policy_generation=scan_policy.generation,
+                           latestKnownFrame=self._provider.peek_frame_count(),
+                           source_frame=None, sampled_at=time.time(),
+                           collection_state='current' if 'st' in locals() else 'unavailable')
+        self._cache_current_deploy(scan_battle)
         if self._deploy_journal:
-            # 代理作战: 序列为静态完整记录, 无需轮询
+            # 代理序列仍按静态历史展示；后台只校验链并在新策略代际重读完整日志。
             self._append_deploy_rows(self._deploy_journal)
+            if not self._start_deploy_poll():
+                self._on_auto_refresh_step_done('deploy', False)
+                return
             stage = f"   {self._deploy_stage_label()}" if self._deploy_stage_label() else ''
             self.lbl_deploy_status.setText(
                 f"代理作战序列 {len(self._deploy_journal)} 条 (静态){stage}")
@@ -5015,7 +5202,10 @@ class CoachWindow(QMainWindow):
         if self._deploy_reader is None or not self._stop_deploy_poll():
             self.lbl_deploy_status.setText('上一轮部署读取仍在停止，未启动新的监控')
             return False
-        worker = DeployPollWorker(self._deploy_reader)
+        worker = DeployPollWorker(self._deploy_reader,
+                                  policy_provider=self._field_policy.snapshot,
+                                  latest_frame_provider=self._provider.peek_frame_count)
+        worker._source_epoch = getattr(self, '_source_epoch', 0)
         worker.snapshot.connect(
             lambda events, battle, chain_ok, w=worker:
             self._on_deploy_snapshot_from_worker(
@@ -5031,6 +5221,9 @@ class CoachWindow(QMainWindow):
 
     def _stop_deploy_poll(self) -> bool:
         """Stop deploy polling without ever destroying a running QThread."""
+        api = getattr(self, '_websocket_api', None)
+        if api is not None:
+            api.invalidate_domains(('deploy', 'stage'), 'source_stopped')
         worker = self._deploy_poll
         if worker is not None:
             worker.requestInterruption()
@@ -5082,10 +5275,39 @@ class CoachWindow(QMainWindow):
     def _on_deploy_snapshot_from_worker(
             self, worker: DeployPollWorker, events: list,
             battle: dict, chain_ok: bool) -> None:
-        if self._deploy_poll is worker and not self._closing:
+        if getattr(worker, '_source_epoch', 0) != getattr(self, '_source_epoch', 0):
+            return
+        generation = battle.get('policy_generation')
+        if generation is not None and generation != self._field_policy.snapshot().generation:
+            return  # 旧代际排队信号不进入新策略下的表格或 WS/历史缓存。
+        if self._deploy_poll is worker and not self._closing and not worker.isInterruptionRequested():
             self._on_deploy_snapshot(events, battle, chain_ok)
 
     def _on_deploy_snapshot(self, events: list, battle: dict, chain_ok: bool) -> None:
+        static = battle.get('static_payload')
+        if isinstance(static, dict):
+            static_generation = battle.get('policy_generation')
+            changed = static_generation != getattr(self, '_deploy_static_generation', None)
+            self._deploy_stage_info = static.get('stage') or {}
+            self._deploy_squad = static.get('squad') or []
+            self._deploy_journal = self._attach_deploy_frames(static.get('journal') or [], [])
+            self._deploy_stage = self._deploy_stage_info.get('stageId') or ''
+            self._deploy_static_generation = static_generation
+            if battle.get('journal_mode') and chain_ok:
+                if changed:
+                    self.deploy_table.setRowCount(0)
+                    self._append_deploy_rows(self._deploy_journal)
+                self._deploy_events = events
+                self._cache_current_deploy(battle)
+                self.lbl_deploy_status.setText(
+                    f'代理作战序列 {len(self._deploy_journal)} 条（本轮策略已核对）')
+                return
+        if battle.get('collection_state') == 'unavailable' and chain_ok:
+            self.lbl_deploy_status.setText('本轮操作记录不可用，等待重新读取')
+            api = getattr(self, '_websocket_api', None)
+            if api is not None:
+                api.publish_deploy([], {}, [], [], metadata=battle)
+            return
         if not chain_ok:
             self._cache_current_deploy(final_reason='address_invalid')
             self._stop_deploy_poll()
@@ -5189,7 +5411,7 @@ class CoachWindow(QMainWindow):
         if api is not None:
             api.publish_deploy(
                 self._deploy_events, self._deploy_stage_info,
-                self._deploy_squad, self._deploy_journal)
+                self._deploy_squad, self._deploy_journal, metadata=battle)
 
     def _build_deploy_export_payload(self, events: list,
                                      stage_info: dict | None = None) -> dict:
@@ -5280,6 +5502,10 @@ class CoachWindow(QMainWindow):
         _tlog(f'[部署] 已导出 {len(events)} 条 -> {path}')
 
     def _on_enemy_snapshot(self, snap: dict) -> None:
+        generation = snap.get('policy_generation')
+        if generation is not None and generation != self._field_policy.snapshot().generation:
+            return
+        self._webui_runtime_snapshot = snap
         if TEST_BUILD:   # 轮询错误 (数据链失效/重建) 去重后输出控制台
             msg = snap.get('msg')
             if msg and msg != getattr(self, '_last_snap_msg', None):
@@ -5287,6 +5513,7 @@ class CoachWindow(QMainWindow):
                 _tlog("轮询:", msg)
         # 在 WebSocket、最终缓存与表格消费前统一执行第二道帧号校验。
         fail_closed_mismatched_enemy_pathing(snap)
+        self._departure_history.observe(snap, self._field_policy.snapshot())
         # 工作线程本身固定 60Hz 且信号只保留最新快照；这里不再做第二层
         # 时间阈值节流，否则 16.7ms 附近的轻微抖动会误跳成约 30Hz。
         now = time.time()
@@ -5367,6 +5594,8 @@ class CoachWindow(QMainWindow):
         if planned:
             total_text += f" / 预定: {planned}"
         read_mode = _format_enemy_read_mode(snap)
+        scale = snap.get('time_scale')
+        scale_text = f'{scale:g}' if isinstance(scale, (int, float)) else '未知'
         precise_text = '精确坐标:关闭'
         if self.chk_enemy_precise_position.isChecked():
             current_enemies = [
@@ -5378,7 +5607,7 @@ class CoachWindow(QMainWindow):
                 for enemy in current_enemies)
             precise_text = f'精确坐标:同步 {precise_count}/{len(current_enemies)}'
         text = (f"读取: {read_mode}   {precise_text}   状态: {st}   "
-                f"倍速: {spd} (x{snap['time_scale']:g})   "
+                f"倍速: {spd} (x{scale_text})   "
                 f"战斗时间: {t // 60:02d}:{t % 60:02d}   {total_text}"
                 + self._frame_txt)
         if snap.get('msg'):
@@ -5520,7 +5749,7 @@ class CoachWindow(QMainWindow):
         self._enemy_precise_position_enabled = checked
         self._settings.setValue(
             'enemy_table/precise_position_enabled', checked)
-        self._enemy_reader.set_precise_position_enabled(checked)
+        self._field_policy.commit({'enemy.precise_pos': {'collect': checked}})
         self._enemy_cell_state.clear()
         if not checked:
             for enemy in self._enemy_last:
@@ -5720,6 +5949,8 @@ class CoachWindow(QMainWindow):
         if dlg.exec() != QDialog.Accepted:
             return
         self._enemy_visible_cols = dlg.values()
+        self._field_policy.commit({f"enemy.{col['key']}": {'display': col['key'] in self._enemy_visible_cols}
+                                   for col in ENEMY_COLUMN_DEFS if f"enemy.{col['key']}" in FIELD_REGISTRY})
         # 可见列按对话框中的拖动顺序；隐藏列保持原相对顺序附后
         self._enemy_col_order = dlg.ordered_keys() + [
             key for key in self._enemy_col_order
@@ -5861,6 +6092,9 @@ class CoachWindow(QMainWindow):
         color = '#5cb85c' if ratio > 0.5 else ('#f0ad4e' if ratio > 0.2 else '#d9534f')
         if lifecycle != 'active' or not e.alive:
             color = '#888888'
+        status = field_status_text(e, 'enemy.hp')
+        if status:
+            mx, value, bar_text, color = 1, 0, status, '#888888'
         bar_state = (mx, value, bar_text, color)
         if self._enemy_bar_state.get(row_key) != bar_state:
             self._enemy_bar_state[row_key] = bar_state
@@ -6004,6 +6238,9 @@ class CoachWindow(QMainWindow):
         color = '#5cb85c' if hp_ratio > 0.5 else ('#f0ad4e' if hp_ratio > 0.2 else '#d9534f')
         if not character.alive:
             color = '#888888'
+        hp_status = field_status_text(character, 'character.hp')
+        if hp_status:
+            hp_max, hp_value, hp_text, color = 1, 0, hp_status, '#888888'
         if self._character_bar_colors.get(character.addr) != color:
             self._character_bar_colors[character.addr] = color
             hp_bar.setStyleSheet(
@@ -6012,6 +6249,9 @@ class CoachWindow(QMainWindow):
         sp_max = max(1, int(character.max_sp))
         sp_value = max(0, min(sp_max, int(character.sp)))
         sp_text = f'{character.sp:.{decimals["sp"]}f}/{character.max_sp}'
+        sp_status = field_status_text(character, 'character.sp')
+        if sp_status:
+            sp_max, sp_value, sp_text = 1, 0, sp_status
         bar_state = (hp_max, hp_value, hp_text, color,
                      sp_max, sp_value, sp_text)
         if self._character_bar_state.get(row_key) != bar_state:
@@ -6045,6 +6285,7 @@ class CoachWindow(QMainWindow):
         self._render_character_table(self._character_last)
 
     def _on_unattributed_damage_tracking(self, checked: bool) -> None:
+        self._field_policy.commit({'character.unattributed_damage': {'collect': bool(checked)}})
         poll = self._enemy_poll
         if poll is not None:
             poll.set_track_unattributed_damage(checked)
@@ -6095,6 +6336,8 @@ class CoachWindow(QMainWindow):
         if dialog.exec() != QDialog.Accepted:
             return
         self._character_visible_cols = dialog.values()
+        self._field_policy.commit({f"character.{col['key']}": {'display': col['key'] in self._character_visible_cols}
+                                   for col in CHARACTER_COLUMN_DEFS if f"character.{col['key']}" in FIELD_REGISTRY})
         # 可见列按对话框中的拖动顺序；隐藏列保持原相对顺序附后
         self._character_col_order = dialog.ordered_keys() + [
             key for key in self._character_col_order
@@ -6239,7 +6482,7 @@ def main() -> None:
     app = QApplication.instance() or QApplication(sys.argv)
 
     original_stdout, original_stderr = sys.stdout, sys.stderr
-    if TEST_BUILD:
+    if TEST_BUILD or '--webui' in sys.argv:
         import traceback
 
         _DIAGNOSTIC_LOGGER = DiagnosticLogManager()
@@ -6267,8 +6510,8 @@ def main() -> None:
 
         threading.excepthook = _thread_hook
         sys.excepthook = _main_hook
-        _tlog(f"========== ArknightsTimeline {VERSION_LABEL} "
-              "测试版（独立诊断日志窗口） ==========")
+        _tlog(f"ArknightsTimeline {VERSION_LABEL} " +
+              ('测试版（独立诊断日志窗口）' if TEST_BUILD else 'WebUI（实时诊断日志）'))
         _tlog("应用版本:", VERSION_LABEL)
         _tlog("frozen:", getattr(sys, "frozen", False), "| exe:", sys.executable)
         _tlog("工作目录:", os.getcwd(), "| 管理员权限:", _is_admin())
@@ -6285,7 +6528,14 @@ def main() -> None:
         app.setWindowIcon(QIcon(str(icon_path)))
 
     win = CoachWindow()
-    win.show()
+    if '--webui' in sys.argv:
+        app.setQuitOnLastWindowClosed(False)
+        port = 8768
+        if '--webui-port' in sys.argv:
+            port = int(sys.argv[sys.argv.index('--webui-port') + 1])
+        win.open_webui(port)
+    else:
+        win.show()
     try:
         app.exec()
     finally:

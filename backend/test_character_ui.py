@@ -15,6 +15,22 @@ from tools.enemy_health import game_structs as gs
 
 
 class CharacterUiTests(unittest.TestCase):
+    def test_hp_and_sp_text_are_available_outside_qt_progress_bars(self):
+        # ROOT CAUSE: both progress-bar columns had no generic text formatter.
+        character = CharacterInfo(1, hp=123.25, max_hp=500.0, sp=0.0, max_sp=15)
+        self.assertEqual(format_character_column('hp', character, {'hp': 2}), '123.25/500.00')
+        self.assertEqual(format_character_column('sp', character, {'sp': 1}), '0.0/15.0')
+        character.field_states['character.sp'] = {'collectionState': 'not_collected'}
+        self.assertEqual(format_character_column('sp', character, {}), '未采集')
+
+    def test_every_text_column_has_a_nonblank_rendering(self):
+        character = CharacterInfo(1, cid='char_test', name='测试干员')
+        for column in CHARACTER_COLUMN_DEFS:
+            if column['key'] == 'detail':
+                continue
+            with self.subTest(column=column['key']):
+                self.assertNotEqual(format_character_column(column['key'], character, {}), '')
+
     @classmethod
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
@@ -111,6 +127,24 @@ class CharacterUiTests(unittest.TestCase):
         self.assertEqual(
             format_character_column('damage_element', character, decimals),
             '未分类')
+
+    def test_global_total_does_not_require_unattributed_tracking(self):
+        # ROOT CAUSE: the old formatter gated the global total on the optional
+        # HP-difference tracker rather than this field's own collection evidence.
+        character = CharacterInfo(1, global_total_damage=1500,
+            unattributed_tracking_enabled=False,
+            field_states={'character.global_total_damage': {'collectionState': 'current'}})
+        self.assertEqual(format_character_column('global_total_damage', character,
+                         default_character_precision()), '1500.00')
+
+    def test_global_total_zero_unavailable_and_disabled_remain_distinct(self):
+        character = CharacterInfo(1, global_total_damage=0,
+            field_states={'character.global_total_damage': {'collectionState': 'current'}})
+        self.assertEqual(format_character_column('global_total_damage', character, {}), '0.00')
+        character.field_states['character.global_total_damage']['collectionState'] = 'unavailable'
+        self.assertEqual(format_character_column('global_total_damage', character, {}), '不可用')
+        character.field_states['character.global_total_damage']['collectionState'] = 'not_collected'
+        self.assertEqual(format_character_column('global_total_damage', character, {}), '未采集')
 
     def test_overview_merges_duplicate_operator_and_excludes_tokens(self):
         first = CharacterInfo(

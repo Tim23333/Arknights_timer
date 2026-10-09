@@ -52,6 +52,9 @@ class _FakeRngService:
             'selected': self.by_role.get('imp'),
         }
 
+    def set_capture_policy(self, policy):
+        self.policy = policy
+
     def stop(self):
         pass
 
@@ -62,10 +65,13 @@ class RngUiTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def _holder(self, service):
+        from backend.app.field_policy import PolicyStore
         spin = QSpinBox()
         spin.setValue(7)
         return SimpleNamespace(
             _rng_svc=service,
+            _field_policy=PolicyStore(),
+            _provider=SimpleNamespace(peek_frame_count=lambda: None),
             rng_pred_spin=spin,
             lbl_rng_info=QLabel(),
             rng_pred_table=QTableWidget(0, 2),

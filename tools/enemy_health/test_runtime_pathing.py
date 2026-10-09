@@ -168,8 +168,7 @@ def _make_reader(*, frame=1234, mutate_identity=False, guard_frame=None):
     struct.pack_into('<f', checkpoint_data, gs.RouteCheckpointFields.TIME, 15.0)
     struct.pack_into('<ii', checkpoint_data, gs.RouteCheckpointFields.POSITION, 2, 7)
 
-    reader = EnemyReader.__new__(EnemyReader)
-    reader.mc = _MemCore()
+    reader = EnemyReader(mc=_MemCore())
     reader._chan = _GuardedChannel(
         memory, frame, mutate_identity=mutate_identity,
         guard_frame=guard_frame)

@@ -229,6 +229,7 @@ def test_auto_refresh_timeout_holds_reentry_lock_until_scan_finishes(step):
     holder._auto_refresh_abort_reason = ""
     holder._auto_refresh_retries = 0
     holder._auto_refresh_timeout = _TimerProbe()
+    holder._auto_refresh_status = {}
     holder._toast = _ToastProbe()
     holder._on_deploy_stop = lambda: None
     holder._stop_enemy_poll = lambda: True
@@ -243,6 +244,7 @@ def test_auto_refresh_timeout_holds_reentry_lock_until_scan_finishes(step):
         "_request_scan_worker_stop",
         "_stop_auto_refresh_timeout",
         "_on_auto_refresh_step_timeout",
+        "_set_auto_refresh_status",
         "_complete_auto_refresh_abort",
         "_run_auto_refresh",
     )
@@ -295,6 +297,7 @@ def test_scan_result_is_routed_only_after_qthread_finished():
     holder._auto_refresh_abort_reason = ""
     holder._auto_refresh_retries = 0
     holder._auto_refresh_timeout = _TimerProbe()
+    holder._auto_refresh_status = {}
     holder._toast = _ToastProbe()
     holder._guest_addressing_active = False
     holder.btn_deploy_scan = _Control()
@@ -313,6 +316,7 @@ def test_scan_result_is_routed_only_after_qthread_finished():
         "_on_auto_refresh_step_done",
         "_stop_auto_refresh_timeout",
         "_abort_auto_refresh",
+        "_set_auto_refresh_status",
         "_complete_auto_refresh_abort",
     )
     holder._connect_scan_worker("deploy", worker)

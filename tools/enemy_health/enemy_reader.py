@@ -32,6 +32,7 @@ except ImportError:
 from .memcore import MemCore, TcpChannel
 from . import game_structs as gs
 from .enemy_db import load_enemy_db
+from .enemy_handbook import EnemyHandbook
 from .precise_position import PrecisePositionReader
 
 NEEDLE_ENEMY = 'enemy_'.encode('utf-16-le')   # UTF-16LE "enemy_"
@@ -276,10 +277,14 @@ class EnemyInfo:
                  'lifecycle', 'planned', 'spawn_eta', 'spawn_condition',
                  'spawn_kind', 'spawn_source', 'is_summon', 'action_ptr', 'action',
                  'skills_detail', 'current_tile_ptr', 'spawn_frame', 'end_frame',
-                 'end_reason', 'pathing')
+                 'end_reason', 'finish_reason', 'pathing', 'policy_generation', 'source_frame',
+                 'field_states')
 
     def __init__(self, addr):
         self.addr = addr
+        self.policy_generation = 0
+        self.source_frame = None
+        self.field_states = {}
         self.eid = ''
         self.name = ''
         self.code = ''
@@ -292,6 +297,9 @@ class EnemyInfo:
         self.aspd = 0.0
         self.direction = 0
         self.finish = 0
+        # Entity.FinishReason observed in a complete memory block. Unlike the
+        # internal lifecycle default `finish=0`, None means never read/disabled.
+        self.finish_reason = None
         self.alive = True
         self.id_ptr = 0
         self.attr_ptr = 0
@@ -456,6 +464,7 @@ class EnemyReader:
         self.log = log
         self.workers = workers          # 完整快照解析并发数（读取统一走 memsrv v5）
         self.diagnostics = bool(diagnostics)
+        self._capture_policy = None
         self._identity_diag_signature = None
         self._identity_diag_ts = 0.0
         self.progress = None            # 可选回调 progress(pct:int, desc:str)
@@ -469,10 +478,13 @@ class EnemyReader:
         self.unit_enemies_addr = 0
         # 轮询缓存
         self._names = {}          # enemy addr -> (eid, name, code)
+        self._identity_sources = {}  # addr -> current ID/data pointer identity
         self._buff_source_names = {}  # buff 来源实体 addr -> 名称 (干员/召唤物等)
         self._char_names = None   # charId -> 中文名 (惰性加载)
         self._attr_cache = {}     # enemy addr -> cachedData 数组地址
         self._db = None
+        self._handbook = EnemyHandbook(self.mc)
+        self._handbook_codes = {}  # Only validated game-memory enemyIndex values.
         self._stale_cnt = 0
         self._last_bootstrap = 0.0
         self._merge_lock = threading.Lock()  # 并行扫描合并锁
@@ -571,6 +583,235 @@ class EnemyReader:
         self.precise_position_enabled = bool(enabled)
         if not self.precise_position_enabled and self._precise_position_reader:
             self._precise_position_reader.clear()
+
+    def set_capture_policy(self, policy):
+        """Apply a worker-owned immutable policy at the next sampling boundary.
+
+        Value caches are discarded on a new generation. Verified addresses may
+        survive because they are revalidated before following the next read.
+        The worker clears the device prefetch plan before calling this method.
+        """
+        previous = self._capture_policy
+        self._capture_policy = policy
+        if previous is None or previous.generation != policy.generation:
+            for cache in (self._attr_snapshot, self._runtime_snapshot,
+                          self._skill_cd, self._skill_enriched, self._names):
+                cache.clear()
+            if not policy.enabled('enemy.finish_reason'):
+                # Departed entities cannot be sampled again. Discard their raw
+                # value on capture-off rather than resurrect it on re-enable.
+                for info in self._roster_last.values():
+                    info.finish_reason = None
+                for record in self._all_plan_records():
+                    record['info'].finish_reason = None
+            if not policy.enabled('enemy.code'):
+                self._handbook_codes = {}
+            elif previous is not None and not previous.enabled('enemy.code'):
+                # Re-enable revalidates a known DB, but never full-scans in the
+                # frame loop. A previously undiscovered DB needs explicit scan.
+                self._load_handbook_codes(locate=False)
+
+    def _collect(self, key):
+        policy = (getattr(self._detail_context, 'policy', None)
+                  if getattr(self._detail_context, 'active', False)
+                  else self._capture_policy)
+        return policy is None or policy.enabled('enemy.' + key)
+
+    def _collect_group(self, group):
+        policy = (getattr(self._detail_context, 'policy', None)
+                  if getattr(self._detail_context, 'active', False)
+                  else self._capture_policy)
+        return policy is None or policy.group_enabled('enemy', group)
+
+    def _detail_collect(self, domain, key):
+        policy = getattr(self._detail_context, 'policy', self._capture_policy)
+        return policy is None or policy.enabled(f'{domain}.{key}')
+
+    def _read_detail_frame(self):
+        """Sample the source clock on the isolated detail IO channel if available."""
+        if not self.mc.is_ptr(self._bc_static_fields):
+            return None
+        try:
+            values = self._detail_batch_read([(
+                self._bc_static_fields + gs.BattleControllerStaticFields.FIXED_FRAME_COUNT, 4)])
+            data = values[0] if values else None
+            return _i32(data, 0) if data and len(data) >= 4 else None
+        except (OSError, RuntimeError, ValueError, struct.error):
+            return None
+
+    def _stamp_detail(self, info, domain, policy, source_frame, succeeded):
+        """Keep async detail provenance separate from primary runtime values."""
+        if policy is None:
+            return
+        from backend.app.field_policy import FIELD_REGISTRY, collection_record
+        info.policy_generation = policy.generation
+        info.source_frame = source_frame
+        accepted_frame = self._read_detail_frame()
+        for spec in FIELD_REGISTRY.values():
+            if spec.domain != domain:
+                continue
+            key = spec.id.split('.', 1)[1]
+            state = ('not_collected' if not policy.enabled(spec.id) else
+                     'current' if key in succeeded else 'unavailable')
+            info.field_states[spec.id] = collection_record(
+                source_frame, self._fixed_frame_snap, policy.generation,
+                state, ('' if key in succeeded else 'unsupported_in_source'
+                        if key in ('attackRange', 'effectFrames') else 'detail_read_failed'),
+                accepted_frame=accepted_frame)
+            info.field_states[spec.id].update(
+                sampledAt=getattr(self._detail_context, 'sampled_at', None),
+                acceptedAt=time.time(),
+                frameConsistent=(source_frame is not None and source_frame == accepted_frame))
+
+    def _attribute_indices(self):
+        if self._capture_policy is None:
+            return None
+        return {index for index, _internal, _name in gs.ATTRIBUTE_DEFS
+                if self._collect(f'attr_{index}')}
+
+    def _runtime_kind_enabled(self, kind):
+        # State remains an internal lifecycle input even if its public column is
+        # disabled. All other pointer chains are demanded by their public field.
+        keys = {
+            'ep': ('ep_sanity', 'ep_water', 'ep_fire', 'ep_dark', 'ep_anger'),
+            'epc': ('ep_break',), 'shield': ('shield',),
+            'flags': ('abnormal_status',), 'combos': ('abnormal_status',),
+            'immunes': ('immune_status',), 'antis': ('immune_status',),
+            'combo_immunes': ('immune_status',),
+        }
+        return kind == 'state' or any(self._collect(key)
+                                     for key in keys.get(kind, ()))
+
+    @staticmethod
+    def _invalidate_read_dependencies(states, domain, external_success=None):
+        """Propagate missing current inputs without relabelling retained history.
+
+        Policy validation proves the inputs are enabled, not that this sampling
+        round read them successfully. Derived fields therefore need both checks.
+        """
+        from backend.app.field_policy import FIELD_REGISTRY
+        external_success = external_success or {}
+        for _ in range(len(states)):
+            changed = False
+            for spec in FIELD_REGISTRY.values():
+                record = states.get(spec.id)
+                if spec.domain != domain or not record or record['collectionState'] != 'current':
+                    continue
+                missing = [dependency for dependency in spec.dependencies
+                           if (states.get(dependency, {}).get('collectionState') != 'current'
+                               if dependency.startswith(domain + '.')
+                               else not external_success.get(dependency, False))]
+                if missing:
+                    record['collectionState'] = 'unavailable'
+                    record['reason'] = 'dependency_unavailable:' + ','.join(missing)
+                    changed = True
+            if not changed:
+                break
+
+    def _stamp_fields(self, info, source_frame, *, historical=False):
+        """Attach evidence for successful values without wrapping every scalar.
+
+        A default on a newly allocated EnemyInfo is never evidence of a read.
+        Independent detail sampling carries its own frame instead of borrowing
+        the subsequently completed aggregate frame.
+        """
+        if self._capture_policy is None:
+            return
+        from backend.app.field_policy import FIELD_REGISTRY, collection_record
+        info.policy_generation = self._capture_policy.generation
+        if not historical:
+            info.source_frame = source_frame
+        runtime = self._runtime_snapshot.get(info.addr, {})
+        for spec in FIELD_REGISTRY.values():
+            if spec.domain != 'enemy':
+                continue
+            key = spec.id.split('.', 1)[1]
+            if key == 'finish_reason':
+                enabled = self._collect(key)
+                if not enabled:
+                    info.finish_reason = None
+                known = info.finish_reason is not None
+                departed = info.lifecycle == 'departed'
+                state = ('not_collected' if not enabled else
+                         'historical' if known and departed else
+                         'current' if known else 'unavailable')
+                info.field_states[spec.id] = collection_record(
+                    (info.end_frame if departed else source_frame) if known else None,
+                    self._fixed_frame_snap, info.policy_generation, state,
+                    '' if known else 'capture_disabled' if not enabled else
+                    'departure_not_observed' if departed else 'read_failed')
+                continue
+            if key in ('end_reason', 'end_frame'):
+                value = getattr(info, key)
+                known = (info.lifecycle == 'departed' and
+                         (bool(value) if key == 'end_reason' else value is not None))
+                state = ('not_collected' if not self._collect(key) else
+                         'historical' if known else 'unavailable')
+                info.field_states[spec.id] = collection_record(
+                    info.end_frame if known else None, self._fixed_frame_snap,
+                    info.policy_generation, state,
+                    '' if known and self._collect(key) else 'departure_not_observed')
+                continue
+            # Identity and spawn-schedule lifecycle are independent of whether
+            # we witnessed this instance alive. Never invent HP/position history.
+            known_identity = (spec.group == 'identity' and bool(info.eid)
+                              and (key != 'code' or info.eid in self._handbook_codes))
+            known_roster = info.planned or bool(info.addr)
+            if self._collect(key) and (
+                    known_identity or (key in ('life_status', 'spawn_wait') and known_roster)):
+                state = 'static' if known_identity else 'current'
+                info.field_states[spec.id] = collection_record(
+                    None if known_identity else source_frame,
+                    self._fixed_frame_snap, info.policy_generation, state)
+                continue
+            if historical and self._collect(key):
+                previous = info.field_states.get(spec.id)
+                if previous and previous['collectionState'] in ('current', 'historical'):
+                    info.field_states[spec.id] = dict(previous,
+                        collectionState='historical', latestKnownFrame=self._fixed_frame_snap)
+                else:
+                    info.field_states[spec.id] = collection_record(
+                        info.source_frame, self._fixed_frame_snap, info.policy_generation,
+                        'unavailable', 'historical_source_unavailable')
+                continue
+            success = bool(info.addr and info.lifecycle == 'active')
+            if spec.group == 'attributes':
+                # planned means spawn-schedule membership, including active
+                # instances. Only lifecycle and this sample's parsed indices
+                # establish a live read; pending/static defaults are not enough.
+                success = success and int(key[5:]) in info.attributes
+            elif spec.group == 'precise':
+                success = info.precise_pos_valid
+            elif spec.group == 'pathing':
+                success = info.pathing.get('available', False)
+            elif spec.group == 'roster':
+                success = info.planned or bool(info.addr)
+            elif spec.group == 'identity':
+                success = known_identity
+            elif spec.group == 'skills':
+                success = info.addr in self._skill_cd
+            elif spec.group == 'runtime':
+                required = {
+                    'action_state': ('state_id',),
+                    'abnormal_status': ('abnormal_flags', 'abnormal_combos'),
+                    'immune_status': ('abnormal_immunes', 'abnormal_combo_immunes'),
+                    'shield': ('shield',), 'ep_break': ('ep_break_recovery',),
+                }.get(key, ('ep_remaining',) if key.startswith('ep_') else ('state_id',))
+                success = all(item in runtime for item in required)
+                if key.startswith('ep_') and key != 'ep_break':
+                    index = {'ep_sanity': 1, 'ep_water': 2, 'ep_fire': 3,
+                             'ep_dark': 4, 'ep_anger': 5}[key]
+                    success = success and index in runtime.get('ep_remaining', {})
+                if key in ('action_phase', 'remaining_time', 'next_action'):
+                    success = success and bool(info.action.get('phase'))
+            state = ('not_collected' if not self._collect(key) else
+                     'historical' if historical and success else
+                     'current' if success else 'unavailable')
+            info.field_states[spec.id] = collection_record(
+                source_frame, self._fixed_frame_snap, info.policy_generation,
+                state, '' if success else 'read_failed')
+        self._invalidate_read_dependencies(info.field_states, 'enemy', {
+            'battle.gameTime': getattr(self, '_sample_clock_ok', False)})
 
     def _refresh_precise_positions(self, ptrs, infos):
         if not self.precise_position_enabled or not ptrs:
@@ -824,7 +1065,7 @@ class EnemyReader:
         enemy.eid = record.get('key', '')
         db_row = self._db.get(enemy.eid, {})
         enemy.name = db_row.get('name') or enemy.eid
-        enemy.code = db_row.get('code') or ''
+        enemy.code = self._handbook_codes.get(enemy.eid, '') if self._collect('code') else ''
         enemy.lifecycle = 'pending'
         enemy.planned = True
         enemy.alive = False
@@ -833,8 +1074,8 @@ class EnemyReader:
         self._plan_by_id[roster_id] = record
         return record
 
-    def _remember_enemy_name(self, eid, name='', code='', desc=''):
-        """合并静态表和关卡运行时名称，并同步所有尚未出场的同类计划项。"""
+    def _remember_enemy_name(self, eid, name='', desc=''):
+        """合并名称并同步计划项；编号只采用已验证的内存图鉴来源。"""
         if not eid:
             return '', ''
         if self._db is None:
@@ -845,14 +1086,12 @@ class EnemyReader:
                 ord(ch) < 0x20 for ch in clean_name):
             merged = dict(old)
             merged['name'] = clean_name
-            if code:
-                merged['code'] = code
             if desc:
                 merged['desc'] = desc
             self._db[eid] = merged
             old = merged
         resolved_name = old.get('name') or eid
-        resolved_code = old.get('code') or code or ''
+        resolved_code = self._handbook_codes.get(eid, '') if self._collect('code') else ''
         for record in self._all_plan_records():
             if record.get('key') != eid:
                 continue
@@ -861,6 +1100,20 @@ class EnemyReader:
                 planned.name = resolved_name
                 planned.code = resolved_code
         return resolved_name, resolved_code
+
+    def _load_handbook_codes(self, *, locate=True):
+        """Load static codes at bootstrap; a failed lookup never falls back to disk."""
+        self._handbook_codes = {}
+        if not self._collect('code') or not getattr(self.mc, 'pid', None):
+            return
+        try:
+            self._handbook_codes = self._handbook.load(locate=locate, log=self.log)
+        except (OSError, RuntimeError, ValueError, struct.error) as exc:
+            self.log(f'[图鉴编号] 内存读取失败: {exc}')
+        if not self._handbook_codes:
+            self.log('[图鉴编号] 内存数据未就绪；编号保持不可用，可重新扫描定位')
+        else:
+            self.log(f'[图鉴编号] 已验证 {len(self._handbook_codes)} 条内存记录')
 
     def _load_level_enemy_names(self, level_data):
         """从当前 LevelData.EnemyData[] 读取新版敌人名，不依赖旧图鉴表。"""
@@ -1646,11 +1899,18 @@ class EnemyReader:
                 old.pathing = last_path
                 old.end_frame = (int(self._fixed_frame_snap)
                                  if self._fixed_frame_snap is not None else None)
-                reason_source = departure or old
+                # Only an observed terminal state confirms death. Missing HP is
+                # internally zero too; vanished instances and late attachment
+                # must not be classified as kills using those default values.
+                reason_source = departure
+                # Freeze HP/position from the last live frame, but the raw finish
+                # code belongs to the observed departure block. Disappearance
+                # alone must not reuse the previous live code 0 as evidence.
+                old.finish_reason = departure.finish_reason if departure else None
                 old.end_reason = (
-                    'death' if (reason_source.hp <= 0
-                                or reason_source.state_id == gs.EnemyState.DEAD) else
-                    f'finish_{reason_source.finish}' if reason_source.finish else
+                    'death' if reason_source and reason_source.state_id == gs.EnemyState.DEAD else
+                    'reach_exit' if reason_source and reason_source.state_id == gs.EnemyState.REACH_EXIT else
+                    f'finish_{reason_source.finish}' if reason_source and reason_source.finish else
                     'departed')
                 self._roster_last[roster_id] = old
             record = self._plan_by_id.get(roster_id)
@@ -2402,6 +2662,7 @@ class EnemyReader:
 
     def bootstrap(self, force=False):
         """发现地址链 (优先用缓存)"""
+        self._load_handbook_codes()
         if not force and os.path.isfile(self.cache_file):
             try:
                 c = pickle.load(open(self.cache_file, 'rb'))
@@ -2544,11 +2805,13 @@ class EnemyReader:
         return info
 
     @staticmethod
-    def _apply_cached_data(cd, info):
+    def _apply_cached_data(cd, info, indices=None):
         base = gs.Il2CppArray.ITEMS
         count = min(_i32(cd, gs.Il2CppArray.MAX_LENGTH), gs.AttributeType.E_NUM)
         attrs = {}
         for idx in range(max(0, count)):
+            if indices is not None and idx not in indices:
+                continue
             o = base + idx * gs.OBSCURED_FP_SIZE
             if o + 16 > len(cd):
                 break
@@ -2562,11 +2825,13 @@ class EnemyReader:
         info.aspd = attrs.get(gs.AttributeType.ATTACK_SPEED, 0.0)
 
     @staticmethod
-    def _apply_raw_data(raw, info):
+    def _apply_raw_data(raw, info, indices=None):
         base = gs.Il2CppArray.ITEMS
         count = min(_i32(raw, gs.Il2CppArray.MAX_LENGTH), gs.AttributeType.E_NUM)
         values = {}
         for idx in range(max(0, count)):
+            if indices is not None and idx not in indices:
+                continue
             o = base + idx * gs.OBSCURED_FP_SIZE
             if o + 16 > len(raw):
                 break
@@ -2712,7 +2977,7 @@ class EnemyReader:
         return info
 
     @staticmethod
-    def _parse_enemy_block(ep, blk):
+    def _parse_enemy_block(ep, blk, policy=None):
         """解析 Enemy 主对象块；不跟随指针，供慢速与聚簇快读共用。"""
         info = EnemyInfo(ep)
         min_size = max(gs.EntityFields.BUFF_CONTAINER + 8,
@@ -2720,10 +2985,15 @@ class EnemyReader:
         if not blk or len(blk) < min_size:
             info.alive = False
             return info
-        info.hp = gs.fp_to_float(_u64(blk, gs.EntityFields.M_HP))
-        info.es = gs.fp_to_float(_u64(blk, gs.EntityFields.M_ES))
-        info.direction = _i32(blk, gs.EntityFields.M_DIRECTION)
+        if policy is None or policy.enabled('enemy.hp'):
+            info.hp = gs.fp_to_float(_u64(blk, gs.EntityFields.M_HP))
+        if policy is None or policy.enabled('enemy.es'):
+            info.es = gs.fp_to_float(_u64(blk, gs.EntityFields.M_ES))
+        if policy is None or policy.enabled('enemy.pos'):
+            info.direction = _i32(blk, gs.EntityFields.M_DIRECTION)
         info.finish = _i32(blk, gs.EntityFields.FINISH_REASON)
+        if policy is None or policy.enabled('enemy.finish_reason'):
+            info.finish_reason = info.finish
         info.id_ptr = _u64(blk, gs.EntityFields.ID)
         info.attr_ptr = _u64(blk, gs.EntityFields.M_ATTRIBUTES)
         info.data_ptr = _u64(blk, gs.EnemyFields.DATA)
@@ -2734,8 +3004,9 @@ class EnemyReader:
         info.shield_controller_ptr = _u64(blk, gs.EntityFields.M_SHIELD_CONTROLLER)
         info.buff_container_ptr = _u64(blk, gs.EntityFields.BUFF_CONTAINER)
         if len(blk) >= gs.EnemyFields.READ_SIZE:
-            info.pos_x, info.pos_y = _f32x2(blk, gs.EnemyFields.M_POS_IN_LAST_FRAME)
-            info.blk_x, info.blk_y = _f32x2(blk, gs.EnemyFields.M_BLOCK_POSITION)
+            if policy is None or policy.enabled('enemy.pos'):
+                info.pos_x, info.pos_y = _f32x2(blk, gs.EnemyFields.M_POS_IN_LAST_FRAME)
+                info.blk_x, info.blk_y = _f32x2(blk, gs.EnemyFields.M_BLOCK_POSITION)
             info.spawn_row = _i32(blk, gs.EnemyFields.ROUTE_SPAWN_POS)
             info.spawn_col = _i32(blk, gs.EnemyFields.ROUTE_SPAWN_POS + 4)
             options = gs.EnemyFields.OPTIONS
@@ -2743,7 +3014,9 @@ class EnemyReader:
                 blk[options + gs.EnemyOptionsFields.IS_SUMMON])
             info.action_ptr = _u64(
                 blk, options + gs.EnemyOptionsFields.ACTION_DATA)
-            info.action = {
+            if policy is None or any(policy.enabled('enemy.' + key) for key in
+                                     ('action_phase', 'remaining_time', 'next_action')):
+                info.action = {
                 'animator_addr': _u64(blk, gs.UnitFields.ANIMATOR),
                 'current_mode_addr': _u64(blk, gs.UnitFields.CURRENT_MODE),
                 'sp': gs.obscured_fp_to_float(
@@ -2763,7 +3036,7 @@ class EnemyReader:
                 'combat_wrapper_addr': _u64(
                     blk, gs.EnemyFields.COMBAT_WRAPPER),
                 'blocker_addr': _u64(blk, gs.EnemyFields.M_BLOCKER),
-            }
+                }
         # HP=0 本身不能证明实体已经离场：多阶段 Boss 会先清空 HP，再进入
         # REBORN。状态机批次稍后给出权威终止态；读不到状态时宁可保留一帧。
         info.alive = info.finish == 0
@@ -2783,12 +3056,14 @@ class EnemyReader:
         return out
 
     @staticmethod
-    def _decode_fp_array(data, limit):
+    def _decode_fp_array(data, limit, indices=None):
         if not data or len(data) < gs.Il2CppArray.ITEMS:
             return {}
         count = min(max(0, _i32(data, gs.Il2CppArray.MAX_LENGTH)), limit)
         out = {}
         for idx in range(count):
+            if indices is not None and idx not in indices:
+                continue
             off = gs.Il2CppArray.ITEMS + idx * 8
             if off + 8 > len(data):
                 break
@@ -3934,6 +4209,8 @@ class EnemyReader:
         def set_countdown(seconds, kind, source='runtime'):
             if not isinstance(seconds, (int, float)) or not math.isfinite(seconds):
                 return False
+            if not self._collect('remaining_time'):
+                return True
             seconds = max(0.0, float(seconds))
             action['remaining'] = seconds
             action['remaining_frames'] = (
@@ -4062,7 +4339,14 @@ class EnemyReader:
                 gs.EnemyState.STUN, gs.EnemyState.FROZEN,
                 gs.EnemyState.LEVITATE, gs.EnemyState.PALSY):
             action['detail'] += '；已有技能 CD 就绪，但须先退出当前状态'
-        self._predict_enemy_next_action(info, action)
+        if self._collect('next_action') and (self._capture_policy is None or (
+                info.addr in self._skill_cd and all(key in
+                self._runtime_snapshot.get(info.addr, {}) for key in
+                ('state_id', 'abnormal_flags', 'abnormal_combos')))):
+            self._predict_enemy_next_action(info, action)
+        if not self._collect('remaining_time'):
+            for key in ('remaining', 'remaining_frames', 'remaining_kind'):
+                action.pop(key, None)
         info.action = action
         runtime = self._runtime_snapshot.get(info.addr)
         if runtime is not None:
@@ -4189,7 +4473,8 @@ class EnemyReader:
             rp.update(state=info.state_ptr, ep=info.ep_ptr, epc=info.ep_controller_ptr,
                       shield=info.shield_controller_ptr)
             if not all(rp.get(k) for k in ('flags', 'immunes', 'antis',
-                                            'combos', 'combo_immunes')):
+                                          'combos', 'combo_immunes')
+                       if self._runtime_kind_enabled(k)):
                 missing.append(ep)
 
         # 第一次：Attributes -> 三个 flag 数组 + combo manager。
@@ -4220,7 +4505,9 @@ class EnemyReader:
                             data, gs.AbnormalComboManagerFields.M_ABNORMAL_COMBO_IMMUNE_COUNTER)
 
         reqs, keys = [], []
-        runtime = {ep: dict(self._runtime_snapshot.get(ep, {})) for ep in eps}
+        # Retain address topology only. Values must be produced by this round,
+        # even during a pause where the source logic frame has not advanced.
+        runtime = {ep: {} for ep in eps}
         for ep in eps:
             info = infos.get(ep)
             if info is None:
@@ -4247,7 +4534,7 @@ class EnemyReader:
                  gs.Il2CppArray.ITEMS + gs.AbnormalCombo.E_NUM * 2),
             )
             for kind, addr, size in specs:
-                if self.mc.is_ptr(addr):
+                if self._runtime_kind_enabled(kind) and self.mc.is_ptr(addr):
                     reqs.append((addr, size))
                     keys.append((ep, kind))
             action = runtime.get(ep, {}).get('action', {})
@@ -4271,7 +4558,8 @@ class EnemyReader:
                     reqs.append((animator + offset,
                                  gs.UnitAnimatorFields.CURRENT_STATE_SIZE))
                     keys.append((ep, kind))
-            for idx, source in enumerate(self._custom_shield_ptrs.get(ep, ())):
+            for idx, source in enumerate(self._custom_shield_ptrs.get(ep, ())
+                                         if self._collect('shield') else ()):
                 value_addr = source.get('value_addr', 0)
                 buff_addr = source.get('buff_addr', 0)
                 if self.mc.is_ptr(value_addr):
@@ -4292,9 +4580,15 @@ class EnemyReader:
                 if cur['action'].get('state_node_addr') != state_node:
                     cur['action'].pop('state_time', None)
                     cur['action'].pop('status_remaining', None)
-                cur['action']['state_node_addr'] = state_node
+                if any(self._collect(key) for key in (
+                        'action_phase', 'remaining_time', 'next_action', 'abnormal_status')):
+                    cur['action']['state_node_addr'] = state_node
             elif kind == 'ep':
-                cur['ep_remaining'] = self._decode_fp_array(data, gs.ElementType.E_NUM)
+                element_keys = ('ep_sanity', 'ep_water', 'ep_fire', 'ep_dark', 'ep_anger')
+                indices = (None if self._capture_policy is None else
+                           {0} | {index + 1 for index, key in enumerate(element_keys)
+                                  if self._collect(key)})
+                cur['ep_remaining'] = self._decode_fp_array(data, gs.ElementType.E_NUM, indices)
             elif kind == 'shield':
                 cur['shield'] = gs.fp_to_float(_u64(data, 0))
             elif kind == 'epc':
@@ -4476,7 +4770,7 @@ class EnemyReader:
         for ep in eps:
             state_id = runtime[ep].get('state_id', gs.EnemyState.DEFAULT)
             info = infos.get(ep)
-            if info is None:
+            if info is None or not self._collect('abnormal_status'):
                 continue
             flags = runtime[ep].get('abnormal_flags') or ()
             combos = runtime[ep].get('abnormal_combos') or ()
@@ -4500,7 +4794,7 @@ class EnemyReader:
         self._refresh_status_timers_chan(status_targets, runtime, self._fast_tick)
 
         for ep in eps:
-            sources = self._custom_shield_ptrs.get(ep, ())
+            sources = self._custom_shield_ptrs.get(ep, ()) if self._collect('shield') else ()
             if sources:
                 active = [source for source in sources if source.get('active')]
                 runtime[ep]['special_shield'] = sum(
@@ -4833,19 +5127,21 @@ class EnemyReader:
             intent_end['label'] += '（友方目标）'
         cached_route = _u64(
             enemy, gs.EnemyFields.M_CACHED_ROUTE - gs.EnemyFields.M_CURSOR)
-        route_value = self._match_runtime_route(
+        route_value = (self._match_runtime_route(
             route_ptr, route_data_ptr,
             _u64(route_data, gs.RouteDataFields.CHECKPOINTS),
-            cached_route, start, end)
-        next_row = _i32(cursor, gs.DirectionCursorFields.M_NEXT_GRID)
-        next_col = _i32(cursor, gs.DirectionCursorFields.M_NEXT_GRID + 4)
-        next_waypoint = (self._grid_coord(next_row, next_col)
-                         if next_row >= 0 and next_col >= 0
-                         and self._valid_grid(next_row, next_col) else None)
-        next_checkpoint = self._format_checkpoint(
-            index, count, cp_data, intent_end)
-        countdown = self._checkpoint_countdown(
+            cached_route, start, end) if self._collect('current_route') else None)
+        next_waypoint = None
+        if self._collect('next_waypoint'):
+            next_row = _i32(cursor, gs.DirectionCursorFields.M_NEXT_GRID)
+            next_col = _i32(cursor, gs.DirectionCursorFields.M_NEXT_GRID + 4)
+            if self._valid_grid(next_row, next_col):
+                next_waypoint = self._grid_coord(next_row, next_col)
+        next_checkpoint = (self._format_checkpoint(index, count, cp_data, intent_end)
+                           if self._collect('next_checkpoint') else None)
+        countdown = (self._checkpoint_countdown(
             next_checkpoint, checkpoint_block, cursor, play_time, frame_duration)
+            if self._collect('checkpoint_countdown') else None)
         return {
             'available': True, 'sample_frame': int(sample_frame),
             'consistent': True, 'path_identity_stable': True,
@@ -4854,7 +5150,8 @@ class EnemyReader:
             # 受 ability、alwaysUsing、isMarkReached 与派生类虚方法影响。
             # 无法从当前只读主路线链证明时必须保持 false，不能产生假阳性。
             'temporarily_diverted': False,
-            'intent_end': intent_end, 'route': route_value,
+            'intent_end': intent_end if self._collect('intent_end') else None,
+            'route': route_value,
             'next_waypoint': next_waypoint,
             'next_checkpoint': next_checkpoint,
             'checkpoint_countdown': countdown,
@@ -4920,13 +5217,27 @@ class EnemyReader:
 
     def _poll_fast_impl(self):
         t0 = time.time()
+        # Successful values belong to this sampling round. Topology and names
+        # remain cached, but failed reads cannot revive last round's statistics.
+        self._attr_snapshot.clear()
+        self._runtime_snapshot.clear()
+        self._skill_cd.clear()
+        self._skill_enriched.clear()
+        # These are per-round evidence, never fallback clocks from an earlier
+        # batch. A configured controller/clock must be readable in this round.
+        self._bc_snap = None
+        self._fixed_frame_snap = None
+        self._scheduler_time_snap = None
+        self._frame_duration_snap = None
+        self._sample_clock_ok = False
         snap = {'ok': False, 'state': -1, 'speed_level': -1, 'time_scale': 0.0,
                 'play_time': 0.0, 'scheduler_time': None,
                 'fixed_frame': self._fixed_frame_snap,
                 'frame_duration': self._frame_duration_snap,
                 'enemies': [], 'msg': '', 'frame_ms': 0.0,
                 'on_field_count': 0, 'planned_count': self.planned_count,
-                'read_mode': 'fast', 'read_backend': 'tcp'}
+                'read_mode': 'fast', 'read_backend': 'tcp',
+                'policy_generation': getattr(self._capture_policy, 'generation', 0)}
         self._fast_tick += 1
         tick = self._fast_tick
         prev_ptrs = self._f_ptrs
@@ -4945,7 +5256,7 @@ class EnemyReader:
         reqs += [(c[0], c[-1] + gs.EnemyFields.READ_SIZE - c[0]) for c in clusters]
         slot['attrs'] = []
         slot['attr_heads'] = []
-        for aep in prev_ptrs:
+        for aep in prev_ptrs if self._collect_group('attributes') else ():
             cdp = self._attr_cache.get(aep, 0)
             if cdp:
                 slot['attrs'].append((len(reqs), aep, cdp))
@@ -4969,6 +5280,9 @@ class EnemyReader:
             slot['scheduler'] = len(reqs)
             reqs.append((self.sched_addr, 0xC8))
         res = self._chan.batch_read(reqs) if reqs else []
+        if 'bc' in slot and not res[slot['bc']]:
+            snap['msg'] = 'BattleController 本帧读取失败'
+            return self._on_stale(snap)
         if 'battle_clock' in slot:
             frame, value, frame_duration = self._decode_battle_clock_snapshot(
                 res[slot['battle_clock']])
@@ -4978,6 +5292,10 @@ class EnemyReader:
                 self._scheduler_time_snap = value
             if frame_duration is not None:
                 self._frame_duration_snap = frame_duration
+            self._sample_clock_ok = frame is not None and value is not None
+            if not self._sample_clock_ok:
+                snap['msg'] = '战斗逻辑时钟本帧读取失败'
+                return self._on_stale(snap)
 
         # ---- 实时敌人容器（降频读取）----
         # Scheduler List 用 _version；UnitManager.enemies 是 UnorderedArray，没有
@@ -5067,25 +5385,42 @@ class EnemyReader:
                 if off + gs.EnemyFields.READ_SIZE > len(data):
                     continue
                 blk = data[off:off + gs.EnemyFields.READ_SIZE]
-                info = self._parse_enemy_block(ep, blk)
+                info = self._parse_enemy_block(ep, blk, self._capture_policy)
+                identity = (info.id_ptr, info.data_ptr)
+                previous_identity = self._identity_sources.get(ep)
+                if previous_identity is not None and previous_identity != identity:
+                    self._names.pop(ep, None)
+                    self._attr_cache.pop(ep, None)
+                    self._runtime_ptrs.pop(ep, None)
+                    self._skill_ptrs.pop(ep, None)
+                    self._custom_shield_ptrs.pop(ep, None)
+                self._identity_sources[ep] = identity
                 infos[ep] = info
                 self._track_attr_object(ep, info.attr_ptr)
                 skl = _u64(data, off + gs.EnemyFields.M_SKILLS)
                 if self.mc.is_ptr(skl):
                     self._skill_lp[ep] = skl
+                else:
+                    self._skill_lp.pop(ep, None)
                 all_skl = _u64(data, off + gs.EnemyFields.M_ALL_SKILLS)
                 if self.mc.is_ptr(all_skl):
                     self._skill_ap[ep] = all_skl
+                else:
+                    self._skill_ap.pop(ep, None)
 
         # 路径必须紧跟本帧 Enemy 块，以单次设备侧事务重新解析全部动态指针。
         # guarded_transaction_read 会在设备内验证逻辑帧与首尾身份；失败时
         # EnemyInfo 保持 unavailable，绝不复制上一帧路径。
         readable_ptrs = [ep for ep in ptrs if ep in infos]
-        if readable_ptrs:
+        if readable_ptrs and self._collect_group('pathing'):
             self._refresh_pathing_chan(readable_ptrs, infos)
+        elif not self._collect_group('pathing'):
+            for info in infos.values():
+                info.pathing = unavailable_pathing('not_collected', self._fixed_frame_snap)
 
         # ---- 新敌人: 通道内解析名称+属性 (仅列表变化帧触发) ----
-        new_eps = [ep for ep in ptrs if ep not in self._names or ep not in self._attr_snapshot]
+        new_eps = [ep for ep in ptrs if ep not in self._names
+                   or (self._collect_group('attributes') and ep not in self._attr_cache)]
         if new_eps:
             self._fill_new_enemies_chan(new_eps, infos)
         self._log_identity_diagnostics(ptrs, infos)
@@ -5101,13 +5436,14 @@ class EnemyReader:
             if (ep not in self._custom_shield_ptrs
                     and tick - last_probe >= 50):
                 custom_probe_eps.append(ep)
-        if custom_probe_eps:
+        if custom_probe_eps and self._collect('shield'):
             self._discover_custom_shields(custom_probe_eps, infos)
 
         # ---- 状态机 / 异常状态 / 免疫 / 五种损伤条 ----
         if readable_ptrs:
             self._refresh_runtime_chan(readable_ptrs, infos)
-            self._refresh_precise_positions(readable_ptrs, infos)
+            if self._collect_group('precise'):
+                self._refresh_precise_positions(readable_ptrs, infos)
 
         # ---- 全部敌人属性每个采样帧刷新 ----
         for i, aep, expected_cdp in slot.get('attrs', ()):
@@ -5116,7 +5452,7 @@ class EnemyReader:
             cd = res[i]
             if cd and 0 < _i32(cd, gs.Il2CppArray.MAX_LENGTH) <= 64:
                 tmp = EnemyInfo(aep)
-                self._apply_cached_data(cd, tmp)
+                self._apply_cached_data(cd, tmp, self._attribute_indices())
                 self._attr_snapshot[aep] = dict(tmp.attributes)
             else:
                 self._attr_cache.pop(aep, None)   # 数组已失效, 下轮重建
@@ -5129,7 +5465,7 @@ class EnemyReader:
                 self._attr_cache[aep] = cdp
 
         # ---- 技能、触发器和 CD 每个采样帧刷新 ----
-        if ptrs:
+        if ptrs and self._collect_group('skills'):
             self._refresh_skills_chan(ptrs)
 
         live = set(ptrs)
@@ -5153,12 +5489,16 @@ class EnemyReader:
             self._copy_runtime(info, self._runtime_snapshot.get(ep))
             info.skills = self._skill_cd.get(ep, [])
             info.skills_detail = list(self._skill_enriched.get(ep, ()))
-            self._finalize_enemy_action(
-                info, self._scheduler_time_snap, self._fixed_frame_snap,
-                self._frame_duration_snap)
+            if (any(self._collect(key) for key in
+                    ('action_phase', 'remaining_time', 'next_action'))
+                    and (self._capture_policy is None or (ep in self._skill_cd
+                         and 'state_id' in self._runtime_snapshot.get(ep, {})))):
+                self._finalize_enemy_action(
+                    info, self._scheduler_time_snap, self._fixed_frame_snap,
+                    self._frame_duration_snap)
             enemies.append(info)
         # 清理已退场敌人的缓存 (地址可能被 GC 复用)
-        for cache in (self._names, self._attr_cache, self._attr_snapshot, self._attr_ptrs,
+        for cache in (self._names, self._identity_sources, self._attr_cache, self._attr_snapshot, self._attr_ptrs,
                       self._runtime_snapshot, self._runtime_ptrs,
                       self._custom_shield_ptrs, self._custom_shield_probe_tick,
                       self._skill_lp, self._skill_ap, self._skill_ptrs,
@@ -5190,11 +5530,14 @@ class EnemyReader:
         scheduler_data = res[slot['scheduler']] if 'scheduler' in slot else None
         spawned_count = (_i32(scheduler_data, gs.SchedulerFields.M_SPAWNED_ENEMIES_CNT)
                          if scheduler_data else 0)
-        if scheduler_data:
+        if scheduler_data and self._collect_group('roster'):
             self._refresh_action_queue_chan(scheduler_data)
         rows = self._merge_enemy_roster(enemies, spawned_count)
         snap['enemies'] = self._apply_spawn_timing(
             rows, snap['scheduler_time'])
+        for info in snap['enemies']:
+            self._stamp_fields(info, self._fixed_frame_snap,
+                               historical=info.lifecycle == 'departed')
         snap['on_field_count'] = sum(enemy.alive for enemy in enemies)
         snap['planned_count'] = self.planned_count
 
@@ -5211,9 +5554,7 @@ class EnemyReader:
         """
         if self._chan is None:
             return {
-                'frame': self._fixed_frame_snap,
-                'time_scale': self._bc_snap[2] if self._bc_snap else None,
-                'play_time': self._bc_snap[3] if self._bc_snap else None,
+                'frame': None, 'time_scale': None, 'play_time': None,
             }
         reqs, keys = [], []
         if self._bc_static_fields:
@@ -5227,13 +5568,15 @@ class EnemyReader:
             reqs.append((self.bc_addr + 0x200, 0xC0))
             keys.append('bc')
         if not reqs:
-            return {'frame': self._fixed_frame_snap, 'time_scale': None,
+            return {'frame': None, 'time_scale': None,
                     'play_time': None}
         # 帧尾守卫必须独立实读，不能命中本帧预取值；用它证明整份敌我
         # 快照没有跨越逻辑帧/暂停边界。
         values = dict(zip(keys, self._chan.batch_read(
             reqs, force_live=True, remember=False)))
-        frame = self._fixed_frame_snap
+        # A guard is a new observation, not the already accepted source clock.
+        # Returning that source on failure would falsely prove frame consistency.
+        frame = None
         if values.get('clock'):
             new_frame, now, frame_duration = self._decode_battle_clock_snapshot(
                 values['clock'])
@@ -5266,6 +5609,9 @@ class EnemyReader:
         动态 ``m_skills`` 与稳定 ``m_allSkills`` 同时读取并去重。完整数组或
         items 的单次读取失败时沿用最近一次成功解析的技能对象地址，不再把一次
         瞬态空值直接发布到 UI；下一轮会自动恢复，无需重新扫描地址链。
+
+        NOTICE: 上段保留的是地址拓扑缓存。三开关版本不再沿用 CD/Trigger
+        等值缓存；当前对象或计时器读失败时由字段状态报告 unavailable。
         """
         eps = [ep for ep in ptrs
                if (self.mc.is_ptr(self._skill_lp.get(ep, 0))
@@ -5311,6 +5657,7 @@ class EnemyReader:
                 frame_tags.append(('timer', skill, timer))
         frame_values = dict(zip(
             frame_tags, self._chan.batch_read(frame_reqs) if frame_reqs else []))
+        self._skill_runtime_meta.clear()
 
         decoded_sources = {ep: set() for ep in eps}
         body_reqs, body_keys, source_layouts = [], [], {}
@@ -5377,7 +5724,10 @@ class EnemyReader:
                   and ep not in self._skill_ptrs):
                 self._skill_ptrs[ep] = []
             else:
-                sks_of[ep] = list(self._skill_ptrs.get(ep, ()))
+                # Retaining topology for next-round prefetch does not prove
+                # the object is still owned by this enemy in the current round.
+                sks_of[ep] = (list(self._skill_ptrs.get(ep, ()))
+                              if self._capture_policy is None else [])
 
         skill_reqs, skill_keys = [], []
         for ep in eps:
@@ -5484,7 +5834,7 @@ class EnemyReader:
                         for s in sks if s in remain_of]
             # 计时器也可能在切阶段的一帧内为 NULL；有旧值时继续保留，下一轮
             # 自动重试。只有完整数组明确为空时才立即发布空技能列表。
-            if out or not self._skill_cd.get(ep):
+            if out:
                 self._skill_cd[ep] = out
                 self._skill_enriched[ep] = enriched
             elif ('all' in decoded_sources[ep] and not sks
@@ -5563,10 +5913,11 @@ class EnemyReader:
             if info.id_ptr and self.mc.is_ptr(info.id_ptr):
                 reqs.append((info.id_ptr, 0x80))
                 keys.append(('id', ep))
-            if info.attr_ptr and self.mc.is_ptr(info.attr_ptr):
+            if (self._collect_group('attributes') and info.attr_ptr
+                    and self.mc.is_ptr(info.attr_ptr)):
                 reqs.append((info.attr_ptr, gs.AttributesFields.READ_SIZE))
                 keys.append(('attr', ep))
-            if info.data_ptr and self.mc.is_ptr(info.data_ptr):
+            if self._collect('name') and info.data_ptr and self.mc.is_ptr(info.data_ptr):
                 reqs.append((info.data_ptr, gs.LevelEnemyDataFields.ATTRIBUTES))
                 keys.append(('data', ep))
         cdps, eids, name_ptrs = {}, {}, {}
@@ -5605,7 +5956,7 @@ class EnemyReader:
                     if data and 0 < _i32(data, gs.Il2CppArray.MAX_LENGTH) <= 64:
                         self._attr_cache[ep] = cdps[ep]
                         tmp = EnemyInfo(ep)
-                        self._apply_cached_data(data, tmp)
+                        self._apply_cached_data(data, tmp, self._attribute_indices())
                         self._attr_snapshot[ep] = dict(tmp.attributes)
                     continue
                 if not data:
@@ -5625,11 +5976,17 @@ class EnemyReader:
                 # 瞬读失败不缓存空 ID: 一旦缓存, new_eps 不再重试, 实体永远
                 # 无法按 ID 认领计划项 (计划行卡「未出场」, 实体落动态行)。
                 continue
-            name, code = self._remember_enemy_name(eid, runtime_names.get(ep, ''))
+            if self._collect('name') or self._collect('code'):
+                name, code = self._remember_enemy_name(eid, runtime_names.get(ep, ''))
+                name = name if self._collect('name') else ''
+                code = code if self._collect('code') else ''
+            else:
+                name = code = ''
             self._names[ep] = (eid, name, code)
         # 通道内未解决的走一次完整慢读兜底 (空结果不缓存, 下帧重试)
         for ep in new_eps:
-            if ep not in self._names or ep not in self._attr_snapshot:
+            if (self._capture_policy is None
+                    and (ep not in self._names or ep not in self._attr_snapshot)):
                 full = self._read_enemy(ep, with_runtime=False)
                 if ep not in self._names and full.eid:
                     self._names[ep] = (full.eid, full.name, full.code)
@@ -5691,7 +6048,10 @@ class EnemyReader:
                 raise InterruptedError('敌人详情读取已请求停止')
             if self._detail_chan is None:
                 self._detail_chan = TcpChannel(self.mc, port=DETAIL_TCP_PORT)
-            return self._detail_chan.batch_read(reqs)
+            values = self._detail_chan.batch_read(reqs)
+            if len(values) != len(reqs) or any(not value for value in values):
+                self._detail_context.read_failed = True
+            return values
         if self._chan is not None:
             return self._chan.batch_read(reqs)
         raise RuntimeError('memsrv v5 主通道尚未建立')
@@ -6194,7 +6554,7 @@ class EnemyReader:
             })
         return out
 
-    def read_enemy_detail(self, addr, heavy_only=False):
+    def read_enemy_detail(self, addr, heavy_only=False, policy=None):
         """按需读取一个敌人的详情。
 
         heavy_only 用于实时详情线程：只取原始属性、Buff 与关卡效果，HP/状态/
@@ -6202,59 +6562,89 @@ class EnemyReader:
         """
         if not self.mc.is_ptr(addr):
             return None
+        policy = self._capture_policy if policy is None else policy
+        if policy is not None and not any(policy.group_enabled('enemy_detail', key)
+                                          for key in ('attributes', 'rawAttributes',
+                                                      'buffs', 'globalBuffs', 'skills',
+                                                      'specialShield')):
+            return None
         self._detail_context.active = True
+        self._detail_context.policy = policy
         try:
             return self._read_enemy_detail_impl(addr, heavy_only)
         finally:
             self._detail_context.active = False
+            self._detail_context.policy = None
 
     def _read_enemy_detail_impl(self, addr, heavy_only=False):
+        policy = getattr(self._detail_context, 'policy', self._capture_policy)
+        source_frame = self._read_detail_frame()
+        self._detail_context.sampled_at = time.time()
+        succeeded = set()
         (blk,) = self._detail_batch_read([(addr, gs.EnemyFields.READ_SIZE)])
         if not blk or len(blk) < max(gs.EntityFields.BUFF_CONTAINER + 8,
                                     gs.EnemyFields.DATA + 8):
             return None
-        info = self._parse_enemy_block(addr, blk)
-        if not heavy_only:
+        info = self._parse_enemy_block(addr, blk, policy)
+        if not heavy_only and policy is None:
             self._fill_name(addr, blk, info)
+        elif not heavy_only:
+            # Primary identity is copied only as auxiliary display context; the
+            # independent detail read never fills/mutates shared value caches.
+            info.eid, info.name, info.code = self._names.get(addr, ('', '', ''))
 
         # 同时读取原始和最终属性，详情页可直接比较 Buff 前后变化。
         (attr_head,) = self._detail_batch_read(
             [(info.attr_ptr, gs.AttributesFields.READ_SIZE)]) \
-            if self.mc.is_ptr(info.attr_ptr) else (None,)
+            if (self.mc.is_ptr(info.attr_ptr) and any(self._detail_collect('enemy_detail', key)
+                for key in ('attributes', 'rawAttributes'))) else (None,)
         if attr_head:
             raw_ptr = _u64(attr_head, gs.AttributesFields.M_RAW_DATA)
             cached_ptr = _u64(attr_head, gs.AttributesFields.M_CACHED_DATA)
             reqs, kinds = [], []
             size = gs.Il2CppArray.ITEMS + gs.AttributeType.E_NUM * gs.OBSCURED_FP_SIZE
-            if self.mc.is_ptr(raw_ptr):
+            if self.mc.is_ptr(raw_ptr) and self._detail_collect('enemy_detail', 'rawAttributes'):
                 reqs.append((raw_ptr, size)); kinds.append('raw')
-            if self.mc.is_ptr(cached_ptr):
+            if self.mc.is_ptr(cached_ptr) and self._detail_collect('enemy_detail', 'attributes'):
                 reqs.append((cached_ptr, size)); kinds.append('cached')
             for kind, data in zip(kinds, self._detail_batch_read(reqs)):
                 if not data:
                     continue
                 if kind == 'raw':
                     self._apply_raw_data(data, info)
+                    succeeded.add('rawAttributes')
                 else:
                     self._apply_cached_data(data, info)
-                    self._attr_cache[addr] = cached_ptr
-                    self._attr_snapshot[addr] = dict(info.attributes)
-        elif addr in self._attr_snapshot:
-            info.attributes = dict(self._attr_snapshot[addr])
+                    succeeded.add('attributes')
+                    # Detail channel never writes the primary sampling cache.
 
-        if not heavy_only:
+        if not heavy_only and policy is None:
             if self._chan is None:
                 raise RuntimeError('memsrv v5 主通道尚未建立')
             self._refresh_runtime_chan([addr], {addr: info})
-            info.skills = list(self._skill_cd.get(addr, []))
-            info.skills_detail = list(self._skill_enriched.get(addr, ()))
-        info.buffs = self._read_active_buffs(info.buff_container_ptr)
-        special, special_mask, special_sources = summarize_custom_shields(
-            info.buffs, info.eid)
-        info.special_shield = special
-        info.special_shield_mask = special_mask
-        info.special_shield_sources = special_sources
-        info.global_buffs = self._read_global_buffs(addr)
+            if self._detail_collect('enemy_detail', 'skills'):
+                # Existing fast values remain explicitly separately sourced;
+                # copying them does not prove a successful async skills read.
+                info.skills = list(self._skill_cd.get(addr, []))
+                info.skills_detail = list(self._skill_enriched.get(addr, ()))
+        if any(self._detail_collect('enemy_detail', key) for key in ('buffs', 'specialShield')):
+            self._detail_context.read_failed = False
+            buffs = self._read_active_buffs(info.buff_container_ptr)
+            if not self._detail_context.read_failed:
+                succeeded.update(('buffs', 'specialShield'))
+            if self._detail_collect('enemy_detail', 'buffs'):
+                info.buffs = buffs
+            if self._detail_collect('enemy_detail', 'specialShield'):
+                special, special_mask, special_sources = summarize_custom_shields(buffs, info.eid)
+                info.special_shield = special
+                info.special_shield_mask = special_mask
+                info.special_shield_sources = special_sources
+        if self._detail_collect('enemy_detail', 'globalBuffs'):
+            self._detail_context.read_failed = False
+            info.global_buffs = self._read_global_buffs(addr)
+            if self.bc_addr and not self._detail_context.read_failed:
+                succeeded.add('globalBuffs')
+        self._stamp_detail(info, 'enemy_detail', policy, source_frame, succeeded)
         return info
 
     def _on_stale(self, snap):

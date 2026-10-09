@@ -1128,6 +1128,20 @@ class EnemyDetailModelTests(unittest.TestCase):
         self.assertEqual([row.lifecycle for row in rows],
                          ['departed', 'active', 'pending'])
 
+    def test_unread_hp_zero_is_not_a_confirmed_kill_and_exit_is_distinct(self):
+        # The default HP is zero even when the field was not captured.
+        for state, expected in ((gs.EnemyState.REACH_EXIT, 'reach_exit'),
+                                (gs.EnemyState.TERMINAL, 'departed')):
+            reader = EnemyReader(mc=object())
+            reader._set_spawn_plan([{'key': 'enemy_a'}], 'test/level')
+            live = EnemyInfo(0x1000)
+            live.eid = 'enemy_a'
+            reader._merge_enemy_roster([live], 1)
+            departed = EnemyInfo(0x1000)
+            departed.eid, departed.alive, departed.state_id = 'enemy_a', False, state
+            rows = reader._merge_enemy_roster([departed], 1)
+            self.assertEqual(rows[0].end_reason, expected)
+
     def test_departure_freezes_last_complete_live_snapshot(self):
         reader = EnemyReader(mc=object())
         reader._set_spawn_plan([{'key': 'enemy_a'}], 'test/level')
@@ -1175,6 +1189,33 @@ class EnemyDetailModelTests(unittest.TestCase):
         # 离场元数据不应反向修改上一帧活跃快照。
         self.assertEqual(live.lifecycle, 'active')
         self.assertTrue(live.alive)
+
+    def test_finish_reason_preserves_observed_code_and_source_frame(self):
+        from backend.app.field_policy import PolicyStore
+        store = PolicyStore()
+        reader = EnemyReader(mc=object())
+        reader.set_capture_policy(store.snapshot())
+        self.assertIsNone(EnemyInfo(0x1000).finish_reason)
+        for code in (0, 8, 12, 99):
+            block = bytearray(gs.EnemyFields.READ_SIZE)
+            struct.pack_into('<i', block, gs.EntityFields.FINISH_REASON, code)
+            info = reader._parse_enemy_block(0x1000, block, store.snapshot())
+            self.assertEqual(info.finish_reason, code)
+        reader._set_spawn_plan([{'key': 'enemy_a'}], 'test/level')
+        live = EnemyInfo(0x1000)
+        live.eid, live.finish_reason, live.hp = 'enemy_a', 0, 321.5
+        reader._fixed_frame_snap = 90
+        reader._stamp_fields(live, 90)
+        reader._merge_enemy_roster([live], 1)
+        dead = EnemyInfo(0x1000)
+        dead.eid, dead.alive, dead.state_id = 'enemy_a', False, gs.EnemyState.DEAD
+        dead.finish, dead.finish_reason = 8, 8
+        reader._fixed_frame_snap = 100
+        frozen = reader._merge_enemy_roster([dead], 1)[0]
+        reader._stamp_fields(frozen, 100, historical=True)
+        self.assertEqual(frozen.hp, 321.5)
+        self.assertEqual(frozen.finish_reason, 8)
+        self.assertEqual(frozen.field_states['enemy.finish_reason']['sourceFrame'], 100)
 
     def test_midbattle_attach_uses_spawned_prefix(self):
         reader = EnemyReader(mc=object())

@@ -21,7 +21,7 @@ class StageExportTests(unittest.TestCase):
             eid='enemy_1007_slime', name='源石虫', code='A1',
             lifecycle='departed', spawn_order=1, route_index=0,
             spawn_kind='scheduled', spawn_source='', spawn_condition='',
-            spawn_frame=123, end_frame=456, end_reason='death',
+            spawn_frame=123, end_frame=456, end_reason='death', finish_reason=8,
         )
         record = {
             'info': info, 'key': info.eid, 'roster_id': -1, 'spawn_order': 1,
@@ -50,7 +50,13 @@ class StageExportTests(unittest.TestCase):
         self.assertEqual(payload['enemySpawns'][0]['actualStartFrame'], 123)
         self.assertEqual(payload['enemySpawns'][0]['endFrame'], 456)
         self.assertEqual(payload['enemySpawns'][0]['endReason'], 'death')
+        self.assertEqual(payload['enemySpawns'][0]['finishReason'], 8)
         json.dumps(payload, ensure_ascii=False)
+        reader._spawn_plan = []
+        dynamic = build_stage_export(reader)['enemySpawns'][0]
+        self.assertEqual(dynamic['finishReason'], 8)
+        del info.finish_reason
+        self.assertIsNone(build_stage_export(reader)['enemySpawns'][0]['finishReason'])
 
     def test_map_normalization_does_not_require_runtime_objects(self):
         result = normalize_map_snapshot({

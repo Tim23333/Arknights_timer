@@ -44,6 +44,9 @@ class TimerDataProvider:
 
     def __init__(self) -> None:
         self._lock = RLock()
+        self._capture_policy = None
+        self._sample_generation = None
+        self._last_known_frame = None
         self.process_name: str = os.getenv("AK_PROCESS_NAME", "MuMuVMMHeadless.exe")
         self.time_address_hex: Optional[str] = os.getenv("AK_TIME_ADDRESS", "").strip() or None
         self.reader: Optional[AKMemoryReader] = None
@@ -198,6 +201,7 @@ class TimerDataProvider:
         """
         with self._lock:
             self._guest_reader = reader
+            self._invalidate_clock_locked('读取器已配置，等待首次时钟采样。')
             self._clear_frame_timeline()
             # 换数据源即换基线：清掉上一局的归0/走秒检测状态。
             # 否则重定位成功后首读 time=0 会被上一局残留的 _game_time_moved
@@ -249,8 +253,21 @@ class TimerDataProvider:
         """清除 guest 读取器，refresh_sample() 回退到宿主 pymem 路径。"""
         with self._lock:
             self._guest_reader = None
+            self._invalidate_clock_locked('guest 读取器已清除，请先运行「打开寻址工具」配置宿主时钟。')
             self._clear_frame_timeline()
             self._reset_stage_detection_state_locked()
+
+    def _invalidate_clock_locked(self, message: str) -> None:
+        """Invalidate public/ready clocks without erasing the last-known anchor.
+
+        The last-known frame is diagnostic only; it can never substitute for a
+        successful current sample or keep automatic stage readiness alive.
+        Caller owns _lock.
+        """
+        self._sample_generation = None
+        self._game_cache = {**self._game_cache, 'game_time': None, 'frame_count': None,
+                            'connected': False, 'configured': False,
+                            'source': None, 'last_refresh': None, 'message': message}
 
     def consume_game_time_reset(self) -> bool:
         """消费一次"时钟归 0"事件；返回此前是否检测到新关卡开始。
@@ -294,6 +311,7 @@ class TimerDataProvider:
                 self._build_reader()
 
             self.time_address_hex = addr
+            self._invalidate_clock_locked('宿主地址已更新，等待首次时钟采样。')
             self._clear_frame_timeline()
 
             if not self._ensure_connected():
@@ -345,11 +363,23 @@ class TimerDataProvider:
         """仅做内存采样（读 game_time + frame_count），不读文件。需先调用 apply_hook 配置地址。"""
         pending_emit = False
         with self._lock:
+            policy = self._capture_policy
             # guest 侧路径：auto_addressing 开启时注入，优先于此采样。
             if self._guest_reader is not None:
                 result = self._refresh_sample_guest()
             else:
                 result = self._refresh_sample_host()
+            if result.get('ok') and policy is not None:
+                self._sample_generation = policy.generation
+            if result.get('ok'):
+                frame = self._game_cache.get('frame_count')
+                if type(frame) is int and frame >= 0:
+                    self._last_known_frame = frame
+            else:
+                # A successful policy generation is not sufficient after a new
+                # read fails: never relabel the previous value as current.
+                self._sample_generation = None
+                self._game_cache = {**self._game_cache, 'game_time': None, 'frame_count': None}
             # 两种数据源统一只置标记，离开 _lock 后再广播订阅者。
             if self._pending_reset_emit:
                 self._pending_reset_emit = False
@@ -488,6 +518,46 @@ class TimerDataProvider:
             self._game_time_reset = False
 
     def get_game_data(self) -> Dict[str, Optional[Any]]:
-        """返回最近一次采样的缓存。"""
+        """返回策略允许的最近采样；内部帧守卫不受公开开关关闭。"""
+        with self._lock:
+            result = dict(self._game_cache)
+            policy = self._capture_policy
+            sampled_generation = self._sample_generation
+        if policy is not None:
+            for public, internal in (
+                ('gameTime', 'game_time'), ('fixedFrame', 'frame_count'),
+                ('clockSource', 'source'), ('connected', 'connected'),
+                ('configured', 'configured'), ('sampledAt', 'last_refresh'),
+                ('message', 'message'),
+            ):
+                if (not policy.enabled('battle.' + public)
+                        or sampled_generation != policy.generation):
+                    result.pop(internal, None)
+            result['policy_generation'] = policy.generation
+            result['collection_state'] = ('current' if sampled_generation == policy.generation
+                                          else 'unavailable')
+        return result
+
+    def get_clock_sample(self) -> Dict[str, Optional[Any]]:
+        """读取内部时钟缓存，供会话/自动定位判定，不受公开字段投影影响。"""
         with self._lock:
             return dict(self._game_cache)
+
+    def set_capture_policy(self, policy) -> None:
+        """设置独立计时器公开字段策略，保留会话检测/帧锚点的共享读取。"""
+        # 不争抢执行设备 IO 的锁；不可变引用一次替换，采样入口另行固定代际。
+        self._capture_policy = policy
+
+    def peek_frame_count(self) -> Optional[int]:
+        """非阻塞查询最近已知帧，锁被采样 IO 持有或值不可用时返回 None。
+
+        字段合成完成后调用，仅用于 latestKnownFrame；它不会读取内存或替代
+        原始 sourceFrame，避免等待设备导致敌我 worker 积压。
+        """
+        if not self._lock.acquire(blocking=False):
+            return None
+        try:
+            frame = self._game_cache.get('frame_count')
+            return frame if type(frame) is int and frame >= 0 else self._last_known_frame
+        finally:
+            self._lock.release()

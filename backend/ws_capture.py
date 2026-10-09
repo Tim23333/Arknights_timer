@@ -1,7 +1,7 @@
 """以独立客户端监控本机 WebSocket，并把原始消息持久化为 NDJSON。
 
 这是面向插件维护者的诊断工具，而非插件运行时的一部分：它只连接公开的
-``/v1/game`` 与 ``/v1/ops``，不会读取游戏内存，也不会调用 ``desktop_app``。
+``/v2/game`` 与 ``/v2/ops``，不会读取游戏内存，也不会调用 ``desktop_app``。
 窗口用于检查实时消息流，NDJSON 文件则保留可复盘的原始协议记录；两者均以
 WebSocket 返回值为唯一数据来源。默认输出到当前用户可写的 LocalAppData。
 """
@@ -27,8 +27,8 @@ DEFAULT_OUTPUT_DIR = Path(os.environ.get(
     "ARKNIGHTS_TIMER_DATA_DIR",
     str(Path(os.environ.get("LOCALAPPDATA", Path.cwd())) / "ArknightsTimeline"),
 )) / "websocket-monitor"
-GAME_URL = "ws://127.0.0.1:8765/v1/game"
-OPS_URL = "ws://127.0.0.1:8765/v1/ops"
+GAME_URL = "ws://127.0.0.1:8765/v2/game"
+OPS_URL = "ws://127.0.0.1:8765/v2/ops"
 TOPICS = {
     "battle": {"rateHz": 20},
     "stage": {"rateHz": 5},

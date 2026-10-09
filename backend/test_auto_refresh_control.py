@@ -22,7 +22,7 @@ class _Provider:
     def game_time_moved(self):
         return self.moved
 
-    def get_game_data(self):
+    def get_clock_sample(self):
         return {
             "game_time": self.game_time,
             "frame_count": self.frame_count,
@@ -33,6 +33,9 @@ class _WindowStub:
     def __init__(self):
         self._auto_refresh_enabled = True
         self._auto_refresh_wait_gen = 1
+        self._auto_refresh_retries = 0
+        self._auto_refresh_status = {}
+        _bind(self, '_set_auto_refresh_status')
         self._provider = _Provider()
         self.runs = 0
 

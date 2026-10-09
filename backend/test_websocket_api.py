@@ -25,7 +25,7 @@ class WebSocketApiTests(unittest.TestCase):
     def test_game_subscription_receives_versioned_battle_message(self):
         async def scenario():
             async with websockets.connect(
-                f"ws://127.0.0.1:{self.api.port}/v1/game") as websocket:
+                f"ws://127.0.0.1:{self.api.port}/v2/game") as websocket:
                 ready = json.loads(await websocket.recv())
                 self.assertEqual(ready["type"], "game.ready")
                 await websocket.send(json.dumps({
@@ -36,7 +36,7 @@ class WebSocketApiTests(unittest.TestCase):
                 self.api.publish_timer({"connected": True, "game_time": 12.5, "frame_count": 750})
                 message = json.loads(await websocket.recv())
                 self.assertEqual(message["type"], "battle.updated")
-                self.assertEqual(message["schemaVersion"], 1)
+                self.assertEqual(message["schemaVersion"], 2)
                 self.assertEqual(message["data"]["gameTime"], 12.5)
 
         asyncio.run(scenario())
@@ -44,11 +44,11 @@ class WebSocketApiTests(unittest.TestCase):
     def test_ops_endpoint_rejects_game_topics(self):
         async def scenario():
             async with websockets.connect(
-                f"ws://127.0.0.1:{self.api.port}/v1/ops") as websocket:
+                f"ws://127.0.0.1:{self.api.port}/v2/ops") as websocket:
                 status = json.loads(await websocket.recv())
                 self.assertEqual(status["type"], "ops.status")
                 self.assertNotIn("port", status["data"])
-                self.assertEqual(status["data"]["service"]["protocolVersion"], 1)
+                self.assertEqual(status["data"]["service"]["protocolVersion"], 2)
                 await websocket.send(json.dumps({
                     "type": "subscribe", "topics": {"battle": {"rateHz": 20}},
                 }))
@@ -61,7 +61,7 @@ class WebSocketApiTests(unittest.TestCase):
     def test_ops_heartbeat_runs_without_game_frames(self):
         async def scenario():
             async with websockets.connect(
-                f"ws://127.0.0.1:{self.api.port}/v1/ops") as websocket:
+                f"ws://127.0.0.1:{self.api.port}/v2/ops") as websocket:
                 await websocket.recv()
                 await websocket.send(json.dumps({
                     "type": "subscribe", "topics": {"ops.heartbeat": {"rateHz": 2}},
@@ -86,7 +86,7 @@ class WebSocketApiTests(unittest.TestCase):
     def test_selected_detail_subscription_requires_ids(self):
         async def scenario():
             async with websockets.connect(
-                f"ws://127.0.0.1:{self.api.port}/v1/game") as websocket:
+                f"ws://127.0.0.1:{self.api.port}/v2/game") as websocket:
                 await websocket.recv()
                 await websocket.send(json.dumps({
                     "type": "subscribe",
@@ -177,9 +177,9 @@ class WebSocketApiTests(unittest.TestCase):
     def test_sequence_is_independent_for_each_client(self):
         async def scenario():
             async with websockets.connect(
-                    f"ws://127.0.0.1:{self.api.port}/v1/game") as first, \
+                    f"ws://127.0.0.1:{self.api.port}/v2/game") as first, \
                     websockets.connect(
-                    f"ws://127.0.0.1:{self.api.port}/v1/game") as second:
+                    f"ws://127.0.0.1:{self.api.port}/v2/game") as second:
                 first_ready = json.loads(await first.recv())
                 second_ready = json.loads(await second.recv())
                 command = json.dumps({
@@ -229,7 +229,7 @@ class WebSocketApiTests(unittest.TestCase):
     def test_ops_endpoint_cannot_request_deploy_history(self):
         async def scenario():
             async with websockets.connect(
-                    f"ws://127.0.0.1:{self.api.port}/v1/ops") as websocket:
+                    f"ws://127.0.0.1:{self.api.port}/v2/ops") as websocket:
                 await websocket.recv()
                 await websocket.send(json.dumps({"type": "deploy.get_history"}))
                 message = json.loads(await websocket.recv())
@@ -243,7 +243,7 @@ class WebSocketApiTests(unittest.TestCase):
             self.api.publish_deploy(
                 [{"op": 0}], {"stageId": "test"}, [], [])
             async with websockets.connect(
-                    f"ws://127.0.0.1:{self.api.port}/v1/game") as websocket:
+                    f"ws://127.0.0.1:{self.api.port}/v2/game") as websocket:
                 await websocket.recv()
                 await websocket.send(json.dumps({"type": "deploy.get_history"}))
                 message = json.loads(await websocket.recv())
@@ -255,7 +255,7 @@ class WebSocketApiTests(unittest.TestCase):
     def test_non_object_command_and_invalid_unsubscribe_return_errors(self):
         async def scenario():
             async with websockets.connect(
-                    f"ws://127.0.0.1:{self.api.port}/v1/game") as websocket:
+                    f"ws://127.0.0.1:{self.api.port}/v2/game") as websocket:
                 await websocket.recv()
                 await websocket.send("[]")
                 first = json.loads(await websocket.recv())

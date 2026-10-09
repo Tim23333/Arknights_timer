@@ -19,6 +19,7 @@ from .enemy_buff_descriptions import (
     describe_global_buff, global_buff_chinese_name,
 )
 from .effect_frames_ui import COLUMNS as FRAMES_COLUMNS, enemy_frame_rows
+from .field_policy import field_status_text
 
 
 def format_skill_cd(skills, sep='; ', prec=1):
@@ -525,6 +526,9 @@ def format_pathing_column(key, enemy, decimals=None):
 
 
 def format_column_value(key, enemy, decimals, row=0):
+    unavailable = field_status_text(enemy, f'enemy.{key}')
+    if unavailable:
+        return unavailable
     precision = decimals.get(key, decimals.get('default', 2))
     lifecycle = getattr(enemy, 'lifecycle', 'active')
     if key == 'row':
@@ -537,6 +541,9 @@ def format_column_value(key, enemy, decimals, row=0):
         return enemy.eid
     if lifecycle == 'pending' and key not in ('life_status', 'spawn_wait'):
         return '-'
+    if key == 'hp':
+        # Qt uses a progress bar, but the WebUI also needs a complete text value.
+        return f'{enemy.hp:.{precision}f}/{enemy.max_hp:.{precision}f}'
     if key == 'pos':
         p = decimals.get('pos', precision)
         return f'({enemy.pos_x:.{p}f}, {enemy.pos_y:.{p}f})'

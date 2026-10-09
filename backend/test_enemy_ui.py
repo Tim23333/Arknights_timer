@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
-from PySide6.QtCore import QSettings, Qt, QModelIndex
+from PySide6.QtCore import QSettings, Qt, QModelIndex, QEvent
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
     QApplication, QProgressBar, QPushButton, QTableWidget, QTableWidgetItem,
@@ -35,6 +35,26 @@ from backend.desktop_app import (
 
 
 class EnemyFormattingTests(unittest.TestCase):
+    def test_hp_text_is_available_outside_qt_progress_bar(self):
+        # ROOT CAUSE: Qt rendered HP with a separate progress bar; the WebUI
+        # called this text formatter, whose HP branch was missing.
+        enemy = EnemyInfo(1)
+        enemy.hp, enemy.max_hp = 123.25, 500.0
+        self.assertEqual(format_column_value('hp', enemy, {'hp': 2}), '123.25/500.00')
+        enemy.hp = 0.0
+        self.assertEqual(format_column_value('hp', enemy, {'hp': 1}), '0.0/500.0')
+        enemy.field_states['enemy.hp'] = {'collectionState': 'unavailable'}
+        self.assertEqual(format_column_value('hp', enemy, {}), '不可用')
+
+    def test_every_text_column_has_a_nonblank_rendering(self):
+        enemy = EnemyInfo(1)
+        enemy.eid, enemy.name = 'enemy_test', '测试敌人'
+        for column in ENEMY_COLUMN_DEFS:
+            if column['key'] == 'detail':
+                continue
+            with self.subTest(column=column['key']):
+                self.assertNotEqual(format_column_value(column['key'], enemy, {}), '')
+
     def test_external_selected_detail_does_not_sample_or_publish_all_units(self):
         requests = {
             "enemy_detail": {
@@ -46,8 +66,9 @@ class EnemyFormattingTests(unittest.TestCase):
         }
         worker = EnemyPollWorker(
             object(), detail_request_provider=lambda: requests)
-        first = SimpleNamespace(addr=101, eid="1")
-        second = SimpleNamespace(addr=202, eid="2")
+        # Detail cache acceptance checks live instance identity, not just addr.
+        first = SimpleNamespace(addr=101, eid="1", id_ptr=1001, data_ptr=2001)
+        second = SimpleNamespace(addr=202, eid="2", id_ptr=1002, data_ptr=2002)
         worker._external_detail_due = float("inf")
         worker._external_enemy_details = {101: first, 202: second}
         snap = {"ok": True, "enemies": [first, second], "characters": []}
@@ -78,6 +99,21 @@ class EnemyUiTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
+
+    def setUp(self):
+        self._existing_windows = set(self.app.topLevelWidgets())
+
+    def tearDown(self):
+        # Qt owns top-level widgets beyond their Python test variables. Drain
+        # queued layout callbacks while their receivers still exist, then delete
+        # the test windows explicitly instead of leaving native hooks, timers or
+        # floating-window cycles for interpreter shutdown.
+        self.app.processEvents()
+        for widget in set(self.app.topLevelWidgets()) - self._existing_windows:
+            widget.close()
+            widget.deleteLater()
+        self.app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        self.app.processEvents()
 
     def test_precision_columns_follow_current_visible_numeric_columns(self):
         visible = {'name', 'ep_sanity', 'attr_1', 'skill', 'detail'}
@@ -113,19 +149,79 @@ class EnemyUiTests(unittest.TestCase):
             def poll_fast():
                 return {
                     'ok': True, 'strict_60hz': True, 'fixed_frame': 123,
-                    'time_scale': 0.0, 'play_time': 10.0, 'enemies': [],
+                    'time_scale': 2.0, 'pause_keys_active': True,
+                    'play_time': 10.0, 'enemies': [],
                 }
 
             def read_frame_guard_fast(self):
-                return {'frame': self.end_frame, 'time_scale': 0.0,
-                        'play_time': 10.0}
+                return {'frame': self.end_frame, 'time_scale': 2.0,
+                        'pause_keys_active': True, 'play_time': 10.0}
 
         consistent = EnemyPollWorker(Reader(123))._collect_complete_snapshot()
         crossed = EnemyPollWorker(Reader(124))._collect_complete_snapshot()
         self.assertTrue(consistent['paused_snapshot'])
+        self.assertEqual(consistent['time_scale'], 0.0)
+        self.assertEqual(consistent['origin_time_scale'], 2.0)
         self.assertTrue(consistent['pause_consistent'])
         self.assertFalse(crossed['frame_consistent'])
         self.assertFalse(crossed['pause_consistent'])
+
+    def test_poll_worker_does_not_infer_pause_from_origin_scale(self):
+        class Reader:
+            @staticmethod
+            def poll_fast():
+                return {'ok': True, 'fixed_frame': 464, 'time_scale': 0.0,
+                        'pause_keys_active': None, 'play_time': 10.0,
+                        'enemies': []}
+
+            @staticmethod
+            def read_frame_guard_fast():
+                return {'frame': 464, 'time_scale': 0.0,
+                        'pause_keys_active': None, 'play_time': 10.0}
+
+        snap = EnemyPollWorker(Reader())._collect_complete_snapshot()
+        self.assertIsNone(snap['paused_snapshot'])
+        self.assertIsNone(snap['time_scale'])
+        self.assertIsNone(snap['pause_consistent'])
+
+    def test_poll_worker_guard_failure_cannot_accept_source_frame(self):
+        # ROOT CAUSE: a missing frame-tail read previously defaulted to the
+        # source frame and incorrectly marked the snapshot consistent.
+        class Reader:
+            @staticmethod
+            def poll_fast():
+                return {'ok': True, 'fixed_frame': 464, 'time_scale': 2.0,
+                        'pause_keys_active': True, 'play_time': 10.0,
+                        'enemies': []}
+
+            @staticmethod
+            def read_frame_guard_fast():
+                raise OSError('device read failed')
+
+        snap = EnemyPollWorker(Reader())._collect_complete_snapshot()
+        self.assertFalse(snap['frame_consistent'])
+        self.assertIsNone(snap['frame_end'])
+        self.assertFalse(snap['pause_consistent'])
+
+    def test_poll_worker_device_guard_must_match_source_frame(self):
+        class Channel:
+            @staticmethod
+            def device_frame_guard():
+                return {'attempts': 1, 'start': 463, 'end': 463,
+                        'complete': True}
+
+        class Reader:
+            _chan = Channel()
+
+            @staticmethod
+            def poll_fast():
+                return {'ok': True, 'fixed_frame': 464, 'time_scale': 2.0,
+                        'pause_keys_active': False, 'play_time': 10.0,
+                        'enemies': []}
+
+        snap = EnemyPollWorker(Reader())._collect_complete_snapshot()
+        self.assertFalse(snap['frame_consistent'])
+        self.assertFalse(snap['pause_consistent'])
 
     def test_poll_worker_coalesces_ui_wakeups_to_latest_snapshot(self):
         worker = EnemyPollWorker(object())

@@ -277,6 +277,7 @@ class CharacterReaderTests(unittest.TestCase):
         memory[0x2000] = None
         reader._refresh_positions_and_blocking({info.addr: info})
         self.assertEqual((info.blocked_count, info.blocked_total_volume), (0, 0))
+        self.assertFalse(info._blocking_read_ok)
         self.assertEqual(requests.count(0x2000), 2)
 
     def test_stable_buff_chain_uses_one_batch_without_skipping_layers(self):

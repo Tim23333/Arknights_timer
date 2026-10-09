@@ -88,6 +88,17 @@ class RngService:
         self._thread = None
         self._lifecycle_lock = threading.Lock()
         self._reader_closed = False
+        self._capture_policy = None
+
+    def set_capture_policy(self, policy):
+        """固定独立 RNG 轮询/投影策略，清除被关闭历史的公开缓存。"""
+        with self._lock:
+            self._capture_policy = policy
+            if not policy.enabled('rng.history'):
+                self._last_by_role.clear()
+            for tracker in self._trackers.values():
+                if isinstance(tracker, EngineTracker):
+                    tracker.set_capture_policy(policy)
 
     # ---------------- 状态 ----------------
 
@@ -207,6 +218,9 @@ class RngService:
             return False
         with self._lock:
             self._trackers = {e["id"]: EngineTracker(self.reader, e) for e in engines}
+            if self._capture_policy is not None:
+                for tracker in self._trackers.values():
+                    tracker.set_capture_policy(self._capture_policy)
             self._selected_id = None
             for t in self._trackers.values():
                 if t.engine["role"] == self.prefer_role:
@@ -393,6 +407,14 @@ class RngService:
     def _poll_loop(self):
         last_watch = 0.0
         while not self._stop.is_set():
+            policy = self._capture_policy
+            if policy is not None:
+                from backend.app.field_policy import FIELD_REGISTRY
+                if not any(policy.enabled(spec.id) for spec in FIELD_REGISTRY.values()
+                           if spec.domain == 'rng'):
+                    # 全域停采后连状态/看门狗专属读也暂停，恢复时重新采当前值。
+                    self._stop.wait(max(self.poll_interval, 0.05))
+                    continue
             if self._rescan.is_set():
                 self._rescan.clear()
                 self.locate()
@@ -467,9 +489,19 @@ class RngService:
             sel = self._trackers.get(self._selected_id)
             sel_id = self._selected_id
             preserved = dict(self._last_by_role)
+            policy = self._capture_policy
+        if policy is not None:
+            if not policy.enabled('rng.predictions'):
+                predict_len = 0
+            if not policy.enabled('rng.history'):
+                history_len = 0
         engines = []
         for t in trackers:
             s = t.snapshot(0, 0)
+            if policy is not None and s.get('collectionState') == 'unavailable':
+                return {'policyGeneration': policy.generation,
+                        'collectionState': 'unavailable',
+                        'reason': 'awaiting_current_generation_read'}
             engines.append({k: s[k] for k in
                             ("id", "label", "role", "cursor", "total", "rate", "status")})
 
@@ -494,6 +526,10 @@ class RngService:
         by_role = {}
         for role, tracker in role_trackers.items():
             current = detail_for(tracker)
+            if policy is not None and current.get('collectionState') == 'unavailable':
+                return {'policyGeneration': policy.generation,
+                        'collectionState': 'unavailable',
+                        'reason': 'awaiting_current_generation_read'}
             cached = preserved.get(role)
             if cached and current and cached.get("id") == current.get("id"):
                 merged = {
@@ -508,7 +544,7 @@ class RngService:
                     merged[key] for key in sorted(merged)[-history_len:]
                 ] if history_len else []
             by_role[role] = current
-        return {
+        result = {
             "process": self.process,
             "via": self.via,
             "status": self.status_msg,
@@ -516,4 +552,21 @@ class RngService:
             "selected_id": sel_id,
             "selected": detail_for(sel),
             "by_role": by_role,
+            "collectionState": "current",
         }
+        if policy is not None:
+            from backend.app.field_policy import project_payload
+            result = project_payload('rng', result, policy, layer='collect')
+            # engines 为旧桌面摘要列表，适用同一叶策略，避免旁路公开。
+            result['engines'] = [
+                {key: value for key, value in engine.items()
+                 if policy.enabled('rng.' + key)} for engine in engines
+            ]
+            result['policyGeneration'] = policy.generation
+            if self._capture_policy is not policy:
+                # 用户切换期间产生的聚合结果不能拿新代际标签发布。下一调用重采，
+                # 这里不递归重试，避免高频切换使展示线程一直等待。
+                return {'policyGeneration': self._capture_policy.generation,
+                        'collectionState': 'unavailable',
+                        'reason': 'policy_changed_during_snapshot'}
+        return result

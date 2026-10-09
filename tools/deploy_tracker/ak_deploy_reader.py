@@ -271,6 +271,7 @@ def _numeric_filter_chunk(base, data):
 class DeployTrackerReader:
     def __init__(self, mc: MemCore):
         self.mc = mc
+        self._capture_policy = None
         self._bc_addr = 0
         self._logger_addr = 0
         self._logs_list_addr = 0
@@ -364,13 +365,14 @@ class DeployTrackerReader:
         ch = self._get_channel()
         return ch.batch_read(requests)
 
-    def _klass_names_batch(self, objs):
-        """批量解析一组对象的 klass 名 {addr: name} (TCP 通道三轮批量读)。"""
+    def _klass_names_batch(self, objs, *, read_many=None):
+        """批量解析 klass 名；静态元数据调用可注入不登记帧预取的 IO。"""
+        read_many = read_many or self._read_many
         objs = [o for o in objs if self.mc.is_ptr(o)]
         if not objs:
             return {}
         klasses = {}
-        for o, d in zip(objs, self._read_many([(o, 8) for o in objs])):
+        for o, d in zip(objs, read_many([(o, 8) for o in objs])):
             if d:
                 k = struct.unpack("<Q", d)[0]
                 if self.mc.is_ptr(k):
@@ -378,7 +380,7 @@ class DeployTrackerReader:
         name_ptrs = {}
         items = list(klasses.items())
         for o, d in zip([o for o, _ in items],
-                        self._read_many([(k + 0x10, 8) for _, k in items])):
+                        read_many([(k + 0x10, 8) for _, k in items])):
             if d:
                 np_ = struct.unpack("<Q", d)[0]
                 if self.mc.is_ptr(np_):
@@ -386,7 +388,7 @@ class DeployTrackerReader:
         out = {}
         items = list(name_ptrs.items())
         for o, d in zip([o for o, _ in items],
-                        self._read_many([(p, 48) for _, p in items])):
+                        read_many([(p, 48) for _, p in items])):
             if not d:
                 continue
             end = d.find(b"\x00")
@@ -428,8 +430,8 @@ class DeployTrackerReader:
                 addr += size
         return out
 
-    def _scan_class_objects(self, class_names):
-        """一次设备侧扫描返回多个 Torappu.Battle 类的对象地址。
+    def _scan_class_objects(self, class_names, *, namespace="Torappu.Battle"):
+        """一次设备侧扫描返回指定命名空间内多个类的对象地址。
 
         多个类共用三遍大范围扫描（类名、Il2CppClass 引用、对象 klass 指针），
         既让关卡信息先产出，又避免随后定位操作记录时重新扫描数 GB 内存。
@@ -481,20 +483,20 @@ class DeployTrackerReader:
                 klass = ref - 0x10  # Il2CppClass.name
                 if self._ptr(klass + 0x10) != addr:
                     continue
-                namespace = self._read_cstring(self._ptr(klass + 0x18))
-                if namespace == "Torappu.Battle":
+                found_namespace = self._read_cstring(self._ptr(klass + 0x18))
+                if found_namespace == namespace:
                     klass_names[klass] = names_by_addr[addr]
         klass_counts = {
             name: sum(1 for value in klass_names.values() if value == name)
             for name in class_names
         }
-        self._status("  Torappu.Battle Il2CppClass 命中 " + ", ".join(
+        self._status(f"  {namespace} Il2CppClass 命中 " + ", ".join(
             f"{name}={klass_counts[name]}" for name in class_names))
         if not klass_names:
             found_names = ", ".join(sorted(set(names_by_addr.values())))
             self._class_scan_failure_reason = (
                 f"已找到类名字符串 ({found_names})，但没有解析出 namespace="
-                "Torappu.Battle 的 Il2CppClass；Il2CppClass.name/namespace 偏移可能已漂移")
+                f"{namespace} 的 Il2CppClass；Il2CppClass.name/namespace 偏移可能已漂移")
             self._status("  主路径失败: " + self._class_scan_failure_reason)
             return {name: set() for name in class_names}
         if "BattleController" in class_names and not klass_counts.get("BattleController"):
@@ -1439,8 +1441,18 @@ class DeployTrackerReader:
 
     # ---------------- 对外接口 ----------------
 
+    def set_capture_policy(self, policy):
+        """由独立部署轮询入口固定本轮策略；地址/关卡身份继续用于生命周期。"""
+        self._capture_policy = policy
+
+    def _collect_field(self, field_id):
+        policy = self._capture_policy
+        return policy is None or policy.enabled(field_id)
+
     def get_events(self):
         """实时操作日志 (BattleLogger.m_logs)。"""
+        if not self._collect_field('deploy.events'):
+            return []
         return self._read_log_list(self._logs_list_addr)
 
     def get_spawn_events(self):
@@ -1448,10 +1460,14 @@ class DeployTrackerReader:
 
     def get_journal_events(self):
         """代理作战完整序列 (ReplayController.m_journal.logs), 非代理作战返回 []。"""
+        if not self._collect_field('deploy.journal'):
+            return []
         return self._read_log_list(self._journal_logs_list_addr)
 
     def get_squad(self):
         """编队信息 (优先代理序列中的完整编队)。"""
+        if not self._collect_field('stage.squad'):
+            return []
         squad = self._read_squad(self._journal_squad_list_addr)
         if squad:
             return squad
@@ -1459,6 +1475,8 @@ class DeployTrackerReader:
 
     def get_stage_info(self):
         """返回阶段 1 已定位的关卡信息副本，适合后端直接序列化。"""
+        if not self._collect_field('stage.stage'):
+            return {}
         return dict(self._stage_info)
 
     def get_battle_state(self):
@@ -1502,7 +1520,7 @@ class DeployTrackerReader:
         stage = self.get_stage_info()
         stage_id = stage.get("stageId") or self._journal_meta.get("stageId", "")
         level_id = stage.get("levelId") or self._journal_meta.get("levelId", "")
-        return {
+        result = {
             "located": bool(self._logs_list_addr or self._journal_logs_list_addr),
             "stageLocated": bool(stage_id or level_id),
             "battle": self.get_battle_state(),
@@ -1521,3 +1539,15 @@ class DeployTrackerReader:
             "events": live,
             "journalEvents": journal,
         }
+        # 阶段身份保留内部匹配，公开子树关后不从别名键漏出旧关卡元数据。
+        if not self._collect_field('stage.stage'):
+            for key in ('stageId', 'levelId', 'stageCode', 'stageName', 'zoneId',
+                        'stage', 'journalMeta'):
+                result.pop(key, None)
+        if not self._collect_field('stage.squad'):
+            result.pop('squad', None)
+        if not self._collect_field('deploy.events'):
+            result.pop('events', None)
+        if not self._collect_field('deploy.journal'):
+            result.pop('journalEvents', None)
+        return result
