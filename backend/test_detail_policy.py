@@ -39,6 +39,40 @@ class DetailPolicyTests(unittest.TestCase):
         self.assertIsNone(worker._detail_heavy_cache)
         self.assertFalse(worker._detail_loading)
 
+    def test_cross_frame_detail_never_enters_desktop_detail_cache(self):
+        store = PolicyStore()
+        policy = store.snapshot()
+        detail = EnemyInfo(0x2000)
+        detail.field_states = {'enemy_detail.buffs': {
+            'collectionState': 'unavailable', 'reason': 'frame_inconsistent',
+            'sourceFrame': 100, 'acceptedFrame': 101}}
+        reader = SimpleNamespace(bc_addr=0x3000,
+                                 read_enemy_detail=Mock(return_value=detail))
+        worker = EnemyPollWorker(reader, policy_provider=store.snapshot)
+        worker._active_policy = policy
+        worker.set_detail_target(0x2000)
+        with patch('backend.desktop_app.threading.Thread', _InlineThread):
+            worker._start_detail_refresh(0x2000)
+        self.assertIsNone(worker._detail_heavy_cache)
+        self.assertIn('跨逻辑帧', worker._detail_error)
+
+    def test_cross_frame_character_detail_is_rejected(self):
+        store = PolicyStore()
+        detail = CharacterInfo(0x2000, cid='char_test', data_ptr=0x4000)
+        detail.field_states = {'character_detail.buffs': {
+            'collectionState': 'unavailable', 'reason': 'frame_inconsistent',
+            'sourceFrame': 100, 'acceptedFrame': 101}}
+        reader = SimpleNamespace(bc_addr=0x3000)
+        character_reader = SimpleNamespace(read_character_detail=Mock(return_value=detail))
+        worker = EnemyPollWorker(reader, character_reader,
+                                 policy_provider=store.snapshot)
+        worker._active_policy = store.snapshot()
+        worker.set_character_detail_target(0x2000)
+        with patch('backend.desktop_app.threading.Thread', _InlineThread):
+            worker._start_character_detail_refresh(0x2000)
+        self.assertIsNone(worker._character_detail_cache)
+        self.assertIn('跨逻辑帧', worker._character_detail_error)
+
     def test_enemy_detail_does_not_mutate_basic_canonical_entity(self):
         reader = SimpleNamespace(bc_addr=0x3000)
         worker = EnemyPollWorker(reader)

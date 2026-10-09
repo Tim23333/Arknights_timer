@@ -50,7 +50,7 @@ python backend/desktop_app.py --webui --webui-port 8768
 
 ## 当前限制与验证
 
-attackRange/effectFrames 详情清单是预留来源，没有现成读取值时明确标记 `unsupported_in_source`，不虚构数据。原有暂停检测问题保留，未在本次声称修复。无技能根对象的派生状态采取保守不可用策略，后续可单独验证。
+敌人详情中的 talents/dynamicAbilities/equipment/attackRange/effectFrames 是预留来源，没有现成读取值时明确标记 `unsupported_in_source`，不虚构数据。`enemy_detail.skills` 复用同一完整帧的 `enemy.skill` 采样；基础技能不可用时详情同样不可用。异步详情读前、读后逻辑帧不一致时，详情字段标记 `frame_inconsistent`，不作为当前值发布。已离场干员的伤害/治疗历史按字段分别保留来源；关闭某字段的采集立即清除该字段历史，重新开启后只接受新的成功采样。原有暂停检测问题保留，未在本次声称修复。无技能根对象的派生状态采取保守不可用策略，后续可单独验证。
 
 测试覆盖纯策略、真实本机 HTTP、真实 Qt 命令桥、源适配器与真实 WS 订阅；不需要模拟器即可运行回归测试。`backend/test_webui_runtime.py --serve` 是关闭采集线程的界面 QA 入口，不是游戏实测或生产启动方式。GUI 浏览器验证、关卡内性能与最终 exe 打包仍需要单独验收。
 

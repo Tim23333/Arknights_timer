@@ -155,8 +155,11 @@ class WebUiRuntime(QObject):
             eligible = [character for character in characters
                         if getattr(character, 'field_states', {}).get('character.' + key, {}).get(
                             'collectionState') in {'current', 'historical'}]
+            eligible_history = [character for character in history
+                                if getattr(character, 'field_states', {}).get('character.' + key, {}).get(
+                                    'collectionState') == 'historical']
             metrics[metric] = {row['cid'] or row['name']: row[metric]
-                               for row in build_character_overview([*eligible, *history])}
+                               for row in build_character_overview([*eligible, *eligible_history])}
         for index, row in enumerate(rows):
             key = row['cid'] or row['name']
             result['rows'].append({'id': str(index),

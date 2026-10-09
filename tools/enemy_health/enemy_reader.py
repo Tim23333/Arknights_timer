@@ -517,6 +517,7 @@ class EnemyReader:
         self._active_skill_ptrs = {}  # enemy addr -> m_skills 中当前启用且已排序的技能
         self._skill_names = {}        # skill addr -> prefabKey (技能静态名缓存)
         self._skill_cd = {}           # enemy addr -> [(key, remaining, period), ...]
+        self._skill_sampled = set()    # 本轮完整读取技能容器与计时器的敌人地址
         self._skill_runtime_meta = {} # skill addr -> family/触发/运行时 Ability
         self._skill_static_meta = {}  # skill addr -> {priority, sp_cost} (ESkillData)
         self._skill_enriched = {}     # enemy addr -> [技能判定元数据 dict, ...]
@@ -597,6 +598,7 @@ class EnemyReader:
             for cache in (self._attr_snapshot, self._runtime_snapshot,
                           self._skill_cd, self._skill_enriched, self._names):
                 cache.clear()
+            self._skill_sampled.clear()
             if not policy.enabled('enemy.finish_reason'):
                 # Departed entities cannot be sampled again. Discard their raw
                 # value on capture-off rather than resurrect it on re-enable.
@@ -647,21 +649,27 @@ class EnemyReader:
         info.policy_generation = policy.generation
         info.source_frame = source_frame
         accepted_frame = self._read_detail_frame()
+        frame_consistent = source_frame is not None and source_frame == accepted_frame
         for spec in FIELD_REGISTRY.values():
             if spec.domain != domain:
                 continue
             key = spec.id.split('.', 1)[1]
+            unsupported = (domain == 'enemy_detail' and key in (
+                'talents', 'dynamicAbilities', 'equipment', 'attackRange', 'effectFrames'))
             state = ('not_collected' if not policy.enabled(spec.id) else
-                     'current' if key in succeeded else 'unavailable')
+                     'current' if key in succeeded and frame_consistent else 'unavailable')
+            reason = ('' if state == 'current' else
+                      'capture_disabled' if state == 'not_collected' else
+                      'frame_inconsistent' if key in succeeded and not frame_consistent else
+                      'unsupported_in_source' if unsupported else 'detail_read_failed')
             info.field_states[spec.id] = collection_record(
                 source_frame, self._fixed_frame_snap, policy.generation,
-                state, ('' if key in succeeded else 'unsupported_in_source'
-                        if key in ('attackRange', 'effectFrames') else 'detail_read_failed'),
+                state, reason,
                 accepted_frame=accepted_frame)
             info.field_states[spec.id].update(
                 sampledAt=getattr(self._detail_context, 'sampled_at', None),
                 acceptedAt=time.time(),
-                frameConsistent=(source_frame is not None and source_frame == accepted_frame))
+                frameConsistent=frame_consistent)
 
     def _attribute_indices(self):
         if self._capture_policy is None:
@@ -789,7 +797,7 @@ class EnemyReader:
             elif spec.group == 'identity':
                 success = known_identity
             elif spec.group == 'skills':
-                success = info.addr in self._skill_cd
+                success = info.addr in self._skill_sampled
             elif spec.group == 'runtime':
                 required = {
                     'action_state': ('state_id',),
@@ -5465,6 +5473,7 @@ class EnemyReader:
                 self._attr_cache[aep] = cdp
 
         # ---- 技能、触发器和 CD 每个采样帧刷新 ----
+        self._skill_sampled.clear()
         if ptrs and self._collect_group('skills'):
             self._refresh_skills_chan(ptrs)
 
@@ -5613,6 +5622,7 @@ class EnemyReader:
         NOTICE: 上段保留的是地址拓扑缓存。三开关版本不再沿用 CD/Trigger
         等值缓存；当前对象或计时器读失败时由字段状态报告 unavailable。
         """
+        self._skill_sampled.clear()
         eps = [ep for ep in ptrs
                if (self.mc.is_ptr(self._skill_lp.get(ep, 0))
                    or self.mc.is_ptr(self._skill_ap.get(ep, 0))
@@ -5832,15 +5842,26 @@ class EnemyReader:
                    for r, p in (remain_of[s],)]
             enriched = [self._build_skill_row(s, *remain_of[s])
                         for s in sks if s in remain_of]
+            expected_sources = {
+                kind for kind, ptr in (('active', self._skill_lp.get(ep, 0)),
+                                       ('all', self._skill_ap.get(ep, 0)))
+                if self.mc.is_ptr(ptr)}
+            complete = (bool(expected_sources)
+                        and expected_sources.issubset(decoded_sources[ep])
+                        and len(out) == len(sks))
             # 计时器也可能在切阶段的一帧内为 NULL；有旧值时继续保留，下一轮
             # 自动重试。只有完整数组明确为空时才立即发布空技能列表。
             if out:
                 self._skill_cd[ep] = out
                 self._skill_enriched[ep] = enriched
+                if complete:
+                    self._skill_sampled.add(ep)
             elif ('all' in decoded_sources[ep] and not sks
                   and self.mc.is_ptr(self._skill_ap.get(ep, 0))):
                 self._skill_cd[ep] = []
                 self._skill_enriched[ep] = []
+                if complete:
+                    self._skill_sampled.add(ep)
         # 技能对象随敌人退场释放, 修剪名称缓存防地址复用串名
         live_sks = {s for ep in ptrs for s in self._skill_ptrs.get(ep, ())}
         for s in list(self._skill_names):
@@ -6566,7 +6587,9 @@ class EnemyReader:
         if policy is not None and not any(policy.group_enabled('enemy_detail', key)
                                           for key in ('attributes', 'rawAttributes',
                                                       'buffs', 'globalBuffs', 'skills',
-                                                      'specialShield')):
+                                                      'specialShield', 'talents',
+                                                      'dynamicAbilities', 'equipment',
+                                                      'attackRange', 'effectFrames')):
             return None
         self._detail_context.active = True
         self._detail_context.policy = policy

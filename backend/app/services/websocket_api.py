@@ -281,9 +281,10 @@ def _character_basic(entity: Any, index: int) -> dict[str, Any]:
     }
 
 
-def _detail(entity: Any, basic: dict[str, Any]) -> dict[str, Any]:
+def _detail(entity: Any, basic: dict[str, Any], *, primary_enemy: Any = None,
+            policy: Any = None) -> dict[str, Any]:
     """建立详情白名单；所有指针/地址字段均在此边界被排除。"""
-    return {
+    details = {
         **basic,
         "attributes": _safe(getattr(entity, "attributes", {})),
         "rawAttributes": _safe(getattr(entity, "raw_attributes", {})),
@@ -298,6 +299,19 @@ def _detail(entity: Any, basic: dict[str, Any]) -> dict[str, Any]:
         "fieldStates": {**basic.get("fieldStates", {}),
                         **_safe(getattr(entity, "field_states", {}))},
     }
+    if primary_enemy is not None and policy is not None:
+        # Enemy detail has no independent skill reader: reuse only the primary
+        # complete-frame skill sample, preserving that sample's provenance.
+        source = basic.get("fieldStates", {}).get("enemy.skill", {})
+        if (policy.enabled("enemy_detail.skills") and source.get("collectionState") == "current"):
+            details["skills"] = _safe(getattr(primary_enemy, "skills_detail", ())
+                                       or getattr(primary_enemy, "skills", ()))
+            details["fieldStates"]["enemy_detail.skills"] = dict(source)
+        elif policy.enabled("enemy_detail.skills"):
+            details["fieldStates"]["enemy_detail.skills"] = {
+                **source, "collectionState": "unavailable",
+                "reason": "dependency_unavailable:enemy.skill"}
+    return details
 
 
 def _public_action(domain: str, action: Any) -> dict[str, Any]:
@@ -747,7 +761,8 @@ class WebSocketApi:
                 self._local_changed.notify_all()
 
     def publish_runtime(self, snapshot: dict[str, Any]) -> None:
-        if snapshot.get("policy_generation", self._policy_provider().generation) != self._policy_provider().generation:
+        policy = self._policy_provider()
+        if snapshot.get("policy_generation", policy.generation) != policy.generation:
             return
         if not snapshot.get("frame_consistent", True):
             failed_battle = self._battle(snapshot)
@@ -814,10 +829,14 @@ class WebSocketApi:
                     rows.append(selected)
             live_enemy_basics = {getattr(entity, "addr", None): basic
                                  for entity, basic in zip(snapshot.get("enemies", ()), enemies)}
+            live_enemy_entities = {getattr(entity, "addr", None): entity
+                                   for entity in snapshot.get("enemies", ())}
             live_character_basics = {getattr(entity, "addr", None): basic
                                      for entity, basic in zip(snapshot.get("characters", ()), characters)}
             self._publish("enemy_detail", {"items": [
-                _detail(entity, live_enemy_basics.get(getattr(entity, "addr", None), _enemy_basic(entity, index)))
+                _detail(entity, live_enemy_basics.get(getattr(entity, "addr", None), _enemy_basic(entity, index)),
+                        primary_enemy=live_enemy_entities.get(getattr(entity, "addr", None)),
+                        policy=policy)
                 for index, entity in enumerate(external_enemies, 1)
             ], "loading": bool(snapshot.get("external_detail_loading") or snapshot.get("detail_loading")),
                 "meta": self._runtime_meta(snapshot, snapshot.get("ok", True))})

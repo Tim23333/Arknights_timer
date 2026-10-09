@@ -167,6 +167,7 @@ class EnemyDetailModelTests(unittest.TestCase):
         reader._skill_cd[ep] = [('StableSkill', 8.0, 30.0)]
         reader._refresh_skills_chan([ep])
         self.assertEqual(reader._skill_cd[ep], [('StableSkill', 8.0, 30.0)])
+        self.assertNotIn(ep, reader._skill_sampled)
 
     def test_stable_enemy_skill_chain_reads_all_layers_in_one_batch(self):
         (ep, active, all_skills, skill, _key), blocks = self._skill_memory(
@@ -208,6 +209,7 @@ class EnemyDetailModelTests(unittest.TestCase):
         self.assertEqual(len(calls), 1)
         self.assertEqual(
             reader._skill_cd[ep], [('StableSkill', 12.5, 30.0)])
+        self.assertIn(ep, reader._skill_sampled)
 
     def test_stable_abnormal_buff_chain_reads_all_layers_in_one_batch(self):
         addr, container, double = 0x1000, 0x2000, 0x3000

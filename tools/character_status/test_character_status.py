@@ -154,15 +154,16 @@ class CharacterReaderTests(unittest.TestCase):
             reader._committed_unattributed_damage, 2425.59, places=2)
 
     def test_damage_history_keeps_retreated_operator_peak(self):
-        reader = CharacterReader.__new__(CharacterReader)
-        reader._damage_history = {}
+        reader = self._action_reader()
         infos = {
             1: CharacterInfo(1, cid='char_a', name='甲',
                              damage_total=120.0, healing_total=30.0),
             2: CharacterInfo(2, cid='char_b', name='乙', is_token=True,
                              damage_total=50.0),
         }
-        reader._record_damage_history(infos, {})
+        reader._record_damage_history(infos, {
+            'char_a': {'damage_total': 120.0, 'healing_total': 30.0},
+            'char_b': {'damage_total': 50.0, 'healing_total': 0.0}})
         # 撤退后不在 infos 中，但游戏仍保留统计条目时继续跟踪累计值。
         reader._record_damage_history({}, {
             'char_a': {'damage_total': 150.0, 'healing_total': 25.0}})

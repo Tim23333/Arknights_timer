@@ -119,6 +119,26 @@ class FieldPublicationTests(unittest.TestCase):
         self.api.publish_runtime({"fixed_frame": 1, "enemies": [enemy], "detail_enemy": enemy})
         self.assertEqual(self.api.local_snapshot()["enemy_detail"]["items"][0]["rawAttributes"], {"1": 20})
 
+    def test_enemy_detail_skills_use_current_primary_sample(self):
+        live = SimpleNamespace(eid='e', addr=100, skills=[{'id': 'skill'}],
+            skills_detail=[{'id': 'skill', 'cooldown': 3}], field_states={
+                'enemy.skill': {'collectionState': 'current', 'sourceFrame': 100}})
+        heavy = SimpleNamespace(eid='e', addr=100, skills_detail=[], field_states={
+            'enemy_detail.skills': {'collectionState': 'unavailable'}})
+        self.api.publish_runtime({'fixed_frame': 100, 'enemies': [live],
+                                  'detail_enemy': heavy})
+        row = self.api.local_snapshot()['enemy_detail']['items'][0]
+        self.assertEqual(row['skills'], [{'id': 'skill', 'cooldown': 3}])
+        self.assertEqual(row['fieldStates']['enemy_detail.skills']['collectionState'], 'current')
+        self.assertEqual(row['fieldStates']['enemy_detail.skills']['sourceFrame'], 100)
+        live.field_states['enemy.skill'] = {'collectionState': 'unavailable', 'sourceFrame': 101}
+        self.api.publish_runtime({'fixed_frame': 101, 'enemies': [live],
+                                  'detail_enemy': heavy})
+        row = self.api.local_snapshot()['enemy_detail']['items'][0]
+        self.assertNotIn('skills', row)
+        self.assertEqual(row['fieldStates']['enemy_detail.skills']['collectionState'],
+                         'unavailable')
+
     def test_stopped_source_is_explicitly_unavailable_not_a_current_last_frame(self):
         self.api.publish_fields("enemy", {"enemy.hp": 5}, entity_id="e", source_frame=12)
         self.api.invalidate_domains(("enemies",), "source_stopped")

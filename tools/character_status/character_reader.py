@@ -253,6 +253,15 @@ class CharacterReader:
                           self._skill_runtime, self._buff_counts,
                           self._damage_snapshots, self._identities, self._positions):
                 cache.clear()
+            # Retired units cannot always be sampled again. Erase only the
+            # disabled metric, so re-enabling it cannot revive an old peak as
+            # if it had been observed under the new capture policy.
+            for metric in ('damage_total', 'healing_total'):
+                if not policy.enabled('character.' + metric):
+                    for entry in self._damage_history.values():
+                        entry[metric] = 0.0
+                        entry[metric + '_valid'] = False
+                        entry[metric + '_frame'] = None
 
     def _collect(self, key):
         policy = (getattr(self.core._detail_context, 'policy', None)
@@ -1865,29 +1874,32 @@ class CharacterReader:
             live_cids.add(info.cid)
             entry = self._damage_history.setdefault(info.cid, {
                 'name': '', 'is_token': False,
-                'damage_total': 0.0, 'healing_total': 0.0})
+                'damage_total': 0.0, 'healing_total': 0.0,
+                'damage_total_valid': False, 'healing_total_valid': False})
             if info.name:
                 entry['name'] = info.name
             entry['is_token'] = bool(info.is_token)
-            entry['damage_total'] = max(
-                entry['damage_total'],
-                max(0.0, self._safe_float(info.damage_total)))
-            entry['healing_total'] = max(
-                entry['healing_total'],
-                max(0.0, self._safe_float(info.healing_total)))
+            observed = snapshots.get(info.cid, {})
+            for metric in ('damage_total', 'healing_total'):
+                if self._collect(metric) and metric in observed:
+                    entry[metric] = max(entry[metric],
+                                        max(0.0, self._safe_float(observed[metric])))
+                    entry[metric + '_valid'] = True
+                    entry[metric + '_frame'] = self.core._fixed_frame_snap
         # 已撤退但游戏仍保留统计条目的干员，继续跟踪其累计值。
         for cid, snap in snapshots.items():
             if not cid or cid in live_cids:
                 continue
             entry = self._damage_history.setdefault(cid, {
                 'name': '', 'is_token': False,
-                'damage_total': 0.0, 'healing_total': 0.0})
-            entry['damage_total'] = max(
-                entry['damage_total'],
-                max(0.0, self._safe_float(snap.get('damage_total', 0.0))))
-            entry['healing_total'] = max(
-                entry['healing_total'],
-                max(0.0, self._safe_float(snap.get('healing_total', 0.0))))
+                'damage_total': 0.0, 'healing_total': 0.0,
+                'damage_total_valid': False, 'healing_total_valid': False})
+            for metric in ('damage_total', 'healing_total'):
+                if self._collect(metric) and metric in snap:
+                    entry[metric] = max(entry[metric],
+                                        max(0.0, self._safe_float(snap[metric])))
+                    entry[metric + '_valid'] = True
+                    entry[metric + '_frame'] = self.core._fixed_frame_snap
 
     def poll_fast(self, enemies=None, track_unattributed_damage=False) -> dict:
         t0 = time.time()
@@ -1949,20 +1961,31 @@ class CharacterReader:
                 characters.append(self._global_damage_summary)
             snap['characters'] = characters
             # 本局曾上场、当前不在场的干员伤害/治疗峰值，供数据总览合并显示。
-            snap['character_stats_history'] = [
-                CharacterInfo(
-                    addr=0, cid=cid, name=entry['name'] or cid,
-                    is_token=entry['is_token'], alive=False,
-                    damage_total=entry['damage_total'],
-                    healing_total=entry['healing_total'])
-                for cid, entry in sorted(
-                    self._damage_history.items(),
-                    key=lambda item: (
-                        -(item[1]['damage_total']
-                          + item[1]['healing_total']), item[0]))
-                if self._collect_group('damage')
-                and cid not in {info.cid for info in infos.values()}
-            ]
+            from backend.app.field_policy import collection_record
+            snap['character_stats_history'] = []
+            live_cids = {info.cid for info in infos.values()}
+            if self._collect_group('damage'):
+                for cid, entry in sorted(self._damage_history.items(), key=lambda item: (
+                        -(item[1]['damage_total'] + item[1]['healing_total']), item[0])):
+                    if cid in live_cids or not any(entry[metric + '_valid']
+                            for metric in ('damage_total', 'healing_total')):
+                        continue
+                    history = CharacterInfo(
+                        addr=0, cid=cid, name=entry['name'] or cid,
+                        is_token=entry['is_token'], alive=False,
+                        damage_total=entry['damage_total'],
+                        healing_total=entry['healing_total'])
+                    history.field_states = {
+                        'character.' + metric: collection_record(
+                            entry.get(metric + '_frame'), source_frame,
+                            getattr(self._capture_policy, 'generation', 0),
+                            'not_collected' if not self._collect(metric) else
+                            'historical' if entry[metric + '_valid'] else 'unavailable',
+                            '' if entry[metric + '_valid'] else
+                            'capture_disabled' if not self._collect(metric) else
+                            'historical_source_unavailable')
+                        for metric in ('damage_total', 'healing_total')}
+                    snap['character_stats_history'].append(history)
             snap['global_damage_summary'] = (self._global_damage_summary
                                              if self._collect_group('damage')
                                              and self._global_damage_read_ok else None)

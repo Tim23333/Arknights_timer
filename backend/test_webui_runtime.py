@@ -204,6 +204,9 @@ class WebUiRuntimeTests(unittest.TestCase):
                              for key in ('damage_total', 'healing_total')}
         history = CharacterInfo(addr=0, cid='char_a', name='甲', damage_total=90, healing_total=7)
         retired = CharacterInfo(addr=0, cid='char_b', name='乙', damage_total=20, healing_total=0)
+        for item in (history, retired):
+            item.field_states = {f'character.{key}': {'collectionState': 'historical'}
+                                 for key in ('damage_total', 'healing_total')}
         token = CharacterInfo(addr=11, cid='token_a', name='召唤物', is_token=True, damage_total=999)
         self.window._character_stats_history = [history, retired]
         self.window._webui_runtime_snapshot = {'characters': [live, token]}
@@ -226,6 +229,24 @@ class WebUiRuntimeTests(unittest.TestCase):
         overview = self.request('api/state')['characterOverview']
         self.assertFalse(overview['healingAvailable'])
         self.assertIsNone(overview['rows'][0]['healing'])
+
+    def test_character_overview_does_not_revive_unverified_retired_metric(self):
+        from tools.character_status.character_reader import CharacterInfo
+        self.window._field_policy.commit({'character.healing_total': {'display': True}})
+        retired = CharacterInfo(addr=0, cid='char_b', name='乙', damage_total=20, healing_total=7)
+        retired.field_states = {
+            'character.damage_total': {'collectionState': 'unavailable'},
+            'character.healing_total': {'collectionState': 'historical'}}
+        self.window._character_stats_history = [retired]
+        self.window._webui_runtime_snapshot = {'characters': []}
+        self.window._websocket_api.publish_runtime({'ok': True, 'character_ok': True,
+            'frame_consistent': True, 'fixed_frame': 100, 'characters': []})
+        self.runtime.refresh()
+        overview = self.request('api/state')['characterOverview']
+        self.assertTrue(overview['available'])
+        self.assertEqual(overview['rows'][0]['name'], '乙')
+        self.assertIsNone(overview['rows'][0]['damage'])
+        self.assertEqual(overview['rows'][0]['healing'], 7)
 
     def test_character_overview_cannot_revive_values_after_stop(self):
         self.window._websocket_api.invalidate_domains(('characters',), 'source_stopped')

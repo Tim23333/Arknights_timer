@@ -53,8 +53,12 @@ def api_documentation(address="ws://127.0.0.1:8765"):
     sections.append("## 可用性与安全\n\n无场上对象与读取失败是不同状态；字段自检会分别报告。"
                     "服务关闭后断开连接并释放端口；本地 Web UI 仍可展示。"
                     "服务仅绑定本机；公开协议去掉指针字段与诊断文本中的地址。此服务不是互联网公开部署入口。")
-    sections.append("## 当前来源限制\n\n详情中的 attackRange/effectFrames 尚无现成来源，字段状态为"
+    sections.append("## 当前来源限制\n\n敌人详情中的 talents/dynamicAbilities/equipment/"
+                    "attackRange/effectFrames 尚无现成来源，字段状态为"
                     "unavailable，reason=unsupported_in_source；不会为了完整清单虚构值。"
+                    "enemy_detail.skills 复用同一完整帧的 enemy.skill 采样，不额外读取技能；"
+                    "若基础技能本帧不可用，详情技能也不可用。异步详情读前与读后逻辑帧不一致时，"
+                    "相应详情字段为 unavailable，reason=frame_inconsistent。"
                     "isPaused 来自本次敌我帧的 BattleController 暂停键集合；读取失败为 null，"
                     "并非 false。timeScale 在确认暂停时为 0，未确认暂停状态时为 null。"
                     "暂停/恢复边界的连续帧行为仍需实机事件验证。")

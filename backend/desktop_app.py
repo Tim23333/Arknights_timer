@@ -992,18 +992,21 @@ class EnemyPollWorker(QThread):
                     full = self.reader.read_enemy_detail(addr, heavy_only=True, policy=policy)
                 if full is not None and self._detail_result_current(policy, session):
                     self._finish_detail_metadata(full)
-                    cache = {
-                        'raw_attributes': dict(full.raw_attributes),
-                        'buffs': list(full.buffs),
-                        'global_buffs': list(full.global_buffs),
-                        'special_shield': full.special_shield,
-                        'special_shield_mask': full.special_shield_mask,
-                        'special_shield_sources': list(full.special_shield_sources),
-                        'field_states': dict(full.field_states),
-                        'policy_generation': full.policy_generation,
-                        'session': session,
-                        'identity': (full.id_ptr, full.data_ptr),
-                    }
+                    if self._detail_crossed_frame(full):
+                        error = '详情读取跨逻辑帧，等待重新采样。'
+                    else:
+                        cache = {
+                            'raw_attributes': dict(full.raw_attributes),
+                            'buffs': list(full.buffs),
+                            'global_buffs': list(full.global_buffs),
+                            'special_shield': full.special_shield,
+                            'special_shield_mask': full.special_shield_mask,
+                            'special_shield_sources': list(full.special_shield_sources),
+                            'field_states': dict(full.field_states),
+                            'policy_generation': full.policy_generation,
+                            'session': session,
+                            'identity': (full.id_ptr, full.data_ptr),
+                        }
                 else:
                     error = '敌人详情对象已失效。'
             except Exception as exc:
@@ -1045,6 +1048,11 @@ class EnemyPollWorker(QThread):
         for record in getattr(detail, 'field_states', {}).values():
             record['latestKnownFrame'] = latest
             record['acceptedAt'] = time.time()
+
+    @staticmethod
+    def _detail_crossed_frame(detail):
+        return any(record.get('reason') == 'frame_inconsistent'
+                   for record in getattr(detail, 'field_states', {}).values())
 
     def _append_detail(self, snap: dict) -> None:
         now = time.monotonic()
@@ -1130,9 +1138,13 @@ class EnemyPollWorker(QThread):
                     detail = self.character_reader.read_character_detail(addr, policy=policy)
                 if detail is not None:
                     self._finish_detail_metadata(detail)
-                    detail._detail_session = session
+                    if self._detail_crossed_frame(detail):
+                        detail = None
+                        error = '详情读取跨逻辑帧，等待重新采样。'
+                    else:
+                        detail._detail_session = session
                 if detail is None:
-                    error = '干员详情对象已失效。'
+                    error = error or '干员详情对象已失效。'
             except Exception as exc:
                 error = f'干员详情刷新失败：{exc}'
             finally:

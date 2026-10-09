@@ -408,6 +408,7 @@ class CapturePolicyTests(unittest.TestCase):
         info.attributes = {0: 100.0}
         info.action = {'phase': 'idle'}
         self.enemy._skill_cd[info.addr] = []
+        self.enemy._skill_sampled.add(info.addr)
         self.enemy._runtime_snapshot[info.addr] = {
             'state_id': 2, 'abnormal_flags': [], 'abnormal_combos': []}
         self.enemy._stamp_fields(info, 100)
@@ -417,12 +418,70 @@ class CapturePolicyTests(unittest.TestCase):
     def test_unimplemented_detail_fields_are_explicitly_unavailable(self):
         self.enemy._read_detail_frame = Mock(return_value=100)
         info = EnemyInfo(0x2000)
-        policy = _Policy({'enemy_detail.attackRange', 'enemy_detail.effectFrames'})
+        unsupported = ('talents', 'dynamicAbilities', 'equipment',
+                       'attackRange', 'effectFrames')
+        policy = _Policy({'enemy_detail.' + key for key in unsupported})
         self.enemy._stamp_detail(info, 'enemy_detail', policy, 100, set())
-        for key in ('attackRange', 'effectFrames'):
+        for key in unsupported:
             state = info.field_states['enemy_detail.' + key]
             self.assertEqual(state['collectionState'], 'unavailable')
             self.assertEqual(state['reason'], 'unsupported_in_source')
+
+    def test_cross_frame_detail_read_cannot_claim_current_values(self):
+        from backend.app.field_policy import PolicyStore
+        policy = PolicyStore().snapshot()
+        self.enemy._read_detail_frame = Mock(return_value=101)
+        info = EnemyInfo(0x2000)
+        self.enemy._stamp_detail(info, 'enemy_detail', policy, 100, {'buffs'})
+        state = info.field_states['enemy_detail.buffs']
+        self.assertEqual(state['sourceFrame'], 100)
+        self.assertEqual(state['acceptedFrame'], 101)
+        self.assertFalse(state['frameConsistent'])
+        self.assertEqual(state['collectionState'], 'unavailable')
+        self.assertEqual(state['reason'], 'frame_inconsistent')
+        self.enemy._read_detail_frame.return_value = 100
+        self.enemy._stamp_detail(info, 'enemy_detail', policy, 100, {'buffs'})
+        self.assertEqual(info.field_states['enemy_detail.buffs']['collectionState'], 'current')
+
+    def test_cached_enemy_skill_without_this_frame_sample_is_unavailable(self):
+        from backend.app.field_policy import PolicyStore
+        self.enemy.set_capture_policy(PolicyStore().snapshot())
+        info = EnemyInfo(0x2000)
+        info.lifecycle = 'active'
+        self.enemy._skill_cd[info.addr] = [('old_skill', 5.0, 10.0)]
+        self.enemy._fixed_frame_snap = 101
+        self.enemy._stamp_fields(info, 101)
+        self.assertEqual(info.field_states['enemy.skill']['collectionState'], 'unavailable')
+        self.enemy._skill_sampled.add(info.addr)
+        self.enemy._stamp_fields(info, 101)
+        self.assertEqual(info.field_states['enemy.skill']['collectionState'], 'current')
+
+    def test_disabling_one_historical_metric_erases_only_that_metric(self):
+        from backend.app.field_policy import PolicyStore
+        store = PolicyStore()
+        self.character.set_capture_policy(store.snapshot())
+        self.character._record_damage_history({}, {'retired': {
+            'damage_total': 25.0, 'healing_total': 8.0}})
+        store.commit({'character.healing_total': {'collect': False}})
+        self.character.set_capture_policy(store.snapshot())
+        entry = self.character._damage_history['retired']
+        self.assertEqual(entry['damage_total'], 25.0)
+        self.assertEqual(entry['healing_total'], 0.0)
+        self.assertFalse(entry['healing_total_valid'])
+        store.commit({'character.healing_total': {'collect': True}})
+        self.character.set_capture_policy(store.snapshot())
+        self.character._record_damage_history({}, {})
+        self.assertFalse(entry['healing_total_valid'])
+        self.assertEqual(entry['healing_total'], 0.0)
+        self.character._read_container = Mock(return_value=[])
+        self.character._batch = Mock(return_value=[])
+        self.character._refresh_damage_stats = Mock()
+        snapshot = self.character.poll_fast()
+        history = snapshot['character_stats_history'][0]
+        self.assertEqual(history.field_states['character.damage_total']['collectionState'],
+                         'historical')
+        self.assertEqual(history.field_states['character.healing_total']['collectionState'],
+                         'unavailable')
 
 
 if __name__ == '__main__':
