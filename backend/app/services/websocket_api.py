@@ -904,6 +904,11 @@ class WebSocketApi:
                        "policyGeneration": meta.get("policy_generation", self._policy_provider().generation),
                        "sampledAt": meta.get("sampled_at"),
                        "collectionState": meta.get("collection_state", "current"), "reason": meta.get("reason", "")}
+        if public_meta['collectionState'] == 'unavailable':
+            # Missing reads aren't valid empty arrays, including for self-checks.
+            self._publish('stage', {'meta': public_meta})
+            self._publish('deploy', {'meta': public_meta})
+            return
         self._publish("stage", {"stage": _safe(stage), "squad": _safe(squad), "meta": public_meta})
         self._publish("deploy", {"events": _safe(events), "journal": _safe(journal), "meta": public_meta})
 

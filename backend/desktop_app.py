@@ -69,7 +69,7 @@ from app.services.departure_history import DepartureHistory
 from app.diagnostic_log import DiagnosticLogManager, DiagnosticLogWindow
 from app.version import VERSION, VERSION_LABEL
 from app.custom_options import CustomOptions, TOAST_LEVELS
-from app.field_policy import PolicyStore, FIELD_REGISTRY, field_status_text
+from app.field_policy import PolicyStore, FIELD_REGISTRY, field_status_text, project_payload
 from app.toast import (
     DEFAULT_DURATIONS_MS, ToastManager, ToastQueueItem, ToastManagerQt,
 )
@@ -1635,9 +1635,11 @@ def _render_rng_snapshot(info_label: QLabel, pred_table: QTableWidget,
         hist_table.setRowCount(0)
         return
 
+    rate = data.get('rate')
+    rate_text = f'{rate:.1f}' if isinstance(rate, (int, float)) else '—'
     info_label.setText(
-        f"游标 #{data.get('cursor', 0)}   已消耗 {data.get('total', 0)} 发   "
-        f"{data.get('rate', 0.0):.1f} 发/秒   [{data.get('label', '')}]")
+        f"游标 #{data.get('cursor', '—')}   已消耗 {data.get('total', '—')} 发   "
+        f"{rate_text} 发/秒   [{data.get('label', '')}]")
     predictions = data.get('predictions') or []
     pred_table.setRowCount(len(predictions))
     for i, prediction in enumerate(predictions):
@@ -1670,10 +1672,11 @@ class DeployScanWorker(QThread):
     stage = Signal(dict)       # 阶段 1 完成即发出，不等待操作链
     done = Signal(object, str)   # (DeployTrackerReader|None, 错误消息)
 
-    def __init__(self, adb_path: str, adb_serial: str = '') -> None:
+    def __init__(self, adb_path: str, adb_serial: str = '', *, policy=None) -> None:
         super().__init__()
         self.adb_path = adb_path
         self.adb_serial = adb_serial
+        self.capture_policy = policy
         self.result: tuple[object, str] | None = None
         self._io_lock = threading.Lock()
         self._mc: MemCore | None = None
@@ -1715,6 +1718,8 @@ class DeployScanWorker(QThread):
             reader = DeployTrackerReader(mc)
             with self._io_lock:
                 self._reader = reader
+            if self.capture_policy is not None:
+                reader.set_capture_policy(self.capture_policy)
             reader.set_status_callback(lambda m: (self.log.emit(str(m)), _tlog('[部署]', m)))
             reader.set_stage_callback(lambda info: self.stage.emit(dict(info)))
             if self.isInterruptionRequested():
@@ -1723,7 +1728,11 @@ class DeployScanWorker(QThread):
                 return
             if reader.locate():
                 # Initial memory snapshot belongs on the scan worker, not the UI thread.
-                self.initial_state = reader.get_state()
+                self.initial_state = {
+                    **reader.get_state(),
+                    'policy_generation': getattr(self.capture_policy, 'generation', None),
+                    'collection_state': 'current', 'sampled_at': time.time(),
+                }
                 if self.isInterruptionRequested():
                     reader.close()
                     mc.close()
@@ -4988,7 +4997,8 @@ class CoachWindow(QMainWindow):
                 != getattr(self, '_source_epoch', 0)):
             return
         try:
-            svc.set_capture_policy(self._field_policy.snapshot())
+            policy = self._field_policy.snapshot()
+            svc.set_capture_policy(policy)
             snap = svc.snapshot(RNG_HISTORY_LEN, self.rng_pred_spin.value())
             snap['latestKnownFrame'] = self._provider.peek_frame_count()
             snap['sampledAt'] = time.time()
@@ -5004,13 +5014,18 @@ class CoachWindow(QMainWindow):
         if api is not None:
             api.publish_rng(snap)
         self._sync_battle_cache_controls()
-        status = str(snap.get('status') or '未定位')
+        # Keep accepted collection/export data intact; display has its own gate.
+        displayed = project_payload('rng', snap, policy, layer='display')
+        status = str(displayed.get('status') or '状态不可用或未显示')
+        display_roles = displayed.get('by_role') or {}
+        if not display_roles and displayed.get('selected') is not None:
+            display_roles = {role: displayed['selected'] for role in by_role}
         _render_rng_snapshot(
             self.lbl_rng_info, self.rng_pred_table, self.rng_hist_table,
-            by_role.get('imp'), f'战斗随机未定位：{status}')
+            display_roles.get('imp'), f'战斗随机未定位：{status}')
         _render_rng_snapshot(
             self.lbl_rng_trivial_info, self.rng_trivial_pred_table,
-            self.rng_trivial_hist_table, by_role.get('trivial'),
+            self.rng_trivial_hist_table, display_roles.get('trivial'),
             f'表现随机未定位：{status}')
         self.btn_rng_imp_export.setEnabled(
             by_role.get('imp') is not None or self._battle_cache.has_rng('imp'))
@@ -5113,7 +5128,8 @@ class CoachWindow(QMainWindow):
         self.btn_deploy_export.setEnabled(False)
         self.lbl_deploy_status.setText('阶段 1/2：正在扫描关卡信息 ...')
         self._deploy_scan = DeployScanWorker(
-            self._enemy_reader.mc.adb_path, self._enemy_reader.mc.adb_serial)
+            self._enemy_reader.mc.adb_path, self._enemy_reader.mc.adb_serial,
+            policy=self._field_policy.snapshot())
         self._deploy_scan.log.connect(
             lambda m: self.lbl_deploy_status.setText(str(m).strip() or self.lbl_deploy_status.text()))
         self._deploy_scan.stage.connect(
@@ -5130,6 +5146,9 @@ class CoachWindow(QMainWindow):
 
     def _on_deploy_stage_from_worker(self, worker, info):
         """Early stage discovery belongs to its scan's source session as well."""
+        policy = getattr(worker, 'capture_policy', None)
+        if policy is not None and policy.generation != self._field_policy.snapshot().generation:
+            return
         if (getattr(self, '_deploy_scan', None) is worker
                 and getattr(worker, '_source_epoch', 0) == getattr(self, '_source_epoch', 0)
                 and not getattr(self, '_closing', False)):
@@ -5164,14 +5183,26 @@ class CoachWindow(QMainWindow):
         self._deploy_reader = reader
         scan_policy = self._field_policy.snapshot()
         reader.set_capture_policy(scan_policy)
+        st = initial_state or {}
+        generation = st.get('policy_generation')
+        if generation is not None and generation != scan_policy.generation:
+            # Adopt only the located reader; old-generation values are discarded.
+            # The next poll re-reads static and live data under the current policy.
+            self._deploy_squad = []
+            self._deploy_journal = []
+            self._deploy_stage_info = {}
+            self._deploy_stage = ''
+            self.lbl_deploy_status.setText('策略已更新：首次扫描数据已丢弃，等待当前策略重新采样')
+            started = self._start_deploy_poll()
+            self._on_auto_refresh_step_done('deploy', started)
+            return
         try:
-            st = initial_state or {}
 #            _ga_log(f"[deploy] get_state 完成: journal={len(st.get('journalEvents') or [])} "
 #                    f"stage={st.get('stageId')!r}")
             self._deploy_squad = st.get('squad') or []
             self._deploy_journal = st.get('journalEvents') or []
             self._deploy_journal = self._attach_deploy_frames(self._deploy_journal, [])
-            self._deploy_stage_info = st.get('stage') or self._deploy_stage_info
+            self._deploy_stage_info = st.get('stage') or {}
             self._deploy_stage = st.get('stageId') or ''
         except Exception as exc:
 #            _ga_log(f"[deploy] get_state 异常: {exc}")
@@ -5179,8 +5210,9 @@ class CoachWindow(QMainWindow):
         scan_battle = dict(st.get('battle') or {}) if 'st' in locals() else {}
         scan_battle.update(policy_generation=scan_policy.generation,
                            latestKnownFrame=self._provider.peek_frame_count(),
-                           source_frame=None, sampled_at=time.time(),
-                           collection_state='current' if 'st' in locals() else 'unavailable')
+                           source_frame=None, sampled_at=st.get('sampled_at'),
+                           collection_state=st.get('collection_state',
+                               'current' if initial_state is not None else 'unavailable'))
         self._cache_current_deploy(scan_battle)
         if self._deploy_journal:
             # 代理序列仍按静态历史展示；后台只校验链并在新策略代际重读完整日志。
