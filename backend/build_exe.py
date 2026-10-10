@@ -275,7 +275,7 @@ def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args,
         cmd.extend(["--add-data", _add_data_arg(data_dir, "backend/data")])
     if static_dir.is_dir():
         cmd.extend(["--add-data", _add_data_arg(static_dir, "backend/app/static")])
-    # Runtime subset of the replaceable bundle. Large reference dumps stay in Git.
+    # Include the replaceable runtime data bundle without the large reference dumps.
     bundle_dir = repo_root / 'game_data'
     if (bundle_dir / 'manifest.json').is_file():
         runtime_manifest = _runtime_bundle_manifest(bundle_dir, backend_dir)
@@ -284,6 +284,15 @@ def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args,
             folder = bundle_dir / name
             if folder.is_dir():
                 cmd.extend(['--add-data', _add_data_arg(folder, f'game_data/{name}')])
+    # The real-time Web UI is an independent asset boundary; the existing
+    # frontend/static directory remains the offline timeline editor.
+    webui_dir = repo_root / "webui"
+    if (webui_dir / "index.html").is_file():
+        # Runtime WebUI assets deliberately occupy this flat boundary. Browser
+        # fixtures live under test/; docs and tests must not enter the EXE.
+        for asset in sorted(webui_dir.iterdir()):
+            if asset.is_file() and asset.suffix in {".html", ".css", ".mjs"}:
+                cmd.extend(["--add-data", _add_data_arg(asset, "webui")])
     beginner_guide = repo_root / "docs" / "新手使用教程.md"
     if beginner_guide.is_file():
         cmd.extend(["--add-data", _add_data_arg(beginner_guide, "docs")])

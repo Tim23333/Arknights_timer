@@ -23,8 +23,8 @@ GAME_TOPICS = {
 
 
 async def main() -> None:
-    game = await websockets.connect("ws://127.0.0.1:8765/v1/game")
-    ops = await websockets.connect("ws://127.0.0.1:8765/v1/ops")
+    game = await websockets.connect("ws://127.0.0.1:8765/v2/game")
+    ops = await websockets.connect("ws://127.0.0.1:8765/v2/ops")
     await game.recv()
     await ops.recv()
     await game.send(json.dumps({

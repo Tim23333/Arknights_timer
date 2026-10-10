@@ -53,9 +53,13 @@ def test_main_thread_deployment_result_does_not_read_reader():
         def setText(self, *args): pass
     class Reader:
         def get_state(self): raise AssertionError('GUI must not perform memory I/O')
+        def set_capture_policy(self, policy): pass
+    policy = SimpleNamespace(generation=1)
     holder = SimpleNamespace(btn_deploy_scan=Control(), btn_deploy_export=Control(),
                              lbl_deploy_status=Control(), _deploy_stage_info={}, _deploy_events=[],
                              _auto_refresh_step=None, _toast=None,
+                             _field_policy=SimpleNamespace(snapshot=lambda: policy),
+                             _provider=SimpleNamespace(peek_frame_count=lambda: None),
                              _attach_deploy_frames=lambda *args: [],
                              _cache_current_deploy=lambda *args: None,
                              _start_deploy_poll=lambda: True,
@@ -68,7 +72,7 @@ def test_last_character_withdrawal_publishes_empty_details():
     requests = lambda: {'enemy_detail': {'rateHz': 0},
                         'character_detail': {'rateHz': 5, 'scopeAll': True}}
     worker = desktop_app.EnemyPollWorker(object(), detail_request_provider=requests)
-    character = SimpleNamespace(addr=101, unique_id=7, cid='offline', name='offline')
+    character = SimpleNamespace(addr=101, unique_id=7, cid='offline', name='offline', data_ptr=0)
     worker._external_character_details = {101: character}
     worker._external_detail_revision = 1
     worker._external_detail_due = float('inf')

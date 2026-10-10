@@ -19,6 +19,7 @@ from .enemy_buff_descriptions import (
     describe_global_buff, global_buff_chinese_name,
 )
 from .effect_frames_ui import COLUMNS as FRAMES_COLUMNS, character_frame_rows
+from .field_policy import field_status_text
 from .enemy_ui import (
     _ColumnOrderList, _PrecisionSpin, _bb_text, _fill_table, _fmt, _make_table,
 )
@@ -319,6 +320,9 @@ def _skill_text(character, precision=2):
 
 
 def format_character_column(key, character, decimals, row=0):
+    unavailable = field_status_text(character, f'character.{key}')
+    if unavailable:
+        return unavailable
     precision = decimals.get(key, decimals.get('default', 2))
     if getattr(character, 'is_global_damage_summary', False):
         if key == 'row':
@@ -348,6 +352,11 @@ def format_character_column(key, character, decimals, row=0):
     if key == 'level':
         phase = f'E{character.evolve_phase}' if character.evolve_phase else 'E0'
         return f'{phase} Lv.{character.level}'
+    if key == 'hp':
+        # The desktop's progress-bar path does not serve generic WebUI cells.
+        return f'{character.hp:.{precision}f}/{character.max_hp:.{precision}f}'
+    if key == 'sp':
+        return f'{character.sp:.{precision}f}/{character.max_sp:.{precision}f}'
     if key == 'pos':
         return character.position_text
     if key == 'action_state':
@@ -388,8 +397,8 @@ def format_character_column(key, character, decimals, row=0):
     if key == 'damage_total':
         return f'{character.damage_total:.{precision}f}'
     if key == 'global_total_damage':
-        if not character.unattributed_tracking_enabled:
-            return '未启用'
+        # Global total has its own collection evidence, checked at entry above;
+        # the optional enemy-HP difference tracker only gates unattributed damage.
         return f'{character.global_total_damage:.{precision}f}'
     if key in damage_keys:
         return f'{character.damage_by_type.get(damage_keys[key], 0.0):.{precision}f}'

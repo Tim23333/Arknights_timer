@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "version": "3.6.2",
+  "frontend_version": "1.0.4",
+  "pull_request": "https://github.com/Tim23333/Arknights_timer/pull/6",
+  "pr_head": "70263924078c20cf03afba80f3449791f9402cca",
+  "integration_base": "819927f4b891175607059421daed3b221e0805a6",
+  "tested_code_tree": "f61d5f99c4d7a08c1d9ade67143f7e1a1b558fe4",
+  "build_command": "python backend/build_exe.py",
+  "output_directory": "backend/dist",
+  "fixes": [
+    "Incomplete deployment list and string reads report unavailable instead of valid empty histories.",
+    "Initial deployment scans bind immutable collection policy before locating/reading and reject stale generation values.",
+    "Desktop RNG rendering applies display policy without erasing collected or exported values.",
+    "Frozen startup uses the PYZ import root so backend.app cannot shadow app.services."
+  ],
+  "tests": {
+    "scoped_pytest": {
+      "passed": 584,
+      "skipped": 5,
+      "subtests_passed": 142,
+      "existing_warnings": 2
+    },
+    "webui_node": {
+      "passed": 44
+    },
+    "frontend_node": {
+      "passed": 3
+    },
+    "frontend_build": "passed",
+    "independent_audit_probes": {
+      "passed": 3
+    },
+    "diff_check": "passed",
+    "github_ci": "not a gate, as requested by the user",
+    "excluded_modules": [
+      "Ark_emulator"
+    ]
+  },
+  "archives": [
+    {
+      "file": "ArknightsTimeline_v3.6.2.exe",
+      "bytes": 102383371,
+      "sha256": "d7da0e4e0f8eafa3490654c03c929cd32e281c036d99a54374dbc53b4b5e1b15",
+      "pe_version": [
+        3,
+        6,
+        2,
+        0
+      ],
+      "test_marker": false,
+      "runtime_hashes_verified": 40,
+      "webui_assets_verified": 15,
+      "data_version": "2026-10-09-8871109a420c"
+    },
+    {
+      "file": "ArknightsTimeline_v3.6.2_Test.exe",
+      "bytes": 102384322,
+      "sha256": "d9839683b669acbf4b5906ab2b4de16c68b0db6f00c0115513ab7146b09c3c64",
+      "pe_version": [
+        3,
+        6,
+        2,
+        0
+      ],
+      "test_marker": true,
+      "runtime_hashes_verified": 40,
+      "webui_assets_verified": 15,
+      "data_version": "2026-10-09-8871109a420c"
+    }
+  ],
+  "smoke": [
+    {
+      "file": "ArknightsTimeline_v3.6.2.exe",
+      "mode": "desktop",
+      "startup_seconds": 3.11,
+      "gui_child_survived_seconds": 10,
+      "exit_code": 0,
+      "diagnostic_logs": 0
+    },
+    {
+      "file": "ArknightsTimeline_v3.6.2.exe",
+      "mode": "webui",
+      "startup_seconds": 2.88,
+      "http_assets_state_policy": "passed",
+      "clock_and_modules_sse": "passed",
+      "browser_opened": false,
+      "game_scans_started": false,
+      "teardown": "terminated test-owned process tree after HTTP/SSE checks"
+    },
+    {
+      "file": "ArknightsTimeline_v3.6.2_Test.exe",
+      "mode": "desktop",
+      "startup_seconds": 2.78,
+      "gui_child_survived_seconds": 10,
+      "exit_code": 0,
+      "diagnostic_logs": 1
+    },
+    {
+      "file": "ArknightsTimeline_v3.6.2_Test.exe",
+      "mode": "webui",
+      "startup_seconds": 2.92,
+      "http_assets_state_policy": "passed",
+      "clock_and_modules_sse": "passed",
+      "browser_opened": false,
+      "game_scans_started": false,
+      "teardown": "terminated test-owned process tree after HTTP/SSE checks"
+    }
+  ]
+}

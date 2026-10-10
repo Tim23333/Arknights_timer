@@ -54,6 +54,7 @@
 import bisect
 import concurrent.futures
 import json
+import math
 import mmap
 import os
 import re
@@ -74,6 +75,10 @@ from tools.enemy_health.memcore import MemCore, TcpChannel
 DIRECTION_NAMES = {0: "UP", 1: "RIGHT", 2: "DOWN", 3: "LEFT", 4: "NONE"}
 OP_NAMES = {0: "SPAWN", 1: "WITHDRAW", 2: "SKILL", 3: "CHEAT"}
 BATTLE_STATE_NAMES = {0: "NONE", 1: "INITED", 2: "PLAYING", 3: "FINISHED"}
+
+
+class DeploymentReadError(RuntimeError):
+    """A located list could not be read completely; this is not an empty list."""
 
 LOGITEM_SIZE = 0x30
 LOGITEM_STRUCT = "<f4xI4xQiiiiQ"
@@ -271,6 +276,7 @@ def _numeric_filter_chunk(base, data):
 class DeployTrackerReader:
     def __init__(self, mc: MemCore):
         self.mc = mc
+        self._capture_policy = None
         self._bc_addr = 0
         self._logger_addr = 0
         self._logs_list_addr = 0
@@ -317,7 +323,7 @@ class DeployTrackerReader:
         if not info or info == self._stage_info:
             return
         self._stage_info = info
-        if self._stage_callback:
+        if self._stage_callback and self._collect_field('stage.stage'):
             self._stage_callback(dict(info))
 
     def _read(self, addr, size):
@@ -364,13 +370,14 @@ class DeployTrackerReader:
         ch = self._get_channel()
         return ch.batch_read(requests)
 
-    def _klass_names_batch(self, objs):
-        """批量解析一组对象的 klass 名 {addr: name} (TCP 通道三轮批量读)。"""
+    def _klass_names_batch(self, objs, *, read_many=None):
+        """批量解析 klass 名；静态元数据调用可注入不登记帧预取的 IO。"""
+        read_many = read_many or self._read_many
         objs = [o for o in objs if self.mc.is_ptr(o)]
         if not objs:
             return {}
         klasses = {}
-        for o, d in zip(objs, self._read_many([(o, 8) for o in objs])):
+        for o, d in zip(objs, read_many([(o, 8) for o in objs])):
             if d:
                 k = struct.unpack("<Q", d)[0]
                 if self.mc.is_ptr(k):
@@ -378,7 +385,7 @@ class DeployTrackerReader:
         name_ptrs = {}
         items = list(klasses.items())
         for o, d in zip([o for o, _ in items],
-                        self._read_many([(k + 0x10, 8) for _, k in items])):
+                        read_many([(k + 0x10, 8) for _, k in items])):
             if d:
                 np_ = struct.unpack("<Q", d)[0]
                 if self.mc.is_ptr(np_):
@@ -386,7 +393,7 @@ class DeployTrackerReader:
         out = {}
         items = list(name_ptrs.items())
         for o, d in zip([o for o, _ in items],
-                        self._read_many([(p, 48) for _, p in items])):
+                        read_many([(p, 48) for _, p in items])):
             if not d:
                 continue
             end = d.find(b"\x00")
@@ -428,8 +435,8 @@ class DeployTrackerReader:
                 addr += size
         return out
 
-    def _scan_class_objects(self, class_names):
-        """一次设备侧扫描返回多个 Torappu.Battle 类的对象地址。
+    def _scan_class_objects(self, class_names, *, namespace="Torappu.Battle"):
+        """一次设备侧扫描返回指定命名空间内多个类的对象地址。
 
         多个类共用三遍大范围扫描（类名、Il2CppClass 引用、对象 klass 指针），
         既让关卡信息先产出，又避免随后定位操作记录时重新扫描数 GB 内存。
@@ -481,20 +488,20 @@ class DeployTrackerReader:
                 klass = ref - 0x10  # Il2CppClass.name
                 if self._ptr(klass + 0x10) != addr:
                     continue
-                namespace = self._read_cstring(self._ptr(klass + 0x18))
-                if namespace == "Torappu.Battle":
+                found_namespace = self._read_cstring(self._ptr(klass + 0x18))
+                if found_namespace == namespace:
                     klass_names[klass] = names_by_addr[addr]
         klass_counts = {
             name: sum(1 for value in klass_names.values() if value == name)
             for name in class_names
         }
-        self._status("  Torappu.Battle Il2CppClass 命中 " + ", ".join(
+        self._status(f"  {namespace} Il2CppClass 命中 " + ", ".join(
             f"{name}={klass_counts[name]}" for name in class_names))
         if not klass_names:
             found_names = ", ".join(sorted(set(names_by_addr.values())))
             self._class_scan_failure_reason = (
                 f"已找到类名字符串 ({found_names})，但没有解析出 namespace="
-                "Torappu.Battle 的 Il2CppClass；Il2CppClass.name/namespace 偏移可能已漂移")
+                f"{namespace} 的 Il2CppClass；Il2CppClass.name/namespace 偏移可能已漂移")
             self._status("  主路径失败: " + self._class_scan_failure_reason)
             return {name: set() for name in class_names}
         if "BattleController" in class_names and not klass_counts.get("BattleController"):
@@ -1292,49 +1299,78 @@ class DeployTrackerReader:
 
     # ---------------- 数据读取 ----------------
 
-    def _read_log_list(self, list_addr):
-        """读取 List<LogItem> 全部元素。"""
-        if not list_addr:
-            return []
-        d = self._read(list_addr, 0x20)
-        if not d:
-            return []
-        items = struct.unpack_from("<Q", d, LIST_ITEMS)[0]
-        size = struct.unpack_from("<i", d, LIST_SIZE)[0]
-        if not self.mc.is_ptr(items) or size <= 0:
-            return []
-        d = self._read(items + ARRAY_MAX_LENGTH, 4)
-        max_len = struct.unpack("<i", d)[0] if d else 0
-        count = max(0, min(size, max_len, 50000))
+    def _read_list_payload(self, list_addr, item_size, limit):
+        """Validate a complete list before decoding or replacing accepted history."""
+        if not list_addr:  # This optional source does not exist in this battle.
+            return b'', 0
+        header = self._read(list_addr, 0x20)
+        if not header or len(header) != 0x20:
+            raise DeploymentReadError('列表头读取失败')
+        identity = struct.unpack_from('<Qii', header, LIST_ITEMS)
+        items, count, _version = identity
+        if not 0 <= count <= limit:
+            raise DeploymentReadError('列表长度无效或超出读取上限')
         if count == 0:
-            return []
-        raw = self._read(items + ARRAY_ITEMS, count * LOGITEM_SIZE)
-        if not raw:
-            return []
+            return b'', 0
+        if not self.mc.is_ptr(items):
+            raise DeploymentReadError('列表数据指针无效')
+        capacity = self._read(items + ARRAY_MAX_LENGTH, 4)
+        if not capacity or len(capacity) != 4:
+            raise DeploymentReadError('列表容量读取失败')
+        if struct.unpack('<i', capacity)[0] < count:
+            raise DeploymentReadError('列表长度超出数组容量')
+        raw = self._read(items + ARRAY_ITEMS, count * item_size)
+        if not raw or len(raw) != count * item_size:
+            raise DeploymentReadError('列表内容读取不完整')
+        after = self._read(list_addr, 0x20)
+        if (not after or len(after) != 0x20
+                or struct.unpack_from('<Qii', after, LIST_ITEMS) != identity):
+            raise DeploymentReadError('读取期间列表发生变化')
+        return raw, count
+
+    def _read_item_strings(self, addresses):
+        """Read every referenced string, including tails beyond the first block."""
+        addresses = list(dict.fromkeys(address for address in addresses if address))
+        if any(not self.mc.is_ptr(address) for address in addresses):
+            raise DeploymentReadError('列表字符串指针无效')
+        strings = {0: ''}
+        for start in range(0, len(addresses), 1024):
+            batch = addresses[start:start + 1024]
+            blobs = self._read_many([(address, 0x60) for address in batch])
+            if len(blobs) != len(batch):
+                raise DeploymentReadError('列表字符串批量读取不完整')
+            for address, blob in zip(batch, blobs):
+                if not blob or len(blob) < STR_CHARS:
+                    raise DeploymentReadError('列表字符串读取失败')
+                length = struct.unpack_from('<i', blob, STR_LENGTH)[0]
+                if not 0 <= length <= 4096:
+                    raise DeploymentReadError('列表字符串长度无效')
+                required = STR_CHARS + length * 2
+                if len(blob) < required:
+                    blob = self._read(address, required)
+                if (not blob or len(blob) < required
+                        or struct.unpack_from('<i', blob, STR_LENGTH)[0] != length):
+                    raise DeploymentReadError('列表字符串内容读取不完整')
+                try:
+                    strings[address] = blob[STR_CHARS:required].decode('utf-16-le')
+                except UnicodeDecodeError as error:
+                    raise DeploymentReadError('列表字符串编码无效') from error
+        return strings
+
+    def _read_log_list(self, list_addr):
+        """读取完整 List<LogItem>；IO/结构失败上抛，合法空列表才返回 []。"""
+        raw, count = self._read_list_payload(list_addr, LOGITEM_SIZE, 50000)
         # 先批量取全部字符串指针, 再批量读字符串
-        reqs = []
+        addresses = []
         metas = []
         for i in range(count):
-            try:
-                ts, uid, cptr, op, direction, row, col, ext = struct.unpack_from(
-                    LOGITEM_STRUCT, raw, i * LOGITEM_SIZE)
-            except struct.error:
-                continue
+            ts, uid, cptr, op, direction, row, col, ext = struct.unpack_from(
+                LOGITEM_STRUCT, raw, i * LOGITEM_SIZE)
+            if not math.isfinite(ts):
+                raise DeploymentReadError('操作时间无效')
             metas.append((ts, uid, cptr, op, direction, row, col, ext))
-            reqs.append((cptr, 0x60))
-            if ext:
-                reqs.append((ext, 0x60))
-        blobs = self._read_many(reqs) if reqs else []
-        strings = {}
-        for (addr, _s), blob in zip(reqs, blobs):
-            if not blob:
-                continue
-            ln = struct.unpack_from("<i", blob, STR_LENGTH)[0]
-            if 0 < ln <= 64 and len(blob) >= STR_CHARS + ln * 2:
-                try:
-                    strings[addr] = blob[STR_CHARS:STR_CHARS + ln * 2].decode("utf-16-le")
-                except UnicodeDecodeError:
-                    pass
+            addresses.extend((cptr, ext))
+        strings = self._read_item_strings(addresses)
         events = []
         for ts, uid, cptr, op, direction, row, col, ext in metas:
             char_id = strings.get(cptr, "")
@@ -1361,34 +1397,11 @@ class DeployTrackerReader:
 
     def _read_squad(self, list_addr):
         """读取 List<CharInfo> 编队信息。"""
-        if not list_addr:
-            return []
-        items = self._ptr(list_addr + LIST_ITEMS)
-        size = self._i32(list_addr + LIST_SIZE)
-        if not (self.mc.is_ptr(items) and 0 < size <= 64):
-            return []
-        raw = self._read(items + ARRAY_ITEMS, size * CHARINFO_SIZE)
-        if not raw:
-            return []
-        reqs = []
+        raw, size = self._read_list_payload(list_addr, CHARINFO_SIZE, 64)
+        addresses = []
         for i in range(size):
-            try:
-                skin_ptr, tmpl_ptr, skill_ptr = struct.unpack_from(
-                    "<QQQ", raw, i * CHARINFO_SIZE + 0x8)
-            except struct.error:
-                continue
-            reqs += [(skin_ptr, 0x60), (tmpl_ptr, 0x60), (skill_ptr, 0x60)]
-        blobs = self._read_many(reqs) if reqs else []
-        strings = {}
-        for (addr, _s), blob in zip(reqs, blobs):
-            if not blob:
-                continue
-            ln = struct.unpack_from("<i", blob, STR_LENGTH)[0]
-            if 0 < ln <= 128 and len(blob) >= STR_CHARS + ln * 2:
-                try:
-                    strings[addr] = blob[STR_CHARS:STR_CHARS + ln * 2].decode("utf-16-le")
-                except UnicodeDecodeError:
-                    pass
+            addresses.extend(struct.unpack_from('<QQQ', raw, i * CHARINFO_SIZE + 0x8))
+        strings = self._read_item_strings(addresses)
         squad = []
         for i in range(size):
             try:
@@ -1439,8 +1452,18 @@ class DeployTrackerReader:
 
     # ---------------- 对外接口 ----------------
 
+    def set_capture_policy(self, policy):
+        """由独立部署轮询入口固定本轮策略；地址/关卡身份继续用于生命周期。"""
+        self._capture_policy = policy
+
+    def _collect_field(self, field_id):
+        policy = self._capture_policy
+        return policy is None or policy.enabled(field_id)
+
     def get_events(self):
         """实时操作日志 (BattleLogger.m_logs)。"""
+        if not self._collect_field('deploy.events'):
+            return []
         return self._read_log_list(self._logs_list_addr)
 
     def get_spawn_events(self):
@@ -1448,10 +1471,14 @@ class DeployTrackerReader:
 
     def get_journal_events(self):
         """代理作战完整序列 (ReplayController.m_journal.logs), 非代理作战返回 []。"""
+        if not self._collect_field('deploy.journal'):
+            return []
         return self._read_log_list(self._journal_logs_list_addr)
 
     def get_squad(self):
         """编队信息 (优先代理序列中的完整编队)。"""
+        if not self._collect_field('stage.squad'):
+            return []
         squad = self._read_squad(self._journal_squad_list_addr)
         if squad:
             return squad
@@ -1459,6 +1486,8 @@ class DeployTrackerReader:
 
     def get_stage_info(self):
         """返回阶段 1 已定位的关卡信息副本，适合后端直接序列化。"""
+        if not self._collect_field('stage.stage'):
+            return {}
         return dict(self._stage_info)
 
     def get_battle_state(self):
@@ -1502,7 +1531,7 @@ class DeployTrackerReader:
         stage = self.get_stage_info()
         stage_id = stage.get("stageId") or self._journal_meta.get("stageId", "")
         level_id = stage.get("levelId") or self._journal_meta.get("levelId", "")
-        return {
+        result = {
             "located": bool(self._logs_list_addr or self._journal_logs_list_addr),
             "stageLocated": bool(stage_id or level_id),
             "battle": self.get_battle_state(),
@@ -1521,3 +1550,15 @@ class DeployTrackerReader:
             "events": live,
             "journalEvents": journal,
         }
+        # 阶段身份保留内部匹配，公开子树关后不从别名键漏出旧关卡元数据。
+        if not self._collect_field('stage.stage'):
+            for key in ('stageId', 'levelId', 'stageCode', 'stageName', 'zoneId',
+                        'stage', 'journalMeta'):
+                result.pop(key, None)
+        if not self._collect_field('stage.squad'):
+            result.pop('squad', None)
+        if not self._collect_field('deploy.events'):
+            result.pop('events', None)
+        if not self._collect_field('deploy.journal'):
+            result.pop('journalEvents', None)
+        return result

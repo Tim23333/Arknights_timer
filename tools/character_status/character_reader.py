@@ -129,6 +129,10 @@ class CharacterInfo:
     observed_enemy_damage_total: float = 0.0
     unattributed_tracking_enabled: bool = False
     is_global_damage_summary: bool = False
+    policy_generation: int = 0
+    source_frame: int | None = None
+    field_states: dict = field(default_factory=dict)
+    _blocking_read_ok: bool = field(default=False, repr=False)
 
     @property
     def profession_name(self) -> str:
@@ -191,6 +195,7 @@ class CharacterReader:
 
     def __init__(self, core: EnemyReader):
         self.core = core
+        self._capture_policy = None
         self.mc = core.mc
         self.unit_manager_addr = 0
         self.characters_addr = 0
@@ -200,6 +205,7 @@ class CharacterReader:
         self._count = 0
         self._identities: dict[int, dict] = {}
         self._attr_cached: dict[int, int] = {}
+        self._attr_sources: dict[int, int] = {}
         self._attr_snapshots: dict[int, dict] = {}
         self._runtime_ptrs: dict[int, dict] = {}
         self._runtime_snapshots: dict[int, dict] = {}
@@ -222,6 +228,10 @@ class CharacterReader:
         self._damage_snapshots: dict[str, dict] = {}
         self._damage_history: dict[str, dict] = {}
         self._battle_stats_total_damage = 0.0
+        self._global_damage_read_ok = False
+        self._damage_layout_read_ok = False
+        self._damage_attribution_read_ok = False
+        self._enemy_hp_read_ok = False
         self._observed_enemy_damage_total = 0.0
         self._observed_enemy_hp: dict[tuple[int, int], float] = {}
         self._seen_enemy_damage_keys: set[tuple[int, int]] = set()
@@ -233,6 +243,111 @@ class CharacterReader:
         self._last_attributed_damage_total = 0.0
         self._global_damage_summary = self._make_global_damage_summary(
             0.0, {}, 0.0, 0.0, False)
+
+    def set_capture_policy(self, policy) -> None:
+        """Apply the worker's frame-boundary policy and invalidate value caches."""
+        previous = self._capture_policy
+        self._capture_policy = policy
+        if previous is None or previous.generation != policy.generation:
+            for cache in (self._attr_snapshots, self._runtime_snapshots,
+                          self._skill_runtime, self._buff_counts,
+                          self._damage_snapshots, self._identities, self._positions):
+                cache.clear()
+            # Retired units cannot always be sampled again. Erase only the
+            # disabled metric, so re-enabling it cannot revive an old peak as
+            # if it had been observed under the new capture policy.
+            for metric in ('damage_total', 'healing_total'):
+                if not policy.enabled('character.' + metric):
+                    for entry in self._damage_history.values():
+                        entry[metric] = 0.0
+                        entry[metric + '_valid'] = False
+                        entry[metric + '_frame'] = None
+
+    def _collect(self, key):
+        policy = (getattr(self.core._detail_context, 'policy', None)
+                  if getattr(self.core._detail_context, 'active', False)
+                  else self._capture_policy)
+        return policy is None or policy.enabled('character.' + key)
+
+    def _collect_group(self, group):
+        policy = (getattr(self.core._detail_context, 'policy', None)
+                  if getattr(self.core._detail_context, 'active', False)
+                  else self._capture_policy)
+        return policy is None or policy.group_enabled('character', group)
+
+    def _attribute_indices(self):
+        if self._capture_policy is None:
+            return None
+        return {index for index, _internal, _name in gs.ATTRIBUTE_DEFS
+                if self._collect(f'attr_{index}')}
+
+    def _runtime_kind_enabled(self, kind):
+        if self._capture_policy is None:
+            return True
+        if kind == 'state':
+            return True  # Internal lifecycle/state validation cannot be disabled.
+        keys = {'shield': ('shield',), 'ep': (), 'epc': (),
+                'flags': ('abnormal_status',), 'combos': ('abnormal_status',),
+                'immunes': (), 'antis': (), 'combo_immunes': ()}
+        return any(self._collect(key) for key in keys.get(kind, ()))
+
+    def _stamp_fields(self, info, source_frame):
+        """Record field read evidence independently from the timer's latest frame."""
+        if self._capture_policy is None:
+            return
+        from backend.app.field_policy import FIELD_REGISTRY, collection_record
+        info.policy_generation = self._capture_policy.generation
+        info.source_frame = source_frame
+        runtime = self._runtime_snapshots.get(info.addr, {})
+        damage = self._damage_snapshots.get(info.cid, {})
+        for spec in FIELD_REGISTRY.values():
+            if spec.domain != 'character':
+                continue
+            key = spec.id.split('.', 1)[1]
+            success = True
+            if spec.group == 'attributes':
+                success = int(key[5:]) in info.attributes
+            elif spec.group == 'identity':
+                success = bool(info.cid)
+            elif key == 'pos':
+                success = info.grid_row is not None and info.grid_col is not None
+            elif spec.group == 'skills':
+                success = info.addr in self._skill_runtime
+            elif spec.group == 'runtime':
+                required = {
+                    'action_state': ('state_id',),
+                    'abnormal_status': ('abnormal_flags', 'abnormal_combos'),
+                    'shield': ('shield',),
+                }.get(key, ('state_id',))
+                success = all(item in runtime for item in required)
+                if key in ('action_phase', 'remaining_time', 'next_action'):
+                    success = success and bool(info.action.get('phase'))
+            elif spec.group == 'blocking':
+                success = bool(getattr(info, '_blocking_read_ok', False))
+            elif spec.group == 'buffs':
+                success = info.addr in self._buff_counts
+            elif spec.group == 'damage':
+                required = {'healing_total': 'damage_by_type',
+                            'element_output_total': 'output_element_damage',
+                            'global_total_damage': 'global_total_damage'}.get(
+                                key, 'damage_by_type' if key.startswith('damage_')
+                                and key != 'damage_total' else key)
+                success = required in damage
+                if key == 'global_total_damage':
+                    success = self._global_damage_read_ok
+                elif key == 'unattributed_damage':
+                    success = (self._global_damage_read_ok and self._enemy_hp_read_ok
+                               and self._unattributed_tracking_enabled)
+                elif key == 'damage_total' and info.is_global_damage_summary:
+                    success = (self._global_damage_read_ok and self._enemy_hp_read_ok
+                               and self._unattributed_tracking_enabled)
+            state = ('not_collected' if not self._collect(key) else
+                     'current' if success else 'unavailable')
+            info.field_states[spec.id] = collection_record(
+                source_frame, self.core._fixed_frame_snap,
+                info.policy_generation, state, '' if success else 'read_failed')
+        self.core._invalidate_read_dependencies(info.field_states, 'character', {
+            'enemy.hp': self._enemy_hp_read_ok})
 
     def _reset_damage_tracking(self) -> None:
         self._damage_snapshots.clear()
@@ -307,15 +422,18 @@ class CharacterReader:
         return ptrs
 
     @staticmethod
-    def _parse_main(addr: int, block: bytes) -> CharacterInfo:
+    def _parse_main(addr: int, block: bytes, policy=None) -> CharacterInfo:
         info = CharacterInfo(addr)
         info.hp = gs.fp_to_float(_u64(block, gs.EntityFields.M_HP))
-        info.es = gs.fp_to_float(_u64(block, gs.EntityFields.M_ES))
-        info.sp = gs.obscured_fp_to_float(
-            _u64(block, gs.EntityFields.M_SP),
-            _u64(block, gs.EntityFields.M_SP + 8))
-        info.max_sp = _i32(block, gs.EntityFields.MAX_SP)
-        info.direction = _i32(block, gs.EntityFields.M_DIRECTION)
+        if policy is None or policy.enabled('character.es'):
+            info.es = gs.fp_to_float(_u64(block, gs.EntityFields.M_ES))
+        if policy is None or policy.enabled('character.sp'):
+            info.sp = gs.obscured_fp_to_float(
+                _u64(block, gs.EntityFields.M_SP),
+                _u64(block, gs.EntityFields.M_SP + 8))
+            info.max_sp = _i32(block, gs.EntityFields.MAX_SP)
+        if policy is None or policy.enabled('character.pos'):
+            info.direction = _i32(block, gs.EntityFields.M_DIRECTION)
         info.finish_reason = _i32(block, gs.EntityFields.FINISH_REASON)
         info.alive = info.hp > 0 and info.finish_reason == 0
         info.attr_ptr = _u64(block, gs.EntityFields.M_ATTRIBUTES)
@@ -329,12 +447,14 @@ class CharacterReader:
         animator = _u64(block, gs.UnitFields.ANIMATOR)
         if not animator:
             animator = _u64(block, gs.CharacterFields.RUNTIME_ANIMATOR)
-        info.action = {
+        if policy is None or any(policy.enabled('character.' + key) for key in
+                                 ('action_phase', 'remaining_time', 'next_action')):
+            info.action = {
             'animator_addr': animator,
             'current_mode_addr': info.current_mode_ptr,
             'override_attack_addr': _u64(block, gs.UnitFields.OVERRIDE_ATTACK),
             'override_combat_addr': _u64(block, gs.UnitFields.OVERRIDE_COMBAT),
-        }
+            }
         info.root_tile_ptr = _u64(block, gs.CharacterFields.ROOT_TILE)
         if gs.CharacterFields.BLOCK_MANAGER:
             info.block_manager_ptr = _u64(block, gs.CharacterFields.BLOCK_MANAGER)
@@ -350,6 +470,14 @@ class CharacterReader:
         return info
 
     def _fill_new_identities(self, infos: dict[int, CharacterInfo]) -> None:
+        independent_detail = (getattr(self.core._detail_context, 'active', False)
+                              and getattr(self.core._detail_context, 'policy', None) is not None)
+        for addr, info in infos.items():
+            cached = self._identities.get(addr)
+            if cached and cached.get('data_ptr') != info.data_ptr:
+                self._identities.pop(addr, None)
+                if not independent_detail:
+                    self.core._names.pop(addr, None)
         targets = [info for info in infos.values()
                    if info.addr not in self._identities and self.mc.is_ptr(info.data_ptr)]
         if not targets:
@@ -376,16 +504,18 @@ class CharacterReader:
                 continue
             record = {'data_ptr': info.data_ptr}
             for key, offset in string_fields:
+                if key in ('name', 'name_en') and not self._collect('name'):
+                    continue
                 ptr = _u64(data, offset)
                 record[key + '_ptr'] = ptr
                 string_ptrs.append(ptr)
             record.update({
-                'level': _i32(data, gs.BattleCharacterDataFields.LEVEL),
-                'evolve_phase': _i32(data, gs.BattleCharacterDataFields.EVOLVE_PHASE),
+                'level': _i32(data, gs.BattleCharacterDataFields.LEVEL) if self._collect('level') else 0,
+                'evolve_phase': _i32(data, gs.BattleCharacterDataFields.EVOLVE_PHASE) if self._collect('level') else 0,
                 'potential_rank': _i32(data, gs.BattleCharacterDataFields.POTENTIAL_RANK),
                 'favor_phase': _i32(data, gs.BattleCharacterDataFields.FAVOR_BATTLE_PHASE),
                 'unique_id': _u32(data, gs.BattleCharacterDataFields.UNIQUE_ID),
-                'profession': _i32(data, gs.BattleCharacterDataFields.PROFESSION),
+                'profession': _i32(data, gs.BattleCharacterDataFields.PROFESSION) if self._collect('profession') else 0,
                 'rarity': _i32(data, gs.BattleCharacterDataFields.RARITY),
                 'deploy_position': _i32(data, gs.BattleCharacterDataFields.DEPLOY_POSITION),
                 'is_token': bool(data[gs.BattleCharacterDataFields.IS_TOKEN]),
@@ -400,10 +530,11 @@ class CharacterReader:
         strings = self.core._read_strings(string_ptrs)
         for addr, record in parsed:
             for key, _ in string_fields:
-                record[key] = strings.get(record.pop(key + '_ptr'), '')
+                record[key] = strings.get(record.pop(key + '_ptr', 0), '')
             self._identities[addr] = record
-            self.core._names[addr] = (
-                record.get('cid', ''), record.get('name', ''), '')
+            if not independent_detail:
+                self.core._names[addr] = (
+                    record.get('cid', ''), record.get('name', ''), '')
 
     @staticmethod
     def _apply_identity(info: CharacterInfo, identity: dict) -> None:
@@ -412,6 +543,12 @@ class CharacterReader:
                 setattr(info, key, value)
 
     def _refresh_attributes(self, infos: dict[int, CharacterInfo]) -> None:
+        self._attr_snapshots.clear()
+        for addr, info in infos.items():
+            previous = self._attr_sources.get(addr)
+            if previous is not None and previous != info.attr_ptr:
+                self._attr_cached.pop(addr, None)
+            self._attr_sources[addr] = info.attr_ptr
         missing = [info for info in infos.values()
                    if info.addr not in self._attr_cached and self.mc.is_ptr(info.attr_ptr)]
         for info, data in zip(
@@ -428,7 +565,7 @@ class CharacterReader:
                 self._attr_cached.pop(addr, None)
                 continue
             tmp = EnemyInfo(addr)
-            self.core._apply_cached_data(data, tmp)
+            self.core._apply_cached_data(data, tmp, self._attribute_indices())
             self._attr_snapshots[addr] = dict(tmp.attributes)
         for addr, info in infos.items():
             info.attributes = dict(self._attr_snapshots.get(addr, {}))
@@ -445,7 +582,8 @@ class CharacterReader:
                             epc=info.ep_controller_ptr,
                             shield=info.shield_controller_ptr)
             if not all(pointers.get(key) for key in (
-                    'flags', 'immunes', 'antis', 'combos', 'combo_immunes')):
+                    'flags', 'immunes', 'antis', 'combos', 'combo_immunes')
+                       if self._runtime_kind_enabled(key)):
                 missing.append((addr, info.attr_ptr))
         combo_mgrs = {}
         for (addr, _), data in zip(
@@ -468,8 +606,7 @@ class CharacterReader:
                 self._runtime_ptrs[addr]['combo_immunes'] = _u64(
                     data, gs.AbnormalComboManagerFields.M_ABNORMAL_COMBO_IMMUNE_COUNTER)
 
-        snapshots = {addr: dict(self._runtime_snapshots.get(addr, {}))
-                     for addr in infos}
+        snapshots = {addr: {} for addr in infos}
         for addr, info in infos.items():
             action = dict(snapshots[addr].get('action', {}))
             action.update(info.action or {})
@@ -491,7 +628,7 @@ class CharacterReader:
                  gs.Il2CppArray.ITEMS + gs.AbnormalCombo.E_NUM * 2),
             )
             for kind, ptr, size in specs:
-                if self.mc.is_ptr(ptr):
+                if self._runtime_kind_enabled(kind) and self.mc.is_ptr(ptr):
                     reqs.append((ptr, size)); keys.append((addr, kind))
             mode = snapshots[addr]['action'].get('current_mode_addr', 0)
             if self.mc.is_ptr(mode):
@@ -515,7 +652,9 @@ class CharacterReader:
                 if snap['action'].get('state_node_addr') != state_node:
                     snap['action'].pop('state_time', None)
                     snap['action'].pop('status_remaining', None)
-                snap['action']['state_node_addr'] = state_node
+                if any(self._collect(key) for key in (
+                        'action_phase', 'remaining_time', 'next_action', 'abnormal_status')):
+                    snap['action']['state_node_addr'] = state_node
             elif kind == 'ep':
                 snap['ep_remaining'] = self.core._decode_fp_array(
                     data, gs.ElementType.E_NUM)
@@ -606,7 +745,7 @@ class CharacterReader:
         for addr, info in infos.items():
             state_id = snapshots[addr].get('state_id', gs.CharacterState.DEFAULT)
             bits = abnormal_bits.get(state_id)
-            if bits:
+            if bits and self._collect('abnormal_status'):
                 status_targets.append((addr, info.buff_container_ptr, state_id,
                                        bits[0], bits[1]))
         self.core._refresh_status_timers_chan(
@@ -620,6 +759,8 @@ class CharacterReader:
     def _refresh_positions_and_blocking(self, infos: dict[int, CharacterInfo]) -> None:
         # New clients move the old blocked-enemy container below BlockManager.
         # Read this additional layer every frame; never reuse a previous pointer.
+        block_read_ok = {info.addr: not bool(gs.CharacterFields.BLOCK_MANAGER)
+                         for info in infos.values()}
         block_targets = [info for info in infos.values()
                          if self.mc.is_ptr(info.block_manager_ptr)]
         for info, data in zip(block_targets, self._batch([
@@ -627,9 +768,10 @@ class CharacterReader:
                 for item in block_targets])):
             info.blocked_manager_ptr = _u64(
                 data, gs.BlockManagerFields.BLOCKED_ENEMY_MANAGER) if data else 0
+            block_read_ok[info.addr] = bool(data)
         changed = [info for info in infos.values()
                    if self._positions.get(info.addr, (0, 0, 0))[0] != info.root_tile_ptr
-                   and self.mc.is_ptr(info.root_tile_ptr)]
+                   and self.mc.is_ptr(info.root_tile_ptr) and self._collect('pos')]
         graphics = {}
         for info, data in zip(
                 changed, self._batch([(x.root_tile_ptr, 0x38) for x in changed])):
@@ -650,10 +792,14 @@ class CharacterReader:
         reqs, tags = [], []
         targets = []
         for info in infos.values():
+            if not self._collect_group('blocking'):
+                continue
             manager = info.blocked_manager_ptr
             if not self.mc.is_ptr(manager):
                 info.blocked_count = 0
                 info.blocked_total_volume = 0
+                # A failed BlockManager read is unknown, not a fresh zero.
+                info._blocking_read_ok = bool(block_read_ok[info.addr] and manager == 0)
                 self._blocked_layouts.pop(info.addr, None)
                 continue
             targets.append(info)
@@ -680,6 +826,7 @@ class CharacterReader:
                 data, gs.BlockedEnemyManagerFields.BLOCKED_ENEMIES)
             if not self.mc.is_ptr(blocked_list):
                 info.blocked_count = 0
+                info._blocking_read_ok = True
                 self._blocked_layouts[info.addr] = {
                     'manager': manager, 'list': 0}
                 continue
@@ -691,6 +838,7 @@ class CharacterReader:
                 if head:
                     count = _i32(head, gs.ListInternal.SIZE)
                     info.blocked_count = count if 0 <= count <= 128 else 0
+                    info._blocking_read_ok = 0 <= count <= 128
             else:
                 changed_lists.append((info.addr, blocked_list))
 
@@ -700,6 +848,7 @@ class CharacterReader:
             if head:
                 count = _i32(head, gs.ListInternal.SIZE)
                 infos[addr].blocked_count = count if 0 <= count <= 128 else 0
+                infos[addr]._blocking_read_ok = 0 <= count <= 128
         for addr, blocked_list in current_lists.items():
             self._blocked_layouts[addr] = {
                 'manager': infos[addr].blocked_manager_ptr,
@@ -707,7 +856,7 @@ class CharacterReader:
             }
         for addr, info in infos.items():
             position = self._positions.get(addr)
-            if position:
+            if position and position[0] == info.root_tile_ptr and self._collect('pos'):
                 _, info.grid_row, info.grid_col = position
 
     def _parse_skill_static(self, data_ptr: int, data: bytes) -> dict:
@@ -748,6 +897,7 @@ class CharacterReader:
         }
 
     def _refresh_skills(self, infos: dict[int, CharacterInfo]) -> None:
+        self._skill_runtime.clear()
         new_data = {info.skill_data_ptr for info in infos.values()
                     if self.mc.is_ptr(info.skill_data_ptr)
                     and info.skill_data_ptr not in self._skill_static}
@@ -867,7 +1017,9 @@ class CharacterReader:
         self._skill_runtime.update(runtime)
         for addr, info in infos.items():
             static = dict(self._skill_static.get(info.skill_data_ptr, {}))
-            static['runtime'] = dict(self._skill_runtime.get(addr, {}))
+            if addr not in self._skill_runtime:
+                continue
+            static['runtime'] = dict(self._skill_runtime[addr])
             static['current_sp'] = info.sp
             static['max_sp'] = info.max_sp
             sp_cost = static.get('sp', {}).get('cost', info.max_sp)
@@ -930,6 +1082,8 @@ class CharacterReader:
         def set_countdown(seconds, kind, source='runtime'):
             if not isinstance(seconds, (int, float)) or not math.isfinite(seconds):
                 return False
+            if not self._collect('remaining_time'):
+                return True
             seconds = max(0.0, float(seconds))
             action['remaining'] = seconds
             action['remaining_frames'] = (
@@ -1063,7 +1217,14 @@ class CharacterReader:
                           detail='该状态没有统一倒计时槽，由状态节点条件退出',
                           remaining_kind='状态节点条件')
 
-        self._predict_character_next_action(info, action)
+        if self._collect('next_action') and (self._capture_policy is None or (
+                info.addr in self._skill_runtime and all(key in
+                self._runtime_snapshots.get(info.addr, {}) for key in
+                ('state_id', 'abnormal_flags', 'abnormal_combos')))):
+            self._predict_character_next_action(info, action)
+        if not self._collect('remaining_time'):
+            for key in ('remaining', 'remaining_frames', 'remaining_kind'):
+                action.pop(key, None)
         info.action = action
         snap = self._runtime_snapshots.get(info.addr)
         if snap is not None:
@@ -1071,6 +1232,7 @@ class CharacterReader:
         return action
 
     def _refresh_buff_counts(self, infos: dict[int, CharacterInfo]) -> None:
+        self._buff_counts.clear()
         # 三层指针都要逐帧验证。稳定地址下把 container、double buffer 和
         # List 头合并到一个 batch；任一指针变化时在当前帧补齐后续层。
         targets = []
@@ -1101,6 +1263,8 @@ class CharacterReader:
         need_doubles = []
         for info in targets:
             data = values.get((info.addr, 'container'))
+            if not data:
+                continue
             double = _u64(data, gs.BuffContainerFields.M_BUFFS) if data else 0
             if not self.mc.is_ptr(double):
                 self._buff_counts[info.addr] = 0
@@ -1127,6 +1291,8 @@ class CharacterReader:
         for info in targets:
             double = doubles.get(info.addr, 0)
             data = double_data.get(info.addr)
+            if not data and double:
+                continue
             buff_list = (_u64(data, gs.DoubleBufferedListFields.M_INTERNAL_LIST)
                          if data else 0)
             if not self.mc.is_ptr(buff_list):
@@ -1154,8 +1320,6 @@ class CharacterReader:
             if head:
                 count = _i32(head, gs.ListInternal.SIZE)
                 self._buff_counts[addr] = count if 0 <= count <= 512 else 0
-            else:
-                self._buff_counts[addr] = 0
         for addr, buff_list in lists.items():
             self._buff_layouts[addr] = {
                 'container': infos[addr].buff_container_ptr,
@@ -1164,9 +1328,27 @@ class CharacterReader:
         for addr, info in infos.items():
             info.buff_count = self._buff_counts.get(addr, 0)
 
+    def _damage_kind_enabled(self, kind):
+        """Demand the exclusive inner list only when one consumer needs it."""
+        if self._capture_policy is None:
+            return True
+        if kind == 'elements':
+            return self._collect('element_output_total')
+        if kind == 'breaks':
+            return False  # Not a registered public sampling field.
+        return any(self._collect(key) for key in (
+            'damage_total', 'global_total_damage', 'damage_physical',
+            'damage_magical', 'damage_pure', 'damage_element', 'healing_total',
+            'unattributed_damage'))
+
     def _rebuild_damage_layout(self) -> None:
         """沿完整指针链重建 BattleLogger 统计布局。"""
         self._damage_frame_prefetch = []
+        self._damage_layout_read_ok = False
+        self._damage_attribution_read_ok = False
+        # A failed traversal cannot leave formerly valid object/list addresses
+        # reachable to the value reader. History is retained separately.
+        self._damage_entries.clear()
         if not self.mc.is_ptr(self.core.bc_addr):
             return
         (logger_slot,) = self._batch([(
@@ -1221,6 +1403,8 @@ class CharacterReader:
             self._damage_pairs_signature = ()
             self._damage_entries.clear()
             self._damage_layout_tick = self._tick
+            self._damage_layout_read_ok = True
+            self._damage_attribution_read_ok = True
             return
         # ListDict<string, CharAdvancedStats> 继承 List<KeyValuePair<...>>；
         # KeyValuePair 引用类型实参在数组中为 key/value 两个 8 字节指针。
@@ -1250,6 +1434,8 @@ class CharacterReader:
                     ('elements', gs.CharAdvancedStatsFields.OUTPUT_ELEMENT_DAMAGE_TOTAL),
                     ('breaks', gs.CharAdvancedStatsFields.OUTPUT_EP_BREAK_COUNT),
                     ('types', gs.CharAdvancedStatsFields.OUTPUT_DAMAGE_BY_TYPE_TOTAL)):
+                if not self._damage_kind_enabled(kind):
+                    continue
                 ptr = _u64(data, offset)
                 if self.mc.is_ptr(ptr):
                     list_owners.append((cid, kind, ptr))
@@ -1266,6 +1452,8 @@ class CharacterReader:
                 }
         self._damage_entries = entries
         self._damage_layout_tick = self._tick
+        self._damage_layout_read_ok = True
+        self._damage_attribution_read_ok = len(entries) == count
 
     def _refresh_damage_layout(self) -> None:
         """逐帧验证完整统计结构，并在稳定帧用一次 batch 同步全部值。
@@ -1274,6 +1462,8 @@ class CharacterReader:
         数组、每个统计对象和三个内层列表头仍会在当前采样帧重新读取。
         """
         self._damage_frame_prefetch = []
+        self._damage_layout_read_ok = False
+        self._damage_attribution_read_ok = False
         items, count = self._damage_list_signature
         if not (self.mc.is_ptr(self.core.bc_addr)
                 and self.mc.is_ptr(self._damage_logger_addr)
@@ -1281,7 +1471,7 @@ class CharacterReader:
                 and self.mc.is_ptr(self._damage_list_addr)
                 and 0 <= count <= 256
                 and (not count or self.mc.is_ptr(items))
-                and (not count or bool(self._damage_entries))):
+                and len(self._damage_entries) == count):
             self._rebuild_damage_layout()
             return
 
@@ -1305,6 +1495,8 @@ class CharacterReader:
             add(('entry', cid), entry['addr'],
                 gs.CharAdvancedStatsFields.READ_SIZE)
             for kind, layout in entry.get('lists', {}).items():
+                if not self._damage_kind_enabled(kind):
+                    continue
                 add(('head', cid, kind), layout['list'], 0x20)
                 if layout.get('count', 0):
                     add(('values', cid, kind), layout['data'],
@@ -1345,7 +1537,6 @@ class CharacterReader:
         for cid, old_entry in self._damage_entries.items():
             block = values.get(('entry', cid))
             if not block:
-                new_entries[cid] = old_entry
                 continue
             entry = {
                 'addr': old_entry['addr'],
@@ -1356,6 +1547,8 @@ class CharacterReader:
                     ('elements', gs.CharAdvancedStatsFields.OUTPUT_ELEMENT_DAMAGE_TOTAL),
                     ('breaks', gs.CharAdvancedStatsFields.OUTPUT_EP_BREAK_COUNT),
                     ('types', gs.CharAdvancedStatsFields.OUTPUT_DAMAGE_BY_TYPE_TOTAL)):
+                if not self._damage_kind_enabled(kind):
+                    continue
                 list_ptr = _u64(block, offset)
                 if not self.mc.is_ptr(list_ptr):
                     continue
@@ -1373,8 +1566,6 @@ class CharacterReader:
                                 'data': inner_items + gs.Il2CppArray.ITEMS,
                                 'count': inner_count,
                             }
-                    elif old_layout:
-                        entry['lists'][kind] = old_layout
                 else:
                     changed_heads.append((cid, kind, list_ptr))
             new_entries[cid] = entry
@@ -1393,8 +1584,10 @@ class CharacterReader:
                     'data': inner_items + gs.Il2CppArray.ITEMS,
                     'count': inner_count,
                 }
+        self._damage_attribution_read_ok = len(new_entries) == count
         self._damage_entries = new_entries
         self._damage_layout_tick = self._tick
+        self._damage_layout_read_ok = True
 
     def _prefetched_damage_read(self, addr: int, size: int) -> bytes | None:
         """返回本帧布局批读中已覆盖的切片，避免相同地址再次往返。"""
@@ -1546,25 +1739,31 @@ class CharacterReader:
     def _refresh_damage_stats(self, infos: dict[int, CharacterInfo],
                               enemies=None,
                               track_unattributed_damage=False) -> None:
+        self._damage_snapshots.clear()
+        self._global_damage_read_ok = False
         if (not self._damage_entries
                 or self._tick - self._damage_layout_tick >= self.DAMAGE_LAYOUT_EVERY):
             self._refresh_damage_layout()
-        if not self.mc.is_ptr(self._damage_stats_addr):
+        if not self.mc.is_ptr(self._damage_stats_addr) or not self._damage_layout_read_ok:
             return
 
-        reqs = [(self._damage_stats_addr + gs.BattleStatsFields.TOTAL_DAMAGE, 4)]
-        tags = [('', 'global_total')]
+        reqs, tags = [], []
+        if self._collect('global_total_damage') or self._collect('unattributed_damage'):
+            reqs.append((self._damage_stats_addr + gs.BattleStatsFields.TOTAL_DAMAGE, 4))
+            tags.append(('', 'global_total'))
         for cid, entry in self._damage_entries.items():
-            reqs.append((entry['addr'] + gs.CharAdvancedStatsFields.OUTPUT_DAMAGE_RANGE,
-                         0x14))
-            tags.append((cid, 'summary'))
+            if self._damage_kind_enabled('types'):
+                reqs.append((entry['addr'] + gs.CharAdvancedStatsFields.OUTPUT_DAMAGE_RANGE,
+                             0x14))
+                tags.append((cid, 'summary'))
             for kind, layout in entry['lists'].items():
+                if not self._damage_kind_enabled(kind):
+                    continue
                 if layout['count']:
                     reqs.append((layout['data'], layout['count'] * 4))
                     tags.append((cid, kind))
-        snapshots = {cid: dict(self._damage_snapshots.get(cid, {}))
-                     for cid in self._damage_entries}
-        battle_stats_total = self._battle_stats_total_damage
+        snapshots = {cid: {} for cid in self._damage_entries}
+        battle_stats_total = 0.0
         frame_data = [self._prefetched_damage_read(addr, size)
                       for addr, size in reqs]
         missing = [(idx, req) for idx, (req, data) in enumerate(
@@ -1577,6 +1776,7 @@ class CharacterReader:
             if not data:
                 continue
             if kind == 'global_total':
+                self._global_damage_read_ok = True
                 battle_stats_total = self._safe_float(
                     struct.unpack_from('<f', data, 0)[0])
                 continue
@@ -1605,6 +1805,8 @@ class CharacterReader:
                         idx: max(0.0, value) for idx, value in enumerate(values)}
 
         for cid, snap in snapshots.items():
+            if 'damage_by_type' not in snap and 'raw_output_total' not in snap:
+                continue
             by_type = snap.get('damage_by_type', {})
             total = sum(by_type.get(idx, 0.0) for idx in (
                 gs.DamageType.PHYSICAL, gs.DamageType.MAGICAL,
@@ -1617,9 +1819,20 @@ class CharacterReader:
         self._battle_stats_total_damage = abs(battle_stats_total)
         character_attributed = sum(max(0.0, self._safe_float(
             snapshot.get('damage_total', 0.0))) for snapshot in snapshots.values())
-        self._update_unattributed_tracking(
-            track_unattributed_damage, enemies,
-            max(self._battle_stats_total_damage, character_attributed))
+        self._enemy_hp_read_ok = (enemies is not None and all(
+            enemy.field_states.get('enemy.hp', {}).get('collectionState') == 'current'
+            for enemy in enemies if getattr(enemy, 'lifecycle', 'active') == 'active'
+            and getattr(enemy, 'addr', 0) > 0)) if self._capture_policy is not None else True
+        attribution_ok = self._damage_attribution_read_ok and all(
+            'damage_total' in snapshot for snapshot in snapshots.values())
+        # Missing current HP/attribution is not a zero-damage observation. Keep
+        # the reconciler's history but do not feed it invented current inputs.
+        if not track_unattributed_damage or (self._global_damage_read_ok
+                and self._enemy_hp_read_ok and attribution_ok):
+            self._update_unattributed_tracking(
+                track_unattributed_damage, enemies,
+                max(self._battle_stats_total_damage, character_attributed))
+        self._global_damage_read_ok = self._global_damage_read_ok and attribution_ok
         self._global_damage_summary = self._make_global_damage_summary(
             self._battle_stats_total_damage, snapshots,
             self._observed_enemy_damage_total,
@@ -1661,33 +1874,39 @@ class CharacterReader:
             live_cids.add(info.cid)
             entry = self._damage_history.setdefault(info.cid, {
                 'name': '', 'is_token': False,
-                'damage_total': 0.0, 'healing_total': 0.0})
+                'damage_total': 0.0, 'healing_total': 0.0,
+                'damage_total_valid': False, 'healing_total_valid': False})
             if info.name:
                 entry['name'] = info.name
             entry['is_token'] = bool(info.is_token)
-            entry['damage_total'] = max(
-                entry['damage_total'],
-                max(0.0, self._safe_float(info.damage_total)))
-            entry['healing_total'] = max(
-                entry['healing_total'],
-                max(0.0, self._safe_float(info.healing_total)))
+            observed = snapshots.get(info.cid, {})
+            for metric in ('damage_total', 'healing_total'):
+                if self._collect(metric) and metric in observed:
+                    entry[metric] = max(entry[metric],
+                                        max(0.0, self._safe_float(observed[metric])))
+                    entry[metric + '_valid'] = True
+                    entry[metric + '_frame'] = self.core._fixed_frame_snap
         # 已撤退但游戏仍保留统计条目的干员，继续跟踪其累计值。
         for cid, snap in snapshots.items():
             if not cid or cid in live_cids:
                 continue
             entry = self._damage_history.setdefault(cid, {
                 'name': '', 'is_token': False,
-                'damage_total': 0.0, 'healing_total': 0.0})
-            entry['damage_total'] = max(
-                entry['damage_total'],
-                max(0.0, self._safe_float(snap.get('damage_total', 0.0))))
-            entry['healing_total'] = max(
-                entry['healing_total'],
-                max(0.0, self._safe_float(snap.get('healing_total', 0.0))))
+                'damage_total': 0.0, 'healing_total': 0.0,
+                'damage_total_valid': False, 'healing_total_valid': False})
+            for metric in ('damage_total', 'healing_total'):
+                if self._collect(metric) and metric in snap:
+                    entry[metric] = max(entry[metric],
+                                        max(0.0, self._safe_float(snap[metric])))
+                    entry[metric + '_valid'] = True
+                    entry[metric + '_frame'] = self.core._fixed_frame_snap
 
     def poll_fast(self, enemies=None, track_unattributed_damage=False) -> dict:
         t0 = time.time()
-        snap = {'ok': False, 'characters': [], 'msg': '', 'frame_ms': 0.0}
+        source_frame = self.core._fixed_frame_snap
+        snap = {'ok': False, 'characters': [], 'msg': '', 'frame_ms': 0.0,
+                'policy_generation': getattr(self._capture_policy, 'generation', 0),
+                'source_frame': source_frame}
         try:
             self._tick += 1
             ptrs = self._read_container()
@@ -1696,26 +1915,37 @@ class CharacterReader:
                 return snap
             blocks = self._batch([
                 (ptr, gs.CharacterFields.READ_SIZE) for ptr in ptrs])
-            infos = {ptr: self._parse_main(ptr, data)
+            infos = {ptr: self._parse_main(ptr, data, self._capture_policy)
                      for ptr, data in zip(ptrs, blocks)
                      if data and len(data) >= gs.CharacterFields.READ_SIZE}
             self._fill_new_identities(infos)
             for addr, info in infos.items():
                 self._apply_identity(info, self._identities.get(addr, {}))
                 self.core._names[addr] = (info.cid, info.name, '')
-            self._refresh_attributes(infos)
-            self._refresh_runtime(infos)
-            self._refresh_positions_and_blocking(infos)
-            self._refresh_damage_stats(
-                infos, enemies, track_unattributed_damage)
-            self._refresh_skills(infos)
-            self._refresh_buff_counts(infos)
+            if self._collect_group('attributes'):
+                self._refresh_attributes(infos)
+            if self._collect_group('runtime'):
+                self._refresh_runtime(infos)
+            if self._collect('pos') or self._collect_group('blocking'):
+                self._refresh_positions_and_blocking(infos)
+            if self._collect_group('damage'):
+                self._refresh_damage_stats(
+                    infos, enemies, track_unattributed_damage and self._collect('unattributed_damage'))
+            if self._collect_group('skills'):
+                self._refresh_skills(infos)
+            if self._collect_group('buffs'):
+                self._refresh_buff_counts(infos)
 
             for info in infos.values():
-                self._finalize_character_action(info)
+                if (any(self._collect(key) for key in
+                        ('action_phase', 'remaining_time', 'next_action'))
+                        and (self._capture_policy is None or (info.addr in self._skill_runtime
+                             and 'state_id' in self._runtime_snapshots.get(info.addr, {})))):
+                    self._finalize_character_action(info)
+                self._stamp_fields(info, source_frame)
 
             live = set(infos)
-            for cache in (self._identities, self._attr_cached, self._attr_snapshots,
+            for cache in (self._identities, self._attr_cached, self._attr_sources, self._attr_snapshots,
                           self._runtime_ptrs, self._runtime_snapshots, self._positions,
                           self._blocked_layouts, self._skill_runtime,
                           self._skill_runtime_layouts, self._buff_counts,
@@ -1725,24 +1955,40 @@ class CharacterReader:
                         cache.pop(addr, None)
             characters = sorted(
                 infos.values(), key=lambda x: (x.is_token, x.unique_id, x.addr))
-            if self._global_damage_summary.unattributed_damage_total > 0:
+            if (self._collect_group('damage') and self._global_damage_read_ok
+                    and self._global_damage_summary.unattributed_damage_total > 0):
+                self._stamp_fields(self._global_damage_summary, source_frame)
                 characters.append(self._global_damage_summary)
             snap['characters'] = characters
             # 本局曾上场、当前不在场的干员伤害/治疗峰值，供数据总览合并显示。
-            snap['character_stats_history'] = [
-                CharacterInfo(
-                    addr=0, cid=cid, name=entry['name'] or cid,
-                    is_token=entry['is_token'], alive=False,
-                    damage_total=entry['damage_total'],
-                    healing_total=entry['healing_total'])
-                for cid, entry in sorted(
-                    self._damage_history.items(),
-                    key=lambda item: (
-                        -(item[1]['damage_total']
-                          + item[1]['healing_total']), item[0]))
-                if cid not in {info.cid for info in infos.values()}
-            ]
-            snap['global_damage_summary'] = self._global_damage_summary
+            from backend.app.field_policy import collection_record
+            snap['character_stats_history'] = []
+            live_cids = {info.cid for info in infos.values()}
+            if self._collect_group('damage'):
+                for cid, entry in sorted(self._damage_history.items(), key=lambda item: (
+                        -(item[1]['damage_total'] + item[1]['healing_total']), item[0])):
+                    if cid in live_cids or not any(entry[metric + '_valid']
+                            for metric in ('damage_total', 'healing_total')):
+                        continue
+                    history = CharacterInfo(
+                        addr=0, cid=cid, name=entry['name'] or cid,
+                        is_token=entry['is_token'], alive=False,
+                        damage_total=entry['damage_total'],
+                        healing_total=entry['healing_total'])
+                    history.field_states = {
+                        'character.' + metric: collection_record(
+                            entry.get(metric + '_frame'), source_frame,
+                            getattr(self._capture_policy, 'generation', 0),
+                            'not_collected' if not self._collect(metric) else
+                            'historical' if entry[metric + '_valid'] else 'unavailable',
+                            '' if entry[metric + '_valid'] else
+                            'capture_disabled' if not self._collect(metric) else
+                            'historical_source_unavailable')
+                        for metric in ('damage_total', 'healing_total')}
+                    snap['character_stats_history'].append(history)
+            snap['global_damage_summary'] = (self._global_damage_summary
+                                             if self._collect_group('damage')
+                                             and self._global_damage_read_ok else None)
             snap['ok'] = True
             snap['frame_ms'] = round((time.time() - t0) * 1000, 1)
             return snap
@@ -1860,22 +2106,48 @@ class CharacterReader:
             else:
                 buff['source_category'] = '无实体来源（技能/天赋/关卡）'
 
-    def read_character_detail(self, addr: int) -> CharacterInfo | None:
+    def read_character_detail(self, addr: int, policy=None) -> CharacterInfo | None:
+        """Read detail using per-thread caches separate from the fast poller.
+
+        Async IO must not replace the primary reader's successful value caches
+        while it is constructing a current aggregate frame.
+        """
+        reader = getattr(self.core._detail_context, 'character_reader', None)
+        if reader is None:
+            reader = CharacterReader(self.core)
+            self.core._detail_context.character_reader = reader
+        reader._capture_policy = self._capture_policy
+        return reader._read_character_detail_impl(addr, policy)
+
+    def _read_character_detail_impl(self, addr: int, policy=None) -> CharacterInfo | None:
         if not self.mc.is_ptr(addr):
             return None
+        policy = self._capture_policy if policy is None else policy
+        if policy is not None and not any(policy.group_enabled('character_detail', key)
+                                          for key in ('attributes', 'rawAttributes', 'buffs',
+                                                      'globalBuffs', 'skills', 'talents',
+                                                      'dynamicAbilities', 'equipment')):
+            return None
+        succeeded = set()
         self.core._detail_context.active = True
+        self.core._detail_context.policy = policy
+        source_frame = self.core._read_detail_frame()
+        self.core._detail_context.sampled_at = time.time()
+        collect = lambda key: self.core._detail_collect('character_detail', key)
         try:
             (block,) = self.core._detail_batch_read([
                 (addr, gs.CharacterFields.READ_SIZE)])
             if not block or len(block) < gs.CharacterFields.READ_SIZE:
                 return None
-            info = self._parse_main(addr, block)
+            info = self._parse_main(addr, block, policy)
             # 身份数据会在换对象后重新读取；详情页不依赖主轮询是否已跑过。
             self._fill_new_identities({addr: info})
             self._apply_identity(info, self._identities.get(addr, {}))
-            self.core._names[addr] = (info.cid, info.name, '')
+            if policy is None:
+                self.core._names[addr] = (info.cid, info.name, '')
 
-            if self.mc.is_ptr(info.attr_ptr):
+            if self.mc.is_ptr(info.attr_ptr) and any(collect(key) for key in
+                                                    ('attributes', 'rawAttributes')):
                 (attr_head,) = self.core._detail_batch_read(
                     [(info.attr_ptr, gs.AttributesFields.READ_SIZE)])
                 if attr_head:
@@ -1884,23 +2156,32 @@ class CharacterReader:
                     size = (gs.Il2CppArray.ITEMS
                             + gs.AttributeType.E_NUM * gs.OBSCURED_FP_SIZE)
                     reqs, kinds = [], []
-                    if self.mc.is_ptr(raw_ptr):
+                    if self.mc.is_ptr(raw_ptr) and collect('rawAttributes'):
                         reqs.append((raw_ptr, size)); kinds.append('raw')
-                    if self.mc.is_ptr(cached_ptr):
+                    if self.mc.is_ptr(cached_ptr) and collect('attributes'):
                         reqs.append((cached_ptr, size)); kinds.append('cached')
                     for kind, data in zip(kinds, self.core._detail_batch_read(reqs)):
+                        if not data:
+                            continue
                         tmp = EnemyInfo(addr)
                         if kind == 'raw':
                             self.core._apply_raw_data(data, tmp)
                             info.raw_attributes = dict(tmp.raw_attributes)
+                            succeeded.add('rawAttributes')
                         else:
                             self.core._apply_cached_data(data, tmp)
                             info.attributes = dict(tmp.attributes)
                             info.max_hp = info.attribute(gs.AttributeType.MAX_HP)
+                            succeeded.add('attributes')
 
-            self._refresh_runtime({addr: info})
-            self._refresh_positions_and_blocking({addr: info})
-            self._refresh_skills({addr: info})
+            if self._collect_group('runtime'):
+                self._refresh_runtime({addr: info})
+            if self._collect('pos') or self._collect_group('blocking'):
+                self._refresh_positions_and_blocking({addr: info})
+            if collect('skills'):
+                self._refresh_skills({addr: info})
+                if addr in self._skill_runtime:
+                    succeeded.add('skills')
             skill = info.skill
             if skill:
                 runtime = skill.get('runtime', {})
@@ -1915,13 +2196,21 @@ class CharacterReader:
                     runtime[key.replace('_ptr', '')] = \
                         self.core._read_blackboards([ptr]).get(ptr, [])
 
-            info.talents = self._read_talents(block)
+            if collect('talents'):
+                self.core._detail_context.read_failed = False
+                info.talents = self._read_talents(block)
+                if not self.core._detail_context.read_failed:
+                    succeeded.add('talents')
             dynamic_list = _u64(block, gs.UnitFields.DYNAMIC_ABILITIES)
+            self.core._detail_context.read_failed = False
             info.dynamic_abilities = [
                 {'addr': ptr, 'class': self._class_name(ptr)}
-                for ptr in self._read_pointer_list(dynamic_list)]
+                for ptr in self._read_pointer_list(dynamic_list)] if collect('dynamicAbilities') else []
+            if collect('dynamicAbilities') and not self.core._detail_context.read_failed:
+                succeeded.add('dynamicAbilities')
             settings_list = 0
-            if self.mc.is_ptr(info.data_ptr):
+            self.core._detail_context.read_failed = False
+            if self.mc.is_ptr(info.data_ptr) and collect('equipment'):
                 (data,) = self.core._detail_batch_read([
                     (info.data_ptr, gs.BattleCharacterDataFields.READ_SIZE)])
                 if data:
@@ -1929,17 +2218,29 @@ class CharacterReader:
                         data, gs.BattleCharacterDataFields.UNI_EQUIP_SETTINGS)
             info.module_settings = [
                 {'addr': ptr, 'class': self._class_name(ptr)}
-                for ptr in self._read_pointer_list(settings_list)]
+                for ptr in self._read_pointer_list(settings_list)] if collect('equipment') else []
             deck_bb = _u64(block, gs.CharacterFields.DECK_BUFF_BLACKBOARD)
-            info.deck_buff_blackboard = self.core._read_blackboards([deck_bb]).get(
-                deck_bb, [])
-            info.buffs = self.core._read_active_buffs(info.buff_container_ptr)
-            self._annotate_buffs(info.buffs)
-            info.buff_count = len(info.buffs)
-            info.global_buffs = self.core._read_global_buffs(addr)
+            if collect('equipment'):
+                info.deck_buff_blackboard = self.core._read_blackboards([deck_bb]).get(deck_bb, [])
+                if not self.core._detail_context.read_failed:
+                    succeeded.add('equipment')
+            if collect('buffs'):
+                self.core._detail_context.read_failed = False
+                info.buffs = self.core._read_active_buffs(info.buff_container_ptr)
+                self._annotate_buffs(info.buffs)
+                info.buff_count = len(info.buffs)
+                if not self.core._detail_context.read_failed:
+                    succeeded.add('buffs')
+            if collect('globalBuffs'):
+                self.core._detail_context.read_failed = False
+                info.global_buffs = self.core._read_global_buffs(addr)
+                if self.core.bc_addr and not self.core._detail_context.read_failed:
+                    succeeded.add('globalBuffs')
+            self.core._stamp_detail(info, 'character_detail', policy, source_frame, succeeded)
             return info
         finally:
             self.core._detail_context.active = False
+            self.core._detail_context.policy = None
 
     @staticmethod
     def merge_detail(live: CharacterInfo, detail: CharacterInfo) -> CharacterInfo:

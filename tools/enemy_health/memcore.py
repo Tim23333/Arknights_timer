@@ -44,6 +44,29 @@ KNOWN_MUMU_SERIALS = tuple(
 BS = 4 * 1024 * 1024  # memsrv 单次读取上限
 
 
+def probe_adb_executable(path: str) -> tuple[bool, str]:
+    """验证用户选择的是可运行的 adb；参数列表调用可处理空格和中文路径。"""
+    path = os.path.normpath(path or '')
+    if not path or not os.path.isfile(path):
+        return False, '所选文件不存在'
+    try:
+        result = subprocess.run(
+            [path, 'version'], capture_output=True, text=True, errors='replace',
+            timeout=8,
+            creationflags=(getattr(subprocess, 'CREATE_NO_WINDOW', 0)
+                           if os.name == 'nt' else 0),
+        )
+    except subprocess.TimeoutExpired:
+        return False, '执行 adb version 超时'
+    except OSError as exc:
+        return False, f'无法运行所选文件：{exc}'
+    output = '\n'.join(
+        part.strip() for part in (result.stdout, result.stderr) if part.strip())
+    if result.returncode != 0:
+        return False, output.splitlines()[0] if output else f'退出码 {result.returncode}'
+    return True, output.splitlines()[0] if output else 'ADB 可执行文件验证通过'
+
+
 def _config_file() -> str:
     """adb 路径配置持久化位置: 打包模式放 exe 旁 (_MEIPASS 是临时目录,
     写进去重启即丢); 开发模式放模块目录"""
@@ -1036,6 +1059,7 @@ class MemCore:
         # 避免找不到 adb 时整个程序无法启动
         self.package = package
         self.pid: Optional[int] = None
+        self.process_instance = None  # Boot ID / start ticks, never inferred from PID alone.
         # maps
         self.regions: List[Tuple[int, int, str, str]] = []
         self._rw_starts: List[int] = []
@@ -1168,7 +1192,22 @@ class MemCore:
                 f'ADB 设备 {self.adb_serial} 已连接且具备 root，但找不到游戏进程。'
                 f'已尝试包名: {tried}')
         self.package = package
+        self.pid = None
+        self.process_instance = None
         self.pid = pid
+        try:
+            # A PID can be reused; history restoration requires process birth.
+            # Failure disables restoration without blocking memory capture.
+            birth_data = self.shell(
+                f'cat /proc/sys/kernel/random/boot_id /proc/{int(pid)}/stat', timeout=5)
+            boot_id, process_stat = birth_data.strip().split('\n', 1)
+            boot_id = boot_id.strip()
+            fields = process_stat.rsplit(')', 1)[1].split()
+            if (len(boot_id) == 36 and process_stat.split(' ', 1)[0] == str(pid)
+                    and len(fields) > 19 and int(fields[19]) > 0):
+                self.process_instance = (boot_id, int(fields[19]))
+        except (OSError, RuntimeError, ValueError, IndexError):
+            pass
         self.reload_maps()
         if not self.regions:
             raise RuntimeError(

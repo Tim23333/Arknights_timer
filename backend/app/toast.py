@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 from typing import Optional
 
 TOAST_DURATION_MS = 30000
@@ -97,6 +98,7 @@ class ToastManager:
     ) -> None:
         self._queue = ToastQueue(max_toasts=max_toasts)
         self._seq = 0
+        self._listeners = []
         opts = options or {}
         self._enabled = bool(opts.get("enabled", True))
         durations = opts.get("duration_ms") or {}
@@ -108,6 +110,14 @@ class ToastManager:
         self._enabled = bool(opts.get("enabled", True))
         durations = opts.get("duration_ms") or {}
         self._durations = {**DEFAULT_DURATIONS_MS, **durations}
+
+    def subscribe(self, listener):
+        """订阅实际允许展示的气泡事件，返回取消订阅函数。"""
+        self._listeners.append(listener)
+        def unsubscribe():
+            if listener in self._listeners:
+                self._listeners.remove(listener)
+        return unsubscribe
 
     def show(
         self,
@@ -132,6 +142,12 @@ class ToastManager:
             title=title, duration=duration)
         self._queue.push(item)
         self._on_changed()
+        for listener in tuple(self._listeners):
+            try:
+                listener(item)
+            except Exception:
+                # A diagnostic subscriber must not abort the game scanning flow.
+                logging.getLogger(__name__).exception('Toast subscriber failed')
         return item
 
     def dismiss(self, item: ToastQueueItem) -> None:

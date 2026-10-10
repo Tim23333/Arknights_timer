@@ -8,16 +8,21 @@ from __future__ import annotations
 
 import copy
 import json
+import logging
+import os
+import tempfile
+import threading
 from pathlib import Path
 from typing import Any, Callable
 
-from app.toast import LEVELS
+from .toast import LEVELS
 
 # SLF4J 五级信息分类：直接复用 toast.py 的权威 LEVELS，避免两处字面量漂移。
 # UI 时长输入框的顺序与键名、运行时查表都以此为唯一来源。
 TOAST_LEVELS: tuple[str, ...] = LEVELS
 
 DEFAULTS: dict[str, Any] = {
+    "field_policy": {"version": 1, "fields": {}},
     "auto_detect_stage_change": {
         "enabled": False,
     },
@@ -68,13 +73,20 @@ def load(path: str | Path | None = None) -> dict[str, Any]:
 
 
 def save(path: str | Path | None, data: dict[str, Any]) -> None:
-    """把配置写入磁盘；目标目录不存在时创建。"""
+    """通过同目录临时文件替换配置，写盘失败不破坏已有 JSON。"""
     p = Path(path or default_path())
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(
-        json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True),
-        encoding="utf-8",
-    )
+    content = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True)
+    descriptor, temporary = tempfile.mkstemp(prefix=f".{p.name}.", dir=p.parent)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, p)
+    finally:
+        # 仅清理本次创建的确定临时文件；不扫描或删除用户目录。
+        Path(temporary).unlink(missing_ok=True)
 
 
 def _merge(defaults: dict, incoming: dict) -> dict:
@@ -95,28 +107,58 @@ class CustomOptions:
         self._path = Path(path or default_path())
         self._data: dict[str, Any] = copy.deepcopy(DEFAULTS)
         self._listeners: list[Callable[[], None]] = []
+        self._lock = threading.RLock()
 
     def load(self) -> "CustomOptions":
-        self._data = load(self._path)
+        with self._lock:
+            self._data = load(self._path)
         return self
 
     def get(self, section: str, key: str | None = None) -> Any:
         """读取配置；key 缺省时返回整个 section。未设置时回退默认值。"""
-        merged = _merge(DEFAULTS, self._data)
+        with self._lock:
+            merged = _merge(DEFAULTS, self._data)
         if key is None:
             return merged.get(section)
         return (merged.get(section) or {}).get(key)
 
     def set(self, section: str, key: str, value: Any) -> None:
         """写入内存并落盘，然后通知监听方。"""
-        self._data.setdefault(section, {})
-        self._data[section][key] = value
-        save(self._path, self._data)
-        for listener in list(self._listeners):
-            listener()
+        with self._lock:
+            candidate = copy.deepcopy(self._data)
+            candidate.setdefault(section, {})
+            candidate[section][key] = copy.deepcopy(value)
+            save(self._path, candidate)
+            self._data = candidate
+        self.notify_listeners()
+
+    def replace_section(self, section: str, value: dict[str, Any], *,
+                        notify: bool = True) -> None:
+        """整段配置写盘成功后一次生效，避免逐键提交的中间依赖冲突。
+
+        策略存储使用 ``notify=False``，先发布对应不可变代际，再通知消费者。
+        """
+        with self._lock:
+            candidate = copy.deepcopy(self._data)
+            candidate[section] = copy.deepcopy(value)
+            save(self._path, candidate)
+            self._data = candidate
+        if notify:
+            self.notify_listeners()
+
+    def notify_listeners(self) -> None:
+        """通知已提交配置；单个监听器失败不能撤销落盘或阻碍其他监听器。"""
+        with self._lock:
+            listeners = list(self._listeners)
+        for listener in listeners:
+            try:
+                listener()
+            except Exception:
+                logging.getLogger(__name__).exception("自定义选项监听器失败")
 
     def add_listener(self, callback: Callable[[], None]) -> None:
-        self._listeners.append(callback)
+        with self._lock:
+            self._listeners.append(callback)
 
     @property
     def path(self) -> str:

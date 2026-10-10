@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>明日方舟 Timeline</title><link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.mjs"></script>
+</head>
+<body>
+  <div class="clock-drawer is-open is-pinned" id="clock-drawer">
+    <div class="clock-drawer-panel" id="clock-drawer-panel">
+      <div class="clock-drawer-readout"><span class="clock-drawer-title">游戏时钟<small id="clock-source">等待计时器连接</small></span><strong id="clock-time">—</strong><span id="clock-frame">逻辑帧 —</span></div>
+      <button class="clock-pin" id="clock-pin" aria-pressed="true">已置顶</button>
+    </div>
+    <button class="clock-drawer-toggle" id="clock-toggle" aria-expanded="true" aria-controls="clock-drawer-panel">收起游戏时钟</button>
+  </div>
+  <div class="shell">
+    <aside class="rail" id="nav-drawer" aria-label="主导航" aria-hidden="true" inert>
+      <div class="drawer-nav-heading"><span>工作区</span><button id="close-nav" aria-label="收起导航">‹</button></div>
+      <div class="identity"><div class="identity-mark">T<span>·</span></div><div><strong>ARKNIGHTS<br>TIMELINE</strong><small>实时数据工作台</small></div></div>
+      <div class="rail-caption">实时工作区</div><nav class="rail-nav">
+        <button class="nav-button" data-page="enemies">敌人监控</button><button class="nav-button" data-page="characters">干员监控</button><button class="nav-button" data-page="deploy">关卡与操作</button><button class="nav-button" data-page="rng">随机数追踪</button>
+      </nav><div class="rail-caption second">配置与服务</div><nav class="rail-nav"><button class="nav-button" data-page="system">运行设置</button><button class="nav-button" data-page="logs">实时日志</button></nav>
+      <div class="rail-foot"><span class="rail-pulse"></span><div><strong id="nav-status">等待后端</strong><small id="nav-detail">本机实时数据</small></div></div>
+    </aside>
+    <div class="nav-backdrop" id="nav-backdrop" hidden></div><button class="nav-handle" id="open-nav" aria-controls="nav-drawer" aria-expanded="false"><span>工作区</span><span>›</span></button>
+    <div class="app"><header class="topbar"><button class="title-stack brand-home" data-page="overview"><span class="overline" id="version">ARKNIGHTS TIMELINE</span><strong>明日方舟 Timeline</strong></button><div class="top-command">
+      <span class="connection-pill" id="connection"><i></i>等待连接</span><button class="top-button top-primary" data-action="adb">选择 ADB</button><button class="top-button" data-action="guide">使用教程</button><button class="top-button" data-action="auto-address-once">自动寻址</button><button class="top-button" data-action="timer">寻址工具</button><button class="top-button" data-action="timeline">排轴工具</button><button class="top-button" data-action="cache">导出本局缓存</button><button class="top-button" data-action="api">接口说明</button>
+    </div></header>
+    <main class="content">
+      <div class="service-warning" id="transport-status" role="status">正在连接 Timeline 后端…</div>
+      <section class="page active" id="page-overview"><div class="page-heading overview-heading"><h1>数据总览</h1><div class="page-stat"><span>当前关卡</span><strong id="stage-name">—</strong></div></div>
+        <section class="source-strip" aria-label="采集链状态">
+          <div class="source source-timer"><span class="source-title">游戏时钟</span><strong id="overview-time">—</strong><span class="source-bottom" id="overview-frame">逻辑帧 —</span></div>
+          <div class="source"><span class="source-title">敌我完整帧</span><strong id="source-battle">等待采样</strong><span class="source-bottom" id="source-quality">—</span></div>
+          <div class="source"><span class="source-title">操作记录</span><strong id="source-deploy">等待采样</strong><span class="source-bottom">独立事件历史</span></div>
+          <div class="source"><span class="source-title">随机数</span><strong id="source-rng">等待采样</strong><span class="source-bottom">独立采样</span></div>
+          <div class="source ws-source"><span class="source-title">WebSocket</span><strong id="source-ws">等待状态</strong><span class="source-bottom" id="ws-url">—</span></div>
+        </section>
+        <div class="overview-jump-list" id="modules">
+          <details class="overview-module-slot" id="overview-enemies"><summary><strong>敌人监控</strong><b id="count-enemies">—</b><em>展开完整数据</em></summary><div class="overview-module-content module-data" id="module-enemies"><div class="module-toolbar"><button class="button primary" data-action="enemy-scan">重新扫描</button><button class="button" data-action="enemy-stop">停止监控</button><button class="button" data-action="stage-export">导出关卡/出怪</button><button class="button quiet" data-action="enemy-columns">显示列</button><button class="button quiet" data-action="enemy-precision">小数位设置</button><button class="button quiet" data-action="enemy-fit">列宽自适应</button><button class="button quiet" data-action="mini">迷你模式</button></div><div class="module-subbar"><label class="check"><input id="hide-departed" type="checkbox" checked>主表隐藏离场敌方</label><span id="enemy-status">等待扫描</span></div><div class="table-shell"><div class="table-title"><strong>敌人信息</strong><span id="enemy-meta"></span></div><div class="table-scroll"><table class="data-table" id="enemy-table"><thead></thead><tbody></tbody></table></div></div>
+            <details class="departed-panel" id="departed-enemies"><summary>已离场敌人 <span id="departed-count">0 条</span></summary>
+              <div class="module-subbar"><label>筛选 <select id="departed-filter" aria-label="离场敌人筛选"><option value="all">全部</option><option value="death">已确认阵亡／生命归零</option><option value="other">其他或原因未知</option><option value="unknown">原始原因未观测</option><option value="finish:0">未结束（0）</option><option value="finish:1">到达出口（1）</option><option value="finish:2">生命归零（2）</option><option value="finish:3">坠落（3）</option><option value="finish:4">撤退／撤出（4）</option><option value="finish:5">死亡式撤出（5）</option><option value="finish:6">静默撤出（6）</option><option value="finish:7">其他原因（7）</option><option value="finish:8">无伤害来源的生命归零（8）</option><option value="finish:9">被替换（9）</option><option value="finish:10">自身重生（10）</option><option value="finish:11">自身移动式重生（11）</option><option value="finish:12">外部移动式重生（12）</option></select></label><span id="departed-status">历史记录，不是实时属性</span></div>
+              <p class="overview-note">离场原因优先展示内存中的原始编号（0 表示未结束，不用于判定阵亡）；未观测时仅保留已有分类，不反推编号。血量与位置为最后成功采样值；离场帧为首次观测到离场的帧，不保证是精确死亡帧。</p>
+              <div class="table-scroll"><table class="data-table" id="enemy-departed-table"><thead></thead><tbody></tbody></table></div>
+            </details>
+            <details class="raw-block"><summary>全部敌人数据与字段状态</summary><pre class="raw-data" id="raw-enemies"></pre></details></div></details>
+          <details class="overview-module-slot" id="overview-characters"><summary><strong>干员监控</strong><b id="count-characters">—</b><em>展开完整数据</em></summary><div class="overview-module-content module-data" id="module-characters"><div class="module-toolbar"><button class="button primary" data-action="character-scan">扫描干员</button><button class="button" data-action="character-stop">停止监控</button><button class="button quiet" data-action="character-columns">显示列</button><button class="button quiet" data-action="character-precision">小数位设置</button><button class="button quiet" data-action="character-fit">列宽自适应</button><button class="button quiet" data-action="character-overview">全局总伤饼图</button></div><div class="module-subbar"><label class="check"><input id="show-tokens" type="checkbox" checked>显示召唤物/装置</label><label class="check" title="控制全局总伤字段的实际采集；与运行设置中的字段策略同步"><input id="collect-global-damage" type="checkbox" data-capture-field="character.global_total_damage">采集全局总伤</label><label class="check" title="启用额外的敌人生命高速差分，从开启时开始统计；默认关闭以节省性能。敌人生命读取失败时无法完成该统计。"><input id="collect-unattributed-damage" type="checkbox" data-capture-field="character.unattributed_damage">无来源总伤</label><span id="character-status">等待扫描</span></div><div class="table-shell"><div class="table-title"><strong>干员信息</strong><span id="character-meta"></span></div><div class="table-scroll"><table class="data-table" id="character-table"><thead></thead><tbody></tbody></table></div></div><details class="raw-block"><summary>全部干员数据与字段状态</summary><pre class="raw-data" id="raw-characters"></pre></details></div></details>
+          <details class="overview-module-slot" id="overview-deploy"><summary><strong>关卡与操作</strong><b id="count-deploy">—</b><em>展开完整数据</em></summary><div class="overview-module-content module-data" id="module-deploy"><div class="module-toolbar"><button class="button primary" data-action="deploy-scan">扫描关卡及操作</button><button class="button" data-action="deploy-stop">停止</button><button class="button" data-action="deploy-export">导出 JSON</button></div><div class="stage-facts" id="stage-facts"></div><div class="table-shell"><div class="table-title"><strong>操作记录</strong></div><div class="table-scroll"><table class="data-table" id="deploy-table"><thead></thead><tbody></tbody></table></div></div><details class="raw-block"><summary>完整关卡、编队与操作历史</summary><pre class="raw-data" id="raw-deploy"></pre></details></div></details>
+          <details class="overview-module-slot" id="overview-rng"><summary><strong>随机数追踪</strong><b id="count-rng">—</b><em>展开完整数据</em></summary><div class="overview-module-content module-data" id="module-rng"><div class="module-toolbar"><button class="button primary" data-action="rng-scan">扫描随机数</button><button class="button" data-action="rng-stop">停止</button><label class="number-setting">预测数<input id="rng-count" type="number" min="1" max="500" value="18">发</label></div><div class="rng-layout" id="rng-panels"></div><details class="raw-block"><summary>完整随机数状态、预测与消耗历史</summary><pre class="raw-data" id="raw-rng"></pre></details></div></details>
+        </div>
+      </section>
+      <section class="page" id="page-system"><h1 class="module-heading">运行设置</h1><div class="settings-grid"><section class="settings-panel"><h2>更多自定义选项</h2><label class="setting-line"><span><strong>自动检测关卡变化</strong></span><input type="checkbox" data-setting="auto_detect_stage_change" data-key="enabled"></label><label class="setting-line"><span><strong>自动寻址</strong></span><input type="checkbox" data-setting="auto_addressing" data-key="enabled"></label><label class="setting-line"><span><strong>气泡式弹窗</strong></span><input type="checkbox" id="toast-enabled" checked></label><div class="duration-row"><label>INFO<input type="number" min="10" max="120000" value="2500" data-duration="info">ms</label><label>WARN<input type="number" min="10" max="120000" value="4500" data-duration="warn">ms</label><label>ERROR<input type="number" min="10" max="120000" value="7000" data-duration="error">ms</label></div><label class="setting-line important"><span><strong>本地 WebSocket 服务</strong><small>服务开关独立于采集和本地展示</small></span><input id="ws-toggle" type="checkbox"></label></section><section class="settings-panel"><h2>连接与诊断</h2><div class="diagnostic-row"><span>ADB</span><strong id="adb-status">—</strong><button data-action="adb">修改</button></div><div class="diagnostic-row"><span>计时器</span><strong id="timer-status">—</strong><button data-action="timer">寻址</button></div><div class="diagnostic-row"><span>工作器</span><strong id="worker-status">—</strong><button data-action="diagnostics">日志</button></div><details class="raw-block"><summary>全部运行状态</summary><pre class="raw-data" id="raw-service"></pre></details></section></div>
+        <section class="settings-fields"><div class="settings-fields-head"><h2>字段策略</h2></div><div class="ws-check"><div><strong>WS 可达性与字段值自检</strong><p>直接连接本机游戏接口，验证后端已同意发布的字段。未采集、字段不可用、无场上对象与连接失败分别报告，心跳不算通过。</p></div><button class="button primary" data-action="ws-check" id="ws-check">检测可达性</button></div><div class="ws-check-results" id="ws-check-results" aria-live="polite">尚未检测</div><div class="policy-note"><strong>采集关</strong><span>停止字段解析与合成，跳过专属读取链；共享基础块仍可能因其他字段读取。采集、展示与 WS 发布分别生效。</span></div><div class="policy-filters"><label>搜索字段<input id="field-search" type="search" placeholder="名称、字段或模块"></label><span id="field-count">—</span></div><div class="table-shell"><div class="policy-scroll"><table class="policy-table"><thead><tr><th>字段 / 来源</th><th>采集</th><th>本地展示</th><th>WS 发布</th><th>依赖与粒度</th></tr></thead><tbody id="field-body"></tbody></table></div></div></section>
+      </section>
+      <section class="page" id="page-logs">
+        <div class="page-heading"><h1>实时日志</h1><span id="log-mode">等待后端</span></div>
+        <div class="module-toolbar log-toolbar">
+          <button class="button primary" id="logs-popup">弹窗显示</button>
+          <a class="button" id="logs-window" href="/logs.html" target="_blank" rel="noopener">独立窗口</a>
+          <button class="button" data-log-command="logs-export" data-format="text">导出完整日志</button>
+          <button class="button" data-log-command="logs-export" data-format="zip">一键打包诊断 ZIP</button>
+          <button class="button" data-log-command="logs-environment">刷新环境信息</button>
+          <button class="button" data-log-command="logs-folder">打开日志目录</button>
+          <button class="button quiet" id="logs-clear">清空显示</button>
+        </div>
+        <div class="module-subbar"><label class="check"><input id="logs-paused" type="checkbox">暂停显示</label><label class="check"><input id="logs-follow" type="checkbox" checked>跟随最新</label><label>搜索<input id="logs-search" type="search" placeholder="日志内容 / 模块 / 异常"></label></div>
+        <p class="log-path" id="log-path"></p><p id="log-task-status" role="status">网页缓存最近 10000 行；导出包含本次运行的完整落盘日志。</p>
+        <div class="log-export" id="logs-export" hidden>
+          <a class="button primary log-download" id="logs-download" aria-describedby="logs-download-hint">下载导出副本</a>
+          <span class="log-export-note" id="logs-download-hint">下载位置由浏览器设置决定，日志目录中的原文件仍会保留。</span>
+        </div>
+        <div class="table-shell"><div class="table-scroll log-scroll"><table class="data-table log-table" id="log-table"><thead><tr><th>序号</th><th>日志</th></tr></thead><tbody></tbody></table></div></div>
+      </section>
+      <footer class="footer">本地展示来自 Timeline 后端，WebSocket 发布策略不影响本页接收。来源帧与最近已知帧分别展示。</footer>
+    </main></div>
+  </div>
+  <div class="overlay" id="overlay" hidden><div class="overlay-shade" data-action="close-overlay"></div><section class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title"><header class="drawer-header"><div><small id="drawer-kicker">详情</small><h2 id="drawer-title">详情</h2></div><button class="close-button" data-action="close-overlay" aria-label="关闭详情">×</button></header><div class="drawer-tabs" id="drawer-tabs"></div><div class="drawer-body" id="drawer-body"></div></section></div>
+  <aside class="toast-stack" id="toast-stack" aria-live="polite" aria-label="操作提示"></aside>
+</body>
+</html>

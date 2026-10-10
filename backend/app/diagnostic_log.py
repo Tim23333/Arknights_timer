@@ -20,17 +20,18 @@ from PySide6.QtWidgets import (
 )
 
 from .version import VERSION, VERSION_LABEL
+from .storage_paths import data_root
 
 
 _NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
 
 
 def default_log_root() -> Path:
-    """返回测试日志目录；优先使用始终可写的 LocalAppData。"""
-    base = os.environ.get("LOCALAPPDATA")
-    if base:
-        return Path(base) / "ArknightsTimeline" / "logs"
-    return Path.cwd() / "logs"
+    """默认使用程序相对目录；仅显式环境配置可以覆盖存储位置。"""
+    override = os.environ.get('TIMELINE_LOG_DIR')
+    if override:
+        return Path(override).expanduser().resolve()
+    return data_root() / 'logs'
 
 
 class _DiagnosticTextStream:
@@ -88,6 +89,7 @@ class DiagnosticLogManager(QObject):
         self._fault_stream = None
         self._lock = threading.RLock()
         self._lines = deque(maxlen=10_000)
+        self._line_seq = 0
         self._context_provider = None
         self._closed = False
         pruned = self._prune_old_logs()
@@ -100,7 +102,7 @@ class DiagnosticLogManager(QObject):
         cutoff = time.time() - self.LOG_RETENTION_DAYS * 86400
         pruned = 0
         for pattern in ('session_*.log', 'fault_*.log',
-                        'ArknightsTimeline_*_diagnostics_*.zip'):
+                        'ArknightsTimeline_*_diagnostics_*.zip', 'diagnostics_*.zip'):
             for path in self.log_root.glob(pattern):
                 try:
                     if path.stat().st_mtime < cutoff:
@@ -126,6 +128,7 @@ class DiagnosticLogManager(QObject):
             if self._closed:
                 return line
             self._lines.append(line)
+            self._line_seq += 1
             self._stream.write(line + "\n")
         self.line_added.emit(line)
         return line
@@ -134,8 +137,42 @@ class DiagnosticLogManager(QObject):
         with self._lock:
             return list(self._lines)
 
+    def snapshot(self, after: int = 0, limit: int = 10000) -> dict:
+        """有界增量日志；序号单调递增，淘汰的显示缓存不冒充完整历史。"""
+        if type(after) is not int or after < 0 or type(limit) is not int or not 1 <= limit <= 10000:
+            raise ValueError('日志游标必须为非负整数，条数必须为 1–10000')
+        with self._lock:
+            first = self._line_seq - len(self._lines) + 1
+            rows = [{'seq': first + index, 'text': line} for index, line in enumerate(self._lines)
+                    if first + index > after][:limit]
+            return {'sessionId': self.session_id, 'firstSeq': first, 'lastSeq': self._line_seq,
+                    'nextCursor': rows[-1]['seq'] if rows else min(after, self._line_seq),
+                    'gap': bool(after and after < first - 1), 'items': rows,
+                    'logPath': str(self.log_path), 'logRoot': str(self.log_root)}
+
     def text_stream(self, source: str) -> _DiagnosticTextStream:
         return _DiagnosticTextStream(self, source)
+
+    def export_session(self, output_path: Path) -> Path:
+        """复制完整落盘日志；只锁定字节边界，慢磁盘复制不阻塞实时写入。"""
+        with output_path.open('wb') as target:
+            self._copy_session(target)
+        return output_path
+
+    def _copy_session(self, target) -> None:
+        """按已完成行的字节边界复制，避免源文件增长导致导出无休止。"""
+        with self._lock:
+            if self._closed:
+                raise RuntimeError('日志管理器已关闭')
+            self._stream.flush()
+            remaining = os.fstat(self._stream.fileno()).st_size
+        with self.log_path.open('rb') as source:
+            while remaining:
+                chunk = source.read(min(65536, remaining))
+                if not chunk:
+                    raise OSError('会话日志在导出时被截断')
+                target.write(chunk)
+                remaining -= len(chunk)
 
     def enable_fault_handler(self) -> bool:
         try:
@@ -169,10 +206,10 @@ class DiagnosticLogManager(QObject):
         except Exception as exc:
             return {"context_error": f"{type(exc).__name__}: {exc}"}
 
-    def diagnostic_report(self) -> str:
-        context = self._context()
+    def diagnostic_report(self, context: dict | None = None) -> str:
+        context = self._context() if context is None else context
         rows = [
-            f"ArknightsTimeline {VERSION_LABEL} 测试版诊断信息",
+            f"ArknightsTimeline {VERSION_LABEL} 诊断信息",
             f"app_version={VERSION}",
             f"generated_at={time.strftime('%Y-%m-%d %H:%M:%S %z')}",
             f"session_id={self.session_id}",
@@ -234,13 +271,13 @@ class DiagnosticLogManager(QObject):
             rows.extend(("", "[adb]", "尚未选择可用的 adb.exe"))
         return "\n".join(rows) + "\n"
 
-    def append_environment_snapshot(self) -> None:
+    def append_environment_snapshot(self, context: dict | None = None) -> None:
         self.log("========== 环境诊断快照 ==========")
-        for line in self.diagnostic_report().splitlines():
+        for line in self.diagnostic_report(context).splitlines():
             self.log(line)
         self.log("========== 环境诊断结束 ==========")
 
-    def build_package(self, output_path: Path | str | None = None) -> Path:
+    def build_package(self, output_path: Path | str | None = None, *, context: dict | None = None) -> Path:
         with self._lock:
             self._stream.flush()
         if output_path is None:
@@ -250,12 +287,13 @@ class DiagnosticLogManager(QObject):
                 / f"ArknightsTimeline_{VERSION_LABEL}_diagnostics_{stamp}.zip")
         output = Path(output_path)
         output.parent.mkdir(parents=True, exist_ok=True)
-        context = self._context()
+        context = self._context() if context is None else context
         with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-            archive.write(self.log_path, "session.log")
+            with archive.open('session.log', 'w', force_zip64=True) as session:
+                self._copy_session(session)
             if self.fault_path.is_file() and self.fault_path.stat().st_size:
                 archive.write(self.fault_path, "fault.log")
-            archive.writestr("diagnostics.txt", self.diagnostic_report())
+            archive.writestr("diagnostics.txt", self.diagnostic_report(context))
             archive.writestr(
                 "runtime_context.json",
                 json.dumps(context, ensure_ascii=False, indent=2,
@@ -268,9 +306,9 @@ class DiagnosticLogManager(QObject):
                 offsets = offset_path('android_arm64') or offsets
                 if offsets.is_file():
                     archive.write(offsets, "generated_offsets.json")
-                data_root = bundle_root()
-                if data_root:
-                    archive.write(data_root / 'manifest.json', 'game_data_manifest.json')
+                data_directory = bundle_root()
+                if data_directory:
+                    archive.write(data_directory / 'manifest.json', 'game_data_manifest.json')
             except Exception:
                 pass
         self.log("诊断日志包已生成:", output)

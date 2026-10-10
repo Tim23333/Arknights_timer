@@ -7,6 +7,96 @@ from backend.app.services.timer_provider import TimerDataProvider
 
 class TimerDataProviderTimelineTests(unittest.TestCase):
     @patch('backend.app.services.timer_provider.AKMemoryReader')
+    def test_operation_before_monitor_started_cannot_be_backfilled_from_current_frame(self, _reader_cls):
+        # BattleLogger retains old timestamps, not old logic-frame samples.
+        provider = TimerDataProvider()
+        provider._record_frame_sample(139.8332, 4195)
+        self.assertEqual(provider.get_frames_for_game_times([12.599988, 139.066528]), [None, None])
+        self.assertEqual(provider.get_frame_for_game_time(139.8332)['frame'], 4195)
+
+    @patch('backend.app.services.timer_provider.AKMemoryReader')
+    def test_failed_clock_refresh_invalidates_public_values_but_retains_last_known_frame(self, _reader_cls):
+        # ROOT CAUSE: a past successful generation survived subsequent failures,
+        # labelling cached/cleared clock values current instead of unavailable.
+        from backend.app.field_policy import PolicyStore
+        provider = TimerDataProvider()
+        provider.configure_guest(FakeGuestReader())
+        provider.set_capture_policy(PolicyStore().snapshot())
+        provider.refresh_sample()
+        frame = provider.peek_frame_count()
+        provider._guest_reader.read_battle_clock = lambda: (None, None)
+        provider.refresh_sample()
+        public = provider.get_game_data()
+        self.assertEqual(public['collection_state'], 'unavailable')
+        self.assertNotIn('game_time', public)
+        self.assertEqual(provider.peek_frame_count(), frame)
+
+    @patch('backend.app.services.timer_provider.AKMemoryReader')
+    def test_clearing_guest_does_not_expose_prior_clock_as_current_host_sample(self, _reader_cls):
+        from backend.app.field_policy import PolicyStore
+        provider = TimerDataProvider()
+        provider.configure_guest(FakeGuestReader())
+        provider.set_capture_policy(PolicyStore().snapshot())
+        provider.refresh_sample()
+        frame = provider.peek_frame_count()
+        provider.clear_guest()
+        provider.reader.time_address = None
+        self.assertFalse(provider.refresh_sample()['ok'])
+        public = provider.get_game_data()
+        self.assertEqual(public['collection_state'], 'unavailable')
+        self.assertNotIn('game_time', public)
+        self.assertNotIn('frame_count', public)
+        self.assertIsNone(provider.get_clock_sample()['game_time'])
+        self.assertEqual(provider.peek_frame_count(), frame)
+
+    @patch('backend.app.services.timer_provider.AKMemoryReader')
+    def test_peek_frame_count_never_waits_for_another_threads_io_lock(self, _reader_cls):
+        import threading
+        provider = TimerDataProvider()
+        ready = threading.Event()
+        release = threading.Event()
+
+        def hold():
+            with provider._lock:
+                ready.set()
+                release.wait(2)
+
+        thread = threading.Thread(target=hold)
+        thread.start()
+        try:
+            self.assertTrue(ready.wait(1))
+            self.assertIsNone(provider.peek_frame_count())
+        finally:
+            release.set()
+            thread.join(2)
+
+    @patch('backend.app.services.timer_provider.AKMemoryReader')
+    def test_peek_frame_retains_internal_frame_when_public_capture_disabled(self, _reader_cls):
+        from backend.app.field_policy import PolicyStore
+        provider = TimerDataProvider()
+        provider._game_cache['frame_count'] = 123
+        provider.set_capture_policy(PolicyStore().commit({'battle.fixedFrame': {'collect': False}}))
+        self.assertEqual(provider.peek_frame_count(), 123)
+        self.assertNotIn('frame_count', provider.get_game_data())
+
+    @patch('backend.app.services.timer_provider.AKMemoryReader')
+    def test_reenabled_public_clock_waits_for_sample_in_new_generation(self, _reader_cls):
+        from backend.app.field_policy import PolicyStore
+        provider = TimerDataProvider()
+        provider.configure_guest(FakeGuestReader())
+        store = PolicyStore()
+        provider.set_capture_policy(store.snapshot())
+        provider.refresh_sample()
+        self.assertIn('frame_count', provider.get_game_data())
+        off = store.commit({'battle.fixedFrame': {'collect': False}})
+        provider.set_capture_policy(off)
+        on = store.commit({'battle.fixedFrame': {'collect': True}})
+        provider.set_capture_policy(on)
+        self.assertNotIn('frame_count', provider.get_game_data())
+        provider.refresh_sample()
+        self.assertIn('frame_count', provider.get_game_data())
+
+    @patch('backend.app.services.timer_provider.AKMemoryReader')
     def test_initialization_and_clear_use_array_compatible_operation(self, reader_cls):
         provider = TimerDataProvider()
         reader_cls.assert_called_once_with(process_name='MuMuVMMHeadless.exe')

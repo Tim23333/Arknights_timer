@@ -52,6 +52,9 @@ class _FakeRngService:
             'selected': self.by_role.get('imp'),
         }
 
+    def set_capture_policy(self, policy):
+        self.policy = policy
+
     def stop(self):
         pass
 
@@ -62,10 +65,13 @@ class RngUiTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def _holder(self, service):
+        from backend.app.field_policy import PolicyStore
         spin = QSpinBox()
         spin.setValue(7)
         return SimpleNamespace(
             _rng_svc=service,
+            _field_policy=PolicyStore(),
+            _provider=SimpleNamespace(peek_frame_count=lambda: None),
             rng_pred_spin=spin,
             lbl_rng_info=QLabel(),
             rng_pred_table=QTableWidget(0, 2),
@@ -120,6 +126,33 @@ class RngUiTests(unittest.TestCase):
         self.assertIn('表现随机未定位', holder.lbl_rng_trivial_info.text())
         self.assertTrue(holder.btn_rng_imp_export.isEnabled())
         self.assertFalse(holder.btn_rng_trivial_export.isEnabled())
+
+    def test_display_switches_hide_both_roles_without_erasing_collection_or_export(self):
+        roles = {
+            'imp': _role_snapshot('imp', 4, 12, 0.125, 0x1234),
+            'trivial': _role_snapshot('trivial', 9, 31, 0.875, 0xABCD),
+        }
+        holder = self._holder(_FakeRngService(roles))
+        holder._field_policy.commit({key: {'display': False} for key in (
+            'rng.predictions', 'rng.history', 'rng.cursor', 'rng.total', 'rng.rate')})
+        CoachWindow._on_rng_tick(holder)
+        for role, info, predictions, history in (
+                ('imp', holder.lbl_rng_info, holder.rng_pred_table, holder.rng_hist_table),
+                ('trivial', holder.lbl_rng_trivial_info, holder.rng_trivial_pred_table,
+                 holder.rng_trivial_hist_table)):
+            self.assertEqual(predictions.rowCount(), 0)
+            self.assertEqual(history.rowCount(), 0)
+            self.assertIn('游标 #—', info.text())
+            self.assertIn('已消耗 —', info.text())
+            self.assertIn('— 发/秒', info.text())
+            self.assertTrue(holder._field_policy.snapshot().enabled('rng.predictions'))
+            self.assertEqual(holder._battle_cache.rng_role(role)['predictions'][0]['frac'],
+                             roles[role]['predictions'][0]['frac'])
+        holder._field_policy.commit({'rng.predictions': {'display': True}})
+        CoachWindow._on_rng_tick(holder)
+        self.assertEqual(holder.rng_pred_table.rowCount(), 1)
+        self.assertEqual(holder.rng_trivial_pred_table.rowCount(), 1)
+        self.assertEqual(roles['imp']['cursor'], 4)
 
     def test_rng_panels_can_shrink_and_history_has_no_raw_column(self):
         window = CoachWindow()

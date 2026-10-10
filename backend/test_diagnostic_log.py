@@ -41,7 +41,7 @@ class DiagnosticLogTests(unittest.TestCase):
                 context = archive.read('runtime_context.json').decode('utf-8')
             self.assertIn('测试诊断行 123', session)
             self.assertIn(
-                f'ArknightsTimeline {VERSION_LABEL} 测试版诊断信息', report)
+                f'ArknightsTimeline {VERSION_LABEL} 诊断信息', report)
             self.assertIn('resolved_ids', context)
 
     def test_window_shows_existing_lines_and_close_only_hides(self):
