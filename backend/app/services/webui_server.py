@@ -62,7 +62,8 @@ class WebUiServer:
     """
 
     def __init__(self, state_provider, policy_provider, policy_commit, command,
-                 docs, asset_dir=None, port=0, download=None, streams=None, preferences=None):
+                 docs, asset_dir=None, port=0, download=None, streams=None, preferences=None,
+                 stream_allowed=None):
         self._state = state_provider
         self._policy = policy_provider
         self._commit = policy_commit
@@ -78,6 +79,14 @@ class WebUiServer:
         self._streams = streams or {}
         # At most four tabs (two channels each), leaving HTTP slots for commands.
         self._stream_slots = {key: threading.BoundedSemaphore(4) for key in self._streams}
+        self._stream_allowed = stream_allowed or (lambda client: True)
+        self._stream_lock = threading.Lock()
+        self._stream_clients = set()
+        self._stream_counts = {key: 0 for key in self._streams}
+
+    def stream_counts(self):
+        with self._stream_lock:
+            return dict(self._stream_counts)
 
     @property
     def url(self):
@@ -134,10 +143,26 @@ class WebUiServer:
                         if stream is None:
                             self._send(404, {'error': '未知推送通道'})
                             return
+                        client = parse_qs(urlsplit(self.path).query).get('client', [''])[0]
+                        if not owner._stream_allowed(client):
+                            self._send(409, {'error': '此页面处于待机状态'})
+                            return
+                        key = (channel, client)
+                        with owner._stream_lock:
+                            duplicate = bool(client) and key in owner._stream_clients
+                            if not duplicate and client:
+                                owner._stream_clients.add(key)
+                        if duplicate:
+                            self._send(409, {'error': '此页面已有实时连接'})
+                            return
                         slots = owner._stream_slots[channel]
                         if not slots.acquire(blocking=False):
+                            with owner._stream_lock:
+                                owner._stream_clients.discard(key)
                             self._send(503, {'error': '本地实时连接数量已达上限'})
                             return
+                        with owner._stream_lock:
+                            owner._stream_counts[channel] += 1
                         try:
                             self.send_response(200)
                             self.send_header('Content-Type', 'text/event-stream; charset=utf-8')
@@ -146,8 +171,10 @@ class WebUiServer:
                             self.send_header('Connection', 'close')
                             self.end_headers()
                             cursor = {}
-                            while not stream.closed:
+                            while not stream.closed and owner._stream_allowed(client):
                                 packets = stream.read_after(cursor)
+                                if not owner._stream_allowed(client):
+                                    break
                                 # Heartbeats detect abandoned sockets and keep
                                 # reconnects alive; writes have a 5s timeout.
                                 if not packets:
@@ -159,6 +186,9 @@ class WebUiServer:
                         except (OSError, TimeoutError):
                             pass  # Ordinary tab close / slow socket timeout.
                         finally:
+                            with owner._stream_lock:
+                                owner._stream_counts[channel] -= 1
+                                owner._stream_clients.discard(key)
                             slots.release()
                         return
                     elif path == "/api/state":

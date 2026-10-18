@@ -12,7 +12,11 @@ import {createDetailSelection} from './detailSelection.mjs';
 import {createStageGlobalRenderer} from './stageGlobal.mjs';
 import {createEntityDetails} from './entityDetails.mjs';
 import {initializeColumnPreferences} from './columnPreferences.mjs';
+import {createPresentationWatch, waitForPresentation, getPresentationClient} from './presentation.mjs';
+
+// Read once before constructing tables; never gate capture or ordinary frames on disk I/O.
 await initializeColumnPreferences();
+const presentationClient=await getPresentationClient();
 
 const byId = id => document.getElementById(id);
 const ui = {data: {}, policy: {generation: 0, fields: []}, columns: {}, precision: {}, page: "overview", detail: null, busyPolicy: false, connected: false};
@@ -658,6 +662,11 @@ function openAdbDrawer() {
 
 async function action(name) {
   try {
+    if (name === 'frontend-desktop') {
+      await command('frontend', {target:'desktop'});
+      location.replace('/standby.html');
+      return;
+    }
     if (name === 'logs' || name === 'diagnostics') return showPage('logs');
     if (name === "close-overlay") return closeDrawer();
     if (name === 'shutdown') return confirmShutdown();
@@ -754,9 +763,26 @@ async function updatePoliciesAndNotifications() {
 }
 
 async function startLive() {
+  let handoff = new URLSearchParams(location.search).get('handoff');
+  const presentation = await waitForPresentation(
+    () => command('frontend', {target:'page-status',clientId:presentationClient}),
+    () => set('transport-status', '等待后端展示状态，正在重试…'));
+  handoff ||= presentation.handoff;
+  if (!handoff && !presentation.active) {
+    location.replace('/standby.html');
+    return;
+  }
+  if (handoff) {
+    try { await command('frontend',{target:'claim-web',token:handoff,clientId:presentationClient}); }
+    catch { location.replace('/standby.html'); return; }
+  }
   // Bootstrap once, then independent SSE connections. No repeated full-state
   // HTTP polling, interpolation or client-generated game frames.
-  try { ui.data = await api('/api/state'); } catch (error) { toast(error.message, 'error'); }
+  // A handoff page only proves transport readiness. Never paint cached modules
+  // before ownership is confirmed; the clean entry reloads current state.
+  if (!handoff) {
+    try { ui.data = await api('/api/state'); } catch (error) { toast(error.message, 'error'); }
+  } else set('transport-status', '正在切换界面，等待实时通道就绪…');
   render();
   let clockPublisher = null, relayClock = ui.data.clock ?? null;
   try {
@@ -764,6 +790,7 @@ async function startLive() {
     clockPublisher.update(relayClock, false);
   } catch { /* Optional browser relay must not prevent the main worktable from connecting. */ }
   const connected = new Set();
+  let confirming = false, confirmed = false;
   // Accept/relay outside requestAnimationFrame: a background worktable may not
   // draw, but its visible log window must still receive the actual new sample.
   const relayUpdates = createLatestUpdates(flush => flush(), values => {
@@ -786,7 +813,7 @@ async function startLive() {
     initialSession:ui.data.stage_global?.meta?.sessionId || ui.data.clock?.meta?.sessionId || null,
     initialOrder:ui.data.stage_global?.meta || ui.data.clock?.meta || null});
   const sources = ['clock', 'modules'].map(channel => {
-    const source = new EventSource('/api/stream/' + channel);
+    let source, retry, closed=false;
     const status = active => {
       if (active) connected.add(channel); else connected.delete(channel);
       ui.connected = connected.size === 2;
@@ -796,10 +823,19 @@ async function startLive() {
       renderClock();
       renderEntityDetails();
       if (channel === 'clock') clockPublisher?.update(relayClock, active);
+      if (handoff && connected.size === 2 && !confirming) {
+        confirming = true;
+        command('frontend', {target:'confirm-web', token:handoff,clientId:presentationClient}).then(() => {
+          confirmed = true;
+          location.replace(location.pathname);
+        }).catch(error => {
+          toast(error.message, 'error');
+          location.replace('/standby.html');
+        });
+      }
     };
-    source.onopen = () => status(true);
-    source.onerror = () => status(false); // EventSource retries; replay contains latest slots only.
-    source.onmessage = event => {
+    const receive = event => {
+      if (handoff) return; // Pre-confirmation replay is not live evidence.
       try {
         const message = JSON.parse(event.data);
         if (channel === 'clock') relayUpdates.receive(channel, message);
@@ -807,9 +843,35 @@ async function startLive() {
       }
       catch { status(false); }
     };
-    return source;
+    function connect() {
+      if (closed) return;
+      source = new EventSource('/api/stream/' + channel+'?client='+encodeURIComponent(presentationClient));
+      source.onopen = () => status(true);
+      source.onmessage = receive;
+      source.onerror = () => {
+        status(false);
+        // HTTP 409/503 makes EventSource terminal, unlike a dropped socket.
+        // Retry one connection at a time while the owner watcher can retire us.
+        if (source.readyState === 2 && !closed) {
+          source.close(); clearTimeout(retry); retry=setTimeout(connect,2000);
+        }
+      };
+    }
+    connect();
+    return {close(){closed=true;clearTimeout(retry);source.close();}};
   });
-  window.addEventListener('pagehide', () => { sources.forEach(source => source.close()); clockPublisher?.close(); }, {once: true});
+  const watch = createPresentationWatch(() => command('frontend', {target:'page-status',clientId:presentationClient}), () => location.replace('/standby.html'));
+  let handoffPollPending=false;
+  const watchTimer = setInterval(() => {
+    if (!handoff || confirmed) watch.check();
+    else if (!handoffPollPending) {
+      handoffPollPending=true;
+      command('frontend',{target:'page-status',clientId:presentationClient}).then(state=>{
+        if (state.handoff !== handoff && !state.active) location.replace('/standby.html');
+      }).catch(()=>{}).finally(()=>{handoffPollPending=false;});
+    } // A failed poll does not cancel a healthy pending transport.
+  }, 2000);
+  window.addEventListener('pagehide', () => { clearInterval(watchTimer); sources.forEach(source => source.close()); clockPublisher?.close(); stageGlobal.destroy(); }, {once: true});
   window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
 }
 

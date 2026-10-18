@@ -8,7 +8,7 @@ _ROOT = Path(__file__).resolve().parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from desktop_app import main
-
 if __name__ == "__main__":
+    # Spawn children import this entry point; they must not initialize desktop Qt.
+    from desktop_app import main
     main()

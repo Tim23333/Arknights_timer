@@ -2,6 +2,8 @@ import {createLogs} from './logs.mjs';
 import {clockChannelName, createClockReceiver} from './clockRelay.mjs';
 import {formatClock, formatValue} from './model.mjs';
 import {initializeColumnPreferences} from './columnPreferences.mjs';
+import {createPresentationWatch} from './presentation.mjs';
+
 await initializeColumnPreferences();
 
 // This entry owns only log controls and the mandatory game clock. Opening a
@@ -55,7 +57,11 @@ try {
   get('clock-source').textContent = '窗口时钟共享不可用';
   get('transport-status').textContent = '当前浏览器不支持窗口时钟共享；日志可独立使用，不另建时钟连接。';
 }
-window.addEventListener('pagehide', () => receiver?.close(), {once:true});
+const presentationWatch = createPresentationWatch(
+  () => request('/api/command', {action:'frontend',params:{target:'status'}}),
+  () => location.replace('/standby.html'));
+const presentationTimer = setInterval(() => presentationWatch.check(), 2000);
+window.addEventListener('pagehide', () => { clearInterval(presentationTimer); receiver?.close(); }, {once:true});
 window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
 // Log reads start immediately, not behind this optional full-state bootstrap.
 // It is fetched once solely for shared test-mode/session metadata, not polled.

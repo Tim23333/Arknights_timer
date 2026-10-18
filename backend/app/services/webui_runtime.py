@@ -70,6 +70,7 @@ class WebUiRuntime(QObject):
         self.diagnostics = RuntimeDiagnostics(window)
         self._lock = threading.RLock()
         self._state = {}
+        self._presentation_revision = 0
         self._streams = {key: LatestStream() for key in ('clock', 'modules')}
         self._stream_stop = threading.Event()
         self._module_pending = threading.Event()
@@ -92,7 +93,7 @@ class WebUiRuntime(QObject):
             lambda fields, generation: self.call("policy", {"fields": fields, "generation": generation}),
             lambda action, params: self.call(action, params), self.docs, port=port,
             asset_dir=self._root() / "webui", download=self.diagnostics.download,
-            streams=self._streams)
+            streams=self._streams, stream_allowed=window._presentation.stream_allowed)
         self.timer = QTimer(self)
         self.timer.setInterval(100)
         self.timer.timeout.connect(self.refresh)
@@ -132,12 +133,21 @@ class WebUiRuntime(QObject):
         if api is None:
             return
         while not self._stream_stop.is_set():
+            if not self.window._presentation.web_active:
+                self._stream_stop.wait(.25)
+                continue
+            presentation_revision = self._presentation_revision
             current, data = api.wait_local_update(channel, revision, timeout=.25)
             if current == revision or self._stream_stop.is_set():
                 continue
             revision = current
             if channel == 'clock':
-                self._streams[channel].publish('clock', data)
+                # A wait can finish after desktop ownership changed. Serialize
+                # this last check with private replay invalidation.
+                with self._lock:
+                    if (self.window._presentation.web_active
+                            and presentation_revision == self._presentation_revision):
+                        self._streams[channel].publish('clock', data)
             elif not self._module_pending.is_set():
                 # Coalesce Qt wakeups as well as network packets. While Qt is
                 # busy, replace source snapshots rather than queue old frames.
@@ -152,6 +162,8 @@ class WebUiRuntime(QObject):
 
     def state(self):
         with self._lock:
+            if not self.window._presentation.web_active:
+                return {'presentationWaiting': True}
             result = copy.deepcopy(self._state)
         api = self.window._websocket_api
         if api is not None:
@@ -215,6 +227,8 @@ class WebUiRuntime(QObject):
 
     def _refresh(self):
         window = self.window
+        if not window._presentation.web_active:
+            return
         api = window._websocket_api
         policy = window._field_policy.snapshot()
         versions = api.local_versions() if api is not None else {}
@@ -350,6 +364,30 @@ class WebUiRuntime(QObject):
 
     def _command(self, action, params):
         w = self.window
+        if action == 'frontend':
+            target = params.get('target')
+            result = w._switch_frontend(target, params.get('token'), params.get('clientId'))
+            if target == 'desktop':
+                # Only local presentation caches are retired. Producers, public
+                # WS snapshots and session identity remain completely untouched.
+                with self._lock:
+                    self._presentation_revision += 1
+                    self._state = {}
+                    self._values = {}
+                    self._versions = {}
+                    self._values_signature = None
+                    for topic in self._module_keys:
+                        self._streams['modules'].publish(topic, None)
+                    self._streams['clock'].publish('clock', None)
+            elif target == 'confirm-web':
+                with self._lock:
+                    self._presentation_revision += 1
+                self.refresh()
+                if w._websocket_api is not None:
+                    self._streams['clock'].publish('clock', w._websocket_api.wait_local_update('clock', -1, timeout=0)[1])
+            if target in {'status', 'page-status'}:
+                result['streams'] = self.server.stream_counts()
+            return result
         if action.startswith('logs-'):
             return self.diagnostics.command(action, params)
         if action == "policy":
