@@ -31,7 +31,9 @@ except ImportError:
 
 from .memcore import MemCore, TcpChannel
 from .scan_timing import timed_scan
-from tools.runtime_log import StateLog
+from tools.runtime_log import StateLog, DetailReadLog
+from contextlib import contextmanager
+from tools.enemy_health.detail_snapshot import DetailSnapshotPool
 from . import game_structs as gs
 from .enemy_db import load_enemy_db
 from .enemy_handbook import EnemyHandbook
@@ -505,6 +507,8 @@ class EnemyReader:
         self.cache_file = cache_file
         self.with_bc = with_bc
         self.log = log
+        self._detail_read_log = DetailReadLog()
+        self._detail_snapshot_pool = DetailSnapshotPool()
         self.workers = workers          # 完整快照解析并发数（读取统一走 memsrv v5）
         self.diagnostics = bool(diagnostics)
         self._capture_policy = None
@@ -677,6 +681,9 @@ class EnemyReader:
 
     def _read_detail_frame(self):
         """Sample the source clock on the isolated detail IO channel if available."""
+        snapshot = getattr(self._detail_context, 'snapshot', None)
+        if snapshot is not None:
+            return snapshot.frame
         if not self.mc.is_ptr(self._bc_static_fields):
             return None
         try:
@@ -700,8 +707,10 @@ class EnemyReader:
             if spec.domain != domain:
                 continue
             key = spec.id.split('.', 1)[1]
-            unsupported = (domain == 'enemy_detail' and key in (
+            unsupported = ((domain == 'enemy_detail' and key in (
                 'talents', 'dynamicAbilities', 'equipment', 'attackRange', 'effectFrames'))
+                or (domain == 'character_detail' and key in (
+                    'specialShield', 'attackRange', 'effectFrames')))
             state = ('not_collected' if not policy.enabled(spec.id) else
                      'current' if key in succeeded and frame_consistent else 'unavailable')
             reason = ('' if state == 'current' else
@@ -716,6 +725,22 @@ class EnemyReader:
                 sampledAt=getattr(self._detail_context, 'sampled_at', None),
                 acceptedAt=time.time(),
                 frameConsistent=frame_consistent)
+        diagnostic = getattr(self, '_detail_read_log', None)
+        if diagnostic is not None:
+            # Diagnostic-only identity joins repeated instances without putting
+            # process addresses or new fields into the public WS contract.
+            import hashlib
+            identity = (getattr(self, 'bc_addr', 0), getattr(info, 'addr', 0),
+                        getattr(info, 'data_ptr', 0), policy.generation)
+            token = hashlib.blake2s(repr(identity).encode(), digest_size=8).hexdigest()
+            sample = getattr(self._detail_context, 'snapshot', None)
+            guard = getattr(sample, 'guard', {})
+            diagnostic.emit(self.log, domain, {
+                key: record for key, record in info.field_states.items()
+                if key.startswith(domain + '.')}, source_frame, accepted_frame,
+                evidence={'entity': token,
+                          'capture': getattr(sample, 'failure_reason', ''),
+                          'guardStart': guard.get('start'), 'guardEnd': guard.get('end')})
 
     def _attribute_indices(self):
         if self._capture_policy is None:
@@ -6254,6 +6279,48 @@ class EnemyReader:
                 f"data_ptr={hex(info.data_ptr) if info.data_ptr else '0'}"
                 f"({'ok' if self.mc.is_ptr(info.data_ptr) else 'invalid'})")
 
+    def _read_planned_detail(self, domain, addr, policy, parse):
+        """Retry discovery once with entirely fresh guarded bytes, never merge.
+
+        Dynamic parent pointers may reveal requests absent from the address plan.
+        The first attempt only teaches the next plan; the returned object is
+        always from one attempt. Real guard/IO failures are not retried here.
+        """
+        identity = (getattr(self, 'bc_addr', 0), getattr(self, '_bc_static_fields', 0))
+        for attempt in range(2):
+            with self._detail_capture_scope(domain, addr, policy):
+                result = parse()
+                sample = getattr(self._detail_context, 'snapshot', None)
+                retry = getattr(sample, 'failure_reason', '') in ('plan_cold', 'plan_miss')
+            # end() has now discarded every captured/discovery byte and saved
+            # only the consumed request addresses for the next transaction.
+            if (attempt or not retry or identity != (
+                    getattr(self, 'bc_addr', 0), getattr(self, '_bc_static_fields', 0))):
+                return result
+
+    @contextmanager
+    def _detail_capture_scope(self, domain, addr, policy):
+        """Keep decoding outside the device frame window, not outside validation."""
+        if policy is None or not self.mc.is_ptr(self._bc_static_fields):
+            yield
+            return
+        if self._poll_stop.is_set():
+            raise InterruptedError('敌人详情读取已请求停止')
+        if self._detail_chan is None:
+            self._detail_chan = TcpChannel(self.mc, port=DETAIL_TCP_PORT)
+        pool = getattr(self, '_detail_snapshot_pool', None)
+        if pool is None:
+            pool = self._detail_snapshot_pool = DetailSnapshotPool()
+        key = (self.bc_addr, self._bc_static_fields, domain, addr, policy.generation)
+        sample = pool.begin(key, self._detail_chan,
+                            self._bc_static_fields + gs.BattleControllerStaticFields.FIXED_FRAME_COUNT)
+        self._detail_context.snapshot = sample
+        try:
+            yield
+        finally:
+            self._detail_context.snapshot = None
+            pool.end(key, sample)
+
     def _detail_batch_read(self, reqs):
         """批量读取；详情线程走独立端口，绝不占住高频轮询通道。"""
         if not reqs:
@@ -6263,7 +6330,8 @@ class EnemyReader:
                 raise InterruptedError('敌人详情读取已请求停止')
             if self._detail_chan is None:
                 self._detail_chan = TcpChannel(self.mc, port=DETAIL_TCP_PORT)
-            values = self._detail_chan.batch_read(reqs)
+            snapshot = getattr(self._detail_context, 'snapshot', None)
+            values = snapshot.read(reqs) if snapshot is not None else self._detail_chan.batch_read(reqs)
             if len(values) != len(reqs) or any(not value for value in values):
                 self._detail_context.read_failed = True
             return values
@@ -6788,7 +6856,8 @@ class EnemyReader:
         self._detail_context.active = True
         self._detail_context.policy = policy
         try:
-            return self._read_enemy_detail_impl(addr, heavy_only)
+            return self._read_planned_detail('enemy_detail', addr, policy,
+                lambda: self._read_enemy_detail_impl(addr, heavy_only))
         finally:
             self._detail_context.active = False
             self._detail_context.policy = None

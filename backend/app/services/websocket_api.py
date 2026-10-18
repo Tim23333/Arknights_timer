@@ -1020,6 +1020,10 @@ class WebSocketApi:
             self._publish("enemies", {"items": [
                 {"id": item.get("id"), "pathing": item.get("pathing")}
                 for item in previous.get("items", [])], "meta": meta}, force=True)
+            if snapshot.get("external_detail_error"):
+                # This independent producer explicitly failed. Core rejection
+                # must not swallow its notice or lend it rejected core values.
+                self._publish_runtime_details(snapshot, policy, [], [])
             return
         sample_frame = snapshot.get("fixed_frame", snapshot.get("sample_frame"))
         enemies = [_enemy_basic(entity, index) for index, entity in enumerate(snapshot.get("enemies", ()), 1)]
@@ -1042,11 +1046,23 @@ class WebSocketApi:
         self._publish(
             "enemies", {"items": enemies if snapshot.get("ok", True) else [],
                         "meta": self._runtime_meta(snapshot, snapshot.get("ok", True))}, force=pathing_invalid)
-        self.publish_enemy_pathing(snapshot)
-        self._publish("characters", {"items": characters if snapshot.get("character_ok", True) else [],
+        # Reuse only this invocation's whitelisted, frame-validated routes.
+        # _publish retains its defensive copy and policy/session checks.
+        self._publish_prepared_enemy_pathing(snapshot, [
+            {"id": basic["id"], "pathing": basic["pathing"]} for basic in enemies])
+        character_ok = snapshot.get("character_ok", True)
+        character_reason = snapshot.get("character_msg") or "character_read_failed"
+        self._publish("characters", {"items": characters if character_ok else [],
             "globalDamageSummary": (_character_basic(snapshot["global_damage_summary"], 0)
                                      if snapshot.get("global_damage_summary") is not None else None),
-            "meta": self._runtime_meta(snapshot, snapshot.get("character_ok", True))})
+            "meta": self._runtime_meta(snapshot, character_ok, reason=character_reason)})
+        self._publish_runtime_details(snapshot, policy, enemies, characters)
+        self._publish("quality", self._quality(snapshot))
+
+    def _publish_runtime_details(self, snapshot, policy, enemies, characters) -> None:
+        """Publish independently revised detail results, preserving their field evidence."""
+        character_ok = snapshot.get("character_ok", True)
+        character_reason = snapshot.get("character_msg") or "character_read_failed"
         detail_revision = snapshot.get("external_detail_revision")
         selected_detail = snapshot.get("detail_enemy") is not None or snapshot.get("detail_character") is not None
         if (selected_detail or (isinstance(detail_revision, int)
@@ -1062,22 +1078,28 @@ class WebSocketApi:
             live_enemy_basics = {getattr(entity, "addr", None): basic
                                  for entity, basic in zip(snapshot.get("enemies", ()), enemies)}
             live_enemy_entities = {getattr(entity, "addr", None): entity
-                                   for entity in snapshot.get("enemies", ())}
+                                   for entity in snapshot.get("enemies", ())
+                                   if snapshot.get("frame_consistent", True)}
             live_character_basics = {getattr(entity, "addr", None): basic
                                      for entity, basic in zip(snapshot.get("characters", ()), characters)}
+            # An external task failure is independent of the core-domain guard.
+            # Report it using existing metadata without erasing independently
+            # accepted local details or changing their original field states.
+            detail_error = snapshot.get("external_detail_error")
             self._publish("enemy_detail", {"items": [
                 _detail(entity, live_enemy_basics.get(getattr(entity, "addr", None), _enemy_basic(entity, index)),
                         primary_enemy=live_enemy_entities.get(getattr(entity, "addr", None)),
                         policy=policy)
                 for index, entity in enumerate(external_enemies, 1)
             ], "loading": bool(snapshot.get("external_detail_loading") or snapshot.get("detail_loading")),
-                "meta": self._runtime_meta(snapshot, snapshot.get("ok", True))})
+                "meta": self._runtime_meta(snapshot,
+                    snapshot.get("ok", True) and not detail_error, reason=detail_error)})
             self._publish("character_detail", {"items": [
                 _detail(entity, live_character_basics.get(getattr(entity, "addr", None), _character_basic(entity, index)))
                 for index, entity in enumerate(external_characters, 1)
             ], "loading": bool(snapshot.get("external_detail_loading") or snapshot.get("character_detail_loading")),
-                "meta": self._runtime_meta(snapshot, snapshot.get("character_ok", True))})
-        self._publish("quality", self._quality(snapshot))
+                "meta": self._runtime_meta(snapshot, character_ok and not detail_error,
+                    reason=detail_error or character_reason)})
 
     @staticmethod
     def _runtime_meta(snapshot: dict[str, Any], ok: bool, *, reason: str | None = None) -> dict[str, Any]:
@@ -1112,6 +1134,16 @@ class WebSocketApi:
                 "id": entity_public_id("enemy", entity, index),
                 "pathing": pathing,
             })
+        self._publish_prepared_enemy_pathing(
+            snapshot, items, force_unavailable=force_unavailable)
+
+    def _publish_prepared_enemy_pathing(
+        self, snapshot: dict[str, Any], items: list[dict[str, Any]], *,
+        force_unavailable: bool = False,
+    ) -> None:
+        """Internal same-call handoff; callers must whitelist and validate first."""
+        sample_frame = snapshot.get("fixed_frame", snapshot.get("sample_frame"))
+        consistent = bool(snapshot.get("frame_consistent", True))
         active_pathing = [
             item["pathing"] for entity, item in
             zip(snapshot.get("enemies", ()), items)

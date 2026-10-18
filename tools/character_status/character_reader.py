@@ -399,6 +399,10 @@ class CharacterReader:
     def _class_name(self, ptr: int) -> str:
         if not self.mc.is_ptr(ptr):
             return ''
+        if getattr(self.core._detail_context, 'snapshot', None) is not None:
+            # Object -> klass must belong to the guarded bytes too; an object
+            # address cache or mc.read_klass_name would bypass this evidence.
+            return self.core._read_object_class_names_chan([ptr]).get(ptr, '')
         if ptr not in self._klass_cache:
             self._klass_cache[ptr] = self.mc.read_klass_name(ptr) or ''
         return self._klass_cache[ptr]
@@ -2128,7 +2132,19 @@ class CharacterReader:
             reader = CharacterReader(self.core)
             self.core._detail_context.character_reader = reader
         reader._capture_policy = self._capture_policy
-        return reader._read_character_detail_impl(addr, policy)
+        policy = self._capture_policy if policy is None else policy
+        attempted = False
+        def parse():
+            nonlocal reader, attempted
+            if attempted:
+                # A discovery attempt can populate identity/skill caches from
+                # unguarded bytes. Rebuild them when restarting the capture.
+                reader = CharacterReader(self.core)
+                reader._capture_policy = self._capture_policy
+                self.core._detail_context.character_reader = reader
+            attempted = True
+            return reader._read_character_detail_impl(addr, policy)
+        return self.core._read_planned_detail('character_detail', addr, policy, parse)
 
     def _read_character_detail_impl(self, addr: int, policy=None) -> CharacterInfo | None:
         if not self.mc.is_ptr(addr):
@@ -2137,7 +2153,9 @@ class CharacterReader:
         if policy is not None and not any(policy.group_enabled('character_detail', key)
                                           for key in ('attributes', 'rawAttributes', 'buffs',
                                                       'globalBuffs', 'skills', 'talents',
-                                                      'dynamicAbilities', 'equipment')):
+                                                      'dynamicAbilities', 'equipment',
+                                                      'specialShield', 'attackRange',
+                                                      'effectFrames')):
             return None
         succeeded = set()
         self.core._detail_context.active = True
@@ -2255,7 +2273,7 @@ class CharacterReader:
 
     @staticmethod
     def merge_detail(live: CharacterInfo, detail: CharacterInfo) -> CharacterInfo:
-        for key in ('raw_attributes', 'buffs', 'global_buffs', 'talents',
+        for key in ('attributes', 'raw_attributes', 'buffs', 'global_buffs', 'talents',
                     'dynamic_abilities', 'module_settings',
                     'deck_buff_blackboard'):
             setattr(live, key, getattr(detail, key))
@@ -2267,6 +2285,12 @@ class CharacterReader:
             live_max_sp = (live.skill or {}).get('max_sp', live.max_sp)
             merged = dict(live.skill or {})
             merged.update(detail.skill)
+            if 'ready' in (live.skill or {}):
+                merged['ready'] = live.skill['ready']
+            if (live.skill or {}).get('skill_id') == detail.skill.get('skill_id'):
+                for key in ('class', 'ability_class', 'blackboard', 'ability_blackboard'):
+                    if key in detail.skill.get('runtime', {}):
+                        live_runtime[key] = detail.skill['runtime'][key]
             merged['runtime'] = live_runtime
             merged['current_sp'] = live_current_sp
             merged['max_sp'] = live_max_sp

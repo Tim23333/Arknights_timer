@@ -947,6 +947,9 @@ class EnemyPollWorker(QThread):
         self._external_enemy_details: dict[int, object] = {}
         self._external_character_details: dict[int, object] = {}
         self._external_detail_error = ''
+        self._external_detail_error_context = None
+        self._external_detail_request_signature = None
+        self._external_detail_target_identities = None
         self._external_detail_revision = 0
         self.track_unattributed_damage = False
         self._snapshot_lock = threading.Lock()
@@ -1030,6 +1033,7 @@ class EnemyPollWorker(QThread):
                         error = '详情读取跨逻辑帧，等待重新采样。'
                     else:
                         cache = {
+                            'attributes': dict(full.attributes),
                             'raw_attributes': dict(full.raw_attributes),
                             'buffs': list(full.buffs),
                             'global_buffs': list(full.global_buffs),
@@ -1132,6 +1136,8 @@ class EnemyPollWorker(QThread):
             return
         import copy
         detail_enemy = copy.deepcopy(roster_enemy)
+        if 'attributes' in heavy:
+            detail_enemy.attributes = dict(heavy['attributes'])
         detail_enemy.raw_attributes = dict(heavy.get('raw_attributes', {}))
         detail_enemy.buffs = list(heavy.get('buffs', ()))
         detail_enemy.global_buffs = list(heavy.get('global_buffs', ()))
@@ -1251,40 +1257,74 @@ class EnemyPollWorker(QThread):
             if self._external_detail_loading:
                 return
             self._external_detail_loading = True
+            request_signature = self._external_detail_request_signature
         enemy_addrs = [int(getattr(item, 'addr', 0) or 0) for item in enemies]
         character_addrs = [int(getattr(item, 'addr', 0) or 0) for item in characters]
+        requested_enemy_targets = set(enemy_addrs)
+        requested_character_targets = set(character_addrs)
         enemy_identities = {item.addr: (getattr(item, 'id_ptr', None), getattr(item, 'data_ptr', None))
                             for item in enemies}
         character_identities = {item.addr: (getattr(item, 'cid', None), getattr(item, 'data_ptr', None))
                                 for item in characters}
+        requested_identities = (tuple(sorted(enemy_identities.items())),
+                                tuple(sorted(character_identities.items())))
 
         def load() -> None:
             enemy_details, character_details = {}, {}
             error = ''
+            enemy_enabled = character_enabled = False
             try:
+                enemy_enabled = self._detail_domain_enabled('enemy_detail', policy)
+                character_enabled = self._detail_domain_enabled('character_detail', policy)
                 with self._shared_detail_io_lock:
+                    # Each unit keeps its guarded batch snapshot; units share
+                    # one detail channel and are deliberately read serially.
                     for addr in enemy_addrs:
                         if (not self._detail_result_current(policy, session)
+                                or not enemy_enabled
                                 or addr not in getattr(self, '_external_enemy_targets', set(enemy_addrs))):
                             continue
                         detail = self.reader.read_enemy_detail(addr, heavy_only=True, policy=policy)
-                        if detail is not None:
-                            self._finish_detail_metadata(detail)
-                            enemy_details[addr] = detail
-                    if self.character_reader is not None:
-                        for addr in character_addrs:
-                            if (not self._detail_result_current(policy, session)
-                                    or addr not in getattr(self, '_external_character_targets', set(character_addrs))):
-                                continue
-                            detail = self.character_reader.read_character_detail(addr, policy=policy)
-                            if detail is not None:
-                                self._finish_detail_metadata(detail)
-                                character_details[addr] = detail
+                        if detail is None:
+                            raise RuntimeError(f'敌人详情主体读取失败：0x{addr:x}')
+                        self._finish_detail_metadata(detail)
+                        enemy_details[addr] = detail
+                    for addr in character_addrs:
+                        if (not self._detail_result_current(policy, session)
+                                or not character_enabled
+                                or addr not in getattr(self, '_external_character_targets', set(character_addrs))):
+                            continue
+                        if self.character_reader is None:
+                            raise RuntimeError('source_unavailable: 干员详情读取器不可用')
+                        detail = self.character_reader.read_character_detail(addr, policy=policy)
+                        if detail is None:
+                            raise RuntimeError(f'干员详情主体读取失败：0x{addr:x}')
+                        self._finish_detail_metadata(detail)
+                        character_details[addr] = detail
             except Exception as exc:
                 error = f'外部详情采样失败：{exc}'
+                diagnostic = getattr(self.reader, '_detail_read_log', None)
+                if diagnostic is not None:
+                    diagnostic.emit(getattr(self.reader, 'log', None), 'request',
+                        {'request': {'reason': 'batch_failed'}}, None, None)
             finally:
                 with self._external_detail_lock:
-                    if not error and self._detail_result_current(policy, session):
+                    # The request may have been superseded while detail IO ran.
+                    # A late failure must not clear another battle/policy/target's
+                    # accepted values or report itself as that target's error.
+                    current = self._detail_result_current(policy, session)
+                    error_owned = (current
+                                   and self._external_detail_request_signature == request_signature
+                                   and getattr(self, '_external_enemy_targets', requested_enemy_targets)
+                                   == requested_enemy_targets
+                                   and getattr(self, '_external_character_targets', requested_character_targets)
+                                   == requested_character_targets
+                                   and self._external_detail_target_identities in (None, requested_identities)
+                                   and (not requested_enemy_targets or enemy_enabled)
+                                   and (not requested_character_targets or character_enabled))
+                    if not current or (error and not error_owned):
+                        self._external_detail_due = 0.0
+                    elif not error:
                         self._external_enemy_details = {
                             addr: detail for addr, detail in enemy_details.items()
                             if addr in getattr(self, '_external_enemy_targets', set(enemy_addrs))
@@ -1295,11 +1335,22 @@ class EnemyPollWorker(QThread):
                             and (detail.cid, detail.data_ptr) == character_identities[addr]}
                         self._external_detail_session = session
                         self._external_detail_revision += 1
-                    elif error:
+                        self._external_detail_error = ''
+                        self._external_detail_error_context = None
+                    else:
                         self._external_enemy_details = {}
                         self._external_character_details = {}
-                    self._external_detail_error = error
-                    self._external_detail_due = time.monotonic() + 1.0 / max(rate_hz, 0.2)
+                        # The next complete worker snapshot carries this revision
+                        # and existing external_detail_error to the WS publisher.
+                        self._external_detail_revision += 1
+                        self._external_detail_error = error
+                        self._external_detail_error_context = (
+                            session, getattr(policy, 'generation', None),
+                            frozenset(requested_enemy_targets),
+                            frozenset(requested_character_targets), request_signature,
+                            requested_identities)
+                    if current and (not error or error_owned):
+                        self._external_detail_due = time.monotonic() + 1.0 / max(rate_hz, 0.2)
                     self._external_detail_loading = False
 
         threading.Thread(target=load, name='ExternalDetailRefresh', daemon=True).start()
@@ -1313,18 +1364,40 @@ class EnemyPollWorker(QThread):
             enemy_request = {}
         if not self._detail_domain_enabled('character_detail', self._active_policy):
             character_request = {}
+        request_signature = tuple(
+            (bool(request.get('scopeAll')), tuple(sorted(str(value) for value in request.get('ids', ()))),
+             float(request.get('rateHz', 0.0) or 0.0))
+            for request in (enemy_request, character_request))
         rate_hz = max(float(enemy_request.get("rateHz", 0.0) or 0.0),
                       float(character_request.get("rateHz", 0.0) or 0.0))
         if not snap.get('ok'):
+            # The core frame is rejected; never borrow its entities or trigger a
+            # new detail read. An independently failed detail request may still
+            # deliver its invalidation, but only to its original request owner.
+            with self._external_detail_lock:
+                session = getattr(self.reader, 'bc_addr', 0)
+                context = (session, getattr(self._active_policy, 'generation', None),
+                           frozenset(getattr(self, '_external_enemy_targets', ())),
+                           frozenset(getattr(self, '_external_character_targets', ())),
+                           request_signature, self._external_detail_target_identities)
+                if (self._external_detail_error and self._external_detail_error_context == context
+                        and self._detail_result_current(self._active_policy, session)):
+                    snap['external_detail_revision'] = self._external_detail_revision
+                    snap['external_detail_error'] = self._external_detail_error
             return
         if rate_hz <= 0.0:
             with self._external_detail_lock:
                 self._external_enemy_targets = set()
                 self._external_character_targets = set()
-                if self._external_enemy_details or self._external_character_details:
+                self._external_detail_request_signature = request_signature
+                self._external_detail_target_identities = ((), ())
+                if (self._external_enemy_details or self._external_character_details
+                        or self._external_detail_error):
                     self._external_enemy_details = {}
                     self._external_character_details = {}
                     self._external_detail_revision += 1
+                self._external_detail_error = ''
+                self._external_detail_error_context = None
                 snap['external_enemy_details'] = []
                 snap['external_character_details'] = []
                 snap['external_detail_loading'] = False
@@ -1349,10 +1422,15 @@ class EnemyPollWorker(QThread):
             with self._external_detail_lock:
                 self._external_enemy_targets = set()
                 self._external_character_targets = set()
-                if self._external_enemy_details or self._external_character_details:
+                self._external_detail_request_signature = request_signature
+                self._external_detail_target_identities = ((), ())
+                if (self._external_enemy_details or self._external_character_details
+                        or self._external_detail_error):
                     self._external_detail_revision += 1
                 self._external_enemy_details = {}
                 self._external_character_details = {}
+                self._external_detail_error = ''
+                self._external_detail_error_context = None
                 self._external_detail_due = time.monotonic() + 1.0 / rate_hz
                 snap['external_enemy_details'] = []
                 snap['external_character_details'] = []
@@ -1363,10 +1441,22 @@ class EnemyPollWorker(QThread):
         character_addrs = {int(getattr(item, 'addr', 0) or 0) for item in characters}
         enemy_identities = {item.addr: (item.id_ptr, item.data_ptr) for item in enemies}
         character_identities = {item.addr: (item.cid, item.data_ptr) for item in characters}
+        target_identities = (tuple(sorted(enemy_identities.items())),
+                             tuple(sorted(character_identities.items())))
         with self._external_detail_lock:
+            session = getattr(self.reader, 'bc_addr', 0)
+            context = (session, getattr(self._active_policy, 'generation', None),
+                       frozenset(enemy_addrs), frozenset(character_addrs), request_signature,
+                       target_identities)
+            if (self._external_detail_error
+                    and self._external_detail_error_context != context):
+                self._external_detail_error = ''
+                self._external_detail_error_context = None
+                self._external_detail_revision += 1
             self._external_enemy_targets = enemy_addrs
             self._external_character_targets = character_addrs
-            session = getattr(self.reader, 'bc_addr', 0)
+            self._external_detail_request_signature = request_signature
+            self._external_detail_target_identities = target_identities
             if getattr(self, '_external_detail_session', session) != session:
                 self._external_enemy_details.clear()
                 self._external_character_details.clear()
@@ -1388,7 +1478,7 @@ class EnemyPollWorker(QThread):
                     or getattr(detail, 'policy_generation', None) == self._active_policy.generation)]
             snap['external_detail_loading'] = self._external_detail_loading
             snap['external_detail_revision'] = self._external_detail_revision
-            if self._external_detail_error:
+            if self._external_detail_error and self._external_detail_error_context == context:
                 snap['external_detail_error'] = self._external_detail_error
 
     def _collect_complete_snapshot(self) -> dict:
