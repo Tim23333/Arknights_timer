@@ -27,6 +27,7 @@ def _bootstrap_import_path() -> None:
 
 _bootstrap_import_path()
 from tools.timer.ak_memory_reader import AKMemoryReader
+from tools.runtime_log import StateLog
 
 
 # 保存整场战斗内每个不同逻辑帧。两个连续数组每条样本固定 16 字节：
@@ -63,7 +64,7 @@ class TimerDataProvider:
         # 归0事件广播：订阅者列表（广播机制，非定向推送）
         self._reset_subscribers: list = []
         self._reset_lock = RLock()
-        self._guest_fail_count = 0  # guest 读取连续失败计数（限流日志用）
+        self._guest_state_log = StateLog()
         self._frame_times = array("d")
         self._frame_counts = array("Q")
         self._game_cache: Dict[str, Any] = {
@@ -201,6 +202,7 @@ class TimerDataProvider:
         """
         with self._lock:
             self._guest_reader = reader
+            self._guest_state_log = StateLog()
             self._invalidate_clock_locked('读取器已配置，等待首次时钟采样。')
             self._clear_frame_timeline()
             # 换数据源即换基线：清掉上一局的归0/走秒检测状态。
@@ -253,6 +255,7 @@ class TimerDataProvider:
         """清除 guest 读取器，refresh_sample() 回退到宿主 pymem 路径。"""
         with self._lock:
             self._guest_reader = None
+            self._guest_state_log = StateLog()
             self._invalidate_clock_locked('guest 读取器已清除，请先运行「打开寻址工具」配置宿主时钟。')
             self._clear_frame_timeline()
             self._reset_stage_detection_state_locked()
@@ -448,11 +451,15 @@ class TimerDataProvider:
                 raise ValueError("guest 时钟读取返回空")
             frame_count, game_time = result
         except Exception as exc:
-            # 每 200 次失败打一次日志（避免高频刷屏）；last_error 由 reader 记录
-            self._guest_fail_count += 1
-            if self._guest_fail_count % 200 == 1:
-                last_err = getattr(self._guest_reader, "last_error", "")
-                print(f"[自动寻址] guest 读取失败: {exc} | {last_err}", flush=True)
+            last_err = getattr(self._guest_reader, "last_error", "")
+            # Stable cause, not varying addresses/frames in exception text.
+            cause = ('lifecycle_wait' if last_err.startswith('等待当前关卡') else
+                     'not_located' if last_err.startswith('static_fields 未锁定') else
+                     'short_read' if last_err.startswith('时钟块读取失败') else
+                     'decode_failed' if last_err.startswith('时钟块解码失败') else
+                     (type(exc).__name__, getattr(exc, 'errno', None)))
+            self._guest_state_log.emit(print, cause,
+                f"[自动寻址] guest 读取失败: {exc} | {last_err}")
             self._game_cache = {
                 **self._game_cache,
                 "connected": True,
@@ -464,6 +471,7 @@ class TimerDataProvider:
             return {"ok": False, "message": self._game_cache["message"]}
 
         if game_time is None or frame_count is None:
+            self._guest_state_log.emit(print, 'uninitialized', '[自动寻址] guest 时钟未初始化')
             self._game_cache = {
                 **self._game_cache,
                 "connected": True,
@@ -477,6 +485,7 @@ class TimerDataProvider:
         self._observe_game_time_locked(game_time)
 
         self._record_frame_sample(game_time, frame_count)
+        self._guest_state_log.emit(print, None, '[自动寻址] guest 时钟读取恢复')
         self._game_cache = {
             "connected": True,
             "configured": True,

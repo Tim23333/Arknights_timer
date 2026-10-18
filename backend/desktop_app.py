@@ -77,6 +77,9 @@ from app.toast import (
     DEFAULT_DURATIONS_MS, ToastManager, ToastQueueItem, ToastManagerQt,
 )
 from tools.enemy_health import EnemyReader
+from tools.enemy_health.scan_timing import timed_scan
+from tools.runtime_log import StateLog, report_poll_snapshot
+from tools.enemy_health.frame_metrics import EffectiveFrameMetrics
 from tools.enemy_health import game_structs as enemy_gs
 from tools.enemy_health.guest_addressing import GuestBattleClock
 from tools.character_status import CharacterReader
@@ -818,10 +821,11 @@ class EnemyScanWorker(QThread):
     progress = Signal(int, str)
     done = Signal(bool, str)
 
-    def __init__(self, reader: EnemyReader, force: bool = True) -> None:
+    def __init__(self, reader: EnemyReader, force: bool = True, policy_provider=None) -> None:
         super().__init__()
         self.reader = reader
         self.force = force
+        self.policy_provider = policy_provider
         self.result: tuple[bool, str] | None = None
 
     def request_stop(self) -> None:
@@ -839,6 +843,7 @@ class EnemyScanWorker(QThread):
         self.result = (ok, message)
         self.done.emit(ok, message)
 
+    @timed_scan('敌我扫描总计')
     def run(self) -> None:
         try:
             if TEST_BUILD or _DIAGNOSTIC_LOGGER is not None:   # 测试版/WebUI: 日志同时进 GUI 标签和诊断
@@ -855,12 +860,17 @@ class EnemyScanWorker(QThread):
                           mc.adb_host("devices", "-l", timeout=10).decode(errors="replace").strip().replace("\r", "").replace("\n", " | "))
                 except Exception as ex:
                     _tlog("诊断 adb 检查失败:", f"{type(ex).__name__}: {ex}")
-            pid = self.reader.connect()
+            from tools.enemy_health.scan_timing import scan_phase
+            with scan_phase(self.log.emit, '敌我连接'):
+                pid = self.reader.connect()
             self.log.emit(
                 f"ADB {self.reader.mc.adb_serial} / {self.reader.mc.package} / 游戏 PID = {pid}")
             if self.isInterruptionRequested():
                 return
-            ok = self.reader.bootstrap(force=self.force)
+            if self.policy_provider is not None:
+                self.reader.set_capture_policy(self.policy_provider())
+            with scan_phase(self.log.emit, '敌我核心定位与预填充'):
+                ok = self.reader.bootstrap(force=self.force)
             if self.isInterruptionRequested():
                 return
             if ok:
@@ -928,6 +938,7 @@ class EnemyPollWorker(QThread):
         self._sample_window_count = 0
         self._sample_hz = 0.0
         self._deadline_misses = 0
+        self._effective_frames = EffectiveFrameMetrics()
 
     def take_latest_snapshot(self):
         """GUI 只取最新帧；忙碌期间产生的旧帧不会在 Qt 队列中堆积。"""
@@ -1481,6 +1492,10 @@ class EnemyPollWorker(QThread):
         channel = getattr(self.reader, '_chan', channel)
         if channel is not None and hasattr(channel, 'end_frame_prefetch'):
             channel.end_frame_prefetch()
+        self._effective_frames.observe(snap, require_character=self.character_reader is not None)
+        report = self._effective_frames.report()
+        if report is not None:
+            _tlog('[effective-frame-metrics] ' + json.dumps(report, separators=(',', ':')))
         return snap
 
     def run(self) -> None:
@@ -1708,6 +1723,7 @@ class DeployScanWorker(QThread):
         self.result = (reader, message)
         self.done.emit(reader, message)
 
+    @timed_scan('部署扫描总计')
     def run(self) -> None:
         try:
             mc = MemCore(adb_path=self.adb_path, adb_serial=self.adb_serial)
@@ -1865,6 +1881,7 @@ class RngScanWorker(QThread):
         self.result = (service, message)
         self.done.emit(service, message)
 
+    @timed_scan('随机数扫描总计')
     def run(self) -> None:
         try:
             svc = RngService(backend='adb', adb_path=self.adb_path,
@@ -2320,6 +2337,7 @@ class GuestAddressWorker(QThread):
         self.result = (ok, err, clock)
         self.done.emit(ok, err, clock)
 
+    @timed_scan('时钟寻址总计')
     def run(self) -> None:
         clock = None
         try:
@@ -4116,7 +4134,7 @@ class CoachWindow(QMainWindow):
             self._enemy_mini.toggle_locked()
         self._mini_hotkey_down = down
 
-    def _on_enemy_scan(self) -> None:
+    def _on_enemy_scan(self, *, reuse_location=False) -> None:
         if not self._ensure_adb():
             self.lbl_enemy_status.setText('状态: 未选择 adb.exe, 取消扫描')
             if self._auto_refresh_step:
@@ -4152,7 +4170,8 @@ class CoachWindow(QMainWindow):
         self._character_skill_lines.clear()
         self._character_cell_state.clear()
         self._character_bar_state.clear()
-        self._character_stats_history.clear()
+        if not reuse_location:
+            self._character_stats_history.clear()
         self._character_frame_ms_sum = 0.0
         self._character_frame_ms_count = 0
         self.btn_enemy_scan.setEnabled(False)
@@ -4161,7 +4180,8 @@ class CoachWindow(QMainWindow):
         self.lbl_character_status.setText('等待共享定位完成 ...')
         self.enemy_progress.setValue(0)
         self.enemy_progress.setFormat('开始定位关卡与出怪序列 ... %p%')
-        self._enemy_scan = EnemyScanWorker(self._enemy_reader, force=True)
+        self._enemy_scan = EnemyScanWorker(self._enemy_reader, force=not reuse_location,
+                                         policy_provider=self._field_policy.snapshot)
         self._enemy_scan.log.connect(self._on_enemy_log)
         self._enemy_scan.progress.connect(self._on_enemy_progress)
         self._connect_scan_worker('enemy', self._enemy_scan)
@@ -4282,8 +4302,8 @@ class CoachWindow(QMainWindow):
         self._sync_battle_cache_controls()
 
     def _on_character_scan(self) -> None:
-        """干员读取复用敌人定位；按钮用于首次定位或强制刷新整条共享链。"""
-        self._on_enemy_scan()
+        """先实时验证共享定位，失效时由 worker 回退完整扫描。"""
+        self._on_enemy_scan(reuse_location=True)
 
     def _start_enemy_poll(self) -> None:
         if not self._stop_enemy_poll():
@@ -5553,11 +5573,10 @@ class CoachWindow(QMainWindow):
         if generation is not None and generation != self._field_policy.snapshot().generation:
             return
         self._webui_runtime_snapshot = snap
-        if TEST_BUILD:   # 轮询错误 (数据链失效/重建) 去重后输出控制台
-            msg = snap.get('msg')
-            if msg and msg != getattr(self, '_last_snap_msg', None):
-                self._last_snap_msg = msg
-                _tlog("轮询:", msg)
+        if TEST_BUILD:   # 状态变化立即记录；持续同态 20 秒汇总，成功恢复也记录。
+            if not hasattr(self, '_snapshot_state_log'):
+                self._snapshot_state_log = StateLog()
+            report_poll_snapshot(self._snapshot_state_log, _tlog, snap)
         # 在 WebSocket、最终缓存与表格消费前统一执行第二道帧号校验。
         fail_closed_mismatched_enemy_pathing(snap)
         self._departure_history.observe(snap, self._field_policy.snapshot())

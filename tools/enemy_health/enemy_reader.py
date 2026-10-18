@@ -30,6 +30,8 @@ except ImportError:
     np = None
 
 from .memcore import MemCore, TcpChannel
+from .scan_timing import timed_scan
+from tools.runtime_log import StateLog
 from . import game_structs as gs
 from .enemy_db import load_enemy_db
 from .enemy_handbook import EnemyHandbook
@@ -508,7 +510,7 @@ class EnemyReader:
         self._bc_snap = None          # BC 块缓存 (state, speed, time_scale, play_time)
         self._scheduler_time_snap = None  # BattleController.s_fixedPlayTime
         self._attr_ptrs = {}          # enemy addr -> Attributes* (属性轮换读取用)
-        self._chan_fail = 0           # 通道连续异常计数 (日志节流)
+        self._chan_fail = 0           # 通道连续异常计数；日志另按状态/单调时间汇总
         self._poll_stop = threading.Event()  # GUI 停止时中断 memsrv v5 读取
         self._skill_lp = {}           # enemy addr -> m_skills List* (主块内提取)
         self._skill_ap = {}           # enemy addr -> m_allSkills EnemySkill[]*
@@ -1641,6 +1643,7 @@ class EnemyReader:
             record = self._make_plan_record(source, order, -order)
             self._spawn_plan.append(record)
 
+    @timed_scan('关卡出怪计划解析')
     def _load_spawn_plan(self):
         """解析固定 waves、条件 branches 和仅由事件/召唤使用的敌人类型。"""
         self._route_by_object = {}
@@ -2670,11 +2673,15 @@ class EnemyReader:
 
     def bootstrap(self, force=False):
         """发现地址链 (优先用缓存)"""
-        self._load_handbook_codes()
+        from .scan_timing import scan_phase
+        with scan_phase(self.log, '敌人图鉴准备'):
+            self._load_handbook_codes()
         if not force and os.path.isfile(self.cache_file):
             try:
                 c = pickle.load(open(self.cache_file, 'rb'))
                 if (c.get('ver') in (3, 4) and c.get('pid') == self.mc.pid
+                        and getattr(self.mc, 'process_instance', None)
+                        and c.get('process_instance') == self.mc.process_instance
                         and c.get('game_data') == fingerprint()):
                     self.enemy_addrs = c['enemies']
                     self.items_addr = c['items']
@@ -2701,6 +2708,7 @@ class EnemyReader:
         # 主路径不依赖场上已有 Enemy：开局即可从关卡 LevelData 取得完整顺序。
         if self.with_bc and self._bootstrap_via_battle_controller():
             pickle.dump({'ver': 4, 'pid': self.mc.pid, 'game_data': fingerprint(),
+                         'process_instance': getattr(self.mc, 'process_instance', None),
                          'enemies': self.enemy_addrs,
                          'items': self.items_addr, 'list': self.list_addr,
                          'sched': self.sched_addr, 'bc': self.bc_addr,
@@ -2758,6 +2766,7 @@ class EnemyReader:
                 snap.discard()
 
         pickle.dump({'ver': 4, 'pid': self.mc.pid, 'game_data': fingerprint(),
+                     'process_instance': getattr(self.mc, 'process_instance', None),
                      'enemies': self.enemy_addrs,
                      'items': self.items_addr, 'list': self.list_addr,
                      'sched': self.sched_addr, 'bc': self.bc_addr,
@@ -2770,6 +2779,7 @@ class EnemyReader:
         self.log(f"[完成] 扫描耗时 {time.time()-t0:.0f} 秒, 已缓存")
         return True
 
+    @timed_scan('敌人首轮属性预填充')
     def _prefill(self):
         """预热名称/属性缓存, 让 poll_fast 首帧即全速"""
         for ep in self.enemy_addrs:
@@ -4406,6 +4416,9 @@ class EnemyReader:
 
         memsrv v5 是唯一读取后端；通道异常直接上抛并停止发布快照。
         """
+        if not hasattr(self, '_poll_state_log'):
+            self._poll_state_log = StateLog()
+        scope = (getattr(self.mc, 'process_instance', None), getattr(self, 'bc_addr', 0))
         if self._poll_stop.is_set():
             raise InterruptedError('敌人轮询已请求停止')
         if self._chan is None:
@@ -4418,13 +4431,15 @@ class EnemyReader:
             snap['strict_60hz'] = (
                 self._chan.srv_version == TcpChannel.PROTOCOL_VERSION)
             self._chan_fail = 0
+            self._poll_state_log.emit(self.log, None, '[轮询] memsrv v5 读取恢复', scope=scope)
             return snap
         except Exception as e:
             if self._poll_stop.is_set():
                 raise InterruptedError('敌人轮询已请求停止') from e
             self._chan_fail += 1
-            if self._chan_fail <= 3 or self._chan_fail % 50 == 0:
-                self.log(f'[轮询] memsrv v5 异常 ({type(e).__name__}: {e})')
+            self._poll_state_log.emit(self.log,
+                (type(e).__name__, getattr(e, 'errno', None)),
+                f'[轮询] memsrv v5 异常 ({type(e).__name__}: {e})', scope=scope)
             self.close()
             raise RuntimeError(f'memsrv v5 读取失败: {e}') from e
 

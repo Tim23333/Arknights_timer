@@ -601,10 +601,16 @@ def locate_battle_random(reader, status=lambda m: None):
     status("静态链: 搜索 BattleController klass ...")
     # 实测类名字符串与 Il2CppClass 都在堆中重建的 metadata 区 (非 GC 大匿名
     # 映射也可能只有拷贝), gc 分区只能扫到拷贝串 —— 直接全 rw 单遍扫
-    strings = find_cstring_hits(reader, b"BattleController\x00", status, scope="rw")
-    if not strings:
-        return []
-    hits = find_ptr_hits(reader, strings, status, scope="rw")
+    metadata_scan = getattr(reader, 'scan_classes', None)
+    if callable(metadata_scan):
+        classes = metadata_scan(('BattleController',))
+        # Preserve the generic reader path for pymem/FakeMem implementations.
+        hits = {0: [klass + KLASS_NAME for klass in classes]}
+    else:
+        strings = find_cstring_hits(reader, b"BattleController\x00", status, scope="rw")
+        if not strings:
+            return []
+        hits = find_ptr_hits(reader, strings, status, scope="rw")
 
     engines = []
     seen_obj = set()

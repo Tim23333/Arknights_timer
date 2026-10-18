@@ -339,6 +339,13 @@ class TcpChannel:
         self._lock = threading.Lock()   # 同一时间只允许一个 batch_read
         self._stats_lock = threading.Lock()
         self._frame_stats = self._new_frame_stats()
+        self.read_diagnostics = None
+        if os.environ.get('TIMELINE_PROFILE_READS') == '1':
+            try:
+                from .read_diagnostics import ReadDiagnostics
+            except ImportError:  # standalone tools use flat imports
+                from read_diagnostics import ReadDiagnostics
+            self.read_diagnostics = ReadDiagnostics()
         # v5 把依赖读取计划常驻在设备端。稳定帧只发送 EXEC，不再上传事务描述，
         # 也不在 Windows 端逐结果重扫指针。链路变化产生的未命中仍在当帧实读，
         # 下一帧进入一次拓扑捕获，随后上传新的计划。
@@ -380,6 +387,14 @@ class TcpChannel:
         """
         with self._stats_lock:
             self._frame_stats = self._new_frame_stats()
+        if self.read_diagnostics is not None:
+            report = self.read_diagnostics.report_due(time.monotonic())
+            self.read_diagnostics.new_round()
+            if report:
+                try:
+                    print(f'[读取分类 port={self.port}] {report}')
+                except Exception:
+                    pass  # A closed diagnostic sink must not interrupt sampling.
 
     def frame_stats(self) -> dict:
         with self._stats_lock:
@@ -720,12 +735,18 @@ class TcpChannel:
                     missing.append(request)
                 else:
                     out[index] = data
+            if self.read_diagnostics is not None:
+                self.read_diagnostics.record('core.plan_hit', [
+                    request for request, data in zip(normalized, out) if data is not None])
+                self.read_diagnostics.record('core.plan_miss', missing)
             if not missing:
                 if remember:
                     for request, data in zip(normalized, out):
                         self._remember_frame_result(request, data)
                 return out
             fetched = self._batch_read_live(missing)
+            if self.read_diagnostics is not None:
+                self.read_diagnostics.miss('core', missing, fetched)
             # 当前设备计划未覆盖新地址；本帧立即实读保证数据最新，下一帧完整
             # 捕获一次拓扑并上传新计划。绝不以旧结果代替当前值。
             self._capture_next_frame = True
@@ -736,6 +757,9 @@ class TcpChannel:
                 for request, data in zip(normalized, out):
                     self._remember_frame_result(request, data)
             return out
+        if self.read_diagnostics is not None:
+            self.read_diagnostics.record(
+                'core.force_live' if force_live else 'core.unplanned', normalized)
         out = self._batch_read_live(normalized)
         if remember and self._capture_topology:
             for request, data in zip(normalized, out):
@@ -879,6 +903,9 @@ class TcpChannel:
         self._record_batch_stats(
             direct_requests, results,
             (time.perf_counter() - started) * 1000.0)
+        if self.read_diagnostics is not None:
+            self.read_diagnostics.transaction(
+                'transport.guarded', attempts, guard_start != guard_end)
         return results, self._make_guard_result(
             attempts, guard_start, guard_end, guarded=True)
 
@@ -1013,6 +1040,9 @@ class TcpChannel:
                 self.close()
                 raise
 
+        if self.read_diagnostics is not None:
+            self.read_diagnostics.transaction('transport.plan_upload')
+
     def execute_frame_plan(self, operations):
         """执行设备端常驻计划，设备内部重试到起止逻辑帧一致。"""
         sizes = self._prefetch_sizes
@@ -1115,6 +1145,14 @@ class MemCore:
         return '', 0
 
     def _select_device(self) -> None:
+        # A configured online target needs no discovery of unrelated TCP ports.
+        # This is a live query, not a cached connection state. Keep the original
+        # discovery/reconnect path for offline, unauthorized or absent targets.
+        if self.adb_serial:
+            rows = query_adb_devices(self._require_adb())
+            if any(row['serial'] == self.adb_serial and row['state'] == 'device'
+                   for row in rows):
+                return
         rows = self._device_rows(connect_known=True)
         states = {row['serial']: row['state'] for row in rows}
         if self.adb_serial:
@@ -1183,9 +1221,18 @@ class MemCore:
 
     def connect(self) -> int:
         """绑定指定模拟器、确认 root，并自动定位不同渠道服的游戏 PID。"""
-        self._select_device()
-        self._ensure_root()
-        package, pid = self._pid_for_known_package()
+        self.connection_timings = {}
+        def measured(name, operation):
+            started = time.perf_counter()
+            try:
+                return operation()
+            finally:
+                elapsed = time.perf_counter() - started
+                self.connection_timings[name] = elapsed
+                print(f'[连接计时] {name}: {elapsed:.3f}s')
+        measured('select_device', self._select_device)
+        measured('ensure_root', self._ensure_root)
+        package, pid = measured('resolve_pid', self._pid_for_known_package)
         if not pid:
             tried = ', '.join(dict.fromkeys((self.package, *KNOWN_GAME_PACKAGES)))
             raise RuntimeError(
@@ -1198,8 +1245,8 @@ class MemCore:
         try:
             # A PID can be reused; history restoration requires process birth.
             # Failure disables restoration without blocking memory capture.
-            birth_data = self.shell(
-                f'cat /proc/sys/kernel/random/boot_id /proc/{int(pid)}/stat', timeout=5)
+            birth_data = measured('process_identity', lambda: self.shell(
+                f'cat /proc/sys/kernel/random/boot_id /proc/{int(pid)}/stat', timeout=5))
             boot_id, process_stat = birth_data.strip().split('\n', 1)
             boot_id = boot_id.strip()
             fields = process_stat.rsplit(')', 1)[1].split()
@@ -1208,14 +1255,14 @@ class MemCore:
                 self.process_instance = (boot_id, int(fields[19]))
         except (OSError, RuntimeError, ValueError, IndexError):
             pass
-        self.reload_maps()
+        measured('reload_maps', self.reload_maps)
         if not self.regions:
             raise RuntimeError(
                 f'已找到游戏进程 {self.package} (PID {pid})，但无法读取 /proc/{pid}/maps。'
                 '请确认 MuMu Root 权限已经开启并在开启后重启过模拟器。')
         # maps 可读不等于 /proc/<pid>/mem 可读；只用 memsrv v5 做诊断。
         readable = False
-        channel = self.channel()
+        channel = measured('open_channel', self.channel)
         for start, end, perms, _name in self.regions[:32]:
             if 'r' not in perms or end - start < 0x1000:
                 continue

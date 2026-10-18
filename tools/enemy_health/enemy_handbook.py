@@ -127,8 +127,9 @@ class EnemyHandbook:
         This does not follow enemy runtime attributes or borrow a newer frame
         number. Revalidate ownership and version before using process-static data.
         """
-        process = (self.mc.adb_serial, self.mc.package, self.mc.pid)
-        if process != self._process:
+        birth = getattr(self.mc, 'process_instance', None)
+        process = (self.mc.adb_serial, self.mc.package, self.mc.pid, birth)
+        if process != self._process or not birth:
             self._process = process
             self._db = self._slot = self._group = 0
             self._signature = None
