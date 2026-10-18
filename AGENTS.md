@@ -1,5 +1,23 @@
 # Arknights 干员数据解析工具
 
+## 字段完整性、鲁棒性与性能优化
+
+Timeline 是完整的后端数据工具，不以当前前端是否展示字段决定数据价值。
+性能优化必须保持启用字段的采集范围、字段状态、来源帧、对象/战局身份校验、
+传递依赖和跨领域依赖检查，以及读取失败/恢复语义；不得以减少校验、默认值
+填充或旧值冒充最新帧换取速度。显式采集开关仍按既有合同生效。
+优先减少等价的重复计算和通信，预编译不可变字段规则、合并同轮数据处理；
+索引由完整注册表自动生成，不能硬编码当前字段数量或依赖子集。并行计算需
+保留结果归属、顺序/代际保护和失败回退，证明输出等价后再实测性能收益。
+
+每轮优化（含组合优化）必须补做与本地 `main` 的后端对比式 review，记录实际
+基线 commit，不将本地 main 擅自称为远程实时最新版本。检查累计差异和新增未跟踪
+模块，不只看本轮局部 diff。以源码、注释与提交记录提炼上游设计约束，明确区分
+事实、推断和有意偏离；不得臆测作者意图。重点核对采集/解析/发布线程职责、
+每轮读取范围、同帧与身份守卫、开关依赖、失败恢复、快照所有权、WS 契约和旧
+PySide6 功能。等价优化需有上游行为对照测试；有意语义变化须单列理由与影响，
+不能混称为性能优化。发现重大偏离先修复再复审。局部审查不得冒充全分支验收。
+
 ## 面向用户的运行时存储
 
 默认日志、临时战局缓存等使用程序相对路径，统一由 `backend/app/storage_paths.py`
@@ -161,8 +179,9 @@ python extract_tables.py
 
 ### 原始 AB 文件位置
 
-基础包：`E:\Hypergryph Launcher\games\Arknights Game\Arknights_Data\StreamingAssets\AB\Windows\anon\`
-热更包：`E:\Hypergryph Launcher\games\Arknights Game\Arknights_Data\PersistentData\Bundles\anon\`
+以下路径相对于用户选择的游戏安装目录：
+基础包：`Arknights_Data/StreamingAssets/AB/Windows/anon/`
+热更包：`Arknights_Data/PersistentData/Bundles/anon/`
 
 > **注意：** AB 包文件名的 hash 后缀会随游戏版本更新变化，`extract_tables.py` 通过表名前缀匹配，无需手动更新文件名。
 

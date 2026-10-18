@@ -4425,8 +4425,8 @@ class CoachWindow(QMainWindow):
         QMessageBox.information(
             self, "需要 adb",
             "未找到 adb.exe。\n\n"
-            "请选择 MuMu 模拟器安装目录下的 shell\\adb.exe，例如：\n"
-            "D:\\Program Files\\MuMu9\\emulator\\MuMuPlayer-12.0\\shell\\adb.exe")
+            "请选择 MuMu 模拟器安装目录下的 shell\\adb.exe。\n"
+            "相对于模拟器安装目录：shell\\adb.exe")
         return self._select_adb(show_success=False)
 
     def _enter_enemy_mini_mode(self) -> None:
