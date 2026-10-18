@@ -13,6 +13,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlsplit, parse_qs
 
+from .webui_preferences import WebUiPreferences
+
 _LOG = logging.getLogger(__name__)
 
 
@@ -60,13 +62,14 @@ class WebUiServer:
     """
 
     def __init__(self, state_provider, policy_provider, policy_commit, command,
-                 docs, asset_dir=None, port=0, download=None, streams=None):
+                 docs, asset_dir=None, port=0, download=None, streams=None, preferences=None):
         self._state = state_provider
         self._policy = policy_provider
         self._commit = policy_commit
         self._command = command
         self._docs = docs
         self._download = download
+        self._preferences = preferences if preferences is not None else WebUiPreferences()
         self._assets = Path(asset_dir or Path(__file__).resolve().parents[3] / "webui").resolve()
         self._port = port
         self._server = None
@@ -162,6 +165,8 @@ class WebUiServer:
                         self._send(200, owner._state())
                     elif path == "/api/policy":
                         self._send(200, owner._policy())
+                    elif path == "/api/ui/column-order":
+                        self._send(200, owner._preferences.read())
                     elif path == '/api/logs/download' and owner._download is not None:
                         job_id = parse_qs(urlsplit(self.path).query).get('id', [''])[0]
                         try:
@@ -235,6 +240,10 @@ class WebUiServer:
                         if not isinstance(action, str) or not 0 < len(action) <= 64 or not isinstance(params, dict):
                             raise ValueError("命令需要 action 字符串和 params 对象")
                         self._send(200, owner._command(action, params))
+                    elif path == "/api/ui/column-order":
+                        if "order" not in body:
+                            raise ValueError("排序配置需要 order 字段；恢复默认请传 null")
+                        self._send(200, owner._preferences.update(body.get("table"), body["order"]))
                     else:
                         self._send(404, {"error": "未知接口"})
                 except (ValueError, UnicodeDecodeError) as error:

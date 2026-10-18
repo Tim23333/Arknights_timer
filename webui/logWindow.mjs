@@ -1,6 +1,8 @@
 import {createLogs} from './logs.mjs';
 import {clockChannelName, createClockReceiver} from './clockRelay.mjs';
 import {formatClock, formatValue} from './model.mjs';
+import {initializeColumnPreferences} from './columnPreferences.mjs';
+await initializeColumnPreferences();
 
 // This entry owns only log controls and the mandatory game clock. Opening a
 // log window must not duplicate any SSE subscriptions: several full

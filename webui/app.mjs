@@ -3,6 +3,7 @@ import {policyChanges} from './policyChanges.mjs';
 import {createPager} from './pagination.mjs';
 import {createLogs} from './logs.mjs';
 import {createTableRenderer} from './tableRenderer.mjs';
+import {createStaticTableColumnOrder} from './tableColumnOrder.mjs';
 import {createLatestUpdates} from './liveUpdates.mjs';
 import {createFieldDisplay} from './fieldDisplay.mjs';
 import {createSourceMeta} from './sourceMeta.mjs';
@@ -10,11 +11,17 @@ import {clockChannelName, createClockPublisher} from './clockRelay.mjs';
 import {createDetailSelection} from './detailSelection.mjs';
 import {createStageGlobalRenderer} from './stageGlobal.mjs';
 import {createEntityDetails} from './entityDetails.mjs';
+import {initializeColumnPreferences} from './columnPreferences.mjs';
+await initializeColumnPreferences();
 
 const byId = id => document.getElementById(id);
 const ui = {data: {}, policy: {generation: 0, fields: []}, columns: {}, precision: {}, page: "overview", detail: null, busyPolicy: false, connected: false};
 const tables = new Map();
 const pagers = new Map();
+const policyOrder=createStaticTableColumnOrder(document.querySelector('.policy-table'),[
+  {key:'field',label:'字段 / 来源'},{key:'collect',label:'采集'},{key:'display',label:'本地展示'},
+  {key:'publish',label:'WS 发布'},{key:'dependencies',label:'依赖与粒度'},
+],'field-policy');
 const fieldDisplays = {enemy:createFieldDisplay(), character:createFieldDisplay()};
 const heldFieldCounts = {enemy:0, character:0};
 const displayExpiry = {enemy:null, character:null};
@@ -384,7 +391,7 @@ function renderRng() {
       const keys = [...new Set(entries.flatMap(entry => Object.keys(entry)))];
       const tableId = `rng-${role}-${key}`;
       // Empty samples remove rows, not the previously known column schema.
-      const columns = keys.length ? keys.map(key => ({key, label: ({n: "第几发", seq: "序号", frac: "值", raw: "原始整数"})[key] || key})) : tables.get(tableId)?.columns || [];
+      const columns = keys.length ? keys.map(key => ({key, label: ({n: "第几发", seq: "序号", frac: "值", raw: "原始整数"})[key] || key})) : tables.get(tableId)?.defaultColumns || [];
       updateTable(tableId, columns, entries, (entry, column) => formatValue(entry[column.key], 6));
     }
   }
@@ -477,6 +484,7 @@ function renderPolicy() {
     body.append(row);
   }
   set("field-count", `${filtered.length} / ${ui.policy.fields.length} 个字段`);
+  policyOrder.apply();
 }
 
 function confirmShutdown() {

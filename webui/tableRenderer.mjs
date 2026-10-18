@@ -1,4 +1,5 @@
 import {createTableLayout} from './tableLayout.mjs';
+import {createTableColumnOrder} from './tableColumnOrder.mjs';
 
 /**
  * Owns keyed rows and stable geometry for a refreshing data table.
@@ -9,7 +10,7 @@ import {createTableLayout} from './tableLayout.mjs';
  * Only visible values, row order or schema changes cause table DOM updates;
  * sampling metadata outside the displayed cells does not invalidate the table.
  */
-export function createTableRenderer(table) {
+export function createTableRenderer(table, {orderKey=table.id,orderStore}={}) {
   const layout = createTableLayout(table);
   const rows = new Map();
   const body = table.tBodies[0];
@@ -20,8 +21,12 @@ export function createTableRenderer(table) {
     return node;
   };
   let schema = null, visible = null, appliedColumns = [];
+  let latest=null;
+  const order=createTableColumnOrder(table,{key:orderKey,store:orderStore,changed:()=>{if(latest)update(...latest);}});
 
   function update(columns, items, values, offset = 0) {
+    latest=[columns,items,values,offset];
+    columns=order.arrange(columns);
     const signature = JSON.stringify(columns.map(column => [column.key, column.label, column.width]));
     const projection = items.map((item, index) => ({
       key: String(item.id ?? item.uniqueId ?? item.seq ?? (index + offset)),
@@ -41,12 +46,13 @@ export function createTableRenderer(table) {
       table.tHead.replaceChildren(head);
       body.replaceChildren(); rows.clear();
       layout.apply(columns); schema = signature; appliedColumns = columns;
+      order.decorate(columns);
     }
     const wanted = new Set();
     projection.forEach(({key, cells}, index) => {
       wanted.add(key);
       let row = rows.get(key);
-      if (!row) { row = element('tr'); columns.forEach(() => row.append(element('td'))); rows.set(key, row); body.append(row); }
+      if (!row) { row = element('tr'); columns.forEach(column => {const cell=element('td');cell.dataset.columnKey=column.key;row.append(cell);}); rows.set(key, row); body.append(row); }
       columns.forEach((column, cellIndex) => {
         const cell = row.children[cellIndex];
         if (column.key === 'history' || column.key === 'detail') {
@@ -81,5 +87,5 @@ export function createTableRenderer(table) {
     visible = nextVisible;
     return true;
   }
-  return {update, layout, get columns() { return appliedColumns; }, rowFor: id => rows.get(String(id))};
+  return {update, layout, get columns() { return appliedColumns; }, get defaultColumns() { return latest?.[0] || []; }, rowFor: id => rows.get(String(id))};
 }
