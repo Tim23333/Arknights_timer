@@ -319,6 +319,7 @@ class TcpChannel:
     PLAN_UPLOAD_MAGIC = 0xFFFFFFFFFFFFFFFC
     PLAN_EXEC_MAGIC = 0xFFFFFFFFFFFFFFFB
     GUARDED_TXN_MAGIC = 0xFFFFFFFFFFFFFFFA
+    COORDINATED_EXEC_MAGIC = 0xFFFFFFFFFFFFFFF9
     MAX_REQUESTS = 8192
     MAX_REQUEST_SIZE = 4 * 1024 * 1024
     MAX_BATCH_BYTES = 64 * 1024 * 1024
@@ -327,6 +328,8 @@ class TcpChannel:
     TXN_KIND_DEREF = 1
     TXN_KIND_ARRAY_DEREF = 2
     TXN_KIND_ARRAY_PTR = 3
+    TXN_KIND_LIST_ITEMS = 4
+    TXN_REUSE_DATA = 256
 
     def __init__(self, mc: 'MemCore', read_timeout: float = 5.0, port: int = None):
         self.mc = mc
@@ -353,10 +356,12 @@ class TcpChannel:
         self._prefetch_ops = []
         self._prefetch_sizes = []
         self._prefetch_values = {}
+        self._prefetch_prefix = {}
         self._frame_plan: List[Tuple[int, int]] = []
         self._frame_plan_seen = set()
         self._frame_ops = []
         self._frame_op_indices = {}
+        self._frame_direct_requests = set()
         self._frame_pointer_sources = {}
         self._frame_pointer_values = []
         self._prefetch_active = False
@@ -367,6 +372,7 @@ class TcpChannel:
         self._guard_size = 0
         self._guard_attempts = 3
         self._device_guard = {}
+        self._pending_optional_capture = None
 
     @staticmethod
     def _new_frame_stats() -> dict:
@@ -591,10 +597,12 @@ class TcpChannel:
         上一帧值。稳定拓扑不再在 Windows 端重建依赖图。
         """
         self._prefetch_values = {}
+        self._prefetch_prefix = {}
         self._frame_plan = []
         self._frame_plan_seen = set()
         self._frame_ops = []
         self._frame_op_indices = {}
+        self._frame_direct_requests = set()
         self._frame_pointer_sources = {}
         self._frame_pointer_values = []
         self._prefetch_active = False
@@ -609,6 +617,7 @@ class TcpChannel:
         values, guard = self.execute_frame_plan(operations)
         self._device_guard = guard
         resolved = []
+        conflicts = set()
         for index, (op, data) in enumerate(zip(operations, values)):
             request = None
             if op[0] == 'direct':
@@ -619,14 +628,60 @@ class TcpChannel:
                 if source and 0 <= int(pointer_offset) <= len(source) - 8:
                     base = struct.unpack_from('<Q', source, int(pointer_offset))[0]
                     request = (base + int(addend), int(size))
+            elif op[0] == 'list_items':
+                _kind, ref, pointer_offset, count_offset, bound = op
+                source = values[int(ref)] if 0 <= int(ref) < index else None
+                if (source is not None and 0 <= pointer_offset <= len(source) - 8
+                        and 0 <= count_offset <= len(source) - 4):
+                    base = struct.unpack_from('<Q', source, pointer_offset)[0]
+                    count = struct.unpack_from('<i', source, count_offset)[0]
+                    if base and 0 < count <= bound // 8:
+                        request = (base + 0x20, count * 8)
             resolved.append(request)
-            if request is not None and data is not None:
+            if request is not None and data is not None and len(data) == request[1]:
+                previous = self._prefetch_prefix.get(request[0], b'')
+                overlap = min(len(previous), len(data))
+                if previous[:overlap] != data[:overlap]:
+                    conflicts.add(request[0])
                 self._prefetch_values[request] = data
+                # Only a complete current-transaction block can cover a
+                # shorter request at the identical base address. No cross-
+                # frame values, inferred ranges or partial reads are reused.
+                if len(data) == request[1]:
+                    previous = self._prefetch_prefix.get(request[0], b'')
+                    if len(data) > len(previous):
+                        self._prefetch_prefix[request[0]] = data
+        if conflicts:
+            self._device_guard['complete'] = False
+            self._capture_next_frame = True
+            self._prefetch_values = {key: value for key, value in self._prefetch_values.items()
+                                     if key[0] not in conflicts}
+            for address in conflicts:
+                self._prefetch_prefix.pop(address, None)
         self._prefetch_active = True
+        return True
+
+    def queue_optional_capture(self, requests, guard_address, accept):
+        """Queue one optional domain for the next resident capture only.
+
+        No values survive a round. Cold plans retain the standalone path.
+        The callback receives its own guard, never the core domain's guard.
+        """
+        if (not requests or not self._plan_uploaded or not self._prefetch_ops
+                or not self.sock or self.mode != 'srv'
+                or self.srv_version != self.PROTOCOL_VERSION
+                or guard_address != self._guard_addr or self._guard_size != 4):
+            return False
+        if getattr(self, '_pending_optional_capture', None) is not None:
+            raise RuntimeError('optional capture already queued')
+        operations = [('direct', address, size) for address, size in requests]
+        encoded, sizes = self._encode_operations(operations)
+        self._pending_optional_capture = (b''.join(encoded), sizes, accept)
         return True
 
     def end_frame_prefetch(self) -> None:
         """提交本帧实际访问的地址计划，供下一帧重新读取。"""
+        self._pending_optional_capture = None
         if self._capture_topology and self._frame_plan:
             self._prefetch_plan = list(self._frame_plan)
             self._prefetch_ops = list(self._frame_ops)
@@ -635,23 +690,28 @@ class TcpChannel:
             self._capture_topology = False
             self._capture_next_frame = False
         self._prefetch_values = {}
+        self._prefetch_prefix = {}
         self._frame_plan = []
         self._frame_plan_seen = set()
         self._frame_ops = []
         self._frame_op_indices = {}
+        self._frame_direct_requests = set()
         self._frame_pointer_sources = {}
         self._frame_pointer_values = []
         self._prefetch_active = False
 
     def clear_frame_prefetch(self) -> None:
+        self._pending_optional_capture = None
         self._prefetch_plan = []
         self._prefetch_ops = []
         self._prefetch_sizes = []
         self._prefetch_values = {}
+        self._prefetch_prefix = {}
         self._frame_plan = []
         self._frame_plan_seen = set()
         self._frame_ops = []
         self._frame_op_indices = {}
+        self._frame_direct_requests = set()
         self._frame_pointer_sources = {}
         self._frame_pointer_values = []
         self._prefetch_active = False
@@ -675,11 +735,19 @@ class TcpChannel:
         """返回最近一次设备端计划执行的起止帧与内部重试次数。"""
         return dict(self._device_guard)
 
-    def _remember_frame_request(self, request) -> int:
+    def has_frame_prefetch(self) -> bool:
+        """Whether this round has device-plan results (not a validity claim)."""
+        return self._prefetch_active
+
+    def _remember_frame_request(self, request, *, plan_direct=False) -> int:
         if not self._capture_topology:
             return -1
+        if plan_direct:
+            self._frame_direct_requests.add(request)
         known = self._frame_op_indices.get(request)
         if known is not None:
+            if plan_direct:
+                self._frame_ops[known] = ('direct', request[0], request[1])
             return known
         addr, size = request
         op = ('direct', addr, size)
@@ -688,7 +756,7 @@ class TcpChannel:
         values = self._frame_pointer_values
         lo = bisect.bisect_left(values, max(0, addr - 0x1000))
         hi = bisect.bisect_right(values, addr)
-        if hi > lo:
+        if hi > lo and not plan_direct:
             pointer = values[hi - 1]
             source_index, pointer_offset = self._frame_pointer_sources[pointer]
             op = ('deref', source_index, pointer_offset,
@@ -699,6 +767,81 @@ class TcpChannel:
         self._frame_plan_seen.add(request)
         self._frame_plan.append(request)
         return index
+
+    def bind_frame_dependency(self, request, source_request, source_data, *,
+                              pointer_offset=0, addend=0) -> bool:
+        """Bind an exact object pointer observed in this capture to a later read.
+
+        Unlike nearest-pointer inference, the caller supplies the actual pointer
+        slot and its current bytes. Only next-frame topology changes: no result
+        cache, guard or operation index is changed. Forward references fail shut.
+        Offsets are explicit caller-owned field offsets, never inferred from
+        neighbouring pointers. A complete source block is required.
+        """
+        if (not self._capture_topology or pointer_offset < 0 or addend < 0
+                or pointer_offset + 8 > source_request[1]):
+            return False
+        source = self._frame_op_indices.get(source_request)
+        target = self._frame_op_indices.get(request)
+        if source is None or target is None or source >= target:
+            return False
+        if not source_data or len(source_data) != source_request[1]:
+            return False
+        pointer = struct.unpack_from('<Q', source_data, pointer_offset)[0]
+        if not pointer or pointer + addend != request[0]:
+            return False
+        self._frame_ops[target] = ('deref', source, pointer_offset, addend, request[1])
+        return True
+
+    def bind_counted_list(self, request, source_request, source_data, *,
+                          pointer_offset, count_offset, max_count) -> bool:
+        """Plan-only IL2CPP pointer-array expansion with a caller-owned bound.
+
+        Uses the same captured header for pointer AND count. The device checks
+        array capacity; consumers retain their original object/identity guards.
+        Does not cache misses or change current-round acceptance.
+        """
+        if (not self._capture_topology or not 0 < max_count <= self.MAX_REQUEST_SIZE // 8
+                or min(pointer_offset, count_offset) < 0
+                or pointer_offset + 8 > source_request[1]
+                or count_offset + 4 > source_request[1]
+                or source_data is None or len(source_data) != source_request[1]):
+            return False
+        source = self._frame_op_indices.get(source_request)
+        target = self._frame_op_indices.get(request)
+        if (source is None or target is None or source >= target
+                or request in self._frame_direct_requests):
+            return False
+        pointer = struct.unpack_from('<Q', source_data, pointer_offset)[0]
+        count = struct.unpack_from('<i', source_data, count_offset)[0]
+        if (not pointer or not 0 < count <= max_count
+                or request != (pointer + 0x20, count * 8)):
+            return False
+        self._frame_ops[target] = ('list_items', source, pointer_offset,
+                                   count_offset, max_count * 8)
+        return True
+
+    def _remember_batch_results(self, requests, results, *, plan_direct=False):
+        """Resolve exact same-batch pointer edges after preceding bytes arrive.
+
+        Planning only: returned bytes and frame acceptance are unchanged.
+        No nearest-pointer search here; only backward, exact object addresses.
+        Explicit direct calls retain their original addressing semantics.
+        """
+        if not self._capture_topology:
+            return
+        complete_sources = set()
+        for request, data in zip(requests, results):
+            target = self._frame_op_indices.get(request)
+            source = self._frame_pointer_sources.get(request[0])
+            if (not plan_direct and request not in self._frame_direct_requests
+                    and target is not None and source is not None
+                    and source[0] in complete_sources
+                    and source[0] < target and self._frame_ops[target][0] == 'direct'):
+                self._frame_ops[target] = ('deref', source[0], source[1], 0, request[1])
+            self._remember_frame_result(request, data)
+            if target is not None and data is not None and len(data) == request[1]:
+                complete_sources.add(target)
 
     def _remember_frame_result(self, request, data) -> None:
         if not self._capture_topology:
@@ -719,17 +862,27 @@ class TcpChannel:
 
     def batch_read(self, requests: List[Tuple[int, int]], *,
                    force_live: bool = False,
-                   remember: bool = True) -> List[Optional[bytes]]:
-        """批量读取 [(addr, size), ...]; 返回与请求等长的数据列表 (短读/失败为 None)"""
+                   remember: bool = True,
+                   plan_direct: bool = False) -> List[Optional[bytes]]:
+        """批量读取；plan_direct 禁止以邻近指针猜测请求的地址依赖。
+
+        只影响下轮计划寻址，不缓存值或跳过帧保护。调用方仍每轮从当前
+        父对象解析真实请求地址；地址变化未命中时补读并使本帧失效。
+        默认保留既有调用的拓扑策略，显式请求不应依赖无关动态指针。
+        """
         normalized = [(int(addr), int(size)) for addr, size in requests]
         if remember and self._capture_topology:
             for request in normalized:
-                self._remember_frame_request(request)
+                self._remember_frame_request(request, plan_direct=plan_direct)
         if self._prefetch_active and not force_live:
             out: List[Optional[bytes]] = [None] * len(normalized)
             missing, missing_indices = [], []
             for index, request in enumerate(normalized):
                 data = self._prefetch_values.get(request)
+                if request not in self._prefetch_values:
+                    block = self._prefetch_prefix.get(request[0])
+                    if block is not None and 0 < request[1] <= len(block):
+                        data = block[:request[1]]
                 if data is None:
                     missing_indices.append(index)
                     missing.append(request)
@@ -741,8 +894,7 @@ class TcpChannel:
                 self.read_diagnostics.record('core.plan_miss', missing)
             if not missing:
                 if remember:
-                    for request, data in zip(normalized, out):
-                        self._remember_frame_result(request, data)
+                    self._remember_batch_results(normalized, out, plan_direct=plan_direct)
                 return out
             fetched = self._batch_read_live(missing)
             if self.read_diagnostics is not None:
@@ -754,16 +906,14 @@ class TcpChannel:
             for index, data in zip(missing_indices, fetched):
                 out[index] = data
             if remember and self._capture_topology:
-                for request, data in zip(normalized, out):
-                    self._remember_frame_result(request, data)
+                self._remember_batch_results(normalized, out, plan_direct=plan_direct)
             return out
         if self.read_diagnostics is not None:
             self.read_diagnostics.record(
                 'core.force_live' if force_live else 'core.unplanned', normalized)
         out = self._batch_read_live(normalized)
         if remember and self._capture_topology:
-            for request, data in zip(normalized, out):
-                self._remember_frame_result(request, data)
+            self._remember_batch_results(normalized, out, plan_direct=plan_direct)
         return out
 
     def _batch_read_live(self, requests) -> List[Optional[bytes]]:
@@ -783,24 +933,26 @@ class TcpChannel:
             requests, results, (time.perf_counter() - started) * 1000.0)
         return results
 
-    def _read_packed_response(self, requests) -> List[Optional[bytes]]:
+    def _read_packed_response(self, requests, *, variable_sizes=()) -> List[Optional[bytes]]:
         (count,) = struct.unpack('<Q', self._read_exact(8))
         if count != len(requests):
             raise IOError(f"memsrv 合并响应数量错误: {count} != {len(requests)}")
         raw_lengths = self._read_exact(count * 8)
         lengths = struct.unpack('<%dq' % count, raw_lengths)
+        if any(got > int(request[-1]) for request, got in zip(requests, lengths)):
+            raise IOError('memsrv response exceeds declared size')
         payload_size = sum(length for length in lengths if length > 0)
         payload = self._read_exact(payload_size)
         out: List[Optional[bytes]] = []
         offset = 0
-        for request, got in zip(requests, lengths):
+        for index, (request, got) in enumerate(zip(requests, lengths)):
             size = int(request[-1])
             if got <= 0:
-                out.append(None)
+                out.append(b'' if got == 0 and index in variable_sizes else None)
                 continue
             data = payload[offset:offset + got]
             offset += got
-            out.append(data if got >= size else None)
+            out.append(data if got == size or index in variable_sizes else None)
         return out
 
     def _batch_srv(self, requests: List[Tuple[int, int]]) -> List[Optional[bytes]]:
@@ -840,7 +992,8 @@ class TcpChannel:
                                       len(operations)) + b''.join(encoded)
                 self.sock.sendall(payload)
                 results = self._read_packed_response(
-                    [(0, size) for size in sizes])
+                    [(0, size) for size in sizes], variable_sizes={
+                        i for i, op in enumerate(operations) if op[0] == 'list_items'})
             except Exception:
                 self.close()
                 raise
@@ -895,7 +1048,8 @@ class TcpChannel:
                 attempts, guard_start, guard_end = struct.unpack(
                     '<QQQ', self._read_exact(24))
                 results = self._read_packed_response(
-                    [(0, size) for size in sizes])
+                    [(0, size) for size in sizes], variable_sizes={
+                        i for i, op in enumerate(operations) if op[0] == 'list_items'})
             except Exception:
                 self.close()
                 raise
@@ -922,7 +1076,7 @@ class TcpChannel:
         }
 
     @staticmethod
-    def _encode_operations(operations):
+    def _encode_operations(operations, *, reuse_data=False):
         """编码设备侧依赖读取操作，返回 (二进制记录, 结果尺寸)。"""
         if len(operations) > TcpChannel.MAX_REQUESTS:
             raise ValueError(
@@ -978,6 +1132,18 @@ class TcpChannel:
                     '<IIqqQ', TcpChannel.TXN_KIND_ARRAY_DEREF, ref,
                     object_addend, packed_offsets, size))
                 sizes.append(size)
+            elif op[0] == 'list_items':
+                _kind, ref, pointer_offset, count_offset, bound = op
+                ref, bound = int(ref), int(bound)
+                if not 0 <= ref < index:
+                    raise ValueError('list_items must reference a preceding result')
+                TcpChannel._validate_operation_size(bound)
+                if bound % 8:
+                    raise ValueError('list_items bound must contain whole pointers')
+                offsets = TcpChannel._pack_array_offsets(int(pointer_offset), int(count_offset))
+                encoded.append(struct.pack('<IIqqQ', TcpChannel.TXN_KIND_LIST_ITEMS,
+                                           ref, 0x20, offsets, bound))
+                sizes.append(bound)
             elif op[0] == 'array_ptr':
                 _kind, ref, array_pointer_offset, index_offset = op
                 ref = int(ref)
@@ -991,6 +1157,13 @@ class TcpChannel:
                 sizes.append(8)
             else:
                 raise ValueError(f'未知事务操作: {op[0]}')
+        if reuse_data:
+            # Resident data capture only. Explicit transactions (including
+            # identity rereads) and array_ptr validation remain fresh reads.
+            encoded = [struct.pack('<I', struct.unpack_from('<I', raw)[0]
+                                   | TcpChannel.TXN_REUSE_DATA) + raw[4:]
+                       if op[0] in ('direct', 'deref', 'list_items') else raw
+                       for op, raw in zip(operations, encoded)]
         if sum(sizes) > TcpChannel.MAX_BATCH_BYTES:
             raise ValueError(
                 f'事务总读取量不能超过 {TcpChannel.MAX_BATCH_BYTES}')
@@ -1020,7 +1193,7 @@ class TcpChannel:
         """把稳定帧的依赖读取拓扑上传到设备并常驻。"""
         if not operations:
             raise ValueError('设备帧计划不能为空')
-        encoded, sizes = self._encode_operations(operations)
+        encoded, sizes = self._encode_operations(operations, reuse_data=True)
         with self._lock:
             if not self.sock:
                 self.open()
@@ -1050,27 +1223,50 @@ class TcpChannel:
             raise RuntimeError('设备帧计划尺寸缓存与操作数量不一致')
         started = time.perf_counter()
         results = None
+        pending = getattr(self, '_pending_optional_capture', None)
+        self._pending_optional_capture = None
         with self._lock:
             if not self.sock:
                 self.open()
             if self.mode != 'srv' or self.srv_version != self.PROTOCOL_VERSION:
                 raise RuntimeError('常驻帧计划要求 memsrv v5')
             try:
-                self.sock.sendall(struct.pack('<Q', self.PLAN_EXEC_MAGIC))
+                if pending is None:
+                    payload = struct.pack('<Q', self.PLAN_EXEC_MAGIC)
+                else:
+                    encoded, optional_sizes, accept = pending
+                    payload = struct.pack('<QQ', self.COORDINATED_EXEC_MAGIC,
+                                          len(optional_sizes)) + encoded
+                self.sock.sendall(payload)
                 attempts, guard_start, guard_end = struct.unpack(
                     '<QQQ', self._read_exact(24))
                 results = self._read_packed_response(
-                    [(0, size) for size in sizes])
+                    [(0, size) for size in sizes], variable_sizes={
+                        i for i, op in enumerate(operations) if op[0] == 'list_items'})
+                if pending is not None:
+                    optional_meta = struct.unpack('<QQQ', self._read_exact(24))
+                    optional_values = self._read_packed_response(
+                        [(0, size) for size in optional_sizes])
+                    accept(optional_values, self._make_guard_result(
+                        *optional_meta, guarded=True))
             except Exception:
                 self.close()
                 raise
         direct_requests = [(0, size) for size in sizes]
+        recorded_results = results
+        if pending is not None:
+            direct_requests += [(0, size) for size in optional_sizes]
+            recorded_results = results + optional_values
         self._record_batch_stats(
-            direct_requests, results,
+            direct_requests, recorded_results,
             (time.perf_counter() - started) * 1000.0)
         guarded = bool(self._guard_addr and self._guard_size in (4, 8))
         guard = self._make_guard_result(
             attempts, guard_start, guard_end, guarded=guarded)
+        if self.read_diagnostics is not None:
+            self.read_diagnostics.transaction(
+                ('transport.coordinated_exec' if pending is not None
+                 else 'transport.plan_exec'), attempts, guard_start != guard_end)
         return results, guard
 
     __del__ = close
@@ -1334,6 +1530,9 @@ class MemCore:
         rw = sorted([(s, e) for s, e, p, n in self.regions if 'rw' in p])
         self._rw_starts = [s for s, e in rw]
         self._rw_ends = [e for s, e in rw]
+        # Publish a complete pair for vector consumers; scalar is_ptr is
+        # unchanged. The pair contains lists, not a cached numeric index.
+        self._rw_pointer_index = (self._rw_starts, self._rw_ends)
 
     def is_ptr(self, v: int) -> bool:
         """值是否落在某个 rw 内存区域内"""

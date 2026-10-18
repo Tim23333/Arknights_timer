@@ -130,6 +130,47 @@ def _u64(b, o):
     return struct.unpack_from('<Q', b, o)[0]
 
 
+def _u64_array(data, count):
+    """Decode a caller-bounded current array; short reads still raise.
+
+    No pointer filtering or cached values here. Callers keep their original
+    count bounds and MemCore.is_ptr checks, including order and duplicates.
+    """
+    return struct.unpack_from(f'<{count}Q', data)
+
+
+def _filter_pointer_array(data, count, mc):
+    """Filter a current bounded array, preserving scalar order and duplicates.
+
+    Construct the region index per call: never retain an index across maps
+    reloads. Small lists and custom validators retain the original path.
+    NumPy is already optional/bundled for scanning; it adds no new dependency.
+    """
+    pair = getattr(mc, '_rw_pointer_index', None)
+    if (np is not None and count >= 256 and len(data) >= count * 8
+            and pair is not None
+            and pair[0] is mc._rw_starts and pair[1] is mc._rw_ends
+            and getattr(mc.is_ptr, '__func__', None) is MemCore.is_ptr):
+        starts, ends = pair
+        try:
+            if not starts:
+                return []
+            sa = np.asarray(starts, dtype=np.uint64)
+            ea = np.asarray(ends, dtype=np.uint64)
+            values = np.frombuffer(data, dtype='<u8', count=count)
+            indices = np.searchsorted(sa, values, side='right') - 1
+            valid = ((values >= 0x10000) & (indices >= 0)
+                     & (values < ea[np.maximum(indices, 0)]))
+            result = values[valid].tolist()
+            if starts is mc._rw_starts and ends is mc._rw_ends:
+                return result
+        except (ValueError, TypeError, OverflowError, IndexError):
+            # Unsupported map representation: use the unchanged validator,
+            # not a guessed mask. Short reads still fail in struct below.
+            pass
+    return [p for p in _u64_array(data, count) if mc.is_ptr(p)]
+
+
 def _i32(b, o):
     return struct.unpack_from('<i', b, o)[0]
 
@@ -3121,21 +3162,41 @@ class EnemyReader:
             (runtime.get('status_timers') or {}).items()
         }
 
+    def _capture_pointer_binder(self):
+        """Expose planning-only binding on the core capture path, never details."""
+        if (getattr(self._detail_context, 'active', False)
+                or not getattr(self._chan, '_capture_topology', True)):
+            return None
+        bind = getattr(self._chan, 'bind_frame_dependency', None)
+        return bind if callable(bind) else None
+
     def _resolve_animation_states_chan(self, actions):
         """从 Spine/Mesh 两种 CurrentAniState 候选中解析当前动画键。"""
         ptrs = []
+        bind = self._capture_pointer_binder()
         for action in actions.values():
             for candidate in action.get('animation_candidates', ()):
                 ptr = candidate.get('key_ptr', 0)
                 speed = candidate.get('speed')
+                source = candidate.get('_source_request')
+                raw = candidate.get('_source_data')
+                capture_name = (bind is not None and source is not None
+                                and raw is not None and len(raw) == source[1]
+                                and len(raw) >= 8 and _u64(raw, 0) == ptr)
                 if (self.mc.is_ptr(ptr) and isinstance(speed, (int, float))
                         and math.isfinite(speed) and abs(speed) <= 100
-                        and ptr not in self._animation_name_cache):
+                        and (ptr not in self._animation_name_cache or capture_name)):
                     ptrs.append(ptr)
         ptrs = list(dict.fromkeys(ptrs))
         if ptrs:
             for ptr, data in zip(ptrs, self._detail_batch_read([(ptr, 0x100)
                                                                  for ptr in ptrs])):
+                # A cached name still needs its dynamic edge during recapture:
+                # otherwise the new plan forgets this slot before it changes.
+                # Preserve the upstream immutable-name cache semantics; these
+                # extra reads build topology, not a new cache lifetime policy.
+                if ptr in self._animation_name_cache:
+                    continue
                 value = ''
                 if data and len(data) >= gs.Il2CppString.CHARS:
                     count = _i32(data, gs.Il2CppString.LENGTH)
@@ -3147,6 +3208,13 @@ class EnemyReader:
                         except UnicodeDecodeError:
                             value = ''
                 self._animation_name_cache[ptr] = value
+        if bind:
+            for action in actions.values():
+                for candidate in action.get('animation_candidates', ()):
+                    source = candidate.get('_source_request')
+                    if source is not None:
+                        bind((candidate.get('key_ptr', 0), 0x100), source,
+                             candidate.get('_source_data'))
         for action in actions.values():
             chosen = None
             for candidate in action.get('animation_candidates', ()):
@@ -3458,6 +3526,9 @@ class EnemyReader:
         # 同一批核对 Skeleton->state、state->tracks、tracks->items，读取当前
         # track 指针，并投机读取上一帧 track。稳态由原来的三次往返压成一次；
         # 只有动画切换导致 track 指针变化时才补读新对象。
+        prefetch_active = getattr(self._chan, 'has_frame_prefetch', None)
+        use_current_track = (not getattr(self._detail_context, 'active', False)
+                             and callable(prefetch_active) and prefetch_active())
         verify_reqs, verify_keys = [], []
         for owner, (skeleton, layout) in valid.items():
             verify_reqs.extend((
@@ -3469,7 +3540,13 @@ class EnemyReader:
             verify_keys.extend(((owner, 'skeleton'), (owner, 'state'),
                                 (owner, 'tracks'), (owner, 'track_ptr')))
             cached_track = layout.get('track', 0)
-            if self.mc.is_ptr(cached_track):
+            # With a resident plan the current pointer's target is already in
+            # this round's results. Request it after decoding items[0], rather
+            # than speculatively reading an obsolete cached TrackEntry and
+            # invalidating an otherwise complete frame. Cold/detail reads keep
+            # their original batching; a genuinely missing current target still
+            # takes the existing supplement + invalidation path below.
+            if self.mc.is_ptr(cached_track) and not use_current_track:
                 verify_reqs.append((cached_track, gs.SpineTrackEntryFields.READ_SIZE))
                 verify_keys.append((owner, 'cached_track'))
         verified = {owner: {} for owner in valid}
@@ -3486,6 +3563,7 @@ class EnemyReader:
                     - gs.SkeletonAnimationFields.STATE)[0]
                 if state == layout['state'] and math.isfinite(scale):
                     verified[owner]['skeleton_scale'] = scale
+                    verified[owner]['skeleton_data'] = data
             elif kind == 'state':
                 tracks = _u64(data, 0)
                 scale = struct.unpack_from(
@@ -3494,15 +3572,18 @@ class EnemyReader:
                     - gs.SpineAnimationStateFields.TRACKS)[0]
                 if tracks == layout['tracks'] and math.isfinite(scale):
                     verified[owner]['state_scale'] = scale
+                    verified[owner]['state_data'] = data
             elif kind == 'tracks':
                 items = _u64(data, gs.SpineExposedListFields.ITEMS)
                 count = _i32(data, gs.SpineExposedListFields.COUNT)
                 if items == layout['items'] and 0 < count <= 16:
                     verified[owner]['items_ok'] = True
+                    verified[owner]['tracks_data'] = data
             elif kind == 'track_ptr':
                 track = _u64(data, 0)
                 if self.mc.is_ptr(track):
                     verified[owner]['track'] = track
+                    verified[owner]['track_pointer_data'] = data
             else:
                 verified[owner]['cached_track_data'] = data
 
@@ -3528,6 +3609,31 @@ class EnemyReader:
                     for owner in missing_track_owners])):
             if data:
                 track_data[owner] = data
+
+        # Bind verified edges with their declared field offsets. Generic exact-
+        # address inference cannot describe state+TRACKS or array+ITEMS. Only
+        # next-round addressing changes; current validation and missing-read
+        # rejection remain unchanged. Detail reads never mutate the core plan.
+        bind = getattr(self._chan, 'bind_frame_dependency', None)
+        if callable(bind) and not getattr(self._detail_context, 'active', False):
+            for owner in track_data:
+                skeleton = valid[owner][0]
+                layout = valid[owner][1]
+                row = verified[owner]
+                bind((layout['state'] + gs.SpineAnimationStateFields.TRACKS, 0x58),
+                     (skeleton + gs.SkeletonAnimationFields.STATE, 0x40),
+                     row.get('skeleton_data'),
+                     addend=gs.SpineAnimationStateFields.TRACKS)
+                bind((layout['tracks'], 0x20),
+                     (layout['state'] + gs.SpineAnimationStateFields.TRACKS, 0x58),
+                     row.get('state_data'))
+                bind((layout['items'] + gs.Il2CppArray.ITEMS, 8),
+                     (layout['tracks'], 0x20), row.get('tracks_data'),
+                     pointer_offset=gs.SpineExposedListFields.ITEMS,
+                     addend=gs.Il2CppArray.ITEMS)
+                bind((track_ptrs[owner], gs.SpineTrackEntryFields.READ_SIZE),
+                     (layout['items'] + gs.Il2CppArray.ITEMS, 8),
+                     verified[owner].get('track_pointer_data'))
 
         parsed = {}
         next_ptrs = {}
@@ -3595,8 +3701,8 @@ class EnemyReader:
     def _refresh_status_timers_chan(self, targets, snapshots, tick):
         """低开销读取维持异常状态的 Buff 剩余时间。
 
-        只在进入异常态或缓存失效时遍历 BuffContainer；稳定期间直接读取已缓存
-        Buff 的计时器和 mask，避免每个高速轮询都重新展开整条容器链。
+        每轮确认 BuffContainer 当前链及计时器、mask。主计划预取期间先解析
+        当前父节点再访问子节点；冷启动和详情读取保留缓存地址的合批探测。
         ``targets`` 元素为 ``(addr, container, state, flag_bits, combo_bits)``，
         后两项包含实体当前全部生效状态，而非只挑状态机对应的少数异常。
         """
@@ -3636,11 +3742,21 @@ class EnemyReader:
         reqs, tags = [], []
         buff_read_size = (gs.BuffFields.ABNORMAL_COMBO_MASK + 8
                           - gs.BuffFields.M_LIFE_TIME)
+        prefetch_active = getattr(self._chan, 'has_frame_prefetch', None)
+        use_current_buffs = (not getattr(self._detail_context, 'active', False)
+                             and callable(prefetch_active) and prefetch_active())
         for addr, container, *_rest in probes:
             cache = self._status_timer_cache[addr]
             cache['last_probe'] = tick
             reqs.append((container, 0x30))
             tags.append((addr, 'container'))
+            # Resident results already contain this round's chain. Decode its
+            # current parents below before requesting children: stale cached
+            # intermediate pointers/counts would otherwise cause needless live
+            # supplements. Real misses still invalidate the frame in batch_read.
+            # Cold and detail paths retain the original speculative batching.
+            if use_current_buffs:
+                continue
             if cache.get('signature', (None,))[0] != container:
                 continue
             double = cache.get('double', 0)
@@ -3656,7 +3772,10 @@ class EnemyReader:
             if self.mc.is_ptr(items) and 0 < count <= 512:
                 reqs.append((items + gs.Il2CppArray.ITEMS, count * 0x10))
                 tags.append((addr, 'body'))
-            for buff in cache.get('buffs', ()):
+            # 主计划已有当前帧结果时，先解析当前列表再取 Buff；不要请求
+            # 已被替换的缓存地址而触发无用补读。下方当前 Buff 未命中仍会
+            # 实读并使帧保护失败。冷启动/详情通道保持原来的合批行为。
+            for buff in (() if use_current_buffs else cache.get('buffs', ())):
                 if self.mc.is_ptr(buff):
                     reqs.append((buff + gs.BuffFields.M_LIFE_TIME,
                                  buff_read_size))
@@ -3754,6 +3873,32 @@ class EnemyReader:
                     (buff + gs.BuffFields.M_LIFE_TIME, buff_read_size)
                     for _addr, buff in missing_reqs])):
             block_values[(addr, buff)] = data
+        bind = self._capture_pointer_binder()
+        if bind:
+            # Exact declared parent slots replace nearest-pointer guesses.
+            # Only the next plan changes; missing/short current reads still fail.
+            for addr, container, *_rest in probes:
+                if addr not in heads:
+                    continue
+                double, listing = doubles[addr], lists[addr]
+                items, count = heads[addr]
+                bind((double, 0x28), (container, 0x30),
+                     values.get((addr, 'container')),
+                     pointer_offset=gs.BuffContainerFields.M_BUFFS)
+                bind((listing, 0x20), (double, 0x28), double_data.get(addr),
+                     pointer_offset=gs.DoubleBufferedListFields.M_INTERNAL_LIST)
+                if count:
+                    body_request = (items + gs.Il2CppArray.ITEMS, count * 0x10)
+                    bind(body_request, (listing, 0x20), list_data.get(addr),
+                         pointer_offset=gs.ListInternal.ITEMS, addend=gs.Il2CppArray.ITEMS)
+                    body = body_data.get(addr)
+                    if body is not None and len(body) == count * 0x10:
+                        for index in range(count):
+                            buff = _u64(body, index * 0x10)
+                            if self.mc.is_ptr(buff):
+                                bind((buff + gs.BuffFields.M_LIFE_TIME, buff_read_size),
+                                     body_request, body, pointer_offset=index * 0x10,
+                                     addend=gs.BuffFields.M_LIFE_TIME)
         matches = {addr: {} for addr in active}
         for addr, _state, flag_bits, combo_bits, buff in rows:
             data = block_values.get((addr, buff))
@@ -4596,7 +4741,8 @@ class EnemyReader:
                                  gs.BuffFields.IS_VALID - gs.BuffFields.IS_FINISHED + 1))
                     keys.append((ep, f'custom_status:{idx}'))
 
-        for (ep, kind), data in zip(keys, self._chan.batch_read(reqs) if reqs else []):
+        capture_bindings = self._capture_pointer_binder() is not None
+        for request, (ep, kind), data in zip(reqs, keys, self._chan.batch_read(reqs) if reqs else []):
             if not data:
                 continue
             cur = runtime[ep]
@@ -4666,6 +4812,8 @@ class EnemyReader:
                     'key_ptr': _u64(data, 0),
                     'speed': speed,
                     'backend': 'Spine' if kind == 'anim_spine' else 'Mesh',
+                    **({'_source_request': request, '_source_data': data}
+                       if capture_bindings else {}),
                 })
             elif kind.startswith('custom_value:'):
                 idx = int(kind.split(':', 1)[1])
@@ -5363,6 +5511,30 @@ class EnemyReader:
             unit_ptrs = [] if unit_valid else list(self._uf_ptrs)
             array_data = self._chan.batch_read(array_reqs) if array_reqs else []
             array_data = self._refill_failed_reads(array_reqs, array_data)
+            bind = self._capture_pointer_binder()
+            if bind:
+                for request, (kind, _count) in zip(array_reqs, array_kinds):
+                    if kind == 'scheduler':
+                        bind(request, (self.list_addr, 0x20), d,
+                             pointer_offset=gs.ListInternal.ITEMS,
+                             addend=gs.Il2CppArray.ITEMS)
+                    else:
+                        bind(request, (self.unit_enemies_addr, 0x28), ud,
+                             pointer_offset=gs.UnorderedArrayFields.ITEMS,
+                             addend=gs.Il2CppArray.ITEMS)
+                # Same header supplies both pointer and current count. Keep
+                # the legacy binder as fallback for non-resident/test channels.
+                bind_list = getattr(self._chan, 'bind_counted_list', None)
+                if callable(bind_list):
+                    for request, (kind, _count) in zip(array_reqs, array_kinds):
+                        if kind == 'scheduler':
+                            bind_list(request, (self.list_addr, 0x20), d,
+                                      pointer_offset=gs.ListInternal.ITEMS,
+                                      count_offset=gs.ListInternal.SIZE, max_count=300)
+                        else:
+                            bind_list(request, (self.unit_enemies_addr, 0x28), ud,
+                                      pointer_offset=gs.UnorderedArrayFields.ITEMS,
+                                      count_offset=gs.UnorderedArrayFields.COUNT, max_count=1000)
             for (kind, count), arr in zip(array_kinds, array_data):
                 if not arr:
                     if kind == 'scheduler':
@@ -5370,8 +5542,7 @@ class EnemyReader:
                         return self._on_stale(snap)
                     unit_ptrs = list(self._uf_ptrs)
                     continue
-                values = [p for p in (_u64(arr, i * 8) for i in range(count))
-                          if self.mc.is_ptr(p)]
+                values = _filter_pointer_array(arr, count, self.mc)
                 if kind == 'scheduler':
                     scheduler_ptrs = values
                 else:
@@ -5666,10 +5837,15 @@ class EnemyReader:
                     layout['items'] + gs.Il2CppArray.ITEMS,
                     layout['count'] * 8))
                 frame_tags.append(('body', ep, kind))
-        # 上帧已验证的技能、Trigger 和计时器地址也并入同一批。当前技能块
-        # 仍会重新给出真实指针；不一致时下面立即补读新地址。
+        # 已有本帧设备计划结果时，先解析当前容器/技能块，再按实际指针取
+        # Trigger 和计时器。提前请求旧拓扑会对已替换对象产生无用补读，
+        # 并使整个帧计划失效；当前对象未命中仍走原 batch_read 补读与守卫。
+        # 冷启动没有计划结果时继续合批，避免增加设备往返。
+        prefetch_active = getattr(self._chan, 'has_frame_prefetch', None)
+        use_current_skills = callable(prefetch_active) and prefetch_active()
         cached_skills = list(dict.fromkeys(
-            skill for ep in eps for skill in self._skill_ptrs.get(ep, ())
+            skill for ep in (() if use_current_skills else eps)
+            for skill in self._skill_ptrs.get(ep, ())
             if self.mc.is_ptr(skill)))
         for skill in cached_skills:
             frame_reqs.append((skill, gs.EnemySkillFields.READ_SIZE))

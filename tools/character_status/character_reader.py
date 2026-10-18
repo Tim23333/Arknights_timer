@@ -419,6 +419,13 @@ class CharacterReader:
         (body,) = self._batch([(items + gs.Il2CppArray.ITEMS, count * 8)])
         if not body:
             return None
+        if not getattr(self.core._detail_context, 'active', False):
+            bind = getattr(self._ensure_channel(), 'bind_counted_list', None)
+            if callable(bind):
+                bind((items + gs.Il2CppArray.ITEMS, count * 8),
+                     (self.characters_addr, 0x28), head,
+                     pointer_offset=gs.UnorderedArrayFields.ITEMS,
+                     count_offset=gs.UnorderedArrayFields.COUNT, max_count=256)
         ptrs = [p for p in (_u64(body, i * 8) for i in range(count))
                 if self.mc.is_ptr(p)]
         self._items, self._count, self.character_addrs = items, count, ptrs
