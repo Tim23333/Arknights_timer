@@ -259,6 +259,9 @@ def _enemy_basic(entity: Any, index: int) -> dict[str, Any]:
         "hp": getattr(entity, "hp", None),
         "maxHp": getattr(entity, "max_hp", None),
         "position": _safe(position),
+        "blockedPosition": {"x": getattr(entity, "blk_x", None), "y": getattr(entity, "blk_y", None)},
+        "spawnPosition": {"x": getattr(entity, "spawn_col", None), "y": getattr(entity, "spawn_row", None)},
+        "direction": getattr(entity, "direction", None),
         "action": _public_action("enemy", getattr(entity, "action", {})),
         "shield": getattr(entity, "shield", None),
         "abnormalStatus": _safe(entity.active_status_names() if hasattr(entity, "active_status_names")
@@ -270,11 +273,17 @@ def _enemy_basic(entity: Any, index: int) -> dict[str, Any]:
                             if getattr(entity, "precise_pos_valid", False) else None),
         "abnormalImmunes": _safe(getattr(entity, "abnormal_immunes", [])),
         "abnormalComboImmunes": _safe(getattr(entity, "abnormal_combo_immunes", [])),
+        "abnormalAntis": _safe(getattr(entity, "abnormal_antis", [])),
+        "abnormalFlags": _safe(getattr(entity, "abnormal_flags", [])),
+        "abnormalCombos": _safe(getattr(entity, "abnormal_combos", [])),
+        "statusTimers": _safe(getattr(entity, "status_timers", {})),
         "elementShield": getattr(entity, "es", None),
         "elementRemaining": _safe(getattr(entity, "ep_remaining", {})),
         "elementBreakRecovery": getattr(entity, "ep_break_recovery", None),
         "skills": _safe(getattr(entity, "skills", [])),
         "spawnOrder": getattr(entity, "spawn_order", None),
+        "spawnContext": {key: getattr(entity, key, None) for key in (
+            "wave_index", "fragment_index", "action_index", "spawn_index", "route_index")},
         "spawnEta": getattr(entity, "spawn_eta", None),
         "spawnCondition": getattr(entity, "spawn_condition", None),
         "spawnKind": getattr(entity, "spawn_kind", None),
@@ -290,6 +299,13 @@ def _character_basic(entity: Any, index: int) -> dict[str, Any]:
         "characterId": getattr(entity, "cid", ""),
         "name": getattr(entity, "name", ""),
         "kind": "token" if getattr(entity, "is_token", False) else "operator",
+        "identity": _safe({key: getattr(entity, key, None) for key in (
+            "unique_id", "tmpl_id", "alias", "name_en", "rarity", "potential_rank",
+            "favor_phase", "is_assist", "is_predefined", "is_hidden", "team_key",
+            "nation_id", "group_id", "team_id", "token_or_host_key", "token_or_host_uid")}),
+        "deployment": {key: getattr(entity, key, None) for key in ("deploy_cost_this_time", "card_uid")},
+        "finishReason": getattr(entity, "finish_reason", None),
+        "direction": getattr(entity, "direction", None) if getattr(entity, '_direction_read_ok', False) else None,
         "alive": bool(getattr(entity, "alive", True)),
         "position": {"row": getattr(entity, "grid_row", None), "col": getattr(entity, "grid_col", None),
                      "x": getattr(entity, "grid_col", None), "y": getattr(entity, "grid_row", None)},
@@ -305,10 +321,20 @@ def _character_basic(entity: Any, index: int) -> dict[str, Any]:
         "action": _public_action("character", getattr(entity, "action", {})),
         "attributes": _safe(getattr(entity, "attributes", {})),
         "abnormalStatus": _safe(entity.status_text() if hasattr(entity, "status_text") else []),
+        "abnormalFlags": _safe(getattr(entity, "abnormal_flags", [])),
+        "abnormalCombos": _safe(getattr(entity, "abnormal_combos", [])),
+        "abnormalImmunes": _safe(getattr(entity, "abnormal_immunes", [])),
+        "abnormalComboImmunes": _safe(getattr(entity, "abnormal_combo_immunes", [])),
+        "abnormalAntis": _safe(getattr(entity, "abnormal_antis", [])),
+        "elementRemaining": _safe(getattr(entity, "ep_remaining", {})),
+        "elementBreakRecovery": getattr(entity, "ep_break_recovery", None),
         "shield": getattr(entity, "shield", None), "elementShield": getattr(entity, "es", None),
         "damageByType": {label: getattr(entity, "damage_by_type", {}).get(index)
                          for index, label in ((1, "physical"), (2, "magical"), (3, "pure"), (5, "element"))},
         "elementOutputTotal": sum(getattr(entity, "output_element_damage", {}).values()),
+        "elementOutputByType": _safe(getattr(entity, "output_element_damage", {})),
+        "elementBreakCount": _safe(getattr(entity, "output_ep_break_count", {})),
+        "damageRange": {"min": getattr(entity, "damage_range_min", None), "max": getattr(entity, "damage_range_max", None)},
         "globalDamageSummary": getattr(entity, "global_total_damage", None),
         "unattributedDamage": getattr(entity, "unattributed_damage_total", None),
         "blockedVolume": getattr(entity, "blocked_total_volume", None),
@@ -331,9 +357,28 @@ def _detail(entity: Any, basic: dict[str, Any], *, primary_enemy: Any = None,
         "specialShield": _safe(getattr(entity, "special_shield", None)),
         "dynamicAbilities": _safe(getattr(entity, "dynamic_abilities", [])),
         "equipment": _safe(getattr(entity, "module_settings", [])),
+        "deckBuffBlackboard": _safe(getattr(entity, "deck_buff_blackboard", [])),
+        "specialShieldMask": _safe(getattr(entity, "special_shield_mask", None)),
+        "specialShieldSources": _safe(getattr(entity, "special_shield_sources", [])),
         "fieldStates": {**basic.get("fieldStates", {}),
                         **_safe(getattr(entity, "field_states", {}))},
     }
+    # The same immutable, locally extracted resource used by the Qt detail tab.
+    # Static table evidence must never borrow the current battle's source frame.
+    domain = 'enemy_detail' if 'enemyId' in basic else 'character_detail'
+    from tools.enemy_health import game_structs as gs
+    details['attributeDefinitions'] = [list(value) for value in gs.ATTRIBUTE_DEFS]
+    details['statusDefinitions'] = [list(value) for value in gs.ABNORMAL_FLAG_DEFS]
+    details['comboDefinitions'] = [list(value) for value in gs.ABNORMAL_COMBO_DEFS]
+    if policy is None or policy.enabled(domain + '.effectFrames'):
+        from ..effect_frames_ui import COLUMNS, enemy_frame_rows, character_frame_rows
+        rows = (enemy_frame_rows(basic.get('enemyId') or getattr(entity, 'eid', '')) if domain == 'enemy_detail'
+                else character_frame_rows(basic.get('characterId') or getattr(entity, 'cid', ''))
+                or character_frame_rows(getattr(entity, 'tmpl_id', '')))
+        details['effectFrames'] = {'columns': list(COLUMNS), 'rows': _safe(rows), 'source': 'local_static_table'}
+        details['fieldStates'][domain + '.effectFrames'] = {
+            'collectionState': 'static', 'sourceFrame': None,
+            'policyGeneration': policy.generation if policy else getattr(entity, 'policy_generation', 0)}
     if primary_enemy is not None and policy is not None:
         # Enemy detail has no independent skill reader: reuse only the primary
         # complete-frame skill sample, preserving that sample's provenance.
@@ -610,7 +655,12 @@ class WebSocketApi:
                     if spec.domain == topic:
                         for path in spec.paths:
                             payload.pop(path.split('.')[0], None)
-            payload["items"] = [project_snapshot(base_domain, _mask_unavailable(row), policy, layer)
+            # Native detail dialogs do not inherit main-table column visibility.
+            # Only the local detail view has this scope; external WS publish
+            # switches and normal WebUI tables keep their existing semantics.
+            base_layer = 'collect' if layer == 'display' and topic.endswith('_detail') else layer
+            payload["items"] = [project_snapshot(base_domain, row if masked else _mask_unavailable(
+                                    row, detail_domain=topic if topic.endswith('_detail') else None), policy, base_layer)
                                 for row in payload.get("items", [])]
             if domain != base_domain:
                 payload["items"] = [project_snapshot(domain, row, policy, layer)

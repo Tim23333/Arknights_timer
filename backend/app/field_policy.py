@@ -81,7 +81,11 @@ def _registry() -> dict[str, FieldSpec]:
         ('action_state', 'runtime', ('action.state_name', 'action.state_id'), '行为状态'),
         ('action_phase', 'runtime', ('action.name', 'action.phase', 'action.detail',
                                    'action.elapsed_frames', 'action.skill_name',
-                                   'action.ready_skills', 'action.clock_source'), '动作阶段'),
+                                   'action.ready_skills', 'action.clock_source',
+                                   'action.current_frame', 'action.animation_exact',
+                                   'action.animation_track_name', 'action.animation_key',
+                                   'action.animation_track_speed', 'action.animation_speed',
+                                   'action.animation_track_time', 'action.animation_loop'), '动作阶段'),
         ('remaining_time', 'runtime', ('action.remaining', 'action.remaining_frames',
                                      'action.remaining_kind'), '剩余帧/时间'),
         ('next_action', 'runtime', ('action.next_action', 'action.next_action_detail',
@@ -90,7 +94,8 @@ def _registry() -> dict[str, FieldSpec]:
                                   'action.next_action_rule_detail', 'action.next_action_rule_confidence',
                                   'action.next_action_rule_candidates'), '下一动作预测'),
         ('abnormal_status', 'runtime', ('abnormalStatus', 'abnormalFlags',
-                                       'abnormalCombos', 'statusTimers'), '异常状态'),
+                                       'abnormalCombos', 'statusTimers',
+                                       'statusDefinitions', 'comboDefinitions'), '异常状态'),
         ('shield', 'runtime', ('shield', 'specialShield'), '伤害护盾'),
         ('es', 'base', 'elementShield', '元素护盾'),
         ('skill', 'skills', 'skill', '技能'),
@@ -119,19 +124,21 @@ def _registry() -> dict[str, FieldSpec]:
         ('next_waypoint', 'pathing', 'pathing.nextWaypoint', '下一路点'),
         ('next_checkpoint', 'pathing', 'pathing.nextCheckpoint', '下一检查点'),
         ('checkpoint_countdown', 'pathing', 'pathing.checkpointCountdown', '检查点倒计时'),
-        ('immune_status', 'runtime', ('abnormalImmunes', 'abnormalComboImmunes'), '状态免疫'),
+        ('immune_status', 'runtime', ('abnormalImmunes', 'abnormalComboImmunes', 'abnormalAntis'), '状态免疫'),
         ('ep_sanity', 'runtime', 'elementRemaining.1', '神经损伤剩余'),
         ('ep_water', 'runtime', 'elementRemaining.2', '侵蚀损伤剩余'),
         ('ep_fire', 'runtime', 'elementRemaining.3', '灼燃损伤剩余'),
         ('ep_dark', 'runtime', 'elementRemaining.4', '凋亡损伤剩余'),
         ('ep_anger', 'runtime', 'elementRemaining.5', '狂躁损伤剩余'),
         ('ep_break', 'runtime', 'elementBreakRecovery', '元素爆发恢复'),
+        ('ep_capacity', 'runtime', 'elementRemaining.0', '运行时损伤条容量'),
+        ('coordinates_extra', 'base', ('blockedPosition', 'spawnPosition', 'direction'), '出生、阻挡位置与朝向'),
         ('life_status', 'base', ('lifecycle', 'alive'), '生存状态'),
         ('end_reason', 'roster', 'endReason', '离场原因'),
         ('finish_reason', 'roster', 'finishReason', '原始离场原因编号'),
         ('end_frame', 'roster', 'endFrame', '观测离场逻辑帧'),
         ('spawn_wait', 'roster', ('spawnEta', 'spawnCondition', 'spawnKind',
-                                'spawnSource', 'planned', 'spawnOrder'), '距离出场'),
+                                'spawnSource', 'planned', 'spawnOrder', 'spawnContext'), '距离出场'),
     ):
         dependencies = (('enemy.next_checkpoint', 'battle.gameTime')
                         if key == 'checkpoint_countdown' else ())
@@ -156,6 +163,19 @@ def _registry() -> dict[str, FieldSpec]:
         ('element_output_total', 'damage', 'elementOutputTotal', '元素损伤累计'),
         ('healing_total', 'damage', 'healingTotal', '累计治疗'),
         ('unattributed_damage', 'damage', 'unattributedDamage', '未归属伤害跟踪'),
+        ('identity', 'identity', 'identity', '完整身份信息'),
+        ('deployment', 'base', ('deployment', 'finishReason'), '部署、卡片及离场信息'),
+        ('immune_status', 'runtime', ('abnormalImmunes', 'abnormalComboImmunes', 'abnormalAntis'), '状态免疫'),
+        ('ep_sanity', 'runtime', 'elementRemaining.1', '神经损伤剩余'),
+        ('ep_water', 'runtime', 'elementRemaining.2', '侵蚀损伤剩余'),
+        ('ep_fire', 'runtime', 'elementRemaining.3', '灼燃损伤剩余'),
+        ('ep_dark', 'runtime', 'elementRemaining.4', '凋亡损伤剩余'),
+        ('ep_anger', 'runtime', 'elementRemaining.5', '狂躁损伤剩余'),
+        ('ep_capacity', 'runtime', 'elementRemaining.0', '运行时损伤条容量'),
+        ('ep_break', 'runtime', 'elementBreakRecovery', '元素爆发恢复'),
+        ('damage_range', 'damage', 'damageRange', '单次输出范围'),
+        ('element_output_by_type', 'damage', 'elementOutputByType', '分类型元素损伤输出'),
+        ('element_break_count', 'damage', 'elementBreakCount', '分类型元素爆发次数'),
     ):
         dependencies = {
             'alive': ('character.hp',),
@@ -214,7 +234,10 @@ def _registry() -> dict[str, FieldSpec]:
         for key in ('attributes', 'rawAttributes', 'buffs', 'globalBuffs', 'skills',
                     'talents', 'specialShield', 'dynamicAbilities', 'equipment',
                     'attackRange', 'effectFrames'):
-            add(domain, key, key, key, key)
+            paths = {'attributes': ('attributes', 'attributeDefinitions'),
+                     'equipment': ('equipment', 'deckBuffBlackboard'),
+                     'specialShield': ('specialShield', 'specialShieldMask', 'specialShieldSources')}.get(key, key)
+            add(domain, key, key, paths, key)
     for key in ('frame_guard', 'enemy_identity', 'character_identity', 'session'):
         add('internal', key, 'required', (), key, display=False, required=True, publish=False)
     add('character', 'direction', 'base', 'direction', '朝向')

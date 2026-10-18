@@ -287,9 +287,9 @@ class CharacterReader:
             return True
         if kind == 'state':
             return True  # Internal lifecycle/state validation cannot be disabled.
-        keys = {'shield': ('shield',), 'ep': (), 'epc': (),
+        keys = {'shield': ('shield',), 'ep': ('ep_capacity', 'ep_sanity', 'ep_water', 'ep_fire', 'ep_dark', 'ep_anger'), 'epc': ('ep_break',),
                 'flags': ('abnormal_status',), 'combos': ('abnormal_status',),
-                'immunes': (), 'antis': (), 'combo_immunes': ()}
+                'immunes': ('immune_status',), 'antis': ('immune_status',), 'combo_immunes': ('immune_status',)}
         return any(self._collect(key) for key in keys.get(kind, ()))
 
     def _stamp_fields(self, info, source_frame):
@@ -320,9 +320,15 @@ class CharacterReader:
                 required = {
                     'action_state': ('state_id',),
                     'abnormal_status': ('abnormal_flags', 'abnormal_combos'),
+                    'immune_status': ('abnormal_immunes', 'abnormal_antis', 'abnormal_combo_immunes'),
                     'shield': ('shield',),
-                }.get(key, ('state_id',))
+                    'ep_break': ('ep_break_recovery',),
+                }.get(key, ('ep_remaining',) if key.startswith('ep_') else ('state_id',))
                 success = all(item in runtime for item in required)
+                if key.startswith('ep_') and key != 'ep_break':
+                    index = {'ep_capacity': 0, 'ep_sanity': 1, 'ep_water': 2,
+                             'ep_fire': 3, 'ep_dark': 4, 'ep_anger': 5}[key]
+                    success = success and index in runtime.get('ep_remaining', {})
                 if key in ('action_phase', 'remaining_time', 'next_action'):
                     success = success and bool(info.action.get('phase'))
             elif spec.group == 'blocking':
@@ -332,6 +338,9 @@ class CharacterReader:
             elif spec.group == 'damage':
                 required = {'healing_total': 'damage_by_type',
                             'element_output_total': 'output_element_damage',
+                            'element_output_by_type': 'output_element_damage',
+                            'element_break_count': 'output_ep_break_count',
+                            'damage_range': 'damage_range_min',
                             'global_total_damage': 'global_total_damage'}.get(
                                 key, 'damage_by_type' if key.startswith('damage_')
                                 and key != 'damage_total' else key)
@@ -1348,13 +1357,13 @@ class CharacterReader:
         if self._capture_policy is None:
             return True
         if kind == 'elements':
-            return self._collect('element_output_total')
+            return self._collect('element_output_total') or self._collect('element_output_by_type')
         if kind == 'breaks':
-            return False  # Not a registered public sampling field.
+            return self._collect('element_break_count')
         return any(self._collect(key) for key in (
             'damage_total', 'global_total_damage', 'damage_physical',
             'damage_magical', 'damage_pure', 'damage_element', 'healing_total',
-            'unattributed_damage'))
+            'unattributed_damage', 'damage_range'))
 
     def _rebuild_damage_layout(self) -> None:
         """沿完整指针链重建 BattleLogger 统计布局。"""

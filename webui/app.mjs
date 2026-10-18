@@ -9,6 +9,7 @@ import {createSourceMeta} from './sourceMeta.mjs';
 import {clockChannelName, createClockPublisher} from './clockRelay.mjs';
 import {createDetailSelection} from './detailSelection.mjs';
 import {createStageGlobalRenderer} from './stageGlobal.mjs';
+import {createEntityDetails} from './entityDetails.mjs';
 
 const byId = id => document.getElementById(id);
 const ui = {data: {}, policy: {generation: 0, fields: []}, columns: {}, precision: {}, page: "overview", detail: null, busyPolicy: false, connected: false};
@@ -23,6 +24,7 @@ let policyRequest = null;
 const toasts = [];
 let drawerReturn = null;
 let drawerCleanup = null;
+let entityDetails = null;
 const detailSelection = createDetailSelection(
   target => command('detail', target), error => toast(error.message, 'error'));
 const stageGlobal = createStageGlobalRenderer(byId('module-global'), {table:updateTable, policy:() => ui.policy});
@@ -113,6 +115,59 @@ function closeDrawer() {
   ui.detail = null;
   detailSelection.replace(null);
   if (drawerReturn?.isConnected) drawerReturn.focus();
+}
+
+function openEntityDetails(kind, item, historical = false) {
+  if (!item) return toast('对象已更新，请重新选择', 'warn');
+  const basicMeta = ui.data[kind === 'enemy' ? 'enemies' : 'characters']?.meta || {};
+  const target = {kind, id:String(item.id), historical, sessionId:basicMeta.sessionId,
+    generation:ui.policy.generation, ...(historical ? {snapshot:structuredClone(item), basicMeta:structuredClone(basicMeta)} : {})};
+  // History is a frozen projected snapshot: never request a retired address.
+  openDrawer(item.name || (kind === 'enemy' ? '敌人详情' : '干员详情'), node('div'), historical ? null : target);
+  ui.detail = target;
+  const drawer = byId('overlay').querySelector('.drawer');
+  drawer.classList.add('entity-drawer');
+  const viewer = createEntityDetails(kind,target.id,byId('drawer-tabs'));
+  entityDetails = viewer;
+  byId('drawer-body').replaceChildren(viewer.element);
+  drawerCleanup = () => {viewer.destroy();entityDetails=null;drawer.classList.remove('entity-drawer');};
+  renderEntityDetails();
+}
+
+function renderEntityDetails() {
+  if (!ui.detail || !entityDetails) return;
+  const target = ui.detail;
+  const basicTopic = ui.data[target.kind === 'enemy' ? 'enemies' : 'characters'] || {};
+  const detailTopic = ui.data[target.kind + '_detail'] || {};
+  if (target.sessionId !== basicTopic.meta?.sessionId || target.generation !== ui.policy.generation) {
+    closeDrawer();
+    toast('战局或字段策略已更新，请重新打开详情', 'info');
+    return;
+  }
+  if (['source_stopped','session_changed','adb_changed'].includes(basicTopic.meta?.reason)) {
+    closeDrawer();return;
+  }
+  const current=basicTopic.items?.find(item=>String(item.id)===target.id);
+  if (!target.historical && basicTopic.meta?.collectionState==='current') {
+    if (current?.lifecycle==='departed' || (!current && target.lastBasic)) {
+      // A confirmed departure is not a transient failed sample. Freeze only
+      // the last accepted basic snapshot and release the live target once.
+      detailSelection.replace(null);target.historical=true;
+      target.snapshot=structuredClone(current || target.lastBasic);
+      target.basicMeta=structuredClone(current?basicTopic.meta:target.lastBasicMeta);
+    } else if(current) {
+      target.lastBasic=current;target.lastBasicMeta=basicTopic.meta;
+    }
+  }
+  const view = entityDetails.update({
+    basic:target.historical ? target.snapshot : current,
+    detail:target.historical ? null : detailTopic.items?.find(item => String(item.id) === target.id),
+    basicMeta:target.historical ? target.basicMeta : basicTopic.meta,
+    detailMeta:target.historical ? {} : detailTopic.meta,
+    policy:ui.policy,historical:target.historical,connected:ui.connected,
+  });
+  set('drawer-title',view.title + (target.historical ? ' · 历史快照' : ' · 详情'));
+  entityDetails.updateClock(ui.data.clock);
 }
 
 function rawBlock(title, data) {
@@ -347,6 +402,7 @@ function renderClock() {
   }
   set("clock-source", [clock.connected ? "已连接" : "未连接", clock.clockSource || "—", clock.message || ""].join(" · "));
   byId("clock-time").classList.toggle("source-unavailable", !ui.connected || !clock.connected);
+  entityDetails?.updateClock(clock);
   if (ui.page === 'system') set('timer-status', clock.message || (clock.connected ? '已连接' : '未连接'));
 }
 
@@ -730,6 +786,7 @@ async function startLive() {
       set('connection', ui.connected ? (ui.data.service?.adb?.serial || '本机后端已连接') : '后端连接断开');
       set('nav-status', ui.connected ? '后端已连接' : '连接断开');
       renderClock();
+      renderEntityDetails();
       if (channel === 'clock') clockPublisher?.update(relayClock, active);
     };
     source.onopen = () => status(true);
@@ -760,11 +817,10 @@ document.addEventListener("click", async event => {
     if (!item || item.lifecycle !== 'departed') return toast('本局记录已更新，请重新选择', 'warn');
     // A frozen projected snapshot is inspectable without subscribing to detail
     // or dereferencing a recycled address. Keep its original session/frame tags.
-    openDrawer(`${item.name || '敌人'} · 历史快照`, rawBlock('最后已知完整基础快照（非实时；未采样属性不补值）',
-      {sessionId: ui.data.enemies?.meta?.sessionId, basic: structuredClone(item)}));
+    openEntityDetails('enemy',item,true);
     return;
   }
-  if (detail) { const kind = detail.dataset.detailKind; const item = ui.data[kind === "enemy" ? "enemies" : "characters"]?.items?.find(item => String(item.id) === detail.dataset.entity); openDrawer(item?.name || "实体详情", rawBlock("完整基础数据与异步详情", {basic: item}), {kind, id: detail.dataset.entity, item}); return; }
+  if (detail) { const kind = detail.dataset.detailKind; const item = ui.data[kind === "enemy" ? "enemies" : "characters"]?.items?.find(item => String(item.id) === detail.dataset.entity); openEntityDetails(kind,item); return; }
   const button = event.target.closest("[data-action]"); if (button) action(button.dataset.action);
 });
 byId("open-nav").onclick = () => setNav(true); byId("close-nav").onclick = () => setNav(false); byId("nav-backdrop").onclick = () => setNav(false);
@@ -783,7 +839,7 @@ for (const slot of document.querySelectorAll(".overview-module-slot")) slot.addE
 for (const block of document.querySelectorAll(".raw-block")) block.addEventListener("toggle", render);
 document.addEventListener("keydown", event => {
   if (event.key === "Escape") { if (!byId("overlay").hidden) closeDrawer(); else if (!byId("nav-drawer").inert) setNav(false); }
-  if (event.key === "Tab" && !byId("overlay").hidden) { const focusable = [...byId("overlay").querySelectorAll("button,input,a,[tabindex]")].filter(element => !element.disabled && element.tabIndex >= 0); const first = focusable[0], last = focusable.at(-1); if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); } else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); } }
+  if (event.key === "Tab" && !byId("overlay").hidden) { const focusable = [...byId("overlay").querySelectorAll("button,input,select,a,[tabindex]")].filter(element => !element.disabled && element.tabIndex >= 0 && element.getClientRects().length && !element.closest('[hidden],[inert]')); const first = focusable[0], last = focusable.at(-1); if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); } else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); } }
 });
 const logs = createLogs({command, toast, visible: () => ui.page === 'logs', openPopup: () => {
   const content = byId('page-logs'), home = content.parentNode, next = content.nextSibling;

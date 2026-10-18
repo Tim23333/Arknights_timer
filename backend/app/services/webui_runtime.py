@@ -17,12 +17,43 @@ from ..field_policy import FIELD_REGISTRY
 from ..enemy_ui import ENEMY_COLUMN_DEFS, format_column_value
 from ..character_ui import CHARACTER_COLUMN_DEFS, format_character_column, build_character_overview
 from ..version import VERSION
+from ..enemy_buff_descriptions import (
+    describe_blackboard, buff_chinese_name, describe_active_buff,
+    global_buff_chinese_name, describe_global_buff, describe_buff_def,
+)
 from .webui_server import WebUiServer
 from .adb_selection import AdbSelection
 from .runtime_diagnostics import RuntimeDiagnostics
 from .webui_stream import LatestStream
 from tools.stage_global_state.profiling import StageProfiler
 
+
+def _local_detail_diagnostics(entity, domain, policy):
+    """Native diagnostic addresses are local-only, never sent to public WS.
+
+    Called on the Qt owner thread for the already identity-validated selected
+    detail. No memory IO or access to a retired object's pointers occurs here.
+    Heavy diagnostic rows require the matching heavy field's read evidence.
+    """
+    rows = [{'key': 'instance', 'label': '实例地址', 'value': hex(entity.addr),
+             'fieldId': domain + '.name'}]
+    for key, source in (('buffs', 'buffs'), ('global_buffs', 'globalBuffs'),
+                        ('dynamic_abilities', 'dynamicAbilities'), ('module_settings', 'equipment')):
+        field_id = f'{domain}_detail.{source}'
+        record = entity.field_states.get(field_id, {})
+        if (not policy.enabled(field_id) or not policy.enabled(field_id, 'display')
+                or record.get('collectionState') not in {'current', 'static', 'historical'}):
+            continue
+        for index, item in enumerate(getattr(entity, key, ())):
+            addresses = {name: hex(value) for name, value in item.items()
+                         if name.endswith(('addr', 'ptr', 'address')) and isinstance(value, int) and value}
+            if addresses:
+                rows.append({'key': f'{key}.{index}', 'label': f'{source} #{index + 1} · 诊断地址',
+                             'value': addresses, 'fieldId': field_id})
+            if 'blackboard' in item:
+                rows.append({'key': f'{key}.{index}.blackboard', 'label': f'{source} #{index + 1} · 参数说明',
+                             'value': describe_blackboard(item['blackboard']), 'fieldId': field_id})
+    return rows
 
 
 class WebUiRuntime(QObject):
@@ -199,6 +230,41 @@ class WebUiRuntime(QObject):
         ws = api.status_snapshot() if api is not None else {"state": "stopped", "enabled": False}
         ws["gameUrl"] = f"ws://127.0.0.1:{ws.get('port') or 8765}/v2/game"
         snapshot = getattr(window, '_webui_runtime_snapshot', {})
+        from .websocket_api import entity_public_id
+        for domain in ('enemy', 'character'):
+            topic = domain + '_detail'
+            if topic not in updated:
+                continue
+            selected = snapshot.get('detail_' + domain)
+            if selected is None or snapshot.get('frame_consistent') is False:
+                continue
+            # External detail subscribers are not a second local diagnostic
+            # channel. Enrich only the owned selected object used by Qt too.
+            identity = entity_public_id(domain, selected, 1)
+            for item in values.get(topic, {}).get('items', ()):
+                if item.get('id') == identity:
+                    item['localDiagnostics'] = _local_detail_diagnostics(selected, domain, policy)
+                    # Native semantic descriptions are presentation metadata,
+                    # not new fields added to external buff objects. Copy each
+                    # row before decoration; accepted WS sources stay immutable.
+                    for key, attr in (('buffs', 'buffs'), ('globalBuffs', 'global_buffs')):
+                        raw_buffs = getattr(selected, attr, ())
+                        decorated = []
+                        for raw_buff, public_buff in zip(raw_buffs, item.get(key, ())):
+                            if key == 'buffs':
+                                extra = {'displayName': buff_chinese_name(raw_buff),
+                                         'displayDescription': describe_active_buff(raw_buff)}
+                            else:
+                                description = describe_global_buff(raw_buff, selected)
+                                if domain == 'character':
+                                    description = description.replace('当前选中敌人', '当前干员')
+                                extra = {'displayName': global_buff_chinese_name(raw_buff),
+                                         'displayDescription': description,
+                                         'displayBuffDefinitions': [describe_buff_def(value)
+                                            for value in (raw_buff.get('buff_defs') or ())]}
+                            decorated.append({**public_buff, **extra})
+                        if key in item:
+                            item[key] = decorated
         for domain, key, formatter in (("enemy", "enemies", format_column_value),
                                        ("character", "characters", format_character_column)):
             if key not in updated:

@@ -19,6 +19,12 @@ _LOG = logging.getLogger(__name__)
 class _BoundedServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
+    # The inherited TCP backlog can be only five pending connections. A cold ESM
+    # import graph can overflow that queue while this accept thread is briefly
+    # descheduled, failing before an HTTP handler can return any response.
+    # This is pending admission capacity, NOT more active workers: keep the
+    # separate 16-worker semaphore and per-stream limits below unchanged.
+    request_queue_size = 64
 
     def __init__(self, address, handler):
         self._slots = threading.BoundedSemaphore(16)

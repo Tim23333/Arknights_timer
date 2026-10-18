@@ -752,7 +752,7 @@ class EnemyReader:
         # State remains an internal lifecycle input even if its public column is
         # disabled. All other pointer chains are demanded by their public field.
         keys = {
-            'ep': ('ep_sanity', 'ep_water', 'ep_fire', 'ep_dark', 'ep_anger'),
+            'ep': ('ep_capacity', 'ep_sanity', 'ep_water', 'ep_fire', 'ep_dark', 'ep_anger'),
             'epc': ('ep_break',), 'shield': ('shield',),
             'flags': ('abnormal_status',), 'combos': ('abnormal_status',),
             'immunes': ('immune_status',), 'antis': ('immune_status',),
@@ -871,12 +871,12 @@ class EnemyReader:
                 required = {
                     'action_state': ('state_id',),
                     'abnormal_status': ('abnormal_flags', 'abnormal_combos'),
-                    'immune_status': ('abnormal_immunes', 'abnormal_combo_immunes'),
+                    'immune_status': ('abnormal_immunes', 'abnormal_antis', 'abnormal_combo_immunes'),
                     'shield': ('shield',), 'ep_break': ('ep_break_recovery',),
                 }.get(key, ('ep_remaining',) if key.startswith('ep_') else ('state_id',))
                 success = all(item in runtime for item in required)
                 if key.startswith('ep_') and key != 'ep_break':
-                    index = {'ep_sanity': 1, 'ep_water': 2, 'ep_fire': 3,
+                    index = {'ep_capacity': 0, 'ep_sanity': 1, 'ep_water': 2, 'ep_fire': 3,
                              'ep_dark': 4, 'ep_anger': 5}[key]
                     success = success and index in runtime.get('ep_remaining', {})
                 if key in ('action_phase', 'remaining_time', 'next_action'):
@@ -3074,7 +3074,7 @@ class EnemyReader:
             info.hp = gs.fp_to_float(_u64(blk, gs.EntityFields.M_HP))
         if policy is None or policy.enabled('enemy.es'):
             info.es = gs.fp_to_float(_u64(blk, gs.EntityFields.M_ES))
-        if policy is None or policy.enabled('enemy.pos'):
+        if policy is None or policy.enabled('enemy.coordinates_extra') or policy.enabled('enemy.pos'):
             info.direction = _i32(blk, gs.EntityFields.M_DIRECTION)
         info.finish = _i32(blk, gs.EntityFields.FINISH_REASON)
         if policy is None or policy.enabled('enemy.finish_reason'):
@@ -3091,6 +3091,7 @@ class EnemyReader:
         if len(blk) >= gs.EnemyFields.READ_SIZE:
             if policy is None or policy.enabled('enemy.pos'):
                 info.pos_x, info.pos_y = _f32x2(blk, gs.EnemyFields.M_POS_IN_LAST_FRAME)
+            if policy is None or policy.enabled('enemy.coordinates_extra') or policy.enabled('enemy.pos'):
                 info.blk_x, info.blk_y = _f32x2(blk, gs.EnemyFields.M_BLOCK_POSITION)
             info.spawn_row = _i32(blk, gs.EnemyFields.ROUTE_SPAWN_POS)
             info.spawn_col = _i32(blk, gs.EnemyFields.ROUTE_SPAWN_POS + 4)
