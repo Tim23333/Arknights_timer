@@ -35,6 +35,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from app.version import VERSION, VERSION_LABEL, windows_version_tuple
@@ -67,6 +68,20 @@ def _add_data_arg(src: Path, dst: str) -> str:
     # PyInstaller 的 --add-data 在 Windows 使用 ';' 分隔，在 Linux/macOS 使用 ':'
     sep = ";" if os.name == "nt" else ":"
     return f"{src}{sep}{dst}"
+
+
+def stage_global_assets(package_dir: Path) -> tuple[Path, ...]:
+    """Ship the new reader's production modules, never fake-memory tests.
+
+    A narrow manifest keeps this addition independent of legacy tools assets.
+    Missing modules fail packaging rather than yielding a half-working EXE.
+    """
+    names = ('__init__.py', 'memory.py', 'optional_memory.py', 'reader.py',
+             'engine_clock.py', 'wave_state.py', 'profiling.py', 'blackboard.py')
+    assets = tuple(package_dir / name for name in names)
+    if not all(path.is_file() for path in assets):
+        raise RuntimeError('关卡全局状态模块不完整，不能继续打包')
+    return assets
 
 
 def _runtime_bundle_manifest(bundle_dir: Path, backend_dir: Path) -> Path:
@@ -270,11 +285,40 @@ def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args,
         marker.parent.mkdir(parents=True, exist_ok=True)
         marker.write_text("test build\n", encoding="utf-8")
         cmd.extend(["--add-data", _add_data_arg(marker, ".")])
-    cmd.extend(["--add-data", _add_data_arg(tools_dir, "tools")])
+    # Preserve existing tool data destinations; the new package has an explicit
+    # production manifest so synthetic unit fixtures never enter either EXE.
+    for entry_path in sorted(tools_dir.iterdir()):
+        # New labs/maintenance tools are development inputs, not application
+        # resources. Exclude the whole subtree, including ignored local caches;
+        # preserve legacy runtime destinations and their established contents.
+        if entry_path.name in {'capture_lab', 'performance', 'webui_assets', '__pycache__'}:
+            continue
+        if entry_path.name == 'stage_global_state':
+            for asset in stage_global_assets(entry_path):
+                cmd.extend(['--add-data', _add_data_arg(asset, 'tools/stage_global_state')])
+        elif entry_path.name == 'enemy_health' and entry_path.is_dir():
+            # A filtered, unique snapshot keeps the legacy destination without
+            # bundling local tests/experiments or exceeding Windows argv limits.
+            # Never reuse an old snapshot: excluded files could survive there.
+            snapshot_parent = backend_dir / 'build'
+            snapshot_parent.mkdir(parents=True, exist_ok=True)
+            snapshot_root = Path(tempfile.mkdtemp(prefix='runtime-tools-', dir=snapshot_parent))
+            snapshot = snapshot_root / 'enemy_health'
+            shutil.copytree(entry_path, snapshot, ignore=shutil.ignore_patterns(
+                '__pycache__', '.pytest_cache', '*.pyc', '*.pkl',
+                'test_*', 'parallel_detail.py'))
+            cmd.extend(['--add-data', _add_data_arg(snapshot, 'tools/enemy_health')])
+        else:
+            destination = f'tools/{entry_path.name}' if entry_path.is_dir() else 'tools'
+            cmd.extend(['--add-data', _add_data_arg(entry_path, destination)])
     if data_dir.is_dir():
         cmd.extend(["--add-data", _add_data_arg(data_dir, "backend/data")])
     if static_dir.is_dir():
         cmd.extend(["--add-data", _add_data_arg(static_dir, "backend/app/static")])
+    # Immutable provider/consumer contract; exclude Python tests and fixtures.
+    contract_file = backend_dir / 'app' / 'contracts' / 'stage_global.schema.json'
+    if contract_file.is_file():
+        cmd.extend(['--add-data', _add_data_arg(contract_file, 'backend/app/contracts')])
     # Include the replaceable runtime data bundle without the large reference dumps.
     bundle_dir = repo_root / 'game_data'
     if (bundle_dir / 'manifest.json').is_file():

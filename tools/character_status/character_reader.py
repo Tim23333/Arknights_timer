@@ -75,7 +75,8 @@ class CharacterInfo:
     shield: float = 0.0
     sp: float = 0.0
     max_sp: int = 0
-    direction: int = 0
+    direction: int | None = None
+    _direction_read_ok: bool = False
     finish_reason: int = 0
     alive: bool = True
     state_id: int = gs.CharacterState.DEFAULT
@@ -311,6 +312,8 @@ class CharacterReader:
                 success = bool(info.cid)
             elif key == 'pos':
                 success = info.grid_row is not None and info.grid_col is not None
+            elif key == 'direction':
+                success = info._direction_read_ok
             elif spec.group == 'skills':
                 success = info.addr in self._skill_runtime
             elif spec.group == 'runtime':
@@ -432,8 +435,9 @@ class CharacterReader:
                 _u64(block, gs.EntityFields.M_SP),
                 _u64(block, gs.EntityFields.M_SP + 8))
             info.max_sp = _i32(block, gs.EntityFields.MAX_SP)
-        if policy is None or policy.enabled('character.pos'):
+        if policy is None or policy.enabled('character.direction'):
             info.direction = _i32(block, gs.EntityFields.M_DIRECTION)
+            info._direction_read_ok = True
         info.finish_reason = _i32(block, gs.EntityFields.FINISH_REASON)
         info.alive = info.hp > 0 and info.finish_reason == 0
         info.attr_ptr = _u64(block, gs.EntityFields.M_ATTRIBUTES)

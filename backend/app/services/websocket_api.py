@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 from typing import Any, Callable
 
 from ..field_policy import FIELD_REGISTRY, PolicyStore, project_snapshot, collection_record
+from ..contracts import contract_specs, contract_value_paths, public_contract_value
 
 
 HOST = "127.0.0.1"
@@ -37,6 +38,7 @@ TOPIC_DEFAULTS: dict[str, float] = {
     "characters": 10.0, "enemy_detail": 2.0,
     "character_detail": 2.0, "deploy": 4.0, "rng": 2.0,
     "quality": 2.0, "ops.heartbeat": 0.5,
+    "stage_global": 20.0, "stage_map": 1.0, "stage_units": 10.0,
 }
 TOPIC_LIMITS: dict[str, tuple[float, float]] = {
     "battle": (1.0, 60.0), "stage": (0.2, 20.0),
@@ -45,7 +47,11 @@ TOPIC_LIMITS: dict[str, tuple[float, float]] = {
     "enemy_detail": (0.2, 60.0), "character_detail": (0.2, 60.0),
     "deploy": (1.0, 20.0), "rng": (1.0, 10.0),
     "quality": (0.5, 5.0), "ops.heartbeat": (0.2, 2.0),
+    "stage_global": (0.2, 60.0), "stage_map": (0.2, 60.0),
+    "stage_units": (1.0, 60.0),
 }
+
+STAGE_GLOBAL_TOPICS = ('stage_global', 'stage_map', 'stage_units')
 
 
 def _now() -> str:
@@ -527,7 +533,8 @@ class WebSocketApi:
             return data
         payload = dict(data)
         domain = {"enemies": "enemy", "enemy_pathing": "enemy",
-                  "characters": "character"}.get(topic, topic)
+                  "characters": "character",
+                  **dict.fromkeys(STAGE_GLOBAL_TOPICS, 'stage_global')}.get(topic, topic)
         if topic in {"enemies", "enemy_pathing", "characters", "enemy_detail", "character_detail"}:
             base_domain = "enemy" if topic.startswith("enemy") or topic == "enemies" else "character"
             if topic in {"enemy_detail", "character_detail"}:
@@ -555,7 +562,9 @@ class WebSocketApi:
 
     def publish_fields(self, domain: str, values: dict[str, Any], *, entity_id: str | None = None,
                        source_frame: int | None = None, latest_known_frame: int | None = None,
-                       frame_consistent: bool = True, policy_generation: int | None = None) -> None:
+                       frame_consistent: bool = True, policy_generation: int | None = None,
+                       field_states: dict[str, Any] | None = None,
+                       batch_meta: dict[str, Any] | None = None) -> None:
         """Publish a complete accepted field batch through the shared policy hook.
 
         Use for a new producer after its frame/identity validation. Register each
@@ -563,6 +572,11 @@ class WebSocketApi:
         batch; it deliberately never merges individual values across game frames.
         Internal pointers and unregistered field IDs cannot enter this boundary.
         """
+        if domain == 'stage_global':
+            self._publish_stage_fields(values, field_states, batch_meta,
+                                       source_frame, latest_known_frame,
+                                       frame_consistent, policy_generation)
+            return
         topics = {"enemy": "enemies", "character": "characters"}
         topic = topics.get(domain, domain)
         if topic not in TOPIC_DEFAULTS or topic == "ops.heartbeat":
@@ -588,6 +602,111 @@ class WebSocketApi:
         if not frame_consistent:
             data = {"items": [], "meta": data["meta"]} if entity_domain else {"meta": data["meta"]}
         self._publish(topic, data)
+
+    def _publish_stage_fields(self, values, records, metadata, source_frame,
+                              latest_known_frame, frame_consistent, generation):
+        """Route a complete aggregate while retaining each producer's evidence.
+
+        New topics are additive to v2. Unlike legacy single-source batches, a
+        failed runtime guard does not erase the independent clock/base map.
+        No dictionary is merged with the previous accepted field batch.
+        """
+        policy = self._policy_provider()
+        generation = policy.generation if generation is None else generation
+        if type(frame_consistent) is not bool or type(generation) is not int:
+            raise ValueError('invalid aggregate guard/generation')
+        if generation != policy.generation:
+            return
+        metadata = dict(metadata or {})
+        allowed = {'runtimeFrame', 'sampledAt', 'acceptedAt', 'sourceEpoch',
+                   'configurationRevision', 'sourceSessionId'}
+        if set(metadata) - allowed:
+            raise ValueError('unsupported aggregate metadata')
+        for key in ('runtimeFrame', 'sourceEpoch'):
+            number = metadata.get(key)
+            if number is not None and (type(number) is not int or number < 0):
+                raise ValueError('invalid aggregate source metadata')
+        expected_session = metadata.pop('sourceSessionId', self.session_id)
+        if expected_session != self.session_id:
+            return
+        records = records or {}
+        specs = {spec['id']: spec for spec in contract_specs()}
+        if set(values) - specs.keys() or set(records) - specs.keys():
+            raise ValueError('unregistered aggregate field')
+        payloads = {topic: {'fieldStates': {}, 'meta': {
+            'sourceFrame': source_frame, 'latestKnownFrame': latest_known_frame,
+            'sampledAt': _now(), 'collectionState': 'current',
+            'frameConsistent': bool(frame_consistent), 'policyGeneration': generation,
+            'sessionId': expected_session, **metadata}} for topic in STAGE_GLOBAL_TOPICS}
+        for field_id, spec in specs.items():
+            record = records.get(field_id)
+            if record is None:
+                record = collection_record(None, latest_known_frame, generation,
+                                           'unavailable', 'read_failed')
+            if (not isinstance(record, dict) or type(record.get('generation')) is not int
+                    or record.get('generation') != generation):
+                raise ValueError('aggregate record generation mismatch')
+            record = copy.deepcopy(record)
+            record = {key: value for key, value in record.items() if key in {
+                'sourceFrame', 'acceptedFrame', 'latestKnownFrame', 'generation',
+                'collectionState', 'reason', 'sampledAt', 'revision'}}
+            if not isinstance(record.get('reason', ''), str):
+                raise ValueError('invalid aggregate reason')
+            if record.get('collectionState') not in {
+                    'current', 'static', 'historical', 'not_collected', 'unavailable'}:
+                raise ValueError('invalid aggregate collection state')
+            # Fail closed even if an erroneous producer supplies current values
+            # after the dynamic guard failed. Clock is an independent producer.
+            independent = field_id in {'stage_global.gameTime', 'stage_global.fixedFrame',
+                                       'stage_global.stageName', 'stage_global.mapId', 'stage_global.map'}
+            dynamic = not independent
+            field_frame = record.get('sourceFrame')
+            runtime_frame = metadata.get('runtimeFrame')
+            accepted = record.get('acceptedFrame')
+            bad_frame = (type(field_frame) is not int or field_frame < 0
+                         or (runtime_frame is not None and field_frame != runtime_frame)
+                         or (accepted is not None and (type(accepted) is not int or accepted != field_frame)))
+            if not policy.enabled(field_id):
+                record.update(collectionState='not_collected', reason='not_collected')
+            elif record.get('collectionState') == 'historical' or (
+                    dynamic and record.get('collectionState') == 'static'):
+                record.update(collectionState='unavailable', reason='source_unavailable')
+            elif dynamic and record.get('collectionState') == 'current' and bad_frame:
+                record.update(collectionState='unavailable', reason='inconsistent_capture')
+            if not frame_consistent and dynamic and policy.enabled(field_id):
+                record.update(collectionState='unavailable', reason='inconsistent_capture')
+            for key in ('sourceFrame', 'acceptedFrame', 'latestKnownFrame'):
+                number = record.get(key)
+                if number is not None and (type(number) is not int or number < 0):
+                    record[key] = None
+            topic = spec['topic']
+            row = payloads[topic]
+            row['fieldStates'][field_id] = record
+            if field_id not in values:
+                continue
+            if record['collectionState'] in {'unavailable', 'not_collected'}:
+                continue
+            public = public_contract_value(field_id, values[field_id])
+            if public is None and record.get('reason') not in spec['null_reasons']:
+                record.update(collectionState='unavailable', reason='read_failed')
+                continue
+            for path, value in contract_value_paths(field_id, public).items():
+                target = row
+                parts = path.split('.')
+                for part in parts[:-1]:
+                    target = target.setdefault(part, {})
+                target[parts[-1]] = _safe(value)
+        # Publish under one session lock: a concurrent begin_session cannot
+        # split this accepted batch across two public session identities.
+        with self._lock:
+            if expected_session != self._session_id:
+                return
+            for topic, payload in payloads.items():
+                states = payload['fieldStates'].values()
+                payload['meta']['collectionState'] = (
+                    'current' if any(r['collectionState'] in {'current', 'static'} for r in states)
+                    else 'unavailable')
+                self._publish(topic, payload)
 
     @property
     def port(self) -> int:
@@ -648,8 +767,8 @@ class WebSocketApi:
             for client in self._clients:
                 client.last_sent.clear()
             for topic in (
-                    "stage", "enemies", "enemy_pathing", "characters", "enemy_detail",
-                    "character_detail", "deploy", "rng", "quality"):
+                    "battle", "stage", "enemies", "enemy_pathing", "characters", "enemy_detail",
+                    "character_detail", "deploy", "rng", "quality", *STAGE_GLOBAL_TOPICS):
                 self._snapshots.pop(topic, None)
                 self._source_snapshots.pop(topic, None)
             # A bootstrap or an independent clock SSE replay must not reuse
@@ -700,6 +819,9 @@ class WebSocketApi:
                 "enemyPathing": "enemy_pathing" in available,
                 "characters": "characters" in available, "deploy": "deploy" in available,
                 "rng": "rng" in available,
+                "stageGlobal": "stage_global" in available,
+                "stageMap": "stage_map" in available,
+                "stageUnits": "stage_units" in available,
             },
             "modules": {
                 "timer": {"state": "ready" if "battle" in available else "unavailable"},
@@ -795,6 +917,7 @@ class WebSocketApi:
         self._merge_battle(update)
         if expected_session != self._session_id:
             return
+        self._refresh_global_clock(update, policy)
         with self._local_changed:
             if (expected_session == self._session_id
                     and policy.generation == self._policy_provider().generation):
@@ -804,6 +927,72 @@ class WebSocketApi:
                 self._local_clock = self._project_topic('battle', update, policy, 'collect')
                 self._local_revisions['clock'] += 1
                 self._local_changed.notify_all()
+
+    def _refresh_global_clock(self, clock, policy):
+        """Reuse the accepted main clock even while shared entity IO is stopped.
+
+        Only clock leaves change; existing runtime fields retain their original
+        frames. Map/layout topics are not retransformed on every timer tick.
+        """
+        with self._lock:
+            if (policy.generation != self._policy_provider().generation
+                    or clock.get('meta', {}).get('sessionId') != self._session_id):
+                return
+            payload = copy.deepcopy(self._source_snapshots.get('stage_global', {}))
+            values = payload.setdefault('clock', {})
+            states = payload.setdefault('fieldStates', {})
+            for key in ('gameTime', 'fixedFrame'):
+                field_id = 'stage_global.' + key
+                record = copy.deepcopy(clock['fieldStates']['battle.' + key])
+                if not policy.enabled(field_id):
+                    record.update(collectionState='not_collected', reason='not_collected')
+                states[field_id] = record
+                if record['collectionState'] == 'current':
+                    values[key] = clock.get(key)
+                else:
+                    values.pop(key, None)
+            payload['meta'] = {**payload.get('meta', {}), 'sourceFrame': None,
+                'latestKnownFrame': clock.get('fixedFrame'), 'sampledAt': clock.get('sampledAt'),
+                'policyGeneration': policy.generation, 'sessionId': self._session_id}
+            if any(record.get('collectionState') in {'current', 'static'} for record in states.values()):
+                payload['meta']['collectionState'] = 'current'
+            else:
+                payload['meta']['collectionState'] = 'unavailable'
+            # Local workspaces already receive clock via the narrow SSE lane.
+            # Re-encoding the entire wave list for every clock tick would undo
+            # that separation. External stage_global subscribers still refresh.
+            self._publish('stage_global', payload, notify_local=False)
+
+    def publish_stage_global(self, snapshot):
+        """Aggregate shared-worker inputs; this boundary never accesses memory."""
+        from .stage_global_state import StageGlobalStateService
+        raw = snapshot.get('stage_global', {})
+        if not isinstance(raw, dict):
+            return
+        policy = self._policy_provider()
+        if snapshot.get('policy_generation', policy.generation) != policy.generation:
+            return
+        source_session = raw.get('meta', {}).get('sourceSessionId', self.session_id)
+        with self._lock:
+            if source_session != self._session_id:
+                return
+            # The pure aggregator only reads these immutable canonical values.
+            # Borrow under the publication lock instead of deep-copying the full
+            # roster (including departed/unspawned enemies and unused details).
+            # Selected layout leaves are copied by build; public accepted_sources
+            # deliberately retains its defensive-copy contract.
+            sources = {topic: self._source_snapshots.get(topic)
+                       for topic in ('battle', 'stage', 'enemies', 'characters')}
+            result = StageGlobalStateService().build(raw, sources.get('battle'), sources.get('stage'),
+                sources.get('enemies'), sources.get('characters'), policy,
+                runtime_frame=snapshot.get('fixed_frame'),
+                frame_consistent=snapshot.get('frame_consistent', False),
+                source_epoch=snapshot.get('_history_epoch'))
+            meta = dict(result['batch_meta'])
+            self.publish_fields('stage_global', result['values'], field_states=result['field_states'],
+                source_frame=meta.pop('sourceFrame'), latest_known_frame=meta.pop('latestKnownFrame'),
+                frame_consistent=meta.pop('frameConsistent'), policy_generation=meta.pop('policyGeneration'),
+                batch_meta={**meta, 'sourceSessionId': source_session})
 
     def publish_runtime(self, snapshot: dict[str, Any]) -> None:
         policy = self._policy_provider()
@@ -972,9 +1161,9 @@ class WebSocketApi:
             paused = snap.get("paused_snapshot")
         if not isinstance(paused, bool):
             paused = None
-        # 对外 timeScale 是有效倍率；暂停键已确认时覆盖原始 originTimeScale。
-        effective_scale = 0.0 if paused is True else (
-            _safe(snap.get("time_scale")) if paused is False else None)
+        # time_scale is now the independently read native Unity getter value.
+        # Neither a pause key nor saved originTimeScale proves the engine value.
+        effective_scale = _safe(snap.get("time_scale"))
         values = {"state": state_names.get(state_code, "unknown"), "stateCode": _safe(state_code),
                 "speedLevel": _safe(snap.get("speed_level")),
                 "timeScale": effective_scale, "isPaused": paused,
@@ -1013,7 +1202,8 @@ class WebSocketApi:
                     snap.get("paused_snapshot"), bool) else None,
                 "droppedOutboundFrames": self._dropped, "resyncCount": self._resyncs}
 
-    def _publish(self, topic: str, data: Any, *, force: bool = False) -> None:
+    def _publish(self, topic: str, data: Any, *, force: bool = False,
+                 notify_local: bool = True) -> None:
         with self._lock:
             policy = self._policy_provider()
             expected = data.get("meta", {}).get("policyGeneration") if isinstance(data, dict) else None
@@ -1024,11 +1214,12 @@ class WebSocketApi:
                 return
             safe_data = _safe(data)
             if isinstance(safe_data, dict):
-                safe_data["meta"] = {**safe_data.get("meta", {}), "sessionId": self._session_id}
+                safe_data["meta"] = {**safe_data.get("meta", {}), "sessionId": self._session_id, "sessionOrigin": self._session_origin, "sessionOrdinal": self._session_ordinal}
             self._source_snapshots[topic] = self._project_topic(topic, safe_data, policy, "collect")
             self._snapshots[topic] = self._project_topic(topic, self._source_snapshots[topic], policy, "publish")
-            self._topic_versions[topic] = self._topic_versions.get(topic, 0) + 1
-            if topic != 'battle':
+            if notify_local:
+                self._topic_versions[topic] = self._topic_versions.get(topic, 0) + 1
+            if topic != 'battle' and notify_local:
                 self._local_revisions['modules'] += 1
                 self._local_changed.notify_all()
             if force:

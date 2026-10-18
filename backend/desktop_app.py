@@ -83,6 +83,8 @@ from tools.enemy_health.frame_metrics import EffectiveFrameMetrics
 from tools.enemy_health import game_structs as enemy_gs
 from tools.enemy_health.guest_addressing import GuestBattleClock
 from tools.character_status import CharacterReader
+from tools.stage_global_state import StageGlobalReader
+from tools.stage_global_state.profiling import StageProfiler
 from tools.enemy_health.memcore import (
     MemCore, find_running_emulator_adbs, probe_adb_executable, query_adb_devices, save_adb_config,
 )
@@ -874,6 +876,18 @@ class EnemyScanWorker(QThread):
             if self.isInterruptionRequested():
                 return
             if ok:
+                # Discovery shares this scan's channel ownership, before polling
+                # starts. Optional discovery failure must not fail the core scan.
+                source = StageGlobalReader(self.reader, lifecycle_verified=True)
+                self.reader._stage_global_source = source
+                try:
+                    with scan_phase(self.log.emit, '关卡全局状态准备'):
+                        source.prepare(self.reader, policy=(self.policy_provider()
+                                       if self.policy_provider is not None else None))
+                except Exception as exc:
+                    self.log.emit(f'关卡全局状态定位不可用: {type(exc).__name__}')
+                if self.isInterruptionRequested():
+                    return
                 self._finish(
                     True,
                     f"定位完成，预定敌人 {self.reader.planned_count} 个，"
@@ -919,6 +933,12 @@ class EnemyPollWorker(QThread):
         self._detail_request_provider = detail_request_provider
         self._policy_provider = policy_provider
         self._latest_frame_provider = latest_frame_provider
+        # Android 2.7.81 membership/ownership was verified on an active wave
+        # across progressing frames (2026-10-13). Keep all per-sample guards;
+        # this is not permission to accept an arbitrary nonzero coroutine.
+        self._stage_global_reader = getattr(reader, '_stage_global_source', None)
+        if self._stage_global_reader is None:
+            self._stage_global_reader = StageGlobalReader(reader, lifecycle_verified=True)
         self._active_policy = None
         self._capture_signature = None
         self._external_detail_lock = threading.Lock()
@@ -1106,6 +1126,10 @@ class EnemyPollWorker(QThread):
             heavy = {}
         # Details are a separate view; do not mutate a canonical basic entity
         # after it has passed the complete-frame acceptance guard.
+        # Keep refresh/identity/retirement handling above even on rejected
+        # attempts; only skip the copy/merge which cannot be published.
+        if snap.get('frame_consistent') is False:
+            return
         import copy
         detail_enemy = copy.deepcopy(roster_enemy)
         detail_enemy.raw_attributes = dict(heavy.get('raw_attributes', {}))
@@ -1208,6 +1232,8 @@ class EnemyPollWorker(QThread):
                     and detail.policy_generation != self._active_policy.generation)):
             detail = None
         import copy
+        if snap.get('frame_consistent') is False:
+            return
         detail_view = copy.deepcopy(live)
         if detail is not None:
             detail_view = CharacterReader.merge_detail(detail_view, detail)
@@ -1374,6 +1400,7 @@ class EnemyPollWorker(QThread):
             if self._capture_signature != policy.collected_ids:
                 if channel is not None and hasattr(channel, 'clear_frame_prefetch'):
                     channel.clear_frame_prefetch()
+                self._stage_global_reader.clear_capture_plan()
                 self._capture_signature = policy.collected_ids
                 with self._detail_lock:
                     self._detail_heavy_cache = None
@@ -1389,6 +1416,8 @@ class EnemyPollWorker(QThread):
                 self.character_reader.set_capture_policy(policy)
             self.track_unattributed_damage = policy.enabled('character.unattributed_damage')
         sampled_at = time.time()
+        # Slow discovery belongs exclusively to EnemyScanWorker.
+        guard_addr = 0
         if channel is not None and hasattr(channel, 'configure_frame_guard'):
             guard_addr = 0
             if getattr(self.reader, '_bc_static_fields', 0):
@@ -1396,12 +1425,24 @@ class EnemyPollWorker(QThread):
                     self.reader._bc_static_fields
                     + enemy_gs.BattleControllerStaticFields.FIXED_FRAME_COUNT)
             channel.configure_frame_guard(guard_addr, 4, 3)
+        try:
+            # Warm plans queue a separate guarded domain in the core request.
+            # Cold plans read independently; neither path shares validity.
+            self._stage_global_reader.begin_optional(guard_addr)
+        except Exception:
+            # Optional initialization/topology failure never prevents core read.
+            pass
+        optional_memory = getattr(self._stage_global_reader, 'memory', None)
         if channel is not None and hasattr(channel, 'begin_frame_prefetch'):
             try:
                 channel.begin_frame_prefetch()
             except Exception:
                 # 与普通 batch_read 一致，由 poll_fast 报告 memsrv v5 错误。
                 pass
+        core_initial = (channel.device_frame_guard() if channel is not None
+                        and hasattr(channel, 'device_frame_guard') else {})
+        optional_guard = getattr(optional_memory, 'guard', {})
+        optional_initial = dict(optional_guard) if isinstance(optional_guard, dict) else {}
         try:
             snap = self.reader.poll_fast()
         except Exception as e:
@@ -1409,6 +1450,7 @@ class EnemyPollWorker(QThread):
                     'time_scale': 0.0, 'play_time': 0.0, 'enemies': [],
                     'msg': f'轮询出错: {e}', 'strict_60hz': False}
         frame_start = snap.get('fixed_frame')
+        snap['origin_time_scale'] = snap.get('time_scale')
         if self.isInterruptionRequested():
             return snap
         if self.character_reader is not None:
@@ -1426,6 +1468,14 @@ class EnemyPollWorker(QThread):
                 'global_damage_summary')
             snap['character_msg'] = char_snap.get('msg', '')
             snap['character_frame_ms'] = char_snap.get('frame_ms', 0.0)
+
+        try:
+            runtime = self._stage_global_reader.sample_runtime(policy)
+        except Exception:
+            runtime = {}
+        snap['_stage_runtime'] = runtime
+        snap['pause_keys_active'] = runtime.get('isPaused')
+        snap['time_scale'] = runtime.get('timeScale')
 
         if self.isInterruptionRequested():
             return snap
@@ -1446,18 +1496,15 @@ class EnemyPollWorker(QThread):
                     'complete': (frame_start is not None and frame_start
                                  == host_guard.get('frame')),
                 }
-                if isinstance(host_guard.get('time_scale'), (int, float)):
-                    snap['time_scale'] = host_guard['time_scale']
                 if isinstance(host_guard.get('play_time'), (int, float)):
                     snap['play_time'] = host_guard['play_time']
-                snap['pause_keys_active'] = host_guard.get('pause_keys_active')
             except Exception as exc:
                 snap['frame_guard_error'] = f'{type(exc).__name__}: {exc}'
                 guard = {'attempts': 1, 'start': frame_start,
                          'end': None, 'complete': False}
         frame_end = guard.get('end')
-        # m_originTimeScale 是配置倍率，暂停时可能仍为 2.0；只信本帧
-        # EnableStateWithKey 的键集合。读取失败保持未知，不回退到旧猜测。
+        # Saved m_originTimeScale is not the current Unity engine multiplier.
+        # Pause keys and native multiplier are independently read in this batch.
         paused = snap.get('pause_keys_active')
         if not isinstance(paused, bool):
             paused = None
@@ -1467,9 +1514,34 @@ class EnemyPollWorker(QThread):
         snap['frame_consistent'] = bool(
             guard.get('complete', False) and frame_start is not None
             and guard.get('start') == frame_start == frame_end)
-        snap['origin_time_scale'] = snap.get('time_scale')
-        snap['time_scale'] = (0.0 if paused is True else
-                              snap['origin_time_scale'] if paused is False else None)
+        try:
+            global_result, optional_consistent = self._stage_global_reader.sample_optional(
+                policy, snap, guard_addr)
+        except Exception as exc:
+            global_result = {'values': {}, 'field_states': {}, 'runtime': {},
+                             'error': type(exc).__name__}
+            optional_consistent = False
+        snap.pop('_stage_runtime', None)
+        optional_guard = getattr(optional_memory, 'guard', {})
+        self._effective_frames.observe_guards(
+            core_initial, guard, optional_initial,
+            optional_guard if isinstance(optional_guard, dict) else {}, frame_start)
+        snap['stage_global'] = global_result
+        global_consistent = snap['frame_consistent'] and optional_consistent
+        # These two fields are sampled by the core chain. A map/wave failure
+        # cannot erase them or force their values through the optional guard.
+        runtime_ids = {'stage_global.isPaused': 'isPaused',
+                       'stage_global.timeScale': 'timeScale'}
+        for field_id, key in runtime_ids.items():
+            enabled = policy is None or policy.enabled(field_id)
+            value = runtime.get(key) if enabled else None
+            global_result.setdefault('values', {})[field_id] = value
+            global_result.setdefault('field_states', {})[field_id] = {
+                'collectionState': ('not_collected' if not enabled else
+                                    'current' if value is not None else 'unavailable'),
+                'reason': ('not_collected' if not enabled else
+                           '' if value is not None else 'read_failed'),
+            }
         snap['paused_snapshot'] = paused
         snap['pause_consistent'] = (
             bool(snap['frame_consistent']) if isinstance(paused, bool) else None)
@@ -1480,6 +1552,20 @@ class EnemyPollWorker(QThread):
         snap['_history_epoch'] = getattr(self, '_source_epoch', 0)
         latest_frame = self._latest_frame_provider() if self._latest_frame_provider is not None else None
         snap['latest_known_frame'] = latest_frame
+        for field_id, record in global_result.get('field_states', {}).items():
+            static = record.get('collectionState') == 'static'
+            record.update(generation=snap['policy_generation'], latestKnownFrame=latest_frame,
+                          acceptedFrame=frame_end)
+            record.setdefault('sourceFrame', frame_start)
+            valid = snap['frame_consistent'] if field_id in runtime_ids else global_consistent
+            if not static and not valid and record.get('collectionState') != 'not_collected':
+                record.update(collectionState='unavailable', reason='inconsistent_capture')
+                global_result.get('values', {})[field_id] = None
+        global_result['meta'] = {'runtimeFrame': frame_start, 'latestKnownFrame': latest_frame,
+            'frameConsistent': global_consistent, 'sourceEpoch': snap['_history_epoch'],
+            'sourceSessionId': getattr(self, '_publication_session_id', None)}
+        if global_result['meta']['sourceSessionId'] is None:
+            global_result['meta'].pop('sourceSessionId')
         for entity in list(snap.get('enemies', ())) + list(snap.get('characters', ())):
             for record in getattr(entity, 'field_states', {}).values():
                 record['latestKnownFrame'] = latest_frame
@@ -2384,6 +2470,7 @@ class CoachWindow(QMainWindow):
 
     def __init__(self) -> None:
         super().__init__()
+        self._runtime_profiler = StageProfiler()
         self.setWindowTitle(
             f"明日方舟游戏数据显示工具 {VERSION_LABEL}"
             + (" [测试版]" if TEST_BUILD else ""))
@@ -3758,7 +3845,7 @@ class CoachWindow(QMainWindow):
             api.begin_session()
             api.invalidate_domains(('battle', 'stage', 'enemies', 'characters',
                 'enemy_pathing', 'enemy_detail', 'character_detail', 'deploy', 'rng',
-                'quality'), 'session_changed')
+                'quality', 'stage_global', 'stage_map', 'stage_units'), 'session_changed')
         for name in ('lbl_enemy_status', 'lbl_character_status', 'lbl_deploy_status', 'lbl_rng_status'):
             label = getattr(self, name, None)
             if label is not None:
@@ -4413,7 +4500,8 @@ class CoachWindow(QMainWindow):
     def _stop_enemy_poll(self, blocking: bool = False) -> bool:
         api = getattr(self, '_websocket_api', None)
         if api is not None:
-            api.invalidate_domains(('enemies', 'characters', 'enemy_pathing', 'enemy_detail', 'character_detail', 'quality'), 'source_stopped')
+            api.invalidate_domains(('enemies', 'characters', 'enemy_pathing', 'enemy_detail', 'character_detail', 'quality',
+                                    'stage_global', 'stage_map', 'stage_units'), 'source_stopped')
         self._webui_runtime_snapshot = {}
         worker = self._enemy_poll
         if worker:
@@ -5666,6 +5754,12 @@ class CoachWindow(QMainWindow):
         _tlog(f'[部署] 已导出 {len(events)} 条 -> {path}')
 
     def _on_enemy_snapshot(self, snap: dict) -> None:
+        try:
+            return self._runtime_profiler.call('qt_snapshot', lambda: self._apply_enemy_snapshot(snap))
+        finally:
+            self._runtime_profiler.report(_tlog)
+
+    def _apply_enemy_snapshot(self, snap: dict) -> None:
         generation = snap.get('policy_generation')
         if generation is not None and generation != self._field_policy.snapshot().generation:
             return
@@ -5682,7 +5776,8 @@ class CoachWindow(QMainWindow):
         now = time.time()
         api = getattr(self, '_websocket_api', None)
         if api is not None:
-            api.publish_runtime(snap)
+            self._runtime_profiler.call('publish_runtime', lambda: api.publish_runtime(snap))
+            self._runtime_profiler.call('publish_global', lambda: api.publish_stage_global(snap))
         self._battle_cache.observe_runtime(snap, self._deploy_stage_info)
         if (snap.get('ok')
                 and snap.get('state') == enemy_gs.BattleState.PLAYING
@@ -5777,7 +5872,7 @@ class CoachWindow(QMainWindow):
             text += f"   ({snap['msg']})"
         if snap.get('ok'):
             self.lbl_enemy_status.setText(text)
-            self._render_enemy_table(snap['enemies'])
+            self._runtime_profiler.call('qt_enemy_table', lambda: self._render_enemy_table(snap['enemies']))
         else:
             # 读取失败的帧没有任何真实数据: 不清空表格 (内存中敌人仍在,
             # 清空既是假信息又会引起闪烁), 只在状态栏报告, 下帧成功即恢复。
@@ -5817,7 +5912,7 @@ class CoachWindow(QMainWindow):
                 self.lbl_character_status.setText(
                     f'实时监控中  干员 {ordinary} / 召唤物与装置 {tokens}'
                     + (f'  {average_ms:.1f}ms/帧' if average_ms else ''))
-            self._render_character_table(characters)
+            self._runtime_profiler.call('qt_character_table', lambda: self._render_character_table(characters))
         else:
             self.lbl_character_status.setText(
                 snap.get('character_msg') or '干员容器暂不可读')

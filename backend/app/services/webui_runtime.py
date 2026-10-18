@@ -45,7 +45,8 @@ class WebUiRuntime(QObject):
         # A restarted backend must explicitly clear every previously visible
         # source even before scanning. Otherwise reconnect retains the old map.
         self._source_keys = {'stage', 'enemies', 'enemy_pathing', 'characters',
-                             'enemy_detail', 'character_detail', 'deploy', 'rng', 'quality'}
+                             'enemy_detail', 'character_detail', 'deploy', 'rng', 'quality',
+                             'stage_global', 'stage_map', 'stage_units'}
         self._module_keys = set(self._source_keys)
         self._columns = {"enemy": self._column_defs("enemy", ENEMY_COLUMN_DEFS),
                          "character": self._column_defs("character", CHARACTER_COLUMN_DEFS)}

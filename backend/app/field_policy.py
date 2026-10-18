@@ -12,6 +12,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
+from .contracts import contract_specs
 
 if TYPE_CHECKING:
     from .custom_options import CustomOptions
@@ -37,15 +38,26 @@ class FieldSpec:
     default_display: bool = True
     default_collect: bool = True
     default_publish: bool = True
+    topic: str | None = None
+    source_fields: tuple[tuple[str, str], ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
-        return {'id': self.id, 'domain': self.domain, 'group': self.group,
+        result = {'id': self.id, 'domain': self.domain, 'group': self.group,
                 'paths': list(self.paths), 'label': self.label,
                 'dependencies': list(self.dependencies),
                 'captureRequired': self.capture_required,
                 'defaults': {'collect': self.default_collect,
                              'display': self.default_display,
                              'publish': self.default_publish}}
+        if self.topic:
+            result['topic'] = self.topic
+        if self.source_fields:
+            sources = {}
+            for path, source in self.source_fields:
+                sources.setdefault(path, []).append(source)
+            result['sourceFields'] = {path: items[0] if len(items) == 1 else items
+                                      for path, items in sources.items()}
+        return result
 
 
 def _registry() -> dict[str, FieldSpec]:
@@ -205,6 +217,20 @@ def _registry() -> dict[str, FieldSpec]:
             add(domain, key, key, key, key)
     for key in ('frame_guard', 'enemy_identity', 'character_identity', 'session'):
         add('internal', key, 'required', (), key, display=False, required=True, publish=False)
+    add('character', 'direction', 'base', 'direction', '朝向')
+    for spec in contract_specs():
+        defaults = spec['defaults']
+        result[spec['id']] = FieldSpec(
+            spec['id'], spec['domain'], spec['group'], tuple(spec['paths']), spec['label'],
+            tuple(spec['dependencies']), default_collect=defaults['collect'],
+            default_display=defaults['display'], default_publish=defaults['publish'],
+            topic=spec['topic'], source_fields=tuple(
+                (path, source) for path, sources in spec['source_fields'].items()
+                for source in (sources if isinstance(sources, list) else [sources])))
+    for spec in result.values():
+        for dependency in spec.dependencies + tuple(source for _, source in spec.source_fields):
+            if dependency not in result:
+                raise ValueError(f'{spec.id}: unregistered dependency {dependency}')
     return result
 
 
@@ -235,10 +261,16 @@ class PolicySnapshot:
         for spec in FIELD_REGISTRY.values():
             switches = self.fields[spec.id]
             for layer in LAYERS:
-                if switches.collect and getattr(switches, layer):
+                own_enabled = switches.collect and getattr(switches, layer)
+                paths = list(spec.paths) if not own_enabled else []
+                for path, source_id in spec.source_fields:
+                    source = self.fields[source_id]
+                    if not own_enabled or not (source.collect and getattr(source, layer)):
+                        paths.append(path)
+                if not paths:
                     continue
                 root = trees.setdefault((spec.domain, layer), {})
-                for path in spec.paths:
+                for path in paths:
                     components = path.split('.')
                     target = root
                     for component in components[:-1]:
@@ -299,10 +331,31 @@ class PolicyStore:
                 self.load_errors = [{'field': 'field_policy', 'message': '字段策略版本无效，使用默认值'}]
             else:
                 try:
-                    fields = self._validate(stored.get('fields', {}))
+                    candidate = self._migrate_new_dependencies(stored.get('fields', {}))
+                    fields = self._validate(candidate)
                     self._snapshot = PolicySnapshot(0, MappingProxyType(fields))
                 except PolicyValidationError as error:
                     self.load_errors = error.errors
+
+    def _migrate_new_dependencies(self, candidate):
+        """Only absent new keys may initialize off; never reopen saved sources."""
+        if not isinstance(candidate, Mapping):
+            return candidate
+        result = dict(candidate)
+        missing = {key for key, spec in FIELD_REGISTRY.items()
+                   if spec.domain == 'stage_global' and key not in candidate}
+        disabled = {key for key, incoming in candidate.items()
+                    if isinstance(incoming, Mapping) and incoming.get('collect') is False}
+        while True:
+            blocked = {key for key in missing - disabled
+                       if any(dep in disabled for dep in FIELD_REGISTRY[key].dependencies)}
+            if not blocked:
+                break
+            for key in sorted(blocked):
+                result[key] = {'collect': False}
+                self.load_errors.append({'field': key, 'message': '新增字段依赖已关闭，初始采集设为关'})
+            disabled.update(blocked)
+        return result
 
     def snapshot(self) -> PolicySnapshot:
         with self._lock:
