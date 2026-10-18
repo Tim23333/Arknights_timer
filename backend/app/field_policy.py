@@ -237,6 +237,30 @@ def _registry() -> dict[str, FieldSpec]:
 FIELD_REGISTRY: Mapping[str, FieldSpec] = MappingProxyType(_registry())
 
 
+def _index_field_rules(registry):
+    """Index the complete immutable schema, never addresses or sampled values.
+
+    The registry is built at module load (including newly registered fields).
+    Preserve registration order for dependency propagation; policy switches and
+    read success are still evaluated per snapshot. No hardcoded field subset.
+    """
+    domains, dependencies, groups = {}, {}, {}
+    for spec in registry.values():
+        domains.setdefault(spec.domain, []).append(spec)
+        groups.setdefault((spec.domain, spec.group), []).append(spec.id)
+        if spec.dependencies:
+            dependencies.setdefault(spec.domain, []).append(spec)
+    actions = {domain: tuple({path.split('.')[1] for spec in specs
+                              for path in spec.paths if path.startswith('action.')})
+               for domain, specs in domains.items()}
+    return tuple(MappingProxyType({key: tuple(values) for key, values in index.items()})
+                 for index in (domains, dependencies, actions, groups))
+
+
+(FIELDS_BY_DOMAIN, DEPENDENCY_FIELDS_BY_DOMAIN,
+ ACTION_KEYS_BY_DOMAIN, FIELDS_BY_GROUP) = _index_field_rules(FIELD_REGISTRY)
+
+
 @dataclass(frozen=True)
 class FieldSwitches:
     collect: bool = True
@@ -292,8 +316,8 @@ class PolicySnapshot:
         return getattr(self.fields[field_id], layer)
 
     def group_enabled(self, domain: str, group: str) -> bool:
-        return any(self.enabled(spec.id) for spec in FIELD_REGISTRY.values()
-                   if spec.domain == domain and spec.group == group)
+        return any(self.enabled(field_id)
+                   for field_id in FIELDS_BY_GROUP.get((domain, group), ()))
 
     @property
     def collected_ids(self) -> frozenset[str]:

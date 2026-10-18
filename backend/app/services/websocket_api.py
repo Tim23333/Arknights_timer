@@ -14,10 +14,14 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from functools import lru_cache
 from typing import Any, Callable
 
-from ..field_policy import FIELD_REGISTRY, PolicyStore, project_snapshot, collection_record
+from ..field_policy import (
+    ACTION_KEYS_BY_DOMAIN, FIELD_REGISTRY, PolicyStore, project_snapshot, collection_record,
+)
 from ..contracts import contract_specs, contract_value_paths, public_contract_value
+from .public_json import encode_sanitized
 
 
 HOST = "127.0.0.1"
@@ -58,6 +62,14 @@ def _now() -> str:
     return datetime.now(timezone.utc).astimezone().isoformat(timespec="milliseconds")
 
 
+@lru_cache(maxsize=1024)
+def _is_public_key(key: str) -> bool:
+    """Cache only immutable schema-name decisions, never field/frame values."""
+    lowered = key.lower()
+    return (lowered not in _INTERNAL_FIELD_NAMES
+            and not lowered.endswith(_INTERNAL_FIELD_SUFFIXES))
+
+
 def _safe(value: Any) -> Any:
     """将运行时值转换为公开 JSON，并移除内部字段与地址文本。
 
@@ -65,16 +77,33 @@ def _safe(value: Any) -> Any:
     还会替换诊断字符串中嵌入的进程地址，避免 ``status`` 等人类可读字段
     绕过结构化白名单。
     """
-    if value is None or isinstance(value, (int, bool)):
+    # Built-in trees dominate publication. Keep the original isinstance path
+    # below for subclasses/unusual producers; no field or redaction is skipped.
+    kind = type(value)
+    if value is None or kind is int or kind is bool:
+        return value
+    if kind is str:
+        return (_INTERNAL_ADDRESS_PATTERN.sub("[redacted-address]", value)
+                if "0x" in value else value)
+    if kind is dict:
+        return {key: _safe(item) for raw_key, item in value.items()
+                if _is_public_key(key := str(raw_key))}
+    if kind is list:
+        return [_safe(item) for item in value]
+    if kind is float:
+        return value if math.isfinite(value) else None
+    if isinstance(value, (int, bool)):
         return value
     if isinstance(value, float):
         return value if math.isfinite(value) else None
     if isinstance(value, str):
-        return _INTERNAL_ADDRESS_PATTERN.sub("[redacted-address]", value)
+        # A literal 0x is necessary for the existing address pattern to match.
+        # Most repeated status/metadata strings therefore need no regex scan.
+        return (_INTERNAL_ADDRESS_PATTERN.sub("[redacted-address]", value)
+                if "0x" in value else value)
     if isinstance(value, dict):
-        return {str(key): _safe(item) for key, item in value.items()
-                if str(key).lower() not in _INTERNAL_FIELD_NAMES
-                and not str(key).lower().endswith(_INTERNAL_FIELD_SUFFIXES)}
+        return {key: _safe(item) for raw_key, item in value.items()
+                if _is_public_key(key := str(raw_key))}
     if isinstance(value, (list, tuple, set)):
         return [_safe(item) for item in value]
     # Default Python object representations include ``at 0x...``. Re-enter the
@@ -320,17 +349,51 @@ def _detail(entity: Any, basic: dict[str, Any], *, primary_enemy: Any = None,
     return details
 
 
+def _detail_basic(entity: Any, index: int, basics: dict, build: Callable) -> Any:
+    """Use same-call basics; unlike dict.get's default, compute only on miss."""
+    key = getattr(entity, "addr", None)
+    return basics[key] if key in basics else build(entity, index)
+
+
 def _public_action(domain: str, action: Any) -> dict[str, Any]:
     """Only registered action leaves cross the public field-policy boundary."""
     if not isinstance(action, dict):
         return {}
-    keys = {path.split(".")[1] for spec in FIELD_REGISTRY.values()
-            if spec.domain == domain for path in spec.paths if path.startswith("action.")}
+    keys = ACTION_KEYS_BY_DOMAIN.get(domain, ())
     return {key: _safe(action[key]) for key in keys if key in action}
 
 
-def _mask_unavailable(row: dict[str, Any]) -> dict[str, Any]:
+def _mask_unavailable(row: dict[str, Any], *, detail_domain: str | None = None) -> dict[str, Any]:
     """Defaults in runtime dataclasses aren't evidence of a successful field read."""
+    # Ownership is local to this call. Retain clones to prevent id reuse, and
+    # never memoize original -> clone: two aliased input branches may need
+    # different leaves removed. Unchanged branches remain borrowed/read-only.
+    owned: dict[int, dict[str, Any]] = {}
+
+    def writable(value):
+        if id(value) in owned:
+            return value
+        clone = dict(value)
+        owned[id(clone)] = clone
+        return clone
+
+    def remove(value, parts):
+        key = parts[0]
+        if key not in value:
+            return value
+        if len(parts) == 1:
+            value = writable(value)
+            del value[key]
+            return value
+        child = value[key]
+        if not isinstance(child, dict):
+            return value
+        changed = remove(child, parts[1:])
+        if changed is not child:
+            value = writable(value)
+            value[key] = changed
+        return value
+
     result = row
     for field_id, record in row.get("fieldStates", {}).items():
         spec = FIELD_REGISTRY.get(field_id)
@@ -341,26 +404,22 @@ def _mask_unavailable(row: dict[str, Any]) -> dict[str, Any]:
         if field_id == 'enemy.finish_reason' and record.get('collectionState') == 'unavailable':
             # This nullable raw enum distinguishes an unobserved finish from
             # NONE=0. Policy projection still removes the key when switched off.
-            result = {**result, 'finishReason': None}
+            result = writable(result)
+            result['finishReason'] = None
             continue
         for path in spec.paths:
+            # These names are shared by basic and independently sampled detail
+            # objects. A failed fast field cannot erase an accepted async value
+            # carrying its own provenance. Other basic leaves remain masked.
+            detail_key = ('attributes' if path.startswith('attributes.') else
+                          'specialShield' if path == 'specialShield' else None)
+            if detail_domain and detail_key and not field_id.startswith(detail_domain + '.'):
+                own = row.get('fieldStates', {}).get(f'{detail_domain}.{detail_key}', {})
+                if own.get('collectionState') in {'current', 'static', 'historical'}:
+                    continue
             parts = path.split(".")
-            result = _without_path(result, parts)
+            result = remove(result, parts)
     return result
-
-
-def _without_path(value: dict[str, Any], parts: list[str]) -> dict[str, Any]:
-    """Copy only the changed branch of an internally immutable accepted row."""
-    key = parts[0]
-    if key not in value:
-        return value
-    if len(parts) == 1:
-        return {name: item for name, item in value.items() if name != key}
-    child = value[key]
-    if not isinstance(child, dict):
-        return value
-    changed = _without_path(child, parts[1:])
-    return value if changed is child else {**value, key: changed}
 
 
 def _rng_engine(snapshot: Any) -> dict[str, Any] | None:
@@ -438,6 +497,12 @@ class WebSocketApi:
         self._session_origin = uuid.uuid4().hex
         self._session_ordinal = 0
         self._topic_versions: dict[str, int] = {}
+        # Tickets order producers independently of notification versions. A slow
+        # conversion must never overwrite a newer accepted batch.
+        self._publication_ticket = 0
+        self._committed_tickets: dict[str, int] = {}
+        # One encoded immutable payload per topic, never one entry per frame.
+        self._encoded_payloads: dict[str, tuple[Any, str]] = {}
         self._scheduled_topics: set[str] = set()
         self._started_at = time.monotonic()
         self._dropped = 0
@@ -455,7 +520,7 @@ class WebSocketApi:
         """Return display-filtered accepted values, independently of WS service state."""
         with self._lock:
             policy = self._policy_provider()
-            return {topic: self._project_topic(topic, data, policy, "display")
+            return {topic: self._project_topic(topic, data, policy, "display", masked=True)
                     for topic, data in self._source_snapshots.items()
                     if topics is None or topic in topics}
 
@@ -528,7 +593,7 @@ class WebSocketApi:
                               "sourceFrame": None, "latestKnownFrame": None}}, force=True)
 
     @staticmethod
-    def _project_topic(topic: str, data: Any, policy: Any, layer: str) -> Any:
+    def _project_topic(topic: str, data: Any, policy: Any, layer: str, *, masked: bool = False) -> Any:
         if not isinstance(data, dict):
             return data
         payload = dict(data)
@@ -554,9 +619,9 @@ class WebSocketApi:
                 payload.pop("globalDamageSummary", None)
             elif topic == "characters" and isinstance(payload.get("globalDamageSummary"), dict):
                 payload["globalDamageSummary"] = project_snapshot(
-                    "character", _mask_unavailable(payload["globalDamageSummary"]), policy, layer)
+                    "character", payload["globalDamageSummary"] if masked else _mask_unavailable(payload["globalDamageSummary"]), policy, layer)
         else:
-            payload = project_snapshot(domain, _mask_unavailable(payload), policy, layer)
+            payload = project_snapshot(domain, payload if masked else _mask_unavailable(payload), policy, layer)
         payload["meta"] = {**payload.get("meta", {}), "policyGeneration": policy.generation}
         return payload
 
@@ -763,6 +828,7 @@ class WebSocketApi:
             self._session_id = f"session-{uuid.uuid4().hex}"
             self._session_ordinal += 1
             self._last_detail_revision = None
+            self._encoded_payloads.clear()
             self._resyncs += 1
             for client in self._clients:
                 client.last_sent.clear()
@@ -1087,7 +1153,7 @@ class WebSocketApi:
             # accepted local details or changing their original field states.
             detail_error = snapshot.get("external_detail_error")
             self._publish("enemy_detail", {"items": [
-                _detail(entity, live_enemy_basics.get(getattr(entity, "addr", None), _enemy_basic(entity, index)),
+                _detail(entity, _detail_basic(entity, index, live_enemy_basics, _enemy_basic),
                         primary_enemy=live_enemy_entities.get(getattr(entity, "addr", None)),
                         policy=policy)
                 for index, entity in enumerate(external_enemies, 1)
@@ -1095,7 +1161,7 @@ class WebSocketApi:
                 "meta": self._runtime_meta(snapshot,
                     snapshot.get("ok", True) and not detail_error, reason=detail_error)})
             self._publish("character_detail", {"items": [
-                _detail(entity, live_character_basics.get(getattr(entity, "addr", None), _character_basic(entity, index)))
+                _detail(entity, _detail_basic(entity, index, live_character_basics, _character_basic), policy=policy)
                 for index, entity in enumerate(external_characters, 1)
             ], "loading": bool(snapshot.get("external_detail_loading") or snapshot.get("character_detail_loading")),
                 "meta": self._runtime_meta(snapshot, character_ok and not detail_error,
@@ -1244,11 +1310,27 @@ class WebSocketApi:
             session = data.get("meta", {}).get("sessionId") if isinstance(data, dict) else None
             if session is not None and session != self._session_id:
                 return
-            safe_data = _safe(data)
-            if isinstance(safe_data, dict):
-                safe_data["meta"] = {**safe_data.get("meta", {}), "sessionId": self._session_id, "sessionOrigin": self._session_origin, "sessionOrdinal": self._session_ordinal}
-            self._source_snapshots[topic] = self._project_topic(topic, safe_data, policy, "collect")
-            self._snapshots[topic] = self._project_topic(topic, self._source_snapshots[topic], policy, "publish")
+            source_session = self._session_id
+            session_meta = {"sessionId": source_session, "sessionOrigin": self._session_origin,
+                            "sessionOrdinal": self._session_ordinal}
+            self._publication_ticket += 1
+            ticket = self._publication_ticket
+        # Detach from producer-owned values once. Consumers may share accepted
+        # branches read-only, but caller data must never bypass this boundary.
+        safe_data = _safe(data)
+        if isinstance(safe_data, dict):
+            safe_data["meta"] = {**safe_data.get("meta", {}), **session_meta}
+        collected = self._project_topic(topic, safe_data, policy, "collect")
+        published = self._project_topic(topic, collected, policy, "publish", masked=True)
+        with self._lock:
+            if (source_session != self._session_id
+                    or policy.generation != self._policy_provider().generation
+                    or ticket < self._committed_tickets.get(topic, 0)):
+                return
+            self._committed_tickets[topic] = ticket
+            self._source_snapshots[topic] = collected
+            self._snapshots[topic] = published
+            self._encoded_payloads.pop(topic, None)
             if notify_local:
                 self._topic_versions[topic] = self._topic_versions.get(topic, 0) + 1
             if topic != 'battle' and notify_local:
@@ -1474,8 +1556,18 @@ class WebSocketApi:
                 return
             if meta.get("policyGeneration", self._policy_provider().generation) != self._policy_provider().generation:
                 return
+            topic = message_type.removesuffix('.updated')
+            # Identity, not a caller-supplied flag: only the exact internally
+            # accepted immutable snapshot may skip a second safety traversal.
+            trusted = data is self._snapshots.get(topic) and data is not None
+            session = self._session_id
+            generation = self._policy_provider().generation
+        queued_data = data if trusted else _safe(data)
+        with self._lock:
+            if session != self._session_id or generation != self._policy_provider().generation:
+                return
             message = {"type": message_type, "schemaVersion": SCHEMA_VERSION,
-                       "sessionId": self._session_id, "data": _safe(data)}
+                       "sessionId": session, "data": queued_data}
         if reliable:
             if client.queue.full():
                 # Bounded overload is explicit: close only this slow command
@@ -1509,18 +1601,31 @@ class WebSocketApi:
             else:
                 client.wake.clear()
                 continue
+            topic = envelope['type'].removesuffix('.updated')
+            data = envelope.get('data')
             with self._lock:
-                data = envelope.get("data")
+                cached = self._encoded_payloads.get(topic)
+                owned = data is not None and data is self._snapshots.get(topic)
+            encoded = (cached[1] if cached is not None and cached[0] is data
+                       else encode_sanitized(data) if owned
+                       else json.dumps(data, ensure_ascii=False, separators=(',', ':')))
+            with self._lock:
                 meta = data.get("meta", {}) if isinstance(data, dict) else {}
                 if envelope.get("sessionId") != self._session_id:
                     continue
                 if meta.get("policyGeneration", self._policy_provider().generation) != self._policy_provider().generation:
                     continue
+                if data is self._snapshots.get(topic) and data is not None:
+                    self._encoded_payloads[topic] = (data, encoded)
                 # Assign sequence at delivery: reliable replies can overtake
                 # coalesced frames without producing decreasing wire sequences.
                 client.sequence += 1
-                envelope = {**envelope, "sequence": client.sequence, "emittedAt": _now()}
-            await client.websocket.send(json.dumps(envelope, ensure_ascii=False, separators=(",", ":")))
+                header = {key: value for key, value in envelope.items() if key != 'data'}
+                header.update(sequence=client.sequence, emittedAt=_now())
+            # Payload is a complete JSON value; envelope sequence/time remain
+            # per-client. No protocol fields or freshness tags are changed.
+            packet = json.dumps(header, ensure_ascii=False, separators=(',', ':'))[:-1]
+            await client.websocket.send(packet + ',"data":' + encoded + '}')
 
     def _notify_status(self) -> None:
         """向宿主报告服务生命周期变化；监听方负责切换到自己的线程。"""

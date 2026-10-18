@@ -768,11 +768,11 @@ class EnemyReader:
         Policy validation proves the inputs are enabled, not that this sampling
         round read them successfully. Derived fields therefore need both checks.
         """
-        from backend.app.field_policy import FIELD_REGISTRY
+        from backend.app.field_policy import DEPENDENCY_FIELDS_BY_DOMAIN
         external_success = external_success or {}
         for _ in range(len(states)):
             changed = False
-            for spec in FIELD_REGISTRY.values():
+            for spec in DEPENDENCY_FIELDS_BY_DOMAIN.get(domain, ()):
                 record = states.get(spec.id)
                 if spec.domain != domain or not record or record['collectionState'] != 'current':
                     continue
@@ -796,14 +796,12 @@ class EnemyReader:
         """
         if self._capture_policy is None:
             return
-        from backend.app.field_policy import FIELD_REGISTRY, collection_record
+        from backend.app.field_policy import FIELDS_BY_DOMAIN, collection_record
         info.policy_generation = self._capture_policy.generation
         if not historical:
             info.source_frame = source_frame
         runtime = self._runtime_snapshot.get(info.addr, {})
-        for spec in FIELD_REGISTRY.values():
-            if spec.domain != 'enemy':
-                continue
+        for spec in FIELDS_BY_DOMAIN.get('enemy', ()):
             key = spec.id.split('.', 1)[1]
             if key == 'finish_reason':
                 enabled = self._collect(key)
