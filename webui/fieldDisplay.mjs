@@ -1,21 +1,16 @@
 /**
- * Owns short, explicitly last-known presentation of failed entity fields.
+ * Owns explicitly last-known presentation of failed entity fields.
  * Only the WebUI table is smoothed: canonical payloads, details and WS stay raw.
  * Successful values update immediately. A failure may reuse its own last valid
- * value for 500ms, never renewing its deadline or assigning a newer source frame.
+ * value until an explicit invalidation, never assigning a newer source frame.
  * Session/policy/format changes, disabled fields and source stops clear the cache.
  */
 export function createFieldDisplay() {
-  const holdMs = 500;
   const cache = new Map();
-  let scope = null, lastRows = [], lastRowsAt = -Infinity;
-  let lastPayload = null, sampleAt = -Infinity;
+  let scope = null, lastRows = [];
 
   return {
     project(payload, context, columns, valueOf, now = performance.now()) {
-      // Table toggles, pagination and expiry timers are not producer samples.
-      // Only a newly received payload can advance the cache's arrival time.
-      if (payload !== lastPayload) { sampleAt = now; lastPayload = payload; }
       const meta = payload?.meta || {};
       const generation = meta.policyGeneration ?? context.policy.generation;
       const nextScope = JSON.stringify([meta.sessionId, generation, context.precision]);
@@ -24,15 +19,15 @@ export function createFieldDisplay() {
       const eligible = typeof meta.sessionId === 'string' && !stopped
         && generation === context.policy.generation;
       if (nextScope !== scope || !eligible) {
-        cache.clear(); lastRows = []; lastRowsAt = -Infinity; scope = nextScope;
+        cache.clear(); lastRows = []; scope = nextScope;
       }
       const failedBatch = meta.collectionState === 'unavailable' || meta.frameConsistent === false;
-      const rows = failedBatch && eligible && now - lastRowsAt < holdMs
+      const rows = failedBatch && eligible
         ? lastRows : payload?.items || [];
       if (!failedBatch) {
         const ids = new Set(rows.map(row => String(row.id)));
         for (const id of cache.keys()) if (!ids.has(id)) cache.delete(id);
-        if (eligible) { lastRows = rows; lastRowsAt = sampleAt; }
+        if (eligible) lastRows = rows;
       }
       const policies = new Map(context.policy.fields.map(field => [field.id, field]));
       const cells = new Map();
@@ -44,7 +39,7 @@ export function createFieldDisplay() {
         if (eligible) cache.set(id, previous);
         for (const column of columns) {
           if (['row', 'detail', 'history'].includes(column.key)) continue;
-          const fieldId = `${context.kind}.${column.key}`;
+          const fieldId = column.fieldId ?? `${context.kind}.${column.key}`;
           const field = policies.get(fieldId);
           const record = row.fieldStates?.[fieldId] || {};
           const state = record.collectionState || record.state;
@@ -61,17 +56,16 @@ export function createFieldDisplay() {
             cell = {text:field?.display === false ? '未展示' : '未采集', title:'字段已关闭，不保留旧值', freshness:'not_collected'};
           } else if (unavailable) {
             const known = previous.get(column.key);
-            if (eligible && known && now - known.at < holdMs) {
+            if (eligible && known) {
               cell = {text:known.text, freshness:'last_known',
                 title:`${known.text} · 最后有效值（非当前值） · 来源帧 ${known.frame ?? '—'} · 当前读取失败：${record.reason || meta.reason || '本次采样不可用'}`};
               heldCount++;
-              expiresAt = Math.min(expiresAt ?? Infinity, known.at + holdMs);
             } else {
               previous.delete(column.key);
-              cell = {text:'不可用', title:'本次读取不可用，且没有500ms内的有效读数', freshness:'unavailable'};
+              cell = {text:'不可用', title:'本次读取不可用，且当前范围内没有有效历史读数', freshness:'unavailable'};
             }
           } else {
-            if (eligible) previous.set(column.key, {text, frame:sourceFrame, at:sampleAt});
+            if (eligible) previous.set(column.key, {text, frame:sourceFrame});
             cell.title = `${text} · ${state === 'historical' ? '历史读数' : state === 'static' ? '已验证静态数据' : '当前有效读数'} · 来源帧 ${sourceFrame ?? '—'}`;
           }
           rowCells.set(column.key, cell);

@@ -596,6 +596,9 @@ class EnemyReader:
         """
         previous = self._capture_policy
         self._capture_policy = policy
+        # The field policy is authoritative once supplied. The standalone
+        # legacy switch must not silently veto an enabled WebUI capture policy.
+        self.set_precise_position_enabled(policy.enabled('enemy.precise_pos'))
         if previous is None or previous.generation != policy.generation:
             for cache in (self._attr_snapshot, self._runtime_snapshot,
                           self._skill_cd, self._skill_enriched, self._names):

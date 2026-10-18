@@ -781,11 +781,16 @@ class WebSocketApi:
                      "policyGeneration": timer.get("policy_generation", self._policy_provider().generation)},
         }
         policy = self._policy_provider()
+        clock_valid = (timer.get('connected') is True
+                       and timer.get('collection_state', 'current') == 'current')
+        def timer_value_valid(spec):
+            return update.get(spec.paths[0]) is not None and (
+                spec.id in {'battle.connected', 'battle.configured', 'battle.message'} or clock_valid)
         update["fieldStates"] = {spec.id: collection_record(
             timer.get("frame_count"), timer.get("frame_count"), policy.generation,
             "not_collected" if not policy.enabled(spec.id) else
-            "current" if update.get(spec.paths[0]) is not None else "unavailable",
-            "" if update.get(spec.paths[0]) is not None else "timer_unavailable")
+            "current" if timer_value_valid(spec) else "unavailable",
+            "" if timer_value_valid(spec) else "timer_unavailable")
             for spec in FIELD_REGISTRY.values() if spec.domain == "battle" and spec.group == "timer"}
         self._merge_battle(update)
         if expected_session != self._session_id:
@@ -810,9 +815,8 @@ class WebSocketApi:
                 record.update(collectionState="unavailable", reason="frame_inconsistent")
             self._merge_battle(failed_battle)
             self.publish_enemy_pathing(snapshot, force_unavailable=True)
-            # The normal enemies topic also contains pathing. Invalidate the
-            # cached/public copy immediately so new or slow clients cannot keep
-            # consuming an apparently current route from the previous frame.
+            # Commit the final invalidation once. Publishing the previous
+            # payload first could broadcast old HP/position as still current.
             with self._lock:
                 previous = copy.deepcopy(self._snapshots.get("enemies", {}))
             if isinstance(previous.get("items"), list):
@@ -821,9 +825,8 @@ class WebSocketApi:
                         item["pathing"] = _invalidate_public_pathing(
                             _public_pathing(item.get("pathing")),
                             "frame_inconsistent")
-                self._publish("enemies", previous, force=True)
             self._publish("quality", self._quality(snapshot))
-            meta = self._runtime_meta(snapshot, False)
+            meta = self._runtime_meta(snapshot, False, reason="frame_inconsistent")
             self._publish("characters", {"items": [], "meta": meta}, force=True)
             self._publish("enemies", {"items": [
                 {"id": item.get("id"), "pathing": item.get("pathing")}
@@ -888,14 +891,14 @@ class WebSocketApi:
         self._publish("quality", self._quality(snapshot))
 
     @staticmethod
-    def _runtime_meta(snapshot: dict[str, Any], ok: bool) -> dict[str, Any]:
+    def _runtime_meta(snapshot: dict[str, Any], ok: bool, *, reason: str | None = None) -> dict[str, Any]:
         return {"sourceFrame": snapshot.get("fixed_frame"),
                 "policyGeneration": snapshot.get("policy_generation"),
                 "latestKnownFrame": snapshot.get("latest_known_frame"),
                 "acceptedFrame": snapshot.get("frame_end"),
                 "sampledAt": snapshot.get("sampled_at"), "acceptedAt": snapshot.get("accepted_at"),
                 "collectionState": "current" if ok else "unavailable",
-                "reason": "" if ok else snapshot.get("msg", "read_failed"),
+                "reason": "" if ok else (reason or snapshot.get("msg") or "read_failed"),
                 "frameConsistent": bool(snapshot.get("frame_consistent", True))}
 
     def publish_enemy_pathing(

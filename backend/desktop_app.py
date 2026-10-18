@@ -5460,7 +5460,8 @@ class CoachWindow(QMainWindow):
                 if changed:
                     self.deploy_table.setRowCount(0)
                     self._append_deploy_rows(self._deploy_journal)
-                self._deploy_events = events
+                self._deploy_events = self._attach_deploy_frames(
+                    events, self._deploy_events)
                 self._cache_current_deploy(battle)
                 self.lbl_deploy_status.setText(
                     f'代理作战序列 {len(self._deploy_journal)} 条（本轮策略已核对）')
