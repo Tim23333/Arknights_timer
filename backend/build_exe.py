@@ -332,11 +332,19 @@ def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args,
     # frontend/static directory remains the offline timeline editor.
     webui_dir = repo_root / "webui"
     if (webui_dir / "index.html").is_file():
-        # Runtime WebUI assets deliberately occupy this flat boundary. Browser
-        # fixtures live under test/; docs and tests must not enter the EXE.
-        for asset in sorted(webui_dir.iterdir()):
-            if asset.is_file() and asset.suffix in {".html", ".css", ".mjs"}:
-                cmd.extend(["--add-data", _add_data_arg(asset, "webui")])
+        # Explicit runtime boundaries; never include browser fixtures or docs.
+        for folder in (webui_dir, webui_dir / "map"):
+            if not folder.is_dir():
+                continue
+            for asset in sorted(folder.iterdir()):
+                if asset.is_file() and asset.suffix in {".html", ".css", ".mjs"}:
+                    destination = (Path("webui") / folder.relative_to(webui_dir)).as_posix()
+                    cmd.extend(["--add-data", _add_data_arg(asset, destination)])
+        portraits = webui_dir / "map" / "assets" / "portraits"
+        if portraits.is_dir():
+            # One resource directory (PNG files + provenance manifest), not
+            # hundreds of arguments exceeding Windows CreateProcess limits.
+            cmd.extend(["--add-data", _add_data_arg(portraits, "webui/map/assets/portraits")])
     beginner_guide = repo_root / "docs" / "新手使用教程.md"
     if beginner_guide.is_file():
         cmd.extend(["--add-data", _add_data_arg(beginner_guide, "docs")])

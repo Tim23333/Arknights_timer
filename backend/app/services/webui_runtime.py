@@ -21,6 +21,8 @@ from .webui_server import WebUiServer
 from .adb_selection import AdbSelection
 from .runtime_diagnostics import RuntimeDiagnostics
 from .webui_stream import LatestStream
+from tools.stage_global_state.profiling import StageProfiler
+
 
 
 class WebUiRuntime(QObject):
@@ -31,6 +33,8 @@ class WebUiRuntime(QObject):
     def __init__(self, window, *, port=8768):
         super().__init__(window)
         self.window = window
+        self._shutdown_requested = False
+        self._profiler = StageProfiler()
         self.adb_selection = AdbSelection(window)
         self.diagnostics = RuntimeDiagnostics(window)
         self._lock = threading.RLock()
@@ -173,6 +177,12 @@ class WebUiRuntime(QObject):
         return result
 
     def refresh(self):
+        try:
+            return self._profiler.call('webui_refresh', self._refresh)
+        finally:
+            self._profiler.report(print)
+
+    def _refresh(self):
         window = self.window
         api = window._websocket_api
         policy = window._field_policy.snapshot()
@@ -295,6 +305,14 @@ class WebUiRuntime(QObject):
                     raise ValueError("请先设置有效的 ADB 路径，再启动扫描")
             handlers[action]()
             return {"accepted": True, "message": "命令已交给 Timeline；扫描结果请查看模块状态"}
+        if action == "full-refresh":
+            if self.adb_selection.switching:
+                raise ValueError("正在切换 ADB，请等待切换完成后再刷新")
+            path = w._enemy_reader.mc.adb_path
+            if not path or not Path(path).is_file():
+                raise ValueError("请先设置有效的 ADB 路径，再启动扫描")
+            w._run_auto_refresh(manual=True)
+            return {"accepted": True, "message": "已启动全量刷新：关卡与操作 → 敌人与干员 → 随机数"}
         if action == "auto-address-once":
             if self.adb_selection.switching:
                 raise ValueError("正在切换 ADB，请等待切换完成后再寻址")
@@ -341,6 +359,16 @@ class WebUiRuntime(QObject):
             decimals.update({key: places for key in decimals})
             decimals["default"] = places
             return {"accepted": True}
+        if action == "shutdown":
+            if params.get("confirmed") is not True:
+                raise ValueError("请先确认关闭 Timeline 后端")
+            if not self._shutdown_requested:
+                self._shutdown_requested = True
+                w._quit_when_closed = True
+                # Let the HTTP command response return before closing its host.
+                # closeEvent owns cooperative worker shutdown and retries.
+                QTimer.singleShot(250, w.close)
+            return {"accepted": True, "message": "正在关闭 Timeline 后端；不会关闭电脑或模拟器"}
         if action == "ws-toggle":
             enabled = params.get("enabled")
             if not isinstance(enabled, bool):

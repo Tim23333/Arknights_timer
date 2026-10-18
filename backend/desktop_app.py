@@ -4127,6 +4127,10 @@ class CoachWindow(QMainWindow):
                 except Exception:
                     pass
                 self._timeline_httpd = None
+        if getattr(self, '_quit_when_closed', False):
+            # WebUI runs with quitOnLastWindowClosed=False. Only quit after
+            # the existing cooperative shutdown has finalized all workers.
+            QTimer.singleShot(0, QApplication.instance().quit)
         return super().closeEvent(event)
 
     def _on_open_timer_tool(self) -> None:
@@ -4999,18 +5003,32 @@ class CoachWindow(QMainWindow):
         if self._auto_refresh_timeout.isActive():
             self._auto_refresh_timeout.stop()
 
-    def _run_auto_refresh(self) -> None:
-        """检测到关卡切换后，按顺序自动刷新 ①操作记录 ②敌人/干员 ④随机数。"""
-        if not self._auto_refresh_enabled:
-            return  # 开关已关闭（含等待期间被关闭的挂起触发），不启动刷新链
+    def _run_auto_refresh(self, *, manual: bool = False) -> bool:
+        """共用操作记录→敌我→随机数扫描；手动刷新不伪造换局或清空历史。"""
+        if getattr(self, '_closing', False):
+            if manual:
+                raise ValueError('程序正在退出，无法启动全量刷新')
+            return False
+        if not manual and not self._auto_refresh_enabled:
+            return False  # 开关已关闭（含等待期间被关闭的挂起触发），不启动刷新链
         if (self._auto_refresh_step is not None
                 or self._auto_refresh_stopping_step is not None):
 #            _ga_log(f"[自动刷新] 已在流程中(_auto_refresh_step={self._auto_refresh_step})，忽略重入")
-            return  # 已在刷新流程中，避免重入
+            if manual:
+                raise ValueError('全量刷新仍在运行或停止中，请稍后重试')
+            return False  # 已在刷新流程中，避免重入
+        if manual:
+            if any(self._scan_worker_pending(kind) for kind in ('deploy', 'enemy', 'rng', 'guest')):
+                raise ValueError('已有扫描尚未结束，请等待后再全量刷新')
+            # 使先前等待时钟的自动触发失效，避免手动刷新完成后重复执行。
+            self._auto_refresh_wait_gen += 1
+            self._stage_reset_wait_gen += 1
+        self._auto_refresh_manual = manual
 #        _ga_log("[自动刷新] 开始执行（deploy 步骤）")
         self._auto_refresh_retries = 0
-        self._toast.show("检测到关卡切换，开始自动刷新…", level="info", semantic="info")
+        self._toast.show("开始全量刷新…" if manual else "检测到关卡切换，开始自动刷新…", level="info", semantic="info")
         self._start_auto_refresh_step("deploy")
+        return True
 
     def _on_auto_refresh_step_timeout(self) -> None:
         """当前步骤超时：进入 stopping，待 QThread finished 后才解除重入。"""
@@ -5052,6 +5070,7 @@ class CoachWindow(QMainWindow):
         self._auto_refresh_abort_reason = ''
         self._auto_refresh_step = None
         self._auto_refresh_retries = 0
+        self._auto_refresh_manual = False
         self._set_auto_refresh_status('failed' if self._auto_refresh_enabled else 'disabled', f'自动刷新中止：{reason}')
         self._toast.show(f"自动刷新中止：{reason}", level="error", semantic="error")
 
@@ -5063,7 +5082,7 @@ class CoachWindow(QMainWindow):
         if self._auto_refresh_stopping_step is not None:
             return
         self._stop_auto_refresh_timeout()
-        if not self._auto_refresh_enabled:
+        if not self._auto_refresh_enabled and not getattr(self, '_auto_refresh_manual', False):
             self._abort_auto_refresh('自动刷新已关闭')
             return
         if not ok:
@@ -5087,8 +5106,10 @@ class CoachWindow(QMainWindow):
             self._start_auto_refresh_step("rng")
         elif step == "rng":
             self._auto_refresh_step = None
-            self._set_auto_refresh_status('watching', '自动刷新完成，继续监听关卡变化')
-            self._toast.show("自动刷新完成", level="info", semantic="success")
+            self._auto_refresh_manual = False
+            self._set_auto_refresh_status('watching' if self._auto_refresh_enabled else 'disabled',
+                                          '全量刷新完成，继续监听关卡变化' if self._auto_refresh_enabled else '全量刷新完成，自动检测仍关闭')
+            self._toast.show("全量刷新完成", level="info", semantic="success")
 
     def _sync_battle_cache_controls(self) -> None:
         cache = self._battle_cache

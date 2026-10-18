@@ -1,4 +1,5 @@
-import {formatValue, formatClock, pathValues, fieldTopic, assessField, metaLabel, policyFields, deployView, pieData, departedView} from "./model.mjs";
+import {formatValue, formatClock, pathValues, fieldTopic, assessField, metaLabel, policyFields, deployView, pieData, departedView, monitorStatus} from "./model.mjs";
+import {policyChanges} from './policyChanges.mjs';
 import {createPager} from './pagination.mjs';
 import {createLogs} from './logs.mjs';
 import {createTableRenderer} from './tableRenderer.mjs';
@@ -7,12 +8,14 @@ import {createFieldDisplay} from './fieldDisplay.mjs';
 import {createSourceMeta} from './sourceMeta.mjs';
 import {clockChannelName, createClockPublisher} from './clockRelay.mjs';
 import {createDetailSelection} from './detailSelection.mjs';
+import {createStageGlobalRenderer} from './stageGlobal.mjs';
 
 const byId = id => document.getElementById(id);
 const ui = {data: {}, policy: {generation: 0, fields: []}, columns: {}, precision: {}, page: "overview", detail: null, busyPolicy: false, connected: false};
 const tables = new Map();
 const pagers = new Map();
 const fieldDisplays = {enemy:createFieldDisplay(), character:createFieldDisplay()};
+const heldFieldCounts = {enemy:0, character:0};
 const displayExpiry = {enemy:null, character:null};
 const sourceMetadata = {enemy:createSourceMeta(byId('enemy-meta')), character:createSourceMeta(byId('character-meta'))};
 let notificationSession = null, notificationCursor = 0;
@@ -22,6 +25,7 @@ let drawerReturn = null;
 let drawerCleanup = null;
 const detailSelection = createDetailSelection(
   target => command('detail', target), error => toast(error.message, 'error'));
+const stageGlobal = createStageGlobalRenderer(byId('module-global'), {table:updateTable, policy:() => ui.policy});
 
 function node(tag, className, text) {
   const element = document.createElement(tag);
@@ -191,7 +195,7 @@ function renderEntities(kind) {
   if (kind === "enemy" && byId("hide-departed").checked) items = items.filter(item => !["departed", "dead", "removed"].includes(item.lifecycle));
   if (kind === "character" && !byId("show-tokens").checked) items = items.filter(item => ["operator", "干员"].includes(item.kind));
   updateTable(kind + "-table", columns, items, view.cell);
-  const note = view.heldCount ? ` · ${view.heldCount} 个字段暂显旧值（非当前帧，悬停查看来源）` : '';
+  heldFieldCounts[kind]=view.heldCount;
   sourceMetadata[kind].update(payload.meta);
   clearTimeout(displayExpiry[kind]);
   if (view.expiresAt !== null) {
@@ -199,7 +203,7 @@ function renderEntities(kind) {
     // one-shot deadline for existing values, not a new polling/update rate.
     displayExpiry[kind] = setTimeout(() => renderEntities(kind), Math.max(1, view.expiresAt - performance.now() + 1));
   }
-  set(kind + "-status", (payload.message || payload.meta?.reason || metaLabel(payload.meta)) + note);
+  set(kind + "-status", monitorStatus(payload,kind==='enemy'?ui.data.service?.enemy:undefined,view.heldCount));
   if (byId("raw-" + domain).parentElement.open) set("raw-" + domain, JSON.stringify(payload, null, 2));
 }
 
@@ -334,8 +338,13 @@ function renderRng() {
 
 function renderClock() {
   const clock = ui.data.clock || {};
+  stageGlobal.updateSources(ui.data);
   set("clock-time", formatClock(clock.gameTime)); set("overview-time", formatClock(clock.gameTime));
   set("clock-frame", "逻辑帧 " + formatValue(clock.fixedFrame)); set("overview-frame", "逻辑帧 " + formatValue(clock.fixedFrame));
+  for (const [key,id,label,formatter] of [['gameTime','global-time','',formatClock],['fixedFrame','global-frame','逻辑帧 ',formatValue]]) {
+    const field=ui.policy.fields.find(field => field.id === 'stage_global.'+key);
+    set(id,label+(field?.display === false ? '未展示' : field?.collect === false ? '未采集' : formatter(clock[key])));
+  }
   set("clock-source", [clock.connected ? "已连接" : "未连接", clock.clockSource || "—", clock.message || ""].join(" · "));
   byId("clock-time").classList.toggle("source-unavailable", !ui.connected || !clock.connected);
   if (ui.page === 'system') set('timer-status', clock.message || (clock.connected ? '已连接' : '未连接'));
@@ -350,7 +359,7 @@ function render(changed = null) {
   logs.metadata(data.service?.logs);
   const clock = data.clock || {};
   const ws = data.service?.ws || {};
-  if (has('clock')) renderClock();
+  if (has('clock') || has('policyGeneration')) renderClock();
   set("version", "ARKNIGHTS TIMELINE / " + (data.version || "—"));
   set("connection", ui.connected ? (data.service?.adb?.serial || "本机后端已连接") : "后端连接断开");
   set("nav-status", ui.connected ? "后端已连接" : "连接断开");
@@ -364,7 +373,9 @@ function render(changed = null) {
   set("count-enemies", (data.enemies?.items?.length ?? 0) + " 个实体 / 名册");
   set("count-characters", (data.characters?.items?.length ?? 0) + " 个单位");
   set("count-deploy", (data.deploy?.events?.length ?? 0) + " 条操作"); set("count-rng", data.rng?.by_role ? "双引擎" : "待扫描");
+  set('count-global', data.stage_global ? '已收到全局主题' : '等待采样');
   if (ui.page === "overview") {
+    if ((has('stage_global') || has('stage_map') || has('stage_units') || has('policyGeneration')) && byId('overview-global').open) stageGlobal.draw(data, has('policyGeneration'));
     if ((has('enemies') || has('columns') || has('policyGeneration')) && byId("overview-enemies").open) renderEntities("enemy");
     if ((has('characters') || has('columns') || has('policyGeneration')) && byId("overview-characters").open) renderEntities("character");
     if ((has('deploy') || has('stage')) && byId("overview-deploy").open) renderDeploy();
@@ -380,14 +391,11 @@ function render(changed = null) {
     if (data.options?.toast && document.activeElement !== byId("toast-enabled")) byId("toast-enabled").checked = data.options.toast.enabled !== false;
     for (const input of document.querySelectorAll("[data-duration]")) if (document.activeElement !== input && data.options?.toast?.duration_ms?.[input.dataset.duration] !== undefined) input.value = data.options.toast.duration_ms[input.dataset.duration];
   }
-  if (ui.detail && (has('enemies') || has('characters') || has('enemy_detail') || has('character_detail'))) {
-    const domain = ui.detail.kind === "enemy" ? "enemy_detail" : "character_detail";
-    const item = data[domain]?.items?.find(item => String(item.id) === ui.detail.id);
-    const current = data[ui.detail.kind === "enemy" ? "enemies" : "characters"]?.items?.find(item => String(item.id) === ui.detail.id);
-    const payload = {basic: current || {state: "last_known", message: "对象已离场或本轮不可用", value: ui.detail.item}, detail: item || {state: "unavailable", message: "异步详情尚未返回或采集已关闭"}, meta: data[domain]?.meta};
-    const pre = byId("drawer-body").querySelector("pre");
-    if (pre) pre.textContent = JSON.stringify(payload, null, 2);
-  }
+  // Service messages may change without a new accepted enemy frame (scanning,
+  // failed reads, stop). Update this text independently, never redraw tables
+  // or create a new timer/transport just to display the existing Qt metrics.
+  if (has('service')) set('enemy-status',monitorStatus(data.enemies,data.service?.enemy,heldFieldCounts.enemy));
+  if (ui.detail && (has('enemies') || has('characters') || has('enemy_detail') || has('character_detail') || has('policyGeneration'))) renderEntityDetails();
 }
 
 function renderPolicy() {
@@ -407,10 +415,48 @@ function renderPolicy() {
       toggle.disabled = ui.busyPolicy || (layer === "collect" && !!(field.captureRequired || field.capture_required || field.required));
       toggle.dataset.field = field.id; toggle.dataset.layer = layer; cell.append(toggle); row.append(cell);
     }
-    row.append(node("td", "granularity", field.domain + " / " + field.group + ((field.dependencies || field.deps || []).length ? " · 依赖 " + (field.dependencies || field.deps).join(", ") : "") + (!field.collect ? " · 未采集" : "")));
+    const domainLabel = field.domain === 'stage_global' ? '关卡全局状态' : field.domain;
+    const groupLabel = field.domain === 'stage_global' ? ({clock_reference:'主时钟引用',identity:'关卡身份',map_identity:'地图标识',runtime:'战斗运行状态',mode:'游戏模式',waves:'波次与门控',wave_enemies:'下一波敌人配置',map:'地图配置',map_runtime:'当前地块',layout:'当前布局',enemy_layout:'当前敌方布局',ally_layout:'当前我方布局'})[field.group] || field.group : field.group;
+    row.append(node("td", "granularity", domainLabel + " / " + groupLabel + ((field.dependencies || field.deps || []).length ? " · 依赖 " + (field.dependencies || field.deps).join(", ") : "") + (!field.collect ? " · 未采集" : "")));
     body.append(row);
   }
   set("field-count", `${filtered.length} / ${ui.policy.fields.length} 个字段`);
+}
+
+function confirmShutdown() {
+  const content = node('div');
+  content.append(node('p', '', '确认关闭 Timeline 后端？采集、WebSocket 和网页服务将停止，其他已连接窗口也会断开。不会关闭电脑或模拟器。'));
+  const actions = node('div', 'adb-actions');
+  const cancel = node('button', 'button', '取消');
+  const confirm = node('button', 'button', '确认关机');
+  actions.append(cancel, confirm); content.append(actions);
+  cancel.onclick = closeDrawer;
+  confirm.onclick = async () => {
+    confirm.disabled = true;
+    try {
+      const result = await command('shutdown', {confirmed: true});
+      content.replaceChildren(node('p', '', result.message + '。再次使用时请重新启动程序。'));
+      toast(result.message, 'info');
+    } catch (error) { confirm.disabled = false; toast(error.message, 'error'); }
+  };
+  openDrawer('关机确认', content);
+}
+
+function confirmDependencyChanges(fields) {
+  return new Promise(resolve => {
+    const content = node('div');
+    content.append(node('p', '', '以下字段依赖此采集来源，继续将一并关闭它们的采集（不会改变展示及 WS 发布开关）：'));
+    const list = node('ul');
+    for (const field of fields) list.append(node('li', '', `${field.label || field.id}（${field.id}）`));
+    const actions = node('div', 'adb-actions');
+    const cancel = node('button', 'button', '取消');
+    const apply = node('button', 'button primary', '确认一并关闭');
+    actions.append(cancel, apply); content.append(list, actions);
+    openDrawer('确认关闭依赖字段', content);
+    drawerCleanup = () => resolve(false);
+    cancel.onclick = closeDrawer;
+    apply.onclick = () => { drawerCleanup = null; closeDrawer(); resolve(true); };
+  });
 }
 
 async function updatePolicy(id, layer, enabled = null) {
@@ -419,9 +465,17 @@ async function updatePolicy(id, layer, enabled = null) {
   ui.busyPolicy = true; renderPolicy(); renderCaptureControls();
   try {
     const registry = ui.policy.fields;
-    const result = await api("/api/policy", {generation: ui.policy.generation, fields: {[id]: {[layer]: enabled === null ? !field[layer] : enabled}}});
+    const generation = ui.policy.generation;
+    const changes = policyChanges(registry, id, layer, enabled === null ? !field[layer] : enabled);
+    const dependents = registry.filter(item => item.id !== id && changes[item.id]);
+    if (dependents.length && !await confirmDependencyChanges(dependents)) return;
+    // A concurrent policy change is rejected by the backend generation check.
+    const result = await api("/api/policy", {generation, fields: changes});
     ui.policy = policyFields({...result, registry: result.registry || registry});
-    toast((field.label || id) + " · 策略已保存", "success");
+    const enabledCollection = layer === 'collect' && changes[id].collect;
+    toast((field.label || id) + (enabledCollection
+      ? " · 已开启采集；若字段尚未定位，请点击顶部全量刷新（或对应模块重新扫描）"
+      : " · 策略已保存"), "success");
   } catch (error) { toast(error.message, "error"); ui.policy = policyFields(await api("/api/policy").catch(() => ui.policy)); }
   finally { ui.busyPolicy = false; renderPolicy(); render(); }
 }
@@ -542,6 +596,7 @@ async function action(name) {
   try {
     if (name === 'logs' || name === 'diagnostics') return showPage('logs');
     if (name === "close-overlay") return closeDrawer();
+    if (name === 'shutdown') return confirmShutdown();
     if (name === "ws-check") return runWsCheck();
     if (["guide", "api"].includes(name)) { const data = await api("/api/docs/" + name); return openDrawer(name === "guide" ? "使用教程" : "接口说明", markdown(data.markdown)); }
     if (name === "adb") return openAdbDrawer();
@@ -624,7 +679,12 @@ async function updatePoliciesAndNotifications() {
     }
     if (!ui.busyPolicy && !policyRequest && (!ui.policy.fields.length || (ui.data.policyGeneration !== undefined && ui.data.policyGeneration !== ui.policy.generation))) {
       policyRequest = api('/api/policy');
-      try { ui.policy = policyFields(await policyRequest); renderPolicy(); renderCaptureControls(); }
+      try {
+        ui.policy = policyFields(await policyRequest); renderPolicy(); renderCaptureControls();
+        // A paused producer may send only one policy-change snapshot. Reapply
+        // it after registry loading instead of waiting for another game frame.
+        render(new Set(['policyGeneration']));
+      }
       finally { policyRequest = null; }
     }
 }
@@ -658,7 +718,9 @@ async function startLive() {
       render(keys);
       updatePoliciesAndNotifications().catch(error => toast(error.message, 'error'));
     }
-  });
+  }, {sessionTopics:['clock','stage_global','stage_map','stage_units'],
+    initialSession:ui.data.stage_global?.meta?.sessionId || ui.data.clock?.meta?.sessionId || null,
+    initialOrder:ui.data.stage_global?.meta || ui.data.clock?.meta || null});
   const sources = ['clock', 'modules'].map(channel => {
     const source = new EventSource('/api/stream/' + channel);
     const status = active => {
