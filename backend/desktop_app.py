@@ -2374,6 +2374,7 @@ class CoachWindow(QMainWindow):
     # 归0事件信号：由后台广播线程 emit，主线程槽触发自动刷新链
     # （跨线程回主线程的标准方式，避免 QTimer.singleShot 从非主线程不可靠）
     gameTimeReset = Signal()
+    battleLifecycle = Signal(object, str, object)
     # memory worker 只负责判断地址失效；Qt worker 的创建/启动回到主线程。
     guestRelocateRequested = Signal()
     websocketServiceStatus = Signal(dict)
@@ -2393,6 +2394,7 @@ class CoachWindow(QMainWindow):
         # 归0事件订阅：时钟归 0（新关卡）→ Signal 回主线程触发自动刷新链
         self._provider.subscribe_game_time_reset(self._on_game_time_reset)
         self.gameTimeReset.connect(self._on_game_time_reset_main)
+        self.battleLifecycle.connect(self._on_battle_lifecycle)
         self.guestRelocateRequested.connect(self._maybe_relocate_guest_clock)
         self._guest_clock = None  # GuestBattleClock，自动寻址成功后持有
         self._guest_addressing_gen = 0  # 递增代际，丢弃过期定位结果
@@ -2530,6 +2532,7 @@ class CoachWindow(QMainWindow):
         # 后台任务关闭采用两阶段：先关闭底层 I/O 并请求线程退出，再由事件循环
         # 异步确认 finished。任何仍在运行的 QThread 都必须继续由这些字段持有。
         self._memory_thread: threading.Thread | None = None
+        self._lifecycle_thread: threading.Thread | None = None
         self._closing = False
         self._shutdown_finalized = False
         self._close_retry_pending = False
@@ -3488,6 +3491,9 @@ class CoachWindow(QMainWindow):
         self._memory_thread = threading.Thread(
             target=self._memory_worker, name="ak-memory-worker", daemon=True)
         self._memory_thread.start()
+        self._lifecycle_thread = threading.Thread(
+            target=self._lifecycle_worker, name="ak-lifecycle-worker", daemon=True)
+        self._lifecycle_thread.start()
 
     def _start_timers(self) -> None:
         self.t_fast = QTimer(self)
@@ -3638,15 +3644,29 @@ class CoachWindow(QMainWindow):
 
         QTimer.singleShot(250, _retry)
 
+    def _lifecycle_worker(self) -> None:
+        """Independent low-rate IO; events retain the existing Qt owner gate."""
+        while not self._stop_event.is_set():
+            clock = self._guest_clock
+            if clock is not None:
+                try:
+                    for event in clock.poll_lifecycle():
+                        self.battleLifecycle.emit(clock, event, clock.lifecycle_token(require_ack=False))
+                except Exception:
+                    # The accepted lifecycle state expires; never fabricate ready.
+                    pass
+            self._stop_event.wait(.01)
+
     def _memory_worker(self) -> None:
         while not self._stop_event.is_set():
             try:
+                api = self._websocket_api
+                source_session = api.session_id if api is not None else None
                 self._provider.set_capture_policy(self._field_policy.snapshot())
                 self._provider.refresh_sample()
                 # 仅从后台读取纯 Python 状态；Qt worker 由 Signal 调回主线程创建。
-                api = self._websocket_api
                 if api is not None:
-                    api.publish_timer(self._provider.get_game_data())
+                    api.publish_timer(self._provider.get_game_data(), source_session_id=source_session)
                 clock = self._guest_clock
                 if (self._auto_addressing_enabled
                         and clock is not None
@@ -3666,8 +3686,52 @@ class CoachWindow(QMainWindow):
 #        _ga_log("[自动刷新] 收到归0广播（新关卡），触发刷新链")
         self.gameTimeReset.emit()
 
-    def _on_game_time_reset_main(self) -> None:
-        """主线程槽：归0后等新局稳定走秒，再触发自动刷新链。
+    def _on_battle_lifecycle(self, clock, event: str, token=None) -> None:
+        """Qt owner consumes events from the currently bound clock only."""
+        if self._closing or clock is not self._guest_clock:
+            return
+        if event == 'exit':
+            self._cache_current_deploy(final_reason='battle_exited')
+            self._cache_rng_from_service()
+            self._on_game_time_reset_main(lifecycle=True, ended=True)
+            for kind in ('deploy', 'enemy', 'rng'):
+                self._request_scan_worker_stop(kind)
+            self._stop_enemy_poll()
+            self._stop_deploy_poll()
+            self._on_rng_stop()
+            self._toast.show('本关已结束，已停止实时采集，等待新关卡', semantic='info')
+            self._set_auto_refresh_status('waiting_stage', '本关已结束，等待新关卡')
+        elif event == 'ready':
+            if token is None or token != clock.lifecycle_token(require_ack=False):
+                return  # A late readiness event cannot resurrect an exited battle.
+            # Ready delivery can be retried after a transient failed check.
+            # Clear the old session once per battle, never once per retry.
+            identity = (clock, token[1:])
+            if getattr(self, '_lifecycle_owner_identity', None) != identity:
+                self._on_game_time_reset_main(lifecycle=True)
+                self._lifecycle_owner_identity = identity
+            clock.acknowledge_lifecycle(token)
+
+    def _wait_lifecycle_ready(self, gen: int) -> None:
+        if not self._stage_reset_wait_current(gen):
+            return
+        clock = self._guest_clock
+        if clock is None or getattr(clock, 'lifecycle', None) is None:
+            return
+        busy = (self._auto_refresh_step is not None or self._auto_refresh_stopping_step is not None
+                or any(self._scan_worker_pending(k) for k in ('deploy', 'enemy', 'rng'))
+                or getattr(self, '_rng_service_stopping', False)
+                or any(worker is not None and worker.isRunning() and worker.isInterruptionRequested()
+                       for worker in (getattr(self, '_enemy_poll', None),
+                                      getattr(self, '_deploy_poll', None))))
+        if clock.lifecycle_ready() and not busy:
+            self._run_auto_refresh()
+            return
+        self._set_auto_refresh_status('waiting_stage', '等待新关卡读取链就绪（支持暂停状态）')
+        QTimer.singleShot(250, lambda: self._wait_lifecycle_ready(gen))
+
+    def _on_game_time_reset_main(self, *, lifecycle=False, ended=False) -> None:
+        """统一作废旧来源；生命周期可用时以实例就绪替代时钟走动。
 
         归零时旧 BattleController 正在销毁、新对象通常尚未建立。立即扫描会
         命中旧对象并退化为数 GB 全堆扫描；若上一局刷新仍在进行，还会形成
@@ -3675,10 +3739,19 @@ class CoachWindow(QMainWindow):
         """
         if getattr(self, '_closing', False):
             return
+        clock = getattr(self, '_guest_clock', None)
+        if not lifecycle and getattr(clock, 'lifecycle', None) is not None:
+            return  # Clock reset is only a hint when lifecycle reads are available.
+        if lifecycle and not ended:
+            # Confirmed identity, not clock rewind, owns this cache boundary.
+            # The ready handler acknowledges the new clock only after we return.
+            self._provider.begin_battle_session()
+        self._auto_refresh_wait_gen += 1
+        self._stage_reset_wait_gen += 1
         self._source_epoch = getattr(self, '_source_epoch', 0) + 1
         self._webui_runtime_snapshot = {}
         history = getattr(self, '_departure_history', None)
-        if history is not None:
+        if history is not None and not ended:
             history.invalidate(self._source_epoch)
         api = getattr(self, '_websocket_api', None)
         if api is not None:
@@ -3690,15 +3763,17 @@ class CoachWindow(QMainWindow):
             label = getattr(self, name, None)
             if label is not None:
                 label.setText('关卡已更新：旧来源不可用，请重新扫描')
-        if not self._auto_refresh_enabled:
-            return
-        self._stage_reset_wait_gen += 1
         reset_gen = self._stage_reset_wait_gen
-        _tlog(f'[自动刷新] reset generation={reset_gen}; '
-              '等待新关卡 time/frame 稳定走动')
+        _tlog(f'[自动刷新] reset generation={reset_gen}; ' +
+              ('等待新关卡实例就绪' if lifecycle else '等待新关卡 time/frame 稳定走动'))
         if (self._auto_refresh_step is not None
                 or self._auto_refresh_stopping_step is not None):
             self._abort_auto_refresh('检测到更新的关卡，取消上一轮刷新')
+        if ended or not self._auto_refresh_enabled:
+            return
+        if lifecycle:
+            self._wait_lifecycle_ready(reset_gen)
+            return
 #        _ga_log("[自动刷新] 主线程收到归0信号，等待新关卡稳定走秒")
         self._wait_new_stage_running_then_refresh(reset_gen)
 
@@ -3839,9 +3914,12 @@ class CoachWindow(QMainWindow):
         memory_pending = (
             self._memory_thread is not None
             and self._memory_thread.is_alive())
+        lifecycle_pending = (
+            self._lifecycle_thread is not None
+            and self._lifecycle_thread.is_alive())
         if (qt_pending or not enemy_poll_stopped or not deploy_poll_stopped
                 or not rng_service_stopped or not websocket_stopped
-                or memory_pending):
+                or memory_pending or lifecycle_pending):
             event.ignore()
             self._schedule_close_retry()
             return
@@ -3919,11 +3997,12 @@ class CoachWindow(QMainWindow):
             QMessageBox.critical(self, "寻址工具", f"无法启动：{e}")
 
     def _on_refresh_game(self) -> None:
+        api = getattr(self, '_websocket_api', None)
+        source_session = api.session_id if api is not None else None
         self._provider.set_capture_policy(self._field_policy.snapshot())
         res = self._provider.refresh_sample()
-        api = getattr(self, '_websocket_api', None)
         if api is not None:
-            api.publish_timer(self._provider.get_game_data())
+            api.publish_timer(self._provider.get_game_data(), source_session_id=source_session)
         if not res.get("ok"):
             QMessageBox.warning(self, "游戏状态", res.get("message", "刷新失败"))
 
@@ -4323,6 +4402,8 @@ class CoachWindow(QMainWindow):
         worker = self._enemy_poll
         worker._source_epoch = getattr(self, '_source_epoch', 0)
         worker.snapshot.connect(lambda snapshot, w=worker: self._on_enemy_snapshot_ready(snapshot, w))
+        if self._websocket_api is not None:
+            worker._publication_session_id = self._websocket_api.session_id
         self._enemy_poll.start()
         self.btn_enemy_stop.setEnabled(True)
         self.btn_character_stop.setEnabled(True)
@@ -4538,6 +4619,7 @@ class CoachWindow(QMainWindow):
                     pass
             return
         if ok and clock is not None:
+            clock.require_lifecycle_ack()
             old_clock, self._guest_clock = self._guest_clock, clock
             self._provider.configure_guest(clock)
             # 重定位场景：旧 clock 的 memsrv 通道显式关闭，不依赖 GC 兜底
@@ -4636,6 +4718,10 @@ class CoachWindow(QMainWindow):
         """
         if not self._auto_refresh_wait_current(gen):
             return
+        if getattr(self._guest_clock, 'lifecycle', None) is not None:
+            self._stage_reset_wait_gen += 1
+            self._wait_lifecycle_ready(self._stage_reset_wait_gen)
+            return
         if self._guest_ready():
 #            _ga_log("[自动刷新] guest 已就绪，进入时间变动等待")
             self._wait_game_time_moved_then_refresh(gen)
@@ -4670,6 +4756,10 @@ class CoachWindow(QMainWindow):
             last_frame: int | None = None) -> None:
         """等待当前时钟连续两次正向增长，不复用跨局锁存的 moved 标志。"""
         if not self._auto_refresh_wait_current(gen):
+            return
+        if getattr(self._guest_clock, 'lifecycle', None) is not None:
+            self._stage_reset_wait_gen += 1
+            self._wait_lifecycle_ready(self._stage_reset_wait_gen)
             return
         game = self._provider.get_clock_sample()
         self._set_auto_refresh_status('waiting_clock', '等待游戏时钟连续前进（未开局或暂停时不会扫描）')
@@ -5327,6 +5417,12 @@ class CoachWindow(QMainWindow):
             self._deploy_poll = None
             self.btn_deploy_scan.setEnabled(not self._closing)
             self.btn_deploy_stop.setEnabled(False)
+            # Complete only this owner's pending notice, never a newer scan,
+            # monitoring status or error that has already replaced it.
+            if self.lbl_deploy_status.text() in (
+                    '正在等待上一轮部署读取停止 ...', '正在等待部署读取停止 ...',
+                    '上一轮部署读取仍在停止，请稍后重试', '上一轮部署读取仍在停止，未启动新的监控'):
+                self.lbl_deploy_status.setText('已停止')
         worker.deleteLater()
         if self._closing:
             self._schedule_close_retry()

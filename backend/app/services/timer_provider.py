@@ -218,6 +218,23 @@ class TimerDataProvider:
         self._last_seen_game_time = None
         self._game_time_moved = False
 
+    def begin_battle_session(self) -> None:
+        """Drop old-battle evidence before acknowledging a new lifecycle ID.
+
+        The first new sample need not rewind: loading/locating may miss zero.
+        Keep reader configuration, policy and subscribers, but never match a
+        new battle's operations against the previous battle's clock timeline.
+        refresh_sample uses the same lock, so an in-flight read finishes before
+        this boundary; the lifecycle ack keeps new-battle reads gated until it.
+        This is not called for a transient unknown or a normal failed sample.
+        """
+        with self._lock:
+            self._invalidate_clock_locked('新关卡已就绪，等待本局首次时钟采样。')
+            self._last_known_frame = None
+            self._clear_frame_timeline()
+            self._reset_stage_detection_state_locked()
+            self._guest_state_log = StateLog()
+
     def subscribe_game_time_reset(self, callback) -> None:
         """注册时钟归 0（新关卡开始）事件回调；广播机制，可多订阅者。
 

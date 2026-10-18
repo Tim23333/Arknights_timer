@@ -429,6 +429,8 @@ class WebSocketApi:
         self._snapshots: dict[str, Any] = {}
         self._last_detail_revision: int | None = None
         self._session_id = f"session-{uuid.uuid4().hex}"
+        self._session_origin = uuid.uuid4().hex
+        self._session_ordinal = 0
         self._topic_versions: dict[str, int] = {}
         self._scheduled_topics: set[str] = set()
         self._started_at = time.monotonic()
@@ -456,6 +458,21 @@ class WebSocketApi:
         with self._lock:
             return {topic: self._topic_versions.get(topic, 0)
                     for topic in self._source_snapshots if topic != 'battle'}
+
+    def accepted_sources(self, topics: tuple[str, ...]) -> dict[str, Any]:
+        """Copy collected sources for aggregation, never a display/WS projection.
+
+        Calling this does not read game memory. Copies keep original field tags;
+        aggregates must still validate the current session and dependencies.
+        """
+        with self._lock:
+            return {topic: copy.deepcopy(self._source_snapshots[topic])
+                    for topic in topics if topic in self._source_snapshots}
+
+    @property
+    def session_id(self) -> str:
+        with self._lock:
+            return self._session_id
 
     def wait_local_update(self, channel: str, revision: int, timeout: float = 1):
         """Wait for accepted local data without memory reads or external WS gates.
@@ -625,6 +642,7 @@ class WebSocketApi:
         """开始新的战斗会话，使客户端可用 sessionId 区分换局。"""
         with self._lock:
             self._session_id = f"session-{uuid.uuid4().hex}"
+            self._session_ordinal += 1
             self._last_detail_revision = None
             self._resyncs += 1
             for client in self._clients:
@@ -634,6 +652,14 @@ class WebSocketApi:
                     "character_detail", "deploy", "rng", "quality"):
                 self._snapshots.pop(topic, None)
                 self._source_snapshots.pop(topic, None)
+            # A bootstrap or an independent clock SSE replay must not reuse
+            # the last battle's time while the new timer is still locating.
+            self._local_clock = {'connected': False, 'meta': {
+                'sessionId': self._session_id, 'sessionOrigin': self._session_origin,
+                'sessionOrdinal': self._session_ordinal,
+                'collectionState': 'unavailable', 'reason': 'session_changed',
+                'policyGeneration': self._policy_provider().generation}}
+            self._local_revisions['clock'] += 1
             self._local_revisions["modules"] += 1
             self._local_changed.notify_all()
             return self._session_id
@@ -726,7 +752,15 @@ class WebSocketApi:
                 result[topic]["rateHz"] = min(result[topic]["rateHz"], 5.0)
         return result
 
-    def publish_timer(self, cache: dict[str, Any]) -> None:
+    def publish_timer(self, cache: dict[str, Any], *, source_session_id: str | None = None) -> None:
+        expected_session = self.session_id if source_session_id is None else source_session_id
+        # All three accepted views commit as one operation against begin_session.
+        # Existing helpers use this same RLock; no game/device IO occurs here.
+        with self._lock:
+            if expected_session == self._session_id:
+                self._publish_timer_locked(cache, expected_session)
+
+    def _publish_timer_locked(self, cache, expected_session):
         timer = copy.deepcopy(cache)
         if timer.get("policy_generation", self._policy_provider().generation) != self._policy_provider().generation:
             return
@@ -741,7 +775,8 @@ class WebSocketApi:
             "configured": bool(timer.get("configured")),
             "sampledAt": _safe(timer.get("last_refresh")),
             "message": _safe(timer.get("message")),
-            "meta": {"sourceFrame": timer.get("frame_count"), "latestKnownFrame": timer.get("frame_count"),
+            "meta": {"sessionId": expected_session,
+                     "sourceFrame": timer.get("frame_count"), "latestKnownFrame": timer.get("frame_count"),
                      "collectionState": timer.get("collection_state", "current"), "sampledAt": timer.get("last_refresh"),
                      "policyGeneration": timer.get("policy_generation", self._policy_provider().generation)},
         }
@@ -753,9 +788,14 @@ class WebSocketApi:
             "" if update.get(spec.paths[0]) is not None else "timer_unavailable")
             for spec in FIELD_REGISTRY.values() if spec.domain == "battle" and spec.group == "timer"}
         self._merge_battle(update)
+        if expected_session != self._session_id:
+            return
         with self._local_changed:
-            if policy.generation == self._policy_provider().generation:
+            if (expected_session == self._session_id
+                    and policy.generation == self._policy_provider().generation):
                 update['meta']['sessionId'] = self._session_id
+                update['meta']['sessionOrigin'] = self._session_origin
+                update['meta']['sessionOrdinal'] = self._session_ordinal
                 self._local_clock = self._project_topic('battle', update, policy, 'collect')
                 self._local_revisions['clock'] += 1
                 self._local_changed.notify_all()
