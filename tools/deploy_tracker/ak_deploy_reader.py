@@ -425,17 +425,44 @@ class DeployTrackerReader:
         ch = self._get_channel()
         needles = list(dict.fromkeys(needles))
         out = {nd: [] for nd in needles}
+        started = time.perf_counter()
+        scanned = calls = 0
         for start, end in regions:
             addr = start
             while addr < end:
                 size = min(DEVICE_SCAN_CAP, end - addr)
                 found = ch.scan(addr, size, needles)
+                scanned += size
+                calls += 1
                 for nd in needles:
                     out[nd].extend(found.get(nd) or [])
                 addr += size
+        self._status(f'[扫描计时] 区域搜索 {scanned / 1048576:.1f} MiB / '
+                     f'{calls} 次请求 / {time.perf_counter() - started:.3f}s')
         return out
 
     def _scan_class_objects(self, class_names, *, namespace="Torappu.Battle"):
+        started = time.perf_counter()
+        class_names = tuple(dict.fromkeys(class_names))
+        try:
+            result = self._scan_class_objects_impl(class_names, namespace=namespace)
+            if result is not None:
+                for name in class_names:
+                    result.setdefault(name, set())
+            return result
+        finally:
+            self._status(f'[扫描计时] 类与对象定位总计 {time.perf_counter() - started:.3f}s')
+
+    def scan_classes(self, class_names, *, namespace="Torappu.Battle"):
+        """Locate metadata only, for static fields/getters; never scan instances."""
+        started = time.perf_counter()
+        try:
+            return self._scan_class_objects_impl(
+                class_names, namespace=namespace, classes_only=True)
+        finally:
+            self._status(f'[扫描计时] 类元数据定位 {time.perf_counter() - started:.3f}s')
+
+    def _scan_class_objects_impl(self, class_names, *, namespace="Torappu.Battle", classes_only=False):
         """一次设备侧扫描返回指定命名空间内多个类的对象地址。
 
         多个类共用三遍大范围扫描（类名、Il2CppClass 引用、对象 klass 指针），
@@ -447,8 +474,13 @@ class DeployTrackerReader:
                 "读取到的进程内存映射中没有任何 rw 区域，无法搜索 IL2CPP 类名")
             self._status("  主路径失败: " + self._class_scan_failure_reason)
             return None
-        t0 = time.time()
         class_names = tuple(dict.fromkeys(class_names))
+        from .class_scan_cache import lookup, remember
+        cached = lookup(self.mc, namespace, class_names, self._scan_read_many)
+        if cached:
+            self._status('[定位复用] 类身份实时验证通过' +
+                         ('；仅定位类元数据' if classes_only else '；仍重新扫描当前对象'))
+            return cached if classes_only else self._scan_objects_for_classes(cached)
         class_needles = {name: name.encode("ascii") + b"\x00" for name in class_names}
         self._status("共享扫描: 设备侧搜索 " + " / ".join(class_names) + " klass ...")
         name_scan = self._device_scan_regions(rw_regions, list(class_needles.values()))
@@ -458,11 +490,12 @@ class DeployTrackerReader:
             return None
 
         names_by_addr = {}
-        for name, needle in class_needles.items():
-            for addr in name_scan.get(needle, []):
-                prev = self._read(addr - 1, 1)
-                if not prev or prev == b"\x00":
-                    names_by_addr[addr] = name
+        hits = [(name, addr) for name, needle in class_needles.items()
+                for addr in name_scan.get(needle, [])]
+        prefixes = self._scan_read_many([(addr - 1, 1) for _, addr in hits])
+        for (name, addr), prev in zip(hits, prefixes):
+            if not prev or prev == b"\x00":
+                names_by_addr[addr] = name
         name_counts = {
             name: sum(1 for value in names_by_addr.values() if value == name)
             for name in class_names
@@ -474,7 +507,7 @@ class DeployTrackerReader:
                 "所有 rw 区域均未找到 BattleInOut/BattleController 类名字符串；"
                 "可能未进入游戏进程、IL2CPP 元数据布局变化或扫描区域不完整")
             self._status("  主路径失败: " + self._class_scan_failure_reason)
-            return {name: set() for name in class_names}
+            return {} if classes_only else {name: set() for name in class_names}
 
         name_needles = {addr: struct.pack("<Q", addr) for addr in names_by_addr}
         ref_scan = self._device_scan_regions(rw_regions, list(name_needles.values()))
@@ -483,14 +516,20 @@ class DeployTrackerReader:
             self._status("  主路径失败: " + self._class_scan_failure_reason)
             return None
         klass_names = {}
-        for addr, needle in name_needles.items():
-            for ref in ref_scan.get(needle, []):
-                klass = ref - 0x10  # Il2CppClass.name
-                if self._ptr(klass + 0x10) != addr:
-                    continue
-                found_namespace = self._read_cstring(self._ptr(klass + 0x18))
-                if found_namespace == namespace:
-                    klass_names[klass] = names_by_addr[addr]
+        refs = [(addr, ref) for addr, needle in name_needles.items()
+                for ref in ref_scan.get(needle, [])]
+        headers = self._scan_read_many([(ref, 16) for _, ref in refs])
+        candidates = []
+        for (addr, ref), raw in zip(refs, headers):
+            if raw is None or len(raw) != 16:
+                continue
+            name_ptr, namespace_ptr = struct.unpack('<QQ', raw)
+            if name_ptr == addr and self.mc.is_ptr(namespace_ptr):
+                candidates.append((ref - 0x10, names_by_addr[addr], namespace_ptr))
+        strings = self._scan_read_many([(ptr, 128) for _, _, ptr in candidates])
+        for (klass, name, _), raw in zip(candidates, strings):
+            if raw and b'\0' in raw and raw.split(b'\0', 1)[0] == namespace.encode('ascii'):
+                klass_names[klass] = name
         klass_counts = {
             name: sum(1 for value in klass_names.values() if value == name)
             for name in class_names
@@ -503,13 +542,26 @@ class DeployTrackerReader:
                 f"已找到类名字符串 ({found_names})，但没有解析出 namespace="
                 f"{namespace} 的 Il2CppClass；Il2CppClass.name/namespace 偏移可能已漂移")
             self._status("  主路径失败: " + self._class_scan_failure_reason)
-            return {name: set() for name in class_names}
+            return {} if classes_only else {name: set() for name in class_names}
         if "BattleController" in class_names and not klass_counts.get("BattleController"):
             self._class_scan_failure_reason = (
                 f"类名扫描命中 BattleController={name_counts.get('BattleController', 0)}，"
                 "但没有解析出 Torappu.Battle.BattleController 的 Il2CppClass；"
                 "Il2CppClass.name/namespace 偏移可能已漂移")
 
+        remember(self.mc, namespace, klass_names)
+        return klass_names if classes_only else self._scan_objects_for_classes(klass_names)
+
+    def _scan_read_many(self, requests):
+        """Bound discovery batches; never enroll them in a realtime frame plan."""
+        values = []
+        for offset in range(0, len(requests), 512):
+            values.extend(self._get_channel().batch_read(
+                requests[offset:offset + 512], force_live=True, remember=False))
+        return values
+
+    def _scan_objects_for_classes(self, klass_names):
+        t0 = time.perf_counter()
         gc_regions = self.mc.scan_targets()
         klass_needles = {klass: struct.pack("<Q", klass) for klass in klass_names}
         obj_scan = self._device_scan_regions(gc_regions, list(klass_needles.values()))
@@ -517,21 +569,22 @@ class DeployTrackerReader:
             self._class_scan_failure_reason = "设备侧对象 klass 指针扫描没有返回结果"
             self._status("  主路径失败: " + self._class_scan_failure_reason)
             return None
-        objects = {name: set() for name in class_names}
+        objects = {name: set() for name in klass_names.values()}
         for klass, needle in klass_needles.items():
             for obj in obj_scan.get(needle, []):
                 if not (obj & 7):
                     objects[klass_names[klass]].add(obj)
-        counts = ", ".join(f"{name}={len(objects[name])}" for name in class_names)
+        counts = ", ".join(f"{name}={len(items)}" for name, items in objects.items())
         self._status(f"  klass {len(klass_names)} 个, 对象命中 {counts} "
-                     f"({time.time() - t0:.1f}s)")
+                     f"(对象搜索 {time.perf_counter() - t0:.1f}s)")
         return objects
 
     def _battle_controller_candidates(self, objects):
         """用战斗标量指纹过滤 klass 指针命中的 BattleController 对象。"""
         candidates = set()
-        for obj in objects:
-            d = self._read(obj, BC_REAL_PLAY_TIME + 4)
+        objects = list(objects)
+        for obj, d in zip(objects, self._scan_read_many(
+                [(obj, BC_REAL_PLAY_TIME + 4) for obj in objects])):
             if not d:
                 continue
             state = struct.unpack_from("<i", d, BC_STATE)[0]

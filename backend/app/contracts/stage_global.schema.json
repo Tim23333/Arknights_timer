@@ -1,0 +1,1330 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:timeline:stage-global:1",
+  "title": "Timeline 关卡全局状态兼容增量合同",
+  "description": "Three topics carry optional projected fields. Null is meaningful only with a successful field record and its explicit reason. No memory addresses are public. Movement state does not imply physical displacement.",
+  "type": "object",
+  "properties": {
+    "clock": {
+      "type": "object",
+      "properties": {
+        "gameTime": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "fixedFrame": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "identity": {
+      "type": "object",
+      "properties": {
+        "stageName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "stageId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "levelId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mapId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtime": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "stateCode": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "isPaused": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "speedLevel": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "timeScale": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "mode": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/mode"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "waves": {
+      "type": "object",
+      "properties": {
+        "current": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/wave"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "next": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/wave"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "nextSelection": {
+          "enum": [
+            "known",
+            "pending",
+            "none",
+            "unknown"
+          ]
+        },
+        "nextEnemies": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/nextEnemy"
+          }
+        },
+        "gate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/gate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "wait": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/wait"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "map": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/map"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "mapRuntime": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/mapRuntime"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "enemyLayout": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/$defs/enemy"
+      }
+    },
+    "allyLayout": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/$defs/ally"
+      }
+    },
+    "fieldStates": {
+      "$ref": "#/$defs/records"
+    },
+    "meta": {
+      "$ref": "#/$defs/meta"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "record": {
+      "type": "object",
+      "properties": {
+        "sourceFrame": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "acceptedFrame": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "latestKnownFrame": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "collectionState": {
+          "enum": [
+            "current",
+            "static",
+            "not_collected",
+            "unavailable",
+            "historical"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "sampledAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "collectionState",
+        "generation"
+      ]
+    },
+    "records": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/record"
+      }
+    },
+    "meta": {
+      "type": "object",
+      "properties": {
+        "collectionState": {
+          "enum": ["current", "static", "not_collected", "unavailable", "historical"]
+        },
+        "reason": {"type": "string"},
+        "sessionOrigin": {"type": "string"},
+        "sessionOrdinal": {"type": "integer", "minimum": 0},
+        "configurationRevision": {"type": ["string", "null"]},
+        "acceptedAt": {"type": ["string", "null"]},
+        "sourceFrame": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "runtimeFrame": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "latestKnownFrame": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "acceptedFrame": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "policyGeneration": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "frameConsistent": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "sampledAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sourceEpoch": {
+          "type": "integer"
+        },
+        "sessionId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "state": {
+          "type": "string"
+        },
+        "revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "coordinates": {
+          "type": "object",
+          "properties": {
+            "origin": {
+              "const": "bottom-left"
+            },
+            "x": {
+              "const": "col"
+            },
+            "y": {
+              "const": "row"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "wave": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "totalConfigured": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "preDelay": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "postDelay": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "maxWait": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "advancedTag": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "ordinal",
+        "totalConfigured"
+      ]
+    },
+    "nextEnemy": {
+      "type": "object",
+      "properties": {
+        "enemyId": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fragmentIndex": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "actionIndex": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "routeIndex": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "preDelay": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "interval": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "selection": {
+          "enum": [
+            "confirmed",
+            "conditional"
+          ]
+        },
+        "hiddenGroup": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "randomGroup": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "randomPack": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "enemyId",
+        "count",
+        "selection"
+      ]
+    },
+    "gate": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "spawning",
+            "fragment_block",
+            "clearance_wait",
+            "timeout_wait",
+            "pre_delay",
+            "post_delay",
+            "mode_wait",
+            "finished",
+            "unknown"
+          ]
+        },
+        "fragmentIndex": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "actionIndex": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "blockingEnemyCount": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "blockCounter": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "satisfied": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "value": {
+                "type": [
+                  "number",
+                  "integer",
+                  "string",
+                  "boolean",
+                  "array",
+                  "object",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "satisfied"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "kind"
+      ]
+    },
+    "wait": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "fixed_wait",
+            "timeout_budget",
+            "mode_timer",
+            "undetermined",
+            "not_applicable",
+            "unavailable"
+          ]
+        },
+        "configuredSeconds": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "totalResumeCount": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "elapsedResumeCount": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "remainingResumeCount": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "remainingSeconds": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "secondsBasis": {
+          "enum": [
+            "logical_time_estimate",
+            "mode_logical_timer",
+            "unknown"
+          ]
+        },
+        "mayFinishEarlier": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "phase": {
+          "enum": [
+            "pre_delay",
+            "post_delay",
+            "action_interval",
+            "clearance",
+            "mode"
+          ]
+        },
+        "source": {
+          "enum": [
+            "coroutine_counter",
+            "mode_timer",
+            "unknown"
+          ]
+        },
+        "precision": {
+          "enum": [
+            "resume_count",
+            "conditional_budget",
+            "logical_timer",
+            "unknown"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "kind"
+      ]
+    },
+    "tile": {
+      "type": "object",
+      "properties": {
+        "blackboard": {
+          "type": ["array", "null"],
+          "maxItems": 256,
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {"type": "string"},
+              "value": {"type": "number"},
+              "valueStr": {"type": ["string", "null"]}
+            },
+            "required": ["key", "value", "valueStr"],
+            "additionalProperties": false
+          }
+        },
+        "blackboardMeta": {
+          "type": "object",
+          "properties": {
+            "state": {"enum": ["available", "absent", "unavailable"]},
+            "source": {"enum": ["initial_configuration", "runtime_parameters"]},
+            "reason": {"type": "string"}
+          },
+          "required": ["state", "source", "reason"],
+          "additionalProperties": false
+        },
+        "tileKey": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "heightType": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "buildableType": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "passableMask": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "playerSideMask": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "advancedBuildableMask": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "tileKey"
+      ]
+    },
+    "map": {
+      "type": "object",
+      "properties": {
+        "rows": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "cols": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "coordinates": {
+          "$ref": "#/$defs/meta/properties/coordinates"
+        },
+        "revision": {
+          "type": "string"
+        },
+        "layer": {
+          "const": "base"
+        },
+        "tiles": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/tile"
+            }
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "rows",
+        "cols",
+        "coordinates",
+        "revision",
+        "tiles"
+      ]
+    },
+    "mapRuntime": {
+      "type": "object",
+      "properties": {
+        "rows": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "cols": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "coordinates": {
+          "$ref": "#/$defs/meta/properties/coordinates"
+        },
+        "revision": {
+          "type": "string"
+        },
+        "tiles": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/tile"
+            }
+          }
+        },
+        "fieldStates": {
+          "$ref": "#/$defs/records"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "tiles"
+      ]
+    },
+    "position": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "x",
+        "y"
+      ]
+    },
+    "grid": {
+      "type": "object",
+      "properties": {
+        "row": {
+          "type": "integer"
+        },
+        "col": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "row",
+        "col"
+      ]
+    },
+    "enemy": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "enemyId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "lifecycle": {
+          "type": "string"
+        },
+        "position": {
+          "$ref": "#/$defs/position"
+        },
+        "precisePosition": {
+          "$ref": "#/$defs/position"
+        },
+        "rawStateCode": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "stateName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fieldStates": {
+          "$ref": "#/$defs/records"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id"
+      ]
+    },
+    "ally": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "characterId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "grid": {
+          "$ref": "#/$defs/grid"
+        },
+        "direction": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "directionName": {
+          "enum": [
+            "上",
+            "右",
+            "下",
+            "左"
+          ]
+        },
+        "fieldStates": {
+          "$ref": "#/$defs/records"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id"
+      ]
+    },
+    "mode": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "handler": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "supported": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "handlerType": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "x-fields": [
+    {
+      "x-field-id": "stage_global.gameTime",
+      "x-paths": [
+        "clock.gameTime"
+      ],
+      "title": "游戏时间",
+      "x-capture-group": "clock_reference",
+      "x-dependencies": [
+        "battle.gameTime"
+      ],
+      "x-source-fields": {
+        "clock.gameTime": "battle.gameTime"
+      },
+      "x-topic": "stage_global",
+      "x-defaults": {
+        "collect": true,
+        "display": true,
+        "publish": true
+      }
+    },
+    {
+      "x-field-id": "stage_global.fixedFrame",
+      "x-paths": [
+        "clock.fixedFrame"
+      ],
+      "title": "逻辑帧",
+      "x-capture-group": "clock_reference",
+      "x-dependencies": [
+        "battle.fixedFrame"
+      ],
+      "x-source-fields": {
+        "clock.fixedFrame": "battle.fixedFrame"
+      },
+      "x-topic": "stage_global",
+      "x-defaults": {
+        "collect": true,
+        "display": true,
+        "publish": true
+      }
+    },
+    {
+      "x-field-id": "stage_global.stageName",
+      "x-paths": [
+        "identity.stageName",
+        "identity.stageId",
+        "identity.levelId"
+      ],
+      "title": "关卡名字",
+      "x-capture-group": "identity",
+      "x-dependencies": [
+        "stage.stage"
+      ],
+      "x-source-fields": {
+        "identity.stageName": "stage.stage",
+        "identity.stageId": "stage.stage",
+        "identity.levelId": "stage.stage"
+      },
+      "x-topic": "stage_global",
+      "x-defaults": {
+        "collect": true,
+        "display": true,
+        "publish": true
+      }
+    },
+    {
+      "x-field-id": "stage_global.mapId",
+      "x-paths": [
+        "identity.mapId"
+      ],
+      "title": "地图 ID",
+      "x-capture-group": "map_identity",
+      "x-dependencies": [],
+      "x-source-fields": {},
+      "x-topic": "stage_global",
+      "x-defaults": {
+        "collect": true,
+        "display": true,
+        "publish": true
+      }
+    },
+    {
+      "x-field-id": "stage_global.state",
+      "x-paths": [
+        "runtime.state",
+        "runtime.stateCode"
+      ],
+      "title": "关卡运行状态",
+      "x-capture-group": "runtime",
+      "x-dependencies": [
+        "battle.state",
+        "battle.stateCode"
+      ],
+      "x-source-fields": {
+        "runtime.state": "battle.state",
+        "runtime.stateCode": "battle.stateCode"
+      },
+      "x-topic": "stage_global",
+      "x-defaults": {
+        "collect": true,
+        "display": true,
+        "publish": true
+      }
+    },
+    {
+      "x-field-id": "stage_global.isPaused",
+      "x-paths": [
+        "runtime.isPaused"
+      ],
+      "title": "暂停状态",
+      "x-capture-group": "runtime",
+      "x-dependencies": [
+        "battle.isPaused"
+      ],
+      "x-source-fields": {
+        "runtime.isPaused": "battle.isPaused"
+      },
+      "x-topic": "stage_global",
+      "x-defaults": {
+        "collect": true,
+        "display": true,
+        "publish": true
+      }
+    },
+    {
+      "x-field-id": "stage_global.speedLevel",
+      "x-paths": [
+        "runtime.speedLevel"
+      ],
+      "title": "配置速度档位",
+      "x-capture-group": "runtime",
+      "x-dependencies": [
+        "battle.speedLevel"
+      ],
+      "x-source-fields": {
+        "runtime.speedLevel": "battle.speedLevel"
+      },
+      "x-topic": "stage_global",
+      "x-defaults": {
+        "collect": true,
+        "display": true,
+        "publish": true
+      }
+    },
+    {
+      "x-field-id": "stage_global.timeScale",
+      "x-paths": [
+        "runtime.timeScale"
+      ],
+      "title": "实际引擎倍率",
+      "x-capture-group": "runtime",
+      "x-dependencies": [
+        "battle.timeScale"
+      ],
+      "x-source-fields": {
+        "runtime.timeScale": "battle.timeScale"
+      },
+      "x-topic": "stage_global",
+      "x-defaults": {
+        "collect": true,
+        "display": true,
+        "publish": true
+      }
+    },
+    {
+      "x-field-id": "stage_global.mode",
+      "x-paths": [
+        "mode"
+      ],
+      "title": "游戏模式",
+      "x-capture-group": "mode",
+      "x-dependencies": [],
+      "x-source-fields": {},
+      "x-topic": "stage_global",
+      "x-defaults": {
+        "collect": true,
+        "display": true,
+        "publish": true
+      }
+    },
+    {
+      "x-field-id": "stage_global.currentWave",
+      "x-paths": [
+        "waves.current"
+      ],
+      "title": "当前波次",
+      "x-capture-group": "waves",
+      "x-dependencies": [],
+      "x-source-fields": {},
+      "x-topic": "stage_global",
+      "x-defaults": {
+        "collect": true,
+        "display": true,
+        "publish": true
+      }
+    },
+    {
+      "x-field-id": "stage_global.nextWave",
+      "x-paths": [
+        "waves.next",
+        "waves.nextSelection"
+      ],
+      "title": "下一波次",
+      "x-capture-group": "waves",
+      "x-dependencies": [],
+      "x-source-fields": {},
+      "x-topic": "stage_global",
+      "x-defaults": {
+        "collect": true,
+        "display": true,
+        "publish": true
+      }
+    },
+    {
+      "x-field-id": "stage_global.nextWaveEnemies",
+      "x-paths": [
+        "waves.nextEnemies"
+      ],
+      "title": "下一波敌人",
+      "x-capture-group": "wave_enemies",
+      "x-dependencies": [],
+      "x-source-fields": {},
+      "x-topic": "stage_global",
+      "x-defaults": {
+        "collect": true,
+        "display": true,
+        "publish": true
+      }
+    },
+    {
+      "x-field-id": "stage_global.waveGate",
+      "x-paths": [
+        "waves.gate"
+      ],
+      "title": "换波条件",
+      "x-capture-group": "waves",
+      "x-dependencies": [],
+      "x-source-fields": {},
+      "x-topic": "stage_global",
+      "x-defaults": {
+        "collect": true,
+        "display": true,
+        "publish": true
+      }
+    },
+    {
+      "x-field-id": "stage_global.waveWait",
+      "x-paths": [
+        "waves.wait"
+      ],
+      "title": "波次等待",
+      "x-capture-group": "waves",
+      "x-dependencies": [],
+      "x-source-fields": {},
+      "x-topic": "stage_global",
+      "x-defaults": {
+        "collect": true,
+        "display": true,
+        "publish": true
+      }
+    },
+    {
+      "x-field-id": "stage_global.map",
+      "x-paths": [
+        "map"
+      ],
+      "title": "二维配置底图",
+      "x-capture-group": "map",
+      "x-dependencies": [],
+      "x-source-fields": {},
+      "x-topic": "stage_map",
+      "x-defaults": {
+        "collect": true,
+        "display": true,
+        "publish": true
+      }
+    },
+    {
+      "x-field-id": "stage_global.mapRuntime",
+      "x-paths": [
+        "mapRuntime"
+      ],
+      "title": "当帧地块类型",
+      "x-capture-group": "map_runtime",
+      "x-dependencies": [
+        "stage_global.map"
+      ],
+      "x-source-fields": {},
+      "x-topic": "stage_map",
+      "x-defaults": {
+        "collect": true,
+        "display": true,
+        "publish": true
+      }
+    },
+    {
+      "x-field-id": "stage_global.enemyLayout",
+      "x-paths": [
+        "enemyLayout"
+      ],
+      "title": "敌方实体布局",
+      "x-capture-group": "enemy_layout",
+      "x-dependencies": [
+        "enemy.pos",
+        "enemy.action_state"
+      ],
+      "x-source-fields": {
+        "enemyLayout.*.position": "enemy.pos",
+        "enemyLayout.*.name": "enemy.name",
+        "enemyLayout.*.enemyId": "enemy.eid",
+        "enemyLayout.*.precisePosition": ["enemy.precise_pos", "enemy.pos"],
+        "enemyLayout.*.stateName": "enemy.action_state",
+        "enemyLayout.*.rawStateCode": "enemy.action_state",
+        "enemyLayout.*.lifecycle": "enemy.life_status"
+      },
+      "x-topic": "stage_units",
+      "x-defaults": {
+        "collect": true,
+        "display": true,
+        "publish": true
+      }
+    },
+    {
+      "x-field-id": "stage_global.allyLayout",
+      "x-paths": [
+        "allyLayout"
+      ],
+      "title": "我方单位布局",
+      "x-capture-group": "ally_layout",
+      "x-dependencies": [
+        "character.pos",
+        "character.kind"
+      ],
+      "x-source-fields": {
+        "allyLayout.*.grid": "character.pos",
+        "allyLayout.*.kind": "character.kind",
+        "allyLayout.*.characterId": "character.cid",
+        "allyLayout.*.name": "character.name",
+        "allyLayout.*.direction": "character.direction",
+        "allyLayout.*.directionName": "character.direction"
+      },
+      "x-topic": "stage_units",
+      "x-defaults": {
+        "collect": true,
+        "display": true,
+        "publish": true
+      }
+    }
+  ],
+  "x-reasons": [
+    "read_failed",
+    "unsupported_layout",
+    "binding_invalid",
+    "inactive_coroutine",
+    "inconsistent_capture",
+    "not_collected",
+    "not_provided",
+    "no_next_wave",
+    "selection_pending",
+    "timing_basis_unverified",
+    "not_applicable",
+    "source_unavailable",
+    "policy_changed",
+    "source_changed"
+  ],
+  "x-valid-null-reasons": {
+    "stage_global.mapId": ["not_provided"],
+    "stage_global.currentWave": ["not_applicable"],
+    "stage_global.nextWave": ["no_next_wave", "selection_pending"],
+    "stage_global.nextWaveEnemies": ["selection_pending"],
+    "stage_global.waveGate": ["not_applicable"],
+    "stage_global.waveWait": ["not_applicable"]
+  },
+  "x-topics": {
+    "stage_global": {
+      "defaultRateHz": 20,
+      "minRateHz": 0.2,
+      "maxRateHz": 60
+    },
+    "stage_map": {
+      "defaultRateHz": 1,
+      "minRateHz": 0.2,
+      "maxRateHz": 60
+    },
+    "stage_units": {
+      "defaultRateHz": 10,
+      "minRateHz": 1,
+      "maxRateHz": 60
+    }
+  }
+}

@@ -12,6 +12,8 @@ class SourceSessionTests(unittest.TestCase):
     def test_reset_invalidates_sources_even_when_auto_refresh_is_off(self):
         api = Mock()
         window = SimpleNamespace(_closing=False, _source_epoch=4,
+            _auto_refresh_wait_gen=0, _stage_reset_wait_gen=0,
+            _auto_refresh_step=None, _auto_refresh_stopping_step=None,
             _websocket_api=api, _auto_refresh_enabled=False,
             _webui_runtime_snapshot={'enemies': ['old']},
             lbl_enemy_status=Mock(), lbl_character_status=Mock(),

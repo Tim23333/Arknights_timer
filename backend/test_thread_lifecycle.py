@@ -367,6 +367,7 @@ def test_blocked_deploy_poll_stop_survives_in_subprocess():
         class Control:
             def setEnabled(self, value): pass
             def setText(self, value): pass
+            def text(self): return ''
 
         app = QApplication.instance() or QApplication([])
         holder = type('Holder', (), {})()

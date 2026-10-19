@@ -75,7 +75,8 @@ class CharacterInfo:
     shield: float = 0.0
     sp: float = 0.0
     max_sp: int = 0
-    direction: int = 0
+    direction: int | None = None
+    _direction_read_ok: bool = False
     finish_reason: int = 0
     alive: bool = True
     state_id: int = gs.CharacterState.DEFAULT
@@ -286,9 +287,9 @@ class CharacterReader:
             return True
         if kind == 'state':
             return True  # Internal lifecycle/state validation cannot be disabled.
-        keys = {'shield': ('shield',), 'ep': (), 'epc': (),
+        keys = {'shield': ('shield',), 'ep': ('ep_capacity', 'ep_sanity', 'ep_water', 'ep_fire', 'ep_dark', 'ep_anger'), 'epc': ('ep_break',),
                 'flags': ('abnormal_status',), 'combos': ('abnormal_status',),
-                'immunes': (), 'antis': (), 'combo_immunes': ()}
+                'immunes': ('immune_status',), 'antis': ('immune_status',), 'combo_immunes': ('immune_status',)}
         return any(self._collect(key) for key in keys.get(kind, ()))
 
     def _stamp_fields(self, info, source_frame):
@@ -311,15 +312,23 @@ class CharacterReader:
                 success = bool(info.cid)
             elif key == 'pos':
                 success = info.grid_row is not None and info.grid_col is not None
+            elif key == 'direction':
+                success = info._direction_read_ok
             elif spec.group == 'skills':
                 success = info.addr in self._skill_runtime
             elif spec.group == 'runtime':
                 required = {
                     'action_state': ('state_id',),
                     'abnormal_status': ('abnormal_flags', 'abnormal_combos'),
+                    'immune_status': ('abnormal_immunes', 'abnormal_antis', 'abnormal_combo_immunes'),
                     'shield': ('shield',),
-                }.get(key, ('state_id',))
+                    'ep_break': ('ep_break_recovery',),
+                }.get(key, ('ep_remaining',) if key.startswith('ep_') else ('state_id',))
                 success = all(item in runtime for item in required)
+                if key.startswith('ep_') and key != 'ep_break':
+                    index = {'ep_capacity': 0, 'ep_sanity': 1, 'ep_water': 2,
+                             'ep_fire': 3, 'ep_dark': 4, 'ep_anger': 5}[key]
+                    success = success and index in runtime.get('ep_remaining', {})
                 if key in ('action_phase', 'remaining_time', 'next_action'):
                     success = success and bool(info.action.get('phase'))
             elif spec.group == 'blocking':
@@ -329,6 +338,9 @@ class CharacterReader:
             elif spec.group == 'damage':
                 required = {'healing_total': 'damage_by_type',
                             'element_output_total': 'output_element_damage',
+                            'element_output_by_type': 'output_element_damage',
+                            'element_break_count': 'output_ep_break_count',
+                            'damage_range': 'damage_range_min',
                             'global_total_damage': 'global_total_damage'}.get(
                                 key, 'damage_by_type' if key.startswith('damage_')
                                 and key != 'damage_total' else key)
@@ -396,6 +408,10 @@ class CharacterReader:
     def _class_name(self, ptr: int) -> str:
         if not self.mc.is_ptr(ptr):
             return ''
+        if getattr(self.core._detail_context, 'snapshot', None) is not None:
+            # Object -> klass must belong to the guarded bytes too; an object
+            # address cache or mc.read_klass_name would bypass this evidence.
+            return self.core._read_object_class_names_chan([ptr]).get(ptr, '')
         if ptr not in self._klass_cache:
             self._klass_cache[ptr] = self.mc.read_klass_name(ptr) or ''
         return self._klass_cache[ptr]
@@ -416,6 +432,13 @@ class CharacterReader:
         (body,) = self._batch([(items + gs.Il2CppArray.ITEMS, count * 8)])
         if not body:
             return None
+        if not getattr(self.core._detail_context, 'active', False):
+            bind = getattr(self._ensure_channel(), 'bind_counted_list', None)
+            if callable(bind):
+                bind((items + gs.Il2CppArray.ITEMS, count * 8),
+                     (self.characters_addr, 0x28), head,
+                     pointer_offset=gs.UnorderedArrayFields.ITEMS,
+                     count_offset=gs.UnorderedArrayFields.COUNT, max_count=256)
         ptrs = [p for p in (_u64(body, i * 8) for i in range(count))
                 if self.mc.is_ptr(p)]
         self._items, self._count, self.character_addrs = items, count, ptrs
@@ -432,8 +455,9 @@ class CharacterReader:
                 _u64(block, gs.EntityFields.M_SP),
                 _u64(block, gs.EntityFields.M_SP + 8))
             info.max_sp = _i32(block, gs.EntityFields.MAX_SP)
-        if policy is None or policy.enabled('character.pos'):
+        if policy is None or policy.enabled('character.direction'):
             info.direction = _i32(block, gs.EntityFields.M_DIRECTION)
+            info._direction_read_ok = True
         info.finish_reason = _i32(block, gs.EntityFields.FINISH_REASON)
         info.alive = info.hp > 0 and info.finish_reason == 0
         info.attr_ptr = _u64(block, gs.EntityFields.M_ATTRIBUTES)
@@ -1333,13 +1357,13 @@ class CharacterReader:
         if self._capture_policy is None:
             return True
         if kind == 'elements':
-            return self._collect('element_output_total')
+            return self._collect('element_output_total') or self._collect('element_output_by_type')
         if kind == 'breaks':
-            return False  # Not a registered public sampling field.
+            return self._collect('element_break_count')
         return any(self._collect(key) for key in (
             'damage_total', 'global_total_damage', 'damage_physical',
             'damage_magical', 'damage_pure', 'damage_element', 'healing_total',
-            'unattributed_damage'))
+            'unattributed_damage', 'damage_range'))
 
     def _rebuild_damage_layout(self) -> None:
         """沿完整指针链重建 BattleLogger 统计布局。"""
@@ -2117,7 +2141,19 @@ class CharacterReader:
             reader = CharacterReader(self.core)
             self.core._detail_context.character_reader = reader
         reader._capture_policy = self._capture_policy
-        return reader._read_character_detail_impl(addr, policy)
+        policy = self._capture_policy if policy is None else policy
+        attempted = False
+        def parse():
+            nonlocal reader, attempted
+            if attempted:
+                # A discovery attempt can populate identity/skill caches from
+                # unguarded bytes. Rebuild them when restarting the capture.
+                reader = CharacterReader(self.core)
+                reader._capture_policy = self._capture_policy
+                self.core._detail_context.character_reader = reader
+            attempted = True
+            return reader._read_character_detail_impl(addr, policy)
+        return self.core._read_planned_detail('character_detail', addr, policy, parse)
 
     def _read_character_detail_impl(self, addr: int, policy=None) -> CharacterInfo | None:
         if not self.mc.is_ptr(addr):
@@ -2126,7 +2162,9 @@ class CharacterReader:
         if policy is not None and not any(policy.group_enabled('character_detail', key)
                                           for key in ('attributes', 'rawAttributes', 'buffs',
                                                       'globalBuffs', 'skills', 'talents',
-                                                      'dynamicAbilities', 'equipment')):
+                                                      'dynamicAbilities', 'equipment',
+                                                      'specialShield', 'attackRange',
+                                                      'effectFrames')):
             return None
         succeeded = set()
         self.core._detail_context.active = True
@@ -2244,7 +2282,7 @@ class CharacterReader:
 
     @staticmethod
     def merge_detail(live: CharacterInfo, detail: CharacterInfo) -> CharacterInfo:
-        for key in ('raw_attributes', 'buffs', 'global_buffs', 'talents',
+        for key in ('attributes', 'raw_attributes', 'buffs', 'global_buffs', 'talents',
                     'dynamic_abilities', 'module_settings',
                     'deck_buff_blackboard'):
             setattr(live, key, getattr(detail, key))
@@ -2256,6 +2294,12 @@ class CharacterReader:
             live_max_sp = (live.skill or {}).get('max_sp', live.max_sp)
             merged = dict(live.skill or {})
             merged.update(detail.skill)
+            if 'ready' in (live.skill or {}):
+                merged['ready'] = live.skill['ready']
+            if (live.skill or {}).get('skill_id') == detail.skill.get('skill_id'):
+                for key in ('class', 'ability_class', 'blackboard', 'ability_blackboard'):
+                    if key in detail.skill.get('runtime', {}):
+                        live_runtime[key] = detail.skill['runtime'][key]
             merged['runtime'] = live_runtime
             merged['current_sp'] = live_current_sp
             merged['max_sp'] = live_max_sp

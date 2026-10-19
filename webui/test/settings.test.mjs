@@ -20,6 +20,7 @@ test('settings omit persistent refresh banners and their render references', () 
 test('settings hide generation while policy writes still carry concurrency generation', () => {
   assert.doesNotMatch(html, /id="policy-generation"/);
   assert.doesNotMatch(app, /['"]policy-generation['"]/);
-  assert.match(app, /api\("\/api\/policy", \{generation: ui\.policy\.generation,/);
+  assert.match(app, /const\s+generation\s*=\s*ui\.policy\.generation\s*;/);
+  assert.match(app, /api\(\s*["']\/api\/policy["']\s*,\s*\{\s*generation\s*,/);
   assert.match(html, /<th>采集<\/th><th>本地展示<\/th><th>WS 发布<\/th>/);
 });

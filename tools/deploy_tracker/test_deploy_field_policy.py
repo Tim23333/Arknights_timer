@@ -23,7 +23,8 @@ class DeployPolicyTests(unittest.TestCase):
     def test_disabled_stage_preserves_internal_session_identity(self):
         reader = DeployTrackerReader(Mock())
         reader._stage_info = {'stageId': 'main_01-07'}
-        reader.set_capture_policy(PolicyStore().commit({'stage.stage': {'collect': False}}))
+        reader.set_capture_policy(PolicyStore().commit({
+            key: {'collect': False} for key in ('stage.stage', 'stage_global.stageName')}))
         self.assertEqual(reader.get_stage_info(), {})
         self.assertEqual(reader._stage_info['stageId'], 'main_01-07')
 

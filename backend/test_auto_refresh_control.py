@@ -37,6 +37,7 @@ class _WindowStub:
         self._auto_refresh_status = {}
         _bind(self, '_set_auto_refresh_status')
         self._provider = _Provider()
+        self._guest_clock = None
         self.runs = 0
 
     def _run_auto_refresh(self):

@@ -75,7 +75,8 @@ class TimerDataProviderTimelineTests(unittest.TestCase):
         from backend.app.field_policy import PolicyStore
         provider = TimerDataProvider()
         provider._game_cache['frame_count'] = 123
-        provider.set_capture_policy(PolicyStore().commit({'battle.fixedFrame': {'collect': False}}))
+        provider.set_capture_policy(PolicyStore().commit({key: {'collect': False}
+            for key in ('battle.fixedFrame', 'stage_global.fixedFrame')}))
         self.assertEqual(provider.peek_frame_count(), 123)
         self.assertNotIn('frame_count', provider.get_game_data())
 
@@ -88,7 +89,8 @@ class TimerDataProviderTimelineTests(unittest.TestCase):
         provider.set_capture_policy(store.snapshot())
         provider.refresh_sample()
         self.assertIn('frame_count', provider.get_game_data())
-        off = store.commit({'battle.fixedFrame': {'collect': False}})
+        off = store.commit({key: {'collect': False}
+            for key in ('battle.fixedFrame', 'stage_global.fixedFrame')})
         provider.set_capture_policy(off)
         on = store.commit({'battle.fixedFrame': {'collect': True}})
         provider.set_capture_policy(on)

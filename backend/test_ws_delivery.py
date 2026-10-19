@@ -34,7 +34,7 @@ def test_all_static_topics_and_subscription_ack_reach_external_client():
                 assert {m["type"] for m in messages} == {
                     *(f"{topic}.updated" for topic in topics), "subscription.updated"}
                 assert messages[-1]["data"]["requestId"] == "all"
-                assert [m["sequence"] for m in messages] == list(range(2, 13))
+                assert [m["sequence"] for m in messages] == list(range(2, len(topics) + 3))
         asyncio.run(scenario())
     finally:
         api.stop()

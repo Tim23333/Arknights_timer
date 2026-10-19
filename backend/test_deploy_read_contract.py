@@ -15,7 +15,7 @@ from tools.deploy_tracker.ak_deploy_reader import DeployTrackerReader
 def test_initial_scan_binds_policy_before_locating_and_reading():
     store = PolicyStore()
     policy = store.commit({key: {'collect': False} for key in (
-        'deploy.events', 'deploy.journal', 'stage.squad', 'stage.stage')})
+        'deploy.events', 'deploy.journal', 'stage.squad', 'stage.stage', 'stage_global.stageName')})
     mc = Mock(connect=Mock(return_value=1))
     reader = DeployTrackerReader(mc)
     reader._read_log_list = Mock()
@@ -100,7 +100,7 @@ def test_old_generation_initial_result_is_not_relabelled_or_cached():
 def test_old_generation_early_stage_cannot_republish_after_policy_change():
     store = PolicyStore()
     worker = SimpleNamespace(capture_policy=store.snapshot(), _source_epoch=1)
-    store.commit({'stage.stage': {'collect': False}})
+    store.commit({key: {'collect': False} for key in ('stage.stage', 'stage_global.stageName')})
     holder = SimpleNamespace(_field_policy=store, _deploy_scan=worker,
         _source_epoch=1, _closing=False, _on_deploy_stage=Mock())
     desktop_app.CoachWindow._on_deploy_stage_from_worker(holder, worker, {'stageId': 'old'})

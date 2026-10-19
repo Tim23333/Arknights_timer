@@ -14,9 +14,14 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from functools import lru_cache
 from typing import Any, Callable
 
-from ..field_policy import FIELD_REGISTRY, PolicyStore, project_snapshot, collection_record
+from ..field_policy import (
+    ACTION_KEYS_BY_DOMAIN, FIELD_REGISTRY, PolicyStore, project_snapshot, collection_record,
+)
+from ..contracts import contract_specs, contract_value_paths, public_contract_value
+from .public_json import encode_sanitized
 
 
 HOST = "127.0.0.1"
@@ -37,6 +42,7 @@ TOPIC_DEFAULTS: dict[str, float] = {
     "characters": 10.0, "enemy_detail": 2.0,
     "character_detail": 2.0, "deploy": 4.0, "rng": 2.0,
     "quality": 2.0, "ops.heartbeat": 0.5,
+    "stage_global": 20.0, "stage_map": 1.0, "stage_units": 10.0,
 }
 TOPIC_LIMITS: dict[str, tuple[float, float]] = {
     "battle": (1.0, 60.0), "stage": (0.2, 20.0),
@@ -45,11 +51,23 @@ TOPIC_LIMITS: dict[str, tuple[float, float]] = {
     "enemy_detail": (0.2, 60.0), "character_detail": (0.2, 60.0),
     "deploy": (1.0, 20.0), "rng": (1.0, 10.0),
     "quality": (0.5, 5.0), "ops.heartbeat": (0.2, 2.0),
+    "stage_global": (0.2, 60.0), "stage_map": (0.2, 60.0),
+    "stage_units": (1.0, 60.0),
 }
+
+STAGE_GLOBAL_TOPICS = ('stage_global', 'stage_map', 'stage_units')
 
 
 def _now() -> str:
     return datetime.now(timezone.utc).astimezone().isoformat(timespec="milliseconds")
+
+
+@lru_cache(maxsize=1024)
+def _is_public_key(key: str) -> bool:
+    """Cache only immutable schema-name decisions, never field/frame values."""
+    lowered = key.lower()
+    return (lowered not in _INTERNAL_FIELD_NAMES
+            and not lowered.endswith(_INTERNAL_FIELD_SUFFIXES))
 
 
 def _safe(value: Any) -> Any:
@@ -59,16 +77,33 @@ def _safe(value: Any) -> Any:
     还会替换诊断字符串中嵌入的进程地址，避免 ``status`` 等人类可读字段
     绕过结构化白名单。
     """
-    if value is None or isinstance(value, (int, bool)):
+    # Built-in trees dominate publication. Keep the original isinstance path
+    # below for subclasses/unusual producers; no field or redaction is skipped.
+    kind = type(value)
+    if value is None or kind is int or kind is bool:
+        return value
+    if kind is str:
+        return (_INTERNAL_ADDRESS_PATTERN.sub("[redacted-address]", value)
+                if "0x" in value else value)
+    if kind is dict:
+        return {key: _safe(item) for raw_key, item in value.items()
+                if _is_public_key(key := str(raw_key))}
+    if kind is list:
+        return [_safe(item) for item in value]
+    if kind is float:
+        return value if math.isfinite(value) else None
+    if isinstance(value, (int, bool)):
         return value
     if isinstance(value, float):
         return value if math.isfinite(value) else None
     if isinstance(value, str):
-        return _INTERNAL_ADDRESS_PATTERN.sub("[redacted-address]", value)
+        # A literal 0x is necessary for the existing address pattern to match.
+        # Most repeated status/metadata strings therefore need no regex scan.
+        return (_INTERNAL_ADDRESS_PATTERN.sub("[redacted-address]", value)
+                if "0x" in value else value)
     if isinstance(value, dict):
-        return {str(key): _safe(item) for key, item in value.items()
-                if str(key).lower() not in _INTERNAL_FIELD_NAMES
-                and not str(key).lower().endswith(_INTERNAL_FIELD_SUFFIXES)}
+        return {key: _safe(item) for raw_key, item in value.items()
+                if _is_public_key(key := str(raw_key))}
     if isinstance(value, (list, tuple, set)):
         return [_safe(item) for item in value]
     # Default Python object representations include ``at 0x...``. Re-enter the
@@ -224,6 +259,9 @@ def _enemy_basic(entity: Any, index: int) -> dict[str, Any]:
         "hp": getattr(entity, "hp", None),
         "maxHp": getattr(entity, "max_hp", None),
         "position": _safe(position),
+        "blockedPosition": {"x": getattr(entity, "blk_x", None), "y": getattr(entity, "blk_y", None)},
+        "spawnPosition": {"x": getattr(entity, "spawn_col", None), "y": getattr(entity, "spawn_row", None)},
+        "direction": getattr(entity, "direction", None),
         "action": _public_action("enemy", getattr(entity, "action", {})),
         "shield": getattr(entity, "shield", None),
         "abnormalStatus": _safe(entity.active_status_names() if hasattr(entity, "active_status_names")
@@ -235,11 +273,17 @@ def _enemy_basic(entity: Any, index: int) -> dict[str, Any]:
                             if getattr(entity, "precise_pos_valid", False) else None),
         "abnormalImmunes": _safe(getattr(entity, "abnormal_immunes", [])),
         "abnormalComboImmunes": _safe(getattr(entity, "abnormal_combo_immunes", [])),
+        "abnormalAntis": _safe(getattr(entity, "abnormal_antis", [])),
+        "abnormalFlags": _safe(getattr(entity, "abnormal_flags", [])),
+        "abnormalCombos": _safe(getattr(entity, "abnormal_combos", [])),
+        "statusTimers": _safe(getattr(entity, "status_timers", {})),
         "elementShield": getattr(entity, "es", None),
         "elementRemaining": _safe(getattr(entity, "ep_remaining", {})),
         "elementBreakRecovery": getattr(entity, "ep_break_recovery", None),
         "skills": _safe(getattr(entity, "skills", [])),
         "spawnOrder": getattr(entity, "spawn_order", None),
+        "spawnContext": {key: getattr(entity, key, None) for key in (
+            "wave_index", "fragment_index", "action_index", "spawn_index", "route_index")},
         "spawnEta": getattr(entity, "spawn_eta", None),
         "spawnCondition": getattr(entity, "spawn_condition", None),
         "spawnKind": getattr(entity, "spawn_kind", None),
@@ -255,6 +299,13 @@ def _character_basic(entity: Any, index: int) -> dict[str, Any]:
         "characterId": getattr(entity, "cid", ""),
         "name": getattr(entity, "name", ""),
         "kind": "token" if getattr(entity, "is_token", False) else "operator",
+        "identity": _safe({key: getattr(entity, key, None) for key in (
+            "unique_id", "tmpl_id", "alias", "name_en", "rarity", "potential_rank",
+            "favor_phase", "is_assist", "is_predefined", "is_hidden", "team_key",
+            "nation_id", "group_id", "team_id", "token_or_host_key", "token_or_host_uid")}),
+        "deployment": {key: getattr(entity, key, None) for key in ("deploy_cost_this_time", "card_uid")},
+        "finishReason": getattr(entity, "finish_reason", None),
+        "direction": getattr(entity, "direction", None) if getattr(entity, '_direction_read_ok', False) else None,
         "alive": bool(getattr(entity, "alive", True)),
         "position": {"row": getattr(entity, "grid_row", None), "col": getattr(entity, "grid_col", None),
                      "x": getattr(entity, "grid_col", None), "y": getattr(entity, "grid_row", None)},
@@ -270,10 +321,20 @@ def _character_basic(entity: Any, index: int) -> dict[str, Any]:
         "action": _public_action("character", getattr(entity, "action", {})),
         "attributes": _safe(getattr(entity, "attributes", {})),
         "abnormalStatus": _safe(entity.status_text() if hasattr(entity, "status_text") else []),
+        "abnormalFlags": _safe(getattr(entity, "abnormal_flags", [])),
+        "abnormalCombos": _safe(getattr(entity, "abnormal_combos", [])),
+        "abnormalImmunes": _safe(getattr(entity, "abnormal_immunes", [])),
+        "abnormalComboImmunes": _safe(getattr(entity, "abnormal_combo_immunes", [])),
+        "abnormalAntis": _safe(getattr(entity, "abnormal_antis", [])),
+        "elementRemaining": _safe(getattr(entity, "ep_remaining", {})),
+        "elementBreakRecovery": getattr(entity, "ep_break_recovery", None),
         "shield": getattr(entity, "shield", None), "elementShield": getattr(entity, "es", None),
         "damageByType": {label: getattr(entity, "damage_by_type", {}).get(index)
                          for index, label in ((1, "physical"), (2, "magical"), (3, "pure"), (5, "element"))},
         "elementOutputTotal": sum(getattr(entity, "output_element_damage", {}).values()),
+        "elementOutputByType": _safe(getattr(entity, "output_element_damage", {})),
+        "elementBreakCount": _safe(getattr(entity, "output_ep_break_count", {})),
+        "damageRange": {"min": getattr(entity, "damage_range_min", None), "max": getattr(entity, "damage_range_max", None)},
         "globalDamageSummary": getattr(entity, "global_total_damage", None),
         "unattributedDamage": getattr(entity, "unattributed_damage_total", None),
         "blockedVolume": getattr(entity, "blocked_total_volume", None),
@@ -296,9 +357,28 @@ def _detail(entity: Any, basic: dict[str, Any], *, primary_enemy: Any = None,
         "specialShield": _safe(getattr(entity, "special_shield", None)),
         "dynamicAbilities": _safe(getattr(entity, "dynamic_abilities", [])),
         "equipment": _safe(getattr(entity, "module_settings", [])),
+        "deckBuffBlackboard": _safe(getattr(entity, "deck_buff_blackboard", [])),
+        "specialShieldMask": _safe(getattr(entity, "special_shield_mask", None)),
+        "specialShieldSources": _safe(getattr(entity, "special_shield_sources", [])),
         "fieldStates": {**basic.get("fieldStates", {}),
                         **_safe(getattr(entity, "field_states", {}))},
     }
+    # The same immutable, locally extracted resource used by the Qt detail tab.
+    # Static table evidence must never borrow the current battle's source frame.
+    domain = 'enemy_detail' if 'enemyId' in basic else 'character_detail'
+    from tools.enemy_health import game_structs as gs
+    details['attributeDefinitions'] = [list(value) for value in gs.ATTRIBUTE_DEFS]
+    details['statusDefinitions'] = [list(value) for value in gs.ABNORMAL_FLAG_DEFS]
+    details['comboDefinitions'] = [list(value) for value in gs.ABNORMAL_COMBO_DEFS]
+    if policy is None or policy.enabled(domain + '.effectFrames'):
+        from ..effect_frames_ui import COLUMNS, enemy_frame_rows, character_frame_rows
+        rows = (enemy_frame_rows(basic.get('enemyId') or getattr(entity, 'eid', '')) if domain == 'enemy_detail'
+                else character_frame_rows(basic.get('characterId') or getattr(entity, 'cid', ''))
+                or character_frame_rows(getattr(entity, 'tmpl_id', '')))
+        details['effectFrames'] = {'columns': list(COLUMNS), 'rows': _safe(rows), 'source': 'local_static_table'}
+        details['fieldStates'][domain + '.effectFrames'] = {
+            'collectionState': 'static', 'sourceFrame': None,
+            'policyGeneration': policy.generation if policy else getattr(entity, 'policy_generation', 0)}
     if primary_enemy is not None and policy is not None:
         # Enemy detail has no independent skill reader: reuse only the primary
         # complete-frame skill sample, preserving that sample's provenance.
@@ -314,17 +394,51 @@ def _detail(entity: Any, basic: dict[str, Any], *, primary_enemy: Any = None,
     return details
 
 
+def _detail_basic(entity: Any, index: int, basics: dict, build: Callable) -> Any:
+    """Use same-call basics; unlike dict.get's default, compute only on miss."""
+    key = getattr(entity, "addr", None)
+    return basics[key] if key in basics else build(entity, index)
+
+
 def _public_action(domain: str, action: Any) -> dict[str, Any]:
     """Only registered action leaves cross the public field-policy boundary."""
     if not isinstance(action, dict):
         return {}
-    keys = {path.split(".")[1] for spec in FIELD_REGISTRY.values()
-            if spec.domain == domain for path in spec.paths if path.startswith("action.")}
+    keys = ACTION_KEYS_BY_DOMAIN.get(domain, ())
     return {key: _safe(action[key]) for key in keys if key in action}
 
 
-def _mask_unavailable(row: dict[str, Any]) -> dict[str, Any]:
+def _mask_unavailable(row: dict[str, Any], *, detail_domain: str | None = None) -> dict[str, Any]:
     """Defaults in runtime dataclasses aren't evidence of a successful field read."""
+    # Ownership is local to this call. Retain clones to prevent id reuse, and
+    # never memoize original -> clone: two aliased input branches may need
+    # different leaves removed. Unchanged branches remain borrowed/read-only.
+    owned: dict[int, dict[str, Any]] = {}
+
+    def writable(value):
+        if id(value) in owned:
+            return value
+        clone = dict(value)
+        owned[id(clone)] = clone
+        return clone
+
+    def remove(value, parts):
+        key = parts[0]
+        if key not in value:
+            return value
+        if len(parts) == 1:
+            value = writable(value)
+            del value[key]
+            return value
+        child = value[key]
+        if not isinstance(child, dict):
+            return value
+        changed = remove(child, parts[1:])
+        if changed is not child:
+            value = writable(value)
+            value[key] = changed
+        return value
+
     result = row
     for field_id, record in row.get("fieldStates", {}).items():
         spec = FIELD_REGISTRY.get(field_id)
@@ -335,26 +449,22 @@ def _mask_unavailable(row: dict[str, Any]) -> dict[str, Any]:
         if field_id == 'enemy.finish_reason' and record.get('collectionState') == 'unavailable':
             # This nullable raw enum distinguishes an unobserved finish from
             # NONE=0. Policy projection still removes the key when switched off.
-            result = {**result, 'finishReason': None}
+            result = writable(result)
+            result['finishReason'] = None
             continue
         for path in spec.paths:
+            # These names are shared by basic and independently sampled detail
+            # objects. A failed fast field cannot erase an accepted async value
+            # carrying its own provenance. Other basic leaves remain masked.
+            detail_key = ('attributes' if path.startswith('attributes.') else
+                          'specialShield' if path == 'specialShield' else None)
+            if detail_domain and detail_key and not field_id.startswith(detail_domain + '.'):
+                own = row.get('fieldStates', {}).get(f'{detail_domain}.{detail_key}', {})
+                if own.get('collectionState') in {'current', 'static', 'historical'}:
+                    continue
             parts = path.split(".")
-            result = _without_path(result, parts)
+            result = remove(result, parts)
     return result
-
-
-def _without_path(value: dict[str, Any], parts: list[str]) -> dict[str, Any]:
-    """Copy only the changed branch of an internally immutable accepted row."""
-    key = parts[0]
-    if key not in value:
-        return value
-    if len(parts) == 1:
-        return {name: item for name, item in value.items() if name != key}
-    child = value[key]
-    if not isinstance(child, dict):
-        return value
-    changed = _without_path(child, parts[1:])
-    return value if changed is child else {**value, key: changed}
 
 
 def _rng_engine(snapshot: Any) -> dict[str, Any] | None:
@@ -429,7 +539,15 @@ class WebSocketApi:
         self._snapshots: dict[str, Any] = {}
         self._last_detail_revision: int | None = None
         self._session_id = f"session-{uuid.uuid4().hex}"
+        self._session_origin = uuid.uuid4().hex
+        self._session_ordinal = 0
         self._topic_versions: dict[str, int] = {}
+        # Tickets order producers independently of notification versions. A slow
+        # conversion must never overwrite a newer accepted batch.
+        self._publication_ticket = 0
+        self._committed_tickets: dict[str, int] = {}
+        # One encoded immutable payload per topic, never one entry per frame.
+        self._encoded_payloads: dict[str, tuple[Any, str]] = {}
         self._scheduled_topics: set[str] = set()
         self._started_at = time.monotonic()
         self._dropped = 0
@@ -447,7 +565,7 @@ class WebSocketApi:
         """Return display-filtered accepted values, independently of WS service state."""
         with self._lock:
             policy = self._policy_provider()
-            return {topic: self._project_topic(topic, data, policy, "display")
+            return {topic: self._project_topic(topic, data, policy, "display", masked=True)
                     for topic, data in self._source_snapshots.items()
                     if topics is None or topic in topics}
 
@@ -456,6 +574,21 @@ class WebSocketApi:
         with self._lock:
             return {topic: self._topic_versions.get(topic, 0)
                     for topic in self._source_snapshots if topic != 'battle'}
+
+    def accepted_sources(self, topics: tuple[str, ...]) -> dict[str, Any]:
+        """Copy collected sources for aggregation, never a display/WS projection.
+
+        Calling this does not read game memory. Copies keep original field tags;
+        aggregates must still validate the current session and dependencies.
+        """
+        with self._lock:
+            return {topic: copy.deepcopy(self._source_snapshots[topic])
+                    for topic in topics if topic in self._source_snapshots}
+
+    @property
+    def session_id(self) -> str:
+        with self._lock:
+            return self._session_id
 
     def wait_local_update(self, channel: str, revision: int, timeout: float = 1):
         """Wait for accepted local data without memory reads or external WS gates.
@@ -505,12 +638,13 @@ class WebSocketApi:
                               "sourceFrame": None, "latestKnownFrame": None}}, force=True)
 
     @staticmethod
-    def _project_topic(topic: str, data: Any, policy: Any, layer: str) -> Any:
+    def _project_topic(topic: str, data: Any, policy: Any, layer: str, *, masked: bool = False) -> Any:
         if not isinstance(data, dict):
             return data
         payload = dict(data)
         domain = {"enemies": "enemy", "enemy_pathing": "enemy",
-                  "characters": "character"}.get(topic, topic)
+                  "characters": "character",
+                  **dict.fromkeys(STAGE_GLOBAL_TOPICS, 'stage_global')}.get(topic, topic)
         if topic in {"enemies", "enemy_pathing", "characters", "enemy_detail", "character_detail"}:
             base_domain = "enemy" if topic.startswith("enemy") or topic == "enemies" else "character"
             if topic in {"enemy_detail", "character_detail"}:
@@ -521,7 +655,12 @@ class WebSocketApi:
                     if spec.domain == topic:
                         for path in spec.paths:
                             payload.pop(path.split('.')[0], None)
-            payload["items"] = [project_snapshot(base_domain, _mask_unavailable(row), policy, layer)
+            # Native detail dialogs do not inherit main-table column visibility.
+            # Only the local detail view has this scope; external WS publish
+            # switches and normal WebUI tables keep their existing semantics.
+            base_layer = 'collect' if layer == 'display' and topic.endswith('_detail') else layer
+            payload["items"] = [project_snapshot(base_domain, row if masked else _mask_unavailable(
+                                    row, detail_domain=topic if topic.endswith('_detail') else None), policy, base_layer)
                                 for row in payload.get("items", [])]
             if domain != base_domain:
                 payload["items"] = [project_snapshot(domain, row, policy, layer)
@@ -530,15 +669,17 @@ class WebSocketApi:
                 payload.pop("globalDamageSummary", None)
             elif topic == "characters" and isinstance(payload.get("globalDamageSummary"), dict):
                 payload["globalDamageSummary"] = project_snapshot(
-                    "character", _mask_unavailable(payload["globalDamageSummary"]), policy, layer)
+                    "character", payload["globalDamageSummary"] if masked else _mask_unavailable(payload["globalDamageSummary"]), policy, layer)
         else:
-            payload = project_snapshot(domain, _mask_unavailable(payload), policy, layer)
+            payload = project_snapshot(domain, payload if masked else _mask_unavailable(payload), policy, layer)
         payload["meta"] = {**payload.get("meta", {}), "policyGeneration": policy.generation}
         return payload
 
     def publish_fields(self, domain: str, values: dict[str, Any], *, entity_id: str | None = None,
                        source_frame: int | None = None, latest_known_frame: int | None = None,
-                       frame_consistent: bool = True, policy_generation: int | None = None) -> None:
+                       frame_consistent: bool = True, policy_generation: int | None = None,
+                       field_states: dict[str, Any] | None = None,
+                       batch_meta: dict[str, Any] | None = None) -> None:
         """Publish a complete accepted field batch through the shared policy hook.
 
         Use for a new producer after its frame/identity validation. Register each
@@ -546,6 +687,11 @@ class WebSocketApi:
         batch; it deliberately never merges individual values across game frames.
         Internal pointers and unregistered field IDs cannot enter this boundary.
         """
+        if domain == 'stage_global':
+            self._publish_stage_fields(values, field_states, batch_meta,
+                                       source_frame, latest_known_frame,
+                                       frame_consistent, policy_generation)
+            return
         topics = {"enemy": "enemies", "character": "characters"}
         topic = topics.get(domain, domain)
         if topic not in TOPIC_DEFAULTS or topic == "ops.heartbeat":
@@ -571,6 +717,111 @@ class WebSocketApi:
         if not frame_consistent:
             data = {"items": [], "meta": data["meta"]} if entity_domain else {"meta": data["meta"]}
         self._publish(topic, data)
+
+    def _publish_stage_fields(self, values, records, metadata, source_frame,
+                              latest_known_frame, frame_consistent, generation):
+        """Route a complete aggregate while retaining each producer's evidence.
+
+        New topics are additive to v2. Unlike legacy single-source batches, a
+        failed runtime guard does not erase the independent clock/base map.
+        No dictionary is merged with the previous accepted field batch.
+        """
+        policy = self._policy_provider()
+        generation = policy.generation if generation is None else generation
+        if type(frame_consistent) is not bool or type(generation) is not int:
+            raise ValueError('invalid aggregate guard/generation')
+        if generation != policy.generation:
+            return
+        metadata = dict(metadata or {})
+        allowed = {'runtimeFrame', 'sampledAt', 'acceptedAt', 'sourceEpoch',
+                   'configurationRevision', 'sourceSessionId'}
+        if set(metadata) - allowed:
+            raise ValueError('unsupported aggregate metadata')
+        for key in ('runtimeFrame', 'sourceEpoch'):
+            number = metadata.get(key)
+            if number is not None and (type(number) is not int or number < 0):
+                raise ValueError('invalid aggregate source metadata')
+        expected_session = metadata.pop('sourceSessionId', self.session_id)
+        if expected_session != self.session_id:
+            return
+        records = records or {}
+        specs = {spec['id']: spec for spec in contract_specs()}
+        if set(values) - specs.keys() or set(records) - specs.keys():
+            raise ValueError('unregistered aggregate field')
+        payloads = {topic: {'fieldStates': {}, 'meta': {
+            'sourceFrame': source_frame, 'latestKnownFrame': latest_known_frame,
+            'sampledAt': _now(), 'collectionState': 'current',
+            'frameConsistent': bool(frame_consistent), 'policyGeneration': generation,
+            'sessionId': expected_session, **metadata}} for topic in STAGE_GLOBAL_TOPICS}
+        for field_id, spec in specs.items():
+            record = records.get(field_id)
+            if record is None:
+                record = collection_record(None, latest_known_frame, generation,
+                                           'unavailable', 'read_failed')
+            if (not isinstance(record, dict) or type(record.get('generation')) is not int
+                    or record.get('generation') != generation):
+                raise ValueError('aggregate record generation mismatch')
+            record = copy.deepcopy(record)
+            record = {key: value for key, value in record.items() if key in {
+                'sourceFrame', 'acceptedFrame', 'latestKnownFrame', 'generation',
+                'collectionState', 'reason', 'sampledAt', 'revision'}}
+            if not isinstance(record.get('reason', ''), str):
+                raise ValueError('invalid aggregate reason')
+            if record.get('collectionState') not in {
+                    'current', 'static', 'historical', 'not_collected', 'unavailable'}:
+                raise ValueError('invalid aggregate collection state')
+            # Fail closed even if an erroneous producer supplies current values
+            # after the dynamic guard failed. Clock is an independent producer.
+            independent = field_id in {'stage_global.gameTime', 'stage_global.fixedFrame',
+                                       'stage_global.stageName', 'stage_global.mapId', 'stage_global.map'}
+            dynamic = not independent
+            field_frame = record.get('sourceFrame')
+            runtime_frame = metadata.get('runtimeFrame')
+            accepted = record.get('acceptedFrame')
+            bad_frame = (type(field_frame) is not int or field_frame < 0
+                         or (runtime_frame is not None and field_frame != runtime_frame)
+                         or (accepted is not None and (type(accepted) is not int or accepted != field_frame)))
+            if not policy.enabled(field_id):
+                record.update(collectionState='not_collected', reason='not_collected')
+            elif record.get('collectionState') == 'historical' or (
+                    dynamic and record.get('collectionState') == 'static'):
+                record.update(collectionState='unavailable', reason='source_unavailable')
+            elif dynamic and record.get('collectionState') == 'current' and bad_frame:
+                record.update(collectionState='unavailable', reason='inconsistent_capture')
+            if not frame_consistent and dynamic and policy.enabled(field_id):
+                record.update(collectionState='unavailable', reason='inconsistent_capture')
+            for key in ('sourceFrame', 'acceptedFrame', 'latestKnownFrame'):
+                number = record.get(key)
+                if number is not None and (type(number) is not int or number < 0):
+                    record[key] = None
+            topic = spec['topic']
+            row = payloads[topic]
+            row['fieldStates'][field_id] = record
+            if field_id not in values:
+                continue
+            if record['collectionState'] in {'unavailable', 'not_collected'}:
+                continue
+            public = public_contract_value(field_id, values[field_id])
+            if public is None and record.get('reason') not in spec['null_reasons']:
+                record.update(collectionState='unavailable', reason='read_failed')
+                continue
+            for path, value in contract_value_paths(field_id, public).items():
+                target = row
+                parts = path.split('.')
+                for part in parts[:-1]:
+                    target = target.setdefault(part, {})
+                target[parts[-1]] = _safe(value)
+        # Publish under one session lock: a concurrent begin_session cannot
+        # split this accepted batch across two public session identities.
+        with self._lock:
+            if expected_session != self._session_id:
+                return
+            for topic, payload in payloads.items():
+                states = payload['fieldStates'].values()
+                payload['meta']['collectionState'] = (
+                    'current' if any(r['collectionState'] in {'current', 'static'} for r in states)
+                    else 'unavailable')
+                self._publish(topic, payload)
 
     @property
     def port(self) -> int:
@@ -625,15 +876,25 @@ class WebSocketApi:
         """开始新的战斗会话，使客户端可用 sessionId 区分换局。"""
         with self._lock:
             self._session_id = f"session-{uuid.uuid4().hex}"
+            self._session_ordinal += 1
             self._last_detail_revision = None
+            self._encoded_payloads.clear()
             self._resyncs += 1
             for client in self._clients:
                 client.last_sent.clear()
             for topic in (
-                    "stage", "enemies", "enemy_pathing", "characters", "enemy_detail",
-                    "character_detail", "deploy", "rng", "quality"):
+                    "battle", "stage", "enemies", "enemy_pathing", "characters", "enemy_detail",
+                    "character_detail", "deploy", "rng", "quality", *STAGE_GLOBAL_TOPICS):
                 self._snapshots.pop(topic, None)
                 self._source_snapshots.pop(topic, None)
+            # A bootstrap or an independent clock SSE replay must not reuse
+            # the last battle's time while the new timer is still locating.
+            self._local_clock = {'connected': False, 'meta': {
+                'sessionId': self._session_id, 'sessionOrigin': self._session_origin,
+                'sessionOrdinal': self._session_ordinal,
+                'collectionState': 'unavailable', 'reason': 'session_changed',
+                'policyGeneration': self._policy_provider().generation}}
+            self._local_revisions['clock'] += 1
             self._local_revisions["modules"] += 1
             self._local_changed.notify_all()
             return self._session_id
@@ -674,6 +935,9 @@ class WebSocketApi:
                 "enemyPathing": "enemy_pathing" in available,
                 "characters": "characters" in available, "deploy": "deploy" in available,
                 "rng": "rng" in available,
+                "stageGlobal": "stage_global" in available,
+                "stageMap": "stage_map" in available,
+                "stageUnits": "stage_units" in available,
             },
             "modules": {
                 "timer": {"state": "ready" if "battle" in available else "unavailable"},
@@ -726,7 +990,15 @@ class WebSocketApi:
                 result[topic]["rateHz"] = min(result[topic]["rateHz"], 5.0)
         return result
 
-    def publish_timer(self, cache: dict[str, Any]) -> None:
+    def publish_timer(self, cache: dict[str, Any], *, source_session_id: str | None = None) -> None:
+        expected_session = self.session_id if source_session_id is None else source_session_id
+        # All three accepted views commit as one operation against begin_session.
+        # Existing helpers use this same RLock; no game/device IO occurs here.
+        with self._lock:
+            if expected_session == self._session_id:
+                self._publish_timer_locked(cache, expected_session)
+
+    def _publish_timer_locked(self, cache, expected_session):
         timer = copy.deepcopy(cache)
         if timer.get("policy_generation", self._policy_provider().generation) != self._policy_provider().generation:
             return
@@ -741,24 +1013,102 @@ class WebSocketApi:
             "configured": bool(timer.get("configured")),
             "sampledAt": _safe(timer.get("last_refresh")),
             "message": _safe(timer.get("message")),
-            "meta": {"sourceFrame": timer.get("frame_count"), "latestKnownFrame": timer.get("frame_count"),
+            "meta": {"sessionId": expected_session,
+                     "sourceFrame": timer.get("frame_count"), "latestKnownFrame": timer.get("frame_count"),
                      "collectionState": timer.get("collection_state", "current"), "sampledAt": timer.get("last_refresh"),
                      "policyGeneration": timer.get("policy_generation", self._policy_provider().generation)},
         }
         policy = self._policy_provider()
+        clock_valid = (timer.get('connected') is True
+                       and timer.get('collection_state', 'current') == 'current')
+        def timer_value_valid(spec):
+            return update.get(spec.paths[0]) is not None and (
+                spec.id in {'battle.connected', 'battle.configured', 'battle.message'} or clock_valid)
         update["fieldStates"] = {spec.id: collection_record(
             timer.get("frame_count"), timer.get("frame_count"), policy.generation,
             "not_collected" if not policy.enabled(spec.id) else
-            "current" if update.get(spec.paths[0]) is not None else "unavailable",
-            "" if update.get(spec.paths[0]) is not None else "timer_unavailable")
+            "current" if timer_value_valid(spec) else "unavailable",
+            "" if timer_value_valid(spec) else "timer_unavailable")
             for spec in FIELD_REGISTRY.values() if spec.domain == "battle" and spec.group == "timer"}
         self._merge_battle(update)
+        if expected_session != self._session_id:
+            return
+        self._refresh_global_clock(update, policy)
         with self._local_changed:
-            if policy.generation == self._policy_provider().generation:
+            if (expected_session == self._session_id
+                    and policy.generation == self._policy_provider().generation):
                 update['meta']['sessionId'] = self._session_id
+                update['meta']['sessionOrigin'] = self._session_origin
+                update['meta']['sessionOrdinal'] = self._session_ordinal
                 self._local_clock = self._project_topic('battle', update, policy, 'collect')
                 self._local_revisions['clock'] += 1
                 self._local_changed.notify_all()
+
+    def _refresh_global_clock(self, clock, policy):
+        """Reuse the accepted main clock even while shared entity IO is stopped.
+
+        Only clock leaves change; existing runtime fields retain their original
+        frames. Map/layout topics are not retransformed on every timer tick.
+        """
+        with self._lock:
+            if (policy.generation != self._policy_provider().generation
+                    or clock.get('meta', {}).get('sessionId') != self._session_id):
+                return
+            payload = copy.deepcopy(self._source_snapshots.get('stage_global', {}))
+            values = payload.setdefault('clock', {})
+            states = payload.setdefault('fieldStates', {})
+            for key in ('gameTime', 'fixedFrame'):
+                field_id = 'stage_global.' + key
+                record = copy.deepcopy(clock['fieldStates']['battle.' + key])
+                if not policy.enabled(field_id):
+                    record.update(collectionState='not_collected', reason='not_collected')
+                states[field_id] = record
+                if record['collectionState'] == 'current':
+                    values[key] = clock.get(key)
+                else:
+                    values.pop(key, None)
+            payload['meta'] = {**payload.get('meta', {}), 'sourceFrame': None,
+                'latestKnownFrame': clock.get('fixedFrame'), 'sampledAt': clock.get('sampledAt'),
+                'policyGeneration': policy.generation, 'sessionId': self._session_id}
+            if any(record.get('collectionState') in {'current', 'static'} for record in states.values()):
+                payload['meta']['collectionState'] = 'current'
+            else:
+                payload['meta']['collectionState'] = 'unavailable'
+            # Local workspaces already receive clock via the narrow SSE lane.
+            # Re-encoding the entire wave list for every clock tick would undo
+            # that separation. External stage_global subscribers still refresh.
+            self._publish('stage_global', payload, notify_local=False)
+
+    def publish_stage_global(self, snapshot):
+        """Aggregate shared-worker inputs; this boundary never accesses memory."""
+        from .stage_global_state import StageGlobalStateService
+        raw = snapshot.get('stage_global', {})
+        if not isinstance(raw, dict):
+            return
+        policy = self._policy_provider()
+        if snapshot.get('policy_generation', policy.generation) != policy.generation:
+            return
+        source_session = raw.get('meta', {}).get('sourceSessionId', self.session_id)
+        with self._lock:
+            if source_session != self._session_id:
+                return
+            # The pure aggregator only reads these immutable canonical values.
+            # Borrow under the publication lock instead of deep-copying the full
+            # roster (including departed/unspawned enemies and unused details).
+            # Selected layout leaves are copied by build; public accepted_sources
+            # deliberately retains its defensive-copy contract.
+            sources = {topic: self._source_snapshots.get(topic)
+                       for topic in ('battle', 'stage', 'enemies', 'characters')}
+            result = StageGlobalStateService().build(raw, sources.get('battle'), sources.get('stage'),
+                sources.get('enemies'), sources.get('characters'), policy,
+                runtime_frame=snapshot.get('fixed_frame'),
+                frame_consistent=snapshot.get('frame_consistent', False),
+                source_epoch=snapshot.get('_history_epoch'))
+            meta = dict(result['batch_meta'])
+            self.publish_fields('stage_global', result['values'], field_states=result['field_states'],
+                source_frame=meta.pop('sourceFrame'), latest_known_frame=meta.pop('latestKnownFrame'),
+                frame_consistent=meta.pop('frameConsistent'), policy_generation=meta.pop('policyGeneration'),
+                batch_meta={**meta, 'sourceSessionId': source_session})
 
     def publish_runtime(self, snapshot: dict[str, Any]) -> None:
         policy = self._policy_provider()
@@ -770,9 +1120,8 @@ class WebSocketApi:
                 record.update(collectionState="unavailable", reason="frame_inconsistent")
             self._merge_battle(failed_battle)
             self.publish_enemy_pathing(snapshot, force_unavailable=True)
-            # The normal enemies topic also contains pathing. Invalidate the
-            # cached/public copy immediately so new or slow clients cannot keep
-            # consuming an apparently current route from the previous frame.
+            # Commit the final invalidation once. Publishing the previous
+            # payload first could broadcast old HP/position as still current.
             with self._lock:
                 previous = copy.deepcopy(self._snapshots.get("enemies", {}))
             if isinstance(previous.get("items"), list):
@@ -781,13 +1130,16 @@ class WebSocketApi:
                         item["pathing"] = _invalidate_public_pathing(
                             _public_pathing(item.get("pathing")),
                             "frame_inconsistent")
-                self._publish("enemies", previous, force=True)
             self._publish("quality", self._quality(snapshot))
-            meta = self._runtime_meta(snapshot, False)
+            meta = self._runtime_meta(snapshot, False, reason="frame_inconsistent")
             self._publish("characters", {"items": [], "meta": meta}, force=True)
             self._publish("enemies", {"items": [
                 {"id": item.get("id"), "pathing": item.get("pathing")}
                 for item in previous.get("items", [])], "meta": meta}, force=True)
+            if snapshot.get("external_detail_error"):
+                # This independent producer explicitly failed. Core rejection
+                # must not swallow its notice or lend it rejected core values.
+                self._publish_runtime_details(snapshot, policy, [], [])
             return
         sample_frame = snapshot.get("fixed_frame", snapshot.get("sample_frame"))
         enemies = [_enemy_basic(entity, index) for index, entity in enumerate(snapshot.get("enemies", ()), 1)]
@@ -810,11 +1162,23 @@ class WebSocketApi:
         self._publish(
             "enemies", {"items": enemies if snapshot.get("ok", True) else [],
                         "meta": self._runtime_meta(snapshot, snapshot.get("ok", True))}, force=pathing_invalid)
-        self.publish_enemy_pathing(snapshot)
-        self._publish("characters", {"items": characters if snapshot.get("character_ok", True) else [],
+        # Reuse only this invocation's whitelisted, frame-validated routes.
+        # _publish retains its defensive copy and policy/session checks.
+        self._publish_prepared_enemy_pathing(snapshot, [
+            {"id": basic["id"], "pathing": basic["pathing"]} for basic in enemies])
+        character_ok = snapshot.get("character_ok", True)
+        character_reason = snapshot.get("character_msg") or "character_read_failed"
+        self._publish("characters", {"items": characters if character_ok else [],
             "globalDamageSummary": (_character_basic(snapshot["global_damage_summary"], 0)
                                      if snapshot.get("global_damage_summary") is not None else None),
-            "meta": self._runtime_meta(snapshot, snapshot.get("character_ok", True))})
+            "meta": self._runtime_meta(snapshot, character_ok, reason=character_reason)})
+        self._publish_runtime_details(snapshot, policy, enemies, characters)
+        self._publish("quality", self._quality(snapshot))
+
+    def _publish_runtime_details(self, snapshot, policy, enemies, characters) -> None:
+        """Publish independently revised detail results, preserving their field evidence."""
+        character_ok = snapshot.get("character_ok", True)
+        character_reason = snapshot.get("character_msg") or "character_read_failed"
         detail_revision = snapshot.get("external_detail_revision")
         selected_detail = snapshot.get("detail_enemy") is not None or snapshot.get("detail_character") is not None
         if (selected_detail or (isinstance(detail_revision, int)
@@ -830,32 +1194,38 @@ class WebSocketApi:
             live_enemy_basics = {getattr(entity, "addr", None): basic
                                  for entity, basic in zip(snapshot.get("enemies", ()), enemies)}
             live_enemy_entities = {getattr(entity, "addr", None): entity
-                                   for entity in snapshot.get("enemies", ())}
+                                   for entity in snapshot.get("enemies", ())
+                                   if snapshot.get("frame_consistent", True)}
             live_character_basics = {getattr(entity, "addr", None): basic
                                      for entity, basic in zip(snapshot.get("characters", ()), characters)}
+            # An external task failure is independent of the core-domain guard.
+            # Report it using existing metadata without erasing independently
+            # accepted local details or changing their original field states.
+            detail_error = snapshot.get("external_detail_error")
             self._publish("enemy_detail", {"items": [
-                _detail(entity, live_enemy_basics.get(getattr(entity, "addr", None), _enemy_basic(entity, index)),
+                _detail(entity, _detail_basic(entity, index, live_enemy_basics, _enemy_basic),
                         primary_enemy=live_enemy_entities.get(getattr(entity, "addr", None)),
                         policy=policy)
                 for index, entity in enumerate(external_enemies, 1)
             ], "loading": bool(snapshot.get("external_detail_loading") or snapshot.get("detail_loading")),
-                "meta": self._runtime_meta(snapshot, snapshot.get("ok", True))})
+                "meta": self._runtime_meta(snapshot,
+                    snapshot.get("ok", True) and not detail_error, reason=detail_error)})
             self._publish("character_detail", {"items": [
-                _detail(entity, live_character_basics.get(getattr(entity, "addr", None), _character_basic(entity, index)))
+                _detail(entity, _detail_basic(entity, index, live_character_basics, _character_basic), policy=policy)
                 for index, entity in enumerate(external_characters, 1)
             ], "loading": bool(snapshot.get("external_detail_loading") or snapshot.get("character_detail_loading")),
-                "meta": self._runtime_meta(snapshot, snapshot.get("character_ok", True))})
-        self._publish("quality", self._quality(snapshot))
+                "meta": self._runtime_meta(snapshot, character_ok and not detail_error,
+                    reason=detail_error or character_reason)})
 
     @staticmethod
-    def _runtime_meta(snapshot: dict[str, Any], ok: bool) -> dict[str, Any]:
+    def _runtime_meta(snapshot: dict[str, Any], ok: bool, *, reason: str | None = None) -> dict[str, Any]:
         return {"sourceFrame": snapshot.get("fixed_frame"),
                 "policyGeneration": snapshot.get("policy_generation"),
                 "latestKnownFrame": snapshot.get("latest_known_frame"),
                 "acceptedFrame": snapshot.get("frame_end"),
                 "sampledAt": snapshot.get("sampled_at"), "acceptedAt": snapshot.get("accepted_at"),
                 "collectionState": "current" if ok else "unavailable",
-                "reason": "" if ok else snapshot.get("msg", "read_failed"),
+                "reason": "" if ok else (reason or snapshot.get("msg") or "read_failed"),
                 "frameConsistent": bool(snapshot.get("frame_consistent", True))}
 
     def publish_enemy_pathing(
@@ -880,6 +1250,16 @@ class WebSocketApi:
                 "id": entity_public_id("enemy", entity, index),
                 "pathing": pathing,
             })
+        self._publish_prepared_enemy_pathing(
+            snapshot, items, force_unavailable=force_unavailable)
+
+    def _publish_prepared_enemy_pathing(
+        self, snapshot: dict[str, Any], items: list[dict[str, Any]], *,
+        force_unavailable: bool = False,
+    ) -> None:
+        """Internal same-call handoff; callers must whitelist and validate first."""
+        sample_frame = snapshot.get("fixed_frame", snapshot.get("sample_frame"))
+        consistent = bool(snapshot.get("frame_consistent", True))
         active_pathing = [
             item["pathing"] for entity, item in
             zip(snapshot.get("enemies", ()), items)
@@ -929,9 +1309,9 @@ class WebSocketApi:
             paused = snap.get("paused_snapshot")
         if not isinstance(paused, bool):
             paused = None
-        # 对外 timeScale 是有效倍率；暂停键已确认时覆盖原始 originTimeScale。
-        effective_scale = 0.0 if paused is True else (
-            _safe(snap.get("time_scale")) if paused is False else None)
+        # time_scale is now the independently read native Unity getter value.
+        # Neither a pause key nor saved originTimeScale proves the engine value.
+        effective_scale = _safe(snap.get("time_scale"))
         values = {"state": state_names.get(state_code, "unknown"), "stateCode": _safe(state_code),
                 "speedLevel": _safe(snap.get("speed_level")),
                 "timeScale": effective_scale, "isPaused": paused,
@@ -970,7 +1350,8 @@ class WebSocketApi:
                     snap.get("paused_snapshot"), bool) else None,
                 "droppedOutboundFrames": self._dropped, "resyncCount": self._resyncs}
 
-    def _publish(self, topic: str, data: Any, *, force: bool = False) -> None:
+    def _publish(self, topic: str, data: Any, *, force: bool = False,
+                 notify_local: bool = True) -> None:
         with self._lock:
             policy = self._policy_provider()
             expected = data.get("meta", {}).get("policyGeneration") if isinstance(data, dict) else None
@@ -979,13 +1360,30 @@ class WebSocketApi:
             session = data.get("meta", {}).get("sessionId") if isinstance(data, dict) else None
             if session is not None and session != self._session_id:
                 return
-            safe_data = _safe(data)
-            if isinstance(safe_data, dict):
-                safe_data["meta"] = {**safe_data.get("meta", {}), "sessionId": self._session_id}
-            self._source_snapshots[topic] = self._project_topic(topic, safe_data, policy, "collect")
-            self._snapshots[topic] = self._project_topic(topic, self._source_snapshots[topic], policy, "publish")
-            self._topic_versions[topic] = self._topic_versions.get(topic, 0) + 1
-            if topic != 'battle':
+            source_session = self._session_id
+            session_meta = {"sessionId": source_session, "sessionOrigin": self._session_origin,
+                            "sessionOrdinal": self._session_ordinal}
+            self._publication_ticket += 1
+            ticket = self._publication_ticket
+        # Detach from producer-owned values once. Consumers may share accepted
+        # branches read-only, but caller data must never bypass this boundary.
+        safe_data = _safe(data)
+        if isinstance(safe_data, dict):
+            safe_data["meta"] = {**safe_data.get("meta", {}), **session_meta}
+        collected = self._project_topic(topic, safe_data, policy, "collect")
+        published = self._project_topic(topic, collected, policy, "publish", masked=True)
+        with self._lock:
+            if (source_session != self._session_id
+                    or policy.generation != self._policy_provider().generation
+                    or ticket < self._committed_tickets.get(topic, 0)):
+                return
+            self._committed_tickets[topic] = ticket
+            self._source_snapshots[topic] = collected
+            self._snapshots[topic] = published
+            self._encoded_payloads.pop(topic, None)
+            if notify_local:
+                self._topic_versions[topic] = self._topic_versions.get(topic, 0) + 1
+            if topic != 'battle' and notify_local:
                 self._local_revisions['modules'] += 1
                 self._local_changed.notify_all()
             if force:
@@ -1208,8 +1606,18 @@ class WebSocketApi:
                 return
             if meta.get("policyGeneration", self._policy_provider().generation) != self._policy_provider().generation:
                 return
+            topic = message_type.removesuffix('.updated')
+            # Identity, not a caller-supplied flag: only the exact internally
+            # accepted immutable snapshot may skip a second safety traversal.
+            trusted = data is self._snapshots.get(topic) and data is not None
+            session = self._session_id
+            generation = self._policy_provider().generation
+        queued_data = data if trusted else _safe(data)
+        with self._lock:
+            if session != self._session_id or generation != self._policy_provider().generation:
+                return
             message = {"type": message_type, "schemaVersion": SCHEMA_VERSION,
-                       "sessionId": self._session_id, "data": _safe(data)}
+                       "sessionId": session, "data": queued_data}
         if reliable:
             if client.queue.full():
                 # Bounded overload is explicit: close only this slow command
@@ -1243,18 +1651,31 @@ class WebSocketApi:
             else:
                 client.wake.clear()
                 continue
+            topic = envelope['type'].removesuffix('.updated')
+            data = envelope.get('data')
             with self._lock:
-                data = envelope.get("data")
+                cached = self._encoded_payloads.get(topic)
+                owned = data is not None and data is self._snapshots.get(topic)
+            encoded = (cached[1] if cached is not None and cached[0] is data
+                       else encode_sanitized(data) if owned
+                       else json.dumps(data, ensure_ascii=False, separators=(',', ':')))
+            with self._lock:
                 meta = data.get("meta", {}) if isinstance(data, dict) else {}
                 if envelope.get("sessionId") != self._session_id:
                     continue
                 if meta.get("policyGeneration", self._policy_provider().generation) != self._policy_provider().generation:
                     continue
+                if data is self._snapshots.get(topic) and data is not None:
+                    self._encoded_payloads[topic] = (data, encoded)
                 # Assign sequence at delivery: reliable replies can overtake
                 # coalesced frames without producing decreasing wire sequences.
                 client.sequence += 1
-                envelope = {**envelope, "sequence": client.sequence, "emittedAt": _now()}
-            await client.websocket.send(json.dumps(envelope, ensure_ascii=False, separators=(",", ":")))
+                header = {key: value for key, value in envelope.items() if key != 'data'}
+                header.update(sequence=client.sequence, emittedAt=_now())
+            # Payload is a complete JSON value; envelope sequence/time remain
+            # per-client. No protocol fields or freshness tags are changed.
+            packet = json.dumps(header, ensure_ascii=False, separators=(',', ':'))[:-1]
+            await client.websocket.send(packet + ',"data":' + encoded + '}')
 
     def _notify_status(self) -> None:
         """向宿主报告服务生命周期变化；监听方负责切换到自己的线程。"""

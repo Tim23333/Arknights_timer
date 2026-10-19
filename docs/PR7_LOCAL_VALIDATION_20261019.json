@@ -1,0 +1,236 @@
+{
+  "date": "2026-10-19",
+  "request": "Locally merge PR #7, validate affected application and tools, remove Android 2.7.81 preparation whitelist.",
+  "git": {
+    "base": "2e5c4306e4949fb6b15f990e34a9c69053be3327",
+    "pr_head": "94cf913c5d1d8fe47257234c41e4f56eaab3ecb2",
+    "pr": "https://github.com/Tim23333/Arknights_timer/pull/7",
+    "local_branch": "integrate/pr7-local-20261019",
+    "github_merge_approval_push": "not requested or performed",
+    "version": {
+      "backend": "3.6.2",
+      "frontend": "1.0.4",
+      "bumped": false
+    }
+  },
+  "scope": {
+    "tested": [
+      "backend",
+      "tools",
+      "ark_parser",
+      "webui",
+      "frontend"
+    ],
+    "excluded": [
+      "Ark_emulator"
+    ],
+    "primary_worktree": "Eight pre-existing Ark_emulator deletions are outside this merge and preserved."
+  },
+  "comparison_review": {
+    "baseline": "local main at the recorded base; fetched origin/main matched that commit at integration start",
+    "constraints_preserved": [
+      "Core guarded capture remains fail closed; optional fields require their accepted frame to match the core frame.",
+      "Discovery bytes do not become accepted current detail data and are cleared after each round.",
+      "Process birth, battle ownership, class identity, native instruction shapes, policy generation and immutable publication remain checked.",
+      "Qt owns presentation; background readers own game IO. Inactive frontend retires private consumers while backend/public WS remain independent."
+    ],
+    "intentional_semantics": [
+      "Requested change: package version strings no longer control preparation, engine retries or transport rebind. Live layout and ownership validation remain mandatory.",
+      "PR adds stable lifecycle readiness for paused battles and explicit new-instance transitions rather than requiring clock advancement.",
+      "PR retains explicitly labelled last_known display values until source invalidation. These retain original frame evidence; failure cannot promote them to current.",
+      "Coordinated core and optional execution does not imply a globally atomic transaction; separate guards and aggregation frame checks still apply."
+    ],
+    "integration_repairs": [
+      "Bind Qt close retry timer to the QObject owner so destroyed windows cannot receive delayed callbacks.",
+      "Update integration fixtures for lifecycle generations, source runtime observations, dependent field policy and added publication topics.",
+      "Update effect-frame test data lookup to the production resolver so available game_data catalogs are tested rather than skipped.",
+      "Add failure-oriented layout, lifecycle, capture ownership, JSON fallback, presentation and native protocol regression coverage."
+    ]
+  },
+  "tests": {
+    "python": {
+      "command": "python -m pytest -q --tb=short backend tools ark_parser",
+      "passed": 621,
+      "subtests_passed": 142,
+      "failed": 0,
+      "skipped": 0,
+      "warnings": "Two existing PytestReturnNotNoneWarning messages from RNG probe helpers.",
+      "evidence": [
+        ".cache/pr7_local_validation/pytest.log",
+        ".cache/pr7_local_validation/pytest.xml"
+      ]
+    },
+    "webui_node": {
+      "passed": 44
+    },
+    "frontend_node": {
+      "passed": 3,
+      "vite_build": "passed"
+    },
+    "native_protocol": {
+      "cases_passed": 21,
+      "serial": "127.0.0.1:16384",
+      "evidence": ".cache/audit/pr6/.cache/native_protocol/result-ee4f30b1d115f16e.txt",
+      "target": "self-owned ARM64 test-process memory; no game memory writes"
+    },
+    "ci": "Excluded by prior user instruction; not used as pass evidence."
+  },
+  "live": {
+    "device": {
+      "path": "E:\\MuMu Player 12\\shell\\adb.exe",
+      "serial": "127.0.0.1:16384"
+    },
+    "stage": {
+      "stageName": "长夜终尽",
+      "stageId": "main_05-10",
+      "levelId": "Obt/Main/level_main_05-10",
+      "mapId": null
+    },
+    "runtime": {
+      "state": "playing",
+      "stateCode": 2,
+      "isPaused": true,
+      "speedLevel": 2,
+      "timeScale": 0.0
+    },
+    "frame": 461,
+    "clock_seconds": 15.366652011871338,
+    "lifecycle_paused_readiness": "passed; first sample waits, stable second sample emits ready",
+    "operators": [
+      {
+        "name": "予愿安洁莉娜",
+        "hp": 2685.0,
+        "max_hp": 2685.0,
+        "sp": 26.0,
+        "max_sp": 30,
+        "skill": "酸橙的心事",
+        "hp_state": {
+          "sourceFrame": 461,
+          "latestKnownFrame": null,
+          "acceptedFrame": 461,
+          "generation": 1,
+          "collectionState": "current",
+          "reason": ""
+        }
+      },
+      {
+        "name": "虎狼丸",
+        "hp": 904.0,
+        "max_hp": 904.0,
+        "sp": 0.0,
+        "max_sp": 0,
+        "skill": null,
+        "hp_state": {
+          "sourceFrame": 461,
+          "latestKnownFrame": null,
+          "acceptedFrame": 461,
+          "generation": 1,
+          "collectionState": "current",
+          "reason": ""
+        }
+      }
+    ],
+    "observed_enemy_status": "读取: 设备快照（memsrv v5）   精确坐标:关闭   状态: 战斗中   倍速: 2x (x0)   战斗时间: 00:08   场上敌人: 6 / 预定: 73   未达完整60Hz 20.2Hz 45.3ms/完整帧 3批/716读 I/O 31.2ms UI丢旧帧65 暂停帧一致",
+    "quality": {
+      "sampleHz": 20.19,
+      "loopMs": 43.28,
+      "frameMs": 19.5,
+      "ioMs": 29.36010000121314,
+      "frameConsistent": true,
+      "pausedSnapshot": true,
+      "droppedOutboundFrames": 0,
+      "resyncCount": 0,
+      "meta": {
+        "sessionId": "session-3a390808b34d45b3aa9bf600b24616b5",
+        "sessionOrigin": "f10fe591c2754c51ac1cf0c00c1b1b22",
+        "sessionOrdinal": 0,
+        "policyGeneration": 1
+      }
+    },
+    "ui": {
+      "map": "12 x 8 rendered; four active enemies at earlier F318, six at final F461",
+      "skill_detail": "Angelina skchr_aglna2_3 level 10, SP 26/30, CastSkillWithLimitTimes, base/detail source F461",
+      "handoff": "desktop standby then selected WebUI resume; one clock and one module stream restored"
+    },
+    "evidence": [
+      ".cache/pr7_local_validation/clock_live.json",
+      ".cache/pr7_local_validation/final_live_state.json",
+      ".cache/pr7_local_validation/webui-map.png",
+      ".cache/pr7_local_validation/webui-skill.png"
+    ],
+    "limits": [
+      "Live verification covers the user-prepared paused 5-10 battle on MuMu, not all stages or future game layouts.",
+      "Actual installed client for this run is 2.7.81. Future version strings are covered by layout-gate regression fixtures, not a future-client gameplay test.",
+      "Full enabled capture measured about 20 Hz in this live run; 60 Hz throughput is not claimed.",
+      "Source browser QA fixture disables automatic clock workers, so header clock remains explicitly unavailable; the real clock was validated separately.",
+      "Map ID absent and wave wait seconds unverified remain explicit unavailable/unknown values rather than fabricated data."
+    ]
+  },
+  "packaging": {
+    "archives": [
+      {
+        "file": ".cache/pr7_local_validation/dist/ArknightsTimeline_PR7_Local.exe",
+        "bytes": 113250137,
+        "sha256": "0f5ccea1e7e55d5e578a7c523f04d3e6a3d9cdb930064c180e58dc277e4e5b30",
+        "pe_version": [
+          3,
+          6,
+          2,
+          0
+        ],
+        "test_marker": false,
+        "game_data_hashes": 40,
+        "webui_assets": 34,
+        "portraits": 878
+      },
+      {
+        "file": ".cache/pr7_local_validation/dist/ArknightsTimeline_PR7_Local_Test.exe",
+        "bytes": 113248882,
+        "sha256": "09be9b93fdc0641957cce246d2f53c55e915559566be08759478a12afab4a57c",
+        "pe_version": [
+          3,
+          6,
+          2,
+          0
+        ],
+        "test_marker": true,
+        "game_data_hashes": 40,
+        "webui_assets": 34,
+        "portraits": 878
+      }
+    ],
+    "runtime": [
+      {
+        "file": "ArknightsTimeline_PR7_Local.exe",
+        "startup_and_checks_seconds": 6.0,
+        "onefile_processes": 2,
+        "http_state_policy_assets": "passed",
+        "sse": [
+          "clock",
+          "modules"
+        ],
+        "shutdown": "cooperative",
+        "exit_code": 0,
+        "log_files": 2,
+        "browser_opened": false,
+        "game_scan_started": false
+      },
+      {
+        "file": "ArknightsTimeline_PR7_Local_Test.exe",
+        "startup_and_checks_seconds": 6.49,
+        "onefile_processes": 2,
+        "http_state_policy_assets": "passed",
+        "sse": [
+          "clock",
+          "modules"
+        ],
+        "shutdown": "cooperative",
+        "exit_code": 0,
+        "log_files": 1,
+        "browser_opened": false,
+        "game_scan_started": false
+      }
+    ]
+  },
+  "cleanup": "Owned source fixture and both frozen apps closed cooperatively; browser test tab closed; game left paused. Generated spec, machine-built memsrv and EOL-only static build changes restored from merge index."
+}

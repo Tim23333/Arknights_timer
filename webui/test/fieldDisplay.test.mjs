@@ -31,16 +31,20 @@ test('transient failed field retains only its own last valid text and original f
   assert.equal(healthy.cell(healthy.rows[0], columns[0]).freshness, 'current');
 });
 
-test('repeated failures cannot extend the 500ms retention or revive expired cache', () => {
+test('repeated failures retain explicitly old values with original evidence until invalidation', () => {
   const display = createFieldDisplay();
   display.project(sample(100), context, columns, text, 0);
   const failure = sample(101, 'unavailable', '不可用');
   let view = display.project(failure, context, columns, text, 499);
   assert.equal(view.cell(view.rows[0], columns[0]).text, '10/20');
-  assert.equal(view.expiresAt, 500);
-  view = display.project(failure, context, columns, text, 500);
-  assert.equal(view.cell(view.rows[0], columns[0]).text, '不可用');
-  assert.equal(view.heldCount, 0);
+  assert.equal(view.expiresAt, null);
+  for (const time of [500, 60000]) {
+    view = display.project(failure, context, columns, text, time);
+    assert.equal(view.cell(view.rows[0], columns[0]).text, '10/20');
+    assert.equal(view.cell(view.rows[0], columns[0]).freshness, 'last_known');
+    assert.match(view.cell(view.rows[0], columns[0]).title, /非当前值.*100/);
+    assert.equal(view.heldCount, 1);
+  }
 });
 
 test('session, policy generation, precision and stop events clear retained values', () => {
@@ -73,14 +77,16 @@ test('disabled, never sampled, removed and different entities do not borrow old 
   assert.equal(view.cell(view.rows[0], columns[0]).text, '不可用');
 });
 
-test('whole invalid frame keeps topology briefly but not the claim of current data', () => {
+test('whole invalid frame keeps topology as last known until explicit source invalidation', () => {
   const display = createFieldDisplay();
   display.project(sample(100), context, columns, text, 0);
   const failed = {meta:{...sample(101).meta, collectionState:'unavailable', frameConsistent:false}, items:[]};
   const view = display.project(failed, context, columns, text, 100);
   assert.equal(view.rows[0].id, 'e1');
   assert.equal(view.cell(view.rows[0], columns[0]).freshness, 'last_known');
-  assert.equal(display.project(failed, context, columns, text, 500).rows.length, 0);
+  assert.equal(display.project(failed, context, columns, text, 60000).rows.length, 1);
+  failed.meta.reason = 'source_stopped';
+  assert.equal(display.project(failed, context, columns, text, 60001).rows.length, 0);
 });
 
 test('pagination and repeated rendering are not a new successful sample', () => {
@@ -89,7 +95,10 @@ test('pagination and repeated rendering are not a new successful sample', () => 
   display.project(first, context, columns, text, 0);
   display.project(first, context, columns, text, 450);
   const view = display.project(sample(101, 'unavailable', '不可用'), context, columns, text, 550);
-  assert.equal(view.cell(view.rows[0], columns[0]).text, '不可用');
+  const cell = view.cell(view.rows[0], columns[0]);
+  assert.equal(cell.text, '10/20');
+  assert.equal(cell.freshness, 'last_known');
+  assert.match(cell.title, /来源帧 100/);
 });
 
 test('an explicitly unknown source frame is never replaced by the batch frame', () => {

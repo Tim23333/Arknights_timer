@@ -182,6 +182,16 @@ export function assessField(field, data) {
   });
   // Null and absent keys are not proof of reachability. Zero/false/empty lists are.
   if (values.some(value => value !== null && value !== undefined)) return {status: "received", text: "已收到有效值"};
+  // A successfully observed null is meaningful only for these documented game
+  // states. Missing keys or failed reads must never count as received values.
+  if (field.domain === 'stage_global' && values.length && values.every(value => value === null)
+      && ['current','static'].includes(collection)) {
+    if (field.id === 'stage_global.mapId' && metadata.reason === 'not_provided') return {status:'received',text:'已收到：游戏未提供地图 ID'};
+    if (['stage_global.nextWave','stage_global.nextWaveEnemies'].includes(field.id)
+        && ((metadata.reason === 'no_next_wave' && data?.waves?.nextSelection === 'none')
+          || (metadata.reason === 'selection_pending' && data?.waves?.nextSelection === 'pending'))) return {status:'received',text:data.waves.nextSelection === 'none' ? '已收到：无后续配置波次' : '已收到：等待模式选择'};
+    if (field.id === 'stage_global.waveWait' && metadata.reason === 'not_applicable') return {status:'received',text:'已收到：当前阶段无等待'};
+  }
   if (Array.isArray(data?.items) && !data.items.length) return {status: "no_entities", text: "当前无对象，未验证"};
   return {status: "unavailable", text: "主题已收到，字段未获得有效值"};
 }
@@ -202,4 +212,14 @@ export function metaParts(meta) {
 export function metaLabel(meta = {}) {
   const {status, source, latest} = metaParts(meta);
   return `${status} · 来源帧 ${source} · 最近已知帧 ${latest}`;
+}
+
+/** Mirror the Qt-owned monitor status, including its existing throttled metrics.
+ * Do not estimate capture Hz from browser events or conflate UI/WS drop counters.
+ * Older backends without this local service text retain the topic explanation.
+ */
+export function monitorStatus(payload = {}, runtimeStatus, heldCount = 0) {
+  const status=typeof runtimeStatus==='string' && runtimeStatus.trim()
+    ? runtimeStatus : payload.message || payload.meta?.reason || metaLabel(payload.meta);
+  return status+(heldCount>0?` · ${heldCount} 个字段暂显旧值（非当前帧，悬停查看来源）`:'');
 }

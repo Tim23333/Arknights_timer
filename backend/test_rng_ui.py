@@ -70,6 +70,7 @@ class RngUiTests(unittest.TestCase):
         spin.setValue(7)
         return SimpleNamespace(
             _rng_svc=service,
+            _presentation=SimpleNamespace(native_active=True),
             _field_policy=PolicyStore(),
             _provider=SimpleNamespace(peek_frame_count=lambda: None),
             rng_pred_spin=spin,

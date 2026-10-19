@@ -13,12 +13,20 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlsplit, parse_qs
 
+from .webui_preferences import WebUiPreferences
+
 _LOG = logging.getLogger(__name__)
 
 
 class _BoundedServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
+    # The inherited TCP backlog can be only five pending connections. A cold ESM
+    # import graph can overflow that queue while this accept thread is briefly
+    # descheduled, failing before an HTTP handler can return any response.
+    # This is pending admission capacity, NOT more active workers: keep the
+    # separate 16-worker semaphore and per-stream limits below unchanged.
+    request_queue_size = 64
 
     def __init__(self, address, handler):
         self._slots = threading.BoundedSemaphore(16)
@@ -54,13 +62,15 @@ class WebUiServer:
     """
 
     def __init__(self, state_provider, policy_provider, policy_commit, command,
-                 docs, asset_dir=None, port=0, download=None, streams=None):
+                 docs, asset_dir=None, port=0, download=None, streams=None, preferences=None,
+                 stream_allowed=None):
         self._state = state_provider
         self._policy = policy_provider
         self._commit = policy_commit
         self._command = command
         self._docs = docs
         self._download = download
+        self._preferences = preferences if preferences is not None else WebUiPreferences()
         self._assets = Path(asset_dir or Path(__file__).resolve().parents[3] / "webui").resolve()
         self._port = port
         self._server = None
@@ -69,6 +79,14 @@ class WebUiServer:
         self._streams = streams or {}
         # At most four tabs (two channels each), leaving HTTP slots for commands.
         self._stream_slots = {key: threading.BoundedSemaphore(4) for key in self._streams}
+        self._stream_allowed = stream_allowed or (lambda client: True)
+        self._stream_lock = threading.Lock()
+        self._stream_clients = set()
+        self._stream_counts = {key: 0 for key in self._streams}
+
+    def stream_counts(self):
+        with self._stream_lock:
+            return dict(self._stream_counts)
 
     @property
     def url(self):
@@ -125,10 +143,26 @@ class WebUiServer:
                         if stream is None:
                             self._send(404, {'error': '未知推送通道'})
                             return
+                        client = parse_qs(urlsplit(self.path).query).get('client', [''])[0]
+                        if not owner._stream_allowed(client):
+                            self._send(409, {'error': '此页面处于待机状态'})
+                            return
+                        key = (channel, client)
+                        with owner._stream_lock:
+                            duplicate = bool(client) and key in owner._stream_clients
+                            if not duplicate and client:
+                                owner._stream_clients.add(key)
+                        if duplicate:
+                            self._send(409, {'error': '此页面已有实时连接'})
+                            return
                         slots = owner._stream_slots[channel]
                         if not slots.acquire(blocking=False):
+                            with owner._stream_lock:
+                                owner._stream_clients.discard(key)
                             self._send(503, {'error': '本地实时连接数量已达上限'})
                             return
+                        with owner._stream_lock:
+                            owner._stream_counts[channel] += 1
                         try:
                             self.send_response(200)
                             self.send_header('Content-Type', 'text/event-stream; charset=utf-8')
@@ -137,8 +171,10 @@ class WebUiServer:
                             self.send_header('Connection', 'close')
                             self.end_headers()
                             cursor = {}
-                            while not stream.closed:
+                            while not stream.closed and owner._stream_allowed(client):
                                 packets = stream.read_after(cursor)
+                                if not owner._stream_allowed(client):
+                                    break
                                 # Heartbeats detect abandoned sockets and keep
                                 # reconnects alive; writes have a 5s timeout.
                                 if not packets:
@@ -150,12 +186,17 @@ class WebUiServer:
                         except (OSError, TimeoutError):
                             pass  # Ordinary tab close / slow socket timeout.
                         finally:
+                            with owner._stream_lock:
+                                owner._stream_counts[channel] -= 1
+                                owner._stream_clients.discard(key)
                             slots.release()
                         return
                     elif path == "/api/state":
                         self._send(200, owner._state())
                     elif path == "/api/policy":
                         self._send(200, owner._policy())
+                    elif path == "/api/ui/column-order":
+                        self._send(200, owner._preferences.read())
                     elif path == '/api/logs/download' and owner._download is not None:
                         job_id = parse_qs(urlsplit(self.path).query).get('id', [''])[0]
                         try:
@@ -229,6 +270,10 @@ class WebUiServer:
                         if not isinstance(action, str) or not 0 < len(action) <= 64 or not isinstance(params, dict):
                             raise ValueError("命令需要 action 字符串和 params 对象")
                         self._send(200, owner._command(action, params))
+                    elif path == "/api/ui/column-order":
+                        if "order" not in body:
+                            raise ValueError("排序配置需要 order 字段；恢复默认请传 null")
+                        self._send(200, owner._preferences.update(body.get("table"), body["order"]))
                     else:
                         self._send(404, {"error": "未知接口"})
                 except (ValueError, UnicodeDecodeError) as error:

@@ -8,6 +8,7 @@ from tools.enemy_health.enemy_handbook import EnemyHandbook
 
 class Memory:
     pid, adb_serial, package = 77, 'test-device', 'test-game'
+    process_instance = ('test-boot', 12345)
 
     def __init__(self):
         self.blocks = {}

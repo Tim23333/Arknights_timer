@@ -187,6 +187,8 @@ def test_bottom_level_reset_clears_history_even_when_auto_refresh_disabled():
     from backend import desktop_app
     calls = []
     stub = SimpleNamespace(_closing=False, _source_epoch=0,
+                           _auto_refresh_wait_gen=0, _stage_reset_wait_gen=0,
+                           _auto_refresh_step=None, _auto_refresh_stopping_step=None,
                            _webui_runtime_snapshot={}, _auto_refresh_enabled=False,
                            _departure_history=SimpleNamespace(invalidate=lambda epoch: calls.append(('clear', epoch))))
     desktop_app.CoachWindow._on_game_time_reset_main(stub)

@@ -1,18 +1,33 @@
-import {formatValue, formatClock, pathValues, fieldTopic, assessField, metaLabel, policyFields, deployView, pieData, departedView} from "./model.mjs";
+import {formatValue, formatClock, pathValues, fieldTopic, assessField, metaLabel, policyFields, deployView, pieData, departedView, monitorStatus} from "./model.mjs";
+import {policyChanges} from './policyChanges.mjs';
 import {createPager} from './pagination.mjs';
 import {createLogs} from './logs.mjs';
 import {createTableRenderer} from './tableRenderer.mjs';
+import {createStaticTableColumnOrder} from './tableColumnOrder.mjs';
 import {createLatestUpdates} from './liveUpdates.mjs';
 import {createFieldDisplay} from './fieldDisplay.mjs';
 import {createSourceMeta} from './sourceMeta.mjs';
 import {clockChannelName, createClockPublisher} from './clockRelay.mjs';
 import {createDetailSelection} from './detailSelection.mjs';
+import {createStageGlobalRenderer} from './stageGlobal.mjs';
+import {createEntityDetails} from './entityDetails.mjs';
+import {initializeColumnPreferences} from './columnPreferences.mjs';
+import {createPresentationWatch, waitForPresentation, getPresentationClient} from './presentation.mjs';
+
+// Read once before constructing tables; never gate capture or ordinary frames on disk I/O.
+await initializeColumnPreferences();
+const presentationClient=await getPresentationClient();
 
 const byId = id => document.getElementById(id);
 const ui = {data: {}, policy: {generation: 0, fields: []}, columns: {}, precision: {}, page: "overview", detail: null, busyPolicy: false, connected: false};
 const tables = new Map();
 const pagers = new Map();
+const policyOrder=createStaticTableColumnOrder(document.querySelector('.policy-table'),[
+  {key:'field',label:'字段 / 来源'},{key:'collect',label:'采集'},{key:'display',label:'本地展示'},
+  {key:'publish',label:'WS 发布'},{key:'dependencies',label:'依赖与粒度'},
+],'field-policy');
 const fieldDisplays = {enemy:createFieldDisplay(), character:createFieldDisplay()};
+const heldFieldCounts = {enemy:0, character:0};
 const displayExpiry = {enemy:null, character:null};
 const sourceMetadata = {enemy:createSourceMeta(byId('enemy-meta')), character:createSourceMeta(byId('character-meta'))};
 let notificationSession = null, notificationCursor = 0;
@@ -20,8 +35,10 @@ let policyRequest = null;
 const toasts = [];
 let drawerReturn = null;
 let drawerCleanup = null;
+let entityDetails = null;
 const detailSelection = createDetailSelection(
   target => command('detail', target), error => toast(error.message, 'error'));
+const stageGlobal = createStageGlobalRenderer(byId('module-global'), {table:updateTable, policy:() => ui.policy});
 
 function node(tag, className, text) {
   const element = document.createElement(tag);
@@ -111,6 +128,59 @@ function closeDrawer() {
   if (drawerReturn?.isConnected) drawerReturn.focus();
 }
 
+function openEntityDetails(kind, item, historical = false) {
+  if (!item) return toast('对象已更新，请重新选择', 'warn');
+  const basicMeta = ui.data[kind === 'enemy' ? 'enemies' : 'characters']?.meta || {};
+  const target = {kind, id:String(item.id), historical, sessionId:basicMeta.sessionId,
+    generation:ui.policy.generation, ...(historical ? {snapshot:structuredClone(item), basicMeta:structuredClone(basicMeta)} : {})};
+  // History is a frozen projected snapshot: never request a retired address.
+  openDrawer(item.name || (kind === 'enemy' ? '敌人详情' : '干员详情'), node('div'), historical ? null : target);
+  ui.detail = target;
+  const drawer = byId('overlay').querySelector('.drawer');
+  drawer.classList.add('entity-drawer');
+  const viewer = createEntityDetails(kind,target.id,byId('drawer-tabs'));
+  entityDetails = viewer;
+  byId('drawer-body').replaceChildren(viewer.element);
+  drawerCleanup = () => {viewer.destroy();entityDetails=null;drawer.classList.remove('entity-drawer');};
+  renderEntityDetails();
+}
+
+function renderEntityDetails() {
+  if (!ui.detail || !entityDetails) return;
+  const target = ui.detail;
+  const basicTopic = ui.data[target.kind === 'enemy' ? 'enemies' : 'characters'] || {};
+  const detailTopic = ui.data[target.kind + '_detail'] || {};
+  if (target.sessionId !== basicTopic.meta?.sessionId || target.generation !== ui.policy.generation) {
+    closeDrawer();
+    toast('战局或字段策略已更新，请重新打开详情', 'info');
+    return;
+  }
+  if (['source_stopped','session_changed','adb_changed'].includes(basicTopic.meta?.reason)) {
+    closeDrawer();return;
+  }
+  const current=basicTopic.items?.find(item=>String(item.id)===target.id);
+  if (!target.historical && basicTopic.meta?.collectionState==='current') {
+    if (current?.lifecycle==='departed' || (!current && target.lastBasic)) {
+      // A confirmed departure is not a transient failed sample. Freeze only
+      // the last accepted basic snapshot and release the live target once.
+      detailSelection.replace(null);target.historical=true;
+      target.snapshot=structuredClone(current || target.lastBasic);
+      target.basicMeta=structuredClone(current?basicTopic.meta:target.lastBasicMeta);
+    } else if(current) {
+      target.lastBasic=current;target.lastBasicMeta=basicTopic.meta;
+    }
+  }
+  const view = entityDetails.update({
+    basic:target.historical ? target.snapshot : current,
+    detail:target.historical ? null : detailTopic.items?.find(item => String(item.id) === target.id),
+    basicMeta:target.historical ? target.basicMeta : basicTopic.meta,
+    detailMeta:target.historical ? {} : detailTopic.meta,
+    policy:ui.policy,historical:target.historical,connected:ui.connected,
+  });
+  set('drawer-title',view.title + (target.historical ? ' · 历史快照' : ' · 详情'));
+  entityDetails.updateClock(ui.data.clock);
+}
+
 function rawBlock(title, data) {
   const block = node("details", "raw-block");
   block.open = true;
@@ -191,7 +261,7 @@ function renderEntities(kind) {
   if (kind === "enemy" && byId("hide-departed").checked) items = items.filter(item => !["departed", "dead", "removed"].includes(item.lifecycle));
   if (kind === "character" && !byId("show-tokens").checked) items = items.filter(item => ["operator", "干员"].includes(item.kind));
   updateTable(kind + "-table", columns, items, view.cell);
-  const note = view.heldCount ? ` · ${view.heldCount} 个字段暂显旧值（非当前帧，悬停查看来源）` : '';
+  heldFieldCounts[kind]=view.heldCount;
   sourceMetadata[kind].update(payload.meta);
   clearTimeout(displayExpiry[kind]);
   if (view.expiresAt !== null) {
@@ -199,7 +269,7 @@ function renderEntities(kind) {
     // one-shot deadline for existing values, not a new polling/update rate.
     displayExpiry[kind] = setTimeout(() => renderEntities(kind), Math.max(1, view.expiresAt - performance.now() + 1));
   }
-  set(kind + "-status", (payload.message || payload.meta?.reason || metaLabel(payload.meta)) + note);
+  set(kind + "-status", monitorStatus(payload,kind==='enemy'?ui.data.service?.enemy:undefined,view.heldCount));
   if (byId("raw-" + domain).parentElement.open) set("raw-" + domain, JSON.stringify(payload, null, 2));
 }
 
@@ -325,7 +395,7 @@ function renderRng() {
       const keys = [...new Set(entries.flatMap(entry => Object.keys(entry)))];
       const tableId = `rng-${role}-${key}`;
       // Empty samples remove rows, not the previously known column schema.
-      const columns = keys.length ? keys.map(key => ({key, label: ({n: "第几发", seq: "序号", frac: "值", raw: "原始整数"})[key] || key})) : tables.get(tableId)?.columns || [];
+      const columns = keys.length ? keys.map(key => ({key, label: ({n: "第几发", seq: "序号", frac: "值", raw: "原始整数"})[key] || key})) : tables.get(tableId)?.defaultColumns || [];
       updateTable(tableId, columns, entries, (entry, column) => formatValue(entry[column.key], 6));
     }
   }
@@ -334,10 +404,16 @@ function renderRng() {
 
 function renderClock() {
   const clock = ui.data.clock || {};
+  stageGlobal.updateSources(ui.data);
   set("clock-time", formatClock(clock.gameTime)); set("overview-time", formatClock(clock.gameTime));
   set("clock-frame", "逻辑帧 " + formatValue(clock.fixedFrame)); set("overview-frame", "逻辑帧 " + formatValue(clock.fixedFrame));
+  for (const [key,id,label,formatter] of [['gameTime','global-time','',formatClock],['fixedFrame','global-frame','逻辑帧 ',formatValue]]) {
+    const field=ui.policy.fields.find(field => field.id === 'stage_global.'+key);
+    set(id,label+(field?.display === false ? '未展示' : field?.collect === false ? '未采集' : formatter(clock[key])));
+  }
   set("clock-source", [clock.connected ? "已连接" : "未连接", clock.clockSource || "—", clock.message || ""].join(" · "));
   byId("clock-time").classList.toggle("source-unavailable", !ui.connected || !clock.connected);
+  entityDetails?.updateClock(clock);
   if (ui.page === 'system') set('timer-status', clock.message || (clock.connected ? '已连接' : '未连接'));
 }
 
@@ -350,7 +426,7 @@ function render(changed = null) {
   logs.metadata(data.service?.logs);
   const clock = data.clock || {};
   const ws = data.service?.ws || {};
-  if (has('clock')) renderClock();
+  if (has('clock') || has('policyGeneration')) renderClock();
   set("version", "ARKNIGHTS TIMELINE / " + (data.version || "—"));
   set("connection", ui.connected ? (data.service?.adb?.serial || "本机后端已连接") : "后端连接断开");
   set("nav-status", ui.connected ? "后端已连接" : "连接断开");
@@ -364,7 +440,9 @@ function render(changed = null) {
   set("count-enemies", (data.enemies?.items?.length ?? 0) + " 个实体 / 名册");
   set("count-characters", (data.characters?.items?.length ?? 0) + " 个单位");
   set("count-deploy", (data.deploy?.events?.length ?? 0) + " 条操作"); set("count-rng", data.rng?.by_role ? "双引擎" : "待扫描");
+  set('count-global', data.stage_global ? '已收到全局主题' : '等待采样');
   if (ui.page === "overview") {
+    if ((has('stage_global') || has('stage_map') || has('stage_units') || has('policyGeneration')) && byId('overview-global').open) stageGlobal.draw(data, has('policyGeneration'));
     if ((has('enemies') || has('columns') || has('policyGeneration')) && byId("overview-enemies").open) renderEntities("enemy");
     if ((has('characters') || has('columns') || has('policyGeneration')) && byId("overview-characters").open) renderEntities("character");
     if ((has('deploy') || has('stage')) && byId("overview-deploy").open) renderDeploy();
@@ -380,14 +458,11 @@ function render(changed = null) {
     if (data.options?.toast && document.activeElement !== byId("toast-enabled")) byId("toast-enabled").checked = data.options.toast.enabled !== false;
     for (const input of document.querySelectorAll("[data-duration]")) if (document.activeElement !== input && data.options?.toast?.duration_ms?.[input.dataset.duration] !== undefined) input.value = data.options.toast.duration_ms[input.dataset.duration];
   }
-  if (ui.detail && (has('enemies') || has('characters') || has('enemy_detail') || has('character_detail'))) {
-    const domain = ui.detail.kind === "enemy" ? "enemy_detail" : "character_detail";
-    const item = data[domain]?.items?.find(item => String(item.id) === ui.detail.id);
-    const current = data[ui.detail.kind === "enemy" ? "enemies" : "characters"]?.items?.find(item => String(item.id) === ui.detail.id);
-    const payload = {basic: current || {state: "last_known", message: "对象已离场或本轮不可用", value: ui.detail.item}, detail: item || {state: "unavailable", message: "异步详情尚未返回或采集已关闭"}, meta: data[domain]?.meta};
-    const pre = byId("drawer-body").querySelector("pre");
-    if (pre) pre.textContent = JSON.stringify(payload, null, 2);
-  }
+  // Service messages may change without a new accepted enemy frame (scanning,
+  // failed reads, stop). Update this text independently, never redraw tables
+  // or create a new timer/transport just to display the existing Qt metrics.
+  if (has('service')) set('enemy-status',monitorStatus(data.enemies,data.service?.enemy,heldFieldCounts.enemy));
+  if (ui.detail && (has('enemies') || has('characters') || has('enemy_detail') || has('character_detail') || has('policyGeneration'))) renderEntityDetails();
 }
 
 function renderPolicy() {
@@ -407,10 +482,49 @@ function renderPolicy() {
       toggle.disabled = ui.busyPolicy || (layer === "collect" && !!(field.captureRequired || field.capture_required || field.required));
       toggle.dataset.field = field.id; toggle.dataset.layer = layer; cell.append(toggle); row.append(cell);
     }
-    row.append(node("td", "granularity", field.domain + " / " + field.group + ((field.dependencies || field.deps || []).length ? " · 依赖 " + (field.dependencies || field.deps).join(", ") : "") + (!field.collect ? " · 未采集" : "")));
+    const domainLabel = field.domain === 'stage_global' ? '关卡全局状态' : field.domain;
+    const groupLabel = field.domain === 'stage_global' ? ({clock_reference:'主时钟引用',identity:'关卡身份',map_identity:'地图标识',runtime:'战斗运行状态',mode:'游戏模式',waves:'波次与门控',wave_enemies:'下一波敌人配置',map:'地图配置',map_runtime:'当前地块',layout:'当前布局',enemy_layout:'当前敌方布局',ally_layout:'当前我方布局'})[field.group] || field.group : field.group;
+    row.append(node("td", "granularity", domainLabel + " / " + groupLabel + ((field.dependencies || field.deps || []).length ? " · 依赖 " + (field.dependencies || field.deps).join(", ") : "") + (!field.collect ? " · 未采集" : "")));
     body.append(row);
   }
   set("field-count", `${filtered.length} / ${ui.policy.fields.length} 个字段`);
+  policyOrder.apply();
+}
+
+function confirmShutdown() {
+  const content = node('div');
+  content.append(node('p', '', '确认关闭 Timeline 后端？采集、WebSocket 和网页服务将停止，其他已连接窗口也会断开。不会关闭电脑或模拟器。'));
+  const actions = node('div', 'adb-actions');
+  const cancel = node('button', 'button', '取消');
+  const confirm = node('button', 'button', '确认关机');
+  actions.append(cancel, confirm); content.append(actions);
+  cancel.onclick = closeDrawer;
+  confirm.onclick = async () => {
+    confirm.disabled = true;
+    try {
+      const result = await command('shutdown', {confirmed: true});
+      content.replaceChildren(node('p', '', result.message + '。再次使用时请重新启动程序。'));
+      toast(result.message, 'info');
+    } catch (error) { confirm.disabled = false; toast(error.message, 'error'); }
+  };
+  openDrawer('关机确认', content);
+}
+
+function confirmDependencyChanges(fields) {
+  return new Promise(resolve => {
+    const content = node('div');
+    content.append(node('p', '', '以下字段依赖此采集来源，继续将一并关闭它们的采集（不会改变展示及 WS 发布开关）：'));
+    const list = node('ul');
+    for (const field of fields) list.append(node('li', '', `${field.label || field.id}（${field.id}）`));
+    const actions = node('div', 'adb-actions');
+    const cancel = node('button', 'button', '取消');
+    const apply = node('button', 'button primary', '确认一并关闭');
+    actions.append(cancel, apply); content.append(list, actions);
+    openDrawer('确认关闭依赖字段', content);
+    drawerCleanup = () => resolve(false);
+    cancel.onclick = closeDrawer;
+    apply.onclick = () => { drawerCleanup = null; closeDrawer(); resolve(true); };
+  });
 }
 
 async function updatePolicy(id, layer, enabled = null) {
@@ -419,9 +533,17 @@ async function updatePolicy(id, layer, enabled = null) {
   ui.busyPolicy = true; renderPolicy(); renderCaptureControls();
   try {
     const registry = ui.policy.fields;
-    const result = await api("/api/policy", {generation: ui.policy.generation, fields: {[id]: {[layer]: enabled === null ? !field[layer] : enabled}}});
+    const generation = ui.policy.generation;
+    const changes = policyChanges(registry, id, layer, enabled === null ? !field[layer] : enabled);
+    const dependents = registry.filter(item => item.id !== id && changes[item.id]);
+    if (dependents.length && !await confirmDependencyChanges(dependents)) return;
+    // A concurrent policy change is rejected by the backend generation check.
+    const result = await api("/api/policy", {generation, fields: changes});
     ui.policy = policyFields({...result, registry: result.registry || registry});
-    toast((field.label || id) + " · 策略已保存", "success");
+    const enabledCollection = layer === 'collect' && changes[id].collect;
+    toast((field.label || id) + (enabledCollection
+      ? " · 已开启采集；若字段尚未定位，请点击顶部全量刷新（或对应模块重新扫描）"
+      : " · 策略已保存"), "success");
   } catch (error) { toast(error.message, "error"); ui.policy = policyFields(await api("/api/policy").catch(() => ui.policy)); }
   finally { ui.busyPolicy = false; renderPolicy(); render(); }
 }
@@ -540,8 +662,14 @@ function openAdbDrawer() {
 
 async function action(name) {
   try {
+    if (name === 'frontend-desktop') {
+      await command('frontend', {target:'desktop'});
+      location.replace('/standby.html');
+      return;
+    }
     if (name === 'logs' || name === 'diagnostics') return showPage('logs');
     if (name === "close-overlay") return closeDrawer();
+    if (name === 'shutdown') return confirmShutdown();
     if (name === "ws-check") return runWsCheck();
     if (["guide", "api"].includes(name)) { const data = await api("/api/docs/" + name); return openDrawer(name === "guide" ? "使用教程" : "接口说明", markdown(data.markdown)); }
     if (name === "adb") return openAdbDrawer();
@@ -624,15 +752,37 @@ async function updatePoliciesAndNotifications() {
     }
     if (!ui.busyPolicy && !policyRequest && (!ui.policy.fields.length || (ui.data.policyGeneration !== undefined && ui.data.policyGeneration !== ui.policy.generation))) {
       policyRequest = api('/api/policy');
-      try { ui.policy = policyFields(await policyRequest); renderPolicy(); renderCaptureControls(); }
+      try {
+        ui.policy = policyFields(await policyRequest); renderPolicy(); renderCaptureControls();
+        // A paused producer may send only one policy-change snapshot. Reapply
+        // it after registry loading instead of waiting for another game frame.
+        render(new Set(['policyGeneration']));
+      }
       finally { policyRequest = null; }
     }
 }
 
 async function startLive() {
+  let handoff = new URLSearchParams(location.search).get('handoff');
+  const presentation = await waitForPresentation(
+    () => command('frontend', {target:'page-status',clientId:presentationClient}),
+    () => set('transport-status', '等待后端展示状态，正在重试…'));
+  handoff ||= presentation.handoff;
+  if (!handoff && !presentation.active) {
+    location.replace('/standby.html');
+    return;
+  }
+  if (handoff) {
+    try { await command('frontend',{target:'claim-web',token:handoff,clientId:presentationClient}); }
+    catch { location.replace('/standby.html'); return; }
+  }
   // Bootstrap once, then independent SSE connections. No repeated full-state
   // HTTP polling, interpolation or client-generated game frames.
-  try { ui.data = await api('/api/state'); } catch (error) { toast(error.message, 'error'); }
+  // A handoff page only proves transport readiness. Never paint cached modules
+  // before ownership is confirmed; the clean entry reloads current state.
+  if (!handoff) {
+    try { ui.data = await api('/api/state'); } catch (error) { toast(error.message, 'error'); }
+  } else set('transport-status', '正在切换界面，等待实时通道就绪…');
   render();
   let clockPublisher = null, relayClock = ui.data.clock ?? null;
   try {
@@ -640,6 +790,7 @@ async function startLive() {
     clockPublisher.update(relayClock, false);
   } catch { /* Optional browser relay must not prevent the main worktable from connecting. */ }
   const connected = new Set();
+  let confirming = false, confirmed = false;
   // Accept/relay outside requestAnimationFrame: a background worktable may not
   // draw, but its visible log window must still receive the actual new sample.
   const relayUpdates = createLatestUpdates(flush => flush(), values => {
@@ -658,9 +809,11 @@ async function startLive() {
       render(keys);
       updatePoliciesAndNotifications().catch(error => toast(error.message, 'error'));
     }
-  });
+  }, {sessionTopics:['clock','stage_global','stage_map','stage_units'],
+    initialSession:ui.data.stage_global?.meta?.sessionId || ui.data.clock?.meta?.sessionId || null,
+    initialOrder:ui.data.stage_global?.meta || ui.data.clock?.meta || null});
   const sources = ['clock', 'modules'].map(channel => {
-    const source = new EventSource('/api/stream/' + channel);
+    let source, retry, closed=false;
     const status = active => {
       if (active) connected.add(channel); else connected.delete(channel);
       ui.connected = connected.size === 2;
@@ -668,11 +821,21 @@ async function startLive() {
       set('connection', ui.connected ? (ui.data.service?.adb?.serial || '本机后端已连接') : '后端连接断开');
       set('nav-status', ui.connected ? '后端已连接' : '连接断开');
       renderClock();
+      renderEntityDetails();
       if (channel === 'clock') clockPublisher?.update(relayClock, active);
+      if (handoff && connected.size === 2 && !confirming) {
+        confirming = true;
+        command('frontend', {target:'confirm-web', token:handoff,clientId:presentationClient}).then(() => {
+          confirmed = true;
+          location.replace(location.pathname);
+        }).catch(error => {
+          toast(error.message, 'error');
+          location.replace('/standby.html');
+        });
+      }
     };
-    source.onopen = () => status(true);
-    source.onerror = () => status(false); // EventSource retries; replay contains latest slots only.
-    source.onmessage = event => {
+    const receive = event => {
+      if (handoff) return; // Pre-confirmation replay is not live evidence.
       try {
         const message = JSON.parse(event.data);
         if (channel === 'clock') relayUpdates.receive(channel, message);
@@ -680,9 +843,35 @@ async function startLive() {
       }
       catch { status(false); }
     };
-    return source;
+    function connect() {
+      if (closed) return;
+      source = new EventSource('/api/stream/' + channel+'?client='+encodeURIComponent(presentationClient));
+      source.onopen = () => status(true);
+      source.onmessage = receive;
+      source.onerror = () => {
+        status(false);
+        // HTTP 409/503 makes EventSource terminal, unlike a dropped socket.
+        // Retry one connection at a time while the owner watcher can retire us.
+        if (source.readyState === 2 && !closed) {
+          source.close(); clearTimeout(retry); retry=setTimeout(connect,2000);
+        }
+      };
+    }
+    connect();
+    return {close(){closed=true;clearTimeout(retry);source.close();}};
   });
-  window.addEventListener('pagehide', () => { sources.forEach(source => source.close()); clockPublisher?.close(); }, {once: true});
+  const watch = createPresentationWatch(() => command('frontend', {target:'page-status',clientId:presentationClient}), () => location.replace('/standby.html'));
+  let handoffPollPending=false;
+  const watchTimer = setInterval(() => {
+    if (!handoff || confirmed) watch.check();
+    else if (!handoffPollPending) {
+      handoffPollPending=true;
+      command('frontend',{target:'page-status',clientId:presentationClient}).then(state=>{
+        if (state.handoff !== handoff && !state.active) location.replace('/standby.html');
+      }).catch(()=>{}).finally(()=>{handoffPollPending=false;});
+    } // A failed poll does not cancel a healthy pending transport.
+  }, 2000);
+  window.addEventListener('pagehide', () => { clearInterval(watchTimer); sources.forEach(source => source.close()); clockPublisher?.close(); stageGlobal.destroy(); }, {once: true});
   window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
 }
 
@@ -698,11 +887,10 @@ document.addEventListener("click", async event => {
     if (!item || item.lifecycle !== 'departed') return toast('本局记录已更新，请重新选择', 'warn');
     // A frozen projected snapshot is inspectable without subscribing to detail
     // or dereferencing a recycled address. Keep its original session/frame tags.
-    openDrawer(`${item.name || '敌人'} · 历史快照`, rawBlock('最后已知完整基础快照（非实时；未采样属性不补值）',
-      {sessionId: ui.data.enemies?.meta?.sessionId, basic: structuredClone(item)}));
+    openEntityDetails('enemy',item,true);
     return;
   }
-  if (detail) { const kind = detail.dataset.detailKind; const item = ui.data[kind === "enemy" ? "enemies" : "characters"]?.items?.find(item => String(item.id) === detail.dataset.entity); openDrawer(item?.name || "实体详情", rawBlock("完整基础数据与异步详情", {basic: item}), {kind, id: detail.dataset.entity, item}); return; }
+  if (detail) { const kind = detail.dataset.detailKind; const item = ui.data[kind === "enemy" ? "enemies" : "characters"]?.items?.find(item => String(item.id) === detail.dataset.entity); openEntityDetails(kind,item); return; }
   const button = event.target.closest("[data-action]"); if (button) action(button.dataset.action);
 });
 byId("open-nav").onclick = () => setNav(true); byId("close-nav").onclick = () => setNav(false); byId("nav-backdrop").onclick = () => setNav(false);
@@ -721,7 +909,7 @@ for (const slot of document.querySelectorAll(".overview-module-slot")) slot.addE
 for (const block of document.querySelectorAll(".raw-block")) block.addEventListener("toggle", render);
 document.addEventListener("keydown", event => {
   if (event.key === "Escape") { if (!byId("overlay").hidden) closeDrawer(); else if (!byId("nav-drawer").inert) setNav(false); }
-  if (event.key === "Tab" && !byId("overlay").hidden) { const focusable = [...byId("overlay").querySelectorAll("button,input,a,[tabindex]")].filter(element => !element.disabled && element.tabIndex >= 0); const first = focusable[0], last = focusable.at(-1); if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); } else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); } }
+  if (event.key === "Tab" && !byId("overlay").hidden) { const focusable = [...byId("overlay").querySelectorAll("button,input,select,a,[tabindex]")].filter(element => !element.disabled && element.tabIndex >= 0 && element.getClientRects().length && !element.closest('[hidden],[inert]')); const first = focusable[0], last = focusable.at(-1); if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); } else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); } }
 });
 const logs = createLogs({command, toast, visible: () => ui.page === 'logs', openPopup: () => {
   const content = byId('page-logs'), home = content.parentNode, next = content.nextSibling;

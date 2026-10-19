@@ -1,22 +1,21 @@
 # -*- coding: utf-8 -*-
 """生效帧展示 (backend/app/effect_frames_ui.py) 测试。
 
-依赖 data/tables/effect_frames.json（ark_parser/extract_effect_frames.py 产物），
+依赖当前数据目录的 effect_frames.json（ark_parser/extract_effect_frames.py 产物），
 文件缺失时整组跳过。
 """
 
-import os
 import unittest
 
 from backend.app.effect_frames_ui import (
     character_frame_rows, enemy_frame_rows,
 )
+from tools.enemy_health.enemy_db import find_effect_frames_json
 
-DATA_JSON = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                         '..', 'data', 'tables', 'effect_frames.json')
+DATA_JSON = find_effect_frames_json()
 
 
-@unittest.skipUnless(os.path.isfile(DATA_JSON), 'effect_frames.json 未生成')
+@unittest.skipUnless(DATA_JSON, 'effect_frames.json 未生成')
 class EffectFrameRowsTests(unittest.TestCase):
     def test_unknown_id_returns_empty(self):
         self.assertEqual(enemy_frame_rows('enemy_nonexistent_zzz'), [])

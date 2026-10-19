@@ -1,9 +1,12 @@
 import {createPager} from './pagination.mjs';
+import {createStaticTableColumnOrder} from './tableColumnOrder.mjs';
 
 /** Session-scoped incremental diagnostics with independent popup and complete disk exports. */
 export function createLogs({command, toast, visible, openPopup}) {
   const get = id => document.getElementById(id);
   const table = get('log-table');
+  const columnOrder=createStaticTableColumnOrder(table,[{key:'seq',label:'序号'},{key:'text',label:'日志'}]);
+  columnOrder.apply();
   let rows = [], cursor = 0, session = null, pausedRows = null, busy = false, loaded = false, stopped = false;
   let timer;
   const pager = createPager('实时日志', () => { get('logs-follow').checked = false; render(); }, 15);
@@ -29,6 +32,7 @@ export function createLogs({command, toast, visible, openPopup}) {
       cell.colSpan = 2; cell.textContent = emptyText; tr.append(cell); fragment.append(tr);
     }
     body.replaceChildren(fragment);
+    columnOrder.apply();
     if (get('logs-follow').checked && !pausedRows) table.parentElement.scrollTop = table.parentElement.scrollHeight;
   }
   get('logs-paused').onchange = event => { pausedRows = event.target.checked ? [...rows] : null; render(); };

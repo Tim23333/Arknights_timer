@@ -17,10 +17,43 @@ from ..field_policy import FIELD_REGISTRY
 from ..enemy_ui import ENEMY_COLUMN_DEFS, format_column_value
 from ..character_ui import CHARACTER_COLUMN_DEFS, format_character_column, build_character_overview
 from ..version import VERSION
+from ..enemy_buff_descriptions import (
+    describe_blackboard, buff_chinese_name, describe_active_buff,
+    global_buff_chinese_name, describe_global_buff, describe_buff_def,
+)
 from .webui_server import WebUiServer
 from .adb_selection import AdbSelection
 from .runtime_diagnostics import RuntimeDiagnostics
 from .webui_stream import LatestStream
+from tools.stage_global_state.profiling import StageProfiler
+
+
+def _local_detail_diagnostics(entity, domain, policy):
+    """Native diagnostic addresses are local-only, never sent to public WS.
+
+    Called on the Qt owner thread for the already identity-validated selected
+    detail. No memory IO or access to a retired object's pointers occurs here.
+    Heavy diagnostic rows require the matching heavy field's read evidence.
+    """
+    rows = [{'key': 'instance', 'label': '实例地址', 'value': hex(entity.addr),
+             'fieldId': domain + '.name'}]
+    for key, source in (('buffs', 'buffs'), ('global_buffs', 'globalBuffs'),
+                        ('dynamic_abilities', 'dynamicAbilities'), ('module_settings', 'equipment')):
+        field_id = f'{domain}_detail.{source}'
+        record = entity.field_states.get(field_id, {})
+        if (not policy.enabled(field_id) or not policy.enabled(field_id, 'display')
+                or record.get('collectionState') not in {'current', 'static', 'historical'}):
+            continue
+        for index, item in enumerate(getattr(entity, key, ())):
+            addresses = {name: hex(value) for name, value in item.items()
+                         if name.endswith(('addr', 'ptr', 'address')) and isinstance(value, int) and value}
+            if addresses:
+                rows.append({'key': f'{key}.{index}', 'label': f'{source} #{index + 1} · 诊断地址',
+                             'value': addresses, 'fieldId': field_id})
+            if 'blackboard' in item:
+                rows.append({'key': f'{key}.{index}.blackboard', 'label': f'{source} #{index + 1} · 参数说明',
+                             'value': describe_blackboard(item['blackboard']), 'fieldId': field_id})
+    return rows
 
 
 class WebUiRuntime(QObject):
@@ -31,10 +64,13 @@ class WebUiRuntime(QObject):
     def __init__(self, window, *, port=8768):
         super().__init__(window)
         self.window = window
+        self._shutdown_requested = False
+        self._profiler = StageProfiler()
         self.adb_selection = AdbSelection(window)
         self.diagnostics = RuntimeDiagnostics(window)
         self._lock = threading.RLock()
         self._state = {}
+        self._presentation_revision = 0
         self._streams = {key: LatestStream() for key in ('clock', 'modules')}
         self._stream_stop = threading.Event()
         self._module_pending = threading.Event()
@@ -45,7 +81,8 @@ class WebUiRuntime(QObject):
         # A restarted backend must explicitly clear every previously visible
         # source even before scanning. Otherwise reconnect retains the old map.
         self._source_keys = {'stage', 'enemies', 'enemy_pathing', 'characters',
-                             'enemy_detail', 'character_detail', 'deploy', 'rng', 'quality'}
+                             'enemy_detail', 'character_detail', 'deploy', 'rng', 'quality',
+                             'stage_global', 'stage_map', 'stage_units'}
         self._module_keys = set(self._source_keys)
         self._columns = {"enemy": self._column_defs("enemy", ENEMY_COLUMN_DEFS),
                          "character": self._column_defs("character", CHARACTER_COLUMN_DEFS)}
@@ -56,7 +93,7 @@ class WebUiRuntime(QObject):
             lambda fields, generation: self.call("policy", {"fields": fields, "generation": generation}),
             lambda action, params: self.call(action, params), self.docs, port=port,
             asset_dir=self._root() / "webui", download=self.diagnostics.download,
-            streams=self._streams)
+            streams=self._streams, stream_allowed=window._presentation.stream_allowed)
         self.timer = QTimer(self)
         self.timer.setInterval(100)
         self.timer.timeout.connect(self.refresh)
@@ -96,12 +133,21 @@ class WebUiRuntime(QObject):
         if api is None:
             return
         while not self._stream_stop.is_set():
+            if not self.window._presentation.web_active:
+                self._stream_stop.wait(.25)
+                continue
+            presentation_revision = self._presentation_revision
             current, data = api.wait_local_update(channel, revision, timeout=.25)
             if current == revision or self._stream_stop.is_set():
                 continue
             revision = current
             if channel == 'clock':
-                self._streams[channel].publish('clock', data)
+                # A wait can finish after desktop ownership changed. Serialize
+                # this last check with private replay invalidation.
+                with self._lock:
+                    if (self.window._presentation.web_active
+                            and presentation_revision == self._presentation_revision):
+                        self._streams[channel].publish('clock', data)
             elif not self._module_pending.is_set():
                 # Coalesce Qt wakeups as well as network packets. While Qt is
                 # busy, replace source snapshots rather than queue old frames.
@@ -116,6 +162,8 @@ class WebUiRuntime(QObject):
 
     def state(self):
         with self._lock:
+            if not self.window._presentation.web_active:
+                return {'presentationWaiting': True}
             result = copy.deepcopy(self._state)
         api = self.window._websocket_api
         if api is not None:
@@ -172,7 +220,15 @@ class WebUiRuntime(QObject):
         return result
 
     def refresh(self):
+        try:
+            return self._profiler.call('webui_refresh', self._refresh)
+        finally:
+            self._profiler.report(print)
+
+    def _refresh(self):
         window = self.window
+        if not window._presentation.web_active:
+            return
         api = window._websocket_api
         policy = window._field_policy.snapshot()
         versions = api.local_versions() if api is not None else {}
@@ -188,6 +244,41 @@ class WebUiRuntime(QObject):
         ws = api.status_snapshot() if api is not None else {"state": "stopped", "enabled": False}
         ws["gameUrl"] = f"ws://127.0.0.1:{ws.get('port') or 8765}/v2/game"
         snapshot = getattr(window, '_webui_runtime_snapshot', {})
+        from .websocket_api import entity_public_id
+        for domain in ('enemy', 'character'):
+            topic = domain + '_detail'
+            if topic not in updated:
+                continue
+            selected = snapshot.get('detail_' + domain)
+            if selected is None or snapshot.get('frame_consistent') is False:
+                continue
+            # External detail subscribers are not a second local diagnostic
+            # channel. Enrich only the owned selected object used by Qt too.
+            identity = entity_public_id(domain, selected, 1)
+            for item in values.get(topic, {}).get('items', ()):
+                if item.get('id') == identity:
+                    item['localDiagnostics'] = _local_detail_diagnostics(selected, domain, policy)
+                    # Native semantic descriptions are presentation metadata,
+                    # not new fields added to external buff objects. Copy each
+                    # row before decoration; accepted WS sources stay immutable.
+                    for key, attr in (('buffs', 'buffs'), ('globalBuffs', 'global_buffs')):
+                        raw_buffs = getattr(selected, attr, ())
+                        decorated = []
+                        for raw_buff, public_buff in zip(raw_buffs, item.get(key, ())):
+                            if key == 'buffs':
+                                extra = {'displayName': buff_chinese_name(raw_buff),
+                                         'displayDescription': describe_active_buff(raw_buff)}
+                            else:
+                                description = describe_global_buff(raw_buff, selected)
+                                if domain == 'character':
+                                    description = description.replace('当前选中敌人', '当前干员')
+                                extra = {'displayName': global_buff_chinese_name(raw_buff),
+                                         'displayDescription': description,
+                                         'displayBuffDefinitions': [describe_buff_def(value)
+                                            for value in (raw_buff.get('buff_defs') or ())]}
+                            decorated.append({**public_buff, **extra})
+                        if key in item:
+                            item[key] = decorated
         for domain, key, formatter in (("enemy", "enemies", format_column_value),
                                        ("character", "characters", format_character_column)):
             if key not in updated:
@@ -273,6 +364,30 @@ class WebUiRuntime(QObject):
 
     def _command(self, action, params):
         w = self.window
+        if action == 'frontend':
+            target = params.get('target')
+            result = w._switch_frontend(target, params.get('token'), params.get('clientId'))
+            if target == 'desktop':
+                # Only local presentation caches are retired. Producers, public
+                # WS snapshots and session identity remain completely untouched.
+                with self._lock:
+                    self._presentation_revision += 1
+                    self._state = {}
+                    self._values = {}
+                    self._versions = {}
+                    self._values_signature = None
+                    for topic in self._module_keys:
+                        self._streams['modules'].publish(topic, None)
+                    self._streams['clock'].publish('clock', None)
+            elif target == 'confirm-web':
+                with self._lock:
+                    self._presentation_revision += 1
+                self.refresh()
+                if w._websocket_api is not None:
+                    self._streams['clock'].publish('clock', w._websocket_api.wait_local_update('clock', -1, timeout=0)[1])
+            if target in {'status', 'page-status'}:
+                result['streams'] = self.server.stream_counts()
+            return result
         if action.startswith('logs-'):
             return self.diagnostics.command(action, params)
         if action == "policy":
@@ -294,6 +409,14 @@ class WebUiRuntime(QObject):
                     raise ValueError("请先设置有效的 ADB 路径，再启动扫描")
             handlers[action]()
             return {"accepted": True, "message": "命令已交给 Timeline；扫描结果请查看模块状态"}
+        if action == "full-refresh":
+            if self.adb_selection.switching:
+                raise ValueError("正在切换 ADB，请等待切换完成后再刷新")
+            path = w._enemy_reader.mc.adb_path
+            if not path or not Path(path).is_file():
+                raise ValueError("请先设置有效的 ADB 路径，再启动扫描")
+            w._run_auto_refresh(manual=True)
+            return {"accepted": True, "message": "已启动全量刷新：关卡与操作 → 敌人与干员 → 随机数"}
         if action == "auto-address-once":
             if self.adb_selection.switching:
                 raise ValueError("正在切换 ADB，请等待切换完成后再寻址")
@@ -340,6 +463,16 @@ class WebUiRuntime(QObject):
             decimals.update({key: places for key in decimals})
             decimals["default"] = places
             return {"accepted": True}
+        if action == "shutdown":
+            if params.get("confirmed") is not True:
+                raise ValueError("请先确认关闭 Timeline 后端")
+            if not self._shutdown_requested:
+                self._shutdown_requested = True
+                w._quit_when_closed = True
+                # Let the HTTP command response return before closing its host.
+                # closeEvent owns cooperative worker shutdown and retries.
+                QTimer.singleShot(250, w.close)
+            return {"accepted": True, "message": "正在关闭 Timeline 后端；不会关闭电脑或模拟器"}
         if action == "ws-toggle":
             enabled = params.get("enabled")
             if not isinstance(enabled, bool):

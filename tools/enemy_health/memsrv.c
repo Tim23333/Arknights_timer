@@ -16,6 +16,10 @@
 //         ptr(array.items[index])+value。设备侧校验 max_length 和下标边界。
 //         kind=3: 同样动态定位 array.items[index]，但返回其 u64 指针，
 //         便于事务末尾再读一次并校验路径对象身份。
+//         kind=4: offset 低/高32位为数组指针/当前数量偏移，value=0x20；
+//         size 为字节上限，只返回当前 count*8 字节。容量/短读错误拒绝。
+//         kind 的 0x100 位仅用于常驻数据复用：同次尝试内地址及长度完全
+//         相同的成功块可复用；kind=2/3、帧守卫及普通事务不启用此优化。
 //         各操作在设备侧按顺序执行，响应格式同合并读取。
 //   一次性守卫事务: u64 == GUARDED_TXN_MAGIC, { u64 N,
 //         u64 guard_addr, u32 guard_size, u32 max_attempts }, 随后 N 组 TxnReq。
@@ -56,6 +60,7 @@
 #define PLAN_UPLOAD_MAGIC 0xFFFFFFFFFFFFFFFCULL
 #define PLAN_EXEC_MAGIC 0xFFFFFFFFFFFFFFFBULL
 #define GUARDED_TXN_MAGIC 0xFFFFFFFFFFFFFFFAULL
+#define COORDINATED_EXEC_MAGIC 0xFFFFFFFFFFFFFFF9ULL
 #define MAX_BATCH_BYTES (64 * 1024 * 1024)
 #define MAX_ARRAY_LENGTH (16 * 1024 * 1024ULL)
 
@@ -63,6 +68,9 @@
 #define TXN_DEREF 1U
 #define TXN_ARRAY_DEREF 2U
 #define TXN_ARRAY_PTR 3U
+/* Current header count, not last capture's array length. size is a bound. */
+#define TXN_LIST_ITEMS 4U
+#define TXN_REUSE_DATA 256U
 #define IL2CPP_ARRAY_MAX_LENGTH 0x18ULL
 #define IL2CPP_ARRAY_ITEMS 0x20ULL
 
@@ -152,7 +160,9 @@ static int build_packed_response(int fd, const ReadReq *reqs, uint64_t n,
     if (n == 0 || n > MAX_REQ) return -1;
 
     uint64_t declared = 0;
+    int has_reuse = 0;
     for (uint64_t i = 0; i < n; i++) {
+        if (allow_refs && (txn[i].kind & TXN_REUSE_DATA)) has_reuse = 1;
         uint64_t size = allow_refs ? txn[i].size : reqs[i].size;
         if (size == 0 || size > MAX_SIZE) continue;
         if (declared > MAX_BATCH_BYTES - size) return -1;
@@ -162,9 +172,15 @@ static int build_packed_response(int fd, const ReadReq *reqs, uint64_t n,
     if (header_size > SIZE_MAX - (size_t)declared) return -1;
     uint8_t *response = (uint8_t *)malloc(header_size + (size_t)declared);
     uint64_t *result_offsets = (uint64_t *)calloc((size_t)n, sizeof(uint64_t));
-    if (!response || !result_offsets) {
+    size_t reuse_cap = 1;
+    while (reuse_cap < n * 2) reuse_cap <<= 1;
+    uint32_t *reuse_slots = has_reuse ? (uint32_t *)calloc(reuse_cap, sizeof(uint32_t)) : NULL;
+    uint64_t *result_addresses = has_reuse ? (uint64_t *)calloc((size_t)n, sizeof(uint64_t)) : NULL;
+    if (!response || !result_offsets || (has_reuse && (!reuse_slots || !result_addresses))) {
         free(response);
         free(result_offsets);
+        free(reuse_slots);
+        free(result_addresses);
         return -1;
     }
     int64_t *lengths = (int64_t *)(response + sizeof(uint64_t));
@@ -174,13 +190,18 @@ static int build_packed_response(int fd, const ReadReq *reqs, uint64_t n,
     for (uint64_t i = 0; i < n; i++) {
         uint64_t addr = 0;
         uint64_t size = allow_refs ? txn[i].size : reqs[i].size;
+        uint32_t kind = allow_refs ? txn[i].kind & ~TXN_REUSE_DATA : TXN_DIRECT;
+        /* Explicit opt-in for resident data only. Pointer/identity validation,
+         * standalone transactions and guards retain fresh pread semantics. */
+        int reuse = allow_refs && (txn[i].kind & TXN_REUSE_DATA)
+            && (kind == TXN_DIRECT || kind == TXN_DEREF || kind == TXN_LIST_ITEMS);
         int invalid = (size == 0 || size > MAX_SIZE);
         if (!invalid && !allow_refs) {
             addr = reqs[i].addr;
-        } else if (!invalid && txn[i].kind == TXN_DIRECT) {
+        } else if (!invalid && kind == TXN_DIRECT) {
             if (txn[i].value <= 0) invalid = 1;
             addr = (uint64_t)txn[i].value;
-        } else if (!invalid && txn[i].kind == TXN_DEREF) {
+        } else if (!invalid && kind == TXN_DEREF) {
             uint32_t ref = txn[i].ref;
             int64_t off = txn[i].offset;
             if (ref >= i || lengths[ref] <= 0 || off < 0
@@ -193,13 +214,40 @@ static int build_packed_response(int fd, const ReadReq *reqs, uint64_t n,
                 if (!base || checked_add_signed(base, txn[i].value, &addr) < 0)
                     invalid = 1;
             }
-        } else if (!invalid && (txn[i].kind == TXN_ARRAY_DEREF
-                                || txn[i].kind == TXN_ARRAY_PTR)) {
+        } else if (!invalid && kind == TXN_LIST_ITEMS) {
+            uint32_t ref = txn[i].ref;
+            uint32_t pointer_off = (uint32_t)(uint64_t)txn[i].offset;
+            uint32_t count_off = (uint32_t)((uint64_t)txn[i].offset >> 32);
+            if (ref >= i || lengths[ref] <= 0 || size % sizeof(uint64_t)
+                    || txn[i].value != IL2CPP_ARRAY_ITEMS
+                    || (uint64_t)pointer_off + 8 > (uint64_t)lengths[ref]
+                    || (uint64_t)count_off + 4 > (uint64_t)lengths[ref]) {
+                invalid = 1;
+            } else {
+                uint64_t array_ptr = 0, length_addr = 0;
+                int32_t count = -1;
+                uint32_t capacity = 0;
+                const uint8_t *source = response + result_offsets[ref];
+                memcpy(&array_ptr, source + pointer_off, 8);
+                memcpy(&count, source + count_off, 4);
+                if (count < 0 || (uint64_t)count > size / 8) invalid = 1;
+                else if (!count) size = 0;
+                else if (!array_ptr
+                        || checked_add_signed(array_ptr, IL2CPP_ARRAY_MAX_LENGTH,
+                                              &length_addr) < 0
+                        || read_u32_at(fd, length_addr, &capacity) < 0
+                        || capacity > MAX_ARRAY_LENGTH || (uint32_t)count > capacity
+                        || checked_add_signed(array_ptr, IL2CPP_ARRAY_ITEMS, &addr) < 0
+                        || addr > UINT64_MAX - (uint64_t)count * 8) invalid = 1;
+                else size = (uint64_t)count * 8;
+            }
+        } else if (!invalid && (kind == TXN_ARRAY_DEREF
+                                || kind == TXN_ARRAY_PTR)) {
             uint32_t ref = txn[i].ref;
             uint64_t packed_offsets = (uint64_t)txn[i].offset;
             uint32_t array_off = (uint32_t)(packed_offsets & 0xFFFFFFFFULL);
             uint32_t index_off = (uint32_t)(packed_offsets >> 32);
-            if ((txn[i].kind == TXN_ARRAY_PTR && size != sizeof(uint64_t))
+            if ((kind == TXN_ARRAY_PTR && size != sizeof(uint64_t))
                     || ref >= i || lengths[ref] <= 0
                     || (uint64_t)array_off + sizeof(uint64_t)
                         > (uint64_t)lengths[ref]
@@ -233,7 +281,7 @@ static int build_packed_response(int fd, const ReadReq *reqs, uint64_t n,
                         invalid = 1;
                     } else {
                         item_addr = array_ptr + IL2CPP_ARRAY_ITEMS + item_offset;
-                        if (txn[i].kind == TXN_ARRAY_PTR) {
+                        if (kind == TXN_ARRAY_PTR) {
                             addr = item_addr;
                         } else {
                             uint64_t object_ptr = 0;
@@ -256,16 +304,50 @@ static int build_packed_response(int fd, const ReadReq *reqs, uint64_t n,
             lengths[i] = -EINVAL;
             continue;
         }
+        if (!size) {
+            lengths[i] = 0;
+            continue;
+        }
+        size_t slot = (size_t)(((addr >> 3) ^ (size * 0x9E3779B97F4A7C15ULL))
+                              & (reuse_cap - 1));
+        int reused = 0;
+        if (reuse) {
+            while (reuse_slots[slot]) {
+                uint32_t prior = reuse_slots[slot] - 1;
+                if (result_addresses[prior] == addr && lengths[prior] == (int64_t)size) {
+                    memcpy(response + header_size + payload_used,
+                           response + result_offsets[prior], (size_t)size);
+                    lengths[i] = (int64_t)size;
+                    payload_used += size;
+                    reused = 1;
+                    break;
+                }
+                slot = (slot + 1) & (reuse_cap - 1);
+            }
+        }
+        if (reused) continue;
         ssize_t r;
         do {
             r = pread(fd, response + header_size + payload_used,
                       (size_t)size, (off_t)addr);
         } while (r < 0 && errno == EINTR);
+        /* A short variable-length array must not masquerade as a smaller
+         * valid list. Its descendants must fail too. Do not publish padding. */
+        if (allow_refs && kind == TXN_LIST_ITEMS && r != (ssize_t)size) {
+            lengths[i] = r < 0 ? -(int64_t)errno : -EIO;
+            continue;
+        }
         lengths[i] = r < 0 ? -(int64_t)errno : (int64_t)r;
         if (r > 0) payload_used += (uint64_t)r;
+        if (reuse && r == (ssize_t)size) {
+            result_addresses[i] = addr;
+            reuse_slots[slot] = (uint32_t)i + 1;
+        }
     }
 
     free(result_offsets);
+    free(reuse_slots);
+    free(result_addresses);
     *response_out = response;
     *response_size_out = header_size + (size_t)payload_used;
     return 0;
@@ -292,6 +374,31 @@ static uint64_t read_guard_value(int fd, uint64_t addr, uint32_t size) {
         r = pread(fd, &value, size, (off_t)addr);
     } while (r < 0 && errno == EINTR);
     return r == (ssize_t)size ? value : UINT64_MAX;
+}
+
+typedef struct {
+    uint64_t meta[3];
+    uint8_t *data;
+    size_t size;
+} CaptureResponse;
+
+/* Independent guards/retries; no bytes or validity shared between domains.
+ * Caller owns the result even on failure. No response is sent here. */
+static int capture_guarded_response(int fd, const TxnReq *ops, uint64_t count,
+        uint64_t guard_addr, uint32_t guard_size, uint32_t attempts,
+        CaptureResponse *out) {
+    for (uint32_t i = 0; i < attempts; i++) {
+        free(out->data);
+        out->data = NULL;
+        out->size = 0;
+        out->meta[0] = i + 1;
+        out->meta[1] = read_guard_value(fd, guard_addr, guard_size);
+        if (build_packed_response(fd, NULL, count, 1, ops,
+                                 &out->data, &out->size) < 0) return -1;
+        out->meta[2] = read_guard_value(fd, guard_addr, guard_size);
+        if (out->meta[1] != UINT64_MAX && out->meta[1] == out->meta[2]) break;
+    }
+    return 0;
 }
 
 // ---------------- 扫描 ----------------
@@ -551,6 +658,38 @@ int main(int argc, char **argv) {
                 saved_max_attempts = MAX_GUARD_ATTEMPTS;
             if (write_exact(1, &saved_plan_count, sizeof(saved_plan_count)) < 0)
                 return 21;
+            continue;
+        }
+
+        /* Extension: resident core followed immediately by one optional domain.
+         * Input: count + TxnReq[count]. Optional uses the same frame address,
+         * one attempt. Both complete before ANY response write; two ordinary
+         * guarded responses follow, retaining independent failure semantics. */
+        if (n == COORDINATED_EXEC_MAGIC) {
+            uint64_t count = 0;
+            if (!saved_plan || !saved_plan_count || !saved_guard_addr
+                    || saved_guard_size != 4) return 30;
+            if (read_exact(0, &count, sizeof(count)) < 0) return 0;
+            if (!count || count > MAX_REQ) return 31;
+            TxnReq *ops = malloc((size_t)count * sizeof(TxnReq));
+            if (!ops) return 32;
+            if (read_exact(0, ops, (size_t)count * sizeof(TxnReq)) < 0) {
+                free(ops);
+                return 0;
+            }
+            CaptureResponse core = {0}, optional = {0};
+            int rc = capture_guarded_response(fd, saved_plan, saved_plan_count,
+                saved_guard_addr, saved_guard_size, saved_max_attempts, &core);
+            if (!rc) rc = capture_guarded_response(fd, ops, count,
+                saved_guard_addr, saved_guard_size, 1, &optional);
+            free(ops);
+            if (!rc) rc = write_exact(1, core.meta, sizeof(core.meta));
+            if (!rc) rc = write_exact(1, core.data, core.size);
+            if (!rc) rc = write_exact(1, optional.meta, sizeof(optional.meta));
+            if (!rc) rc = write_exact(1, optional.data, optional.size);
+            free(core.data);
+            free(optional.data);
+            if (rc < 0) return 33;
             continue;
         }
 

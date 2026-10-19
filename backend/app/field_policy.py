@@ -12,6 +12,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
+from .contracts import contract_specs
 
 if TYPE_CHECKING:
     from .custom_options import CustomOptions
@@ -37,15 +38,26 @@ class FieldSpec:
     default_display: bool = True
     default_collect: bool = True
     default_publish: bool = True
+    topic: str | None = None
+    source_fields: tuple[tuple[str, str], ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
-        return {'id': self.id, 'domain': self.domain, 'group': self.group,
+        result = {'id': self.id, 'domain': self.domain, 'group': self.group,
                 'paths': list(self.paths), 'label': self.label,
                 'dependencies': list(self.dependencies),
                 'captureRequired': self.capture_required,
                 'defaults': {'collect': self.default_collect,
                              'display': self.default_display,
                              'publish': self.default_publish}}
+        if self.topic:
+            result['topic'] = self.topic
+        if self.source_fields:
+            sources = {}
+            for path, source in self.source_fields:
+                sources.setdefault(path, []).append(source)
+            result['sourceFields'] = {path: items[0] if len(items) == 1 else items
+                                      for path, items in sources.items()}
+        return result
 
 
 def _registry() -> dict[str, FieldSpec]:
@@ -69,7 +81,11 @@ def _registry() -> dict[str, FieldSpec]:
         ('action_state', 'runtime', ('action.state_name', 'action.state_id'), '行为状态'),
         ('action_phase', 'runtime', ('action.name', 'action.phase', 'action.detail',
                                    'action.elapsed_frames', 'action.skill_name',
-                                   'action.ready_skills', 'action.clock_source'), '动作阶段'),
+                                   'action.ready_skills', 'action.clock_source',
+                                   'action.current_frame', 'action.animation_exact',
+                                   'action.animation_track_name', 'action.animation_key',
+                                   'action.animation_track_speed', 'action.animation_speed',
+                                   'action.animation_track_time', 'action.animation_loop'), '动作阶段'),
         ('remaining_time', 'runtime', ('action.remaining', 'action.remaining_frames',
                                      'action.remaining_kind'), '剩余帧/时间'),
         ('next_action', 'runtime', ('action.next_action', 'action.next_action_detail',
@@ -78,7 +94,8 @@ def _registry() -> dict[str, FieldSpec]:
                                   'action.next_action_rule_detail', 'action.next_action_rule_confidence',
                                   'action.next_action_rule_candidates'), '下一动作预测'),
         ('abnormal_status', 'runtime', ('abnormalStatus', 'abnormalFlags',
-                                       'abnormalCombos', 'statusTimers'), '异常状态'),
+                                       'abnormalCombos', 'statusTimers',
+                                       'statusDefinitions', 'comboDefinitions'), '异常状态'),
         ('shield', 'runtime', ('shield', 'specialShield'), '伤害护盾'),
         ('es', 'base', 'elementShield', '元素护盾'),
         ('skill', 'skills', 'skill', '技能'),
@@ -107,19 +124,21 @@ def _registry() -> dict[str, FieldSpec]:
         ('next_waypoint', 'pathing', 'pathing.nextWaypoint', '下一路点'),
         ('next_checkpoint', 'pathing', 'pathing.nextCheckpoint', '下一检查点'),
         ('checkpoint_countdown', 'pathing', 'pathing.checkpointCountdown', '检查点倒计时'),
-        ('immune_status', 'runtime', ('abnormalImmunes', 'abnormalComboImmunes'), '状态免疫'),
+        ('immune_status', 'runtime', ('abnormalImmunes', 'abnormalComboImmunes', 'abnormalAntis'), '状态免疫'),
         ('ep_sanity', 'runtime', 'elementRemaining.1', '神经损伤剩余'),
         ('ep_water', 'runtime', 'elementRemaining.2', '侵蚀损伤剩余'),
         ('ep_fire', 'runtime', 'elementRemaining.3', '灼燃损伤剩余'),
         ('ep_dark', 'runtime', 'elementRemaining.4', '凋亡损伤剩余'),
         ('ep_anger', 'runtime', 'elementRemaining.5', '狂躁损伤剩余'),
         ('ep_break', 'runtime', 'elementBreakRecovery', '元素爆发恢复'),
+        ('ep_capacity', 'runtime', 'elementRemaining.0', '运行时损伤条容量'),
+        ('coordinates_extra', 'base', ('blockedPosition', 'spawnPosition', 'direction'), '出生、阻挡位置与朝向'),
         ('life_status', 'base', ('lifecycle', 'alive'), '生存状态'),
         ('end_reason', 'roster', 'endReason', '离场原因'),
         ('finish_reason', 'roster', 'finishReason', '原始离场原因编号'),
         ('end_frame', 'roster', 'endFrame', '观测离场逻辑帧'),
         ('spawn_wait', 'roster', ('spawnEta', 'spawnCondition', 'spawnKind',
-                                'spawnSource', 'planned', 'spawnOrder'), '距离出场'),
+                                'spawnSource', 'planned', 'spawnOrder', 'spawnContext'), '距离出场'),
     ):
         dependencies = (('enemy.next_checkpoint', 'battle.gameTime')
                         if key == 'checkpoint_countdown' else ())
@@ -144,6 +163,19 @@ def _registry() -> dict[str, FieldSpec]:
         ('element_output_total', 'damage', 'elementOutputTotal', '元素损伤累计'),
         ('healing_total', 'damage', 'healingTotal', '累计治疗'),
         ('unattributed_damage', 'damage', 'unattributedDamage', '未归属伤害跟踪'),
+        ('identity', 'identity', 'identity', '完整身份信息'),
+        ('deployment', 'base', ('deployment', 'finishReason'), '部署、卡片及离场信息'),
+        ('immune_status', 'runtime', ('abnormalImmunes', 'abnormalComboImmunes', 'abnormalAntis'), '状态免疫'),
+        ('ep_sanity', 'runtime', 'elementRemaining.1', '神经损伤剩余'),
+        ('ep_water', 'runtime', 'elementRemaining.2', '侵蚀损伤剩余'),
+        ('ep_fire', 'runtime', 'elementRemaining.3', '灼燃损伤剩余'),
+        ('ep_dark', 'runtime', 'elementRemaining.4', '凋亡损伤剩余'),
+        ('ep_anger', 'runtime', 'elementRemaining.5', '狂躁损伤剩余'),
+        ('ep_capacity', 'runtime', 'elementRemaining.0', '运行时损伤条容量'),
+        ('ep_break', 'runtime', 'elementBreakRecovery', '元素爆发恢复'),
+        ('damage_range', 'damage', 'damageRange', '单次输出范围'),
+        ('element_output_by_type', 'damage', 'elementOutputByType', '分类型元素损伤输出'),
+        ('element_break_count', 'damage', 'elementBreakCount', '分类型元素爆发次数'),
     ):
         dependencies = {
             'alive': ('character.hp',),
@@ -202,13 +234,54 @@ def _registry() -> dict[str, FieldSpec]:
         for key in ('attributes', 'rawAttributes', 'buffs', 'globalBuffs', 'skills',
                     'talents', 'specialShield', 'dynamicAbilities', 'equipment',
                     'attackRange', 'effectFrames'):
-            add(domain, key, key, key, key)
+            paths = {'attributes': ('attributes', 'attributeDefinitions'),
+                     'equipment': ('equipment', 'deckBuffBlackboard'),
+                     'specialShield': ('specialShield', 'specialShieldMask', 'specialShieldSources')}.get(key, key)
+            add(domain, key, key, paths, key)
     for key in ('frame_guard', 'enemy_identity', 'character_identity', 'session'):
         add('internal', key, 'required', (), key, display=False, required=True, publish=False)
+    add('character', 'direction', 'base', 'direction', '朝向')
+    for spec in contract_specs():
+        defaults = spec['defaults']
+        result[spec['id']] = FieldSpec(
+            spec['id'], spec['domain'], spec['group'], tuple(spec['paths']), spec['label'],
+            tuple(spec['dependencies']), default_collect=defaults['collect'],
+            default_display=defaults['display'], default_publish=defaults['publish'],
+            topic=spec['topic'], source_fields=tuple(
+                (path, source) for path, sources in spec['source_fields'].items()
+                for source in (sources if isinstance(sources, list) else [sources])))
+    for spec in result.values():
+        for dependency in spec.dependencies + tuple(source for _, source in spec.source_fields):
+            if dependency not in result:
+                raise ValueError(f'{spec.id}: unregistered dependency {dependency}')
     return result
 
 
 FIELD_REGISTRY: Mapping[str, FieldSpec] = MappingProxyType(_registry())
+
+
+def _index_field_rules(registry):
+    """Index the complete immutable schema, never addresses or sampled values.
+
+    The registry is built at module load (including newly registered fields).
+    Preserve registration order for dependency propagation; policy switches and
+    read success are still evaluated per snapshot. No hardcoded field subset.
+    """
+    domains, dependencies, groups = {}, {}, {}
+    for spec in registry.values():
+        domains.setdefault(spec.domain, []).append(spec)
+        groups.setdefault((spec.domain, spec.group), []).append(spec.id)
+        if spec.dependencies:
+            dependencies.setdefault(spec.domain, []).append(spec)
+    actions = {domain: tuple({path.split('.')[1] for spec in specs
+                              for path in spec.paths if path.startswith('action.')})
+               for domain, specs in domains.items()}
+    return tuple(MappingProxyType({key: tuple(values) for key, values in index.items()})
+                 for index in (domains, dependencies, actions, groups))
+
+
+(FIELDS_BY_DOMAIN, DEPENDENCY_FIELDS_BY_DOMAIN,
+ ACTION_KEYS_BY_DOMAIN, FIELDS_BY_GROUP) = _index_field_rules(FIELD_REGISTRY)
 
 
 @dataclass(frozen=True)
@@ -235,10 +308,16 @@ class PolicySnapshot:
         for spec in FIELD_REGISTRY.values():
             switches = self.fields[spec.id]
             for layer in LAYERS:
-                if switches.collect and getattr(switches, layer):
+                own_enabled = switches.collect and getattr(switches, layer)
+                paths = list(spec.paths) if not own_enabled else []
+                for path, source_id in spec.source_fields:
+                    source = self.fields[source_id]
+                    if not own_enabled or not (source.collect and getattr(source, layer)):
+                        paths.append(path)
+                if not paths:
                     continue
                 root = trees.setdefault((spec.domain, layer), {})
-                for path in spec.paths:
+                for path in paths:
                     components = path.split('.')
                     target = root
                     for component in components[:-1]:
@@ -260,8 +339,8 @@ class PolicySnapshot:
         return getattr(self.fields[field_id], layer)
 
     def group_enabled(self, domain: str, group: str) -> bool:
-        return any(self.enabled(spec.id) for spec in FIELD_REGISTRY.values()
-                   if spec.domain == domain and spec.group == group)
+        return any(self.enabled(field_id)
+                   for field_id in FIELDS_BY_GROUP.get((domain, group), ()))
 
     @property
     def collected_ids(self) -> frozenset[str]:
@@ -299,10 +378,31 @@ class PolicyStore:
                 self.load_errors = [{'field': 'field_policy', 'message': '字段策略版本无效，使用默认值'}]
             else:
                 try:
-                    fields = self._validate(stored.get('fields', {}))
+                    candidate = self._migrate_new_dependencies(stored.get('fields', {}))
+                    fields = self._validate(candidate)
                     self._snapshot = PolicySnapshot(0, MappingProxyType(fields))
                 except PolicyValidationError as error:
                     self.load_errors = error.errors
+
+    def _migrate_new_dependencies(self, candidate):
+        """Only absent new keys may initialize off; never reopen saved sources."""
+        if not isinstance(candidate, Mapping):
+            return candidate
+        result = dict(candidate)
+        missing = {key for key, spec in FIELD_REGISTRY.items()
+                   if spec.domain == 'stage_global' and key not in candidate}
+        disabled = {key for key, incoming in candidate.items()
+                    if isinstance(incoming, Mapping) and incoming.get('collect') is False}
+        while True:
+            blocked = {key for key in missing - disabled
+                       if any(dep in disabled for dep in FIELD_REGISTRY[key].dependencies)}
+            if not blocked:
+                break
+            for key in sorted(blocked):
+                result[key] = {'collect': False}
+                self.load_errors.append({'field': key, 'message': '新增字段依赖已关闭，初始采集设为关'})
+            disabled.update(blocked)
+        return result
 
     def snapshot(self) -> PolicySnapshot:
         with self._lock:

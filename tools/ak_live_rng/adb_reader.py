@@ -61,6 +61,14 @@ class AdbReader:
 
     # ---------------- 连接 ----------------
 
+    def scan_classes(self, names, namespace="Torappu.Battle"):
+        """Use process-scoped metadata hints without sharing the RNG socket."""
+        from tools.deploy_tracker.ak_deploy_reader import DeployTrackerReader
+        locator = DeployTrackerReader(self.mc)
+        locator._channel = self._channel()
+        # Borrowed channel remains owned by this reader; do not close locator.
+        return locator.scan_classes(names, namespace=namespace) or {}
+
     @classmethod
     def connect(cls, adb_path=None, package="com.hypergryph.arknights", status=print,
                 adb_serial=None):
@@ -111,6 +119,9 @@ class AdbReader:
             return False
         status("[adb] 游戏 pid 变化 (%s -> %s), 重新连接" % (self.mc.pid, pid))
         self.mc.pid = pid
+        # The old birth belongs to the previous process. Until reconnect obtains
+        # a fresh identity, disable shared metadata hints rather than mis-key them.
+        self.mc.process_instance = None
         self.mc.reload_maps()
         with self._channel_lock:
             if self._closed:

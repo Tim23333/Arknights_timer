@@ -54,6 +54,7 @@ def test_packaged_webui_includes_runtime_modules_not_docs_or_tests(tmp_path, mon
     import build_exe
     backend = tmp_path / "backend"
     backend.mkdir()
+    (tmp_path / 'tools').mkdir()
     (backend / "run.py").touch()
     assets = tmp_path / "webui"
     assets.mkdir()
@@ -74,16 +75,17 @@ def test_packaged_webui_includes_runtime_modules_not_docs_or_tests(tmp_path, mon
     assert assets / "test" not in sources
 
 
-def test_flat_packaging_boundary_contains_all_current_runtime_imports():
+def test_runtime_packaging_boundaries_contain_all_current_runtime_imports():
     assets = Path(__file__).resolve().parents[1] / "webui"
-    for source in assets.iterdir():
+    boundaries = {assets.resolve(), (assets / 'map').resolve()}
+    for source in [*assets.iterdir(), *(assets / 'map').iterdir()]:
         if source.suffix not in {".html", ".mjs", ".css"}:
             continue
         contents = source.read_text(encoding="utf-8")
         references = re.findall(r"(?:from\s*|\b(?:src|href)\s*=\s*)['\"](\./[^'\"]+)['\"]", contents)
         for reference in references:
             target = (source.parent / reference).resolve()
-            assert target.parent == assets.resolve(), f"runtime asset left flat bundle: {source.name} -> {reference}"
+            assert target.parent in boundaries, f"runtime asset left production bundle: {source.name} -> {reference}"
             assert target.is_file(), f"missing runtime asset: {reference}"
 
 

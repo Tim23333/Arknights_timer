@@ -157,8 +157,13 @@ class EnemyUiTests(unittest.TestCase):
                 return {'frame': self.end_frame, 'time_scale': 2.0,
                         'pause_keys_active': True, 'play_time': 10.0}
 
-        consistent = EnemyPollWorker(Reader(123))._collect_complete_snapshot()
-        crossed = EnemyPollWorker(Reader(124))._collect_complete_snapshot()
+        def collect(end_frame):
+            worker = EnemyPollWorker(Reader(end_frame))
+            worker._stage_global_reader.sample_runtime = lambda policy: {
+                'isPaused': True, 'timeScale': 0.0}
+            return worker._collect_complete_snapshot()
+        consistent = collect(123)
+        crossed = collect(124)
         self.assertTrue(consistent['paused_snapshot'])
         self.assertEqual(consistent['time_scale'], 0.0)
         self.assertEqual(consistent['origin_time_scale'], 2.0)
