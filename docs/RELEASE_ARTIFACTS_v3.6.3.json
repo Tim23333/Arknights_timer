@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "version": "3.6.3",
+  "frontend_version": "1.0.4",
+  "built_from_commit": "7d3191f384525af97ad296bc2e20492d87585784",
+  "tested_code_tree": "e0211bcfd847bf70a2f1efca1b456c2f71b43d8a",
+  "build_command": "python backend/build_exe.py",
+  "output_directory": "backend/dist",
+  "changes": [
+    "PR #7 stage-global state, map and unit views, read-plan and publication changes are integrated.",
+    "Accept Android layouts by live structural/ownership checks instead of the 2.7.81 versionName whitelist.",
+    "Desktop and WebUI can display concurrently without retiring readers or private streams.",
+    "Web detail requests are page-owned, merged with shared asynchronous demand, and separate from desktop selection.",
+    "Retain complete enabled field coverage, same-frame guards, policy generation and immutable publication boundaries.",
+    "Include source comparison and measured performance bottleneck report."
+  ],
+  "tests": {
+    "pre_version_bump_suite": {
+      "passed": 625,
+      "subtests_passed": 142,
+      "failed": 0,
+      "skipped": 0,
+      "existing_warnings": 2,
+      "evidence": "docs/SHARED_WEBUI_PERFORMANCE_20261019.json"
+    },
+    "release_version_and_focused_regression": {
+      "passed": 29
+    },
+    "webui_node": {
+      "passed": 44
+    },
+    "frontend_build": "passed via the normal packaging script",
+    "previous_same_code_live_mumu": "Paused 5-10, F466, six enemies, two operators and web-selected skill detail passed before the version-only bump.",
+    "excluded_modules": [
+      "Ark_emulator"
+    ],
+    "github_ci": "not a gate, as requested by the user"
+  },
+  "archives": [
+    {
+      "file": "ArknightsTimeline_v3.6.3.exe",
+      "bytes": 113138344,
+      "sha256": "1ec8590bec4222b545c82f969cabb1e89d37ad51c6e01cd04df6e6f1ebcdf417",
+      "pe_version": [
+        3,
+        6,
+        3,
+        0
+      ],
+      "test_marker": false,
+      "game_data_hashes": 40,
+      "webui_assets": 34,
+      "portraits": 878
+    },
+    {
+      "file": "ArknightsTimeline_v3.6.3_Test.exe",
+      "bytes": 113137193,
+      "sha256": "75429bc4069be2da1897fe274f91349b5d0623e76bea75893f97d0bb41635191",
+      "pe_version": [
+        3,
+        6,
+        3,
+        0
+      ],
+      "test_marker": true,
+      "game_data_hashes": 40,
+      "webui_assets": 34,
+      "portraits": 878
+    }
+  ],
+  "smoke": [
+    {
+      "file": "ArknightsTimeline_v3.6.3.exe",
+      "startup_and_checks_seconds": 4.33,
+      "onefile_processes": 2,
+      "http_state_policy_assets": "passed",
+      "sse": [
+        "clock",
+        "modules"
+      ],
+      "shutdown": "cooperative",
+      "exit_code": 0,
+      "log_files": 1,
+      "browser_opened": false,
+      "game_scan_started": false
+    },
+    {
+      "file": "ArknightsTimeline_v3.6.3_Test.exe",
+      "startup_and_checks_seconds": 4.89,
+      "onefile_processes": 2,
+      "http_state_policy_assets": "passed",
+      "sse": [
+        "clock",
+        "modules"
+      ],
+      "shutdown": "cooperative",
+      "exit_code": 0,
+      "log_files": 1,
+      "browser_opened": false,
+      "game_scan_started": false
+    }
+  ],
+  "notes": [
+    "Ordinary and diagnostic builds come from the same committed code; only the diagnostic package embeds TEST_BUILD.",
+    "WebUI enables its runtime diagnostic stream in either package; the ordinary desktop package has no TEST_BUILD marker.",
+    "Game-data hashes, production web assets, portraits, contracts and embedded tools were verified.",
+    "No GitHub Release, tag, asset upload or manual PR review action was requested."
+  ]
+}
