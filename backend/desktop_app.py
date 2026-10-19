@@ -2896,7 +2896,7 @@ class CoachWindow(QMainWindow):
         btn_timeline.clicked.connect(self._on_open_timeline_tool)
         self._style_secondary_button(btn_timeline)
         title_actions_row.addWidget(btn_timeline)
-        btn_webui = QPushButton('切换至 WebUI')
+        btn_webui = QPushButton('打开 Web 界面')
         btn_webui.clicked.connect(self.open_webui)
         self._style_secondary_button(btn_webui)
         title_actions_row.addWidget(btn_webui)
@@ -3538,83 +3538,46 @@ class CoachWindow(QMainWindow):
         if self._webui is None:
             self._webui = WebUiRuntime(self, port=port)
         url = self._webui.start()
-        token = self._presentation.request_web()
-        def fallback():
-            if not self._closing and self._presentation.release_fallback(token):
-                webbrowser.open(url + '?handoff=' + token)
-        if self._presentation.has_target(token):
-            # Give the selected existing page time to receive its wake offer.
-            # Confirmation cancels this fallback without creating another tab.
-            QTimer.singleShot(6000, fallback)
-        else:
-            fallback()
+        webbrowser.open(url)
         return url
 
     def _switch_frontend(self, action, token=None, client_id=None):
-        """Qt owner thread: hide/show consumers without stopping any producer."""
-        if action == 'status':
-            return self._presentation.status()
-        if action == 'request-web':
-            if client_id is not None:
-                self._presentation._validate_client(client_id)
-            return {'token': self._presentation.request_web(client_id=client_id)}
+        """Qt owner: show the desktop without retiring any other consumer."""
         if action == 'page-status':
             return self._presentation.page_status(client_id)
-        if action == 'claim-web':
-            if not self._presentation.claim_web(token, client_id):
-                raise ValueError('此页面未获选中或切换请求已过期')
-            return {'accepted': True}
-        if action == 'confirm-web':
-            if not self._presentation.confirm_web(token, client_id=client_id):
-                raise ValueError('切换请求已过期，请从原界面重试')
-            self._exit_enemy_mini_mode()
-            for section in self.findChildren(CollapsibleGroupBox):
-                section.dock_content()
-            # Closing selected detail consumers releases their own read targets;
-            # external WS detail subscriptions remain owned by the WS service.
-            for name in ('_enemy_detail_dialog', '_character_detail_dialog',
-                         '_global_damage_detail_dialog', '_character_overview_dialog'):
-                dialog = getattr(self, name, None)
-                if dialog is not None:
-                    dialog.close()
-            log_window = self._diagnostic_log_window
-            if log_window is not None and not getattr(self, '_log_presentation_paused', False):
-                log_window.manager.line_added.disconnect(log_window.output.appendPlainText)
-                self._log_presentation_paused = True
-                log_window.hide()
-            self.setUpdatesEnabled(False)
-            self.hide()
-        elif action == 'desktop':
-            self._presentation.desktop()
-            if self._enemy_poll is not None:
-                self._enemy_poll.set_detail_target(0)
-                self._enemy_poll.set_character_detail_target(0)
-            log_window = self._diagnostic_log_window
-            if log_window is not None and getattr(self, '_log_presentation_paused', False):
-                log_window.output.setPlainText('\n'.join(log_window.manager.snapshot_lines()))
-                log_window.manager.line_added.connect(log_window.output.appendPlainText)
-                self._log_presentation_paused = False
-            self.setUpdatesEnabled(True)
-            self.showNormal()
-            if sys.platform == 'win32' and QApplication.platformName().lower() == 'windows':
-                # A launcher may supply STARTF_USESHOWWINDOW/SW_HIDE. Qt can
-                # consider the window shown while its native HWND remains
-                # hidden. Explicit user handoff restores and shows that HWND;
-                # never apply this to background startup or offscreen tests.
-                hwnd = ctypes.c_void_p(int(self.winId()))
-                ctypes.windll.user32.ShowWindow(hwnd, 9)  # SW_RESTORE
-                ctypes.windll.user32.ShowWindow(hwnd, 5)  # SW_SHOW
-            self.raise_()
-            self.activateWindow()
-            self._render_enemy_table(self._enemy_last)
-            self._render_character_table(self._character_last)
-            self.deploy_table.setRowCount(0)
-            self._append_deploy_rows(self._deploy_journal or self._deploy_events)
-            self._tick_fast()
-        else:
-            raise ValueError('未知前端切换操作')
-        _tlog('[前端切换] ' + self._presentation.mode)
+        if action in {'status', 'claim-web', 'confirm-web'}:
+            # Older already-open pages can complete their former handshake;
+            # it no longer hides windows or closes selected detail consumers.
+            if client_id is not None:
+                self._presentation._validate_client(client_id)
+            return {**self._presentation.status(), 'accepted': True}
+        if action == 'request-web':
+            return {'token': '', **self._presentation.status()}
+        if action != 'desktop':
+            raise ValueError('未知界面操作')
+        self.showNormal()
+        if sys.platform == 'win32' and QApplication.platformName().lower() == 'windows':
+            hwnd = ctypes.c_void_p(int(self.winId()))
+            ctypes.windll.user32.ShowWindow(hwnd, 9)
+            ctypes.windll.user32.ShowWindow(hwnd, 5)
+        self.raise_()
+        self.activateWindow()
         return self._presentation.status()
+
+    def _shared_detail_requests(self):
+        """Merge bounded web selections with WS demand; no game IO here."""
+        api = self._websocket_api
+        result = api.detail_requests() if api is not None else {}
+        webui = self._webui
+        local = webui.detail_requests() if webui is not None else {}
+        for topic, request in local.items():
+            external = result.get(topic, {})
+            result[topic] = {
+                'rateHz': max(float(external.get('rateHz', 0)), request['rateHz']),
+                'scopeAll': bool(external.get('scopeAll')),
+                'ids': set(external.get('ids', ())) | request['ids'],
+            }
+        return result
 
     def _load_websocket_api_options(self) -> None:
         enabled = bool((self._custom_options.get("websocket_api") or {}).get("enabled", True))
@@ -4661,9 +4624,7 @@ class CoachWindow(QMainWindow):
         self._enemy_reader.resume_polling()
         self._enemy_poll = EnemyPollWorker(
             self._enemy_reader, self._character_reader,
-            detail_request_provider=lambda: (
-                self._websocket_api.detail_requests()
-                if self._websocket_api is not None else {}),
+            detail_request_provider=self._shared_detail_requests,
             policy_provider=self._field_policy.snapshot,
             latest_frame_provider=self._provider.peek_frame_count,
         )

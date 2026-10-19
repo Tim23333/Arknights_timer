@@ -93,18 +93,16 @@ def test_detail_same_address_prefix_conflict_is_rejected():
     assert not snapshot.valid and snapshot.failure_reason == 'overlap_conflict'
 
 
-def test_only_selected_page_can_take_presentation_ownership():
+def test_desktop_and_multiple_web_pages_can_consume_together():
     presentation = FrontendPresentation()
-    token = presentation.request_web(now=0, client_id='chosen')
-    assert not presentation.claim_web(token, 'other', now=1)
-    assert presentation.claim_web(token, 'chosen', now=1)
-    assert not presentation.confirm_web(token, now=2, client_id='other')
-    assert presentation.confirm_web(token, now=2, client_id='chosen')
-    assert presentation.stream_allowed('chosen', now=3)
-    assert not presentation.stream_allowed('other', now=3)
-    presentation.desktop()
-    assert presentation.native_active and not presentation.web_active
-    assert not presentation.stream_allowed('chosen', now=4)
+    assert presentation.native_active and presentation.web_active
+    assert presentation.page_status('first', now=0)['active']
+    assert presentation.page_status('second', now=1)['active']
+    assert presentation.stream_allowed('first', now=2)
+    assert presentation.stream_allowed('second', now=2)
+    assert presentation.status() == {'mode': 'shared'}
+    assert presentation.native_active and presentation.web_active
+    assert not presentation.stream_allowed('x' * 129)
 
 
 def test_accepted_public_snapshot_is_independent_of_producer_mutation():

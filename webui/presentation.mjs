@@ -1,7 +1,4 @@
-// The sleeping page owns no telemetry connections or renderers.
-export function standbyDestination(state) {
-  return state.handoff ? '/?handoff='+encodeURIComponent(state.handoff) : null;
-}
+// Each page owns its connections and selected details, alongside the desktop.
 
 export async function getPresentationClient() {
   const key='timeline.presentation.client';
@@ -31,17 +28,4 @@ export async function waitForPresentation(read, onError, delay = ms => new Promi
     try { return await read(); }
     catch (error) { onError(error); await delay(2000); }
   }
-}
-
-export function createPresentationWatch(read, sleep) {
-  let stopped=false, busy=false;
-  return {async check() {
-    if (stopped || busy) return;
-    busy=true;
-    try {
-      const state=await read();
-      if (state.mode === 'desktop' || state.active === false) { stopped=true; sleep(); }
-    } catch { /* Control-plane failures must not discard a working frontend. */ }
-    finally { busy=false; }
-  }};
 }

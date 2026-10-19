@@ -71,6 +71,7 @@ class WebUiRuntime(QObject):
         self._lock = threading.RLock()
         self._state = {}
         self._presentation_revision = 0
+        self._detail_targets = {}
         self._streams = {key: LatestStream() for key in ('clock', 'modules')}
         self._stream_stop = threading.Event()
         self._module_pending = threading.Event()
@@ -99,6 +100,28 @@ class WebUiRuntime(QObject):
         self.timer.timeout.connect(self.refresh)
         self.refresh()
 
+    def _detail_context(self):
+        api = self.window._websocket_api
+        return (getattr(self.window, '_source_epoch', 0), api.session_id if api is not None else None)
+
+    def _expire_detail_targets(self):
+        now = time.monotonic()
+        self._detail_targets = {client: owner for client, owner in self._detail_targets.items()
+                                if now - owner['seen'] < 10.0}
+
+    def detail_requests(self):
+        """Worker-safe web demand, separate from desktop selected targets."""
+        with self._lock:
+            self._expire_detail_targets()
+            context = self._detail_context()
+            result = {}
+            for kind in ('enemy', 'character'):
+                ids = {target[0] for owner in self._detail_targets.values()
+                       if (target := owner['targets'].get(kind)) and target[1] == context}
+                result[kind + '_detail'] = {'rateHz': 60.0 if ids else 0.0,
+                                            'scopeAll': False, 'ids': ids}
+            return result
+
     @staticmethod
     def _column_defs(domain, definitions):
         return [{**column, "path": FIELD_REGISTRY[f"{domain}.{column['key']}"].paths[0]
@@ -119,6 +142,8 @@ class WebUiRuntime(QObject):
 
     def stop(self):
         self.timer.stop()
+        with self._lock:
+            self._detail_targets.clear()
         self._stream_stop.set()
         for thread in self._stream_threads:
             thread.join(timeout=1.5)
@@ -245,40 +270,44 @@ class WebUiRuntime(QObject):
         ws["gameUrl"] = f"ws://127.0.0.1:{ws.get('port') or 8765}/v2/game"
         snapshot = getattr(window, '_webui_runtime_snapshot', {})
         from .websocket_api import entity_public_id
+        local_requests = self.detail_requests()
         for domain in ('enemy', 'character'):
             topic = domain + '_detail'
             if topic not in updated:
                 continue
+            selected_rows = [row for row in snapshot.get('external_' + domain + '_details', ())
+                             if entity_public_id(domain, row, 1) in local_requests[topic]['ids']]
             selected = snapshot.get('detail_' + domain)
-            if selected is None or snapshot.get('frame_consistent') is False:
+            if selected is not None and all(getattr(row, 'addr', None) != selected.addr for row in selected_rows):
+                selected_rows.append(selected)
+            if snapshot.get('frame_consistent') is False:
                 continue
-            # External detail subscribers are not a second local diagnostic
-            # channel. Enrich only the owned selected object used by Qt too.
-            identity = entity_public_id(domain, selected, 1)
-            for item in values.get(topic, {}).get('items', ()):
-                if item.get('id') == identity:
-                    item['localDiagnostics'] = _local_detail_diagnostics(selected, domain, policy)
-                    # Native semantic descriptions are presentation metadata,
-                    # not new fields added to external buff objects. Copy each
-                    # row before decoration; accepted WS sources stay immutable.
-                    for key, attr in (('buffs', 'buffs'), ('globalBuffs', 'global_buffs')):
-                        raw_buffs = getattr(selected, attr, ())
-                        decorated = []
-                        for raw_buff, public_buff in zip(raw_buffs, item.get(key, ())):
-                            if key == 'buffs':
-                                extra = {'displayName': buff_chinese_name(raw_buff),
-                                         'displayDescription': describe_active_buff(raw_buff)}
-                            else:
-                                description = describe_global_buff(raw_buff, selected)
-                                if domain == 'character':
-                                    description = description.replace('当前选中敌人', '当前干员')
-                                extra = {'displayName': global_buff_chinese_name(raw_buff),
-                                         'displayDescription': description,
-                                         'displayBuffDefinitions': [describe_buff_def(value)
-                                            for value in (raw_buff.get('buff_defs') or ())]}
-                            decorated.append({**public_buff, **extra})
-                        if key in item:
-                            item[key] = decorated
+            for selected in selected_rows:
+                identity = entity_public_id(domain, selected, 1)
+                for item in values.get(topic, {}).get('items', ()):
+                    if item.get('id') == identity:
+                        item['localDiagnostics'] = _local_detail_diagnostics(selected, domain, policy)
+                        # Native semantic descriptions are presentation metadata,
+                        # not new fields added to external buff objects. Copy each
+                        # row before decoration; accepted WS sources stay immutable.
+                        for key, attr in (('buffs', 'buffs'), ('globalBuffs', 'global_buffs')):
+                            raw_buffs = getattr(selected, attr, ())
+                            decorated = []
+                            for raw_buff, public_buff in zip(raw_buffs, item.get(key, ())):
+                                if key == 'buffs':
+                                    extra = {'displayName': buff_chinese_name(raw_buff),
+                                             'displayDescription': describe_active_buff(raw_buff)}
+                                else:
+                                    description = describe_global_buff(raw_buff, selected)
+                                    if domain == 'character':
+                                        description = description.replace('当前选中敌人', '当前干员')
+                                    extra = {'displayName': global_buff_chinese_name(raw_buff),
+                                             'displayDescription': description,
+                                             'displayBuffDefinitions': [describe_buff_def(value)
+                                                for value in (raw_buff.get('buff_defs') or ())]}
+                                decorated.append({**public_buff, **extra})
+                            if key in item:
+                                item[key] = decorated
         for domain, key, formatter in (("enemy", "enemies", format_column_value),
                                        ("character", "characters", format_character_column)):
             if key not in updated:
@@ -367,24 +396,11 @@ class WebUiRuntime(QObject):
         if action == 'frontend':
             target = params.get('target')
             result = w._switch_frontend(target, params.get('token'), params.get('clientId'))
-            if target == 'desktop':
-                # Only local presentation caches are retired. Producers, public
-                # WS snapshots and session identity remain completely untouched.
+            if target == 'page-status':
                 with self._lock:
-                    self._presentation_revision += 1
-                    self._state = {}
-                    self._values = {}
-                    self._versions = {}
-                    self._values_signature = None
-                    for topic in self._module_keys:
-                        self._streams['modules'].publish(topic, None)
-                    self._streams['clock'].publish('clock', None)
-            elif target == 'confirm-web':
-                with self._lock:
-                    self._presentation_revision += 1
-                self.refresh()
-                if w._websocket_api is not None:
-                    self._streams['clock'].publish('clock', w._websocket_api.wait_local_update('clock', -1, timeout=0)[1])
+                    owner = self._detail_targets.get(params.get('clientId'))
+                    if owner is not None:
+                        owner['seen'] = time.monotonic()
             if target in {'status', 'page-status'}:
                 result['streams'] = self.server.stream_counts()
             return result
@@ -441,19 +457,27 @@ class WebUiRuntime(QObject):
             kind = params.get("kind")
             if kind not in {"enemy", "character"}:
                 raise ValueError("未知对象类型")
-            if params.get("id") is None:
-                if w._enemy_poll is not None:
-                    target = w._enemy_poll.set_detail_target if kind == "enemy" else w._enemy_poll.set_character_detail_target
-                    target(0)
-                return {"accepted": True}
-            from .websocket_api import entity_public_id
-            rows = getattr(w, '_webui_runtime_snapshot', {}).get("enemies" if kind == "enemy" else "characters", [])
-            entity = next((row for index, row in enumerate(rows, 1)
-                           if entity_public_id(kind, row, index) == params.get("id")), None)
-            if entity is None or w._enemy_poll is None:
-                raise ValueError("对象已离场或监控未启动")
-            target = w._enemy_poll.set_detail_target if kind == "enemy" else w._enemy_poll.set_character_detail_target
-            target(entity.addr)
+            client = params.get('clientId', 'legacy-web')
+            w._presentation._validate_client(client)
+            identity = params.get('id')
+            if identity is not None:
+                from .websocket_api import entity_public_id
+                rows = getattr(w, '_webui_runtime_snapshot', {}).get("enemies" if kind == "enemy" else "characters", [])
+                if w._enemy_poll is None or not any(entity_public_id(kind, row, index) == identity
+                        for index, row in enumerate(rows, 1)):
+                    raise ValueError("对象已离场或监控未启动")
+            with self._lock:
+                self._expire_detail_targets()
+                if client not in self._detail_targets and len(self._detail_targets) >= 128:
+                    raise ValueError('网页详情数量已达上限')
+                owner = self._detail_targets.setdefault(client, {'seen': time.monotonic(), 'targets': {}})
+                owner['seen'] = time.monotonic()
+                if identity is None:
+                    owner['targets'].pop(kind, None)
+                else:
+                    owner['targets'][kind] = (identity, self._detail_context())
+                if not owner['targets']:
+                    self._detail_targets.pop(client, None)
             return {"accepted": True}
         if action == "precision":
             kind, places = params.get("kind"), params.get("places")

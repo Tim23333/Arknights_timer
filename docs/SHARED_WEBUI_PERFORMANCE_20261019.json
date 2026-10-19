@@ -1,0 +1,2719 @@
+{
+  "date": "2026-10-19",
+  "baseline_commit": "5120f1b114b3b59c3ef2d9b17dc96bbdef103d4f",
+  "scope": "Desktop/WebUI coexistence and evidence-based read/parse performance analysis; Ark_emulator excluded.",
+  "delivery": {
+    "backend_version": "3.6.2",
+    "frontend_version": "1.0.4",
+    "version_bumped": false,
+    "git": "Changes copied to primary local working tree; no commit, push or GitHub action."
+  },
+  "behavior_changes": [
+    "Desktop button opens WebUI without hiding desktop, disabling native rendering or closing native detail dialogs.",
+    "Web button only shows/activates desktop. Every page can keep its private clock/modules streams; no exclusive owner or standby handshake.",
+    "Core readers, source session, policy and public WS remain shared. Opening a frontend does not start another core sampling worker.",
+    "Web selected-detail demand is per page and merged with existing shared asynchronous WS detail demand. Desktop target setters are never overwritten by a web drawer.",
+    "Web selected-detail nominal demand preserves the former 60 Hz setting. Actual completion depends on work and guards; no 60 Hz result is claimed.",
+    "Web details expire after ten seconds without page heartbeat and cannot transfer across source/battle session identities."
+  ],
+  "pipeline": [
+    {
+      "phase": "Connection",
+      "implementation": [
+        "tools/enemy_health/memcore.py:MemCore.connect"
+      ],
+      "work": "Explicit MuMu selection, adbd root check, package/PID, process birth and maps. ADB is setup/transport plumbing, not one shell call per field."
+    },
+    {
+      "phase": "Cold discovery",
+      "implementation": [
+        "EnemyReader.bootstrap",
+        "StageGlobalReader.prepare",
+        "class_scan_cache"
+      ],
+      "work": "Device-side region/class/object scans locate BattleController, handbook, native Unity Time and BattleInOut. Accept roots by live class/ownership/layout checks."
+    },
+    {
+      "phase": "Independent producers",
+      "implementation": [
+        "GuestBattleClock",
+        "LifecycleReader",
+        "DeployPollWorker",
+        "RngService"
+      ],
+      "work": "Clock/lifecycle, deployment journal and RNG keep separate ownership/rates. Deployment defaults to 0.3-second polling. These are not components of one atomic enemy frame."
+    },
+    {
+      "phase": "Complete enemy/character capture",
+      "implementation": [
+        "EnemyPollWorker._collect_complete_snapshot",
+        "TcpChannel.begin_frame_prefetch",
+        "memsrv.c"
+      ],
+      "work": "Bind immutable policy generation, execute resident core plan plus separately guarded optional plan; parse enemy, characters, pause/scale, map and waves."
+    },
+    {
+      "phase": "Field evidence and acceptance",
+      "implementation": [
+        "EnemyReader._stamp_fields",
+        "OptionalMemoryAccess",
+        "DetailSnapshotPool"
+      ],
+      "work": "Produce all enabled field states/source frames, enforce process/battle identity, complete-frame and path guards; reject mismatches with bounded retries. Discovery values cannot be promoted to current detail evidence."
+    },
+    {
+      "phase": "Latest snapshot delivery",
+      "implementation": [
+        "EnemyPollWorker._publish_snapshot",
+        "CoachWindow._apply_enemy_snapshot"
+      ],
+      "work": "Latest-only worker buffer wakes Qt. Qt rechecks generation/pathing, updates history and battle cache, then publishes canonical runtime/global topics."
+    },
+    {
+      "phase": "Public projection",
+      "implementation": [
+        "WebSocketApi.publish_runtime",
+        "WebSocketApi._publish",
+        "field_policy.project_snapshot"
+      ],
+      "work": "Whitelist/sanitize, build field masks and collect/publish projections, detach accepted values from mutable producer data, commit by session/generation/ticket. Public WS sends interested topics at subscription rates."
+    },
+    {
+      "phase": "Desktop and local web",
+      "implementation": [
+        "CoachWindow._render_enemy_table",
+        "WebUiRuntime._refresh",
+        "LatestStream.publish",
+        "webui/app.mjs"
+      ],
+      "work": "Desktop mutates Qt tables. Local web copies changed accepted topics, formats columns, decorates requested details and serializes latest SSE slots. Browser merges latest values and renders via requestAnimationFrame; clock is separate."
+    }
+  ],
+  "measurement_method": {
+    "device": "E:/MuMu Player 12/shell/adb.exe -s 127.0.0.1:16384",
+    "stage": "5-10, paused; six active enemies, 73 total roster entries, two operators; F461 in timed profiles, F466 in subsequent UI QA.",
+    "reader": "20 warmup rounds, then 80 timed accepted captures per precision setting. Separate 30-round cProfile and 20-round bounded read-accounting probes.",
+    "presentation": "Real accepted paused snapshot replay: 10 warmup + 60 timed rounds for desktop and desktop+web, offscreen Qt/event processing. No extra device IO or browser/GPU timing in these measurements.",
+    "cprofile": "Use for call counts and ranking. Its instrumentation inflates timings; do not combine cProfile times with unprofiled medians.",
+    "comparison": "Recorded local main baseline compared with coexistence implementation under the same paused replay method. This is an intentional presentation behavior change, not a claimed reader optimization.",
+    "limits": "A paused scene cannot prove running-only unique-frame rate, retry behavior during moving scenes, browser paint cost or universal 60 Hz."
+  },
+  "bottlenecks": [
+    {
+      "rank": 1,
+      "area": "Canonical snapshot publication and projection on the Qt/Python path",
+      "evidence": "Shared replay median publish_runtime 12.48 ms + publish_global 3.41 ms. cProfile shows about 1.08 million recursive _safe calls across 15 replay frames, plus _mask_unavailable/_project_topic/_public.",
+      "implication": "The dominant downstream Python work occurs before interested-client delivery, including with public WS disabled. It competes with parsing for the GIL.",
+      "next": "Compile/cache full-registry policy/path plans by immutable policy generation; retain one immutable sanitized canonical batch and cache equivalent consumer projections by source revision, session, generation and layer. Preserve mutation isolation and pointer redaction."
+    },
+    {
+      "rank": 2,
+      "area": "Local web projection, formatting and serialization",
+      "evidence": "Shared replay median webui_refresh 9.51 ms; desktop+web downstream total 27.94 ms versus desktop-only 15.82 ms. LatestStream uses standard json.dumps even though public WS supports orjson.",
+      "next": "Separate raw topic/evidence changes from reusable presentation strings; reuse static/unchanged formatting and encode accepted immutable topics once. Verify exact JSON/value semantics before changing encoder."
+    },
+    {
+      "rank": 3,
+      "area": "Per-entity field evidence stamping and repeated policy lookups",
+      "evidence": "Reader cProfile: _stamp_fields called 2190 times over 30 frames (73 roster entries/frame), collection_record 151290 times, _collect about 287460 times. Most are pending roster entities as well as active units.",
+      "next": "Precompile complete domain field/dependency checks per policy generation and reduce repeated string/thread-local/getattr work. Continue emitting all enabled roster and field evidence; do not filter to only visible or active rows."
+    },
+    {
+      "rank": 4,
+      "area": "Transport tail latency",
+      "evidence": "Stable capture uses three counted network batches, around 700+ memory operations, not hundreds of ADB shell round trips. Median IO is about 3.1-3.3 ms, p95 around 46 ms in these samples.",
+      "next": "Measure scheduler/socket/device tails with isolated probes before attributing delay to ADB bandwidth, TCP delayed ACK, storage or another specific cause. No such root cause is proven here."
+    },
+    {
+      "rank": "cold-start",
+      "area": "Repeated large-region class/object discovery",
+      "evidence": {
+        "core_bootstrap_seconds": 24.205522199998086,
+        "global_prepare_seconds": 18.156286999997974
+      },
+      "next": "Improve validated process-scoped class indexes/cache reuse and share equivalent cold scans. Never reuse unvalidated objects across process or battle ownership changes."
+    }
+  ],
+  "reader_profile": {
+    "baseline": "5120f1b114b3b59c3ef2d9b17dc96bbdef103d4f",
+    "serial": "127.0.0.1:16384",
+    "cases": [
+      {
+        "precise_position": true,
+        "frame": 466,
+        "paused": true,
+        "accepted": 80,
+        "active_enemies": 6,
+        "characters": 2,
+        "total_ms": {
+          "n": 80,
+          "mean": 16.789171249911305,
+          "p50": 13.148000001820037,
+          "p95": 56.52220000047237
+        },
+        "phases_ms": {
+          "enemy": {
+            "n": 80,
+            "mean": 10.032103750290844,
+            "p50": 8.755850001762155,
+            "p95": 11.011599999619648
+          },
+          "character": {
+            "n": 80,
+            "mean": 0.654266249784996,
+            "p50": 0.6311500001174863,
+            "p95": 0.8347999973921105
+          },
+          "runtime": {
+            "n": 80,
+            "mean": 0.026121250175492605,
+            "p50": 0.02484999640728347,
+            "p95": 0.03459999425103888
+          },
+          "optional": {
+            "n": 80,
+            "mean": 1.40384875021482,
+            "p50": 1.290050000534393,
+            "p95": 1.7197000051965006
+          }
+        },
+        "io": {
+          "batches": {
+            "n": 80,
+            "mean": 3,
+            "p50": 3.0,
+            "p95": 3
+          },
+          "requests": {
+            "n": 80,
+            "mean": 722,
+            "p50": 722.0,
+            "p95": 722
+          },
+          "requested_bytes": {
+            "n": 80,
+            "mean": 81744,
+            "p50": 81744.0,
+            "p95": 81744
+          },
+          "returned_bytes": {
+            "n": 80,
+            "mean": 69408,
+            "p50": 69408.0,
+            "p95": 69408
+          },
+          "io_ms": {
+            "n": 80,
+            "mean": 6.742771250628721,
+            "p50": 3.1343499940703623,
+            "p95": 45.995400003448594
+          },
+          "max_batch_ms": {
+            "n": 80,
+            "mean": 5.264380000244273,
+            "p50": 1.7913999981828965,
+            "p95": 44.20479999680538
+          }
+        },
+        "profile_self": [
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<method 'recv' of '_socket.socket' objects>",
+            "calls": 450,
+            "self_ms": 177.9737,
+            "inclusive_ms": 177.9737
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 790,
+            "name": "_stamp_fields",
+            "calls": 2190,
+            "self_ms": 154.6796,
+            "inclusive_ms": 461.33610000000004
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<built-in method builtins.getattr>",
+            "calls": 609960,
+            "self_ms": 107.6388,
+            "inclusive_ms": 107.6435
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 666,
+            "name": "_collect",
+            "calls": 287460,
+            "self_ms": 83.2269,
+            "inclusive_ms": 230.99670000000003
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\field_policy.py",
+            "line": 336,
+            "name": "enabled",
+            "calls": 298500,
+            "self_ms": 48.12370000000001,
+            "inclusive_ms": 64.2228
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<method 'get' of 'dict' objects>",
+            "calls": 354002,
+            "self_ms": 30.460800000000003,
+            "inclusive_ms": 30.460800000000003
+          },
+          {
+            "file": "D:\\python3.12.10\\Lib\\copy.py",
+            "line": 118,
+            "name": "deepcopy",
+            "calls": 67050,
+            "self_ms": 30.073700000000002,
+            "inclusive_ms": 60.770500000000006
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\field_policy.py",
+            "line": 554,
+            "name": "collection_record",
+            "calls": 151290,
+            "self_ms": 23.6002,
+            "inclusive_ms": 23.6002
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<method 'split' of 'str' objects>",
+            "calls": 151290,
+            "self_ms": 20.0045,
+            "inclusive_ms": 20.0045
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\memcore.py",
+            "line": 593,
+            "name": "begin_frame_prefetch",
+            "calls": 30,
+            "self_ms": 12.738800000000001,
+            "inclusive_ms": 176.51170000000002
+          },
+          {
+            "file": "D:\\python3.12.10\\Lib\\copy.py",
+            "line": 217,
+            "name": "_deepcopy_dict",
+            "calls": 5820,
+            "self_ms": 11.117400000000002,
+            "inclusive_ms": 60.6998
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<built-in method _struct.unpack_from>",
+            "calls": 119010,
+            "self_ms": 10.493300000000001,
+            "inclusive_ms": 10.493300000000001
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 764,
+            "name": "_invalidate_read_dependencies",
+            "calls": 2250,
+            "self_ms": 8.3038,
+            "inclusive_ms": 14.795000000000002
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\memcore.py",
+            "line": 1078,
+            "name": "_encode_operations",
+            "calls": 60,
+            "self_ms": 8.299100000000001,
+            "inclusive_ms": 12.8023
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<method 'startswith' of 'str' objects>",
+            "calls": 65820,
+            "self_ms": 8.225,
+            "inclusive_ms": 8.225
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<built-in method builtins.len>",
+            "calls": 148230,
+            "self_ms": 8.159300000000002,
+            "inclusive_ms": 8.159300000000002
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 4648,
+            "name": "_refresh_runtime_chan",
+            "calls": 30,
+            "self_ms": 7.2347,
+            "inclusive_ms": 36.6352
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<method 'append' of 'list' objects>",
+            "calls": 84600,
+            "self_ms": 6.6847,
+            "inclusive_ms": 6.6847
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 3131,
+            "name": "_decode_short_array",
+            "calls": 1200,
+            "self_ms": 6.6325,
+            "inclusive_ms": 11.490200000000002
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<built-in method builtins.all>",
+            "calls": 32760,
+            "self_ms": 6.420700000000001,
+            "inclusive_ms": 13.5615
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\backend\\desktop_app.py",
+            "line": 1484,
+            "name": "_collect_complete_snapshot",
+            "calls": 30,
+            "self_ms": 6.346500000000001,
+            "inclusive_ms": 955.7747
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 877,
+            "name": "<genexpr>",
+            "calls": 61860,
+            "self_ms": 6.1013,
+            "inclusive_ms": 6.1013
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\memcore.py",
+            "line": 936,
+            "name": "_read_packed_response",
+            "calls": 120,
+            "self_ms": 5.7085,
+            "inclusive_ms": 120.5514
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<built-in method builtins.any>",
+            "calls": 7290,
+            "self_ms": 4.8487,
+            "inclusive_ms": 17.160500000000003
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\character_status\\character_reader.py",
+            "line": 295,
+            "name": "_stamp_fields",
+            "calls": 60,
+            "self_ms": 4.7066,
+            "inclusive_ms": 12.281500000000001
+          }
+        ],
+        "profile_inclusive": [
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\backend\\desktop_app.py",
+            "line": 1484,
+            "name": "_collect_complete_snapshot",
+            "calls": 30,
+            "self_ms": 6.346500000000001,
+            "inclusive_ms": 955.7747
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 4586,
+            "name": "poll_fast",
+            "calls": 30,
+            "self_ms": 0.26010000000000005,
+            "inclusive_ms": 593.6002
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 5416,
+            "name": "_poll_fast_impl",
+            "calls": 30,
+            "self_ms": 4.463900000000001,
+            "inclusive_ms": 593.2246
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 790,
+            "name": "_stamp_fields",
+            "calls": 2190,
+            "self_ms": 154.6796,
+            "inclusive_ms": 461.33610000000004
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 666,
+            "name": "_collect",
+            "calls": 287460,
+            "self_ms": 83.2269,
+            "inclusive_ms": 230.99670000000003
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\memcore.py",
+            "line": 582,
+            "name": "_read_exact",
+            "calls": 450,
+            "self_ms": 0.9053000000000001,
+            "inclusive_ms": 179.0131
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<method 'recv' of '_socket.socket' objects>",
+            "calls": 450,
+            "self_ms": 177.9737,
+            "inclusive_ms": 177.9737
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\memcore.py",
+            "line": 593,
+            "name": "begin_frame_prefetch",
+            "calls": 30,
+            "self_ms": 12.738800000000001,
+            "inclusive_ms": 176.51170000000002
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\memcore.py",
+            "line": 1219,
+            "name": "execute_frame_plan",
+            "calls": 30,
+            "self_ms": 1.5017,
+            "inclusive_ms": 157.4884
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\memcore.py",
+            "line": 936,
+            "name": "_read_packed_response",
+            "calls": 120,
+            "self_ms": 5.7085,
+            "inclusive_ms": 120.5514
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\reader.py",
+            "line": 498,
+            "name": "sample_optional",
+            "calls": 30,
+            "self_ms": 0.07160000000000001,
+            "inclusive_ms": 118.9865
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\reader.py",
+            "line": 443,
+            "name": "sample",
+            "calls": 30,
+            "self_ms": 0.038400000000000004,
+            "inclusive_ms": 118.6033
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\profiling.py",
+            "line": 19,
+            "name": "call",
+            "calls": 330,
+            "self_ms": 0.18130000000000002,
+            "inclusive_ms": 118.5578
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\reader.py",
+            "line": 445,
+            "name": "<lambda>",
+            "calls": 30,
+            "self_ms": 0.0528,
+            "inclusive_ms": 118.53970000000001
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\reader.py",
+            "line": 515,
+            "name": "_sample",
+            "calls": 30,
+            "self_ms": 0.7281000000000001,
+            "inclusive_ms": 118.4869
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<built-in method builtins.getattr>",
+            "calls": 609960,
+            "self_ms": 107.6388,
+            "inclusive_ms": 107.6435
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\reader.py",
+            "line": 562,
+            "name": "capture",
+            "calls": 270,
+            "self_ms": 0.3078,
+            "inclusive_ms": 83.74480000000001
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\field_policy.py",
+            "line": 336,
+            "name": "enabled",
+            "calls": 298500,
+            "self_ms": 48.12370000000001,
+            "inclusive_ms": 64.2228
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\reader.py",
+            "line": 654,
+            "name": "<lambda>",
+            "calls": 30,
+            "self_ms": 0.0233,
+            "inclusive_ms": 62.9797
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\reader.py",
+            "line": 310,
+            "name": "_read_base",
+            "calls": 30,
+            "self_ms": 0.213,
+            "inclusive_ms": 62.95640000000001
+          },
+          {
+            "file": "D:\\python3.12.10\\Lib\\copy.py",
+            "line": 118,
+            "name": "deepcopy",
+            "calls": 67050,
+            "self_ms": 30.073700000000002,
+            "inclusive_ms": 60.770500000000006
+          },
+          {
+            "file": "D:\\python3.12.10\\Lib\\copy.py",
+            "line": 217,
+            "name": "_deepcopy_dict",
+            "calls": 5820,
+            "self_ms": 11.117400000000002,
+            "inclusive_ms": 60.6998
+          },
+          {
+            "file": "D:\\python3.12.10\\Lib\\copy.py",
+            "line": 191,
+            "name": "_deepcopy_list",
+            "calls": 270,
+            "self_ms": 0.7403000000000001,
+            "inclusive_ms": 60.0274
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\character_status\\character_reader.py",
+            "line": 1928,
+            "name": "poll_fast",
+            "calls": 30,
+            "self_ms": 1.0314,
+            "inclusive_ms": 42.805800000000005
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 5359,
+            "name": "_refresh_pathing_chan",
+            "calls": 30,
+            "self_ms": 0.4348000000000001,
+            "inclusive_ms": 41.645
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 4648,
+            "name": "_refresh_runtime_chan",
+            "calls": 30,
+            "self_ms": 7.2347,
+            "inclusive_ms": 36.6352
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\optional_memory.py",
+            "line": 50,
+            "name": "read_many",
+            "calls": 2100,
+            "self_ms": 4.448,
+            "inclusive_ms": 35.7957
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\reader.py",
+            "line": 673,
+            "name": "<lambda>",
+            "calls": 30,
+            "self_ms": 0.0826,
+            "inclusive_ms": 32.2355
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\wave_state.py",
+            "line": 199,
+            "name": "sample",
+            "calls": 30,
+            "self_ms": 0.7372000000000001,
+            "inclusive_ms": 32.1529
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<method 'get' of 'dict' objects>",
+            "calls": 354002,
+            "self_ms": 30.460800000000003,
+            "inclusive_ms": 30.460800000000003
+          }
+        ],
+        "read_accounting": {
+          "transport.coordinated_exec.calls": 20,
+          "transport.coordinated_exec.attempts": 20,
+          "transport.coordinated_exec.cross_frame": 0,
+          "core.plan_hit.calls": 740,
+          "core.plan_hit.requests": 5340,
+          "core.plan_hit.bytes": 772400,
+          "core.plan_miss.calls": 740,
+          "transport.guarded.calls": 20,
+          "transport.guarded.attempts": 20,
+          "transport.guarded.cross_frame": 0,
+          "core.plan_hit.batch_duplicates": 120,
+          "core.plan_hit.round_repeats": 5079,
+          "optional.plan_miss.calls": 1260,
+          "optional.plan_hit.calls": 1260,
+          "optional.plan_hit.requests": 6960,
+          "optional.plan_hit.bytes": 415200,
+          "optional.plan_hit.round_repeats": 6621,
+          "optional.structural.calls": 20,
+          "optional.structural.requests": 380,
+          "optional.structural.bytes": 9280,
+          "core.force_live.calls": 20,
+          "core.force_live.requests": 380,
+          "core.force_live.bytes": 9280,
+          "optional.structural.round_repeats": 361,
+          "core.force_live.round_repeats": 361
+        }
+      },
+      {
+        "precise_position": false,
+        "frame": 466,
+        "paused": true,
+        "accepted": 80,
+        "active_enemies": 6,
+        "characters": 2,
+        "total_ms": {
+          "n": 80,
+          "mean": 18.142567500763107,
+          "p50": 13.783049998892238,
+          "p95": 57.12330000096699
+        },
+        "phases_ms": {
+          "enemy": {
+            "n": 80,
+            "mean": 12.845556249703804,
+            "p50": 8.826450000924524,
+            "p95": 50.716099998680875
+          },
+          "character": {
+            "n": 80,
+            "mean": 0.7827750004253176,
+            "p50": 0.6456500050262548,
+            "p95": 1.0968999995384365
+          },
+          "runtime": {
+            "n": 80,
+            "mean": 0.02845999970304547,
+            "p50": 0.026350004191044718,
+            "p95": 0.04610000178217888
+          },
+          "optional": {
+            "n": 80,
+            "mean": 1.6748262508372136,
+            "p50": 1.3735500033362769,
+            "p95": 3.558700002031401
+          }
+        },
+        "io": {
+          "batches": {
+            "n": 80,
+            "mean": 3,
+            "p50": 3.0,
+            "p95": 3
+          },
+          "requests": {
+            "n": 80,
+            "mean": 746,
+            "p50": 746.0,
+            "p95": 746
+          },
+          "requested_bytes": {
+            "n": 80,
+            "mean": 89464,
+            "p50": 89464.0,
+            "p95": 89464
+          },
+          "returned_bytes": {
+            "n": 80,
+            "mean": 77128,
+            "p50": 77128.0,
+            "p95": 77128
+          },
+          "io_ms": {
+            "n": 80,
+            "mean": 7.538672500686516,
+            "p50": 3.277949999755947,
+            "p95": 45.719999994616956
+          },
+          "max_batch_ms": {
+            "n": 80,
+            "mean": 5.840557500323484,
+            "p50": 1.9352499984961469,
+            "p95": 42.545500000414904
+          }
+        },
+        "profile_self": [
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<method 'recv' of '_socket.socket' objects>",
+            "calls": 450,
+            "self_ms": 226.0378,
+            "inclusive_ms": 226.0378
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 790,
+            "name": "_stamp_fields",
+            "calls": 2190,
+            "self_ms": 155.9753,
+            "inclusive_ms": 463.34630000000004
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<built-in method builtins.getattr>",
+            "calls": 609960,
+            "self_ms": 107.855,
+            "inclusive_ms": 107.86000000000001
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 666,
+            "name": "_collect",
+            "calls": 287460,
+            "self_ms": 83.257,
+            "inclusive_ms": 231.06690000000003
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\field_policy.py",
+            "line": 336,
+            "name": "enabled",
+            "calls": 298500,
+            "self_ms": 48.1812,
+            "inclusive_ms": 64.3382
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<method 'get' of 'dict' objects>",
+            "calls": 355082,
+            "self_ms": 30.958700000000004,
+            "inclusive_ms": 30.958700000000004
+          },
+          {
+            "file": "D:\\python3.12.10\\Lib\\copy.py",
+            "line": 118,
+            "name": "deepcopy",
+            "calls": 67050,
+            "self_ms": 30.235400000000002,
+            "inclusive_ms": 61.2963
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\field_policy.py",
+            "line": 554,
+            "name": "collection_record",
+            "calls": 151290,
+            "self_ms": 23.628100000000003,
+            "inclusive_ms": 23.628100000000003
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<method 'split' of 'str' objects>",
+            "calls": 151290,
+            "self_ms": 20.1817,
+            "inclusive_ms": 20.1817
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\memcore.py",
+            "line": 593,
+            "name": "begin_frame_prefetch",
+            "calls": 30,
+            "self_ms": 14.5062,
+            "inclusive_ms": 100.2561
+          },
+          {
+            "file": "D:\\python3.12.10\\Lib\\copy.py",
+            "line": 217,
+            "name": "_deepcopy_dict",
+            "calls": 5820,
+            "self_ms": 11.343200000000001,
+            "inclusive_ms": 61.226400000000005
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<built-in method _struct.unpack_from>",
+            "calls": 120270,
+            "self_ms": 10.165700000000001,
+            "inclusive_ms": 10.165700000000001
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\memcore.py",
+            "line": 1078,
+            "name": "_encode_operations",
+            "calls": 60,
+            "self_ms": 8.625800000000002,
+            "inclusive_ms": 13.2522
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<built-in method builtins.len>",
+            "calls": 154680,
+            "self_ms": 8.594100000000001,
+            "inclusive_ms": 8.594100000000001
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 764,
+            "name": "_invalidate_read_dependencies",
+            "calls": 2250,
+            "self_ms": 8.4038,
+            "inclusive_ms": 14.8953
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<method 'startswith' of 'str' objects>",
+            "calls": 65820,
+            "self_ms": 8.3844,
+            "inclusive_ms": 8.3844
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\backend\\desktop_app.py",
+            "line": 1484,
+            "name": "_collect_complete_snapshot",
+            "calls": 30,
+            "self_ms": 7.4018,
+            "inclusive_ms": 1012.3907
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 4648,
+            "name": "_refresh_runtime_chan",
+            "calls": 30,
+            "self_ms": 7.135600000000001,
+            "inclusive_ms": 36.03960000000001
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<method 'append' of 'list' objects>",
+            "calls": 86040,
+            "self_ms": 6.8993,
+            "inclusive_ms": 6.8993
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 3131,
+            "name": "_decode_short_array",
+            "calls": 1200,
+            "self_ms": 6.562,
+            "inclusive_ms": 11.3054
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<built-in method builtins.all>",
+            "calls": 32760,
+            "self_ms": 6.4291,
+            "inclusive_ms": 13.6117
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 877,
+            "name": "<genexpr>",
+            "calls": 61860,
+            "self_ms": 6.1395,
+            "inclusive_ms": 6.1395
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\memcore.py",
+            "line": 936,
+            "name": "_read_packed_response",
+            "calls": 120,
+            "self_ms": 5.8676,
+            "inclusive_ms": 166.321
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<built-in method builtins.any>",
+            "calls": 7290,
+            "self_ms": 4.9263,
+            "inclusive_ms": 17.616
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 2892,
+            "name": "_apply_cached_data",
+            "calls": 240,
+            "self_ms": 4.8389,
+            "inclusive_ms": 12.815800000000001
+          }
+        ],
+        "profile_inclusive": [
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\backend\\desktop_app.py",
+            "line": 1484,
+            "name": "_collect_complete_snapshot",
+            "calls": 30,
+            "self_ms": 7.4018,
+            "inclusive_ms": 1012.3907
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 4586,
+            "name": "poll_fast",
+            "calls": 30,
+            "self_ms": 0.2619,
+            "inclusive_ms": 720.5253
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 5416,
+            "name": "_poll_fast_impl",
+            "calls": 30,
+            "self_ms": 4.4633,
+            "inclusive_ms": 720.1395
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 790,
+            "name": "_stamp_fields",
+            "calls": 2190,
+            "self_ms": 155.9753,
+            "inclusive_ms": 463.34630000000004
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 666,
+            "name": "_collect",
+            "calls": 287460,
+            "self_ms": 83.257,
+            "inclusive_ms": 231.06690000000003
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\memcore.py",
+            "line": 582,
+            "name": "_read_exact",
+            "calls": 450,
+            "self_ms": 0.9420000000000001,
+            "inclusive_ms": 227.11460000000002
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<method 'recv' of '_socket.socket' objects>",
+            "calls": 450,
+            "self_ms": 226.0378,
+            "inclusive_ms": 226.0378
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 5359,
+            "name": "_refresh_pathing_chan",
+            "calls": 30,
+            "self_ms": 0.42490000000000006,
+            "inclusive_ms": 167.98980000000003
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\memcore.py",
+            "line": 936,
+            "name": "_read_packed_response",
+            "calls": 120,
+            "self_ms": 5.8676,
+            "inclusive_ms": 166.321
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\memcore.py",
+            "line": 1006,
+            "name": "guarded_transaction_read",
+            "calls": 30,
+            "self_ms": 0.6187,
+            "inclusive_ms": 156.00740000000002
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\reader.py",
+            "line": 498,
+            "name": "sample_optional",
+            "calls": 30,
+            "self_ms": 0.0763,
+            "inclusive_ms": 121.35630000000002
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\reader.py",
+            "line": 443,
+            "name": "sample",
+            "calls": 30,
+            "self_ms": 0.0425,
+            "inclusive_ms": 120.93220000000001
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\profiling.py",
+            "line": 19,
+            "name": "call",
+            "calls": 330,
+            "self_ms": 0.1902,
+            "inclusive_ms": 120.88310000000001
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\reader.py",
+            "line": 445,
+            "name": "<lambda>",
+            "calls": 30,
+            "self_ms": 0.0539,
+            "inclusive_ms": 120.8651
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\reader.py",
+            "line": 515,
+            "name": "_sample",
+            "calls": 30,
+            "self_ms": 0.7574000000000001,
+            "inclusive_ms": 120.81120000000001
+          },
+          {
+            "file": "~",
+            "line": 0,
+            "name": "<built-in method builtins.getattr>",
+            "calls": 609960,
+            "self_ms": 107.855,
+            "inclusive_ms": 107.86000000000001
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\memcore.py",
+            "line": 593,
+            "name": "begin_frame_prefetch",
+            "calls": 30,
+            "self_ms": 14.5062,
+            "inclusive_ms": 100.2561
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\reader.py",
+            "line": 562,
+            "name": "capture",
+            "calls": 270,
+            "self_ms": 0.3068,
+            "inclusive_ms": 84.7368
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\memcore.py",
+            "line": 1219,
+            "name": "execute_frame_plan",
+            "calls": 30,
+            "self_ms": 1.6476000000000002,
+            "inclusive_ms": 78.639
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\field_policy.py",
+            "line": 336,
+            "name": "enabled",
+            "calls": 298500,
+            "self_ms": 48.1812,
+            "inclusive_ms": 64.3382
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\reader.py",
+            "line": 654,
+            "name": "<lambda>",
+            "calls": 30,
+            "self_ms": 0.025300000000000003,
+            "inclusive_ms": 63.598
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\reader.py",
+            "line": 310,
+            "name": "_read_base",
+            "calls": 30,
+            "self_ms": 0.23180000000000003,
+            "inclusive_ms": 63.57270000000001
+          },
+          {
+            "file": "D:\\python3.12.10\\Lib\\copy.py",
+            "line": 118,
+            "name": "deepcopy",
+            "calls": 67050,
+            "self_ms": 30.235400000000002,
+            "inclusive_ms": 61.2963
+          },
+          {
+            "file": "D:\\python3.12.10\\Lib\\copy.py",
+            "line": 217,
+            "name": "_deepcopy_dict",
+            "calls": 5820,
+            "self_ms": 11.343200000000001,
+            "inclusive_ms": 61.226400000000005
+          },
+          {
+            "file": "D:\\python3.12.10\\Lib\\copy.py",
+            "line": 191,
+            "name": "_deepcopy_list",
+            "calls": 270,
+            "self_ms": 0.7617,
+            "inclusive_ms": 60.5367
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\character_status\\character_reader.py",
+            "line": 1928,
+            "name": "poll_fast",
+            "calls": 30,
+            "self_ms": 1.0567,
+            "inclusive_ms": 44.447100000000006
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\optional_memory.py",
+            "line": 50,
+            "name": "read_many",
+            "calls": 2100,
+            "self_ms": 4.6388,
+            "inclusive_ms": 37.193799999999996
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\enemy_health\\enemy_reader.py",
+            "line": 4648,
+            "name": "_refresh_runtime_chan",
+            "calls": 30,
+            "self_ms": 7.135600000000001,
+            "inclusive_ms": 36.03960000000001
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\reader.py",
+            "line": 673,
+            "name": "<lambda>",
+            "calls": 30,
+            "self_ms": 0.0875,
+            "inclusive_ms": 33.4476
+          },
+          {
+            "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\wave_state.py",
+            "line": 199,
+            "name": "sample",
+            "calls": 30,
+            "self_ms": 0.7541000000000001,
+            "inclusive_ms": 33.3601
+          }
+        ],
+        "read_accounting": {
+          "transport.coordinated_exec.calls": 20,
+          "transport.coordinated_exec.attempts": 20,
+          "transport.coordinated_exec.cross_frame": 0,
+          "core.plan_hit.calls": 720,
+          "core.plan_hit.requests": 5220,
+          "core.plan_hit.bytes": 771440,
+          "core.plan_miss.calls": 720,
+          "transport.guarded.calls": 20,
+          "transport.guarded.attempts": 20,
+          "transport.guarded.cross_frame": 0,
+          "core.plan_hit.batch_duplicates": 120,
+          "core.plan_hit.round_repeats": 4965,
+          "optional.plan_miss.calls": 1260,
+          "optional.plan_hit.calls": 1260,
+          "optional.plan_hit.requests": 6960,
+          "optional.plan_hit.bytes": 415200,
+          "optional.plan_hit.round_repeats": 6621,
+          "optional.structural.calls": 20,
+          "optional.structural.requests": 380,
+          "optional.structural.bytes": 9280,
+          "core.force_live.calls": 20,
+          "core.force_live.requests": 380,
+          "core.force_live.bytes": 9280,
+          "optional.structural.round_repeats": 361,
+          "core.force_live.round_repeats": 361
+        }
+      }
+    ],
+    "cold_core_seconds": 24.205522199998086,
+    "cold_global_seconds": 18.156286999997974
+  },
+  "presentation_baseline": {
+    "source": "D:\\Arknights\\Arknights_timer",
+    "tag": "baseline",
+    "frame": 466,
+    "paused": true,
+    "roster": 73,
+    "characters": 2,
+    "method": "Replay real accepted paused snapshot; offscreen Qt mutations/event processing; browser paint and device IO excluded.",
+    "cases": [
+      {
+        "desktop_and_web": false,
+        "total_ms": {
+          "n": 60,
+          "mean": 17.852363332834404,
+          "p50": 15.84194999668398,
+          "p95": 31.634399994800333
+        },
+        "inclusive_phases_ms": {
+          "publish_runtime": {
+            "n": 70,
+            "mean": 13.262842857303829,
+            "p50": 11.414100001275074,
+            "p95": 26.995100000931416
+          },
+          "publish_global": {
+            "n": 70,
+            "mean": 3.500692856843151,
+            "p50": 3.4018999976979103,
+            "p95": 3.7793000010424294
+          },
+          "qt_enemy_table": {
+            "n": 70,
+            "mean": 2.0427385716175195,
+            "p50": 0.844000001961831,
+            "p95": 1.0511000000406057
+          },
+          "qt_character_table": {
+            "n": 70,
+            "mean": 0.1322685719060246,
+            "p50": 0.0978499992925208,
+            "p95": 0.16700000560376793
+          },
+          "qt_snapshot": {
+            "n": 70,
+            "mean": 19.07347000025246,
+            "p50": 15.819449999980861,
+            "p95": 31.867400000919588
+          }
+        }
+      },
+      {
+        "desktop_and_web": true,
+        "total_ms": {
+          "n": 60,
+          "mean": 27.974221666712157,
+          "p50": 25.839750003797235,
+          "p95": 43.297999996866565
+        },
+        "inclusive_phases_ms": {
+          "publish_runtime": {
+            "n": 70,
+            "mean": 13.732678571146348,
+            "p50": 12.123599997721612,
+            "p95": 27.994800002488773
+          },
+          "publish_global": {
+            "n": 70,
+            "mean": 3.8360857142833993,
+            "p50": 3.4841000015148893,
+            "p95": 5.166700000700075
+          },
+          "qt_enemy_table": {
+            "n": 70,
+            "mean": 1.0273028570476785,
+            "p50": 1.0103499989781994,
+            "p95": 1.3106999977026135
+          },
+          "qt_character_table": {
+            "n": 70,
+            "mean": 0.12193142881317597,
+            "p50": 0.11445000200183131,
+            "p95": 0.16509999841218814
+          },
+          "qt_snapshot": {
+            "n": 70,
+            "mean": 18.880488571656834,
+            "p50": 17.063600000255974,
+            "p95": 33.373300000675954
+          },
+          "webui_refresh": {
+            "n": 70,
+            "mean": 8.555835714443154,
+            "p50": 8.424150000791997,
+            "p95": 9.659299998020288
+          }
+        }
+      }
+    ],
+    "profile_self": [
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\services\\websocket_api.py",
+        "line": 73,
+        "name": "_safe",
+        "calls": 1076775,
+        "self_ms": 374.40330000000006,
+        "inclusive_ms": 383.83540000000005
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\services\\websocket_api.py",
+        "line": 411,
+        "name": "_mask_unavailable",
+        "calls": 2310,
+        "self_ms": 121.04220000000001,
+        "inclusive_ms": 261.6037
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\contracts\\__init__.py",
+        "line": 87,
+        "name": "_public",
+        "calls": 81105,
+        "self_ms": 97.0644,
+        "inclusive_ms": 172.7373
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<method 'get' of 'dict' objects>",
+        "calls": 663239,
+        "self_ms": 69.4242,
+        "inclusive_ms": 69.4242
+      },
+      {
+        "file": "D:\\python3.12.10\\Lib\\json\\encoder.py",
+        "line": 205,
+        "name": "iterencode",
+        "calls": 300,
+        "self_ms": 69.3151,
+        "inclusive_ms": 69.3151
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\services\\websocket_api.py",
+        "line": 425,
+        "name": "remove",
+        "calls": 237525,
+        "self_ms": 54.43260000000001,
+        "inclusive_ms": 72.80650000000001
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\services\\webui_runtime.py",
+        "line": 228,
+        "name": "_refresh",
+        "calls": 15,
+        "self_ms": 46.7237,
+        "inclusive_ms": 226.53140000000002
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<built-in method builtins.isinstance>",
+        "calls": 396030,
+        "self_ms": 24.564600000000002,
+        "inclusive_ms": 25.4208
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<method 'split' of 'str' objects>",
+        "calls": 171300,
+        "self_ms": 23.8995,
+        "inclusive_ms": 23.8995
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<method 'startswith' of 'str' objects>",
+        "calls": 175710,
+        "self_ms": 22.0059,
+        "inclusive_ms": 22.0059
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\field_policy.py",
+        "line": 336,
+        "name": "enabled",
+        "calls": 118515,
+        "self_ms": 18.629700000000003,
+        "inclusive_ms": 24.7549
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\field_policy.py",
+        "line": 485,
+        "name": "_copy_without_paths",
+        "calls": 9480,
+        "self_ms": 17.9035,
+        "inclusive_ms": 25.873
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\contracts\\__init__.py",
+        "line": 60,
+        "name": "_resolve",
+        "calls": 92490,
+        "self_ms": 16.919200000000004,
+        "inclusive_ms": 26.506600000000002
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<built-in method builtins.getattr>",
+        "calls": 242646,
+        "self_ms": 16.8267,
+        "inclusive_ms": 16.8267
+      },
+      {
+        "file": "D:\\python3.12.10\\Lib\\copy.py",
+        "line": 118,
+        "name": "deepcopy",
+        "calls": 22140,
+        "self_ms": 11.5946,
+        "inclusive_ms": 23.5789
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<method 'items' of 'dict' objects>",
+        "calls": 130635,
+        "self_ms": 9.887500000000001,
+        "inclusive_ms": 9.887500000000001
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\services\\websocket_api.py",
+        "line": 242,
+        "name": "_enemy_basic",
+        "calls": 1095,
+        "self_ms": 9.7603,
+        "inclusive_ms": 66.655
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<method 'get' of 'mappingproxy' objects>",
+        "calls": 93645,
+        "self_ms": 9.7589,
+        "inclusive_ms": 9.7589
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\services\\webui_stream.py",
+        "line": 22,
+        "name": "publish",
+        "calls": 210,
+        "self_ms": 9.2908,
+        "inclusive_ms": 90.3656
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<method 'encode' of 'str' objects>",
+        "calls": 105,
+        "self_ms": 6.212300000000001,
+        "inclusive_ms": 6.212300000000001
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<built-in method builtins.len>",
+        "calls": 102273,
+        "self_ms": 6.212000000000001,
+        "inclusive_ms": 6.212000000000001
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\services\\websocket_api.py",
+        "line": 418,
+        "name": "writable",
+        "calls": 27975,
+        "self_ms": 6.0935,
+        "inclusive_ms": 8.2819
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<built-in method builtins.any>",
+        "calls": 14385,
+        "self_ms": 5.609800000000001,
+        "inclusive_ms": 9.8411
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<method 'isdecimal' of 'str' objects>",
+        "calls": 68340,
+        "self_ms": 4.9965,
+        "inclusive_ms": 4.9965
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\field_policy.py",
+        "line": 528,
+        "name": "project_snapshot",
+        "calls": 6915,
+        "self_ms": 4.4939,
+        "inclusive_ms": 31.3038
+      }
+    ],
+    "profile_inclusive": [
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\tools\\stage_global_state\\profiling.py",
+        "line": 19,
+        "name": "call",
+        "calls": 90,
+        "self_ms": 0.2763,
+        "inclusive_ms": 1161.5355
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\desktop_app.py",
+        "line": 5962,
+        "name": "_on_enemy_snapshot",
+        "calls": 15,
+        "self_ms": 0.0458,
+        "inclusive_ms": 934.9737
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\desktop_app.py",
+        "line": 5964,
+        "name": "<lambda>",
+        "calls": 15,
+        "self_ms": 0.048900000000000006,
+        "inclusive_ms": 934.8758
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\desktop_app.py",
+        "line": 5968,
+        "name": "_apply_enemy_snapshot",
+        "calls": 15,
+        "self_ms": 0.8248000000000001,
+        "inclusive_ms": 934.8269
+      },
+      {
+        "file": "D:\\python3.12.10\\Lib\\selectors.py",
+        "line": 319,
+        "name": "select",
+        "calls": 2,
+        "self_ms": 0.007000000000000001,
+        "inclusive_ms": 824.6465000000001
+      },
+      {
+        "file": "D:\\python3.12.10\\Lib\\selectors.py",
+        "line": 313,
+        "name": "_select",
+        "calls": 2,
+        "self_ms": 0.14200000000000002,
+        "inclusive_ms": 824.6366
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\desktop_app.py",
+        "line": 5985,
+        "name": "<lambda>",
+        "calls": 15,
+        "self_ms": 1.5413000000000001,
+        "inclusive_ms": 665.0883000000001
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\services\\websocket_api.py",
+        "line": 1113,
+        "name": "publish_runtime",
+        "calls": 15,
+        "self_ms": 2.2560000000000002,
+        "inclusive_ms": 663.547
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\services\\websocket_api.py",
+        "line": 1353,
+        "name": "_publish",
+        "calls": 120,
+        "self_ms": 2.0834,
+        "inclusive_ms": 607.1243000000001
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\services\\websocket_api.py",
+        "line": 73,
+        "name": "_safe",
+        "calls": 1076775,
+        "self_ms": 374.40330000000006,
+        "inclusive_ms": 383.83540000000005
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\services\\websocket_api.py",
+        "line": 640,
+        "name": "_project_topic",
+        "calls": 345,
+        "self_ms": 3.4387000000000003,
+        "inclusive_ms": 297.18340000000006
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\services\\websocket_api.py",
+        "line": 411,
+        "name": "_mask_unavailable",
+        "calls": 2310,
+        "self_ms": 121.04220000000001,
+        "inclusive_ms": 261.6037
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\desktop_app.py",
+        "line": 5986,
+        "name": "<lambda>",
+        "calls": 15,
+        "self_ms": 0.3815,
+        "inclusive_ms": 242.12160000000003
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\services\\websocket_api.py",
+        "line": 1082,
+        "name": "publish_stage_global",
+        "calls": 15,
+        "self_ms": 0.552,
+        "inclusive_ms": 241.7401
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\services\\webui_runtime.py",
+        "line": 222,
+        "name": "refresh",
+        "calls": 15,
+        "self_ms": 0.039700000000000006,
+        "inclusive_ms": 226.69180000000003
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\services\\webui_runtime.py",
+        "line": 228,
+        "name": "_refresh",
+        "calls": 15,
+        "self_ms": 46.7237,
+        "inclusive_ms": 226.53140000000002
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\contracts\\__init__.py",
+        "line": 142,
+        "name": "public_contract_value",
+        "calls": 480,
+        "self_ms": 1.0751000000000002,
+        "inclusive_ms": 175.8085
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\contracts\\__init__.py",
+        "line": 87,
+        "name": "_public",
+        "calls": 81105,
+        "self_ms": 97.0644,
+        "inclusive_ms": 172.7373
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\services\\websocket_api.py",
+        "line": 678,
+        "name": "publish_fields",
+        "calls": 15,
+        "self_ms": 0.28850000000000003,
+        "inclusive_ms": 133.45170000000002
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\services\\websocket_api.py",
+        "line": 721,
+        "name": "_publish_stage_fields",
+        "calls": 15,
+        "self_ms": 2.4655,
+        "inclusive_ms": 133.16320000000002
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\services\\stage_global_state.py",
+        "line": 54,
+        "name": "build",
+        "calls": 15,
+        "self_ms": 1.5025000000000002,
+        "inclusive_ms": 107.4829
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\services\\webui_stream.py",
+        "line": 22,
+        "name": "publish",
+        "calls": 210,
+        "self_ms": 9.2908,
+        "inclusive_ms": 90.3656
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\services\\websocket_api.py",
+        "line": 425,
+        "name": "remove",
+        "calls": 237525,
+        "self_ms": 54.43260000000001,
+        "inclusive_ms": 72.80650000000001
+      },
+      {
+        "file": "D:\\python3.12.10\\Lib\\json\\__init__.py",
+        "line": 183,
+        "name": "dumps",
+        "calls": 315,
+        "self_ms": 0.4528,
+        "inclusive_ms": 70.3884
+      },
+      {
+        "file": "D:\\python3.12.10\\Lib\\json\\encoder.py",
+        "line": 183,
+        "name": "encode",
+        "calls": 315,
+        "self_ms": 0.37450000000000006,
+        "inclusive_ms": 69.8386
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<method 'get' of 'dict' objects>",
+        "calls": 663239,
+        "self_ms": 69.4242,
+        "inclusive_ms": 69.4242
+      },
+      {
+        "file": "D:\\python3.12.10\\Lib\\json\\encoder.py",
+        "line": 205,
+        "name": "iterencode",
+        "calls": 300,
+        "self_ms": 69.3151,
+        "inclusive_ms": 69.3151
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\services\\websocket_api.py",
+        "line": 242,
+        "name": "_enemy_basic",
+        "calls": 1095,
+        "self_ms": 9.7603,
+        "inclusive_ms": 66.655
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\field_policy.py",
+        "line": 528,
+        "name": "project_snapshot",
+        "calls": 6915,
+        "self_ms": 4.4939,
+        "inclusive_ms": 31.3038
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\contracts\\__init__.py",
+        "line": 60,
+        "name": "_resolve",
+        "calls": 92490,
+        "self_ms": 16.919200000000004,
+        "inclusive_ms": 26.506600000000002
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\field_policy.py",
+        "line": 485,
+        "name": "_copy_without_paths",
+        "calls": 9480,
+        "self_ms": 17.9035,
+        "inclusive_ms": 25.873
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<built-in method builtins.isinstance>",
+        "calls": 396030,
+        "self_ms": 24.564600000000002,
+        "inclusive_ms": 25.4208
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\backend\\app\\field_policy.py",
+        "line": 336,
+        "name": "enabled",
+        "calls": 118515,
+        "self_ms": 18.629700000000003,
+        "inclusive_ms": 24.7549
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<method 'split' of 'str' objects>",
+        "calls": 171300,
+        "self_ms": 23.8995,
+        "inclusive_ms": 23.8995
+      },
+      {
+        "file": "D:\\python3.12.10\\Lib\\copy.py",
+        "line": 118,
+        "name": "deepcopy",
+        "calls": 22140,
+        "self_ms": 11.5946,
+        "inclusive_ms": 23.5789
+      }
+    ]
+  },
+  "presentation_shared": {
+    "source": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6",
+    "tag": "shared",
+    "frame": 466,
+    "paused": true,
+    "roster": 73,
+    "characters": 2,
+    "method": "Replay real accepted paused snapshot; offscreen Qt mutations/event processing; browser paint and device IO excluded.",
+    "cases": [
+      {
+        "desktop_and_web": false,
+        "total_ms": {
+          "n": 60,
+          "mean": 18.126691666596646,
+          "p50": 15.823600002477178,
+          "p95": 31.88349999982165
+        },
+        "inclusive_phases_ms": {
+          "publish_runtime": {
+            "n": 70,
+            "mean": 13.290174285586025,
+            "p50": 11.21794999926351,
+            "p95": 26.651399995898828
+          },
+          "publish_global": {
+            "n": 70,
+            "mean": 3.497148571269853,
+            "p50": 3.3453500000177883,
+            "p95": 4.519299996900372
+          },
+          "qt_enemy_table": {
+            "n": 70,
+            "mean": 2.1695185713594713,
+            "p50": 0.8940500010794494,
+            "p95": 1.3623999984702095
+          },
+          "qt_character_table": {
+            "n": 70,
+            "mean": 0.13783000010464871,
+            "p50": 0.10085000030812807,
+            "p95": 0.16080000204965472
+          },
+          "qt_snapshot": {
+            "n": 70,
+            "mean": 19.245461428883054,
+            "p50": 15.746300003229408,
+            "p95": 31.82350000133738
+          }
+        }
+      },
+      {
+        "desktop_and_web": true,
+        "total_ms": {
+          "n": 60,
+          "mean": 29.55541000010271,
+          "p50": 27.94374999939464,
+          "p95": 44.26740000053542
+        },
+        "inclusive_phases_ms": {
+          "publish_runtime": {
+            "n": 70,
+            "mean": 14.006244285805483,
+            "p50": 12.483500002417713,
+            "p95": 29.379100000369363
+          },
+          "publish_global": {
+            "n": 70,
+            "mean": 3.8345999999104867,
+            "p50": 3.413300000829622,
+            "p95": 5.292499998176936
+          },
+          "qt_enemy_table": {
+            "n": 70,
+            "mean": 1.0659828575236523,
+            "p50": 1.0489000014786143,
+            "p95": 1.5061000012792647
+          },
+          "qt_character_table": {
+            "n": 70,
+            "mean": 0.1202442853744807,
+            "p50": 0.11174999963259324,
+            "p95": 0.1770999951986596
+          },
+          "qt_snapshot": {
+            "n": 70,
+            "mean": 19.2099242853666,
+            "p50": 17.502949998743134,
+            "p95": 34.16020000440767
+          },
+          "webui_refresh": {
+            "n": 70,
+            "mean": 9.717921428611069,
+            "p50": 9.506699996563839,
+            "p95": 12.260099996638019
+          }
+        }
+      }
+    ],
+    "profile_self": [
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\websocket_api.py",
+        "line": 73,
+        "name": "_safe",
+        "calls": 1076775,
+        "self_ms": 379.8455,
+        "inclusive_ms": 389.4435
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\websocket_api.py",
+        "line": 411,
+        "name": "_mask_unavailable",
+        "calls": 2310,
+        "self_ms": 138.50680000000003,
+        "inclusive_ms": 286.1698
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\contracts\\__init__.py",
+        "line": 87,
+        "name": "_public",
+        "calls": 81105,
+        "self_ms": 100.0575,
+        "inclusive_ms": 178.18630000000002
+      },
+      {
+        "file": "D:\\python3.12.10\\Lib\\json\\encoder.py",
+        "line": 205,
+        "name": "iterencode",
+        "calls": 300,
+        "self_ms": 78.7111,
+        "inclusive_ms": 78.7111
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<method 'get' of 'dict' objects>",
+        "calls": 663232,
+        "self_ms": 75.2708,
+        "inclusive_ms": 75.2708
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\websocket_api.py",
+        "line": 425,
+        "name": "remove",
+        "calls": 237525,
+        "self_ms": 56.900000000000006,
+        "inclusive_ms": 75.94350000000001
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\webui_runtime.py",
+        "line": 253,
+        "name": "_refresh",
+        "calls": 15,
+        "self_ms": 50.771,
+        "inclusive_ms": 251.67159999999998
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<built-in method builtins.isinstance>",
+        "calls": 396030,
+        "self_ms": 25.097300000000004,
+        "inclusive_ms": 25.992500000000003
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<method 'split' of 'str' objects>",
+        "calls": 171300,
+        "self_ms": 24.649400000000004,
+        "inclusive_ms": 24.649400000000004
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<method 'startswith' of 'str' objects>",
+        "calls": 175710,
+        "self_ms": 22.9219,
+        "inclusive_ms": 22.9219
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\field_policy.py",
+        "line": 485,
+        "name": "_copy_without_paths",
+        "calls": 9480,
+        "self_ms": 20.4111,
+        "inclusive_ms": 29.1783
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\field_policy.py",
+        "line": 336,
+        "name": "enabled",
+        "calls": 118515,
+        "self_ms": 19.7592,
+        "inclusive_ms": 26.378400000000003
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<built-in method builtins.getattr>",
+        "calls": 242644,
+        "self_ms": 18.5744,
+        "inclusive_ms": 18.5744
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\contracts\\__init__.py",
+        "line": 60,
+        "name": "_resolve",
+        "calls": 92490,
+        "self_ms": 17.485500000000002,
+        "inclusive_ms": 27.358200000000004
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\websocket_api.py",
+        "line": 1113,
+        "name": "publish_runtime",
+        "calls": 15,
+        "self_ms": 16.2813,
+        "inclusive_ms": 688.5479
+      },
+      {
+        "file": "D:\\python3.12.10\\Lib\\copy.py",
+        "line": 118,
+        "name": "deepcopy",
+        "calls": 22140,
+        "self_ms": 12.2108,
+        "inclusive_ms": 24.8617
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<method 'items' of 'dict' objects>",
+        "calls": 130635,
+        "self_ms": 10.1174,
+        "inclusive_ms": 10.1174
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<method 'get' of 'mappingproxy' objects>",
+        "calls": 93645,
+        "self_ms": 10.0493,
+        "inclusive_ms": 10.0493
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\webui_stream.py",
+        "line": 22,
+        "name": "publish",
+        "calls": 210,
+        "self_ms": 10.0462,
+        "inclusive_ms": 102.1406
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\websocket_api.py",
+        "line": 242,
+        "name": "_enemy_basic",
+        "calls": 1095,
+        "self_ms": 9.865300000000001,
+        "inclusive_ms": 66.99130000000001
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\enemy_ui.py",
+        "line": 528,
+        "name": "format_column_value",
+        "calls": 7185,
+        "self_ms": 7.1279,
+        "inclusive_ms": 17.8491
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\websocket_api.py",
+        "line": 418,
+        "name": "writable",
+        "calls": 27975,
+        "self_ms": 6.412800000000001,
+        "inclusive_ms": 8.687000000000001
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<built-in method builtins.len>",
+        "calls": 102272,
+        "self_ms": 6.3921,
+        "inclusive_ms": 6.3921
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<built-in method select.select>",
+        "calls": 1,
+        "self_ms": 6.1243,
+        "inclusive_ms": 6.1243
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<built-in method builtins.any>",
+        "calls": 14385,
+        "self_ms": 5.8055,
+        "inclusive_ms": 10.243400000000001
+      }
+    ],
+    "profile_inclusive": [
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\tools\\stage_global_state\\profiling.py",
+        "line": 19,
+        "name": "call",
+        "calls": 90,
+        "self_ms": 0.3254,
+        "inclusive_ms": 1230.0311000000002
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\desktop_app.py",
+        "line": 5923,
+        "name": "_on_enemy_snapshot",
+        "calls": 16,
+        "self_ms": 0.16690000000000002,
+        "inclusive_ms": 978.3156
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\desktop_app.py",
+        "line": 5925,
+        "name": "<lambda>",
+        "calls": 15,
+        "self_ms": 0.06440000000000001,
+        "inclusive_ms": 978.2136
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\desktop_app.py",
+        "line": 5929,
+        "name": "_apply_enemy_snapshot",
+        "calls": 15,
+        "self_ms": 1.0034,
+        "inclusive_ms": 978.0704000000001
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\desktop_app.py",
+        "line": 5946,
+        "name": "<lambda>",
+        "calls": 15,
+        "self_ms": 2.0585,
+        "inclusive_ms": 695.5357000000001
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\websocket_api.py",
+        "line": 1113,
+        "name": "publish_runtime",
+        "calls": 15,
+        "self_ms": 16.2813,
+        "inclusive_ms": 688.5479
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\websocket_api.py",
+        "line": 1353,
+        "name": "_publish",
+        "calls": 120,
+        "self_ms": 2.4068,
+        "inclusive_ms": 604.6935
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\websocket_api.py",
+        "line": 73,
+        "name": "_safe",
+        "calls": 1076775,
+        "self_ms": 379.8455,
+        "inclusive_ms": 389.4435
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\websocket_api.py",
+        "line": 640,
+        "name": "_project_topic",
+        "calls": 345,
+        "self_ms": 3.69,
+        "inclusive_ms": 312.8122
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\websocket_api.py",
+        "line": 411,
+        "name": "_mask_unavailable",
+        "calls": 2310,
+        "self_ms": 138.50680000000003,
+        "inclusive_ms": 286.1698
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\desktop_app.py",
+        "line": 5947,
+        "name": "<lambda>",
+        "calls": 15,
+        "self_ms": 0.5256,
+        "inclusive_ms": 253.08440000000004
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\websocket_api.py",
+        "line": 1082,
+        "name": "publish_stage_global",
+        "calls": 15,
+        "self_ms": 0.5944,
+        "inclusive_ms": 252.55880000000002
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\webui_runtime.py",
+        "line": 247,
+        "name": "refresh",
+        "calls": 15,
+        "self_ms": 0.048900000000000006,
+        "inclusive_ms": 251.85970000000003
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\webui_runtime.py",
+        "line": 253,
+        "name": "_refresh",
+        "calls": 15,
+        "self_ms": 50.771,
+        "inclusive_ms": 251.67159999999998
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\contracts\\__init__.py",
+        "line": 142,
+        "name": "public_contract_value",
+        "calls": 480,
+        "self_ms": 1.0449000000000002,
+        "inclusive_ms": 181.2204
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\contracts\\__init__.py",
+        "line": 87,
+        "name": "_public",
+        "calls": 81105,
+        "self_ms": 100.0575,
+        "inclusive_ms": 178.18630000000002
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\websocket_api.py",
+        "line": 678,
+        "name": "publish_fields",
+        "calls": 15,
+        "self_ms": 0.3619,
+        "inclusive_ms": 139.8716
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\websocket_api.py",
+        "line": 721,
+        "name": "_publish_stage_fields",
+        "calls": 15,
+        "self_ms": 2.5707,
+        "inclusive_ms": 139.5097
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\stage_global_state.py",
+        "line": 54,
+        "name": "build",
+        "calls": 15,
+        "self_ms": 1.6093000000000002,
+        "inclusive_ms": 111.8405
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\webui_stream.py",
+        "line": 22,
+        "name": "publish",
+        "calls": 210,
+        "self_ms": 10.0462,
+        "inclusive_ms": 102.1406
+      },
+      {
+        "file": "D:\\python3.12.10\\Lib\\json\\__init__.py",
+        "line": 183,
+        "name": "dumps",
+        "calls": 315,
+        "self_ms": 0.4519,
+        "inclusive_ms": 79.7493
+      },
+      {
+        "file": "D:\\python3.12.10\\Lib\\json\\encoder.py",
+        "line": 183,
+        "name": "encode",
+        "calls": 315,
+        "self_ms": 0.3502,
+        "inclusive_ms": 79.2043
+      },
+      {
+        "file": "D:\\python3.12.10\\Lib\\json\\encoder.py",
+        "line": 205,
+        "name": "iterencode",
+        "calls": 300,
+        "self_ms": 78.7111,
+        "inclusive_ms": 78.7111
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\websocket_api.py",
+        "line": 425,
+        "name": "remove",
+        "calls": 237525,
+        "self_ms": 56.900000000000006,
+        "inclusive_ms": 75.94350000000001
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<method 'get' of 'dict' objects>",
+        "calls": 663232,
+        "self_ms": 75.2708,
+        "inclusive_ms": 75.2708
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\websocket_api.py",
+        "line": 242,
+        "name": "_enemy_basic",
+        "calls": 1095,
+        "self_ms": 9.865300000000001,
+        "inclusive_ms": 66.99130000000001
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\field_policy.py",
+        "line": 528,
+        "name": "project_snapshot",
+        "calls": 6915,
+        "self_ms": 4.931700000000001,
+        "inclusive_ms": 35.107800000000005
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\field_policy.py",
+        "line": 485,
+        "name": "_copy_without_paths",
+        "calls": 9480,
+        "self_ms": 20.4111,
+        "inclusive_ms": 29.1783
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\contracts\\__init__.py",
+        "line": 60,
+        "name": "_resolve",
+        "calls": 92490,
+        "self_ms": 17.485500000000002,
+        "inclusive_ms": 27.358200000000004
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\field_policy.py",
+        "line": 336,
+        "name": "enabled",
+        "calls": 118515,
+        "self_ms": 19.7592,
+        "inclusive_ms": 26.378400000000003
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<built-in method builtins.isinstance>",
+        "calls": 396030,
+        "self_ms": 25.097300000000004,
+        "inclusive_ms": 25.992500000000003
+      },
+      {
+        "file": "D:\\python3.12.10\\Lib\\copy.py",
+        "line": 118,
+        "name": "deepcopy",
+        "calls": 22140,
+        "self_ms": 12.2108,
+        "inclusive_ms": 24.8617
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<method 'split' of 'str' objects>",
+        "calls": 171300,
+        "self_ms": 24.649400000000004,
+        "inclusive_ms": 24.649400000000004
+      },
+      {
+        "file": "D:\\Arknights\\Arknights_timer\\.cache\\audit\\pr6\\backend\\app\\services\\websocket_api.py",
+        "line": 564,
+        "name": "local_snapshot",
+        "calls": 15,
+        "self_ms": 0.101,
+        "inclusive_ms": 23.927300000000002
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "name": "<method 'startswith' of 'str' objects>",
+        "calls": 175710,
+        "self_ms": 22.9219,
+        "inclusive_ms": 22.9219
+      }
+    ]
+  },
+  "validation": {
+    "python_passed": 625,
+    "subtests_passed": 142,
+    "failed": 0,
+    "skipped": 0,
+    "warnings": "Two existing RNG probe return-value warnings.",
+    "final_nominal_detail_rate_targeted_tests": 4,
+    "webui_node_passed": 44,
+    "frontend_build": "Passed via standard dual-package build script.",
+    "ui": "Desktop Qt visibility/update flags stay true, two browsers keep two clock and two module streams, same reader/poll object; show-desktop causes no standby navigation.",
+    "native_protocol": "21-case test included in Python suite on explicit MuMu.",
+    "frozen_scan": {
+      "exe": "D:\\Arknights\\Arknights_timer\\.cache\\shared_webui_profile\\dist\\ArknightsTimeline_PR7_Shared.exe",
+      "sha256": "f8d5fc6c8bc536f32995d8d09c833584602f9550e986da727b3ec067ab0b67f8",
+      "adb": {
+        "path": "E:\\MuMu Player 12\\shell\\adb.exe",
+        "serial": "127.0.0.1:16384"
+      },
+      "enemy_status": "读取: 设备快照（memsrv v5）   精确坐标:同步 6/6   状态: 战斗中   倍速: 1x (x0)   战斗时间: 00:08   场上敌人: 6 / 预定: 73   60Hz校准中  200.1ms/完整帧 200批/1223读 I/O 174.2ms 暂停帧一致",
+      "enemy_meta": {
+        "sourceFrame": 466,
+        "policyGeneration": 0,
+        "latestKnownFrame": null,
+        "acceptedFrame": 466,
+        "sampledAt": 1792422010.742549,
+        "acceptedAt": 1792422010.7885113,
+        "collectionState": "current",
+        "reason": "",
+        "frameConsistent": true,
+        "sessionId": "session-f287f8793797419a9cf5e5c4abccf01f",
+        "sessionOrigin": "95fe6c0b8d4740058319b33d0731ee68",
+        "sessionOrdinal": 0
+      },
+      "character_meta": {
+        "sourceFrame": 466,
+        "policyGeneration": 0,
+        "latestKnownFrame": null,
+        "acceptedFrame": 466,
+        "sampledAt": 1792422010.742549,
+        "acceptedAt": 1792422010.7885113,
+        "collectionState": "current",
+        "reason": "",
+        "frameConsistent": true,
+        "sessionId": "session-f287f8793797419a9cf5e5c4abccf01f",
+        "sessionOrigin": "95fe6c0b8d4740058319b33d0731ee68",
+        "sessionOrdinal": 0
+      },
+      "character_count": 2,
+      "web_selected_detail": {
+        "id": "character-2147484065",
+        "name": "予愿安洁莉娜",
+        "skills_state": {
+          "sourceFrame": 466,
+          "latestKnownFrame": null,
+          "acceptedFrame": 466,
+          "generation": 0,
+          "collectionState": "current",
+          "reason": "",
+          "sampledAt": 1792422010.7260742,
+          "acceptedAt": 1792422010.7270663,
+          "frameConsistent": true
+        }
+      },
+      "stage": {
+        "stageName": "长夜终尽",
+        "stageId": "main_05-10",
+        "levelId": "Obt/Main/level_main_05-10",
+        "mapId": null
+      },
+      "scan_samples": [
+        {
+          "status": "未开始扫描",
+          "meta": {
+            "collectionState": "unavailable",
+            "reason": "source_stopped",
+            "sourceFrame": null,
+            "latestKnownFrame": null,
+            "sessionId": "session-f287f8793797419a9cf5e5c4abccf01f",
+            "sessionOrigin": "95fe6c0b8d4740058319b33d0731ee68",
+            "sessionOrdinal": 0,
+            "policyGeneration": 0
+          },
+          "characters": []
+        },
+        {
+          "status": "共享扫描: 设备侧搜索 EnemyHandBookDB / EnemyHandBookDataGroup klass ...",
+          "meta": {
+            "collectionState": "unavailable",
+            "reason": "source_stopped",
+            "sourceFrame": null,
+            "latestKnownFrame": null,
+            "sessionId": "session-f287f8793797419a9cf5e5c4abccf01f",
+            "sessionOrigin": "95fe6c0b8d4740058319b33d0731ee68",
+            "sessionOrdinal": 0,
+            "policyGeneration": 0
+          },
+          "characters": []
+        },
+        {
+          "status": "类名命中 EnemyHandBookDB=3, EnemyHandBookDataGroup=1",
+          "meta": {
+            "collectionState": "unavailable",
+            "reason": "source_stopped",
+            "sourceFrame": null,
+            "latestKnownFrame": null,
+            "sessionId": "session-f287f8793797419a9cf5e5c4abccf01f",
+            "sessionOrigin": "95fe6c0b8d4740058319b33d0731ee68",
+            "sessionOrdinal": 0,
+            "policyGeneration": 0
+          },
+          "characters": []
+        },
+        {
+          "status": "Torappu Il2CppClass 命中 EnemyHandBookDB=1, EnemyHandBookDataGroup=1",
+          "meta": {
+            "collectionState": "unavailable",
+            "reason": "source_stopped",
+            "sourceFrame": null,
+            "latestKnownFrame": null,
+            "sessionId": "session-f287f8793797419a9cf5e5c4abccf01f",
+            "sessionOrigin": "95fe6c0b8d4740058319b33d0731ee68",
+            "sessionOrdinal": 0,
+            "policyGeneration": 0
+          },
+          "characters": []
+        },
+        {
+          "status": "共享扫描: 设备侧搜索 BattleController klass ...",
+          "meta": {
+            "collectionState": "unavailable",
+            "reason": "source_stopped",
+            "sourceFrame": null,
+            "latestKnownFrame": null,
+            "sessionId": "session-f287f8793797419a9cf5e5c4abccf01f",
+            "sessionOrigin": "95fe6c0b8d4740058319b33d0731ee68",
+            "sessionOrdinal": 0,
+            "policyGeneration": 0
+          },
+          "characters": []
+        },
+        {
+          "status": "类名命中 BattleController=5",
+          "meta": {
+            "collectionState": "unavailable",
+            "reason": "source_stopped",
+            "sourceFrame": null,
+            "latestKnownFrame": null,
+            "sessionId": "session-f287f8793797419a9cf5e5c4abccf01f",
+            "sessionOrigin": "95fe6c0b8d4740058319b33d0731ee68",
+            "sessionOrdinal": 0,
+            "policyGeneration": 0
+          },
+          "characters": []
+        },
+        {
+          "status": "Torappu.Battle Il2CppClass 命中 BattleController=1",
+          "meta": {
+            "collectionState": "unavailable",
+            "reason": "source_stopped",
+            "sourceFrame": null,
+            "latestKnownFrame": null,
+            "sessionId": "session-f287f8793797419a9cf5e5c4abccf01f",
+            "sessionOrigin": "95fe6c0b8d4740058319b33d0731ee68",
+            "sessionOrdinal": 0,
+            "policyGeneration": 0
+          },
+          "characters": []
+        },
+        {
+          "status": "[扫描] BattleController @ 0x716b75f0d640, Scheduler @ 0x716b7bc0b000, 当前注册实例 6 个（UnitManager 6）",
+          "meta": {
+            "collectionState": "unavailable",
+            "reason": "source_stopped",
+            "sourceFrame": null,
+            "latestKnownFrame": null,
+            "sessionId": "session-f287f8793797419a9cf5e5c4abccf01f",
+            "sessionOrigin": "95fe6c0b8d4740058319b33d0731ee68",
+            "sessionOrdinal": 0,
+            "policyGeneration": 0
+          },
+          "characters": []
+        },
+        {
+          "status": "[扫描计时] 敌我核心定位与预填充: 25.048s",
+          "meta": {
+            "collectionState": "unavailable",
+            "reason": "source_stopped",
+            "sourceFrame": null,
+            "latestKnownFrame": null,
+            "sessionId": "session-f287f8793797419a9cf5e5c4abccf01f",
+            "sessionOrigin": "95fe6c0b8d4740058319b33d0731ee68",
+            "sessionOrdinal": 0,
+            "policyGeneration": 0
+          },
+          "characters": []
+        },
+        {
+          "status": "读取: 设备快照（memsrv v5）   精确坐标:同步 6/6   状态: 战斗中   倍速: 1x (x0)   战斗时间: 00:08   场上敌人: 6 / 预定: 73   60Hz校准中  200.1ms/完整帧 200批/1223读 I/O 174.2ms 暂停帧一致",
+          "meta": {
+            "sourceFrame": 466,
+            "policyGeneration": 0,
+            "latestKnownFrame": null,
+            "acceptedFrame": 466,
+            "sampledAt": 1792422008.104767,
+            "acceptedAt": 1792422008.304192,
+            "collectionState": "current",
+            "reason": "",
+            "frameConsistent": true,
+            "sessionId": "session-f287f8793797419a9cf5e5c4abccf01f",
+            "sessionOrigin": "95fe6c0b8d4740058319b33d0731ee68",
+            "sessionOrdinal": 0
+          },
+          "characters": [
+            {
+              "id": "character-2147484065",
+              "skill_state": {
+                "sourceFrame": 466,
+                "latestKnownFrame": null,
+                "acceptedFrame": 466,
+                "generation": 0,
+                "collectionState": "current",
+                "reason": ""
+              }
+            },
+            {
+              "id": "character-2147484072",
+              "skill_state": {
+                "sourceFrame": 466,
+                "latestKnownFrame": null,
+                "acceptedFrame": 466,
+                "generation": 0,
+                "collectionState": "unavailable",
+                "reason": "read_failed"
+              }
+            }
+          ]
+        }
+      ],
+      "exit_code": 0
+    },
+    "packages": {
+      "archives": [
+        {
+          "file": ".cache/shared_webui_profile/dist/ArknightsTimeline_PR7_Shared.exe",
+          "bytes": 113138161,
+          "sha256": "f8d5fc6c8bc536f32995d8d09c833584602f9550e986da727b3ec067ab0b67f8",
+          "pe_version": [
+            3,
+            6,
+            2,
+            0
+          ],
+          "test_marker": false,
+          "game_data_hashes": 40,
+          "webui_assets": 34,
+          "portraits": 878
+        },
+        {
+          "file": ".cache/shared_webui_profile/dist/ArknightsTimeline_PR7_Shared_Test.exe",
+          "bytes": 113135973,
+          "sha256": "5a388e612b2773b7b6084b7949c4810dd41d3629a2cc2d18bdd955136e5c294b",
+          "pe_version": [
+            3,
+            6,
+            2,
+            0
+          ],
+          "test_marker": true,
+          "game_data_hashes": 40,
+          "webui_assets": 34,
+          "portraits": 878
+        }
+      ],
+      "runtime": [
+        {
+          "file": "ArknightsTimeline_PR7_Shared.exe",
+          "startup_and_checks_seconds": 6.19,
+          "onefile_processes": 2,
+          "http_state_policy_assets": "passed",
+          "sse": [
+            "clock",
+            "modules"
+          ],
+          "shutdown": "cooperative",
+          "exit_code": 0,
+          "log_files": 1,
+          "browser_opened": false,
+          "game_scan_started": false
+        },
+        {
+          "file": "ArknightsTimeline_PR7_Shared_Test.exe",
+          "startup_and_checks_seconds": 6.89,
+          "onefile_processes": 2,
+          "http_state_policy_assets": "passed",
+          "sse": [
+            "clock",
+            "modules"
+          ],
+          "shutdown": "cooperative",
+          "exit_code": 0,
+          "log_files": 1,
+          "browser_opened": false,
+          "game_scan_started": false
+        }
+      ]
+    },
+    "ci": "Excluded by prior user instruction; not used as evidence."
+  },
+  "evidence_directory": ".cache/shared_webui_profile",
+  "preserved": "All original Ark_emulator deletions, original v3.6.2 releases and previous PR7_Local packages remain untouched."
+}
