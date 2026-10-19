@@ -50,7 +50,7 @@
 - 下一波为 null，`nextSelection=none`、理由 `no_next_wave`：普通顺序调度已无后续配置。
 - 下一波为 null，`nextSelection=pending`、理由 `selection_pending`：模式尚未确定下一波，不能当作最终波。
 - `remainingSeconds=null`、`secondsBasis=unknown`：秒数换算未验证，展示实际恢复次数；不把该次数直接除以 30 当作秒数。
-- `collectionState=unavailable`：读取/绑定/版本/守卫等未通过；`not_collected`：采集已关闭。这两者都不能算自检收到有效值。
+- `collectionState=unavailable`：读取/绑定/布局/守卫等未通过；`not_collected`：采集已关闭。这两者都不能算自检收到有效值。
 
 `fieldStates` 保留 `sourceFrame / acceptedFrame / latestKnownFrame / generation / collectionState / reason`。主时钟、运行采样、静态配置各自保留来源；组合数据没有一个真实共同帧时，根 `meta.sourceFrame=null`，运行采样参考 `meta.runtimeFrame`，逐字段记录才是判断依据。落后不统一丢弃，静态配置与动态字段按各自性质解释，不把旧帧重标为新帧。
 
