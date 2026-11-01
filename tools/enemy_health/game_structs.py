@@ -990,6 +990,7 @@ class BattleControllerFields:
     M_STATE = 0x220           # int32 State (0=NONE 1=INITED 2=PLAYING 3=FINISHED) [实测=2]
     M_SPEED_LEVEL = 0x228     # int32 SpeedLevel (0-3) [实测=1]
     M_TIME_SCALE = 0x280      # float 时间倍率 [实测=1.0]
+    PAUSE_STATE = 0x278       # EnableStateWithKey<string>*；由版本数据覆盖
     M_REAL_PLAY_TIME = 0x284  # float 战斗时间(秒) [实测]
     UNIT_MANAGER = 0x2B8      # UnitManager*；其 enemies 含非 Scheduler 管理的召唤敌人
     # 注意: 标量字段相对 dump.cs 有漂移；Scheduler/LevelData 等引用字段现网仍匹配。
@@ -1027,7 +1028,12 @@ class SchedulerFields:
     M_MANAGED_FINAL_ENEMIES = 0xC8     # List<Enemy>
     M_CACHED_ENEMIES = 0xE0            # ListSet<Enemy>
     SCHEDULER_DRIVER = 0x138           # SchedulerDriver* [实测 klass=SchedulerDriver]
+    BATTLE_CONTROLLER = 0x130          # BattleController*；每轮验证反向归属
     TOTAL_ENEMIES_CNT = 0x128          # int32
+
+
+class DefaultWaveHandlerFields:
+    SCHEDULER = 0x18                    # Scheduler*；由版本数据覆盖
 
 
 class BattleControllerStaticFields:

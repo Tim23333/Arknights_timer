@@ -8,6 +8,7 @@
 import math
 import struct
 
+from tools.enemy_health import game_structs as gs
 from .memory import ReadFailure
 
 
@@ -30,7 +31,7 @@ def _branch(word, pc):
 
 def read_pause(memory, bc):
     """暂停与引擎零倍率独立；集合读失败不推断 false。"""
-    pause = memory.pointer(bc + 0x278)
+    pause = memory.pointer(bc + gs.BattleControllerFields.PAUSE_STATE)
     memory.identity(pause, "EnableStateWithKey`1")
     keys = memory.pointer(pause + 0x10)
     memory.identity(keys, "ListSet`1")

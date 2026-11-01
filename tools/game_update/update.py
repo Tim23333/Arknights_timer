@@ -19,6 +19,8 @@ from extract_tables import extract_tables
 from tools.game_data import REPO_ROOT, sha256_file, validate_bundle
 from tools.game_update.metadata import normalize_metadata
 from tools.game_update.android_fields import decode_metadata, extract_fields
+from tools.game_update.coroutines import scheduler_coroutines
+from tools.game_update.table_schema import build_table_schema
 from tools.enemy_health.update_from_unpack import build_offsets, parse_dump
 
 
@@ -168,6 +170,7 @@ def profile(dump: Path, platform: str, source: dict, *, defaults=None):
                 'BC_STATIC_TRIVIAL': hex(bc['s_randomTrivial'])},
         'deploy': {'LOGGER_CONTROLLER': hex(logger['m_controller']),
                    'LOGGER_LOGS': hex(logger['m_logs']), 'LOGGER_SQUAD': hex(logger['m_squad'])},
+        'stage_global': {'coroutine_types': scheduler_coroutines(raw)},
     }
     return {'schema_version': 1, 'platform': platform,
             'source': f'reference/{platform}/dump.cs', 'source_sha256': sha256_file(dump),
@@ -221,9 +224,12 @@ def main(argv=None):
         catalogs = stage / 'catalogs'
         tables = stage / 'tables'
         sources = extract_tables([work / 'raw_base', work / 'raw_hot'], tables)
+        schema = stage / 'schemas/table_fields.json'
+        write_json(schema, build_table_schema(pc_dump))
         for side in ('character', 'enemy'):
             run([sys.executable, REPO_ROOT / f'ark_parser/{side}/extract_{side}_data.py',
-                 '--tables-dir', tables, '--out-dir', catalogs], work / f'parse_{side}.log')
+                 '--tables-dir', tables, '--out-dir', catalogs, '--schema', schema],
+                work / f'parse_{side}.log')
         from tools.deploy_tracker.char_names import build_char_names
         from tools.enemy_health.enemy_db import parse_handbook
         write_json(catalogs / 'char_names.json', build_char_names(str(tables / 'character_table.bin')))

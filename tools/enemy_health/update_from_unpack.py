@@ -198,6 +198,22 @@ FIELD_MAP = {
         'DEPLOY_COST_THIS_TIME': 'm_deployCostThisTime',
         'CARD_UID': '<cardUid>k__BackingField', 'DATA': '<data>k__BackingField',
     }),
+    'BattleCharacterDataFields': ('Torappu.Battle', 'BattleCharacterData', {
+        'LEVEL': 'level', 'EVOLVE_PHASE': 'evolvePhase',
+        'POTENTIAL_RANK': 'potentialRank', 'FAVOR_BATTLE_PHASE': 'favorBattlePhase',
+        'PREFAB_KEY': 'prefabKey', 'RANGE_ID': 'rangeId', 'UNIQUE_ID': 'uniqueId',
+        'PROFESSION': 'profession', 'SUB_PROFESSION_DATA': 'subProfessionData',
+        'RARITY': 'rarity', 'DEPLOY_POSITION': 'deployPositionFromData',
+        'TEAM_KEY': 'teamKey', 'IS_TOKEN': 'isToken', 'IS_PREDEFINED': 'isPredefined',
+        'IS_HIDDEN': 'isHidden', 'IS_ASSIST': 'isAssistChar',
+        'TOKEN_OR_HOST_KEY': 'tokenOrHostKey', 'TOKEN_OR_HOST_UID': 'tokenOrHostUniqueId',
+        'TOKEN_INITIAL_COUNT': 'tokenInitialCnt', 'MAIN_SKILL_INDEX': 'mainSkillIndex',
+        'MAIN_SKILL': 'mainSkill', 'TALENTS': 'talents', 'TRAIT': 'trait',
+        'UNI_EQUIP_QUERIES': 'uniEquipQueries', 'UNI_EQUIPS': 'uniEquips',
+        'UNI_EQUIP_SETTINGS': 'uniEquipSettings', 'NATION_ID': 'nationId',
+        'GROUP_ID': 'groupId', 'TEAM_ID': 'teamId', 'SUB_POWER': 'subPower',
+        'SHARED': 'shared', 'RUNTIME_DATA': 'runtimeData',
+    }),
     'BattleControllerFields': ('Torappu.Battle', 'BattleController', {
         'MAP': '_map', 'SCHEDULER': '_scheduler',
         'FACTORY': '_factory', 'M_GLOBAL_BUFFS': 'm_globalBuffs',
@@ -205,6 +221,7 @@ FIELD_MAP = {
         'GAME_MODE': 'm_gameMode', 'DIALOG_CONTROLLER': 'm_dialogController',
         'M_STATE': 'm_state', 'M_SPEED_LEVEL': 'm_speedLevel',
         'M_TIME_SCALE': 'm_originTimeScale', 'M_REAL_PLAY_TIME': 'm_realPlayTime',
+        'PAUSE_STATE': 'm_pauseState',
         'UNIT_MANAGER': '<unitManager>k__BackingField',
     }),
     'SchedulerFields': ('Torappu.Battle', 'Scheduler', {
@@ -217,6 +234,10 @@ FIELD_MAP = {
         'M_CACHED_ENEMIES': 'm_cachedEnemies',
         'TOTAL_ENEMIES_CNT': '<totalEnemiesCnt>k__BackingField',
         'SCHEDULER_DRIVER': '<driver>k__BackingField',
+        'BATTLE_CONTROLLER': '<battleController>k__BackingField',
+    }),
+    'DefaultWaveHandlerFields': ('', 'Scheduler.DefaultWaveHandler', {
+        'SCHEDULER': 'm_scheduler',
     }),
     'UnitManagerFields': ('Torappu.Battle', 'UnitManager', {
         'ALL_UNITS': '<allUnits>k__BackingField',
@@ -387,6 +408,9 @@ def build_offsets(dump_path: Path):
     if 'DATA' in output.get('CharacterFields', {}):
         last = int(output['CharacterFields']['DATA'], 0)
         output['CharacterFields']['READ_SIZE'] = f'0x{(last + 0x18 + 7) & ~7:X}'
+    if 'RUNTIME_DATA' in output.get('BattleCharacterDataFields', {}):
+        last = int(output['BattleCharacterDataFields']['RUNTIME_DATA'], 0)
+        output['BattleCharacterDataFields']['READ_SIZE'] = f'0x{(last + 8 + 7) & ~7:X}'
     if 'M_CACHED_DATA' in output.get('AttributesFields', {}):
         last = int(output['AttributesFields']['M_CACHED_DATA'], 0)
         output['AttributesFields']['READ_SIZE'] = f'0x{(last + 8 + 7) & ~7:X}'
@@ -449,7 +473,11 @@ def build_offsets(dump_path: Path):
         'BuffDataFields': ('LIFE_TIME', 'TRIGGER_LIFE_TYPE', 'TRIGGER_COUNT',
                            'TRIGGER_INTERVAL', 'PRIORITY', 'BLACKBOARD',
                            'READ_SIZE'),
-        'BattleControllerFields': ('SCHEDULER', 'LEVEL_DATA', 'UNIT_MANAGER'),
+        'BattleControllerFields': ('SCHEDULER', 'LEVEL_DATA', 'UNIT_MANAGER', 'PAUSE_STATE'),
+        'BattleCharacterDataFields': ('MAIN_SKILL_INDEX', 'MAIN_SKILL', 'TALENTS',
+                                     'UNI_EQUIPS', 'RUNTIME_DATA', 'READ_SIZE'),
+        'SchedulerFields': ('BATTLE_CONTROLLER',),
+        'DefaultWaveHandlerFields': ('SCHEDULER',),
         'LevelDataFields': ('ROUTES', 'EXTRA_ROUTES'),
         'MapFields': ('M_ROUTES', 'M_EXTRA_ROUTES', 'READ_SIZE'),
         'BasicCursorFields': ('M_ROUTE', 'M_CURSOR', 'M_CHECKPOINTS',

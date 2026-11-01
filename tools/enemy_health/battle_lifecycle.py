@@ -1,11 +1,12 @@
 """Read-only battle lifecycle, independent of clock advancement and UI policy.
 
-Android 2.7.81 layout, checked against class identities on every binding.
+Versioned Android layout, checked against class identities on every binding.
 Scene transitions are not atomic snapshots: re-read slots and scene scalars
 before accepting a sample. A failure is unknown, never an observed null slot.
 """
 import struct
 
+from tools.enemy_health import game_structs as gs
 from tools.stage_global_state.memory import MemoryAccess, ReadFailure
 
 
@@ -91,19 +92,24 @@ class LifecycleReader:
         source, target = [self._string(struct.unpack_from('<Q', raw, offset)[0]) for offset in (0x28, 0x30)]
         battle, ready = None, False
         if bc:
-            block = m.read(bc, 0x2C0)
+            fields = gs.BattleControllerFields
+            size = max(fields.M_STATE + 4, fields.SCHEDULER + 8,
+                       fields.LEVEL_DATA + 8, fields.UNIT_MANAGER + 8, 0x18)
+            block = m.read(bc, size)
             if struct.unpack_from('<Q', block)[0] != self.battle_klass:
                 raise ReadFailure('binding_invalid')
             native = struct.unpack_from('<Q', block, 0x10)[0]
             if native:
                 battle = (bc, native)
-                state = struct.unpack_from('<i', block, 0x220)[0]
+                state = struct.unpack_from('<i', block, fields.M_STATE)[0]
                 if state not in (0, 1, 2, 3):
                     raise ReadFailure('unsupported_layout')
                 # No advancing-clock requirement: paused PLAYING is valid.
                 if state == 2 and not raw[0x20]:
                     ready = True
-                    for offset, name in ((0x30, 'Scheduler'), (0x158, 'LevelData'), (0x2B8, 'UnitManager')):
+                    for offset, name in ((fields.SCHEDULER, 'Scheduler'),
+                                         (fields.LEVEL_DATA, 'LevelData'),
+                                         (fields.UNIT_MANAGER, 'UnitManager')):
                         ptr = struct.unpack_from('<Q', block, offset)[0]
                         if not ptr:
                             ready = False

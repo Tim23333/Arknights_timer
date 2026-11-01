@@ -8,6 +8,7 @@ from extract_tables import extract_tables
 from tools import game_data
 from tools.game_update.metadata import normalize_metadata
 from tools.game_update.update import snapshot_android
+from tools.game_update.coroutines import CONTAINERS, LAYOUTS, METHODS, scheduler_coroutines
 
 
 def bundle(tmp_path, monkeypatch):
@@ -95,3 +96,40 @@ def test_extended_metadata_removes_only_extra_record_field(tmp_path):
     assert struct.unpack_from('<I', result, 42 * 4)[0] == 364
     assert result[364:] == b'after123'
     assert source.read_bytes()[276:368] == record
+
+
+def coroutine_fixture():
+    return {('', f'{CONTAINERS[role]}.<{method}>d__{119 + index * 2}'):
+            dict(LAYOUTS[role]) for index, (role, method) in enumerate(METHODS.items())}
+
+
+def test_scheduler_suffixes_are_version_data_but_layout_remains_verified():
+    classes = coroutine_fixture()
+    assert scheduler_coroutines(classes) == {
+        'root': '<_DoSchedule>d__119', 'wave': '<_DealWave>d__121',
+        'fragment': '<_DealFragment>d__123',
+        'pre_delay': '<WaitForPredelay>d__125', 'post_delay': '<WaitForPostDelay>d__127',
+        'actions': '<ExecuteActionQueue>d__129',
+    }
+
+
+@pytest.mark.parametrize('role', tuple(METHODS))
+def test_scheduler_layout_change_is_rejected_even_with_matching_method_name(role):
+    classes = coroutine_fixture()
+    key = next(key for key in classes if f'<{METHODS[role]}>' in key[1])
+    owner_field = 'wave' if role in ('pre_delay', 'post_delay') else '<>4__this'
+    classes[key][owner_field] += 8
+    with pytest.raises(ValueError, match='Unsupported scheduler'):
+        scheduler_coroutines(classes)
+
+
+def test_missing_or_ambiguous_scheduler_iterator_is_rejected():
+    classes = coroutine_fixture()
+    root = next(key for key in classes if '<_DoSchedule>' in key[1])
+    classes[('', 'Scheduler.<_DoSchedule>d__999')] = classes[root]
+    with pytest.raises(ValueError, match='found 2'):
+        scheduler_coroutines(classes)
+    del classes[root]
+    del classes[('', 'Scheduler.<_DoSchedule>d__999')]
+    with pytest.raises(ValueError, match='found 0'):
+        scheduler_coroutines(classes)

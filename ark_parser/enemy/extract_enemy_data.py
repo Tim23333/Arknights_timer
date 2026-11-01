@@ -34,7 +34,7 @@ import sys
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, str(Path(SCRIPT_DIR).parents[1]))
-from tools.game_data import table_path, legacy_table
+from tools.game_data import table_path, legacy_table, table_field_names
 TABLES_DIR = os.path.join(SCRIPT_DIR, "..", "..", "data", "tables")
 OUT_DIR = os.path.join(SCRIPT_DIR, "data")
 
@@ -671,18 +671,26 @@ STAGE_STR_FIELDS = {
     'battleFinishLoadingPicId', 'etItemId', 'etButtonStyle',
     'displayMainItem', 'startButtonOverrideId', 'mainStageId',
     'sixStarBaseDesc',
+    'levelMapId',
 }
 STAGE_FLOAT_FIELDS = {'dangerPoint'}
+STAGE_BOOL_FIELDS = {
+    'canPractice', 'canBattleReplay', 'hilightMark', 'bossMark', 'isPredefined',
+    'isHardPredefined', 'isSkillSelectablePredefined', 'isStoryOnly',
+    'canUseCharm', 'canUseTech', 'canUseTrapTool', 'canUseBattlePerformance',
+    'canUseFirework', 'canMultipleBattle', 'isStagePatch', 'useSpecialSizeMapPreview',
+}
 STAGE_VEC_FIELDS = {
     'unlockCondition', 'sixStarDisplayRewardList', 'advancedRuneIdList1',
     'advancedRuneIdList2', 'extraCondition', 'extraInfo',
 }
 
 
-def parse_stages(fb):
+def parse_stages(fb, field_names=None):
     """stage_table: root field0 = dict stageId -> StageData (61 fields).
     LevelData (waves/routes/enemies) lives in separate encrypted level
     TextAssets (level_main_*, level_act*_*, ...) - see levels_index.json."""
+    field_names = field_names or table_field_names('StageData', STAGE_NAMES)
     root_fields = fb.table_fields(fb.root)
     vec = root_fields[0] + fb.i32(root_fields[0])
     entries = fb.read_dict(vec)
@@ -694,7 +702,7 @@ def parse_stages(fb):
                 continue
             f = fb.table_fields(t)
             rec = {}
-            for i, nm in enumerate(STAGE_NAMES):
+            for i, nm in enumerate(field_names):
                 if i >= len(f) or f[i] is None:
                     continue
                 if nm in STAGE_STR_FIELDS:
@@ -703,6 +711,8 @@ def parse_stages(fb):
                         rec[nm] = fb.read_string(t2)
                 elif nm in STAGE_FLOAT_FIELDS:
                     rec[nm] = i2f(fb.i32(f[i]))
+                elif nm in STAGE_BOOL_FIELDS:
+                    rec[nm] = bool(fb.d[f[i]])
                 elif nm in STAGE_VEC_FIELDS:
                     t2 = fb.target_of(f[i])
                     if fb.is_vector(t2):
@@ -779,6 +789,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--tables-dir', type=Path)
     parser.add_argument('--out-dir', type=Path, default=Path(OUT_DIR))
+    parser.add_argument('--schema', type=Path, help='Versioned table field ordinals')
     args = parser.parse_args(argv)
     OUT_DIR = str(args.out_dir)
     def resolve(prefix):
@@ -812,7 +823,7 @@ def main(argv=None):
 
     print('== stage_table ==')
     fb3 = FB(STAGE_TB)
-    stages = parse_stages(fb3)
+    stages = parse_stages(fb3, table_field_names('StageData', STAGE_NAMES, args.schema))
     path3 = os.path.join(OUT_DIR, 'stage_enemy_usage.json')
     with open(path3, 'w', encoding='utf-8') as f:
         json.dump(stages, f, ensure_ascii=False)

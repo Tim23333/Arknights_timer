@@ -1,6 +1,6 @@
 """活动波次及等待读取；配置名单不等同于必定出场的实体。
 
-原生链偏移仅针对已研究的 Android 2.7.81。活动链表现场验收未完成时
+托管协程名来自经过字段布局校验的版本数据。活动链表现场验收未完成时
 默认关闭动态波次解析，调用方不能靠非零反向引用自动升级证据等级。
 """
 
@@ -8,12 +8,17 @@ import math
 import struct
 
 from tools.enemy_health import game_structs as gs
+from tools.game_data import runtime_offsets
 from .memory import ReadFailure
 
 
-ROOT = "<_DoSchedule>d__117"
-WAVE = "<_DealWave>d__121"
-FRAGMENT = "<_DealFragment>d__122"
+_COROUTINES = runtime_offsets('stage_global').get('coroutine_types', {})
+ROOT = _COROUTINES.get('root', "<_DoSchedule>d__117")
+WAVE = _COROUTINES.get('wave', "<_DealWave>d__121")
+FRAGMENT = _COROUTINES.get('fragment', "<_DealFragment>d__122")
+PRE_DELAY = _COROUTINES.get('pre_delay', '<WaitForPredelay>d__19')
+POST_DELAY = _COROUTINES.get('post_delay', '<WaitForPostDelay>d__20')
+ACTIONS = _COROUTINES.get('actions', '<ExecuteActionQueue>d__21')
 PHASES = {1: "pre_delay", 2: "spawning", 3: "timeout_wait", 4: "clearance_wait", 5: "post_delay"}
 WAVE_FIELDS = frozenset({"currentWave", "nextWave", "nextWaveEnemies", "waveGate", "waveWait"})
 
@@ -76,7 +81,7 @@ class WaveStateReader:
             or struct.unpack_from("<Q", bcraw, 0x20)[0] != s
         ):
             raise ReadFailure("binding_invalid")
-        if struct.unpack("<Q", read(s + 0x130, 8))[0] != self.bc:
+        if struct.unpack("<Q", read(s + gs.SchedulerFields.BATTLE_CONTROLLER, 8))[0] != self.bc:
             raise ReadFailure("binding_invalid")
         native_owner = struct.unpack("<Q", read(s + 0x10, 8))[0]
         if not m.mc.is_ptr(native_owner):
@@ -266,7 +271,7 @@ class WaveStateReader:
         mode_name = m.identity(mode_address)[1]
         if handler_name != "DefaultWaveHandler" or mode_name != "DefaultGameMode":
             raise ReadFailure("unsupported_layout")
-        if m.pointer(handler + 0x18) != self.scheduler:
+        if m.pointer(handler + gs.DefaultWaveHandlerFields.SCHEDULER) != self.scheduler:
             raise ReadFailure("binding_invalid")
         wait_phase = "clearance" if phase in ("clearance_wait", "timeout_wait") else phase
         wait = (
@@ -336,19 +341,19 @@ class WaveStateReader:
                     or struct.unpack_from("<Q", block, 0x28)[0] != fragments[fragment_index]
                 ):
                     raise ReadFailure("binding_invalid")
-            elif name in (
-                "<WaitForPreDelay>d__19",
-                "<WaitForPostDelay>d__20",
-                "<ExecuteActionQueue>d__21",
-            ):
+            elif name in (PRE_DELAY, POST_DELAY):
+                # These iterators capture WaveData directly, not the handler.
+                expected_phase = 'pre_delay' if name == PRE_DELAY else 'post_delay'
+                if owner != wave or phase != expected_phase:
+                    raise ReadFailure("binding_invalid")
+            elif name == ACTIONS:
                 if owner != handler:
                     raise ReadFailure("binding_invalid")
-                if name == "<ExecuteActionQueue>d__21":
-                    if gate is not None:
-                        gate["actionIndex"] = struct.unpack_from("<i", block, 0x28)[0]
-                    if wait is not None:
-                        wait_phase = "action_interval"
-                        wait["phase"] = wait_phase
+                if gate is not None:
+                    gate["actionIndex"] = struct.unpack_from("<i", block, 0x28)[0]
+                if wait is not None:
+                    wait_phase = "action_interval"
+                    wait["phase"] = wait_phase
             elif name not in ("<WaitWhileFixed>d__4", "<WaitWhileFixed>d__9"):
                 raise ReadFailure("unsupported_layout")
             address = child

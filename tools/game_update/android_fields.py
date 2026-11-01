@@ -9,6 +9,7 @@ import struct
 
 from tools.enemy_health.update_from_unpack import FIELD_MAP, ENUM_MAP
 from tools.game_update.metadata import normalize_metadata
+from tools.game_update.coroutines import is_scheduler_coroutine
 
 
 def decode_metadata(source: Path, output: Path) -> dict:
@@ -139,6 +140,8 @@ def extract_fields(binary: Path, metadata: Path, output: Path,
     wanted = {(ns, name) for ns, name, mapping in FIELD_MAP.values()} | set(ENUM_MAP.values())
     wanted |= {('Torappu.Battle', 'BattleLogger'), ('', 'BattleLogger.LogItem'),
                ('', 'BattleLogger.CharInfo'), ('', 'BattleController.ReplayController')}
+    wanted |= {type_name(index) for index in range(count)
+               if is_scheduler_coroutine(*type_name(index))}
     default_values = {}
     for off in range(header[16], header[16] + header[17], 12):
         field, typ, value = struct.unpack_from('<3i', data, off)

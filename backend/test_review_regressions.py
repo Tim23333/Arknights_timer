@@ -102,12 +102,14 @@ def test_packaging_manifest_matches_embedded_runtime_subset(tmp_path):
     bundle.mkdir()
     original = {'schema_version': 1, 'files': {
         'catalogs/char_names.json': {'sha256': 'runtime'},
+        'schemas/table_fields.json': {'sha256': 'schema'},
         'reference/pc_x64/dump.cs': {'sha256': 'reference'},
         'README.md': {'sha256': 'guide'}}}
     (bundle / 'manifest.json').write_text(json.dumps(original))
     generated = _runtime_bundle_manifest(bundle, tmp_path / 'backend')
     embedded = json.loads(generated.read_text(encoding='utf-8'))
-    assert embedded['files'] == {'catalogs/char_names.json': {'sha256': 'runtime'}}
+    assert embedded['files'] == {'catalogs/char_names.json': {'sha256': 'runtime'},
+                                 'schemas/table_fields.json': {'sha256': 'schema'}}
     assert json.loads((bundle / 'manifest.json').read_text()) == original
 
 

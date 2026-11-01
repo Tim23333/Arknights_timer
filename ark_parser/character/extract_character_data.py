@@ -27,7 +27,7 @@ TABLES_DIR = os.path.join(SCRIPT_DIR, "..", "..", "data", "tables")
 OUT_DIR = os.path.join(SCRIPT_DIR, "data")
 sys.path.insert(0, os.path.join(SCRIPT_DIR, "..", "enemy"))
 sys.path.insert(0, str(Path(SCRIPT_DIR).parents[1]))
-from tools.game_data import table_path, legacy_table
+from tools.game_data import table_path, legacy_table, table_field_names
 
 from extract_enemy_data import FB, i2f, parse_blackboard  # noqa: E402
 
@@ -137,18 +137,28 @@ CHAR_ATTR_FLOAT = {
     'hpRecoveryPerSecByMaxHpRatio', 'defPenetrateFixed',
     'oneMinusStatusResistance', 'magicResistPenetrateFixed',
     'epRecoveryPerSec', 'spRecoverRatio', 'epBreakRecoverSpeed', 'slowDown',
+    'blockRadiusScale',
 }
+CHAR_ATTR_BOOL = {
+    'stunImmune', 'silenceImmune', 'sleepImmune', 'frozenImmune',
+    'levitateImmune', 'disarmedCombatImmune', 'fearedImmune', 'palsyImmune',
+    'attractImmune', 'teleportImmune', 'groundBoundImmune',
+}
+LEGACY_CHAR_ATTR_NAMES = CHAR_ATTR_NAMES
+CHAR_ATTR_NAMES = table_field_names('AttributesData', LEGACY_CHAR_ATTR_NAMES)
 
 
-def parse_char_attributes(fb, pos):
+def parse_char_attributes(fb, pos, field_names=None):
     f = fb.table_fields(pos)
     out = {}
-    for i, nm in enumerate(CHAR_ATTR_NAMES):
+    for i, nm in enumerate(field_names or CHAR_ATTR_NAMES):
         if i >= len(f) or f[i] is None:
             out[nm] = None
             continue
         if nm in CHAR_ATTR_FLOAT:
             out[nm] = i2f(fb.i32(f[i]))
+        elif nm in CHAR_ATTR_BOOL:
+            out[nm] = read_bool(fb, f[i])
         else:
             out[nm] = fb.i32(f[i])
     return out
@@ -524,11 +534,13 @@ def parse_battle_equip(fb):
 
 
 def main(argv=None):
-    global OUT_DIR, CHARACTER_TB, SKILL_TB, BATTLE_EQUIP_TB, UNIEQUIP_TB
+    global OUT_DIR, CHARACTER_TB, SKILL_TB, BATTLE_EQUIP_TB, UNIEQUIP_TB, CHAR_ATTR_NAMES
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--tables-dir', type=Path)
     parser.add_argument('--out-dir', type=Path, default=Path(OUT_DIR))
+    parser.add_argument('--schema', type=Path, help='Versioned table field ordinals')
     args = parser.parse_args(argv)
+    CHAR_ATTR_NAMES = table_field_names('AttributesData', LEGACY_CHAR_ATTR_NAMES, args.schema)
     OUT_DIR = str(args.out_dir)
     def resolve(prefix):
         path = legacy_table(prefix, args.tables_dir) if args.tables_dir else table_path(prefix)

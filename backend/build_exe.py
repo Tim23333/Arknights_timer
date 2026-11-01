@@ -87,7 +87,7 @@ def stage_global_assets(package_dir: Path) -> tuple[Path, ...]:
 def _runtime_bundle_manifest(bundle_dir: Path, backend_dir: Path) -> Path:
     """The embedded subset excludes reference dumps; its manifest must match it."""
     payload = json.loads((bundle_dir / 'manifest.json').read_text(encoding='utf-8'))
-    runtime_folders = {'tables', 'catalogs', 'offsets', 'overrides'}
+    runtime_folders = {'tables', 'catalogs', 'offsets', 'overrides', 'schemas'}
     payload['files'] = {name: info for name, info in payload.get('files', {}).items()
                         if name.split('/')[0] in runtime_folders}
     payload['distribution'] = 'embedded_runtime_subset'
@@ -324,7 +324,7 @@ def _build_main_app(backend_dir: Path, repo_root: Path, icon_path: Path, args,
     if (bundle_dir / 'manifest.json').is_file():
         runtime_manifest = _runtime_bundle_manifest(bundle_dir, backend_dir)
         cmd.extend(['--add-data', _add_data_arg(runtime_manifest, 'game_data')])
-        for name in ('tables', 'catalogs', 'offsets', 'overrides'):
+        for name in ('tables', 'catalogs', 'offsets', 'overrides', 'schemas'):
             folder = bundle_dir / name
             if folder.is_dir():
                 cmd.extend(['--add-data', _add_data_arg(folder, f'game_data/{name}')])

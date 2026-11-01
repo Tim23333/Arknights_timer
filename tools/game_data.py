@@ -81,6 +81,24 @@ def catalog_path(name: str) -> Path | None:
     return path if path.is_file() else None
 
 
+def table_field_names(type_name: str, legacy: list[str], schema_path: Path | None = None) -> list[str]:
+    """Table ordinals belong to the resource version, not Android offsets."""
+    if schema_path is None:
+        root = bundle_root()
+        if root is None:
+            return list(legacy)
+        schema_path = root / 'schemas/table_fields.json'
+        if not schema_path.is_file() and 'schemas/table_fields.json' not in manifest(root).get('files', {}):
+            return list(legacy)  # Bundles made before table schemas were introduced.
+    data = json.loads(Path(schema_path).read_text(encoding='utf-8'))
+    fields = data.get('classes', {}).get(type_name)
+    if (data.get('schema_version') != 1 or not isinstance(fields, list)
+            or not all(isinstance(name, str) and name.isidentifier() for name in fields)
+            or len(fields) != len(set(fields)) or not set(legacy) <= set(fields)):
+        raise ValueError(f'Invalid or incomplete table field schema: {type_name}')
+    return fields
+
+
 def merge_overrides(base, patch):
     """ID/field dictionaries merge recursively; lists and scalar values replace."""
     if isinstance(base, dict) and isinstance(patch, dict):

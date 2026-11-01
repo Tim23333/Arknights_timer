@@ -256,7 +256,7 @@ class StageGlobalReader:
             or self.process_instance != getattr(m.mc, "process_instance", None)
         ):
             raise ReadFailure("binding_invalid")
-        if m.pointer(scheduler + 0x130) != self.bc:
+        if m.pointer(scheduler + gs.SchedulerFields.BATTLE_CONTROLLER) != self.bc:
             raise ReadFailure("binding_invalid")
 
     def base_map(self, cached):
