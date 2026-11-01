@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "version": "3.6.4",
+  "frontend_version": "1.0.5",
+  "built_from_commit": "af0a573065e6fc1298baa4975199ef6228700083",
+  "tested_code_tree": "4a7f8b0547a6993c51a80f3ca079a898eebcdfa3",
+  "build_command": "python backend/build_exe.py",
+  "output_directory": "backend/dist",
+  "build_checkout": "clean detached checkout; Ark_emulator excluded by sparse checkout",
+  "android_game_version": "2.7.91",
+  "data_version": "2026-11-01-ea7475c2dad5",
+  "changes": [
+    "Refresh PC base/hot resources and independently extract live Android 2.7.91 field offsets from MuMu.",
+    "Use versioned resource-table ordinals after StageData.levelMapId and AttributesData.blockVolume insertions.",
+    "Regenerate BattleCharacterData skill/talent/equipment fields and version pause/lifecycle reads.",
+    "Resolve validated scheduler/handler iterator names and preserve ownership and same-frame guards.",
+    "Include schemas/table_fields.json in both embedded runtime bundles.",
+    "Preserve concurrent desktop/WebUI behavior and manual game_data overrides."
+  ],
+  "tests": {
+    "pre_version_bump_suite": {
+      "passed": 648,
+      "subtests_passed": 142,
+      "failed": 0,
+      "skipped": 0,
+      "existing_warnings": 2,
+      "native_protocol_cases": 21,
+      "evidence": "game_data/validation.json"
+    },
+    "release_version_and_focused_regression": {
+      "passed": 43
+    },
+    "webui_node": {
+      "passed": 44
+    },
+    "timeline_frontend_node": {
+      "passed": 3
+    },
+    "frontend_build": "passed via the normal packaging script",
+    "frozen_live_mumu": {
+      "package": "ArknightsTimeline_v3.6.4.exe",
+      "android_game_version": "2.7.91",
+      "serial": "127.0.0.1:16384",
+      "enemy_meta": {
+        "sourceFrame": 585,
+        "policyGeneration": 1,
+        "latestKnownFrame": null,
+        "acceptedFrame": 585,
+        "sampledAt": 1793512872.4878821,
+        "acceptedAt": 1793512872.5317218,
+        "collectionState": "current",
+        "reason": "",
+        "frameConsistent": true,
+        "sessionId": "session-d569f02835f946bda1c4cb278d557a81",
+        "sessionOrigin": "73df6a1159ab4d2fa9a17cf11d688b25",
+        "sessionOrdinal": 0
+      },
+      "character_meta": {
+        "sourceFrame": 585,
+        "policyGeneration": 1,
+        "latestKnownFrame": null,
+        "acceptedFrame": 585,
+        "sampledAt": 1793512872.4878821,
+        "acceptedAt": 1793512872.5317218,
+        "collectionState": "current",
+        "reason": "",
+        "frameConsistent": true,
+        "sessionId": "session-d569f02835f946bda1c4cb278d557a81",
+        "sessionOrigin": "73df6a1159ab4d2fa9a17cf11d688b25",
+        "sessionOrdinal": 0
+      },
+      "character_count": 19,
+      "stage": {
+        "stageName": "潮湿的火焰",
+        "stageId": "act55side_08",
+        "levelId": "Activities/act55side/level_act55side_08",
+        "mapId": null
+      },
+      "web_selected_detail": {
+        "id": "character-2147484054",
+        "name": "可露希尔",
+        "skills_state": {
+          "sourceFrame": 585,
+          "latestKnownFrame": null,
+          "acceptedFrame": 585,
+          "generation": 1,
+          "collectionState": "current",
+          "reason": "",
+          "sampledAt": 1793512872.4977767,
+          "acceptedAt": 1793512872.4987562,
+          "frameConsistent": true
+        }
+      },
+      "exit_code": 0
+    },
+    "excluded_modules": [
+      "Ark_emulator"
+    ],
+    "github_ci": "not a gate, as requested by the user"
+  },
+  "archives": [
+    {
+      "file": "ArknightsTimeline_v3.6.4.exe",
+      "bytes": 113033832,
+      "sha256": "35985ce291419a571bfe62f4a3350b14590dde99eeec49881b56c54d9b219095",
+      "pe_version": [
+        3,
+        6,
+        4,
+        0
+      ],
+      "test_marker": false,
+      "game_data_hashes": 41,
+      "android_game_version": "2.7.91",
+      "data_version": "2026-11-01-ea7475c2dad5",
+      "webui_assets": 34,
+      "portraits": 878
+    },
+    {
+      "file": "ArknightsTimeline_v3.6.4_Test.exe",
+      "bytes": 113095349,
+      "sha256": "f5639e0530d4ad386021e238fed606ee95cfb6080451f4662ff6e72405af4a13",
+      "pe_version": [
+        3,
+        6,
+        4,
+        0
+      ],
+      "test_marker": true,
+      "game_data_hashes": 41,
+      "android_game_version": "2.7.91",
+      "data_version": "2026-11-01-ea7475c2dad5",
+      "webui_assets": 34,
+      "portraits": 878
+    }
+  ],
+  "smoke": [
+    {
+      "file": "ArknightsTimeline_v3.6.4.exe",
+      "startup_and_checks_seconds": 4.58,
+      "onefile_processes": 2,
+      "http_state_policy_assets": "passed",
+      "sse": [
+        "clock",
+        "modules"
+      ],
+      "shutdown": "cooperative",
+      "exit_code": 0,
+      "log_files": 1,
+      "browser_opened": false,
+      "game_scan_started": false
+    },
+    {
+      "file": "ArknightsTimeline_v3.6.4_Test.exe",
+      "startup_and_checks_seconds": 4.69,
+      "onefile_processes": 2,
+      "http_state_policy_assets": "passed",
+      "sse": [
+        "clock",
+        "modules"
+      ],
+      "shutdown": "cooperative",
+      "exit_code": 0,
+      "log_files": 1,
+      "browser_opened": false,
+      "game_scan_started": false
+    }
+  ],
+  "notes": [
+    "Ordinary and diagnostic packages share the same committed source; only the diagnostic package embeds TEST_BUILD.",
+    "WebUI enables live diagnostics in both package modes; the ordinary desktop has no test diagnostics window.",
+    "Frozen checks use embedded version data with no ARKNIGHTS_GAME_DATA_DIR override.",
+    "The adjacent machine-local ADB configuration explicitly selects MuMu 127.0.0.1:16384.",
+    "No GitHub Release, tag or asset upload was requested.",
+    "Live verification is a finite paused-battle check, not long-running or all-stage acceptance."
+  ]
+}
